@@ -23,6 +23,7 @@ import { mockTypes } from '../mock_elements'
 import filterCreator, {
   LAYOUT_ASSIGNMENTS_FIELD,
   LOGIN_IP_RANGES_FIELD,
+  LOGIN_FLOWS_FIELD,
 } from '../../src/filters/minify_deploy'
 import { defaultFilterContext } from '../utils'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
@@ -55,6 +56,13 @@ describe('minifyDeployFilter', () => {
         mockTypes.Profile,
         {
           [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
+          [LOGIN_FLOWS_FIELD]: {
+            flow: 'Test',
+            flowType: 'UI',
+            friendlyName: 'Test Login',
+            uiLoginFlowType: 'VisualWorkflow',
+            useLightningRuntime: 'false',
+          },
           layoutAssignments: {
             nonModifiedLayout: [{ layout: 'nonModifiedLayout' }],
             anotherNonModifiedLayout: [{ layout: 'anotherNonModifiedLayout' }],
@@ -104,6 +112,13 @@ describe('minifyDeployFilter', () => {
         expect(afterProfile.value).toEqual({
           [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
           [LOGIN_IP_RANGES_FIELD]: AFTER_IP_RANGES,
+          [LOGIN_FLOWS_FIELD]: {
+            flow: 'Test',
+            flowType: 'UI',
+            friendlyName: 'Test Login',
+            uiLoginFlowType: 'VisualWorkflow',
+            useLightningRuntime: 'false',
+          },
           [LAYOUT_ASSIGNMENTS_FIELD]: {
             newLayoutAssignment: [{ layout: 'newLayoutAssignment' }],
           },

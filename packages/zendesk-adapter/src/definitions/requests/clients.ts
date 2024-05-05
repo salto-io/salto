@@ -44,7 +44,7 @@ export const createClientDefinitions = (
           '/api/v2/brands': { get: { pagination: 'links' } },
           '/api/v2/recipient_addresses': { get: { pagination: 'links' } },
           '/api/v2/views': { get: { pagination: 'links' } },
-          '/api/v2/macros': { get: { pagination: 'links' } },
+          '/api/v2/macros': { get: { pagination: 'links', queryArgs: { access: 'shared' } } },
           '/api/v2/ticket_fields': { get: { pagination: 'links' } },
           '/api/v2/user_fields': { get: { pagination: 'links' } },
           '/api/v2/organization_fields': { get: { pagination: 'links' } },

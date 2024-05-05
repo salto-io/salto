@@ -358,7 +358,7 @@ const createCustomizations = (): Record<
     requests: [
       {
         endpoint: { path: '/api/v2/macros/actions' },
-        transformation: { root: '.' },
+        transformation: { root: 'actions' },
       },
     ],
     resource: { directFetch: true },
@@ -373,7 +373,7 @@ const createCustomizations = (): Record<
     },
   },
 
-  macro_category: {
+  macro_categories: {
     requests: [
       {
         endpoint: { path: '/api/v2/macros/categories' },
@@ -1101,6 +1101,7 @@ const createCustomizations = (): Record<
           context: { args: { custom_object_key: { root: 'key' } } },
         },
       },
+      serviceIDFields: [],
     },
     element: {
       topLevel: {
@@ -1166,9 +1167,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
       },
-      fieldCustomizations: {
-        id: { hide: true },
-      },
+      fieldCustomizations: { id: { hide: true }, name: { hide: true } },
     },
   },
 
@@ -1176,6 +1175,62 @@ const createCustomizations = (): Record<
     requests: [{ endpoint: { path: '/api/v2/account/features' }, transformation: { root: 'features' } }],
     resource: { directFetch: true },
     element: { topLevel: { isTopLevel: true, singleton: true } },
+  },
+
+  routing_attribute: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/routing/attributes' },
+        transformation: { root: 'attributes' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        values: {
+          typeName: 'routing_attribute_value',
+          context: { args: { attributeId: { root: 'id' } } },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/objects-rules/rules/routing' },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'string' },
+        values: {
+          standalone: {
+            typeName: 'routing_attribute_value',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: false,
+          },
+        },
+      },
+    },
+  },
+
+  routing_attribute_value: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/routing/attributes/{attributeId}/values' },
+        transformation: { root: 'attribute_values' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        serviceUrl: { path: '/admin/objects-rules/rules/routing' },
+      },
+      fieldCustomizations: { id: { hide: true, fieldType: 'string' } },
+    },
   },
 
   business_hours_schedule: {

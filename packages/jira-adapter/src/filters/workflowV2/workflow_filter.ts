@@ -409,9 +409,7 @@ const getWorkflowPayload = (
   return workflowPayload
 }
 
-const getWorkflowsFromWorkflowScheme = async (
-  workflowSchemeInstance: InstanceElement,
-): Promise<ReferenceExpression[]> => {
+export const getWorkflowsFromWorkflowScheme = (workflowSchemeInstance: InstanceElement): ReferenceExpression[] => {
   const { defaultWorkflow } = workflowSchemeInstance.value
   const workflows = makeArray(workflowSchemeInstance.value.items)
     .filter(isWorkflowSchemeItem)

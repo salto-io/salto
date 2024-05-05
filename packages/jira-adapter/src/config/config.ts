@@ -209,6 +209,7 @@ export type ChangeValidatorName =
   | 'emptyValidatorWorkflowChange'
   | 'readOnlyWorkflow'
   | 'dashboardGadgets'
+  | 'referencedWorkflowDeletion'
   | 'dashboardLayout'
   | 'permissionType'
   | 'automations'
@@ -268,6 +269,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     status: { refType: BuiltinTypes.BOOLEAN },
     privateApi: { refType: BuiltinTypes.BOOLEAN },
     emptyValidatorWorkflowChange: { refType: BuiltinTypes.BOOLEAN },
+    referencedWorkflowDeletion: { refType: BuiltinTypes.BOOLEAN },
     readOnlyWorkflow: { refType: BuiltinTypes.BOOLEAN },
     dashboardGadgets: { refType: BuiltinTypes.BOOLEAN },
     dashboardLayout: { refType: BuiltinTypes.BOOLEAN },

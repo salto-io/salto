@@ -34,25 +34,25 @@ import { WORKFLOW_SCHEME_TYPE_NAME } from '../../constants'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const mapWorkflowsToReferencingSchemes = async (
+const mapWorkflowNameToReferencingWorkflowSchemesIDs = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<Record<string, Set<ElemID>>> => {
-  const workflowNameToReferencingWorkflowSchemes: Record<string, Set<ElemID>> = {}
+  const workflowNameToReferencingWorkflowSchemesIDs: Record<string, Set<ElemID>> = {}
 
   await awu(await getInstancesFromElementSource(elementsSource, [WORKFLOW_SCHEME_TYPE_NAME])).forEach(scheme => {
-    getWorkflowsFromWorkflowScheme(scheme).forEach(workflow => {
-      const key = workflow.elemID.getFullName()
-      if (workflowNameToReferencingWorkflowSchemes[key] === undefined) {
-        workflowNameToReferencingWorkflowSchemes[key] = new Set<ElemID>()
+    getWorkflowsFromWorkflowScheme(scheme).forEach(workflowReference => {
+      const key = workflowReference.elemID.getFullName()
+      if (workflowNameToReferencingWorkflowSchemesIDs[key] === undefined) {
+        workflowNameToReferencingWorkflowSchemesIDs[key] = new Set<ElemID>()
       }
-      workflowNameToReferencingWorkflowSchemes[key].add(scheme.elemID)
+      workflowNameToReferencingWorkflowSchemesIDs[key].add(scheme.elemID)
     })
   })
-  return workflowNameToReferencingWorkflowSchemes
+  return workflowNameToReferencingWorkflowSchemesIDs
 }
 
 /*
- * This change validator checks whether a deleted workflow has an workflow-scheme referencing it, if so then emit an error.
+ * This change validator checks whether a deleted workflow has a workflow-scheme referencing it, if so then emit an error.
  * This is the behaviour by Jira, which returns an error when trying to delete a referenced workflow.
  *
  * Note, this validator only works for WorkflowV2.
@@ -65,10 +65,13 @@ export const referencedWorkflowDeletionChangeValidator =
       return []
     }
     if (elementsSource === undefined) {
-      log.warn('Elements source was not passed to referencedWorkflowDeletionChangeValidator. Skipping validator.')
+      log.warn(
+        "Elements source was not passed to referencedWorkflowDeletionChangeValidator. Skipping 'referencedWorkflowDeletionChangeValidator'.",
+      )
       return []
     }
-    const workflowNameToReferencingWorkflowSchemes = await mapWorkflowsToReferencingSchemes(elementsSource)
+    const workflowNameToReferencingWorkflowSchemes =
+      await mapWorkflowNameToReferencingWorkflowSchemesIDs(elementsSource)
     return awu(changes)
       .filter(isInstanceChange)
       .filter(isRemovalChange)

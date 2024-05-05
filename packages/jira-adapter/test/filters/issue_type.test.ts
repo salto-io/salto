@@ -205,7 +205,7 @@ describe('issueTypeFilter', () => {
           errors: [
             {
               message:
-                'Failed to fetch attachment content from Jira API. error: Error: Failed to fetch attachment content, response is not a buffer',
+                'Failed to fetch attachment content from Jira API. error: Error: Failed to fetch attachment content, response is not a buffer.',
               severity: 'Warning',
             },
           ],
@@ -227,7 +227,7 @@ describe('issueTypeFilter', () => {
           errors: [
             {
               message:
-                'Failed to fetch attachment content from Jira API. error: Error: Failed to fetch attachment content, attachment not found',
+                'Failed to fetch attachment content from Jira API. error: Error: Failed to fetch issue type icon. It might be corrupted. To fix this, upload a new icon in your jira instance.',
               severity: 'Warning',
             },
           ],

@@ -585,7 +585,29 @@ describe('automationFetchFilter', () => {
                     },
                   ],
                 },
-                children: [],
+                children: [
+                  {
+                    component: 'ACTION',
+                    schemaVersion: 1,
+                    type: 'cmdb.object.create',
+                    value: {
+                      objectTypeId: '35',
+                      workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
+                      schemaLabel: 'idoA Schema',
+                      schemaId: '5',
+                      objectTypeLabel: 'R&D',
+                      attributes: [
+                        {
+                          name: 'Name',
+                          value: 'idoA automation',
+                          isLabel: true,
+                        },
+                      ],
+                    },
+                    children: [],
+                    conditions: [],
+                  },
+                ],
                 conditions: [],
               },
             ],
@@ -691,7 +713,29 @@ describe('automationFetchFilter', () => {
                 },
               ],
             },
-            children: [],
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                type: 'cmdb.object.create',
+                value: {
+                  objectTypeId: '35',
+                  workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
+                  schemaLabel: 'idoA Schema',
+                  schemaId: '5',
+                  objectTypeLabel: 'R&D',
+                  attributes: [
+                    {
+                      name: 'Name',
+                      value: 'idoA automation',
+                      isLabel: true,
+                    },
+                  ],
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
             conditions: [],
           },
         ],
@@ -747,7 +791,26 @@ describe('automationFetchFilter', () => {
                 },
               ],
             },
-            children: [],
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                type: 'cmdb.object.create',
+                value: {
+                  objectTypeId: '35',
+                  schemaId: '5',
+                  attributes: [
+                    {
+                      name: 'Name',
+                      value: 'idoA automation',
+                      isLabel: true,
+                    },
+                  ],
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
             conditions: [],
           },
         ],

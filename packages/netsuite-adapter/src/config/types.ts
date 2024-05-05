@@ -28,13 +28,11 @@ import { definitions } from '@salto-io/adapter-components'
 import {
   BIN,
   CURRENCY,
-  CUSTOM_RECORD_TYPE,
   DATASET,
   EMPLOYEE,
   EXCHANGE_RATE,
   INACTIVE_FIELDS,
   NETSUITE,
-  PERMISSIONS,
   SAVED_SEARCH,
   WORKBOOK,
 } from '../constants'
@@ -475,10 +473,6 @@ export const fetchDefault: FetchParams = {
     {
       type: CURRENCY,
       fields: [EXCHANGE_RATE],
-    },
-    {
-      type: CUSTOM_RECORD_TYPE,
-      fields: [PERMISSIONS],
     },
   ],
   exclude: {

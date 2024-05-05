@@ -78,7 +78,7 @@ import {
   SUITEAPP_UPDATING_FILES_GROUP_ID,
 } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, getServiceId } from '../types'
-import { ADDITIONAL_DEPENDENCIES, APPLICATION_ID, CONFIG_FEATURES } from '../constants'
+import { ADDITIONAL_DEPENDENCIES, APPLICATION_ID, CONFIG_FEATURES, CUSTOM_RECORD_TYPE, ROLE } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import {
   FeaturesDeployError,
@@ -115,13 +115,18 @@ type DependencyInfo = {
   dependencyGraph: Graph<SDFObjectNode>
 }
 
+const isRoleToCustomRecordType = (startNode: GraphNode<SDFObjectNode>, endNode: GraphNode<SDFObjectNode>): boolean =>
+  startNode.value.customizationInfo.typeName === ROLE && endNode.value.customizationInfo.typeName === CUSTOM_RECORD_TYPE
+
 const isLegalEdge = (
   startNode: GraphNode<SDFObjectNode>,
   endNode: GraphNode<SDFObjectNode>,
   serviceId: string,
 ): boolean =>
-  (startNode.value.changeType === 'addition' || startNode.value.addedObjects.has(serviceId)) &&
-  startNode.id !== endNode.id
+  startNode.id !== endNode.id &&
+  (startNode.value.changeType === 'addition' ||
+    startNode.value.addedObjects.has(serviceId) ||
+    isRoleToCustomRecordType(startNode, endNode))
 
 const determineAccountType = (accountId: string, envType: EnvType): EnvType | 'TEST' => {
   if (accountId.toUpperCase().startsWith('TSTDRV') || accountId.toUpperCase().startsWith('TD')) {

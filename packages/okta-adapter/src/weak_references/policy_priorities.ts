@@ -23,17 +23,19 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { POLICY_RULE_PRIORITY_TYPE_NAMES } from '../constants'
+import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
+const getInstanceAttribute = (instance: InstanceElement): string =>
+  POLICY_RULE_PRIORITY_TYPE_NAMES.includes(instance.elemID.typeName) ? 'rules' : 'policies'
 
-const markRuleAsWeakReference = async (instance: InstanceElement): Promise<ReferenceInfo[]> => {
+const markInstancesAsWeakReference = async (instance: InstanceElement): Promise<ReferenceInfo[]> => {
   const { priorities } = instance.value
   if (priorities === undefined || !Array.isArray(priorities)) {
-    // priorities can be undefined if the policy has no custom rules
+    // priorities can be undefined if their are not custom instances (policies or rules)
     log.trace(
       `priorities value is undefined or not an array in instance ${instance.elemID.getFullName()}, hence not calculating rules weak references`,
     )
@@ -41,9 +43,13 @@ const markRuleAsWeakReference = async (instance: InstanceElement): Promise<Refer
   }
 
   return awu(priorities)
-    .map(async (rule, index) =>
-      isReferenceExpression(rule)
-        ? { source: instance.elemID.createNestedID(index.toString()), target: rule.elemID, type: 'weak' as const }
+    .map(async (ref, index) =>
+      isReferenceExpression(ref)
+        ? {
+            source: instance.elemID.createNestedID('priorities', index.toString()),
+            target: ref.elemID,
+            type: 'weak' as const,
+          }
         : undefined,
     )
     .filter(values.isDefined)
@@ -51,25 +57,29 @@ const markRuleAsWeakReference = async (instance: InstanceElement): Promise<Refer
 }
 
 /**
- * Marks each rule reference in policyPriority as a weak reference.
+ * Marks each instance reference in policyPriority as a weak reference.
  */
 const getPolicyPriorityReferences: GetCustomReferencesFunc = async elements =>
   awu(elements)
     .filter(isInstanceElement)
-    .filter(instance => POLICY_RULE_PRIORITY_TYPE_NAMES.includes(instance.elemID.typeName))
-    .flatMap(markRuleAsWeakReference)
+    .filter(instance =>
+      POLICY_RULE_PRIORITY_TYPE_NAMES.concat(POLICY_PRIORITY_TYPE_NAMES).includes(instance.elemID.typeName),
+    )
+    .flatMap(markInstancesAsWeakReference)
     .toArray()
 
 /*
- * Since we can implement a priority order for a portion of the rules.
- * We removing invalid rules (those not referenced or missing references) from policyPriority.
+ * Since we can implement a priority order for a portion of the instances (policies and rules),
+ * We removing invalid instances (those not referenced or missing references) from priority instances.
  */
-const removeMissingPolicyRulePriorities: WeakReferencesHandler['removeWeakReferences'] =
+const removeMissingPriorities: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async elements => {
     const fixedElements = await awu(elements)
       .filter(isInstanceElement)
-      .filter(instance => POLICY_RULE_PRIORITY_TYPE_NAMES.includes(instance.elemID.typeName))
+      .filter(instance =>
+        POLICY_RULE_PRIORITY_TYPE_NAMES.concat(POLICY_PRIORITY_TYPE_NAMES).includes(instance.elemID.typeName),
+      )
       .map(async instance => {
         const { priorities } = instance.value
         if (priorities === undefined) {
@@ -78,11 +88,11 @@ const removeMissingPolicyRulePriorities: WeakReferencesHandler['removeWeakRefere
         const fixedInstance = instance.clone()
         fixedInstance.value.priorities = await awu(priorities)
           .filter(
-            async rule =>
-              rule !== undefined &&
-              isReferenceExpression(rule) &&
+            async ref =>
+              ref !== undefined &&
+              isReferenceExpression(ref) &&
               // eslint-disable-next-line no-return-await
-              (await elementsSource.has(rule.elemID)),
+              (await elementsSource.has(ref.elemID)),
           )
           .toArray()
 
@@ -98,13 +108,13 @@ const removeMissingPolicyRulePriorities: WeakReferencesHandler['removeWeakRefere
     const errors = fixedElements.map(instance => ({
       elemID: instance.elemID.createNestedID('priorities'),
       severity: 'Info' as const,
-      message: `Deploying ${instance.elemID.typeName} without all attached priorities for rules.`,
-      detailedMessage: `This ${instance.elemID.typeName} is attached to some rules that do not exist in the target environment. It will be deployed without referencing these.`,
+      message: `Deploying ${instance.elemID.typeName} without all attached priorities for ${getInstanceAttribute(instance)}`,
+      detailedMessage: `This ${instance.elemID.typeName} is attached to some ${getInstanceAttribute(instance)} that do not exist in the target environment. It will be deployed without referencing these.`,
     }))
     return { fixedElements, errors }
   }
 
-export const policyRulePrioritiesHandler: WeakReferencesHandler = {
+export const policyPrioritiesHandler: WeakReferencesHandler = {
   findWeakReferences: getPolicyPriorityReferences,
-  removeWeakReferences: removeMissingPolicyRulePriorities,
+  removeWeakReferences: removeMissingPriorities,
 }

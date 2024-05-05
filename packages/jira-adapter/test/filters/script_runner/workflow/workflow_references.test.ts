@@ -519,6 +519,49 @@ describe('Scriptrunner references', () => {
         expect(transitionId).toBeInstanceOf(ReferenceExpression)
         expect(transitionId.elemID.getFullName()).toEndWith('.transitions.missing_21')
       })
+
+      it('should not convert to missing reference if the transitionId is empty', async () => {
+        instance.value.transitions = {
+          tran1: {
+            id: '11',
+            name: 'tran1',
+            rules: {
+              postFunctions: [
+                {
+                  type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+                  configuration: {
+                    scriptRunner: {
+                      transitionId: '',
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        }
+        workflowV2Instance.value.transitions = {
+          tran1: {
+            id: '11',
+            name: 'tran1',
+            type: 'DIRECTED',
+            actions: [
+              {
+                ruleKey: 'rule1',
+                parameters: {
+                  appKey: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+                  scriptRunner: {
+                    transitionId: '',
+                  },
+                },
+              },
+            ],
+          },
+        }
+        await filterCloud.onFetch([getElement(workflowVersion)])
+        const { transitionId } = getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 })
+        expect(transitionId).toEqual('')
+      })
+
       it('should not change anything if script runner is not enabled', async () => {
         await filterOff.onFetch([getElement(workflowVersion)])
         expect(

@@ -51,7 +51,7 @@ import {
   isPermissionObject,
   restructurePermissionsAndCreateInternalIdMap,
   transformPermissionAndUpdateIdMap,
-} from '../definitions/transformation_utils/space'
+} from '../definitions/utils/space'
 import { ADAPTER_NAME, PERMISSION_TYPE_NAME, SPACE_TYPE_NAME } from '../constants'
 import { Options } from '../definitions/types'
 import { UserConfig } from '../config'
@@ -190,7 +190,7 @@ const filter =
   ({
     convertError = deployment.defaultConvertError,
   }: filters.FilterCreationArgs<Options, UserConfig>): AdapterFilterCreator<{}, FilterResult, {}, Options> =>
-  ({ definitions, elementSource }) => ({
+  ({ definitions, elementSource, sharedContext }) => ({
     name: 'deploySpaceAndPermissionsFilter',
     deploy: async (changes, changeGroup) => {
       const { deploy, fetch, ...otherDefs } = definitions
@@ -218,7 +218,7 @@ const filter =
         elementSource,
         convertError,
         changeResolver,
-        sharedContext: {},
+        sharedContext,
       }
       await awu(spaceNonRemovalChanges)
         // This filter is for TypeScript, we already filtered the changes at the beginning of this filter

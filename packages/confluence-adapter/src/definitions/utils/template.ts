@@ -15,14 +15,14 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { assertValue } from './generic'
+import { validateValue } from './generic'
 
 /**
  * Add space.key to a template request
  */
 export const addSpaceKey: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value, context }) => ({
   value: {
-    ...assertValue(value),
+    ...validateValue(value),
     space: {
       key: _.get(context.additionalContext, 'space_key'),
     },

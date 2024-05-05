@@ -65,7 +65,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'roleName' }] },
-        serviceUrl: { path: '/roles/{roleId}' },
+        serviceUrl: { path: 'ac/roles/{roleId}' },
         alias: { aliasComponents: [{ fieldName: 'roleName' }] },
       },
       fieldCustomizations: {
@@ -107,7 +107,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'domainName' }] },
-        serviceUrl: { path: '/domains' },
+        serviceUrl: { path: 'ac/domains' },
         alias: { aliasComponents: [{ fieldName: 'domainName' }] },
       },
       fieldCustomizations: {
@@ -203,7 +203,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        serviceUrl: { path: '/groups/{id}' },
+        serviceUrl: { path: 'ac/groups/{id}' },
         elemID: { parts: [NAME_ID_FIELD] },
       },
       fieldCustomizations: {
@@ -376,7 +376,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'orgUnitPath' }] },
 
-        serviceUrl: { path: '/orgunits' },
+        serviceUrl: { path: 'ac/orgunits' },
         alias: {
           aliasComponents: [{ fieldName: 'name' }],
         },
@@ -429,7 +429,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'schemaName' }] },
-        serviceUrl: { path: '/customschema' },
+        serviceUrl: { path: 'ac/customschema' },
         alias: { aliasComponents: [{ fieldName: 'schemaName' }] },
       },
       fieldCustomizations: {
@@ -470,7 +470,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'buildingName' }] },
-        serviceUrl: { path: '/calendarresources/resources' },
+        serviceUrl: { path: 'ac/calendarresources/resources' },
         alias: { aliasComponents: [{ fieldName: 'buildingName' }] },
       },
       fieldCustomizations: {
@@ -499,7 +499,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'resourceName' }] },
-        serviceUrl: { path: '/calendarresources/resources' },
+        serviceUrl: { path: 'ac/calendarresources/resources' },
         alias: { aliasComponents: [{ fieldName: 'resourceName' }] },
       },
       fieldCustomizations: {
@@ -530,7 +530,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        serviceUrl: { path: '/calendarresources/resources' },
+        serviceUrl: { path: 'ac/calendarresources/resources' },
         alias: { aliasComponents: [NAME_ID_FIELD] },
       },
     },
@@ -546,7 +546,7 @@ export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<
       element: {
         topLevel: {
           elemID: { parts: DEFAULT_ID_PARTS },
-          serviceUrl: { baseUrl: 'https://admin.google.com/ac' },
+          serviceUrl: { baseUrl: 'https://admin.google.com' },
         },
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },

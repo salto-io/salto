@@ -122,31 +122,25 @@ const convertToFileCustomizationInfo = ({
   xmlContent,
   path,
   fileContent,
-  hadMissingAttributes,
 }: {
   xmlContent: string
   path: string[]
   fileContent: Buffer
-  hadMissingAttributes: boolean
 }): FileCustomizationInfo => ({
   ...convertToCustomizationInfo(xmlContent),
   path,
   fileContent,
-  hadMissingAttributes,
 })
 
 const convertToFolderCustomizationInfo = ({
   xmlContent,
   path,
-  hadMissingAttributes,
 }: {
   xmlContent: string
   path: string[]
-  hadMissingAttributes: boolean
 }): FolderCustomizationInfo => ({
   ...convertToCustomizationInfo(xmlContent),
   path,
-  hadMissingAttributes,
 })
 
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
@@ -232,7 +226,6 @@ const transformFiles = (
       xmlContent: xmlContent?.toString() ?? DEFAULT_FILE_ATTRIBUTES,
       path: filePathParts.slice(1),
       fileContent,
-      hadMissingAttributes: xmlContent === undefined,
     })
   }
 
@@ -252,7 +245,6 @@ const transformFolders = (
     return convertToFolderCustomizationInfo({
       xmlContent: xmlContent.toString(),
       path: folderPathParts.slice(1, -2),
-      hadMissingAttributes: false,
     })
   }
 
@@ -283,7 +275,6 @@ const transformFoldersWithoutAttributes = (
         convertToFolderCustomizationInfo({
           xmlContent: DEFAULT_FOLDER_ATTRIBUTES,
           path,
-          hadMissingAttributes: true,
         }),
       )
       .value()

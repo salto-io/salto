@@ -34,26 +34,26 @@ import { collections, values } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import _ from 'lodash'
-import { CUSTOM_RECORD_TYPE, PERMISSIONS, ROLE } from '../../constants'
+import { CUSTOM_RECORD_TYPE, PERMISSION, PERMISSIONS, ROLE } from '../../constants'
 import { isCustomRecordType } from '../../types'
 
 const { awu } = collections.asynciterable
 
-export type RolePermissionObject = {
+export type RolePermission = {
   permkey: string | ReferenceExpression
   permlevel: string
   restriction?: string
 }
 
-type CustomRecordPermissionObject = {
+export type CustomRecordTypePermission = {
   permittedlevel: string
   permittedrole: string | ReferenceExpression
   restriction?: string
 }
 
-type PermissionObject = RolePermissionObject | CustomRecordPermissionObject
+export type PermissionObject = RolePermission | CustomRecordTypePermission
 
-type RoleOrCustomRecord = 'role' | 'customrecordtype'
+type RoleOrCustomRecordType = 'role' | 'customrecordtype'
 
 const ROLE_PERMISSION_SCHEME = Joi.object({
   permkey: Joi.required(),
@@ -61,8 +61,8 @@ const ROLE_PERMISSION_SCHEME = Joi.object({
   restriction: Joi.string().optional(),
 })
 
-export const isRolePermissionObject = (val: Value): val is RolePermissionObject =>
-  createSchemeGuard<RolePermissionObject>(ROLE_PERMISSION_SCHEME)(val) &&
+export const isRolePermissionObject = (val: Value): val is RolePermission =>
+  createSchemeGuard<RolePermission>(ROLE_PERMISSION_SCHEME)(val) &&
   (isReferenceExpression(val.permkey) || _.isString(val.permkey))
 
 const CUSTOM_RECORD_PERMISSION_SCHEME = Joi.object({
@@ -71,28 +71,28 @@ const CUSTOM_RECORD_PERMISSION_SCHEME = Joi.object({
   restriction: Joi.string().optional(),
 })
 
-const isCustomRecordPermissionObject = (val: Value): val is CustomRecordPermissionObject =>
-  createSchemeGuard<CustomRecordPermissionObject>(CUSTOM_RECORD_PERMISSION_SCHEME)(val) &&
+const isCustomRecordTypePermissionObject = (val: Value): val is CustomRecordTypePermission =>
+  createSchemeGuard<CustomRecordTypePermission>(CUSTOM_RECORD_PERMISSION_SCHEME)(val) &&
   (isReferenceExpression(val.permittedrole) || _.isString(val.permittedrole))
 
-const isPermissionObject = (obj: unknown, permissionType: RoleOrCustomRecord): obj is PermissionObject =>
-  permissionType === ROLE ? isRolePermissionObject(obj) : isCustomRecordPermissionObject(obj)
+const isPermissionObject = (obj: unknown, permissionType: RoleOrCustomRecordType): obj is PermissionObject =>
+  permissionType === ROLE ? isRolePermissionObject(obj) : isCustomRecordTypePermissionObject(obj)
 
-export const getPermissionsListPath = (): string[] => [PERMISSIONS, 'permission']
+export const getPermissionsListPath = (): string[] => [PERMISSIONS, PERMISSION]
 
 const getPermissionReferences = (
-  roleOrCustomRecord: ObjectType | InstanceElement,
+  roleOrCustomRecordType: ObjectType | InstanceElement,
 ): Record<string, ReferenceExpression> => {
   const permissionReferences: Record<string, ReferenceExpression> = {}
   const listPathValue = _.get(
-    isInstanceElement(roleOrCustomRecord) ? roleOrCustomRecord.value : roleOrCustomRecord.annotations,
+    isInstanceElement(roleOrCustomRecordType) ? roleOrCustomRecordType.value : roleOrCustomRecordType.annotations,
     getPermissionsListPath(),
   )
   if (values.isPlainRecord(listPathValue)) {
     Object.entries(listPathValue).forEach(([key, value]) => {
       if (isRolePermissionObject(value) && isReferenceExpression(value.permkey)) {
         permissionReferences[key] = value.permkey
-      } else if (isCustomRecordPermissionObject(value) && isReferenceExpression(value.permittedrole)) {
+      } else if (isCustomRecordTypePermissionObject(value) && isReferenceExpression(value.permittedrole)) {
         permissionReferences[key] = value.permittedrole
       }
     })
@@ -121,14 +121,14 @@ const getPermissionsReferences: GetCustomReferencesFunc = async elements =>
 
 const getValidPermissions = (
   permissionField: Record<string, unknown>,
-  permissionType: RoleOrCustomRecord,
+  permissionType: RoleOrCustomRecordType,
 ): Record<string, PermissionObject> =>
   _.pickBy(permissionField, (value): value is PermissionObject => isPermissionObject(value, permissionType))
 
 const getFixedPermissionField = async (
   permissions: Record<string, unknown>,
   elementsSource: ReadOnlyElementsSource,
-  permissionType: RoleOrCustomRecord,
+  permissionType: RoleOrCustomRecordType,
 ): Promise<Record<string, PermissionObject>> => {
   const validPermissions = getValidPermissions(permissions, permissionType)
   return awu(Object.entries(validPermissions)).reduce(
@@ -146,13 +146,13 @@ const getFixedPermissionField = async (
   )
 }
 
-const getFixedElementsAndUpdatedPaths = async (
-  roleOrCustomRecord: InstanceElement | ObjectType,
+const getFixedElement = async (
+  roleOrCustomRecordType: InstanceElement | ObjectType,
   elementsSource: ReadOnlyElementsSource,
-  permissionType: RoleOrCustomRecord,
+  permissionType: RoleOrCustomRecordType,
 ): Promise<InstanceElement | ObjectType | undefined> => {
   const permissionField = _.get(
-    isInstanceElement(roleOrCustomRecord) ? roleOrCustomRecord.value : roleOrCustomRecord.annotations,
+    isInstanceElement(roleOrCustomRecordType) ? roleOrCustomRecordType.value : roleOrCustomRecordType.annotations,
     getPermissionsListPath(),
   )
   if (!values.isPlainRecord(permissionField)) {
@@ -165,7 +165,7 @@ const getFixedElementsAndUpdatedPaths = async (
     return undefined
   }
 
-  const fixedObject = roleOrCustomRecord.clone()
+  const fixedObject = roleOrCustomRecordType.clone()
   _.set(
     isInstanceElement(fixedObject) ? fixedObject.value : fixedObject.annotations,
     getPermissionsListPath(),
@@ -189,7 +189,7 @@ const removeUnresolvedPermissionElements: WeakReferencesHandler<{
     const fixedRoles = await awu(elements)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ROLE)
-      .map(role => getFixedElementsAndUpdatedPaths(role, elementsSource, ROLE))
+      .map(role => getFixedElement(role, elementsSource, ROLE))
       .filter(values.isDefined)
       .toArray()
 
@@ -206,7 +206,7 @@ const removeUnresolvedPermissionElements: WeakReferencesHandler<{
     const fixedCustomRecordTypes = await awu(elements)
       .filter(isObjectType)
       .filter(isCustomRecordType)
-      .map(custRecordType => getFixedElementsAndUpdatedPaths(custRecordType, elementsSource, CUSTOM_RECORD_TYPE))
+      .map(custRecordType => getFixedElement(custRecordType, elementsSource, CUSTOM_RECORD_TYPE))
       .filter(values.isDefined)
       .toArray()
 

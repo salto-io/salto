@@ -16,7 +16,13 @@
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from '../types'
-import { increasePagesVersion, addSpaceKey } from '../transformation_utils'
+import {
+  addSpaceKey,
+  adjustPageOnModification,
+  homepageAdditionToModification,
+  shouldDeleteRestrictionOnPageModification,
+  shouldNotModifyRestrictionOnPageAddition,
+} from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
@@ -26,6 +32,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
+import { spaceChangeGroupWithItsHomepage } from '../utils/space'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
@@ -67,6 +74,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     [PAGE_TYPE_NAME]: {
+      toActionNames: homepageAdditionToModification,
       requestsByAction: {
         customizations: {
           add: [
@@ -79,6 +87,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 transformation: {
                   omit: ['restriction', 'version'],
                 },
+              },
+            },
+            {
+              condition: {
+                custom: () => shouldNotModifyRestrictionOnPageAddition,
+              },
+              request: {
+                earlySuccess: true,
               },
             },
             {
@@ -108,7 +124,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['restriction'],
-                  adjust: increasePagesVersion,
+                  adjust: adjustPageOnModification,
                 },
               },
               copyFromResponse: {
@@ -118,6 +134,31 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
             {
+              condition: {
+                custom: () => shouldDeleteRestrictionOnPageModification,
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/content/{id}/restriction',
+                  method: 'delete',
+                },
+              },
+            },
+            {
+              condition: {
+                custom: () => shouldDeleteRestrictionOnPageModification,
+              },
+              request: {
+                // delete page restrictions are setting them to default, so no need to make another request
+                earlySuccess: true,
+              },
+            },
+            {
+              condition: {
+                transformForCheck: {
+                  pick: ['restriction'],
+                },
+              },
               request: {
                 endpoint: {
                   path: '/wiki/rest/api/content/{id}/restriction',
@@ -147,6 +188,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       referenceResolution: {
         when: 'early',
       },
+      changeGroupId: spaceChangeGroupWithItsHomepage,
       requestsByAction: {
         customizations: {
           add: [
@@ -157,7 +199,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  omit: ['permissions'],
+                  omit: ['permissions', 'homepage'],
+                },
+              },
+              copyFromResponse: {
+                toSharedContext: {
+                  root: 'homepage',
+                  pick: ['id'],
                 },
               },
             },
@@ -358,5 +406,10 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
     },
     customizations: createCustomizations(),
   },
-  dependencies: [],
+  dependencies: [
+    {
+      first: { type: PAGE_TYPE_NAME },
+      second: { type: SPACE_TYPE_NAME, action: 'add' },
+    },
+  ],
 })

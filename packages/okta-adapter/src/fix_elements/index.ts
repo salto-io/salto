@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { FixElementsFunc } from '@salto-io/adapter-api'
 import { omitMissingUsersHandler } from './missing_users'
 import { FixElementsArgs } from './types'
 import { weakReferenceHandlers } from '../weak_references'
 
-export const createFixElementFunctions = (args: FixElementsArgs): FixElementsFunc[] => [
-  omitMissingUsersHandler(args),
-  ...Object.values(weakReferenceHandlers).map(handler =>
+export const createFixElementFunctions = (args: FixElementsArgs): Record<string, FixElementsFunc> => ({
+  omitMissingUsers: omitMissingUsersHandler(args),
+  ..._.mapValues(weakReferenceHandlers, handler =>
     handler.removeWeakReferences({ elementsSource: args.elementsSource }),
   ),
-]
+})

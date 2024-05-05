@@ -17,9 +17,9 @@
 import { definitions } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { addSpaceKey } from '../../src/definitions/transformation_utils'
+import { addSpaceKey } from '../../../src/definitions/utils'
 
-describe('template transformation utils', () => {
+describe('template definitions utils', () => {
   let item: definitions.GeneratedItem<definitions.ContextParams & definitions.deploy.ChangeAndContext, unknown>
   describe('addSpaceKey', () => {
     beforeEach(() => {

@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
+import { validateValue } from './generic'
 
 /**
- * Update the restriction format and omit redundant fields
+ * AdjustFunction that converts labels object array to ids array.
  */
-export const adjustRestriction: definitions.AdjustFunction = ({ value }) => {
-  const userRestrictions = _.get(value, 'restrictions.user.results')
+export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
+  const value = validateValue(item.value)
+  const labels = _.get(value, 'labels')
+  if (_.isEmpty(labels) || !Array.isArray(labels)) {
+    return { value }
+  }
   return {
     value: {
-      operation: _.get(value, 'operation'),
-      restrictions: {
-        user: Array.isArray(userRestrictions)
-          ? userRestrictions.map(user => _.omit(user, ['publicName', 'profilePicture', 'displayName']))
-          : userRestrictions,
-        group: _.get(value, 'restrictions.group.results'),
-      },
+      ...value,
+      labels: labels.map(label => label.id),
     },
   }
 }

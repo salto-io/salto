@@ -214,7 +214,6 @@ describe('Adapter', () => {
 
   describe('fetch', () => {
     it('should fetch all types and instances that are not in fetch.exclude', async () => {
-      const mockElementsSource = buildElementsSourceFromElements([])
       const folderCustomizationInfo: FolderCustomizationInfo = {
         typeName: FOLDER,
         values: {},
@@ -276,40 +275,25 @@ describe('Adapter', () => {
       )
       expect(isObjectType(customFieldType)).toBeTruthy()
       expect(elements).toContainEqual(
-        await createInstanceElement(
-          customTypeInfo,
-          customFieldType as ObjectType,
-          mockElementsSource,
-          mockGetElemIdFunc,
-        ),
+        await createInstanceElement(customTypeInfo, customFieldType as ObjectType, mockGetElemIdFunc),
       )
 
       const file = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, FILE)))
       expect(isObjectType(file)).toBeTruthy()
       expect(elements).toContainEqual(
-        await createInstanceElement(fileCustomizationInfo, file as ObjectType, mockElementsSource, mockGetElemIdFunc),
+        await createInstanceElement(fileCustomizationInfo, file as ObjectType, mockGetElemIdFunc),
       )
 
       const folder = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, FOLDER)))
       expect(isObjectType(folder)).toBeTruthy()
       expect(elements).toContainEqual(
-        await createInstanceElement(
-          folderCustomizationInfo,
-          folder as ObjectType,
-          mockElementsSource,
-          mockGetElemIdFunc,
-        ),
+        await createInstanceElement(folderCustomizationInfo, folder as ObjectType, mockGetElemIdFunc),
       )
 
       const featuresType = elements.find(element => element.elemID.isEqual(new ElemID(NETSUITE, CONFIG_FEATURES)))
       expect(isObjectType(featuresType)).toBeTruthy()
       expect(elements).toContainEqual(
-        await createInstanceElement(
-          featuresCustomTypeInfo,
-          featuresType as ObjectType,
-          mockElementsSource,
-          mockGetElemIdFunc,
-        ),
+        await createInstanceElement(featuresCustomTypeInfo, featuresType as ObjectType, mockGetElemIdFunc),
       )
 
       expect(suiteAppImportFileCabinetMock).not.toHaveBeenCalled()

@@ -32,9 +32,6 @@ import {
   isInstanceElement,
   ElemIDType,
   BuiltinTypes,
-  ReadOnlyElementsSource,
-  CORE_ANNOTATIONS,
-  TypeReference,
   TopLevelElement,
 } from '@salto-io/adapter-api'
 import {
@@ -120,7 +117,6 @@ const getServiceIdFieldName = (type: ObjectType): string => (isStandardType(type
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
   type: ObjectType,
-  elementsSource: ReadOnlyElementsSource,
   getElemIdFunc?: ElemIdGetter,
 ): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
@@ -203,30 +199,6 @@ export const createInstanceElement = async (
 
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
   const instanceFileName = pathNaclCase(instanceName)
-
-  // SALTO-4227 - Support loading files & folders without their attributes (in SDF):
-  // SDF projects can have FileCabinet objects (files&folders) without their matching .attribute XML file.
-  // In that case we still want to load the objects:
-  // - if the instance doesn't exists in the environment - we use default attributes.
-  // - if the instance exists in the environment - we use the existing attibutes and the new file content.
-  if (
-    (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) &&
-    customizationInfo.hadMissingAttributes
-  ) {
-    const instanceElemId = new ElemID(NETSUITE, type.elemID.name, 'instance', instanceName)
-    const existingInstance = await elementsSource.get(instanceElemId)
-    if (isInstanceElement(existingInstance)) {
-      const clonedInstance = existingInstance.clone()
-      clonedInstance.refType = new TypeReference(type.elemID, type)
-      if (isFileInstance(clonedInstance)) {
-        clonedInstance.value[CONTENT] = valuesWithTransformedAttrs[CONTENT]
-        // file's generated dependencies are based on the content and calculated in element_references.ts
-        delete clonedInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
-      }
-      return clonedInstance
-    }
-  }
-
   const fileContentField = await getFileContentField(type)
   if (fileContentField && isTemplateCustomTypeInfo(customizationInfo) && customizationInfo.fileContent !== undefined) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
@@ -245,7 +217,6 @@ export const createInstanceElement = async (
 
 export const createElements = async (
   customizationInfos: CustomizationInfo[],
-  elementsSource: ReadOnlyElementsSource,
   getElemIdFunc?: ElemIdGetter,
 ): Promise<Array<TopLevelElement>> => {
   const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
@@ -268,7 +239,7 @@ export const createElements = async (
     .filter(({ type }) => type !== undefined)
 
   const allInstances = await awu(customizationInfosWithTypes)
-    .map(({ customizationInfo, type }) => createInstanceElement(customizationInfo, type, elementsSource, getElemIdFunc))
+    .map(({ customizationInfo, type }) => createInstanceElement(customizationInfo, type, getElemIdFunc))
     .toArray()
 
   const [customRecordTypeInstances, instances] = _.partition(

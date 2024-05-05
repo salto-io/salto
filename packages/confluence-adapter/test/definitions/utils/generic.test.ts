@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
-export * from './generic'
-export * from './page'
-export * from './label'
-export * from './restriction'
-export * from './template'
+import { validateValue } from '../../../src/definitions/utils'
+
+describe('generic definitions utils', () => {
+  describe('validateValue', () => {
+    it('should return the value if it is an object', () => {
+      const value = { key: 'value' }
+      expect(validateValue(value)).toEqual(value)
+    })
+
+    it('should throw an error if the value is not an object', () => {
+      expect(() => validateValue('not an object')).toThrow()
+    })
+  })
+})

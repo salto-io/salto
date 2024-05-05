@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { adjustLabelsToIdsFunc } from '../../src/definitions/transformation_utils'
+import { adjustLabelsToIdsFunc } from '../../../src/definitions/utils'
 
-describe('label transformation utils', () => {
+describe('label definitions utils', () => {
   describe('adjustLabelsToIdsFunc', () => {
     it('should return the same value if labels is not an array', () => {
       const item = {

@@ -240,7 +240,7 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
       paths.map(path => {
         const fullPath = `${instance.elemID.name}.${instance.elemID.getRelativePath(path).join('.')}`
         return {
-          elemID: path,
+          elemID: instance.elemID,
           severity: 'Info',
           message: 'Deploying without all referenced fields',
           detailedMessage: `This ${fullPath} is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.`,

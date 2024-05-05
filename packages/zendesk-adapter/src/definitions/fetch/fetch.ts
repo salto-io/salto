@@ -147,6 +147,8 @@ const createCustomizations = (): Record<
     },
   },
 
+  view_order: {},
+
   trigger: {
     requests: [
       {
@@ -232,6 +234,8 @@ const createCustomizations = (): Record<
     },
   },
 
+  trigger_order: {},
+
   automation: {
     requests: [
       {
@@ -254,6 +258,8 @@ const createCustomizations = (): Record<
       },
     },
   },
+
+  automation_order: {},
 
   target: {
     requests: [
@@ -322,6 +328,8 @@ const createCustomizations = (): Record<
     },
   },
 
+  sla_policy_order: {},
+
   macro: {
     requests: [
       {
@@ -354,25 +362,6 @@ const createCustomizations = (): Record<
     },
   },
 
-  macro_action: {
-    requests: [
-      {
-        endpoint: { path: '/api/v2/macros/actions' },
-        transformation: { root: 'actions' },
-      },
-    ],
-    resource: { directFetch: true },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        singleton: true,
-      },
-      fieldCustomizations: {
-        id: { fieldType: 'number', hide: true },
-      },
-    },
-  },
-
   macro_categories: {
     requests: [
       {
@@ -392,24 +381,6 @@ const createCustomizations = (): Record<
     },
   },
 
-  macros_definitions: {
-    requests: [
-      {
-        endpoint: { path: '/api/v2/macros/definitions' },
-        transformation: { root: 'definitions' },
-      },
-    ],
-    resource: { directFetch: true },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        singleton: true,
-      },
-      fieldCustomizations: {
-        id: { fieldType: 'number', hide: true },
-      },
-    },
-  },
   macro__restriction: {
     element: { fieldCustomizations: { id: { fieldType: 'unknown' } } },
   },
@@ -436,6 +407,8 @@ const createCustomizations = (): Record<
       },
     },
   },
+
+  ticket_form_order: {},
 
   custom_status: {
     requests: [
@@ -589,6 +562,8 @@ const createCustomizations = (): Record<
     },
   },
 
+  user_field_order: {},
+
   organization_field: {
     requests: [
       {
@@ -643,6 +618,8 @@ const createCustomizations = (): Record<
       },
     },
   },
+
+  organization_field_order: {},
 
   brand: {
     requests: [
@@ -1232,6 +1209,41 @@ const createCustomizations = (): Record<
       fieldCustomizations: { id: { hide: true, fieldType: 'string' } },
     },
   },
+
+  workspace: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/workspaces' },
+        transformation: { root: 'workspaces' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+        serviceUrl: { path: '/admin/workspaces/agent-workspace/contextual-workspaces' },
+      },
+      fieldCustomizations: { id: { hide: true, fieldType: 'number' } },
+    },
+  },
+
+  workspace__selected_macros: {
+    element: { fieldCustomizations: { usage_7d: { omit: true } } },
+  },
+
+  workspace__selected_macros__restriction: {
+    element: { fieldCustomizations: { id: { fieldType: 'unknown' } } },
+  },
+
+  workspace__apps: {
+    element: {},
+  },
+
+  workspace_order: {},
 
   business_hours_schedule: {
     requests: [

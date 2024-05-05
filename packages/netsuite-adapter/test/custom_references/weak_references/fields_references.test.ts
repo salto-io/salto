@@ -178,7 +178,7 @@ describe('permissions_references', () => {
 
         expect(fixes.errors).toEqual([
           {
-            elemID: form1.elemID.createNestedID('field1'),
+            elemID: form1.elemID,
             severity: 'Info',
             message: 'Deploying without all referenced fields',
             detailedMessage:
@@ -204,7 +204,7 @@ describe('permissions_references', () => {
 
         expect(fixes.errors).toEqual([
           {
-            elemID: form1.elemID.createNestedID('parentField', 'field2'),
+            elemID: form1.elemID,
             severity: 'Info',
             message: 'Deploying without all referenced fields',
             detailedMessage:
@@ -231,7 +231,7 @@ describe('permissions_references', () => {
 
       expect(fixes.errors).toEqual([
         {
-          elemID: form2.elemID.createNestedID('parentField', 'field2'),
+          elemID: form2.elemID,
           severity: 'Info',
           message: 'Deploying without all referenced fields',
           detailedMessage:

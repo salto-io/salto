@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { DAG } from '@salto-io/dag'
+import wu from 'wu'
+import { DAG, WalkError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementGenerator } from '../element/element'
@@ -24,6 +25,7 @@ import { DefQuery } from '../../definitions'
 import { createTypeResourceFetcher } from './type_fetcher'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
 import { TypeFetcherCreator } from '../types'
+import { AbortFetchOnFailure } from '../errors'
 
 const log = logger(module)
 
@@ -81,45 +83,48 @@ export const createResourceManager = <ClientOptions extends string>({
         lowerdashValues.isDefined,
       )
       const graph = createDependencyGraph(resourceDefQuery.getAll())
-      let e: unknown
-      await graph.walkAsync(async typeName => {
-        // If we already have an error, we don't want to continue actually fetching resources.
-        // We don't throw the error here, since we don't want it to be wrapped by the graph error.
-        if (e) return
-
-        const resourceFetcher = resourceFetchers[typeName]
-        if (resourceFetcher === undefined) {
-          log.debug('no resource fetcher defined for type %s:%s', adapterName, typeName)
-          return
-        }
-        const availableResources = _.mapValues(
-          _.pickBy(resourceFetchers, fetcher => fetcher.done()),
-          fetcher => fetcher.getItems(),
-        )
-
-        const res = await resourceFetcher.fetch({
-          contextResources: availableResources, // used to construct the possible context args for the request
-          typeFetcherCreator: createTypeFetcher, // used for recurseInto calls
-        })
-
-        const typeNameAsStr = String(typeName)
-        if (!res.success) {
-          try {
-            elementGenerator.handleError({ typeName: typeNameAsStr, error: res.error })
-          } catch (err) {
-            e = err
+      try {
+        await graph.walkAsync(async typeName => {
+          const resourceFetcher = resourceFetchers[typeName]
+          if (resourceFetcher === undefined) {
+            log.debug('no resource fetcher defined for type %s:%s', adapterName, typeName)
+            return
           }
-          return
-        }
+          const availableResources = _.mapValues(
+            _.pickBy(resourceFetchers, fetcher => fetcher.done()),
+            fetcher => fetcher.getItems(),
+          )
 
-        elementGenerator.pushEntries({
-          typeName: typeNameAsStr,
-          entries: resourceFetcher.getItems()?.map(item => item.value) ?? [],
+          const res = await resourceFetcher.fetch({
+            contextResources: availableResources, // used to construct the possible context args for the request
+            typeFetcherCreator: createTypeFetcher, // used for recurseInto calls
+          })
+
+          const typeNameAsStr = String(typeName)
+          if (!res.success) {
+            elementGenerator.handleError({ typeName: typeNameAsStr, error: res.error })
+            return
+          }
+
+          elementGenerator.pushEntries({
+            typeName: typeNameAsStr,
+            entries: resourceFetcher.getItems()?.map(item => item.value) ?? [],
+          })
         })
-      })
-
-      // After the graph walk is done, we can throw the error if we have one
-      if (e) throw e
+      } catch (e) {
+        if (e instanceof WalkError) {
+          // In case we decided to fail the entire fetch we don't want the error to be wrapped in a WalkError
+          const failFetchError = wu(e.handlerErrors.values()).find(err => err instanceof AbortFetchOnFailure)
+          if (failFetchError !== undefined) {
+            // Since there may be other errors in the handlerErrors, we log them all
+            log.error('Received at least one AbortFetchOnFailure error, failing the entire fetch. Full error:', e)
+            throw failFetchError
+          }
+        }
+        // If we got here, it means that the error is not an AbortFetchOnFailure error, so we revert to
+        // the original error behavior, where this section wasn't wrapped in a try-catch.
+        throw e
+      }
     },
     '[%s] fetching resources for account',
     adapterName,

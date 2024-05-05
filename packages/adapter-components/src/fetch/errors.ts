@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export class AbortFetchOnFailure extends Error {
+import { FatalError } from '@salto-io/dag'
+
+export class AbortFetchOnFailure extends FatalError {
   constructor({ adapterName, typeName, message }: { adapterName: string; typeName: string; message: string }) {
     super(`Aborting fetch due to error in ${adapterName}:${typeName}: ${message}`)
   }

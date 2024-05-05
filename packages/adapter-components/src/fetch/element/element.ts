@@ -102,7 +102,9 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     } else if (onError?.configSuggestion !== undefined) {
       log.warn('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
       configSuggestions.push(onError.configSuggestion)
-    } else log.warn('failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
+    } else {
+      log.warn('failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
+    }
   }
 
   const generate: ElementGenerator['generate'] = () => {

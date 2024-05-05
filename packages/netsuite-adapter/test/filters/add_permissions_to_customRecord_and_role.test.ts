@@ -401,4 +401,42 @@ describe('add permissions to custom record types filter', () => {
     expect(Object.keys(permissionsOfChange2).length).toEqual(3)
     expect(permissionsOfChange2.customrole_1.permittedlevel).toEqual('changed')
   })
+  it('should add permissions to custom-record/role if there are missing ones', async () => {
+    const afterRole1 = role1.clone()
+    delete afterRole1.value.permissions.permission.customrecord_1
+
+    const afterCustomRecord2 = customRecord2.clone()
+    delete afterCustomRecord2.annotations.permissions.permission.customrole_1
+
+    const changes = [
+      toChange({ before: role1, after: afterRole1 }),
+      toChange({ before: customRecord1, after: customRecord1 }),
+      toChange({ before: customRecord2, after: afterCustomRecord2 }),
+    ]
+    await filterCreator({ elementsSource } as LocalFilterOpts).preDeploy?.(changes)
+    expect(changes.length).toEqual(3)
+
+    const permissionsOfChange0 =
+      isModificationChange(changes[0]) && isInstanceChange(changes[0])
+        ? changes[0].data.after.value.permissions.permission
+        : undefined
+    expect(isPlainObject(permissionsOfChange0)).toBeTruthy()
+    expect(Object.keys(permissionsOfChange0).length).toEqual(3)
+    expect(permissionsOfChange0.customrecord_1).toBeDefined()
+
+    const permissionsOfChange1 =
+      isModificationChange(changes[1]) && isObjectTypeChange(changes[1])
+        ? changes[1].data.after.annotations.permissions.permission
+        : undefined
+    expect(isPlainObject(permissionsOfChange1)).toBeTruthy()
+    expect(Object.keys(permissionsOfChange1).length).toEqual(3)
+
+    const permissionsOfChange2 =
+      isModificationChange(changes[2]) && isObjectTypeChange(changes[2])
+        ? changes[2].data.after.annotations.permissions.permission
+        : undefined
+    expect(isPlainObject(permissionsOfChange2)).toBeTruthy()
+    expect(Object.keys(permissionsOfChange2).length).toEqual(3)
+    expect(permissionsOfChange2.customrole_1).toBeDefined()
+  })
 })

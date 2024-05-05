@@ -56,8 +56,11 @@ describe('client', () => {
   })
 
   describe('get', () => {
+    const validHeaders = { 'X-RateLimit-Reset': '2024-05-05T18:02Z', 'X-RateLimit-NearLimit': true, 'Retry-After': '5' }
+    const filteredHeaders = { 'Do-Not-Extract': 'true' }
     beforeEach(async () => {
-      mockAxios.onGet('/myPath').reply(200, { response: 'asd' }, { 'X-RateLimit-Reset': '2024-05-05T18:02Z', 'X-RateLimit-NearLimit': true, 'Retry-After': '5', 'Do-Not-Extract': 'true' })
+      extractHeadersFunc.mockClear()
+      mockAxios.onGet('/myPath').reply(200, { response: 'asd' }, { ...validHeaders, ...filteredHeaders })
       result = await client.get({ url: '/myPath' })
     })
     it('should request the correct path with auth headers', () => {
@@ -68,17 +71,13 @@ describe('client', () => {
       expect(request?.url).toEqual('/myPath')
     })
     it('should return the response', () => {
-      expect(result).toEqual({ status: 200, data: { response: 'asd' } })
+      expect(result).toEqual({ status: 200, data: { response: 'asd' }, headers: validHeaders })
     })
     it('should call extractHeaders', () => {
       expect(extractHeadersFunc).toHaveBeenCalled()
     })
     it('should extract the correct headers', () => {
-      expect(extractHeadersFunc).toHaveNthReturnedWith(1, {
-        'X-RateLimit-Reset': '2024-05-05T18:02Z',
-        'X-RateLimit-NearLimit': true,
-        'Retry-After': '5',
-      })
+      expect(extractHeadersFunc).toHaveNthReturnedWith(1, validHeaders)
     })
   })
   it('should preserve headers', async () => {

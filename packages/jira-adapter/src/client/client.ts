@@ -116,15 +116,15 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     }
   }
 
-    // eslint-disable-next-line class-methods-use-this
-    protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
-      return headers !== undefined
-        ? {
-            ...super.extractHeaders(headers),
-            ..._.pickBy(headers, (_val, key) => key.toLowerCase().startsWith(RATE_LIMIT_HEADER_PREFIX)),
-          }
-        : undefined
-    }
+  // eslint-disable-next-line class-methods-use-this
+  protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+    return headers !== undefined
+      ? {
+          ...super.extractHeaders(headers),
+          ..._.pickBy(headers, (_val, key) => key.toLowerCase().startsWith(RATE_LIMIT_HEADER_PREFIX)),
+        }
+      : undefined
+  }
 
   // Sends a post request to a JIRA JSP page
   public async jspPost(

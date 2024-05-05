@@ -91,7 +91,9 @@ const getRetryDelayFromHeaders = (headers: Record<string, string>): number | und
       log.warn(`Received invalid x-rate-limit-reset values: ${rateLimitResetHeaderValue}, ${lowercaseHeaders.date}`)
       return undefined
     }
-    log.trace(`Received x-rate-limit-reset value: ${rateLimitResetHeaderValue} matched with date: ${lowercaseHeaders.date}`)
+    log.trace(
+      `Received x-rate-limit-reset value: ${rateLimitResetHeaderValue} matched with date: ${lowercaseHeaders.date}`,
+    )
     return resetTime - currentTime
   }
   return undefined
@@ -110,7 +112,7 @@ const shouldRetryOnTimeout = (errorCode: string | undefined, retryOnTimeout: boo
   // axios returns ECONNABORTED on timeouts, but servers can sometimes return ETIMEDOUT
   retryOnTimeout ? ['ECONNABORTED', 'ETIMEDOUT'].includes(errorCode ?? '') : false
 
-export const createRetryOptions = ( 
+export const createRetryOptions = (
   retryOptions: Required<ClientRetryConfig>,
   timeoutOptions?: ClientTimeoutConfig,
 ): RetryOptions => ({

@@ -54,8 +54,11 @@ const getIconContent = async (link: string, client: JiraClient): Promise<Buffer>
   try {
     const res = await client.get({ url: link, queryParams, responseType: 'arraybuffer' })
     const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
+    if (res.status === 404) {
+      throw new Error('Failed to fetch attachment content, attachment not found')
+    }
     if (!Buffer.isBuffer(content)) {
-      throw new Error('Failed to fetch attachment content, response is not a buffer.')
+      throw new Error('Failed to fetch attachment content, response is not a buffer')
     }
     return content
   } catch (e) {

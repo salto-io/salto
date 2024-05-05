@@ -21,7 +21,7 @@ import {
   ReferenceExpression,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { getParent, hasValidParent, naclCase } from '@salto-io/adapter-utils'
+import { getParent, hasValidParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -72,27 +72,37 @@ const filter: FilterCreator = ({ getElemIdFunc }) => ({
 
     const defaultName = 'Default Policy'
     const updatedName = getDefaultAccessPolicyName(defaultName, defaultAccessPolicy, getElemIdFunc)
+    const updatedPath = [
+      ...(defaultAccessPolicy.path?.slice(0, defaultAccessPolicy.path?.length - 2) ?? []),
+      pathNaclCase(updatedName),
+      pathNaclCase(updatedName),
+    ]
     const renamedPolicy = new InstanceElement(
       updatedName,
       defaultAccessPolicy.getTypeSync(),
       defaultAccessPolicy.value,
-      defaultAccessPolicy.path,
+      updatedPath,
       defaultAccessPolicy.annotations,
     )
 
-    const renamedRules = defaultPolicyRules.map(
-      rule =>
-        new InstanceElement(
-          getDefaultAccessPolicyName(`${defaultName}__${rule.value.name}`, rule, getElemIdFunc),
-          rule.getTypeSync(),
-          rule.value,
-          rule.path,
-          {
-            ...rule.annotations,
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(renamedPolicy.elemID, renamedPolicy)],
-          },
-        ),
-    )
+    const renamedRules = defaultPolicyRules.map(rule => {
+      const updatedRuleName = getDefaultAccessPolicyName(`${defaultName}__${rule.value.name}`, rule, getElemIdFunc)
+      return new InstanceElement(
+        updatedRuleName,
+        rule.getTypeSync(),
+        rule.value,
+        [
+          ...(rule.path?.slice(0, rule.path?.length - 3) ?? []),
+          pathNaclCase(updatedName),
+          'policyRules',
+          pathNaclCase(updatedRuleName),
+        ],
+        {
+          ...rule.annotations,
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(renamedPolicy.elemID, renamedPolicy)],
+        },
+      )
+    })
 
     _.pullAll(elements, [defaultAccessPolicy, ...defaultPolicyRules])
     elements.push(renamedPolicy)

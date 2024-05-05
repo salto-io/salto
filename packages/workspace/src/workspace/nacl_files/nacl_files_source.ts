@@ -846,10 +846,16 @@ const buildNaclFilesSource = (
 
     const removeDanglingStaticFiles = async (allChanges: DetailedChange[]): Promise<void> => {
       const {staticFilesIndex} = await getState()
+
       await Promise.all(
         getDanglingStaticFiles(allChanges).map(
-          file => staticFilesIndex.get(file.filepath) ?? staticFilesSource.delete(file),
-        ),
+          async file => {
+            const filePath = await staticFilesIndex.get(file.filepath)
+            if (!filePath) {
+              await staticFilesSource.delete(file)
+            }
+          }
+        )
       )
     }
     const changesByFileName = await groupChangesByFilename(changes)

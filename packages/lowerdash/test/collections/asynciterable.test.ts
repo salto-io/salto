@@ -39,6 +39,7 @@ const {
   keyByAsync,
   iterateTogether,
   flatMapAsync,
+  partitionAsync,
 } = asynciterable
 type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
 
@@ -324,6 +325,15 @@ describe('asynciterable', () => {
     })
   })
 
+  describe('partitionAsync', () => {
+    it('should return two iterables, one with the elements that passed the predicate and one with the ones that did not', async () => {
+      expect(await partitionAsync(toAsyncIterable([1, 2, 3, 4, 5, 6]), n => n % 2 === 0)).toEqual([
+        [2, 4, 6],
+        [1, 3, 5],
+      ])
+    })
+  })
+
   describe('iterateTogether', () => {
     let firstIter: AsyncIterable<number>
     let secondIter: AsyncIterable<number>
@@ -487,6 +497,13 @@ describe('asynciterable', () => {
           A: [{ key: 'A' }],
         })
       })
+      it('should forward the partition function to partitionAsync', async () => {
+        expect(await awu([1, 2, 3, 4, 5, 6]).partition(num => num > 4)).toEqual([
+          [5, 6],
+          [1, 2, 3, 4],
+        ])
+      })
+
       it('should delete copies from list when uniquifying', async () => {
         expect(
           await awu([1, 2, 3, 5, 4, 6, 6, 4, 3, 7, 2, 1])

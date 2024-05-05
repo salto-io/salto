@@ -18,6 +18,9 @@ import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
+/**
+ * Filters a record to contain only the entries not explicitly disabled in the config.
+ */
 export const getEnabledEntries = <T>(
   possibleEntries: Record<string, T>,
   config: Record<string, boolean>,

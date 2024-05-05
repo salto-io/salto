@@ -35,7 +35,7 @@ import { JiraConfig } from '../../config/config'
 import { getCloudId } from './cloud_id'
 import { convertRuleScopeValueToProjects } from './automation_structure'
 
-export type Component = {
+export type AssetComponent = {
   value: {
     workspaceId?: string
     schemaId: ReferenceExpression
@@ -43,6 +43,10 @@ export type Component = {
     schemaLabel?: string
     objectTypeLabel?: string
   }
+}
+type Component = {
+  children: Component[]
+  conditions: Component[]
 }
 
 const ASSET_COMPONENT_SCHEME = Joi.object({
@@ -55,7 +59,7 @@ const ASSET_COMPONENT_SCHEME = Joi.object({
   }).unknown(true),
 }).unknown(true)
 
-export const isAssetComponent = createSchemeGuard<Component>(ASSET_COMPONENT_SCHEME)
+export const isAssetComponent = createSchemeGuard<AssetComponent>(ASSET_COMPONENT_SCHEME)
 const DEFAULT_PAGE_SIZE = 1000
 const { getInstanceName } = elementUtils
 const log = logger(module)
@@ -144,16 +148,29 @@ const createInstance = (
     pathNaclCase(instanceName),
   ])
 }
+
+// For componetes that has assets fields, we need to remove some fields that can be calculated from the schema and object type
+const processComponents = (component: Component): void => {
+  if (isAssetComponent(component)) {
+    delete component.value.schemaLabel
+    delete component.value.objectTypeLabel
+    delete component.value.workspaceId
+  }
+  if (component.children) {
+    component.children.forEach(processComponents)
+  }
+  if (component.conditions) {
+    component.conditions.forEach(processComponents)
+  }
+}
+
+/* Since the children and conditions of the components can also be of the AssetComponent type,
+ * we need to handle them the same way as we handle the top-level component value. */
 const mofidyAssetsComponents = (instance: InstanceElement): void => {
   if (!instance.value.components) {
     return
   }
-  const assetsComponents: Component[] = instance.value.components.filter(isAssetComponent)
-  assetsComponents.forEach(component => {
-    delete component.value.schemaLabel
-    delete component.value.objectTypeLabel
-    delete component.value.workspaceId
-  })
+  instance.value.components.forEach(processComponents)
 }
 
 export const getAutomations = async (client: JiraClient, config: JiraConfig): Promise<Values[]> =>

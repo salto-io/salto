@@ -180,7 +180,7 @@ import {
   buildMetadataQueryForFetchWithChangesDetection,
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
-import { fixElementsFunc } from './weak_references/handlers'
+import { fixElementsFunc } from './custom_references/handlers'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -543,7 +543,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }
-    this.fixElementsFunc = fixElementsFunc({ elementsSource })
+    this.fixElementsFunc = fixElementsFunc({ elementsSource, config })
   }
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {

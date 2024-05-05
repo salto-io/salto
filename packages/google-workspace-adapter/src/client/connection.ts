@@ -28,8 +28,12 @@ export const validateDirectoryCredentials = async ({
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
   try {
-    await connection.get('/admin/directory/v1/users?customer=my_customer')
-    return { accountId: 'googoo' }
+    const defualtCustomer = await connection.get('/admin/directory/v1/customers/my_customer')
+    const primaryDomain = defualtCustomer.data.customerDomain
+    if (primaryDomain === undefined) {
+      throw new Error('Failed to find primary domain')
+    }
+    return { accountId: primaryDomain }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)

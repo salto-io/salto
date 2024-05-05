@@ -1151,7 +1151,6 @@ describe('sdf client', () => {
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
           fileContent: 'dummy file content',
-          hadMissingAttributes: false,
         },
         {
           typeName: 'folder',
@@ -1159,7 +1158,6 @@ describe('sdf client', () => {
             description: 'folder description',
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
-          hadMissingAttributes: false,
         },
         {
           typeName: 'folder',
@@ -1170,7 +1168,6 @@ describe('sdf client', () => {
             isprivate: 'F',
           },
           path: ['Templates'],
-          hadMissingAttributes: true,
         },
         {
           typeName: 'folder',
@@ -1181,7 +1178,6 @@ describe('sdf client', () => {
             isprivate: 'F',
           },
           path: ['Templates', 'E-mail Templates'],
-          hadMissingAttributes: true,
         },
       ])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
@@ -1283,7 +1279,6 @@ describe('sdf client', () => {
             description: 'folder description',
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
-          hadMissingAttributes: false,
         },
       ])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })

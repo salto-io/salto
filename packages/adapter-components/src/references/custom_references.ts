@@ -26,12 +26,12 @@ const getReferenceInfoIdentifier = (ref: ReferenceInfo): string =>
  */
 export const combineCustomReferenceGetters =
   (
-    namedCustomReferenceGetters: Record<string, GetCustomReferencesFunc>,
-    getCustomRefsConfig: (adapterConfig: InstanceElement) => Record<string, boolean> = () => ({}),
+    customReferenceGettersByName: Record<string, GetCustomReferencesFunc>,
+    getCustomRefsConfig?: (adapterConfig: InstanceElement) => Record<string, boolean>,
   ): GetCustomReferencesFunc =>
   async (elements, adapterConfig) => {
-    const adapterConfigValues = adapterConfig ? getCustomRefsConfig(adapterConfig) : {}
-    const customReferenceGetters = Object.values(getEnabledEntries(namedCustomReferenceGetters, adapterConfigValues))
+    const adapterConfigValues = adapterConfig && getCustomRefsConfig ? getCustomRefsConfig(adapterConfig) : {}
+    const customReferenceGetters = Object.values(getEnabledEntries(customReferenceGettersByName, adapterConfigValues))
     const idToRef: Record<string, ReferenceInfo> = {}
     const refGroups = await Promise.all(
       customReferenceGetters.map(getCustomReferences => getCustomReferences(elements, adapterConfig)),

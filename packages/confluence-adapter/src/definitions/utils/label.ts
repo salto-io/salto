@@ -13,18 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { assertValue } from './generic'
+import { validateValue } from './generic'
 
 /**
- * Add space.key to a template request
+ * AdjustFunction that converts labels object array to ids array.
  */
-export const addSpaceKey: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value, context }) => ({
-  value: {
-    ...assertValue(value),
-    space: {
-      key: _.get(context.additionalContext, 'space_key'),
+export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
+  const value = validateValue(item.value)
+  const labels = _.get(value, 'labels')
+  if (_.isEmpty(labels) || !Array.isArray(labels)) {
+    return { value }
+  }
+  return {
+    value: {
+      ...value,
+      labels: labels.map(label => label.id),
     },
-  },
-})
+  }
+}

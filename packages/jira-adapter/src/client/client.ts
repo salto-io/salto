@@ -16,6 +16,7 @@
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
+import _ from 'lodash'
 import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { createConnection } from './connection'
@@ -37,6 +38,8 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitC
 const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
   get: 1000,
 }
+
+const RATE_LIMIT_HEADER_PREFIX = 'x-ratelimit-'
 
 export type graphQLResponseType = {
   data: unknown
@@ -112,6 +115,16 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       this.apiClient = getProductSettings({ isDataCenter: this.isDataCenter }).wrapConnection(this.apiClient)
     }
   }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+      return headers !== undefined
+        ? {
+            ...super.extractHeaders(headers),
+            ..._.pickBy(headers, (_val, key) => key.toLowerCase().startsWith(RATE_LIMIT_HEADER_PREFIX)),
+          }
+        : undefined
+    }
 
   // Sends a post request to a JIRA JSP page
   public async jspPost(

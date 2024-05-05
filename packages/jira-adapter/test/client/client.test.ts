@@ -22,8 +22,11 @@ describe('client', () => {
   let client: JiraClient
   let mockAxios: MockAdapter
   let result: clientUtils.client.ResponseValue
+  let extractHeadersFunc: jest.SpyInstance
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    extractHeadersFunc = jest.spyOn(JiraClient.prototype as any, 'extractHeaders')
     client = new JiraClient({
       credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' },
       isDataCenter: false,
@@ -54,7 +57,7 @@ describe('client', () => {
 
   describe('get', () => {
     beforeEach(async () => {
-      mockAxios.onGet('/myPath').reply(200, { response: 'asd' })
+      mockAxios.onGet('/myPath').reply(200, { response: 'asd' }, { 'X-RateLimit-Reset': '2024-05-05T18:02Z', 'X-RateLimit-NearLimit': true, 'Retry-After': '5', 'Do-Not-Extract': 'true' })
       result = await client.get({ url: '/myPath' })
     })
     it('should request the correct path with auth headers', () => {
@@ -66,6 +69,16 @@ describe('client', () => {
     })
     it('should return the response', () => {
       expect(result).toEqual({ status: 200, data: { response: 'asd' } })
+    })
+    it('should call extractHeaders', () => {
+      expect(extractHeadersFunc).toHaveBeenCalled()
+    })
+    it('should extract the correct headers', () => {
+      expect(extractHeadersFunc).toHaveNthReturnedWith(1, {
+        'X-RateLimit-Reset': '2024-05-05T18:02Z',
+        'X-RateLimit-NearLimit': true,
+        'Retry-After': '5',
+      })
     })
   })
   it('should preserve headers', async () => {

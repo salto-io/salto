@@ -75,11 +75,14 @@ const getRetryDelayFromHeaders = (headers: Record<string, string>): number | und
       log.warn(`Received invalid retry-after header value: ${retryAfterHeaderValue}`)
       return undefined
     }
+    log.trace(`Received retry-after header value: ${retryAfter}`)
     return retryAfter
   }
   // Handle rate limits as seen in Okta,
   // x-rate-limit-reset contains the time at which the rate limit resets
   // more information: https://developer.okta.com/docs/reference/rl-best-practices/
+  // it will not work for Jira (https://developer.atlassian.com/cloud/jira/platform/rate-limiting/)
+  // as they give it in a date format. currently we do not see it happening
   const rateLimitResetHeaderValue = lowercaseHeaders['x-rate-limit-reset']
   if (rateLimitResetHeaderValue !== undefined && lowercaseHeaders.date !== undefined) {
     const resetTime = parseInt(rateLimitResetHeaderValue, 10) * 1000
@@ -88,6 +91,7 @@ const getRetryDelayFromHeaders = (headers: Record<string, string>): number | und
       log.warn(`Received invalid x-rate-limit-reset values: ${rateLimitResetHeaderValue}, ${lowercaseHeaders.date}`)
       return undefined
     }
+    log.trace(`Received x-rate-limit-reset value: ${rateLimitResetHeaderValue} matched with date: ${lowercaseHeaders.date}`)
     return resetTime - currentTime
   }
   return undefined
@@ -106,7 +110,7 @@ const shouldRetryOnTimeout = (errorCode: string | undefined, retryOnTimeout: boo
   // axios returns ECONNABORTED on timeouts, but servers can sometimes return ETIMEDOUT
   retryOnTimeout ? ['ECONNABORTED', 'ETIMEDOUT'].includes(errorCode ?? '') : false
 
-export const createRetryOptions = (
+export const createRetryOptions = ( 
   retryOptions: Required<ClientRetryConfig>,
   timeoutOptions?: ClientTimeoutConfig,
 ): RetryOptions => ({

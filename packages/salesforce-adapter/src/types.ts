@@ -131,6 +131,7 @@ export type OptionalFeatures = {
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
+  omitStandardFieldsNonDeployableValues?: boolean
 }
 
 export type ChangeValidatorName =
@@ -369,8 +370,6 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
-  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
-  [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
 }
 
 export type FetchParameters = {
@@ -473,6 +472,8 @@ export type SalesforceConfig = {
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
   [DEPLOY_CONFIG]?: UserDeployConfig
+  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
+  [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
 }
 
 type DataManagementConfigSuggestions = {
@@ -669,12 +670,6 @@ const dataManagementType = new ObjectType({
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
     },
-    [CUSTOM_REFS_CONFIG]: {
-      refType: customReferencesSettingsType,
-    },
-    [FIX_ELEMENTS_CONFIG]: {
-      refType: fixElementsSettingsType,
-    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -858,6 +853,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
+    omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1030,6 +1026,12 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
         constants.SALESFORCE,
         changeValidatorConfigType,
       ),
+    },
+    [CUSTOM_REFS_CONFIG]: {
+      refType: customReferencesSettingsType,
+    },
+    [FIX_ELEMENTS_CONFIG]: {
+      refType: fixElementsSettingsType,
     },
   },
   annotations: {

@@ -62,10 +62,7 @@ export const getCustomReferences = combineCustomReferenceGetters(
 const fixElementsConfiguration = (
   config: SalesforceConfig,
 ): Record<string, boolean> =>
-  _.defaults(
-    config[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[FIX_ELEMENTS_CONFIG],
-    defaultHandlersConfiguration,
-  )
+  _.defaults(config[FIX_ELEMENTS_CONFIG], defaultHandlersConfiguration)
 
 export const fixElementsFunc = ({
   elementsSource,

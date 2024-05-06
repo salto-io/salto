@@ -71,7 +71,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     }),
   defaultConfig: DEFAULT_CONFIG,
   additionalConfigFields: {
-    additionalDeployFields: {
+    deployFields: {
       defaultDomain: { refType: BuiltinTypes.STRING },
     },
   },

@@ -45,7 +45,7 @@ import { AdapterImpl } from './adapter/adapter'
 import { getResolverCreator } from '../references/resolver_creator'
 import { ConvertError } from '../deployment'
 import { combineElementFixers } from '../references/element_fixers'
-import { FixElementsArgs } from './fix_elements/types'
+import { FixElementsArgs } from '../fix_elements/types'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -81,8 +81,8 @@ export const createAdapter = <
   }) => RequiredDefinitions<Options>
   configTypeCreator?: ConfigTypeCreator<ResolveCustomNameMappingOptionsType<Options>>
   additionalConfigFields?: {
-    additionalFetchFields?: Record<string, FieldDefinition>
-    additionalDeployFields?: Record<string, FieldDefinition>
+    fetchFields?: Record<string, FieldDefinition>
+    deployFields?: Record<string, FieldDefinition>
   }
   operationsCustomizations: {
     adapterConfigCreator?: (config: Readonly<InstanceElement> | undefined) => Co
@@ -92,7 +92,7 @@ export const createAdapter = <
       args: FilterCreationArgs<Options, Co>,
     ) => Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>>
     additionalChangeValidators?: Record<string, ChangeValidator>
-    customizeFixElements?: (args: FixElementsArgs<Options, Co>) => FixElementsFunc[]
+    customizeFixElements?: (args: FixElementsArgs<Options, Co>) => Record<string, FixElementsFunc>
   }
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
   customConvertError?: ConvertError
@@ -109,7 +109,7 @@ export const createAdapter = <
   const connectionCreator: ConnectionCreatorFromConfig<Credentials> = config =>
     connectionCreatorFromConfig(configCreator(config).client)
 
-  const { additionalDeployFields, additionalFetchFields } = additionalConfigFields ?? {}
+  const { fetchFields, deployFields } = additionalConfigFields ?? {}
 
   return {
     operations: context => {
@@ -128,9 +128,9 @@ export const createAdapter = <
       )
       const definitions = definitionsCreator({ clients, userConfig: config })
       const resolverCreator = getResolverCreator(definitions)
-      const fixElement = combineElementFixers(
-        customizeFixElements ? customizeFixElements({ config, elementsSource: context.elementsSource }) : [],
-      )
+      const fixElements = customizeFixElements
+        ? combineElementFixers(customizeFixElements({ config, elementsSource: context.elementsSource }))
+        : undefined
 
       const adapterOperations = createAdapterImpl<Credentials, Options, Co>(
         {
@@ -151,7 +151,7 @@ export const createAdapter = <
           adapterName,
           configInstance: context.config,
           additionalChangeValidators: operationsCustomizations.additionalChangeValidators,
-          fixElement,
+          fixElements,
         },
         adapterImpl ?? AdapterImpl,
       )
@@ -179,8 +179,8 @@ export const createAdapter = <
       adapterName,
       defaultConfig,
       changeValidatorNames: Object.keys(operationsCustomizations.additionalChangeValidators ?? {}),
-      additionalDeployFields,
-      additionalFetchFields,
+      additionalDeployFields: deployFields,
+      additionalFetchFields: fetchFields,
     }),
   }
 }

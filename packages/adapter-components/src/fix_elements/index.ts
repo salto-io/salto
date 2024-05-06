@@ -14,14 +14,4 @@
  * limitations under the License.
  */
 
-import { FixElementsFunc } from '@salto-io/adapter-api'
-import { FixElementsArgs } from '@salto-io/adapter-components'
-import { UserConfig } from '../config'
-import { Options } from '../definitions/types'
-import { replaceGroupsDomainHandler } from './replace_groups_domain'
-
-export const createFixElementFunctions = (
-  args: FixElementsArgs<Options, UserConfig>,
-): Record<string, FixElementsFunc> => ({
-  replaceGroupsDomain: replaceGroupsDomainHandler(args),
-})
+export { FixElementsArgs, FixElementsHandler } from './types'

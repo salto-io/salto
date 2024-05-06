@@ -38,7 +38,4 @@ export const DEFAULT_CONFIG: UserConfig = {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
   },
-  deploy: {
-    defaultDomain: DEFAULT_PRIMARY_DOMAIN,
-  },
 }

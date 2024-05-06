@@ -96,7 +96,6 @@ export class AdapterImpl<
   protected changeValidators: Record<string, ChangeValidator>
   protected dependencyChangers: DependencyChanger[]
   protected definitions: RequiredDefinitions<Options>
-  protected fixElementsFunc: FixElementsFunc
   protected referenceResolver: (
     def: FieldReferenceDefinition<
       ResolveReferenceContextStrategiesType<Options>,
@@ -120,7 +119,7 @@ export class AdapterImpl<
     additionalChangeValidators,
     dependencyChangers,
     referenceResolver,
-    fixElement,
+    fixElements,
   }: AdapterParams<Credentials, Options, Co>) {
     this.adapterName = adapterName
     this.clients = clients
@@ -164,7 +163,7 @@ export class AdapterImpl<
 
     this.referenceResolver = referenceResolver
 
-    this.fixElementsFunc = fixElement
+    this.fixElements = fixElements
   }
 
   @logDuration('generating types from swagger')
@@ -357,5 +356,5 @@ export class AdapterImpl<
     }
   }
 
-  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
+  fixElements: FixElementsFunc | undefined = undefined
 }

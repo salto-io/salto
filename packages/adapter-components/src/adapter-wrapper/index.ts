@@ -17,4 +17,3 @@
 export { createAdapter } from './adapter_creator'
 export { AdapterImpl } from './adapter/adapter'
 export { AdapterParams } from './adapter/types'
-export { FixElementsArgs, FixElementsHandler } from './fix_elements/types'

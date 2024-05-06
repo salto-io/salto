@@ -62,7 +62,7 @@ export interface AdapterParams<
   >
   elementSource: ReadOnlyElementsSource
   adapterName: string
-  fixElement: FixElementsFunc
+  fixElements: FixElementsFunc | undefined
   // TODO SALTO-5578 pass in account name as well
 }
 

@@ -15,7 +15,7 @@
  */
 
 import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { APIDefinitionsOptions, ResolveCustomNameMappingOptionsType, UserConfig } from '../../definitions'
+import { APIDefinitionsOptions, ResolveCustomNameMappingOptionsType, UserConfig } from '../definitions'
 
 export type FixElementsArgs<
   Options extends APIDefinitionsOptions,

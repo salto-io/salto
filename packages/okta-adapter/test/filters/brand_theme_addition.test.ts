@@ -15,7 +15,14 @@
  */
 
 import { MockInterface } from '@salto-io/test-utils'
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
@@ -67,6 +74,46 @@ describe('brandThemeAdditionFilter', () => {
         },
         undefined,
       )
+    })
+    it('should throw an error when failing to get the theme id - no themes returned', async () => {
+      mockConnection.get.mockResolvedValue({
+        status: 200, data: [
+          { id: 'themeId456' },
+          { id: 'themeId789' },
+        ],
+      })
+      const result = await filter.deploy([toChange({ after: themeInstance })])
+      expect(result.deployResult.errors).toEqual([
+        {
+          elemID: themeInstance.elemID,
+          message: 'Could not find BrandTheme with the provided brandId',
+          severity: 'Error',
+        },
+      ])
+    })
+    it('should throw an error when failing to get the theme id - multiple themes returned', async () => {
+      mockConnection.get.mockResolvedValue({ status: 200, data: [] })
+      const result = await filter.deploy([toChange({ after: themeInstance })])
+      expect(result.deployResult.errors).toEqual([
+        {
+          elemID: themeInstance.elemID,
+          message: 'Could not find BrandTheme with the provided brandId',
+          severity: 'Error',
+        },
+      ])
+    })
+    it('should throw an error when the parent brand is already resolved', async () => {
+      const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
+      const brandInstance = new InstanceElement('brand', brandType, { id: 'brandId123' })
+      themeInstance.annotations[CORE_ANNOTATIONS.PARENT][0] = new ReferenceExpression(brandInstance.elemID, brandInstance)
+      const result = await filter.deploy([toChange({ after: themeInstance })])
+      expect(result.deployResult.errors).toEqual([
+        {
+          elemID: themeInstance.elemID,
+          message: 'BrandTheme must have valid brandId',
+          severity: 'Error',
+        },
+      ])
     })
   })
 })

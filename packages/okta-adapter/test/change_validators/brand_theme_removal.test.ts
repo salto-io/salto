@@ -24,7 +24,7 @@ import {
 import { brandThemeRemovalValidator } from '../../src/change_validators/brand_theme_removal'
 import { OKTA, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME } from '../../src/constants'
 
-describe('profileMappingRemovalValidator', () => {
+describe('brandThemeRemovalValidator', () => {
   const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
   const brandThemeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
 

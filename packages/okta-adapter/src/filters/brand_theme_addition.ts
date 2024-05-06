@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { getParents, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
@@ -34,8 +34,8 @@ const getThemeIdByBrand = async (brandId: string, client: OktaClient): Promise<s
   if (_.isArray(themeEntries) && themeEntries.length === 1 && _.isString(themeEntries[0].id)) {
     return themeEntries[0].id
   }
-  log.error(`Received unexpected result for brand theme: ${inspectValue(themeEntries)}`)
-  throw new Error(`Could not find BrandTheme with the provided brandId ${brandId}`)
+  log.error(`Received unexpected result for brand theme for brandId ${brandId}: ${inspectValue(themeEntries)}`)
+  throw new Error('Could not find BrandTheme with the provided brandId')
 }
 
 const deployBrandThemeAddition = async (
@@ -45,7 +45,7 @@ const deployBrandThemeAddition = async (
 ): Promise<void> => {
   const instance = getChangeData(change)
   // eslint-disable-next-line no-underscore-dangle
-  const brandId = instance.annotations?._parent?.[0]?.id
+  const brandId = getParents(instance)[0]?.id
   if (!_.isString(brandId)) {
     // Parent reference is already resolved
     log.error(`Failed to deploy BrandTheme with brandId: ${brandId}`)

@@ -16,11 +16,14 @@
 import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
 import { isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
 import OktaClient from '../client/client'
+
+const log = logger(module)
 
 const verifyBrandThemeIsDeleted = async (
   brandId: string,
@@ -39,6 +42,7 @@ const verifyBrandThemeIsDeleted = async (
     if (error instanceof clientUtils.HTTPError && error.response?.status === 404) {
       return true
     }
+    log.error(`Failed to verify that BrandTheme ${brandThemeId} is deleted: ${error.message}`)
     throw error
   }
 }

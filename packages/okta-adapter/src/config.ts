@@ -960,7 +960,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           brandId: '_parent.0.id',
           themeId: 'id',
         },
-        fieldsToIgnore: ['id', 'logo', 'favicon', '_links'],
+        fieldsToIgnore: ['id'],
       },
       modify: {
         url: '/api/v1/brands/{brandId}/themes/{themeId}',

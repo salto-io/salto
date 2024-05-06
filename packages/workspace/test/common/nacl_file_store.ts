@@ -219,7 +219,7 @@ type salesforce.lead {
   string base_field {}
 }`,
 
-  'willbempty.nacl': 'type nonempty { a = 2 }',
+  'will_be_empty.nacl': 'type nonempty { a = 2 }',
   'renamed_type.nacl': `type salesforce.RenamedType1 {
   }`,
   'fieldsWithHidden.nacl': `

@@ -116,7 +116,7 @@ const changedConfFile = {
   }`,
 }
 const emptyNaclFile = {
-  filename: 'willbempty.nacl',
+  filename: 'will_be_empty.nacl',
   buffer: ' ',
 }
 const newNaclFile = {
@@ -375,12 +375,12 @@ describe('workspace', () => {
 
   describe('getSearchableNames', () => {
     let workspace: Workspace
-    const TOTAL_NUM_ELEMENETS = 62
+    const TOTAL_NUM_ELEMENTS = 62
 
     it('should return names of top level elements and fields', async () => {
       workspace = await createWorkspace()
       const searchableNames = await workspace.getSearchableNames()
-      expect(searchableNames.length).toEqual(TOTAL_NUM_ELEMENETS)
+      expect(searchableNames.length).toEqual(TOTAL_NUM_ELEMENTS)
     })
 
     it('should remove object and fields from list if removed', async () => {
@@ -404,7 +404,7 @@ describe('workspace', () => {
         naclFilesChangesCount: 1,
         stateOnlyChangesCount: 1,
       })
-      expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS - (numOfFields + 1))
+      expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENTS - (numOfFields + 1))
       expect(searchableNamesAfter.includes(accountIntSett.elemID.getFullName())).toBeFalsy()
       Object.values(accountIntSett.fields).forEach(field => {
         expect(searchableNamesAfter.includes(field.elemID.getFullName())).toBeFalsy()
@@ -430,7 +430,7 @@ describe('workspace', () => {
         stateOnlyChangesCount: 0,
       })
       const searchableNamesAfter = await workspace.getSearchableNames()
-      expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS + 2)
+      expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENTS + 2)
     })
   })
 
@@ -514,11 +514,11 @@ describe('workspace', () => {
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
       const workspaceErrors = await Promise.all(wu(errors.all()).map(error => erroredWorkspace.transformError(error)))
       expect(workspaceErrors).toHaveLength(1)
-      const wsErros = workspaceErrors[0]
-      expect(wsErros.sourceLocations).toHaveLength(2)
-      expect(wsErros.message).toMatch(mergeError)
-      expect(wsErros.severity).toBe('Error')
-      const firstSourceLocation = wsErros.sourceLocations[0]
+      const wsErrors = workspaceErrors[0]
+      expect(wsErrors.sourceLocations).toHaveLength(2)
+      expect(wsErrors.message).toMatch(mergeError)
+      expect(wsErrors.severity).toBe('Error')
+      const firstSourceLocation = wsErrors.sourceLocations[0]
       expect(firstSourceLocation.sourceRange.filename).toBe('file.nacl')
       expect(firstSourceLocation.sourceRange.start).toEqual({ byte: 26, col: 3, line: 3 })
       expect(firstSourceLocation.sourceRange.end).toEqual({ byte: 79, col: 4, line: 5 })
@@ -584,7 +584,7 @@ describe('workspace', () => {
   describe('removeNaclFiles', () => {
     let dirStore: DirectoryStore<string>
     let workspace: Workspace
-    const removedPaths = ['file.nacl', 'willbempty.nacl', 'fieldsWithHidden.nacl']
+    const removedPaths = ['file.nacl', 'will_be_empty.nacl', 'fieldsWithHidden.nacl']
 
     beforeEach(async () => {
       dirStore = mockDirStore()
@@ -1062,8 +1062,8 @@ describe('workspace', () => {
       },
     })
 
-    const nonHiddenObjWithOnlyHiddeNotInNacl = new ObjectType({
-      elemID: ElemID.fromFullName('salesforce.nonHiddenObjWithOnlyHiddeNotInNacl'),
+    const nonHiddenObjWithOnlyHiddenNotInNacl = new ObjectType({
+      elemID: ElemID.fromFullName('salesforce.nonHiddenObjWithOnlyHiddenNotInNacl'),
       annotationRefsOrTypes: {
         hidden: BuiltinTypes.HIDDEN_STRING,
       },
@@ -1531,7 +1531,7 @@ describe('workspace', () => {
         data: { before: true },
       },
       {
-        id: nonHiddenObjWithOnlyHiddeNotInNacl.elemID.createNestedID('attr', 'hidden'),
+        id: nonHiddenObjWithOnlyHiddenNotInNacl.elemID.createNestedID('attr', 'hidden'),
         action: 'modify',
         path: ['should', 'not', 'matter'],
         data: {
@@ -1614,7 +1614,7 @@ describe('workspace', () => {
         queueSobjectHiddenSubType,
         queueHiddenInstanceToRemove,
         objWithFieldTypeWithHidden,
-        nonHiddenObjWithOnlyHiddeNotInNacl,
+        nonHiddenObjWithOnlyHiddenNotInNacl,
       ])
 
       workspace = await createWorkspace(dirStore, state)
@@ -1644,6 +1644,7 @@ describe('workspace', () => {
         'salesforce.ObjWithDoublyNestedHidden.instance.instWithDoublyNestedHidden'
       ] as InstanceElement
     })
+
     it('should have right number of results', () => {
       // This is just meant to test that calculating number of changes works,
       // and could possibly change. If you get a failure here and the number
@@ -1653,9 +1654,11 @@ describe('workspace', () => {
         stateOnlyChangesCount: 20,
       })
     })
+
     it('should not cause parse errors', async () => {
       expect((await workspace.errors()).parse).toHaveLength(0)
     })
+
     it('should modify existing element', () => {
       expect(lead).toBeDefined()
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('foo')
@@ -1666,6 +1669,7 @@ describe('workspace', () => {
       const setNaclFile = dirStore.set as jest.Mock
       expect(setNaclFile.mock.calls[0][0].buffer).toMatch(/base_field\s+{\s+_default = "foo"/s)
     })
+
     it('should add new element', () => {
       expect(elemMap[newElemID.getFullName()]).toBeDefined()
     })
@@ -1679,6 +1683,7 @@ describe('workspace', () => {
       expect(lead.fields.empty.annotations).toHaveProperty('test')
       expect(lead.fields.empty.annotations.test).toEqual('some value')
     })
+
     it('should add annotation types block when having new annotation type changes', () => {
       expect(lead.annotationRefTypes).toHaveProperty('newAnnoType1')
       expect(lead.annotationRefTypes.newAnnoType1.elemID).toEqual(BuiltinTypes.STRING.elemID)
@@ -1687,15 +1692,18 @@ describe('workspace', () => {
       expect(lead.annotationRefTypes).toHaveProperty('newHiddenAnno')
       expect(lead.annotationRefTypes.newHiddenAnno.elemID).toEqual(BuiltinTypes.HIDDEN_STRING.elemID)
     })
+
     it('should add visible values', () => {
       expect(lead.annotations).toHaveProperty('visibleAnno')
       expect(instWithNestedHidden.value.nested_visible.visible).toEqual(43)
       const nestedHiddenVal = elemMap['salesforce.NestedHiddenVal'] as ObjectType
       expect(nestedHiddenVal.annotations.hidden_to_visible_anno.something).toEqual('t')
     })
+
     it('should not add hidden annotation value on new annotation type', () => {
       expect(lead.annotations).not.toHaveProperty('newHiddenAnno')
     })
+
     it('should not add hidden annotation value on existing annotation type', () => {
       const objWithHidden = elemMap['salesforce.ObjWithHidden'] as ObjectType
       expect(objWithHidden.annotations).not.toHaveProperty('internalId')
@@ -1703,6 +1711,7 @@ describe('workspace', () => {
       expect(nestedHiddenVal.annotationRefTypes).toHaveProperty('hidden_val_anno')
       expect(nestedHiddenVal.annotations).not.toHaveProperty('hidden_val_anno')
     })
+
     it('should include hidden annotation value when fetching with hidden', () => {
       const leadWithHidden = elemMapWithHidden['salesforce.lead'] as ObjectType
       expect(leadWithHidden.annotations).toHaveProperty('newHiddenAnno')
@@ -1729,6 +1738,7 @@ describe('workspace', () => {
         ).refInnerType.elemID.isEqual(changedType.elemID),
       ).toBeTruthy()
     })
+
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
       expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('firstAnnotation')
@@ -1736,6 +1746,7 @@ describe('workspace', () => {
       expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('secondAnnotation')
       expect(objWithAnnotationsBlock.annotationRefTypes.secondAnnotation.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
     })
+
     it('should add annotation type to the existing annotations block without path hint', () => {
       const objWithoutAnnoBlock = elemMap['salesforce.WithoutAnnotationsBlock'] as ObjectType
       expect(objWithoutAnnoBlock.annotationRefTypes).toHaveProperty('newAnnoType1')
@@ -1743,6 +1754,7 @@ describe('workspace', () => {
       expect(objWithoutAnnoBlock.annotationRefTypes).toHaveProperty('newAnnoType2')
       expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType2.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
     })
+
     it('should remove all definitions in remove', () => {
       expect(Object.keys(elemMap)).not.toContain('multi.loc')
     })
@@ -1752,9 +1764,11 @@ describe('workspace', () => {
       expect(oneLiner.annotations).toHaveProperty('label')
       expect(oneLiner.annotations.label).toEqual('label')
     })
+
     it('should update value in list', () => {
       expect(lead.fields.list_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, { foo: 'bla' }])
     })
+
     it('should change isList value in fields', () => {
       expect(lead.fields.not_a_list_yet_field.refType.elemID.getFullName()).toContain('List<')
       // expect(isListType(lead.fields.not_a_list_yet_field.getType())).toBeTruthy()
@@ -1763,10 +1777,13 @@ describe('workspace', () => {
     it('my formula was added correctly', () => {
       expect(lead.fields.myFormula.annotations.myFormula).toEqual('This\nis\nmultiline')
     })
+
     it('my formula is not indented', () => {
-      const setNaclFile = dirStore.set as jest.Mock
-      const myFormula = /'''\nThis\nis\nmultiline\n'''/
-      expect(setNaclFile.mock.calls[0][0].buffer).toMatch(myFormula)
+      expect(dirStore.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          buffer: expect.stringMatching(/'''\nThis\nis\nmultiline\n'''/),
+        }),
+      )
     })
 
     it('should remove new hidden types', () => {
@@ -1923,31 +1940,36 @@ describe('workspace', () => {
       expect(obj.annotations).not.toHaveProperty('visibleSwitchType')
       expect(obj.fields.fieldWithChangingHidden.annotations).not.toHaveProperty('visibleSwitchType')
     })
+
     it('should add annotation values when they switch type to visible', () => {
       const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
       expect(obj).toBeDefined()
       expect(obj.annotations).toHaveProperty('hiddenSwitchType')
       expect(obj.fields.fieldWithChangingHidden.annotations).toHaveProperty('hiddenSwitchType')
     })
+
     it('should hide annotation values when their type changes to hidden', () => {
       const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
       expect(obj).toBeDefined()
       expect(obj.annotations).not.toHaveProperty('visibleChangeType')
       expect(obj.fields.fieldWithChangingHidden.annotations).not.toHaveProperty('visibleChangeType')
     })
+
     it('should add annotation values when their type changes to visible', () => {
       const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
       expect(obj).toBeDefined()
       expect(obj.annotations).toHaveProperty('hiddenChangeType')
       expect(obj.fields.fieldWithChangingHidden.annotations).toHaveProperty('hiddenChangeType')
     })
+
     it('should hide annotation values when they switch type to hidden and the source type changes', () => {
       const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
       expect(obj).toBeDefined()
       expect(obj.annotations).not.toHaveProperty('visibleChangeAndSwitchType')
     })
+
     it('should not modify elements which are not hidden and are not in the nacls', () => {
-      expect(elemMap[nonHiddenObjWithOnlyHiddeNotInNacl.elemID.getFullName()]).not.toBeDefined()
+      expect(elemMap[nonHiddenObjWithOnlyHiddenNotInNacl.elemID.getFullName()]).not.toBeDefined()
     })
 
     describe('on secondary envs', () => {
@@ -1962,6 +1984,7 @@ describe('workspace', () => {
           after: obj,
         },
       } as DetailedChange
+
       beforeEach(async () => {
         wsWithMultipleEnvs = await createWorkspace(
           undefined,
@@ -2003,6 +2026,7 @@ describe('workspace', () => {
           },
         )
       })
+
       it('should include added element in the secondary env', async () => {
         expect(
           await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName)).list()).toArray(),
@@ -2089,6 +2113,7 @@ describe('workspace', () => {
         )
         await workspace.updateNaclFiles(workspaceChanges)
       })
+
       it('should not have merge errors', async () => {
         expect((await workspace.errors()).merge).toHaveLength(0)
       })
@@ -2333,7 +2358,7 @@ describe('workspace', () => {
       expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
     })
 
-    it('shouldnt persist', async () => {
+    it('should not persist', async () => {
       await workspace.setCurrentEnv('inactive', false)
       expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(0)
     })
@@ -3089,7 +3114,7 @@ describe('workspace', () => {
       })
     })
 
-    describe('when specifing an override environment', () => {
+    describe('when specifying an override environment', () => {
       beforeEach(async () => {
         workspaceConf = mockWorkspaceConfigSource({}, true)
         workspace = await createWorkspace(undefined, undefined, workspaceConf)
@@ -3097,7 +3122,7 @@ describe('workspace', () => {
         await workspace.addAccount('salto')
       })
 
-      it('should add the account only in the other enviroment', () => {
+      it('should add the account only in the other environment', () => {
         expect(workspace.accounts('default')).not.toContain('salto')
         expect(workspace.accounts('inactive')).toContain('salto')
       })
@@ -3216,7 +3241,7 @@ describe('workspace', () => {
       credsSource = {
         get: jest.fn().mockResolvedValue(
           new InstanceElement(services[0], new ObjectType({ elemID: new ElemID(services[0]) }), {
-            usename: 'default',
+            username: 'default',
             password: 'default',
             currentEnv: 'default',
           }),
@@ -3693,7 +3718,7 @@ describe('workspace', () => {
       `
 
     const inst2updateFile = `
-      salto.obj objInstToupdate {
+      salto.obj objInstToUpdate {
         baseField = {
           num = 12
           str = "STR"
@@ -3749,7 +3774,7 @@ describe('workspace', () => {
         data: { before: 'STR' },
       },
       {
-        id: new ElemID('salto', 'obj', 'instance', 'objInstToupdate', 'baseField', 'str'),
+        id: new ElemID('salto', 'obj', 'instance', 'objInstToUpdate', 'baseField', 'str'),
         action: 'modify',
         data: { before: 'STR', after: 12 },
       },
@@ -3769,7 +3794,7 @@ describe('workspace', () => {
       workspace = await createWorkspace(naclFileStore)
       // Verify that the two errors we are starting with (that should be deleted in the update
       // since the update resolves them ) are present. This check will help debug situations in
-      // which the entier flow is broken and errors are not created at all...
+      // which the entire flow is broken and errors are not created at all...
       expect((await workspace.errors()).validation).toHaveLength(2)
       resultNumber = await workspace.updateNaclFiles(changes)
       validationErrs = (await workspace.errors()).validation
@@ -3780,12 +3805,12 @@ describe('workspace', () => {
     })
 
     it('create validation errors in the updated elements', () => {
-      const objInstToupdateErr = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToupdate.baseField.str',
+      const objInstToUpdateErr = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
       )
 
-      expect(objInstToupdateErr).toBeDefined()
-      expect(objInstToupdateErr?.message).toContain('Invalid value type for string')
+      expect(objInstToUpdateErr).toBeDefined()
+      expect(objInstToUpdateErr?.message).toContain('Invalid value type for string')
     })
     it('create validation errors where the updated elements are used as value type', () => {
       const usedAsTypeErr = validationErrs.find(
@@ -4174,7 +4199,7 @@ describe('workspace', () => {
       expect(ws.getServiceFromAccountName('salto1')).toEqual('salto')
     })
 
-    it('throws exception on non-existant account name', () => {
+    it('throws exception on non-existent account name', () => {
       expect(() => ws.getServiceFromAccountName('salto')).toThrow(new UnknownAccountError('salto'))
     })
   })
@@ -4201,7 +4226,7 @@ describe('getElementNaclFiles', () => {
     }
   `
 
-  const redHeringFile = `
+  const redHerringFile = `
     type salesforce.hearing {
       salesforce.text multiDef {
 
@@ -4211,7 +4236,7 @@ describe('getElementNaclFiles', () => {
   const naclFileStore = mockDirStore(undefined, undefined, {
     'firstFile.nacl': firstFile,
     'secondFile.nacl': secondFile,
-    'redHeringFile.nacl': redHeringFile,
+    'redHerringFile.nacl': redHerringFile,
   })
 
   beforeAll(async () => {
@@ -4224,7 +4249,7 @@ describe('getElementNaclFiles', () => {
     expect(res).toContain('firstFile.nacl')
   })
 
-  it('should find all files with a nested level id that apears in multiple files', async () => {
+  it('should find all files with a nested level id that appears in multiple files', async () => {
     const id = ElemID.fromFullName('salesforce.lead.field.multiDef')
     const res = await workspace.getElementNaclFiles(id)
     expect(res).toContain('secondFile.nacl')
@@ -4260,7 +4285,7 @@ describe('getElementFileNames', () => {
     }
   `
 
-  const redHeringFile = `
+  const redHerringFile = `
     type salesforce.hearing {
       salesforce.text multiDef {
 
@@ -4270,7 +4295,7 @@ describe('getElementFileNames', () => {
   const naclFileStore = mockDirStore(undefined, undefined, {
     'firstFile.nacl': firstFile,
     'secondFile.nacl': secondFile,
-    'redHeringFile.nacl': redHeringFile,
+    'redHerringFile.nacl': redHerringFile,
   })
   const naclFileStoreOfInactive = mockDirStore(undefined, undefined, {
     'thirdFile.nacl': 'type salesforce.test is string {}',
@@ -4308,7 +4333,7 @@ describe('getElementFileNames', () => {
     expect(Array.from(res.entries())).toEqual([
       ['salesforce.text', ['envs/default/firstFile.nacl']],
       ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
-      ['salesforce.hearing', ['envs/default/redHeringFile.nacl']],
+      ['salesforce.hearing', ['envs/default/redHerringFile.nacl']],
     ])
   })
 
@@ -4339,7 +4364,7 @@ describe('stateOnly update', () => {
   let ws: Workspace
 
   const objectWithHiddenToAdd = new ObjectType({
-    elemID: ElemID.fromFullName('salto.withhiddenToAdd'),
+    elemID: ElemID.fromFullName('salto.withHiddenToAdd'),
     annotationRefsOrTypes: {
       hidden: BuiltinTypes.HIDDEN_STRING,
       visible: BuiltinTypes.STRING,
@@ -4362,7 +4387,7 @@ describe('stateOnly update', () => {
   )
 
   const objectWithHiddenToModify = new ObjectType({
-    elemID: ElemID.fromFullName('salto.withhiddenToModify'),
+    elemID: ElemID.fromFullName('salto.withHiddenToModify'),
     annotationRefsOrTypes: {
       hidden: BuiltinTypes.HIDDEN_STRING,
       visible: BuiltinTypes.STRING,
@@ -4386,7 +4411,7 @@ describe('stateOnly update', () => {
   )
 
   const objectWithHiddenToRemove = new ObjectType({
-    elemID: ElemID.fromFullName('salto.withhiddenToRemove'),
+    elemID: ElemID.fromFullName('salto.withHiddenToRemove'),
     annotationRefsOrTypes: {
       hidden: BuiltinTypes.HIDDEN_STRING,
       visible: BuiltinTypes.STRING,
@@ -4414,8 +4439,8 @@ describe('stateOnly update', () => {
       [objectWithHiddenToModify, objectWithHiddenToRemove, hiddenInstToModify, hiddenInstToRemove].map(e => e.clone()),
     )
     const dirStore = mockDirStore([], false, {
-      'salto/objwithhidden.nacl': `
-        type salto.withhiddenToModify {
+      'salto/objWithHidden.nacl': `
+        type salto.withHiddenToModify {
           annotations {
             hidden_string hidden {
             }
@@ -4424,7 +4449,7 @@ describe('stateOnly update', () => {
           }
           visible = "visible"
         }
-        type salto.withhiddenToRemove {
+        type salto.withHiddenToRemove {
           annotations {
             hidden_string hidden {
             }
@@ -4443,7 +4468,7 @@ describe('stateOnly update', () => {
           after: objectWithHiddenToAdd,
         },
         id: objectWithHiddenToAdd.elemID,
-        path: ['salto', 'objwithhidden.nacl'],
+        path: ['salto', 'objWithHidden.nacl'],
       },
       {
         action: 'add',
@@ -4507,7 +4532,7 @@ describe('stateOnly update', () => {
     expect(resElement).toBeDefined()
   })
 
-  it('should not apply add chabges to the workspace for non hidden elements', async () => {
+  it('should not apply add changes to the workspace for non hidden elements', async () => {
     const resElement = await ws.getValue(objectWithHiddenToAdd.elemID)
     expect(resElement).not.toBeDefined()
   })
@@ -4975,13 +5000,13 @@ describe('update nacl files with invalid state cache', () => {
 })
 
 describe('nacl sources reuse', () => {
-  let mockMuiltiEnv: jest.SpyInstance
+  let mockMultiEnv: jest.SpyInstance
   let elementSources: Record<string, EnvironmentSource>
   let ws: Workspace
 
   beforeEach(async () => {
-    mockMuiltiEnv = jest.spyOn(multiEnvSrcLib, 'multiEnvSource')
-    mockMuiltiEnv.mockClear()
+    mockMultiEnv = jest.spyOn(multiEnvSrcLib, 'multiEnvSource')
+    mockMultiEnv.mockClear()
     elementSources = {
       '': {
         naclFiles: createMockNaclFileSource([]),
@@ -5008,12 +5033,12 @@ describe('nacl sources reuse', () => {
 
   it('should create only one copy the multi env source', async () => {
     await ws.flush()
-    expect(mockMuiltiEnv).toHaveBeenCalledTimes(1)
+    expect(mockMultiEnv).toHaveBeenCalledTimes(1)
   })
 
   it('should not create a new copy of a secondary env when invoking a command directly on the secondary env', async () => {
     await ws.elements(true, 'inactive')
-    expect(mockMuiltiEnv).toHaveBeenCalledTimes(1)
+    expect(mockMultiEnv).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -5056,7 +5081,7 @@ describe('listElementsDependenciesInWorkspace', () => {
   instWithRef.value.a = new ReferenceExpression(instWithNestedPathRef.elemID) // create circular reference
   const instWithMissingRef = new InstanceElement('inst3', new TypeReference(type2.elemID), {
     a: 'aaa',
-    b: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'nissingInst')),
+    b: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'missingInst')),
   })
   const initialInst = new InstanceElement('start', new TypeReference(type1.elemID), {
     a: new ReferenceExpression(instWithNestedPathRef.elemID),
@@ -5157,9 +5182,9 @@ describe('listElementsDependenciesInWorkspace', () => {
       [type1.elemID.createNestedID('field', 'c').getFullName()]: [],
     })
   })
-  it('should stop iterating when encoutinering a missing reference and return missing elemdIDs recursively', async () => {
+  it('should stop iterating when encountering a missing reference and return missing elemIDs recursively', async () => {
     const topLevelMissing = new ElemID('salesforce', 'someType', 'instance', 'missing')
-    const nestedMissingElemId = new ElemID('salesforce', 'missingType', 'instance', 'misisng2')
+    const nestedMissingElemId = new ElemID('salesforce', 'missingType', 'instance', 'missing2')
     instWithNestedPathRef.value.a.a = new ReferenceExpression(nestedMissingElemId)
     const res = await listElementsDependenciesInWorkspace({
       workspace,

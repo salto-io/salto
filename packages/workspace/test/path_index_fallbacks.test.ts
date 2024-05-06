@@ -43,7 +43,7 @@ describe('createPathIndexForElement', () => {
     }
   `
 
-  const redHeringFile = `
+  const redHerringFile = `
     type salesforce.hearing {
       salesforce.text multiDef {
 
@@ -53,7 +53,7 @@ describe('createPathIndexForElement', () => {
   const naclFileStore = mockDirStore(undefined, undefined, {
     'firstFile.nacl': firstFile,
     'secondFile.nacl': secondFile,
-    'redHeringFile.nacl': redHeringFile,
+    'redHerringFile.nacl': redHerringFile,
   })
 
   const expected = [

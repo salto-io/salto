@@ -65,7 +65,6 @@ const isRelevantInstance = (instance: InstanceElement): boolean =>
   Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS).includes(instance.elemID.typeName) ||
   Object.keys(TYPE_NAME_TO_TAG_FIELD_NAMES).includes(instance.elemID.typeName) ||
   isRelevantCheckboxInstance(instance)
-
 const createTagReferenceExpression = (tag: string): ReferenceExpression =>
   new ReferenceExpression(new ElemID(ZENDESK, TAG_TYPE_NAME, 'instance', naclCase(tag)))
 
@@ -159,6 +158,8 @@ const filterCreator: FilterCreator = ({ fetchQuery }) => ({
       return
     }
     const tagObjectType = elements.filter(isObjectType).find(t => t.elemID.typeName === TAG_TYPE_NAME)
+    // eslint-disable-next-line no-console
+    console.log(elements.filter(isObjectType))
     if (tagObjectType === undefined) {
       log.error('could not find tag object type')
       return

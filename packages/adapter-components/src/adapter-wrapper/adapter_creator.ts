@@ -81,8 +81,8 @@ export const createAdapter = <
   }) => RequiredDefinitions<Options>
   configTypeCreator?: ConfigTypeCreator<ResolveCustomNameMappingOptionsType<Options>>
   additionalConfigFields?: {
-    fetchFields?: Record<string, FieldDefinition>
-    deployFields?: Record<string, FieldDefinition>
+    fetch?: Record<string, FieldDefinition>
+    deploy?: Record<string, FieldDefinition>
   }
   operationsCustomizations: {
     adapterConfigCreator?: (config: Readonly<InstanceElement> | undefined) => Co
@@ -108,8 +108,6 @@ export const createAdapter = <
     (adapterConfigCreator ?? adapterConfigFromConfig)(config, defaultConfig)
   const connectionCreator: ConnectionCreatorFromConfig<Credentials> = config =>
     connectionCreatorFromConfig(configCreator(config).client)
-
-  const { fetchFields, deployFields } = additionalConfigFields ?? {}
 
   return {
     operations: context => {
@@ -183,8 +181,8 @@ export const createAdapter = <
       adapterName,
       defaultConfig,
       changeValidatorNames: Object.keys(operationsCustomizations.additionalChangeValidators ?? {}),
-      additionalDeployFields: deployFields,
-      additionalFetchFields: fetchFields,
+      additionalDeployFields: additionalConfigFields?.deploy,
+      additionalFetchFields: additionalConfigFields?.fetch,
     }),
   }
 }

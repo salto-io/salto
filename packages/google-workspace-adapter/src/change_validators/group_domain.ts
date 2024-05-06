@@ -46,8 +46,9 @@ const domainsNotFetchedWarning = (group: InstanceElement): ChangeError => ({
 /**
  * This CV warns if a group email is in a domain that does not exist in the deployed environment.
  */
-export const groupDomainValidator: (config: UserConfig) => ChangeValidator =
-  config => async (changes, elementSource) => {
+export const groupDomainValidator =
+  (config: UserConfig): ChangeValidator =>
+  async (changes, elementSource) => {
     if (elementSource === undefined) {
       return []
     }

@@ -23,3 +23,4 @@ export {
 } from './type_elements/swagger_parser'
 export { loadSwagger, LoadedSwagger } from './load'
 export { addDeploymentAnnotations } from './deployment_annotations'
+export { createFetchRequestDef } from './type_elements/openAPI_utils'

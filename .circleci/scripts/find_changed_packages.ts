@@ -1,6 +1,6 @@
-import { execSync } from 'child_process'
-import { existsSync, readFileSync, writeFileSync, readdirSync } from 'fs'
-import path from 'path'
+const { execSync } = require('child_process')
+const { existsSync, readFileSync, writeFileSync, readdirSync } = require('fs')
+const path = require('path')
 
 function getChangedFiles(): string[] {
   const output = execSync('git log --name-status origin/main..HEAD').toString()

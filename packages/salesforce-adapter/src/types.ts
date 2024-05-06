@@ -369,8 +369,6 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
-  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
-  [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
 }
 
 export type FetchParameters = {
@@ -473,6 +471,8 @@ export type SalesforceConfig = {
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
   [DEPLOY_CONFIG]?: UserDeployConfig
+  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
+  [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
 }
 
 type DataManagementConfigSuggestions = {
@@ -668,12 +668,6 @@ const dataManagementType = new ObjectType({
     },
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
-    },
-    [CUSTOM_REFS_CONFIG]: {
-      refType: customReferencesSettingsType,
-    },
-    [FIX_ELEMENTS_CONFIG]: {
-      refType: fixElementsSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
@@ -1030,6 +1024,12 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
         constants.SALESFORCE,
         changeValidatorConfigType,
       ),
+    },
+    [CUSTOM_REFS_CONFIG]: {
+      refType: customReferencesSettingsType,
+    },
+    [FIX_ELEMENTS_CONFIG]: {
+      refType: fixElementsSettingsType,
     },
   },
   annotations: {

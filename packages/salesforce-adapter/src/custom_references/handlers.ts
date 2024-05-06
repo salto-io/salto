@@ -27,8 +27,6 @@ import {
 import { profilesHandler } from './profiles'
 import {
   CUSTOM_REFS_CONFIG,
-  DATA_CONFIGURATION,
-  FETCH_CONFIG,
   FIX_ELEMENTS_CONFIG,
   SalesforceConfig,
   WeakReferencesHandler,
@@ -48,9 +46,7 @@ const customReferencesConfiguration = (
   adapterConfig: InstanceElement,
 ): Record<string, boolean> =>
   _.defaults(
-    adapterConfig.value[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[
-      CUSTOM_REFS_CONFIG
-    ],
+    adapterConfig.value[CUSTOM_REFS_CONFIG],
     defaultHandlersConfiguration,
   )
 
@@ -62,10 +58,7 @@ export const getCustomReferences = combineCustomReferenceGetters(
 const fixElementsConfiguration = (
   config: SalesforceConfig,
 ): Record<string, boolean> =>
-  _.defaults(
-    config[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[FIX_ELEMENTS_CONFIG],
-    defaultHandlersConfiguration,
-  )
+  _.defaults(config[FIX_ELEMENTS_CONFIG], defaultHandlersConfiguration)
 
 export const fixElementsFunc = ({
   elementsSource,

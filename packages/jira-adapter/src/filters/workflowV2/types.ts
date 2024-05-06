@@ -29,9 +29,14 @@ import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import { WorkflowV1Instance, isWorkflowV1Instance } from '../workflow/types'
 
 export const CHUNK_SIZE = 25
-export const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
-export const TRIGGER_LIST_FIELDS = new Set(['enabledTriggers'])
-export const CONDITION_LIST_FIELDS = new Set(['roleIds', 'groupIds', 'statusIds'])
+export const TRANSITION_LIST_FIELDS = new Set([
+  'statusIds',
+  'groupsExemptFromValidation',
+  'fieldsRequired',
+  'enabledTriggers',
+  'roleIds',
+  'groupIds',
+])
 export const ID_TO_UUID_PATH_NAME_TO_RECURSE = new Set([
   'statuses',
   'transitions',
@@ -42,6 +47,7 @@ export const CONDITION_GROUPS_PATH_NAME_TO_RECURSE = new Set(['transitions', 'co
 export const EMPTY_STRINGS_PATH_NAME_TO_RECURSE = new Set([
   'transitions',
   'conditions',
+  'conditionGroups',
   'validators',
   'actions',
   'triggers',

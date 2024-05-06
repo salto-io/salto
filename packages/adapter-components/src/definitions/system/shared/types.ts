@@ -33,6 +33,13 @@ export type ArgsWithCustomizer<ResultType, Args, Input = unknown, AdditionalArgs
   custom?: (args: Partial<Args> & AdditionalArgs) => (input: Input) => ResultType
 }
 
+export type ResultWithCustomizer<ResultType, Input = unknown> = types.XOR<
+  { result: ResultType },
+  {
+    custom: (input: Input) => ResultType
+  }
+>
+
 export type OptionsWithDefault<T, K extends string> = {
   options: Record<K, T>
   default: K

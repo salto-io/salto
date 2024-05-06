@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 import { SaltoError } from '@salto-io/adapter-api'
-import { types } from '@salto-io/lowerdash'
 import { ContextCombinationDefinition, RecurseIntoDefinition } from './dependencies'
-import { AdjustFunction, GeneratedItem, TransformDefinition } from '../shared'
+import { AdjustFunction, GeneratedItem, ResultWithCustomizer, TransformDefinition } from '../shared'
 import { ConfigChangeSuggestion } from '../../user'
 
 export type ResourceTransformFunc = AdjustFunction<{ fragments: GeneratedItem[] }>
@@ -24,18 +23,21 @@ export type ResourceTransformFunc = AdjustFunction<{ fragments: GeneratedItem[] 
 type FailEntireFetch = {
   // If set to true, the entire fetch will fail if an error is encountered while fetching this resource.
   // By default - false, meaning the fetch will log the error and continue, with only this resource missing.
-  failEntireFetch: boolean
+  action: 'failEntireFetch'
+  value: boolean
 }
 
 type CustomSaltoError = {
-  customSaltoError: SaltoError
+  action: 'customSaltoError'
+  value: SaltoError
 }
 
 type ConfigSuggestion = {
-  configSuggestion: ConfigChangeSuggestion
+  action: 'configSuggestion'
+  value: ConfigChangeSuggestion
 }
 
-type OnErrorHandler = (e: Error) => types.XOR<types.XOR<FailEntireFetch, CustomSaltoError>, ConfigSuggestion>
+type OnErrorHandler = ResultWithCustomizer<FailEntireFetch | CustomSaltoError | ConfigSuggestion, Error>
 
 export type FetchResourceDefinition = {
   // set to true if the resource should be fetched on its own. set to false for types only fetched via recurseInto
@@ -60,8 +62,10 @@ export type FetchResourceDefinition = {
   mergeAndTransform?: TransformDefinition<{ fragments: GeneratedItem[] }>
 
   // Error handler for a specific resource.
-  // The error handler receives the error that was thrown during the fetch and can return exactly
-  // one of the following: FailEntireFetch, CustomSaltoError, ConfigSuggestion.
+  // The error handler is used to customize the behavior when an error occurs while fetching the resource.
+  // It can be one of the following: FailEntireFetch, CustomSaltoError, ConfigSuggestion.
+  // This can also be customized using a custom function that receives the error and returns the desired action.
+  // If defined - the custom handling will be prioritized.
   // By default, any error thrown during the fetch is treated as if FailEntireFetch was set to false.
   onError?: OnErrorHandler
 }

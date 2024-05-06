@@ -213,13 +213,16 @@ describe('fetch', () => {
                   ],
                   resource: {
                     directFetch: false,
-                    onError: () => ({
-                      configSuggestion: {
-                        reason: 'error fetching options',
-                        type: 'typeToExclude',
-                        value: 'some value',
+                    onError: {
+                      result: {
+                        action: 'configSuggestion',
+                        value: {
+                          reason: 'error fetching options',
+                          type: 'typeToExclude',
+                          value: 'some value',
+                        },
                       },
-                    }),
+                    },
                   },
                   element: {
                     topLevel: {
@@ -237,9 +240,12 @@ describe('fetch', () => {
                   ],
                   resource: {
                     directFetch: false,
-                    onError: () => ({
-                      customSaltoError,
-                    }),
+                    onError: {
+                      result: {
+                        action: 'customSaltoError',
+                        value: customSaltoError,
+                      },
+                    },
                   },
                 },
               },

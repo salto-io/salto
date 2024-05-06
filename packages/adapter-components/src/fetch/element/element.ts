@@ -90,20 +90,27 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     }
 
     const { resource: resourceDef } = defQuery.query(typeName) ?? {}
-    const onError = resourceDef?.onError?.(error)
+    const onError = resourceDef?.onError
 
-    if (onError?.failEntireFetch) {
-      throw new AbortFetchOnFailure({ adapterName, typeName, message: error.message })
-    }
-
-    if (onError?.customSaltoError !== undefined) {
-      log.warn('failed to fetch type %s:%s, generating custom Salto error', adapterName, typeName)
-      customSaltoErrors.push(onError.customSaltoError)
-    } else if (onError?.configSuggestion !== undefined) {
-      log.warn('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
-      configSuggestions.push(onError.configSuggestion)
-    } else {
-      log.warn('failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
+    const onErrorResult = onError?.custom?.(error) ?? onError?.result
+    switch (onErrorResult?.action) {
+      case 'customSaltoError':
+        log.warn('failed to fetch type %s:%s, generating custom Salto error', adapterName, typeName)
+        customSaltoErrors.push(onErrorResult.value)
+        break
+      case 'configSuggestion':
+        log.warn('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
+        configSuggestions.push(onErrorResult.value)
+        break
+      case 'failEntireFetch': {
+        if (onErrorResult.value) {
+          throw new AbortFetchOnFailure({ adapterName, typeName, message: error.message })
+        }
+      }
+      // eslint-disable-next-line no-fallthrough
+      case undefined:
+      default:
+        log.warn('failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
     }
   }
 

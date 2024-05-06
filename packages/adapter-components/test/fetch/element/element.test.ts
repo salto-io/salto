@@ -219,9 +219,12 @@ describe('element', () => {
                 element: { topLevel: { isTopLevel: true } },
                 resource: {
                   directFetch: true,
-                  onError: () => ({
-                    failEntireFetch: true,
-                  }),
+                  onError: {
+                    result: {
+                      action: 'failEntireFetch',
+                      value: true,
+                    },
+                  },
                 },
               },
             },
@@ -246,9 +249,12 @@ describe('element', () => {
                 element: { topLevel: { isTopLevel: true } },
                 resource: {
                   directFetch: true,
-                  onError: () => ({
-                    customSaltoError,
-                  }),
+                  onError: {
+                    result: {
+                      action: 'customSaltoError',
+                      value: customSaltoError,
+                    },
+                  },
                 },
               },
             },
@@ -275,9 +281,12 @@ describe('element', () => {
                 element: { topLevel: { isTopLevel: true } },
                 resource: {
                   directFetch: true,
-                  onError: () => ({
-                    configSuggestion,
-                  }),
+                  onError: {
+                    result: {
+                      action: 'configSuggestion',
+                      value: configSuggestion,
+                    },
+                  },
                 },
               },
             },
@@ -287,6 +296,32 @@ describe('element', () => {
         const res = generator.generate()
         expect(res.configChanges).toHaveLength(1)
         expect(res.configChanges?.[0]).toEqual(configSuggestion)
+      })
+
+      it('should call custom error handler if defined', () => {
+        const customErrorHandler = jest.fn().mockReturnValue({ action: 'failEntireFetch', value: true })
+        const generator = getElementGenerator({
+          adapterName: 'myAdapter',
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+            customizations: {
+              myType: {
+                element: { topLevel: { isTopLevel: true } },
+                resource: {
+                  directFetch: true,
+                },
+              },
+            },
+            default: {
+              resource: {
+                onError: {
+                  custom: customErrorHandler,
+                },
+              },
+            },
+          }),
+        })
+        expect(() => generator.handleError({ typeName: 'myType', error: fetchError })).toThrow(AbortFetchOnFailure)
+        expect(customErrorHandler).toHaveBeenCalledWith(fetchError)
       })
     })
   })

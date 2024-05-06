@@ -24,7 +24,7 @@ import JiraClient from '../src/client/client'
 import { FilterCreator } from '../src/filter'
 import { paginate } from '../src/client/pagination'
 import { GetUserMapFunc, getUserMapFuncCreator } from '../src/users'
-import { JIRA } from '../src/constants'
+import { JIRA, WORKFLOW_CONFIGURATION_TYPE } from '../src/constants'
 import ScriptRunnerClient from '../src/client/script_runner_client'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
@@ -120,4 +120,20 @@ export const getLicenseElementSource = (isFree: boolean): ReadOnlyElementsSource
 export const createEmptyType = (type: string): ObjectType =>
   new ObjectType({
     elemID: new ElemID(JIRA, type),
+  })
+
+export const createSkeletonWorkflowV2Instance = (name: string): InstanceElement =>
+  new InstanceElement(name, createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
+    name,
+    scope: {
+      project: 'project',
+      type: 'type',
+    },
+    transitions: {
+      transition: {
+        name: `${name}Transition`,
+        type: 'DIRECTED',
+      },
+    },
+    statuses: [],
   })

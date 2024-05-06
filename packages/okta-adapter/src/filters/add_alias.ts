@@ -45,7 +45,7 @@ import {
   GROUP_PUSH_TYPE_NAME,
   AUTOMATION_TYPE_NAME,
   AUTOMATION_RULE_TYPE_NAME,
-  APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME, SIGN_IN_PAGE_TYPE_NAME, ERROR_PAGE_TYPE_NAME,
 } from '../constants'
 
 const DEFAULT_ALIAS_TYPES = [
@@ -68,6 +68,8 @@ const DEFAULT_ALIAS_TYPES = [
   EVENT_HOOK,
   GROUP_PUSH_RULE_TYPE_NAME,
   'OAuth2Claim',
+  SIGN_IN_PAGE_TYPE_NAME,
+  ERROR_PAGE_TYPE_NAME,
 ]
 
 const DEFAULT_ALIAS_DATA: AliasData = {
@@ -146,6 +148,29 @@ const aliasMap: Record<string, AliasData> = {
     aliasComponents: [{ fieldName: 'displayName' }],
   },
   ...Object.fromEntries(DEFAULT_ALIAS_TYPES.map(typeName => [typeName, DEFAULT_ALIAS_DATA])),
+  // Custom pages depend on the `Brand` alias and should run after it (`Brand` has the default alias).
+  [SIGN_IN_PAGE_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+      {
+        constant: 'Custom Sign-In Page',
+      },
+    ],
+  },
+  [ERROR_PAGE_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        constant: 'Custom Error Page',
+      },
+    ],
+  },
 }
 
 const filterCreator: FilterCreator = () => ({

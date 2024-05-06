@@ -77,10 +77,8 @@ describe('brandThemeAdditionFilter', () => {
     })
     it('should throw an error when failing to get the theme id - no themes returned', async () => {
       mockConnection.get.mockResolvedValue({
-        status: 200, data: [
-          { id: 'themeId456' },
-          { id: 'themeId789' },
-        ],
+        status: 200,
+        data: [{ id: 'themeId456' }, { id: 'themeId789' }],
       })
       const result = await filter.deploy([toChange({ after: themeInstance })])
       expect(result.deployResult.errors).toEqual([
@@ -105,7 +103,10 @@ describe('brandThemeAdditionFilter', () => {
     it('should throw an error when the parent brand is already resolved', async () => {
       const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
       const brandInstance = new InstanceElement('brand', brandType, { id: 'brandId123' })
-      themeInstance.annotations[CORE_ANNOTATIONS.PARENT][0] = new ReferenceExpression(brandInstance.elemID, brandInstance)
+      themeInstance.annotations[CORE_ANNOTATIONS.PARENT][0] = new ReferenceExpression(
+        brandInstance.elemID,
+        brandInstance,
+      )
       const result = await filter.deploy([toChange({ after: themeInstance })])
       expect(result.deployResult.errors).toEqual([
         {

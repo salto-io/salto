@@ -54,6 +54,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         if (field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined) {
           delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
         }
+        if (field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] !== undefined) {
+          delete field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]
+        }
       })
     },
   }),

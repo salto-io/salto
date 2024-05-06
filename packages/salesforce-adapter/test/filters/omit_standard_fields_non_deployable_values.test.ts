@@ -53,6 +53,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
               valueSet: [
                 { fullName: 'value1', default: true, label: 'value1' },
               ],
+              referenceTo: ['Case', 'User'],
             },
           },
           [CUSTOM_PICKLIST_FIELD]: {
@@ -62,6 +63,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
               valueSet: [
                 { fullName: 'value1', default: true, label: 'value1' },
               ],
+              referenceTo: ['Case', 'User'],
             },
           },
           [STANDARD_VALUE_SET_FIELD]: {
@@ -76,6 +78,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
                   'TestStandardValueSet',
                 ),
               ),
+              referenceTo: ['Case', 'User'],
             },
           },
         },
@@ -87,16 +90,19 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
       const standardPicklistField = testObject.fields[STANDARD_PICKLIST_FIELD]
       expect(standardPicklistField).toBeDefined()
       expect(standardPicklistField.annotations.valueSet).toBeUndefined()
+      expect(standardPicklistField.annotations.referenceTo).toBeUndefined()
 
       // Custom Picklist Fields should remain unchanged
       const customPicklistField = testObject.fields[CUSTOM_PICKLIST_FIELD]
       expect(customPicklistField).toBeDefined()
       expect(customPicklistField.annotations.valueSet).toBeDefined()
+      expect(customPicklistField.annotations.referenceTo).toBeDefined()
 
-      // Standard Picklist Fields with a StandardValueSet should remain unchanged
+      // Should omit only referenceTo from Picklist Fields with a StandardValueSet
       const standardValueSetField = testObject.fields[STANDARD_VALUE_SET_FIELD]
       expect(standardValueSetField).toBeDefined()
       expect(standardValueSetField.annotations.valueSetName).toBeDefined()
+      expect(standardValueSetField.annotations.referenceTo).toBeUndefined()
     })
 
     it('should do nothing when the feature is disabled', async () => {
@@ -116,6 +122,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
       const standardPicklistField = testObject.fields[STANDARD_PICKLIST_FIELD]
       expect(standardPicklistField).toBeDefined()
       expect(standardPicklistField.annotations.valueSet).toBeDefined()
+      expect(standardPicklistField.annotations.referenceTo).toBeDefined()
     })
   })
 })

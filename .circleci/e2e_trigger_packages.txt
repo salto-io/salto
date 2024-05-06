@@ -1,0 +1,13 @@
+adapter-api
+adapter-components
+adapter-utils
+core
+dag
+file
+lang-server
+logging
+lowerdash
+parser
+persistent-pool
+test-utils
+workspace

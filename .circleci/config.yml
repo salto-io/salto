@@ -8,6 +8,26 @@ orbs:
   macos: circleci/macos@2.4.1
 
 commands:
+  run_unittest:
+    parameters:
+      package_name:
+        type: string
+    steps:
+      - run:
+          name: Run unit tests
+          command: |
+            pushd packages/<< parameters.package_name >>
+            yarn test -w 4 --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
+            # https://github.com/pinojs/koa-pino-logger/issues/16
+            FORCE_COLOR: 1
+
+      - store_test_results:
+          path: reports
+
+      - coveralls/upload
+
   run_e2e_tests:
     parameters:
       should_install_java:
@@ -28,19 +48,17 @@ commands:
             fi
             echo "using sources.list:"
             cat /etc/apt/sources.list
-      - when:
-          condition: << parameters.should_install_java >>
-          steps:
-            run:
-              name: Install Java
-              command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
+      - run:
+          name: Install Java
+          command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
       - run:
           name: Run E2E tests for package << parameters.package_name >>
           command: |
             pushd packages/<< parameters.package_name >>
-            yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
+            yarn test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
+            RUN_E2E_TESTS: 1
             SALTO_LOG_LEVEL: 'info'
             # enable telemetry for end2end so we can count more events
             # webpack configuration is irrelevant in this case and therefore
@@ -157,7 +175,7 @@ jobs:
             - .
           key: v1-project-{{ .Branch }}-{{ epoch }}
 
-  unit_test:
+  unit_tests:
     docker:
       - image: cimg/node:14.15
 
@@ -169,17 +187,21 @@ jobs:
           at: .
 
       - run:
-          name: Run unit tests
-          command: yarn test -w 4 --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
-            # https://github.com/pinojs/koa-pino-logger/issues/16
-            FORCE_COLOR: 1
-
-      - store_test_results:
-          path: reports
-
-      - coveralls/upload
+          name: Run Unit Tests for Each Package
+          command: |
+            if [ -f packages-with-unittests.txt ]; then
+              CHANGED_PACKAGES_WITH_UT=$(cat packages-with-unittests.txt)
+              if [ -n "$CHANGED_PACKAGES_WITH_UT" ]; then
+                for package in $CHANGED_PACKAGES_WITH_UT; do
+                  echo "Running unit tests for package $package"
+                  circleci step run command "run_unittest package_name=$package"
+                done
+              else
+                echo "No packages with unit tests have changed."
+              fi
+            else
+              echo "Error: packages-with-unittests.txt not found."
+              exit 1
 
   prettier:
     docker:
@@ -216,10 +238,27 @@ jobs:
           name: Release version
           command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
 
-  e2e_tests_without_java:
-    parameters:
-      package_name:
-        type: string
+  find_changed_packages:
+    docker:
+      - image: cimg/node:14.15
+    resource_class: large
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Compile and Run Find Changed Packages Script
+          command: |
+            tsc find-changed-packages.ts
+            node find-changed-packages.js
+      - persist_to_workspace:
+          root: .
+          paths:
+            - packages-with-e2e-tests.txt
+            - packages-with-unittests.txt
+  
+  e2e_tests:
     docker:
       - image: cimg/node:14.15
     resource_class: large
@@ -227,25 +266,22 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - run_e2e_tests:
-          package_name: <<parameters.package_name>>
-          should_install_java: false     
-
-  e2e_tests_with_java:
-    parameters:
-      package_name:
-        type: string
-    docker:
-      - image: cimg/node:14.15
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-    steps:
-      - attach_workspace:
-          at: .
-      - run_e2e_tests:
-          package_name: <<parameters.package_name>>
-          should_install_java: true     
-
+      - run:
+          name: Run e2e Tests for Each Package
+          command: |
+            if [ -f packages-with-e2e-tests.txt ]; then
+              CHANGED_PACKAGES_WITH_E2E=$(cat packages-with-e2e-tests.txt)
+              if [ -n "$CHANGED_PACKAGES_WITH_E2E" ]; then
+                for package in $CHANGED_PACKAGES_WITH_E2E; do
+                  echo "Running e2e tests for package $package"
+                  circleci step run command "run_e2e_tests package_name=$package"
+                done
+              else
+                echo "No packages with e2e tests have changed."
+              fi
+            else
+              echo "Error: packages-with-e2e-tests.txt not found."
+              exit 1
 
   package_cli:
     docker:
@@ -407,37 +443,21 @@ workflows:
     jobs:
       - build
 
-      - e2e_tests_without_java:
+      - find_changed_packages:
           requires:
             - build
-          matrix:
-            alias: e2e_tests_without_java
-            parameters:
-              package_name: 
-                - cli
-                - okta-adapter
-                - salesforce-adapter
-                - stripe-adapter
-                - zendesk-adapter
-                - zuora-billing-adapter
 
-      - e2e_tests_with_java:
+      - e2e_tests:
           requires:
-            - build
-          matrix:
-            alias: e2e_tests_with_java
-            parameters:
-              package_name: 
-                - jira-adapter
-                - netsuite-adapter
+            - find_changed_packages
 
       - save_project_cache:
           requires:
             - build
 
-      - unit_test:
+      - unit_tests:
           requires:
-            - build
+            - find_changed_packages
 
       - prettier:
           requires:
@@ -458,12 +478,12 @@ workflows:
       - package_cli:
           requires:
             - build
-            - unit_test
+            - unit_tests
 
       - package_vscode_extension:
           requires:
             - build
-            - unit_test
+            - unit_tests
 
       - sync_s3_pkg_latest:
           requires:
@@ -478,9 +498,8 @@ workflows:
                 - main
           requires:
             - build
-            - unit_test
-            - e2e_tests_without_java
-            - e2e_tests_with_java
+            - unit_tests
+            - e2e_tests
 
       - publish_on_version_change:
           context: salto
@@ -490,6 +509,5 @@ workflows:
                 - main
           requires:
             - build
-            - unit_test
-            - e2e_tests_without_java
-            - e2e_tests_with_java
+            - unit_tests
+            - e2e_tests

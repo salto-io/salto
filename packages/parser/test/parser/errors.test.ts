@@ -47,10 +47,10 @@ describe('parsing errors', () => {
         })
         expect(res.errors[0].summary).toBe('Expected block labels')
         expect(res.errors[0].message).toBe('Expected block labels, found { instead.')
-        expect(res.errors[1].summary).toBe('Ambigious block definition')
+        expect(res.errors[1].summary).toBe('Ambiguous block definition')
       })
 
-      it('should continue parsing other blocks and ignore the labeless block', async () => {
+      it('should continue parsing other blocks and ignore the unlabeled block', async () => {
         expect(await awu(res.elements).toArray()).toHaveLength(1)
         expect((await awu(res.elements).toArray())[0]).toEqual(new ObjectType({ elemID: new ElemID('nowhere', 'man') }))
       })
@@ -86,7 +86,7 @@ describe('parsing errors', () => {
     describe('invalid primitive type error', () => {
       describe('with unknown primitive type', () => {
         const nacl = `
-            type helter.skater is amazing {
+            type helter.skelter is amazing {
             }
             `
         let res: ParseResult
@@ -96,7 +96,7 @@ describe('parsing errors', () => {
         it('should throw an error', () => {
           expect(res.errors[0].subject).toEqual({
             start: { byte: 13, col: 13, line: 2 },
-            end: { byte: 42, col: 42, line: 2 },
+            end: { byte: 43, col: 43, line: 2 },
             filename: 'file.nacl',
           })
           expect(res.errors[0].message).toBe('Unknown primitive type amazing.')
@@ -110,7 +110,7 @@ describe('parsing errors', () => {
       })
       describe('with a missing primitive type', () => {
         const nacl = `
-          type helter.skater is {
+          type helter.skelter is {
           }
         `
         let res: ParseResult
@@ -123,7 +123,7 @@ describe('parsing errors', () => {
           expect(res.errors[0].summary).toBe('unknown primitive type')
           expect(await awu(res.elements).toArray()).toHaveLength(1)
         })
-        it('should use unknown as the primitvie type primitive', async () => {
+        it('should use unknown as the primitive type primitive', async () => {
           const element = (await awu(res.elements).toArray())[0] as PrimitiveType
           expect(element.primitive).toBe(PrimitiveTypes.UNKNOWN)
         })
@@ -132,7 +132,7 @@ describe('parsing errors', () => {
     describe('invalid inheritance operator', () => {
       describe('with missing inheritance operator', () => {
         const nacl = `
-        type helter.skater tanananana {
+        type helter.skelter tanananana {
         }
         `
         let res: ParseResult
@@ -143,14 +143,14 @@ describe('parsing errors', () => {
           expect(res.errors).toHaveLength(2)
           expect(res.errors[0].subject).toEqual({
             start: { byte: 9, col: 9, line: 2 },
-            end: { byte: 38, col: 38, line: 2 },
+            end: { byte: 39, col: 39, line: 2 },
             filename: 'file.nacl',
           })
           expect(res.errors[0].message).toBe("Expected inheritance operator 'is' found tanananana instead")
           expect(res.errors[0].summary).toBe('invalid type definition')
           expect(res.errors[1].subject).toEqual({
             start: { byte: 9, col: 9, line: 2 },
-            end: { byte: 38, col: 38, line: 2 },
+            end: { byte: 39, col: 39, line: 2 },
             filename: 'file.nacl',
           })
           expect(res.errors[1].message).toBe('Expected a primitive type definition.')
@@ -164,7 +164,7 @@ describe('parsing errors', () => {
       })
       describe('with invalid inheritance operator', () => {
         const nacl = `
-          type helter.skater tanananana string {
+          type helter.skelter tanananana string {
         }
         `
         let res: ParseResult
@@ -175,7 +175,7 @@ describe('parsing errors', () => {
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { byte: 11, col: 11, line: 2 },
-            end: { byte: 47, col: 47, line: 2 },
+            end: { byte: 48, col: 48, line: 2 },
             filename: 'file.nacl',
           })
           expect(res.errors[0].message).toBe("Expected inheritance operator 'is' found tanananana instead")
@@ -190,7 +190,7 @@ describe('parsing errors', () => {
     describe('invalid primitive type block structure', () => {
       describe('when fields are defined in the primitive type', () => {
         const nacl = `
-          type helter.skater is string {
+          type helter.skelter is string {
               string tanananananana {
 
               }
@@ -203,8 +203,8 @@ describe('parsing errors', () => {
         it('should create an error', () => {
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
-            start: { byte: 40, col: 40, line: 2 },
-            end: { byte: 108, col: 12, line: 6 },
+            start: { byte: 41, col: 41, line: 2 },
+            end: { byte: 109, col: 12, line: 6 },
             filename: 'file.nacl',
           })
           expect(res.errors[0].message).toBe('Unexpected field definition(s) in a primitive type. Expected no fields.')
@@ -213,7 +213,7 @@ describe('parsing errors', () => {
         it('should create the element without the fields', async () => {
           const element = (await awu(res.elements).toArray())[0] as PrimitiveType
           expect(element.primitive).toBe(PrimitiveTypes.STRING)
-          expect(element.elemID.getFullName()).toEqual('helter.skater')
+          expect(element.elemID.getFullName()).toEqual('helter.skelter')
         })
       })
     })
@@ -856,7 +856,7 @@ describe('parsing errors', () => {
           expect(res.errors[0].message).toBe('Expected a value')
           expect(res.errors[0].summary).toBe('Expected a value')
         })
-        it('parse the missing value as dynanmic value', async () => {
+        it('parse the missing value as dynamic value', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
           const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
@@ -903,7 +903,7 @@ describe('parsing errors', () => {
       })
     })
     describe('array definition errors', () => {
-      describe('when there is a missing comman', () => {
+      describe('when there is a missing comma', () => {
         const nacl = `
         type hey.jude {
           dont = ["dont", "make" "it", "bad"]
@@ -1162,7 +1162,7 @@ describe('parsing errors', () => {
     `
     let res: ParseResult
     beforeAll(async () => {
-      res = await parse(Buffer.from(nacl), 'warlus.nacl', {})
+      res = await parse(Buffer.from(nacl), 'walrus.nacl', {})
     })
 
     it('should throw an error', () => {

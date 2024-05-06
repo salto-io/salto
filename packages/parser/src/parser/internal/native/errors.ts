@@ -49,7 +49,7 @@ export const invalidBlocksInInstance = (range: SourceRange): ParseError =>
     'Unexpected field or annotation type definition(s) in a primitive type. Expected only values.',
   )
 
-export const ambigiousBlock = (range: SourceRange): ParseError => createError(range, 'Ambigious block definition')
+export const ambiguousBlock = (range: SourceRange): ParseError => createError(range, 'Ambiguous block definition')
 
 export const missingLabelsError = (range: SourceRange, token: string): ParseError =>
   createError(range, 'Expected block labels', `Expected block labels, found ${token} instead.`)
@@ -70,7 +70,7 @@ export const multipleAnnotationBlocks = (range: SourceRange): ParseError =>
     'Invalid annotations block, only one annotation block can be defined in a fragment.',
   )
 
-export const multiplFieldDefinitions = (range: SourceRange, fieldName: string): ParseError =>
+export const multipleFieldDefinitions = (range: SourceRange, fieldName: string): ParseError =>
   createError(
     range,
     'Duplicated field name',

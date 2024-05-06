@@ -159,7 +159,10 @@ const filterCreator: FilterCreator = ({ fetchQuery }) => ({
     }
     const tagObjectType = elements.filter(isObjectType).find(t => t.elemID.typeName === TAG_TYPE_NAME)
     // eslint-disable-next-line no-console
-    console.log(elements.filter(isObjectType))
+    // console.log(tagObjectType)
+
+    // // eslint-disable-next-line no-console
+    // elements.filter(isObjectType).map(a => console.log(a.elemID.typeName))
     if (tagObjectType === undefined) {
       log.error('could not find tag object type')
       return

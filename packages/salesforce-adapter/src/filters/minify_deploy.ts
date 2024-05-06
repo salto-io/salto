@@ -34,6 +34,7 @@ import { PROFILE_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { apiName, metadataType } from '../transformers/transformer'
 
 export const LOGIN_IP_RANGES_FIELD = 'loginIpRanges'
+export const LOGIN_FLOWS_FIELD = 'loginFlows'
 export const LAYOUT_ASSIGNMENTS_FIELD = 'layoutAssignments'
 
 const { awu, keyByAsync } = collections.asynciterable
@@ -46,6 +47,7 @@ const typeToRemainingFields: Record<
   [PROFILE_METADATA_TYPE]: {
     [INSTANCE_FULL_NAME_FIELD]: {},
     [LOGIN_IP_RANGES_FIELD]: { default: [] },
+    [LOGIN_FLOWS_FIELD]: {},
   },
 }
 

@@ -22,6 +22,7 @@ import {
   ReferenceExpression,
   isInstanceElement,
 } from '@salto-io/adapter-api'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import renameDefaultAccessPolicy from '../../src/filters/rename_default_access_policy'
@@ -45,20 +46,45 @@ describe('renameDefaultAccessPolicy', () => {
   })
 
   it('should rename the default access policy and its children rules', async () => {
-    const custom = new InstanceElement('customized default policy name', type, {
-      name: 'customized name',
-      system: true,
-      type: 'ACCESS_POLICY',
-    })
-    const rule = new InstanceElement('customized_name__rule', ruleType, { name: 'rule', priority: 3 }, undefined, {
-      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(custom.elemID, custom)],
-    })
+    const custom = new InstanceElement(
+      'customized default policy name',
+      type,
+      {
+        name: 'customized name',
+        system: true,
+        type: 'ACCESS_POLICY',
+      },
+      [
+        OKTA,
+        'Records',
+        ACCESS_POLICY_TYPE_NAME,
+        pathNaclCase(naclCase('customized name')),
+        pathNaclCase(naclCase('customized name')),
+      ],
+    )
+    const rule = new InstanceElement(
+      'customized_name__rule',
+      ruleType,
+      { name: 'rule', priority: 3 },
+      [
+        OKTA,
+        'Records',
+        ACCESS_POLICY_TYPE_NAME,
+        pathNaclCase(naclCase('customized name')),
+        'policyRules',
+        pathNaclCase(naclCase('customized_name__rule')),
+      ],
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(custom.elemID, custom)],
+      },
+    )
 
     const elements = [custom, type, ruleType, rule]
     await filter.onFetch(elements)
     const accesPolicies = elements.filter(e => isInstanceElement(e) && e.elemID.typeName === ACCESS_POLICY_TYPE_NAME)
     expect(accesPolicies).toHaveLength(1)
     expect(accesPolicies[0].elemID.name).toEqual('Default_Policy@s')
+    expect(accesPolicies[0].path).toEqual([OKTA, 'Records', 'AccessPolicy', 'Default_Policy', 'Default_Policy'])
 
     const accesRules = elements.filter(e => isInstanceElement(e) && e.elemID.typeName === ACCESS_POLICY_RULE_TYPE_NAME)
     expect(accesRules).toHaveLength(1)
@@ -66,19 +92,39 @@ describe('renameDefaultAccessPolicy', () => {
     expect((accesRules[0].annotations[CORE_ANNOTATIONS.PARENT]?.[0] as ReferenceExpression).elemID).toEqual(
       accesPolicies[0].elemID,
     )
+    expect(accesRules[0].path).toEqual([
+      OKTA,
+      'Records',
+      'AccessPolicy',
+      'Default_Policy',
+      'policyRules',
+      'Default_Policy__rule',
+    ])
   })
 
   it('should not rename non default policies and its children rules', async () => {
-    const custom = new InstanceElement('my_policy@s', type, {
-      name: 'my policy',
-      system: false,
-      type: 'ACCESS_POLICY',
-    })
+    const custom = new InstanceElement(
+      'my_policy@s',
+      type,
+      {
+        name: 'my policy',
+        system: false,
+        type: 'ACCESS_POLICY',
+      },
+      [OKTA, 'Records', 'AccessPolicy', pathNaclCase('my_policy@s'), pathNaclCase('my_policy@s')],
+    )
     const rule = new InstanceElement(
       'my_policy__rule',
       ruleType,
       { name: 'rule', priority: 3, system: true },
-      undefined,
+      [
+        OKTA,
+        'Records',
+        ACCESS_POLICY_TYPE_NAME,
+        pathNaclCase('my_policy@s'),
+        'policyRules',
+        pathNaclCase('my_policy__rule'),
+      ],
       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(custom.elemID, custom)] },
     )
 
@@ -87,6 +133,7 @@ describe('renameDefaultAccessPolicy', () => {
     const accesPolicies = elements.filter(e => isInstanceElement(e) && e.elemID.typeName === ACCESS_POLICY_TYPE_NAME)
     expect(accesPolicies).toHaveLength(1)
     expect(accesPolicies[0].elemID.name).toEqual('my_policy@s')
+    expect(accesPolicies[0].path).toEqual([OKTA, 'Records', 'AccessPolicy', 'my_policy', 'my_policy'])
 
     const accesRules = elements.filter(e => isInstanceElement(e) && e.elemID.typeName === ACCESS_POLICY_RULE_TYPE_NAME)
     expect(accesRules).toHaveLength(1)

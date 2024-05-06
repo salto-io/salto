@@ -91,7 +91,7 @@ export const createAdapter = <
     customizeFilterCreators?: (
       args: FilterCreationArgs<Options, Co>,
     ) => Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>>
-    additionalChangeValidators?: Record<string, ChangeValidator>
+    additionalChangeValidators?: (args: { config: Co }) => Record<string, ChangeValidator>
     customizeFixElements?: (args: FixElementsArgs<Options, Co>) => Record<string, FixElementsFunc>
   }
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
@@ -132,6 +132,10 @@ export const createAdapter = <
         ? combineElementFixers(customizeFixElements({ config, elementsSource: context.elementsSource }))
         : undefined
 
+      const additionalChangeValidators = operationsCustomizations.additionalChangeValidators
+        ? operationsCustomizations.additionalChangeValidators({ config })
+        : undefined
+
       const adapterOperations = createAdapterImpl<Credentials, Options, Co>(
         {
           clients,
@@ -150,7 +154,7 @@ export const createAdapter = <
           ),
           adapterName,
           configInstance: context.config,
-          additionalChangeValidators: operationsCustomizations.additionalChangeValidators,
+          additionalChangeValidators,
           fixElements,
         },
         adapterImpl ?? AdapterImpl,

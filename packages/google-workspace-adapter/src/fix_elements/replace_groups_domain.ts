@@ -30,7 +30,7 @@ const replaceDomainInfo = (group: InstanceElement, domain: string): ChangeError 
   detailedMessage: `Replaced to domain of the ${group.value.name} group to ${domain}.`,
 })
 
-const isDomainExist = (group: InstanceElement, domains: InstanceElement[]): boolean => {
+export const isDomainExist = (group: InstanceElement, domains: InstanceElement[]): boolean => {
   const domainName = group.value.email.split('@')[1]
   return domains.some(domain => domain.value.domainName === domainName)
 }
@@ -43,7 +43,7 @@ const replaceGroupDomain = (group: InstanceElement, domain: string): InstanceEle
 }
 
 /**
- * If a group email is in a domain that does not exist in the target environment,
+ * If a group email is in a domain that does not exist in the current environment,
  * the function will replace the domain with the default domain.
  */
 export const replaceGroupsDomainHandler: FixElementsHandler<Options, UserConfig> =

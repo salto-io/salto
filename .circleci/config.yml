@@ -246,10 +246,11 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-
       - run:
           name: Compile and Run Find Changed Packages Script
           command: |
+            pushd .circleci/scripts
+            npm install
             tsc find-changed-packages.ts
             node find-changed-packages.js
       - persist_to_workspace:

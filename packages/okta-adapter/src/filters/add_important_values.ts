@@ -63,7 +63,7 @@ const importantValuesMap: Record<string, ImportantValues> = {
       indexed: true,
     },
     {
-      value: 'source',
+      value: 'source.id',
       highlighted: false,
       indexed: true,
     },

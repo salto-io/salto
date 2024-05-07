@@ -26,6 +26,7 @@ import {
   isRemovalChange,
   isAdditionChange,
   Value,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
@@ -69,12 +70,11 @@ const IsIssueTypeInIssueTypeSchemesOrDefault = (
 
 // we do not want to filter out the default issueTypeScreenScheme in case there is an issueType that is not in the issueTypeMapping
 // we can do it by compare the length of the issueTypeScheme to the length of the issueTypeMapping after we filter the issueTypeMapping
-const isRelevantMapping = (
-  issueTypeMapping: issueTypeMappingStruct,
+export const isRelevantMapping = (
+  issueTypeId: string | ReferenceExpression,
   projectIssueTypeMappingsLength: number,
   projectIssueTypesFullNameLength: number,
-): boolean =>
-  issueTypeMapping.issueTypeId !== 'default' || projectIssueTypeMappingsLength <= projectIssueTypesFullNameLength
+): boolean => issueTypeId !== 'default' || projectIssueTypeMappingsLength <= projectIssueTypesFullNameLength
 
 const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string, number[]> => {
   const screensSchemesToDefaultOrViewScreens = Object.fromEntries(
@@ -126,7 +126,7 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
               )
               .filter((issueTypeMapping: issueTypeMappingStruct) =>
                 isRelevantMapping(
-                  issueTypeMapping,
+                  issueTypeMapping.issueTypeId,
                   issueTypeScreenSchemesToiIssueTypeMappings[
                     project.value.issueTypeScreenScheme.issueTypeScreenScheme.id
                   ].length,

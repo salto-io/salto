@@ -606,7 +606,15 @@ export default class ZendeskAdapter implements AdapterOperations {
       fetchQuery: this.fetchQuery,
       getElemIdFunc: this.getElemIdFunc,
       definitions: this.adapterDefinitions,
-      // predefinedTypes: _.pickBy(supportedTypes, isObjectType),
+      // predefinedTypes: _.pickBy({'tag': }),
+    })
+
+    addRemainingTypes({
+      adapterName: ZENDESK,
+      elements: defaultSubdomainResult.elements,
+      typesConfig: this.userConfig.apiDefinitions.types,
+      supportedTypes,
+      typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
 
     if (!isGuideInFetch) {

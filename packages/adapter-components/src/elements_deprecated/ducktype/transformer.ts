@@ -470,11 +470,6 @@ export const getAllElements = async ({
   })
   const objectTypes = Object.fromEntries(elements.filter(isObjectType).map(e => [e.elemID.name, e]))
   const instancesAndTypes = [...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e))]
-  // eslint-disable-next-line no-console
-  console.log('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n\n\n\n\n\n')
-
-  // eslint-disable-next-line no-console
-  elements.map(a => console.log(a.elemID.typeName))
 
   if (shouldAddRemainingTypes) {
     addRemainingTypes({
@@ -485,11 +480,6 @@ export const getAllElements = async ({
       typeDefaultConfig: typeDefaults,
     })
   }
-  // eslint-disable-next-line no-console
-  console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n\n\n\n')
-
-  // eslint-disable-next-line no-console
-  elements.map(a => console.log(a.elemID.typeName))
 
   return {
     elements: instancesAndTypes,

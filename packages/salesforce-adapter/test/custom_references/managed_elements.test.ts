@@ -18,7 +18,6 @@ import {
   BuiltinTypes,
   Element,
   InstanceElement,
-  ReferenceInfo,
   ObjectType,
   Field,
 } from '@salto-io/adapter-api'
@@ -32,16 +31,11 @@ describe('managed elements', () => {
   describe('weak references handler', () => {
     const NAMESPACE = 'namespace1'
     let installedPackageInstances: Element[]
-    let refs: ReferenceInfo[]
 
     beforeEach(() => {
       installedPackageInstances = [
         createInstanceElement(
           { fullName: NAMESPACE },
-          mockTypes.InstalledPackage,
-        ),
-        createInstanceElement(
-          { fullName: 'namespace1' },
           mockTypes.InstalledPackage,
         ),
       ]
@@ -50,22 +44,28 @@ describe('managed elements', () => {
     describe('CustomObjects', () => {
       let customObject: ObjectType
       let customObjectFromInstalledPackage: ObjectType
+      let customObjectMissingInstalledPackage: ObjectType
 
-      beforeEach(async () => {
+      beforeEach(() => {
         customObject = createCustomObjectType('TestObject__c', {})
         customObjectFromInstalledPackage = createCustomObjectType(
           `${NAMESPACE}__TestObject__c`,
           {},
         )
-        refs = await managedElementsHandler.findWeakReferences(
-          installedPackageInstances.concat([
-            customObject,
-            customObjectFromInstalledPackage,
-          ]),
+        customObjectMissingInstalledPackage = createCustomObjectType(
+          'namespace2__TestObject__c',
+          {},
         )
       })
 
-      it('should generate weak references', () => {
+      it('should generate weak references', async () => {
+        const refs = await managedElementsHandler.findWeakReferences(
+          installedPackageInstances.concat([
+            customObject,
+            customObjectFromInstalledPackage,
+            customObjectMissingInstalledPackage,
+          ]),
+        )
         expect(refs).toEqual([
           {
             source: customObjectFromInstalledPackage.elemID,
@@ -74,15 +74,23 @@ describe('managed elements', () => {
           },
         ])
       })
+
+      it('should not generate weak references when there are no installed package references', async () => {
+        const refs = await managedElementsHandler.findWeakReferences([
+          customObject,
+          customObjectFromInstalledPackage,
+        ])
+        expect(refs).toBeEmpty()
+      })
     })
 
     describe('Standard Object Custom Fields', () => {
-      let customField: Field
       let customFieldFromInstalledPackage: Field
+      let accountType: ObjectType
 
-      beforeEach(async () => {
-        const accountType = mockTypes.Account.clone()
-        customField = new Field(
+      beforeEach(() => {
+        accountType = mockTypes.Account.clone()
+        const customField = new Field(
           mockTypes.Account,
           'TestField__c',
           BuiltinTypes.STRING,
@@ -97,12 +105,12 @@ describe('managed elements', () => {
         accountType.fields[customField.name] = customField
         accountType.fields[customFieldFromInstalledPackage.name] =
           customFieldFromInstalledPackage
-        refs = await managedElementsHandler.findWeakReferences(
-          installedPackageInstances.concat([accountType]),
-        )
       })
 
-      it('should generate weak references', () => {
+      it('should generate weak references', async () => {
+        const refs = await managedElementsHandler.findWeakReferences(
+          installedPackageInstances.concat([accountType]),
+        )
         expect(refs).toEqual([
           {
             source: customFieldFromInstalledPackage.elemID,
@@ -111,27 +119,34 @@ describe('managed elements', () => {
           },
         ])
       })
+
+      it('should not generate weak references when there are no installed package references', async () => {
+        const refs = await managedElementsHandler.findWeakReferences([
+          accountType,
+        ])
+        expect(refs).toBeEmpty()
+      })
     })
 
     describe('CustomMetadata types', () => {
       let customMetadata: ObjectType
       let customMetadataFromInstalledPackage: ObjectType
 
-      beforeEach(async () => {
+      beforeEach(() => {
         customMetadata = createCustomMetadataType('TestCustomMetadata__mdt', {})
         customMetadataFromInstalledPackage = createCustomMetadataType(
           `${NAMESPACE}__TestCustomMetadata__mdt`,
           {},
         )
-        refs = await managedElementsHandler.findWeakReferences(
+      })
+
+      it('should generate weak references', async () => {
+        const refs = await managedElementsHandler.findWeakReferences(
           installedPackageInstances.concat([
             customMetadata,
             customMetadataFromInstalledPackage,
           ]),
         )
-      })
-
-      it('should generate weak references', () => {
         expect(refs).toEqual([
           {
             source: customMetadataFromInstalledPackage.elemID,
@@ -140,13 +155,21 @@ describe('managed elements', () => {
           },
         ])
       })
+
+      it('should not generate weak references when there are no installed package references', async () => {
+        const refs = await managedElementsHandler.findWeakReferences([
+          customMetadata,
+          customMetadataFromInstalledPackage,
+        ])
+        expect(refs).toBeEmpty()
+      })
     })
 
     describe('Instances', () => {
       let instance: InstanceElement
       let instanceFromInstalledPackage: InstanceElement
 
-      beforeEach(async () => {
+      beforeEach(() => {
         instance = createInstanceElement(
           { fullName: 'TestInstance' },
           mockTypes.ApexClass,
@@ -155,15 +178,15 @@ describe('managed elements', () => {
           { fullName: `${NAMESPACE}__TestInstance` },
           mockTypes.ApexClass,
         )
-        refs = await managedElementsHandler.findWeakReferences(
+      })
+
+      it('should generate weak references', async () => {
+        const refs = await managedElementsHandler.findWeakReferences(
           installedPackageInstances.concat([
             instance,
             instanceFromInstalledPackage,
           ]),
         )
-      })
-
-      it('should generate weak references', () => {
         expect(refs).toEqual([
           {
             source: instanceFromInstalledPackage.elemID,
@@ -171,6 +194,14 @@ describe('managed elements', () => {
             type: 'weak',
           },
         ])
+      })
+
+      it('should not generate weak references when there are no installed package references', async () => {
+        const refs = await managedElementsHandler.findWeakReferences([
+          instance,
+          instanceFromInstalledPackage,
+        ])
+        expect(refs).toBeEmpty()
       })
     })
   })

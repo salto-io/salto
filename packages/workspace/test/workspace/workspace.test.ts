@@ -2556,10 +2556,16 @@ describe('workspace', () => {
       salesforce.text = file("static2.nacl")
       }
     `
+    const thirdInstance = `
+      salesforce.lead someName3 {
+      salesforce.text = file("static2.nacl")
+      }
+    `
     const naclFileStore = mockDirStore(undefined, undefined, {
       'firstFile.nacl': firstTypeFile,
       'someName1.nacl': firstInstance,
       'someName2.nacl': secondInstance,
+      'someName3.nacl': thirdInstance,
     })
     beforeEach(async () => {
       const firstStaticFile = new StaticFile({
@@ -2588,6 +2594,20 @@ describe('workspace', () => {
         },
       })
     })
+    describe('multiple pointers to single static file', () => {
+      it('should not delete static file if there is an element that still points to it', async () => {
+        const changes: DetailedChange[] = [
+          {
+            id: new ElemID('salesforce', 'lead', 'instance', 'someName1', 'salesforce', 'text'),
+            action: 'remove',
+            data: { before: 'file("static2.nacl")' },
+          },
+        ]
+        await workspace.updateNaclFiles(changes)
+        expect(workspace.getStaticFile({ filepath: 'static2.nacl', encoding: 'ascii' })).toBeDefined()
+      })
+    })
+
     describe('getStaticFilePathsByElemIds', () => {
       it('get correct paths when providing a correct element id', async () => {
         const result = await workspace.getStaticFilePathsByElemIds([

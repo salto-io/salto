@@ -483,24 +483,7 @@ describe('Nacl Files Source', () => {
       await src.updateNaclFiles([changeAdd, changeDelete])
       expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
     })
-    it('should not delete static file if the file is still being used by another element', async () => {
-      const changeRemove = {
-        id: new ElemID('salesforce', 'new_elem2'),
-        action: 'remove',
-        data: { before: sfile },
-        path: ['new', 'file'],
-      } as DetailedChange
-      const changeModify = {
-        id: elemID,
-        action: 'modify',
-        data: { before: sfile, after: new StaticFile({ filepath, hash: 'XII' }) },
-        path: ['new', 'file'],
-      } as DetailedChange
-      await src.updateNaclFiles([changeRemove, changeModify])
-      expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
-    })
   })
-
   describe('init with parsed files', () => {
     it('should return elements from given parsed files', async () => {
       const filename = 'mytest.nacl'

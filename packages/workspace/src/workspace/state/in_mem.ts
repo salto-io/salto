@@ -84,6 +84,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
 
   const deleteRemovedStaticFiles = async (elemChanges: DetailedChange[]): Promise<void> => {
     const { staticFilesSource } = await stateData()
+    // SALTO-5898 We don't pass a static file index here, which could wrongly require deleting static files whose one element deleted the static file
     const files = getDanglingStaticFiles(elemChanges)
     await Promise.all(files.map(file => staticFilesSource.delete(file)))
   }

@@ -583,10 +583,13 @@ const logNaclFileUpdateErrorContext = (
   log.debug('data after:\n%s', naclDataAfter)
 }
 
-// Returns a list of all static files that existed in the changes 'before' and doesn't exist in the 'after'
-export const getDanglingStaticFiles = (fileChanges: DetailedChange[]): StaticFile[] => {
-  // Using filepath is currently enough because all implementations of static files have unique file paths
-  // The only exception is 'buildHistoryStateStaticFilesSource' but it doesn't support deletion at the moment
+export const getDanglingStaticFiles = (
+  fileChanges: DetailedChange[],
+  staticFileIndex?: RemoteMap<string[]>,
+): StaticFile[] => {
+  // Returns a list of all static files that existed in the changes 'before' and doesn't exist in the 'after'
+  // If staticFileIndex is defined, it also checks whether there are any other elements that still point to
+  //  the specific file
   const afterFilePaths = new Set<string>(
     fileChanges
       .filter(isAdditionOrModificationChange)
@@ -598,6 +601,7 @@ export const getDanglingStaticFiles = (fileChanges: DetailedChange[]): StaticFil
     .filter(isRemovalOrModificationChange)
     .map(change => change.data.before)
     .flatMap(getNestedStaticFiles)
+    .filter(file => !staticFileIndex?.has(file.filepath))
     .filter(file => !afterFilePaths.has(file.filepath))
 }
 
@@ -848,7 +852,7 @@ const buildNaclFilesSource = (
       const { staticFilesIndex } = await getState()
 
       await Promise.all(
-        getDanglingStaticFiles(allChanges).map(async file => {
+        getDanglingStaticFiles(allChanges, staticFilesIndex).map(async file => {
           const filePath = await staticFilesIndex.get(file.filepath)
           if (!filePath) {
             await staticFilesSource.delete(file)

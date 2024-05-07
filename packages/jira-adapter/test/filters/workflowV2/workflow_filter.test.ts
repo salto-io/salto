@@ -505,6 +505,45 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     },
                     type: 'INITIAL',
                     conditions: {
+                      conditionGroups: [
+                        {
+                          operation: 'ALL',
+                          conditionGroups: [
+                            {
+                              operation: 'ALL',
+                              conditions: [
+                                {
+                                  parameters: {
+                                    groupIds: '1,2',
+                                  },
+                                },
+                              ],
+                            },
+                          ],
+                          conditions: [
+                            {
+                              parameters: {
+                                groupIds: '1,2',
+                              },
+                            },
+                            {
+                              parameters: {
+                                fromStatusId: '1',
+                              },
+                            },
+                            {
+                              parameters: undefined,
+                              ruleKey: 'ruleKey',
+                            },
+                            {
+                              parameters: {
+                                accountIds: 'quack quack',
+                                groupIds: '',
+                              },
+                            },
+                          ],
+                        },
+                      ],
                       conditions: [
                         {
                           parameters: {
@@ -590,6 +629,14 @@ It is strongly recommended to rename these transitions so they are unique in Jir
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].triggers[0].parameters).toEqual({
           enabledTriggers: ['firstTrigger', 'secondTrigger'],
         })
+        expect(
+          workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditionGroups[0].conditions[0]
+            .parameters,
+        ).toEqual({ groupIds: ['1', '2'] })
+        expect(
+          workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditionGroups[0].conditionGroups[0]
+            .conditions[0].parameters,
+        ).toEqual({ groupIds: ['1', '2'] })
       })
       it('should do nothing if parameters field not in the relevant list', async () => {
         await filter.onFetch(elements)
@@ -604,6 +651,10 @@ It is strongly recommended to rename these transitions so they are unique in Jir
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].triggers[1].parameters).toEqual({
           anotherParam: 'firstTrigger,secondTrigger',
         })
+        expect(
+          workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditionGroups[0].conditions[1]
+            .parameters,
+        ).toEqual({ fromStatusId: '1' })
       })
       it('should do nothing if parameters is undefined', async () => {
         await filter.onFetch(elements)
@@ -613,6 +664,10 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[2].parameters,
         ).toBeUndefined()
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[2].parameters).toBeUndefined()
+        expect(
+          workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditionGroups[0].conditions[2]
+            .parameters,
+        ).toBeUndefined()
       })
       it('should remove empty strings', async () => {
         await filter.onFetch(elements)
@@ -623,6 +678,10 @@ It is strongly recommended to rename these transitions so they are unique in Jir
         ).toBeUndefined()
         expect(
           workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[3].parameters.fieldsRequired,
+        ).toBeUndefined()
+        expect(
+          workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditionGroups[0].conditions[3]
+            .parameters.groupIds,
         ).toBeUndefined()
       })
     })
@@ -821,10 +880,19 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           parameters: { refType: transitionParametersType },
         },
       })
+      const tempConditionGroupConfigurationType = new ObjectType({
+        elemID: new ElemID(JIRA, 'ConditionGroupConfiguration'),
+        fields: {
+          conditions: { refType: new ListType(ruleConfigurationType) },
+        },
+      })
       conditionGroupConfigurationType = new ObjectType({
         elemID: new ElemID(JIRA, 'ConditionGroupConfiguration'),
         fields: {
           conditions: { refType: new ListType(ruleConfigurationType) },
+          conditionGroups: {
+            refType: new ListType(tempConditionGroupConfigurationType),
+          },
         },
       })
       transitionType = new ObjectType({
@@ -1119,6 +1187,34 @@ It is strongly recommended to rename these transitions so they are unique in Jir
         describe('transition parameters', () => {
           beforeEach(() => {
             const conditions = {
+              conditionGroups: [
+                {
+                  conditions: [
+                    {
+                      parameters: {
+                        groupIds: [
+                          new ReferenceExpression(group1.elemID, group1),
+                          new ReferenceExpression(group2.elemID, group2),
+                        ],
+                      },
+                    },
+                    {
+                      parameters: {
+                        fromStatusId: new ReferenceExpression(status1.elemID, status1),
+                      },
+                    },
+                    {
+                      parameters: undefined,
+                      ruleKey: 'ruleKey',
+                    },
+                    {
+                      parameters: {
+                        groupIds: [],
+                      },
+                    },
+                  ],
+                },
+              ],
               conditions: [
                 {
                   parameters: {
@@ -1151,10 +1247,20 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[0].parameters).toEqual({
               groupIds: '1,2',
             })
+            expect(
+              workflowInstance.value.workflows[0].transitions[1].conditions.conditionGroups[0].conditions[0].parameters,
+            ).toEqual({
+              groupIds: '1,2',
+            })
           })
           it('should do nothing if parameters field not in the relevant list', async () => {
             await filter.preDeploy([toChange({ after: workflowInstance })])
             expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[1].parameters).toEqual({
+              fromStatusId: '1',
+            })
+            expect(
+              workflowInstance.value.workflows[0].transitions[1].conditions.conditionGroups[0].conditions[1].parameters,
+            ).toEqual({
               fromStatusId: '1',
             })
           })
@@ -1163,10 +1269,18 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             expect(
               workflowInstance.value.workflows[0].transitions[1].conditions.conditions[2].parameters,
             ).toBeUndefined()
+            expect(
+              workflowInstance.value.workflows[0].transitions[1].conditions.conditionGroups[0].conditions[2].parameters,
+            ).toBeUndefined()
           })
           it('should convert parameters to empty string if it is an empty array', async () => {
             await filter.preDeploy([toChange({ after: workflowInstance })])
             expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[3].parameters).toEqual({
+              groupIds: '',
+            })
+            expect(
+              workflowInstance.value.workflows[0].transitions[1].conditions.conditionGroups[0].conditions[3].parameters,
+            ).toEqual({
               groupIds: '',
             })
           })

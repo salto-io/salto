@@ -341,12 +341,12 @@ describe('issue layouts validator', () => {
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })
-  it('should return error the project has no issueTypeScheme', async () => {
+  it('should return error if the project has no issueTypeScheme', async () => {
     delete projectInstance1.value.issueTypeScheme
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })
-  it('should return error the project has no issueTypeScreenScheme', async () => {
+  it('should return error if the project has no issueTypeScreenScheme', async () => {
     delete projectInstance1.value.issueTypeScreenScheme
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)

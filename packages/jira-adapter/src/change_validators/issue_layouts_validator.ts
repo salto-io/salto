@@ -28,10 +28,13 @@ import {
   isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { ISSUE_LAYOUT_TYPE } from '../constants'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
 import { isRelevantMapping } from '../filters/layouts/issue_layout'
+
+const log = logger(module)
 
 type issueTypeMappingStruct = {
   issueTypeId: string | ReferenceExpression
@@ -41,8 +44,8 @@ type issueTypeMappingStruct = {
 const parentElemID = (instance: InstanceElement): ElemID | undefined =>
   instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID
 
-// Filters and deletes from the issueTypeMapping the issue layouts that are not in the issueTypeScheme of the project
-const isIssueTypeInIssueTypeScheme = (
+// Check if issueType in the issueTypeScheme of the project or default
+const isIssueTypeDefaultOrInIssueTypeScheme = (
   issueTypeId: ReferenceExpression | string,
   projectIssueTypesFullName: string[],
 ): boolean =>
@@ -50,6 +53,7 @@ const isIssueTypeInIssueTypeScheme = (
     ? projectIssueTypesFullName?.includes(issueTypeId?.elemID.getFullName())
     : issueTypeId === 'default'
 
+// Do not filter issueLayouts that their parentElemID is undefined because the code after use them to push error
 const getIssueLayoutsListByProject = (changes: ReadonlyArray<Change>): InstanceElement[][] =>
   Object.values(
     _.groupBy(
@@ -72,8 +76,9 @@ const getProjectIssueLayoutsScreensName = async (
     project.value.issueTypeScreenScheme === undefined ||
     !isReferenceExpression(project.value.issueTypeScreenScheme) ||
     !isReferenceExpression(project.value.issueTypeScheme)
-  )
+  ) {
     return []
+  }
   const projectIssueTypesFullName = (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds
     ?.filter(isReferenceExpression)
     ?.map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
@@ -82,30 +87,30 @@ const getProjectIssueLayoutsScreensName = async (
     (await Promise.all(
       (await elementsSource.get(project.value.issueTypeScreenScheme.elemID))?.value.issueTypeMappings ?? [],
     )) as issueTypeMappingStruct[]
-  ).filter(issueTypeScreenScheme =>
-    isIssueTypeInIssueTypeScheme(issueTypeScreenScheme.issueTypeId, projectIssueTypesFullName),
+  ).filter(issueTypeMappingsElement =>
+    isIssueTypeDefaultOrInIssueTypeScheme(issueTypeMappingsElement.issueTypeId, projectIssueTypesFullName),
   )
 
   return (
     await Promise.all(
       relevantIssueTypeMappings
-        .filter(issueTypeScreenScheme =>
+        .filter(issueTypeMappingsElement =>
           isRelevantMapping(
-            issueTypeScreenScheme.issueTypeId,
+            issueTypeMappingsElement.issueTypeId,
             relevantIssueTypeMappings.length,
             projectIssueTypesFullName.length,
           ),
         )
-        .filter(issueTypeMapping => isReferenceExpression(issueTypeMapping.screenSchemeId))
-        .map(issueTypeMapping => elementsSource.get(issueTypeMapping.screenSchemeId.elemID)),
+        .filter(issueTypeMappingsElement => isReferenceExpression(issueTypeMappingsElement.screenSchemeId))
+        .map(async issueTypeMappingsElement => elementsSource.get(issueTypeMappingsElement.screenSchemeId.elemID)),
     )
   )
     .filter(isInstanceElement)
     .filter(
-      (screenScheme: InstanceElement) =>
+      screenScheme =>
         screenScheme.value.screens?.default !== undefined || screenScheme.value.screens?.view !== undefined,
     )
-    .flatMap((screenScheme: InstanceElement) => screenScheme.value.screens.view ?? screenScheme.value.screens.default)
+    .flatMap(screenScheme => screenScheme.value.screens.view ?? screenScheme.value.screens.default)
     .filter(isReferenceExpression)
     .map((screen: ReferenceExpression) => screen.elemID.getFullName())
 }
@@ -113,37 +118,37 @@ const getProjectIssueLayoutsScreensName = async (
 // this change validator ensures the correctness of issue layout configurations within each project,
 // by validating that each issue layout is linked to a valid screen according to his specific project
 // we also check that the issue layout is linked to a relevant project
-
 export const issueLayoutsValidator: (client: JiraClient, config: JiraConfig) => ChangeValidator =
   (client, config) => async (changes, elementsSource) => {
     const errors: ChangeError[] = []
     if (client.isDataCenter || !config.fetch.enableIssueLayouts || elementsSource === undefined) {
+      log.info('Issue Layouts validation is disabled')
       return errors
     }
 
-    const issueLayoutsListByProject = getIssueLayoutsListByProject(changes)
     await Promise.all(
-      issueLayoutsListByProject.map(async instances => {
+      getIssueLayoutsListByProject(changes).map(async issueLayoutsByProject => {
         // I use the first issueLayout of the sub-list of the issueLayouts to get the projectId of the project that this issueLayouts linked to
         // and I need to do it just for the first issueLayout because all the issueLayouts in this sub-list are linked to the same project
-        const issueLayoutsScreens = await getProjectIssueLayoutsScreensName(elementsSource, parentElemID(instances[0]))
-
-        await Promise.all(
-          instances
-            .filter(
-              issueLayoutInstance =>
-                !isReferenceExpression(issueLayoutInstance.value.extraDefinerId) ||
-                !issueLayoutsScreens.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName()),
-            )
-            .map(async issueLayoutInstance => {
-              errors.push({
-                elemID: issueLayoutInstance.elemID,
-                severity: 'Error',
-                message: 'Invalid screen in Issue Layout',
-                detailedMessage: 'This issue layout references an invalid or non-existing screen.',
-              })
-            }),
+        const issueLayoutsScreens = await getProjectIssueLayoutsScreensName(
+          elementsSource,
+          parentElemID(issueLayoutsByProject[0]),
         )
+
+        issueLayoutsByProject
+          .filter(
+            issueLayoutInstance =>
+              !isReferenceExpression(issueLayoutInstance.value.extraDefinerId) ||
+              !issueLayoutsScreens.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName()),
+          )
+          .map(async issueLayoutInstance => {
+            errors.push({
+              elemID: issueLayoutInstance.elemID,
+              severity: 'Error',
+              message: 'Invalid screen in Issue Layout',
+              detailedMessage: 'This issue layout references an invalid or non-existing screen.',
+            })
+          })
       }),
     )
 

@@ -26,6 +26,18 @@ The adapter also supports OAuth authentication. To authenticate using OAuth, use
    1. `Admin SDK API`
    2. `Groups Settings API`
    3. `Cloud Identity API`
-4. Run the `salto account add ...` command and follow the instructions to authenticate using OAuth. You will need to provide the `clientId` and `clientSecret`, which you can obtain from the same page you create the Oauth and set the `redirectUri`, you can go to your google [console](https://console.cloud.google.com/) => `APIs & Services` => `Credentials` .
+4. Adjust your reauthentication policy [here](https://admin.google.com/ac/security/reauth/admin-tools) to not require reauthentication.
+You can do it in 2 ways:
+   1. Check the 'Never require authentication' checkbox.
+   2. Never require authentication for a specific app:
+      1. Under 'Require reauthentication' section, check the 'Exempt Trusted apps' checkbox and click OVERRIDE.
+      2. Go to the [Apps Access Control](https://admin.google.com/ac/owl/list?tab=configuredApps) page.
+      3. Click 'Add app' -> 'OAuth App Name Or Client ID'.
+      4. Paste the client ID of the OAuth app you created in the first step and click 'search'.
+      5. Select the app and check the relevant OAuth Client ID checkbox.
+      6. Continue with the default scope.
+      7. Under 'Access to Google Data' check the 'Trusted' checkbox and continue.
+      8. View your configuration and click 'Finish'.
+5. Run the `salto account add ...` command and follow the instructions to authenticate using OAuth. You will need to provide the `clientId` and `clientSecret`, which you can obtain from the same page you create the Oauth and set the `redirectUri`, you can go to your google [console](https://console.cloud.google.com/) => `APIs & Services` => `Credentials` .
 
 Please notice - in order to log in with oauth to google workspace, we are using the refresh token. The refresh token only returns in the first request, so if you are already connected to your google workspace in your browser, you can open a guest tab and repeat the login.

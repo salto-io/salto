@@ -46,6 +46,7 @@ import {
   PRIVATE_API_DEFINITIONS_CONFIG,
 } from '../config'
 import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
+import { brandThemeRemovalValidator } from './brand_theme_removal'
 
 const { createCheckDeploymentBasedOnConfigValidator, getDefaultChangeValidators, createChangeValidator } =
   deployment.changeValidators
@@ -78,6 +79,7 @@ export default ({ client, config }: { client: OktaClient; config: OktaConfig }):
     profileMappingRemoval: profileMappingRemovalValidator,
     brandRemoval: brandRemovalValidator,
     dynamicOSVersion: dynamicOSVersionFeatureValidator,
+    brandThemeRemoval: brandThemeRemovalValidator,
   }
 
   return createChangeValidator({

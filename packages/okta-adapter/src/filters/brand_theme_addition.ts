@@ -44,7 +44,6 @@ const deployBrandThemeAddition = async (
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const instance = getChangeData(change)
-  // eslint-disable-next-line no-underscore-dangle
   const brandId = getParents(instance)[0]?.id
   if (!_.isString(brandId)) {
     // Parent reference is already resolved

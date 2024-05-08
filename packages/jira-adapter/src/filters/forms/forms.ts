@@ -30,6 +30,7 @@ import {
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
@@ -41,7 +42,7 @@ import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../ut
 import { getLookUpName } from '../../reference_mapping'
 
 const { isDefined } = lowerDashValues
-
+const log = logger(module)
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
   const project = getParent(form)
@@ -109,12 +110,15 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
     const errors: SaltoError[] = []
+    const projectsWithOutForms: string[] = []
+    const projectsWithUntitledForms: Set<string> = new Set()
     const forms = (
       await Promise.all(
         jsmProjects.flatMap(async project => {
           const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
           const res = await client.get({ url })
           if (!isFormsResponse(res)) {
+            projectsWithOutForms.push(project.elemID.name)
             return undefined
           }
           return Promise.all(
@@ -122,11 +126,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
               const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
               const detailedRes = await client.get({ url: detailedUrl })
               if (!isDetailedFormsResponse(detailedRes.data)) {
-                const error = {
-                  message: `Unable to fetch form for project ${project.elemID.name} as it is missing a title.`,
-                  severity: 'Warning' as SeverityLevel,
-                }
-                errors.push(error)
+                projectsWithUntitledForms.add(project.elemID.name)
                 return undefined
               }
               const name = naclCase(`${project.value.key}_${formResponse.name}`)
@@ -156,6 +156,23 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
+    if (projectsWithOutForms.length > 0) {
+      const message = `Unable to fetch forms for the following projects: ${projectsWithOutForms.join(', ')}. This issue is likely due to insufficient permissions.`
+      log.debug(message)
+      errors.push({
+        message,
+        severity: 'Warning' as SeverityLevel,
+      })
+    }
+    const projectsWithUntitledFormsArr = Array.from(projectsWithUntitledForms)
+    if (projectsWithUntitledFormsArr.length > 0) {
+      const message = `Unable to fetch untitled forms for the following projects: ${projectsWithUntitledFormsArr.join(', ')}. Please provide a title for them or delete them.`
+      log.debug(message)
+      errors.push({
+        message,
+        severity: 'Warning' as SeverityLevel,
+      })
+    }
 
     return { errors }
   },

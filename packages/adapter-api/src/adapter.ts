@@ -205,6 +205,7 @@ export type ReferenceInfo = {
   source: ElemID
   target: ElemID
   type: ReferenceType
+  exact?: boolean
 }
 
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>

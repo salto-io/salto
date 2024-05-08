@@ -619,6 +619,7 @@ describe('updateReferenceIndexes', () => {
                   source: inst.elemID.createNestedID('val2'),
                   target: new ElemID('test', 'type', 'instance', 'someInstance2'),
                   type: 'weak',
+                  exact: true,
                 },
                 {
                   source: inst.elemID.createNestedID('val3'),
@@ -635,7 +636,7 @@ describe('updateReferenceIndexes', () => {
           key: 'test.object.instance.instance',
           value: new collections.treeMap.TreeMap([
             ['val1', [{ id: new ElemID('test', 'type', 'instance', 'someInstance1'), type: 'strong' }]],
-            ['val2', [{ id: new ElemID('test', 'type', 'instance', 'someInstance2'), type: 'weak' }]],
+            ['val2', [{ id: new ElemID('test', 'type', 'instance', 'someInstance2'), type: 'weak', exact: true }]],
             ['val3', [{ id: new ElemID('test', 'type', 'instance', 'someInstance3'), type: 'weak' }]],
           ]),
         },

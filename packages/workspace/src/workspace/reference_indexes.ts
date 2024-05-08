@@ -50,7 +50,11 @@ type ChangeReferences = {
   currentAndNew: ReferenceInfo[]
 }
 
-export type ReferenceTargetIndexValue = collections.treeMap.TreeMap<{ id: ElemID; type: ReferenceType }>
+export type ReferenceTargetIndexValue = collections.treeMap.TreeMap<{
+  id: ElemID
+  type: ReferenceType
+  exact?: boolean
+}>
 
 type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 
@@ -131,7 +135,7 @@ const createReferenceTree = (references: ReferenceInfo[], rootFields = false): R
         rootFields && ref.source.idType === 'field'
           ? ''
           : ref.source.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-      return [key, [{ id: ref.target, type: ref.type }]]
+      return [key, [{ id: ref.target, type: ref.type, exact: ref.exact }]]
     }),
     ElemID.NAMESPACE_SEPARATOR,
   )

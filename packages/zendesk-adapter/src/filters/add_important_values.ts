@@ -155,7 +155,7 @@ const importantValuesMap: Record<string, ImportantValues> = {
     {
       value: 'content',
       highlighted: true,
-      indexed: true,
+      indexed: false,
     },
     {
       value: 'locale_id',

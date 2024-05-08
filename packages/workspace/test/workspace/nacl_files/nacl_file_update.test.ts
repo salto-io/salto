@@ -47,7 +47,18 @@ const mockType = new ObjectType({
       ),
     },
   },
+  annotations: {
+    anno1: 'Annotation 1',
+    anno2: 'Annotation 2',
+    anno3: 'Annotation 3',
+  },
   path: ['this', 'is', 'happening'],
+})
+
+const mockInstance = new InstanceElement('mock', mockType, {
+  file: 'data.nacl',
+  numArray: [1, 2, 3],
+  strArray: ['a', 'b', 'c'],
 })
 
 describe('getNestedStaticFiles', () => {
@@ -90,24 +101,248 @@ describe('getNestedStaticFiles', () => {
 
 describe('getChangeLocations', () => {
   let result: DetailedChangeWithSource[]
+
   describe('with addition of top level element', () => {
     it('should add the element at the end of the file', () => {
       const change: DetailedChange = { ...toChange({ after: mockType }), id: mockType.elemID }
       result = getChangeLocations(change, new Map())
-      expect(result).toHaveLength(1)
-      expect(result[0].location.start).toEqual({ col: 1, line: Infinity, byte: Infinity })
-      expect(result[0].location.end).toEqual({ col: 1, line: Infinity, byte: Infinity })
-      expect(result[0].location.filename).toEqual('this/is/happening.nacl')
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'this/is/happening.nacl',
+            start: { col: 1, line: Infinity, byte: Infinity },
+            end: { col: 1, line: Infinity, byte: Infinity },
+          },
+        },
+      ])
     })
+
     it('should use the default filename when no path is provided', () => {
       const noPath = mockType.clone()
       noPath.path = undefined
       const change: DetailedChange = { ...toChange({ after: noPath }), id: noPath.elemID }
       result = getChangeLocations(change, new Map())
-      expect(result).toHaveLength(1)
-      expect(result[0].location.start).toEqual({ col: 1, line: Infinity, byte: Infinity })
-      expect(result[0].location.end).toEqual({ col: 1, line: Infinity, byte: Infinity })
-      expect(result[0].location.filename).toEqual('unsorted.nacl')
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'unsorted.nacl',
+            start: { col: 1, line: Infinity, byte: Infinity },
+            end: { col: 1, line: Infinity, byte: Infinity },
+          },
+        },
+      ])
+    })
+  })
+
+  describe('with addition of field', () => {
+    it('should add the field before a following field', () => {
+      const change: DetailedChange = {
+        ...toChange({ after: mockType.fields.numArray }),
+        id: mockType.fields.numArray.elemID,
+        baseChange: toChange({ after: mockType }),
+        path: ['file'],
+      }
+      const sourceMap = new Map([
+        [
+          mockType.fields.obj.elemID.getFullName(),
+          [
+            {
+              filename: 'file.nacl',
+              start: { line: 2, col: 5, byte: 12 },
+              end: { line: 5, col: 5, byte: 26 },
+            },
+          ],
+        ],
+      ])
+      result = getChangeLocations(change, sourceMap)
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'file.nacl',
+            start: { line: 2, col: 5, byte: 12 },
+            end: { line: 2, col: 5, byte: 12 },
+          },
+          indexInParent: 1,
+        },
+      ])
+    })
+
+    it('should add the field at the end of the parent when no following fields are found', () => {
+      const change: DetailedChange = {
+        ...toChange({ after: mockType.fields.numArray }),
+        id: mockType.fields.numArray.elemID,
+        baseChange: toChange({ after: mockType }),
+        path: ['file'],
+      }
+      const sourceMap = new Map([
+        [
+          mockType.elemID.getFullName(),
+          [
+            {
+              filename: 'file.nacl',
+              start: { line: 1, col: 1, byte: 0 },
+              end: { line: 10, col: 2, byte: 126 },
+            },
+          ],
+        ],
+        [
+          mockType.fields.file.elemID.getFullName(),
+          [
+            {
+              filename: 'file.nacl',
+              start: { line: 2, col: 5, byte: 12 },
+              end: { line: 5, col: 5, byte: 26 },
+            },
+          ],
+        ],
+      ])
+      result = getChangeLocations(change, sourceMap)
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'file.nacl',
+            start: { line: 10, col: 1, byte: 125 },
+            end: { line: 10, col: 1, byte: 125 },
+          },
+          requiresIndent: true,
+        },
+      ])
+    })
+
+    it("should add the field to the end of the file when the parent isn't in the source map", () => {
+      const change: DetailedChange = {
+        ...toChange({ after: mockType.fields.numArray }),
+        id: mockType.fields.numArray.elemID,
+        baseChange: toChange({ after: mockType }),
+        path: ['file'],
+      }
+      result = getChangeLocations(change, new Map())
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'file.nacl',
+            start: { line: Infinity, col: 1, byte: Infinity },
+            end: { line: Infinity, col: 1, byte: Infinity },
+          },
+        },
+      ])
+    })
+
+    it('should add the field to the end of the parent when the base change is undefined', () => {
+      const change: DetailedChange = {
+        ...toChange({ after: mockType.fields.numArray }),
+        id: mockType.fields.numArray.elemID,
+        path: ['file'],
+      }
+      const sourceMap = new Map([
+        [
+          mockType.elemID.getFullName(),
+          [
+            {
+              filename: 'file.nacl',
+              start: { line: 1, col: 1, byte: 0 },
+              end: { line: 10, col: 2, byte: 126 },
+            },
+          ],
+        ],
+        [
+          mockType.fields.obj.elemID.getFullName(),
+          [
+            {
+              filename: 'file.nacl',
+              start: { line: 2, col: 5, byte: 12 },
+              end: { line: 5, col: 5, byte: 26 },
+            },
+          ],
+        ],
+      ])
+      result = getChangeLocations(change, sourceMap)
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'file.nacl',
+            start: { line: 10, col: 1, byte: 125 },
+            end: { line: 10, col: 1, byte: 125 },
+          },
+          requiresIndent: true,
+        },
+      ])
+    })
+  })
+
+  describe('with addition of annotation', () => {
+    it('should add the annotation before a following annotation', () => {
+      const change: DetailedChange = {
+        ...toChange({ after: mockType.annotations.anno2 }),
+        id: mockType.elemID.createNestedID('attr', 'anno2'),
+        baseChange: toChange({ after: mockType }),
+        path: ['file'],
+      }
+      const sourceMap = new Map([
+        [
+          mockType.elemID.createNestedID('attr', 'anno3').getFullName(),
+          [
+            {
+              filename: 'file.nacl',
+              start: { line: 2, col: 5, byte: 12 },
+              end: { line: 5, col: 5, byte: 26 },
+            },
+          ],
+        ],
+      ])
+      result = getChangeLocations(change, sourceMap)
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'file.nacl',
+            start: { line: 2, col: 5, byte: 12 },
+            end: { line: 2, col: 5, byte: 12 },
+          },
+          indexInParent: 1,
+        },
+      ])
+    })
+  })
+
+  describe('with addition of value', () => {
+    it('should add the value before a following value', () => {
+      const change: DetailedChange = {
+        ...toChange({ after: mockInstance.value.numArray }),
+        id: mockInstance.elemID.createNestedID('numArray'),
+        baseChange: toChange({ after: mockInstance }),
+        path: ['file'],
+      }
+      const sourceMap = new Map([
+        [
+          mockInstance.elemID.createNestedID('strArray').getFullName(),
+          [
+            {
+              filename: 'file.nacl',
+              start: { line: 2, col: 5, byte: 12 },
+              end: { line: 5, col: 5, byte: 26 },
+            },
+          ],
+        ],
+      ])
+      result = getChangeLocations(change, sourceMap)
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'file.nacl',
+            start: { line: 2, col: 5, byte: 12 },
+            end: { line: 2, col: 5, byte: 12 },
+          },
+          indexInParent: 1,
+        },
+      ])
     })
   })
 })
@@ -124,6 +359,9 @@ describe('updateNaclFileData', () => {
   }
   "List<salto.obj>" obj {
   }
+  anno1 = "Annotation 1"
+  anno2 = "Annotation 2"
+  anno3 = "Annotation 3"
 }
 `
 
@@ -134,8 +372,12 @@ describe('updateNaclFileData', () => {
   }
   "List<string>" strArray {
   }
+  anno1 = "Annotation 1"
+  anno2 = "Annotation 2"
+  anno3 = "Annotation 3"
 }
 `
+
   const mockTypeMissingMiddleNacl = `type salto.mock {
   string file {
   }
@@ -143,6 +385,20 @@ describe('updateNaclFileData', () => {
   }
   "List<salto.obj>" obj {
   }
+  anno1 = "Annotation 1"
+  anno2 = "Annotation 2"
+  anno3 = "Annotation 3"
+}
+`
+
+  const mockTypeMissingMultipleMiddleNacl = `type salto.mock {
+  string file {
+  }
+  "List<salto.obj>" obj {
+  }
+  anno1 = "Annotation 1"
+  anno2 = "Annotation 2"
+  anno3 = "Annotation 3"
 }
 `
 
@@ -199,6 +455,7 @@ describe('updateNaclFileData', () => {
             start: { col: 1, line: 7, byte: 102 },
             end: { col: 1, line: 7, byte: 102 },
           },
+          requiresIndent: true,
         },
       ]
     })
@@ -217,8 +474,8 @@ describe('updateNaclFileData', () => {
           id: mockType.fields.numArray.elemID,
           location: {
             filename: 'file',
-            start: { col: 1, line: 3, byte: 38 },
-            end: { col: 1, line: 3, byte: 38 },
+            start: { col: 3, line: 3, byte: 40 },
+            end: { col: 3, line: 3, byte: 40 },
           },
         },
       ]
@@ -226,6 +483,38 @@ describe('updateNaclFileData', () => {
 
     it('should add the fields to the element', async () => {
       const result = await updateNaclFileData(mockTypeMissingMiddleNacl, changes, {})
+      expect(result).toEqual(mockTypeNacl)
+    })
+  })
+
+  describe('when data contains an element to which multiple fields are added in the middle', () => {
+    beforeAll(() => {
+      changes = [
+        {
+          ...toChange({ after: mockType.fields.strArray }),
+          id: mockType.fields.numArray.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 3, line: 3, byte: 40 },
+            end: { col: 3, line: 3, byte: 40 },
+          },
+          indexInParent: 3,
+        },
+        {
+          ...toChange({ after: mockType.fields.numArray }),
+          id: mockType.fields.numArray.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 3, line: 3, byte: 40 },
+            end: { col: 3, line: 3, byte: 40 },
+          },
+          indexInParent: 2,
+        },
+      ]
+    })
+
+    it('should add the fields to the element in order', async () => {
+      const result = await updateNaclFileData(mockTypeMissingMultipleMiddleNacl, changes, {})
       expect(result).toEqual(mockTypeNacl)
     })
   })

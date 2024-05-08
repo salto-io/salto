@@ -54,7 +54,7 @@ import {
   ACCESS_POLICY_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   APPLICATION_TYPE_NAME,
-  AUTHENTICATOR_TYPE_NAME,
+  AUTHENTICATOR_TYPE_NAME, BRAND_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
   INACTIVE_STATUS,
@@ -252,6 +252,14 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
     parent: app,
     name: groupInstance.elemID.name,
   })
+  const brand = createInstance({
+    typeName: BRAND_TYPE_NAME,
+    types,
+    valuesOverride: {
+      removePoweredByOkta: true,
+      agreeToCustomPrivacyPolicy: false,
+    },
+  })
   return [
     groupInstance,
     anotherGroupInstance,
@@ -263,6 +271,7 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
     profileEnrollmentRule,
     app,
     appGroupAssignment,
+    brand,
   ]
 }
 
@@ -485,6 +494,7 @@ describe('Okta adapter E2E', () => {
         USER_SCHEMA_TYPE_NAME,
         USERTYPE_TYPE_NAME,
         APPLICATION_TYPE_NAME,
+        BRAND_TYPE_NAME,
       ])
 
       const createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)

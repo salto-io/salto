@@ -1,3 +1,4 @@
+
 version: 2.1
 
 orbs:
@@ -406,6 +407,7 @@ workflows:
                 - stripe-adapter
                 - zendesk-adapter
                 - zuora-billing-adapter
+                - google-workspace-adapter
               should_install_java: 
                 - false
 

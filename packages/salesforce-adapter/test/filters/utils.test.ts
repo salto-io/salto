@@ -644,7 +644,7 @@ describe('filter utils', () => {
   })
   describe('isInstanceOfTypeSync and isInstanceOfTypeChangeSync', () => {
     let instance: InstanceElement
-    let unresolvedInstance: InstanceElement
+    let instanceWithUnresolvedType: InstanceElement
     beforeEach(() => {
       instance = createInstanceElement(
         {
@@ -653,7 +653,7 @@ describe('filter utils', () => {
         },
         mockTypes.Profile,
       )
-      unresolvedInstance = new InstanceElement(
+      instanceWithUnresolvedType = new InstanceElement(
         'UnresolvedTestInstance',
         new TypeReference(mockTypes.Profile.elemID),
       )
@@ -670,14 +670,18 @@ describe('filter utils', () => {
         )
       })
       it('should return true when the unresolved instance type is one of the provided types', () => {
-        expect(unresolvedInstance).toSatisfy(isInstanceOfTypeSync('Profile'))
-        expect(unresolvedInstance).toSatisfy(
+        expect(instanceWithUnresolvedType).toSatisfy(
+          isInstanceOfTypeSync('Profile'),
+        )
+        expect(instanceWithUnresolvedType).toSatisfy(
           isInstanceOfTypeSync('Profile', 'Flow'),
         )
       })
       it('should return false when the unresolved instance type is not one of the provided types', () => {
-        expect(unresolvedInstance).not.toSatisfy(isInstanceOfTypeSync('Flow'))
-        expect(unresolvedInstance).not.toSatisfy(
+        expect(instanceWithUnresolvedType).not.toSatisfy(
+          isInstanceOfTypeSync('Flow'),
+        )
+        expect(instanceWithUnresolvedType).not.toSatisfy(
           isInstanceOfTypeSync('Flow', 'ApexClass'),
         )
       })

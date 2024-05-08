@@ -17,33 +17,30 @@
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReferenceInfo } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
 import { WeakReferencesHandler } from '../types'
-import {
-  apiNameSync,
-  getNamespaceSync,
-  isInstanceOfTypeSync,
-  isStandardObjectSync,
-} from '../filters/utils'
-import { INSTALLED_PACKAGE_METADATA } from '../constants'
+import { getNamespaceSync, isStandardObjectSync } from '../filters/utils'
+import { INSTALLED_PACKAGE_METADATA, SALESFORCE } from '../constants'
 
 const log = logger(module)
 const { isDefined } = values
 
 const installedPackageReference = (
   element: Element,
-  installedPackageNamespaceToRef: Record<string, ElemID>,
 ): ReferenceInfo | undefined => {
   const namespace = getNamespaceSync(element)
   if (namespace === undefined) {
     return undefined
   }
-  const installedPackageElemID = installedPackageNamespaceToRef[namespace]
-  if (installedPackageElemID === undefined) {
-    return undefined
-  }
+
   return {
     source: element.elemID,
-    target: installedPackageElemID,
+    target: ElemID.fromFullNameParts([
+      SALESFORCE,
+      INSTALLED_PACKAGE_METADATA,
+      'instance',
+      naclCase(namespace),
+    ]),
     type: 'weak',
   }
 }
@@ -51,34 +48,13 @@ const installedPackageReference = (
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
-  const installedPackageNamespaceToRef: Record<string, ElemID> =
-    Object.fromEntries(
-      elements
-        .filter(isInstanceOfTypeSync(INSTALLED_PACKAGE_METADATA))
-        .map((packageMetadata: Element): [string | undefined, ElemID] => [
-          apiNameSync(packageMetadata),
-          packageMetadata.elemID,
-        ])
-        .filter(
-          (keyVal: [string | undefined, ElemID]): keyVal is [string, ElemID] =>
-            keyVal[0] !== undefined,
-        ),
-    )
-  if (Object.keys(installedPackageNamespaceToRef).length === 0) {
-    return []
-  }
-
   const topLevelReferences = elements
-    .map((element) =>
-      installedPackageReference(element, installedPackageNamespaceToRef),
-    )
+    .map((element) => installedPackageReference(element))
     .filter(isDefined)
   const fieldReferences = elements
     .filter(isStandardObjectSync)
     .flatMap((standardObject) => Object.values(standardObject.fields))
-    .map((field) =>
-      installedPackageReference(field, installedPackageNamespaceToRef),
-    )
+    .map((field) => installedPackageReference(field))
     .filter(isDefined)
   const references = topLevelReferences.concat(fieldReferences)
 

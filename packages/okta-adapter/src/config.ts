@@ -505,6 +505,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/universaldirectory#app/{_parent.0.id}',
     },
     deployRequests: {
+      // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator for removals
       remove: {
         url: '',
         method: 'delete',

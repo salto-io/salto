@@ -26,63 +26,70 @@ import { appUserSchemaRemovalValidator } from '../../src/change_validators/app_u
 import { OKTA, APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 
 describe('appUserSchemaRemovalValidator', () => {
+  let appUserSchema: InstanceElement
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const appUserSchemaType = new ObjectType({ elemID: new ElemID(OKTA, APP_USER_SCHEMA_TYPE_NAME) })
 
   const app = new InstanceElement('app', appType, { name: 'A', default: false })
-  const appUserSchema1 = new InstanceElement(
+  const appUserSchemaInstance = new InstanceElement(
     'appUserSchema',
     appUserSchemaType,
     {
-      name: 'B',
+      name: 'A',
     },
     undefined,
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app, app)],
     },
   )
-  const appUserSchema2 = new InstanceElement(
-    'appUserSchema',
-    appUserSchemaType,
-    {
-      name: 'B',
-    },
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(app.elemID, app, app),
-        new ReferenceExpression(app.elemID, app, app),
-      ],
-    },
-  )
+
+  beforeEach(() => {
+    appUserSchema = appUserSchemaInstance.clone()
+  })
+
   it('should return an error when AppUserSchema is deleted without its parent Application', async () => {
-    const changeErrors = await appUserSchemaRemovalValidator([toChange({ before: appUserSchema1 })])
+    const changeErrors = await appUserSchemaRemovalValidator([toChange({ before: appUserSchema })])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([
       {
-        elemID: appUserSchema1.elemID,
+        elemID: appUserSchema.elemID,
         severity: 'Error',
         message: 'Cannot remove app user schema without its parent application',
-        detailedMessage: `In order to remove ${appUserSchema1.elemID.name} of type ${APP_USER_SCHEMA_TYPE_NAME}, the instance ${app.elemID.name} of type ${APPLICATION_TYPE_NAME} must be removed as well.`,
+        detailedMessage: `In order to remove this Application User Schema, the Application ${app.elemID.name} must be removed as well.`,
       },
     ])
   })
   it('should log an error when AppUserSchema with 2 parents is deleted', async () => {
+    appUserSchema.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(app.elemID, app, app))
     const logging = logger('okta-adapter/src/change_validators/app_user_schema_removal')
     const e = new Error(
-      `Expected ${appUserSchema2.elemID.getFullName()} to have exactly one parent, found ${appUserSchema2.annotations[CORE_ANNOTATIONS.PARENT].length}`,
+      `Expected ${appUserSchema.elemID.getFullName()} to have exactly one parent, found ${appUserSchema.annotations[CORE_ANNOTATIONS.PARENT].length}`,
     )
     const logErrorSpy = jest.spyOn(logging, 'error')
-    await appUserSchemaRemovalValidator([toChange({ before: appUserSchema2 })])
+    await appUserSchemaRemovalValidator([toChange({ before: appUserSchema })])
     expect(logErrorSpy).toHaveBeenCalledWith(
       'Could not run appUserSchemaAndApplicationValidator validator for instance %s: %s',
-      appUserSchema2.elemID.getFullName(),
-      e,
+      appUserSchema.elemID.getFullName(),
+      e.message,
+    )
+  })
+  it('should log an error when AppUserSchema with no parent is deleted', async () => {
+    appUserSchema.annotations[CORE_ANNOTATIONS.PARENT] = []
+    const logging = logger('okta-adapter/src/change_validators/app_user_schema_removal')
+    const e = new Error(
+      `Expected ${appUserSchema.elemID.getFullName()} to have exactly one parent, found ${appUserSchema.annotations[CORE_ANNOTATIONS.PARENT].length}`,
+    )
+    const logErrorSpy = jest.spyOn(logging, 'error')
+    await appUserSchemaRemovalValidator([toChange({ before: appUserSchema })])
+    expect(logErrorSpy).toHaveBeenCalledWith(
+      'Could not run appUserSchemaAndApplicationValidator validator for instance %s: %s',
+      appUserSchema.elemID.getFullName(),
+      e.message,
     )
   })
   it('should not return an error when AppUserSchema is deleted with its parent Application', async () => {
     const changeErrors = await appUserSchemaRemovalValidator([
-      toChange({ before: appUserSchema1 }),
+      toChange({ before: appUserSchema }),
       toChange({ before: app }),
     ])
     expect(changeErrors).toHaveLength(0)

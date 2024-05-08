@@ -21,7 +21,9 @@ import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 const log = logger(module)
 
 /**
- * When removing AppUserSchema, validate the parent Application gets removed as well
+ * When removing AppUserSchema, validate the parent Application gets removed as well.
+ * AppUserSchema cannot be removed via the API, but the client removes it automatically when the parent Application is removed.
+ * Therefore, we allow the removal of AppUserSchema only if the parent Application is removed as well.
  */
 export const appUserSchemaRemovalValidator: ChangeValidator = async changes => {
   const removalInstanceChanges = changes.filter(isInstanceChange).filter(isRemovalChange).map(getChangeData)
@@ -44,7 +46,7 @@ export const appUserSchemaRemovalValidator: ChangeValidator = async changes => {
         log.error(
           'Could not run appUserSchemaAndApplicationValidator validator for instance %s: %s',
           appUserSchema.elemID.getFullName(),
-          e,
+          e.message,
         )
         return false
       }
@@ -53,6 +55,6 @@ export const appUserSchemaRemovalValidator: ChangeValidator = async changes => {
       elemID: appUserSchema.elemID,
       severity: 'Error',
       message: 'Cannot remove app user schema without its parent application',
-      detailedMessage: `In order to remove ${appUserSchema.elemID.name} of type ${APP_USER_SCHEMA_TYPE_NAME}, the instance ${getParent(appUserSchema).elemID.name} of type ${APPLICATION_TYPE_NAME} must be removed as well.`,
+      detailedMessage: `In order to remove this Application User Schema, the Application ${getParent(appUserSchema).elemID.name} must be removed as well.`,
     }))
 }

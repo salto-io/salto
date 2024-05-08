@@ -27,7 +27,7 @@ const verifyApplicationIsDeleted = async (applicationId: string, client: OktaCli
     return (
       (
         await client.get({
-          url: `/api/v1/meta/schemas/apps/${applicationId}`,
+          url: `/api/v1/apps/${applicationId}`,
         })
       ).status === 404
     )
@@ -60,9 +60,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
       const appUserSchemaInstance = getChangeData(change)
-      const parentApplicationId = getParents(appUserSchemaInstance)[0].id
+      const parentApplicationId = getParents(appUserSchemaInstance)[0]?.id
       if (!_.isString(parentApplicationId) || !(await verifyApplicationIsDeleted(parentApplicationId, client))) {
-        throw new Error('Expected AppUserSchema to be deleted')
+        throw new Error('Expected the parent Application to be deleted')
       }
     })
 

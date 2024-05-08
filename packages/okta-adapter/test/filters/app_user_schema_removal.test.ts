@@ -28,6 +28,7 @@ describe('appUserSchemaRemovalFilter', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let client: OktaClient
   let filter: FilterType
+
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const appUserSchemaType = new ObjectType({ elemID: new ElemID(OKTA, APP_USER_SCHEMA_TYPE_NAME) })
 
@@ -58,11 +59,13 @@ describe('appUserSchemaRemovalFilter', () => {
   })
 
   describe('deploy', () => {
-    it('should successfully deploy removal of app user schema as a verification', async () => {
+    it('should successfully deploy removal of app user schema as a verification when application is not found in the service', async () => {
       mockConnection.get.mockRejectedValue(notFoundError)
       const changes = [toChange({ before: appUserSchemaInstance })]
       const result = await filter.deploy(changes)
       const { appliedChanges, errors } = result.deployResult
+
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/apps/1', undefined)
       expect(errors).toHaveLength(0)
       expect(appliedChanges).toHaveLength(1)
       expect(appliedChanges.map(change => getChangeData(change))[0]).toEqual(appUserSchemaInstance)
@@ -72,7 +75,10 @@ describe('appUserSchemaRemovalFilter', () => {
       const changes = [toChange({ before: appUserSchemaInstance })]
       const result = await filter.deploy(changes)
       const { appliedChanges, errors } = result.deployResult
+
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/apps/1', undefined)
       expect(errors).toHaveLength(1)
+      expect(errors[0].message).toEqual('Expected the parent Application to be deleted')
       expect(appliedChanges).toHaveLength(0)
     })
     it('should handle multiple changes', async () => {
@@ -81,7 +87,11 @@ describe('appUserSchemaRemovalFilter', () => {
       const changes = [toChange({ before: appUserSchemaInstance }), toChange({ before: appUserSchemaInstance })]
       const result = await filter.deploy(changes)
       const { appliedChanges, errors } = result.deployResult
+
+      expect(mockConnection.get).toHaveBeenCalledTimes(2)
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/apps/1', undefined)
       expect(errors).toHaveLength(1)
+      expect(errors[0].message).toEqual('Expected the parent Application to be deleted')
       expect(appliedChanges).toHaveLength(1)
     })
   })

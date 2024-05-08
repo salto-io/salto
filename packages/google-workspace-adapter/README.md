@@ -27,7 +27,7 @@ The adapter also supports OAuth authentication. To authenticate using OAuth, use
    2. `Groups Settings API`
    3. `Cloud Identity API`
 4. Adjust your reauthentication policy [here](https://admin.google.com/ac/security/reauth/admin-tools) to not require reauthentication.
-You can do it in 2 ways:
+   You can do it in 2 ways:
    1. Check the 'Never require authentication' checkbox.
    2. Never require authentication for a specific app:
       1. Under 'Require reauthentication' section, check the 'Exempt Trusted apps' checkbox and click OVERRIDE.

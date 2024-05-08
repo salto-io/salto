@@ -24,35 +24,37 @@ import {
   combineCustomReferenceGetters,
   combineElementFixers,
 } from '@salto-io/adapter-components'
-import { profilesHandler } from './profiles'
 import {
+  CustomReferencesHandlers,
+  CustomReferencesSettings,
   CUSTOM_REFS_CONFIG,
   FIX_ELEMENTS_CONFIG,
   SalesforceConfig,
   WeakReferencesHandler,
 } from '../types'
+import { profilesHandler } from './profiles'
+import { managedElementsHandler } from './managed_elements'
 
-type Handlers = 'profiles'
-
-const handlers: Record<Handlers, WeakReferencesHandler> = {
+const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   profiles: profilesHandler,
+  managedElements: managedElementsHandler,
 }
 
-const defaultHandlersConfiguration: Record<Handlers, boolean> = {
-  profiles: false,
-}
+const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
+  {
+    profiles: false,
+    managedElements: false,
+  }
 
-const customReferencesConfiguration = (
-  adapterConfig: InstanceElement,
+export const customReferencesConfiguration = (
+  customReferencesConfig: CustomReferencesSettings | undefined,
 ): Record<string, boolean> =>
-  _.defaults(
-    adapterConfig.value[CUSTOM_REFS_CONFIG],
-    defaultHandlersConfiguration,
-  )
+  _.defaults(customReferencesConfig, defaultHandlersConfiguration)
 
 export const getCustomReferences = combineCustomReferenceGetters(
   _.mapValues(handlers, (handler) => handler.findWeakReferences),
-  customReferencesConfiguration,
+  (adapterConfig: InstanceElement) =>
+    customReferencesConfiguration(adapterConfig.value[CUSTOM_REFS_CONFIG]),
 )
 
 const fixElementsConfiguration = (

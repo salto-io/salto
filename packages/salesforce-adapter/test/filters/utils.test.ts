@@ -28,6 +28,7 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
   toChange,
+  TypeReference,
   Values,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -643,6 +644,7 @@ describe('filter utils', () => {
   })
   describe('isInstanceOfTypeSync and isInstanceOfTypeChangeSync', () => {
     let instance: InstanceElement
+    let instanceWithUnresolvedType: InstanceElement
     beforeEach(() => {
       instance = createInstanceElement(
         {
@@ -651,17 +653,40 @@ describe('filter utils', () => {
         },
         mockTypes.Profile,
       )
+      instanceWithUnresolvedType = new InstanceElement(
+        'UnresolvedTestInstance',
+        new TypeReference(mockTypes.Profile.elemID),
+      )
     })
     describe('isInstanceOfTypeSync', () => {
-      it('should return true when the instance type is one of the provided types', () => {
+      it('should return true when the resolved instance type is one of the provided types', () => {
         expect(instance).toSatisfy(isInstanceOfTypeSync('Profile'))
         expect(instance).toSatisfy(isInstanceOfTypeSync('Profile', 'Flow'))
       })
-      it('should return false when the instance type is not one of the provided types', () => {
+      it('should return false when the resolved instance type is not one of the provided types', () => {
         expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow'))
         expect(instance).not.toSatisfy(
           isInstanceOfTypeSync('Flow', 'ApexClass'),
         )
+      })
+      it('should return true when the unresolved instance type is one of the provided types', () => {
+        expect(instanceWithUnresolvedType).toSatisfy(
+          isInstanceOfTypeSync('Profile'),
+        )
+        expect(instanceWithUnresolvedType).toSatisfy(
+          isInstanceOfTypeSync('Profile', 'Flow'),
+        )
+      })
+      it('should return false when the unresolved instance type is not one of the provided types', () => {
+        expect(instanceWithUnresolvedType).not.toSatisfy(
+          isInstanceOfTypeSync('Flow'),
+        )
+        expect(instanceWithUnresolvedType).not.toSatisfy(
+          isInstanceOfTypeSync('Flow', 'ApexClass'),
+        )
+      })
+      it('should return false for a type element', () => {
+        expect(mockTypes.Profile).not.toSatisfy(isInstanceOfTypeSync('Profile'))
       })
     })
     describe('isInstanceOfTypeChangeSync', () => {

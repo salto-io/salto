@@ -165,6 +165,8 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
     const itemsWithContext = pagesWithContext
       .map(({ context, pages }) => ({ items: extractorCreator(context)(pages), context }))
       .flatMap(({ items, context }) => items.flatMap(item => ({ ...item, context })))
+    // eslint-disable-next-line no-console
+    console.log(itemsWithContext)
     return itemsWithContext.filter(item => {
       if (!lowerdashValues.isPlainRecord(item.value)) {
         log.warn(
@@ -174,7 +176,7 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
           mergedRequestDef.endpoint.method ?? 'get',
           typeName,
         )
-        return false
+        // return false
       }
       return true
     }) as ValueGeneratedItem[]

@@ -607,6 +607,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       getElemIdFunc: this.getElemIdFunc,
       definitions: this.adapterDefinitions,
       // predefinedTypes: _.pickBy({'tag': }),
+      // customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     })
 
     addRemainingTypes({

@@ -65,6 +65,9 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     const { element: elementDef } = defQuery.query(typeName) ?? {}
     const valueGuard = elementDef?.topLevel?.valueGuard ?? lowerdashValues.isPlainObject
     const [validEntries, invalidEntries] = _.partition(entries, valueGuard)
+    // eslint-disable-next-line no-console
+    // console.log(entries)
+
     if (invalidEntries.length > 0) {
       log.warn(
         '[%s] omitted %d entries of type %s that did not match the value guard, first item:',

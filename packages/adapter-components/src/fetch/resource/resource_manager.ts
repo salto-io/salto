@@ -98,6 +98,8 @@ export const createResourceManager = <ClientOptions extends string>({
             fetcher => fetcher.getItems(),
           )
 
+          // TODO wrap in try-catch and support turning into config suggestions or fetch warnings (SALTO-5427)
+
           const res = await resourceFetcher.fetch({
             contextResources: availableResources, // used to construct the possible context args for the request
             typeFetcherCreator: createTypeFetcher, // used for recurseInto calls

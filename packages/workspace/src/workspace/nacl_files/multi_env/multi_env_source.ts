@@ -157,7 +157,7 @@ const buildMultiEnvSource = (
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean,
   initState?: MultiEnvState,
-  // The following is a workaound for SALTO-1428 - remove when fixed
+  // The following is a workaround for SALTO-1428 - remove when fixed
   mergedRecoveryMode: MergedRecoveryMode = REBUILD_ON_RECOVERY,
 ): MultiEnvSource => {
   const commonSource = (): NaclFilesSource => sources[commonSourceName]
@@ -689,7 +689,7 @@ export const multiEnvSource = (
   commonSourceName: string,
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean,
-  // The following is a workaound for SALTO-1428 - remove when fixed
+  // The following is a workaround for SALTO-1428 - remove when fixed
   mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
 ): MultiEnvSource =>
   buildMultiEnvSource(
@@ -697,7 +697,7 @@ export const multiEnvSource = (
     commonSourceName,
     remoteMapCreator,
     persistent,
-    // The following 2 arguments are a workaound for SALTO-1428 - remove when fixed
+    // The following 2 arguments are a workaround for SALTO-1428 - remove when fixed
     undefined,
     mergedRecoveryMode,
   )

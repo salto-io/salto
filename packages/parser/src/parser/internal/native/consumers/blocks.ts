@@ -25,7 +25,7 @@ import {
   multipleAnnotationBlocks,
   invalidNestedBlock,
   invalidFieldAnnotationBlock,
-  multiplFieldDefinitions,
+  multipleFieldDefinitions,
   invalidBlockItem,
 } from '../errors'
 
@@ -152,7 +152,7 @@ export const consumeBlockBody = (
         })
       } else {
         context.errors.push(
-          multiplFieldDefinitions(
+          multipleFieldDefinitions(
             {
               ...consumedBlock.range,
               filename: context.filename,

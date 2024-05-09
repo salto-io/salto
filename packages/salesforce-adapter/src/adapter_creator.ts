@@ -200,6 +200,8 @@ const adapterConfigFromConfig = (
     enumFieldPermissions: config?.value?.[ENUM_FIELD_PERMISSIONS],
     client: config?.value?.[CLIENT_CONFIG],
     deploy: config?.value?.[DEPLOY_CONFIG],
+    fixElements: config?.value?.fixElements,
+    customReferences: config?.value?.customReferences,
     // Deprecated and used for backwards compatibility (SALTO-4468)
   }
   Object.keys(config?.value ?? {})

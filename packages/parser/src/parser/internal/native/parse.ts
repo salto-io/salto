@@ -138,7 +138,7 @@ export async function parseBuffer(
     }
   }
 
-  // Adding the list types so they will be accesible during merge.
+  // Adding the list types so they will be accessible during merge.
   elements.push(...Object.values(context.listTypes), ...Object.values(context.mapTypes))
   await replaceValuePromises(context.valuePromiseWatchers)
   return {

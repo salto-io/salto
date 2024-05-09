@@ -116,6 +116,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
 import {
+  CUSTOM_REFS_CONFIG,
   FetchElements,
   FetchProfile,
   MetadataQuery,
@@ -591,6 +592,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({
       fetchParams,
+      customReferencesSettings: this.userConfig[CUSTOM_REFS_CONFIG],
       metadataQuery,
       maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
     })
@@ -698,7 +700,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     checkOnly: boolean,
   ): Promise<DeployResult> {
     const fetchParams = this.userConfig.fetch ?? {}
-    const fetchProfile = buildFetchProfile({ fetchParams })
+    const fetchProfile = buildFetchProfile({
+      fetchParams,
+      customReferencesSettings: this.userConfig[CUSTOM_REFS_CONFIG],
+    })
     log.debug(
       `about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(
         changeGroup.changes

@@ -209,15 +209,16 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesTypeNames = ['profiles'] as const
-type customReferencesTypes = (typeof customReferencesTypeNames)[number]
+const customReferencesHandlersNames = ['profiles', 'managedElements'] as const
+export type CustomReferencesHandlers =
+  (typeof customReferencesHandlersNames)[number]
 
 export type CustomReferencesSettings = Partial<
-  Record<customReferencesTypes, boolean>
+  Record<CustomReferencesHandlers, boolean>
 >
 
 export type FixElementsSettings = Partial<
-  Record<customReferencesTypes, boolean>
+  Record<CustomReferencesHandlers, boolean>
 >
 
 const objectIdSettings = new ObjectType({
@@ -330,7 +331,7 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
 const customReferencesSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoCustomReferencesSettings'),
   fields: Object.fromEntries(
-    customReferencesTypeNames.map((name) => [
+    customReferencesHandlersNames.map((name) => [
       name,
       { refType: BuiltinTypes.BOOLEAN },
     ]),
@@ -340,7 +341,7 @@ const customReferencesSettingsType = new ObjectType({
 const fixElementsSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoFixElementsSettings'),
   fields: Object.fromEntries(
-    customReferencesTypeNames.map((name) => [
+    customReferencesHandlersNames.map((name) => [
       name,
       { refType: BuiltinTypes.BOOLEAN },
     ]),
@@ -370,8 +371,6 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
-  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
-  [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
 }
 
 export type FetchParameters = {
@@ -474,6 +473,8 @@ export type SalesforceConfig = {
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
   [DEPLOY_CONFIG]?: UserDeployConfig
+  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
+  [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
 }
 
 type DataManagementConfigSuggestions = {
@@ -669,12 +670,6 @@ const dataManagementType = new ObjectType({
     },
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
-    },
-    [CUSTOM_REFS_CONFIG]: {
-      refType: customReferencesSettingsType,
-    },
-    [FIX_ELEMENTS_CONFIG]: {
-      refType: fixElementsSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
@@ -1033,6 +1028,12 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
         changeValidatorConfigType,
       ),
     },
+    [CUSTOM_REFS_CONFIG]: {
+      refType: customReferencesSettingsType,
+    },
+    [FIX_ELEMENTS_CONFIG]: {
+      refType: fixElementsSettingsType,
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1068,6 +1069,9 @@ export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
   readonly dataManagement?: DataManagement
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
+  readonly isCustomReferencesHandlerEnabled: (
+    name: CustomReferencesHandlers,
+  ) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean

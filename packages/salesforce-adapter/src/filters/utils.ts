@@ -918,9 +918,19 @@ export const toListType = (type: TypeElement): ListType =>
 // if you want instances of all custom objects use isInstanceOfCustomObject
 export const isInstanceOfTypeSync =
   (...typeNames: string[]) =>
-  (elem: Element): elem is InstanceElement =>
-    isInstanceElement(elem) &&
-    typeNames.includes(apiNameSync(elem.getTypeSync()) ?? '')
+  (elem: Element): elem is InstanceElement => {
+    if (!isInstanceElement(elem)) {
+      return false
+    }
+
+    const typeApiName = apiNameSync(elem.getTypeSync())
+    if (typeApiName !== undefined) {
+      return typeNames.includes(typeApiName)
+    }
+
+    // If the type isn't resolved yet fall back on checking the type in the element ID
+    return typeNames.includes(elem.elemID.typeName)
+  }
 
 export const isInstanceOfTypeChangeSync =
   (...typeNames: string[]) =>

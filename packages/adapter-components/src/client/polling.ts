@@ -33,7 +33,7 @@ export const executeWithPolling = async <T>(
   }
   try {
     const pollingResult = await withRetry(() => pollingFunc(), {
-      strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
+      strategy: intervals({ maxRetries: polling.retries - 1, interval: polling.interval }),
     })
     if (pollingResult === undefined) {
       // should never get here, withRetry would throw

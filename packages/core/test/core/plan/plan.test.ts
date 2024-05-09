@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { performance } from 'perf_hooks'
 import {
   InstanceElement,
   getChangeData,
@@ -112,6 +113,7 @@ describe('getPlan', () => {
     expect(getChange(planItem, employee.elemID).action).toBe('modify')
     expect(planItem.items.size).toBe(1)
   })
+
   it('should create plan with modification change in primary element (no inner changes)', async () => {
     const [plan, changedElem] = await planWithTypeChanges()
 
@@ -121,6 +123,7 @@ describe('getPlan', () => {
     expect(getChange(planItem, changedElem.elemID).action).toBe('modify')
     expect(planItem.items.size).toBe(1)
   })
+
   it('should create plan when field have a dependency cycle but its in a custom change group', async () => {
     const [plan, field] = await planWithFieldDependency(true)
     const planItems = [...plan.itemsByEvalOrder()]
@@ -134,6 +137,7 @@ describe('getPlan', () => {
     expect(parentPlanItems).toHaveLength(1)
     expect(parentPlanItems[0].action).toEqual('add')
   })
+
   it('should create plan when field have a dependency cycle but its a modification of the type', async () => {
     const [plan, field] = await planWithFieldDependency(false)
     const planItems = [...plan.itemsByEvalOrder()]
@@ -143,6 +147,7 @@ describe('getPlan', () => {
     expect(splitElemChanges[0].action).toEqual('modify')
     expect(splitElemChanges[1].action).toEqual('modify')
   })
+
   it('should fail on addition if fields create a dependency cycle', async () => {
     await expect(planWithFieldDependencyCycle(true)).rejects.toThrow()
   })
@@ -168,6 +173,23 @@ describe('getPlan', () => {
     const plan = await planWithDependencyCycleWithinAGroup(true)
     const planItems = [...plan.itemsByEvalOrder()]
     expect(planItems).toHaveLength(6)
+  })
+
+  it('should create plan with a huge change in reasonable time', async () => {
+    const mockType = new ObjectType({ elemID: new ElemID('salto', 'mock') })
+    const mockInstance = new InstanceElement(
+      'instance',
+      mockType,
+      Object.fromEntries(_.range(100000).map(i => [`field${i}`, `value${i}`])),
+    )
+    const before = performance.now()
+    const plan = await getPlan({
+      before: createElementSource([mockType, mockInstance]),
+      after: createElementSource([mockType, mockInstance]),
+    })
+    const after = performance.now()
+    expect(plan.size).toBe(0)
+    expect(after - before).toBeLessThan(500)
   })
 
   describe('with custom group key function', () => {

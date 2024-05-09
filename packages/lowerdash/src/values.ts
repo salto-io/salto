@@ -32,3 +32,6 @@ export const lookupValue = (blob: unknown, lookupFunc: (val: unknown) => boolean
   }
   return false
 }
+
+// _.isEqual has terrible performance for sets, prefer this when possible
+export const setsEqual = <T>(a: Set<T>, b: Set<T>): boolean => a.size === b.size && [...a].every(x => b.has(x))

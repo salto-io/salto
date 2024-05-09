@@ -38,8 +38,6 @@ const isNonSecurityGroup = async (
   if (isReferenceExpression(groupReference)) {
     try {
       const group = await groupReference.getResolvedValue(elementSource)
-      // const labels = Object.keys(group.value.labels)
-      // return !labels.includes('cloudidentity_googleapis_com_groups_security@vvdv')
       return !Object.prototype.hasOwnProperty.call(
         group.value.labels,
         'cloudidentity_googleapis_com_groups_security@vvdv',

@@ -20,11 +20,18 @@ export type UserFetchConfig = definitions.UserFetchConfig<{
   fetchCriteria: definitions.DefaultFetchCriteria
 }>
 
+export type UserDeployConfig = definitions.UserDeployConfig & {
+  defaultDomain?: string
+}
+
+// This configuration is used to to replace the domain of a group with the primary domain of the environment.
+export const DEFAULT_PRIMARY_DOMAIN = '###PRIMARY###'
+
 export type UserConfig = definitions.UserConfig<
   never,
   definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,
   UserFetchConfig,
-  definitions.UserDeployConfig
+  UserDeployConfig
 >
 
 export const DEFAULT_CONFIG: UserConfig = {

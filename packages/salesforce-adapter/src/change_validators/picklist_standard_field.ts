@@ -32,8 +32,7 @@ const isStandardPicklistFieldWithValueSet = (field: Field): boolean =>
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
-  message:
-    'Standard fields cannot have a defined valueSet',
+  message: 'Standard fields cannot have a defined valueSet',
   detailedMessage: `Standard field ‘${field.name}’ cannot have a defined valueSet.\nYou can edit the field in Salto and use a StandardValueSet instead`,
 })
 

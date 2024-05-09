@@ -38,6 +38,7 @@ export type PollingArgs = {
   interval: number
   retries: number
   checkStatus: (response: Response<ResponseValue | ResponseValue[]>) => boolean
+  retryOnStatus?: number[]
 }
 
 export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = RequestArgs & {

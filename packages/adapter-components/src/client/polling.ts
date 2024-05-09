@@ -25,19 +25,22 @@ const {
 export const executeWithPolling = async <T>(
   args: T,
   polling: PollingArgs,
-  singleClientCall: (args: T) => Promise<Response<ResponseValue | ResponseValue[]>>,
+  singleClientCall: (args: T, shouldRetry: boolean | undefined) => Promise<Response<ResponseValue | ResponseValue[]>>,
 ): Promise<Response<ResponseValue | ResponseValue[]>> => {
   const pollingFunc = async (): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
-    const response = await singleClientCall(args)
+    const response = await singleClientCall(args, undefined)
     return polling.checkStatus(response) ? response : undefined
   }
-
-  const pollingResult = await withRetry(() => pollingFunc(), {
-    strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
-  })
-  if (pollingResult === undefined) {
-    // should never get here, withRetry would throw
-    throw new Error('Error while waiting for polling')
+  try {
+    const pollingResult = await withRetry(() => pollingFunc(), {
+      strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
+    })
+    if (pollingResult === undefined) {
+      // should never get here, withRetry would throw
+      throw new Error('Error while waiting for polling')
+    }
+    return pollingResult
+  } catch (e) {
+    return singleClientCall(args, false)
   }
-  return pollingResult
 }

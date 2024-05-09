@@ -37,11 +37,11 @@ export const createClientDefinitions = (
         customizations: {
           '/admin/directory/v1/customer/my_customer/roleassignments': {
             post: {
-              additionalValidStatuses: [400],
               polling: {
                 interval: 5000,
                 retries: 3,
                 checkStatus: response => response.status !== 400,
+                retryOnStatus: [400],
               },
             },
           },

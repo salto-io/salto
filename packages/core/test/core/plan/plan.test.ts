@@ -112,6 +112,7 @@ describe('getPlan', () => {
     expect(getChange(planItem, employee.elemID).action).toBe('modify')
     expect(planItem.items.size).toBe(1)
   })
+
   it('should create plan with modification change in primary element (no inner changes)', async () => {
     const [plan, changedElem] = await planWithTypeChanges()
 
@@ -121,6 +122,7 @@ describe('getPlan', () => {
     expect(getChange(planItem, changedElem.elemID).action).toBe('modify')
     expect(planItem.items.size).toBe(1)
   })
+
   it('should create plan when field have a dependency cycle but its in a custom change group', async () => {
     const [plan, field] = await planWithFieldDependency(true)
     const planItems = [...plan.itemsByEvalOrder()]
@@ -134,6 +136,7 @@ describe('getPlan', () => {
     expect(parentPlanItems).toHaveLength(1)
     expect(parentPlanItems[0].action).toEqual('add')
   })
+
   it('should create plan when field have a dependency cycle but its a modification of the type', async () => {
     const [plan, field] = await planWithFieldDependency(false)
     const planItems = [...plan.itemsByEvalOrder()]
@@ -143,6 +146,7 @@ describe('getPlan', () => {
     expect(splitElemChanges[0].action).toEqual('modify')
     expect(splitElemChanges[1].action).toEqual('modify')
   })
+
   it('should fail on addition if fields create a dependency cycle', async () => {
     await expect(planWithFieldDependencyCycle(true)).rejects.toThrow()
   })

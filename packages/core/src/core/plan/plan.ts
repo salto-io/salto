@@ -139,10 +139,16 @@ const compareValuesAndLazyResolveRefs = async (
   }
 
   if (_.isPlainObject(first) && _.isPlainObject(second)) {
-    if (!_.isEqual(new Set(Object.keys(first)), new Set(Object.keys(second)))) {
+    const firstKeys = Object.keys(first)
+    const secondKeys = Object.keys(second)
+    if (firstKeys.length !== secondKeys.length) {
       return false
     }
-    return !(await awu(Object.keys(first)).some(
+    const secondKeysSet = new Set(secondKeys)
+    if (firstKeys.some(k => !secondKeysSet.has(k))) {
+      return false
+    }
+    return !(await awu(firstKeys).some(
       async key =>
         !(await compareValuesAndLazyResolveRefs(
           first[key],
@@ -181,7 +187,7 @@ const isEqualsNode = async (
   compareOptions?: CompareOptions,
 ): Promise<boolean> => {
   if (!values.isDefined(node1) || !values.isDefined(node2)) {
-    // Theoratically we should return true if both are undefined, but practically
+    // Theoretically we should return true if both are undefined, but practically
     // this makes no sense, so we return false,
     return false
   }
@@ -271,9 +277,9 @@ const addDifferentElements =
 
         const addNodeIfDifferent = async (beforeNode?: ChangeDataType, afterNode?: ChangeDataType): Promise<void> => {
           // We can cast to string, at least one of the nodes should be defined.
-          const fullname = beforeNode?.elemID.getFullName() ?? (afterNode?.elemID.getFullName() as string)
-          if (!sieve.has(fullname)) {
-            sieve.add(fullname)
+          const fullName = beforeNode?.elemID.getFullName() ?? (afterNode?.elemID.getFullName() as string)
+          if (!sieve.has(fullName)) {
+            sieve.add(fullName)
             if (!(await isEqualsNode(beforeNode, afterNode, before, after, compareOptions))) {
               addElemToOutputGraph(beforeNode, afterNode)
             }

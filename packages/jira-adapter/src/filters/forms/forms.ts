@@ -114,41 +114,42 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       await Promise.all(
         jsmProjects.flatMap(async project => {
           try {
-          const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-          const res = await client.get({ url })
-          if (!isFormsResponse(res)) {
-            return undefined
-          }
-          return await Promise.all(
-            res.data.map(async formResponse => {
-              const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-              const detailedRes = await client.get({ url: detailedUrl })
-              if (!isDetailedFormsResponse(detailedRes.data)) {
-                const error = {
-                  message: `Unable to fetch form for project ${project.elemID.name} as it is missing a title.`,
-                  severity: 'Warning' as SeverityLevel,
+            const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
+            const res = await client.get({ url })
+            if (!isFormsResponse(res)) {
+              return undefined
+            }
+            return await Promise.all(
+              res.data.map(async formResponse => {
+                const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
+                const detailedRes = await client.get({ url: detailedUrl })
+                if (!isDetailedFormsResponse(detailedRes.data)) {
+                  const error = {
+                    message: `Unable to fetch form for project ${project.elemID.name} as it is missing a title.`,
+                    severity: 'Warning' as SeverityLevel,
+                  }
+                  errors.push(error)
+                  return undefined
                 }
-                errors.push(error)
-                return undefined
-              }
-              const name = naclCase(`${project.value.key}_${formResponse.name}`)
-              const formValue = detailedRes.data
-              const parentPath = project.path ?? []
-              const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
-              if (jsmDuckTypeApiDefinitions === undefined) {
-                return undefined
-              }
-              return new InstanceElement(
-                name,
-                formType,
-                formValue,
-                [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
-                {
-                  [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
-                },
-              )
-            }),
-          )} catch (e) {
+                const name = naclCase(`${project.value.key}_${formResponse.name}`)
+                const formValue = detailedRes.data
+                const parentPath = project.path ?? []
+                const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
+                if (jsmDuckTypeApiDefinitions === undefined) {
+                  return undefined
+                }
+                return new InstanceElement(
+                  name,
+                  formType,
+                  formValue,
+                  [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
+                  {
+                    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
+                  },
+                )
+              }),
+            )
+          } catch (e) {
             if (e.response?.status === 403) {
               projectsNamesWithPermissionErrors.push(project.elemID.name)
             }

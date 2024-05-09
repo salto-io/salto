@@ -374,10 +374,14 @@ describe('forms filter', () => {
         },
       })
 
-      connection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {error: 'insufficientPermission'}, status: 403 }))
+      connection.get.mockRejectedValue(
+        new clientUtils.HTTPError('failed', { data: { error: 'insufficientPermission' }, status: 403 }),
+      )
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual('Failed to fetch forms for projects: project1 due to insufficient permissions')
+      expect(res.errors?.[0].message).toEqual(
+        'Failed to fetch forms for projects: project1 due to insufficient permissions',
+      )
     })
   })
   describe('deploy', () => {

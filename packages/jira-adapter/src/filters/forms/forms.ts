@@ -109,15 +109,17 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
     const errors: SaltoError[] = []
+    const projectsNamesWithPermissionErrors: string[] = []
     const forms = (
       await Promise.all(
         jsmProjects.flatMap(async project => {
+          try {
           const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
           const res = await client.get({ url })
           if (!isFormsResponse(res)) {
             return undefined
           }
-          return Promise.all(
+          return await Promise.all(
             res.data.map(async formResponse => {
               const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
               const detailedRes = await client.get({ url: detailedUrl })
@@ -146,7 +148,12 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
                 },
               )
             }),
-          )
+          )} catch (e) {
+            if (e.response?.status === 403) {
+              projectsNamesWithPermissionErrors.push(project.elemID.name)
+            }
+            return undefined
+          }
         }),
       )
     )
@@ -156,7 +163,12 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
-
+    if (projectsNamesWithPermissionErrors.length > 0) {
+      errors.push({
+        message: `Failed to fetch forms for projects: ${projectsNamesWithPermissionErrors.join(', ')} due to insufficient permissions`,
+        severity: 'Error' as SeverityLevel,
+      })
+    }
     return { errors }
   },
   preDeploy: async changes => {

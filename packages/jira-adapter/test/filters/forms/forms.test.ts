@@ -260,6 +260,12 @@ describe('forms filter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
+      elements = [projectInstance, projectType]
+    })
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+    it("should return saltoError when failed to fetch form becuase it doesn't have name", async () => {
       connection.post.mockResolvedValueOnce({
         status: 200,
         data: {
@@ -352,12 +358,26 @@ describe('forms filter', () => {
           },
         },
       })
-      elements = [projectInstance, projectType]
-    })
-    it("should return saltoError when failed to fetch form becuase it doesn't have name", async () => {
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
       expect(res.errors?.[0].message).toEqual('Unable to fetch form for project project1 as it is missing a title.')
+    })
+    it('should return saltoError when failed to fetch form becuase 403 forbidden error', async () => {
+      connection.post.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          unparsedData: {
+            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+              tenantId: 'cloudId',
+            }),
+          },
+        },
+      })
+
+      connection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {error: 'insufficientPermission'}, status: 403 }))
+      const res = (await filter.onFetch(elements)) as FilterResult
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors?.[0].message).toEqual('Failed to fetch forms for projects: project1 due to insufficient permissions')
     })
   })
   describe('deploy', () => {

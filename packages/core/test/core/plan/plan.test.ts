@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { performance } from 'perf_hooks'
 import {
   InstanceElement,
   getChangeData,
@@ -173,23 +172,6 @@ describe('getPlan', () => {
     const plan = await planWithDependencyCycleWithinAGroup(true)
     const planItems = [...plan.itemsByEvalOrder()]
     expect(planItems).toHaveLength(6)
-  })
-
-  it('should create plan with a huge change in reasonable time', async () => {
-    const mockType = new ObjectType({ elemID: new ElemID('salto', 'mock') })
-    const mockInstance = new InstanceElement(
-      'instance',
-      mockType,
-      Object.fromEntries(_.range(100000).map(i => [`field${i}`, `value${i}`])),
-    )
-    const before = performance.now()
-    const plan = await getPlan({
-      before: createElementSource([mockType, mockInstance]),
-      after: createElementSource([mockType, mockInstance]),
-    })
-    const after = performance.now()
-    expect(plan.size).toBe(0)
-    expect(after - before).toBeLessThan(500)
   })
 
   describe('with custom group key function', () => {

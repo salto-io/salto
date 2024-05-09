@@ -33,8 +33,8 @@ const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
   message:
-    'Standard fields cannot be defined a picklist, global picklist, or value set.',
-  detailedMessage: `Standard field ‘${field.name}’ cannot be defined with a picklist, global picklist or value set.\nYou can edit the field in Salto and use a StandardValueSet instead`,
+    'Standard fields cannot have a defined valueSet',
+  detailedMessage: `Standard field ‘${field.name}’ cannot have a defined valueSet.\nYou can edit the field in Salto and use a StandardValueSet instead`,
 })
 
 /**

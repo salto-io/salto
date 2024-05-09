@@ -52,7 +52,9 @@ import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import {
   ACCESS_POLICY_RULE_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
-  APP_GROUP_ASSIGNMENT_TYPE_NAME, APP_LOGO_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  APP_LOGO_TYPE_NAME,
+  APP_USER_SCHEMA_TYPE_NAME,
   APPLICATION_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
@@ -80,12 +82,12 @@ jest.setTimeout(1000 * 60 * 10)
 const TEST_PREFIX = 'Test'
 
 const createInstance = ({
-                          typeName,
-                          valuesOverride,
-                          types,
-                          parent,
-                          name,
-                        }: {
+  typeName,
+  valuesOverride,
+  types,
+  parent,
+  name,
+}: {
   typeName: string
   valuesOverride: Values
   types: ObjectType[]
@@ -270,8 +272,7 @@ const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => {
-  },
+  reportProgress: () => {},
 }
 
 const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<DeployResult[]> => {
@@ -338,13 +339,10 @@ const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<
     .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
     .map(instance => toChange({ before: instance }))
 
-
 const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): Promise<void> => {
   log.debug('Cleaning up the environment before starting e2e test')
   const cleanupChanges = await getChangesForInitialCleanup(elements)
-  const removals = cleanupChanges.filter(change =>
-    getChangeData(change).elemID.typeName !== APPLICATION_TYPE_NAME
-  )
+  const removals = cleanupChanges.filter(change => getChangeData(change).elemID.typeName !== APPLICATION_TYPE_NAME)
   await removeAllApps(adapterAttr, cleanupChanges)
   await deployChanges(adapterAttr, removals)
   log.debug('Environment cleanup successful')

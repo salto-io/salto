@@ -62,7 +62,6 @@ import {
   getFLSProfiles,
   toCustomField,
   toCustomProperties,
-  isStandardPicklistFieldWithValueSet,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -1606,50 +1605,6 @@ describe('filter utils', () => {
         expect(_.get(rollupSummaryInfo, 'summaryOperation')).toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeUndefined()
       })
-    })
-  })
-  describe('isStandardPicklistFieldWithValueSet', () => {
-    it('should return true for standard picklist field with value set', () => {
-      const field = createField(
-        mockTypes.Account,
-        Types.primitiveDataTypes.Picklist,
-        'Standard',
-        {
-          apiName: 'Account.Standard',
-          [FIELD_ANNOTATIONS.VALUE_SET]: [
-            { fullName: 'val1', default: true, label: 'val1' },
-          ],
-        },
-      )
-      expect(field).toSatisfy(isStandardPicklistFieldWithValueSet)
-    })
-    it('should return false for standard picklist field without value set', () => {
-      const field = createField(
-        mockTypes.Account,
-        Types.primitiveDataTypes.Picklist,
-        'Standard',
-        { apiName: 'Account.Standard' },
-      )
-      expect(field).not.toSatisfy(isStandardPicklistFieldWithValueSet)
-    })
-    it('should return false for non standard piclist field with value set', () => {
-      const field = createField(
-        mockTypes.Account,
-        Types.primitiveDataTypes.Picklist,
-        'Custom__c',
-        {
-          apiName: 'Account.Custom__c',
-          [FIELD_ANNOTATIONS.VALUE_SET]: [
-            { fullName: 'val1', default: true, label: 'val1' },
-          ],
-        },
-      )
-      expect(field).not.toSatisfy(isStandardPicklistFieldWithValueSet)
-    })
-    it('should return false for non picklist field', () => {
-      expect(mockTypes.Account.fields.Name).not.toSatisfy(
-        isStandardPicklistFieldWithValueSet,
-      )
     })
   })
 })

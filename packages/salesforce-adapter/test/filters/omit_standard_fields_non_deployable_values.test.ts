@@ -85,7 +85,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
       })
     })
 
-    it('should omit valueSet from standard fields', async () => {
+    it('should omit valueSet and referenceTo from standard fields', async () => {
       await filter.onFetch([testObject])
       const standardPicklistField = testObject.fields[STANDARD_PICKLIST_FIELD]
       expect(standardPicklistField).toBeDefined()

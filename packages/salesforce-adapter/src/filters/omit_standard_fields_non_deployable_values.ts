@@ -14,19 +14,13 @@
  * limitations under the License.
  */
 
-import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { FIELD_ANNOTATIONS } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import {
-  apiNameSync,
   ensureSafeFilterFetch,
   isCustomObjectSync,
   isStandardField,
-  isStandardPicklistFieldWithValueSet,
 } from './utils'
-
-const log = logger(module)
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'omitStandardFieldsNonDeployableValues',
@@ -40,23 +34,10 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         .filter(isCustomObjectSync)
         .flatMap((customObject) => Object.values(customObject.fields))
         .filter(isStandardField)
-      const standardFieldsWithValueSet = standardFields.filter(
-        isStandardPicklistFieldWithValueSet,
-      )
-      ;(standardFieldsWithValueSet.length > 100 ? log.trace : log.debug)(
-        'omitting valueSet from the following standard fields: %s',
-        safeJsonStringify(
-          standardFieldsWithValueSet.map((field) => apiNameSync(field)),
-        ),
-      )
 
       standardFields.forEach((field) => {
-        if (field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined) {
-          delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-        }
-        if (field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] !== undefined) {
-          delete field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]
-        }
+        delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+        delete field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]
       })
     },
   }),

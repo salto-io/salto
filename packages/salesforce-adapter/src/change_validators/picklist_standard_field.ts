@@ -21,7 +21,13 @@ import {
   isFieldChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { isStandardPicklistFieldWithValueSet } from '../filters/utils'
+import { FIELD_ANNOTATIONS } from '../constants'
+import { isPicklistField, isStandardField } from '../filters/utils'
+
+const isStandardPicklistFieldWithValueSet = (field: Field): boolean =>
+  isStandardField(field) &&
+  isPicklistField(field) &&
+  field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined
 
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,

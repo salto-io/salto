@@ -1179,4 +1179,4 @@ export const toCustomProperties = async (
 export const isStandardPicklistFieldWithValueSet = (field: Field): boolean =>
   isStandardField(field) &&
   isPicklistField(field) &&
-  field.annotations.valueSet !== undefined
+  field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined

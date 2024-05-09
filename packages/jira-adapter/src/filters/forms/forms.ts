@@ -28,7 +28,14 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import {
+  getParent,
+  invertNaclCase,
+  mapKeysRecursive,
+  naclCase,
+  pathNaclCase,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { resolveValues } from '@salto-io/adapter-components'
@@ -110,7 +117,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
     const errors: SaltoError[] = []
-    const projectsWithOutForms: string[] = []
+    const projectsWithoutForms: string[] = []
     const projectsWithUntitledForms: Set<string> = new Set()
     const forms = (
       await Promise.all(
@@ -118,7 +125,12 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
           const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
           const res = await client.get({ url })
           if (!isFormsResponse(res)) {
-            projectsWithOutForms.push(project.elemID.name)
+            log.trace(
+              `Failed to fetch forms for project ${project.value.name} with the following response: ${safeJsonStringify(res)}`,
+            )
+            if (res.status === 200 && res.data.length === 0) {
+              projectsWithoutForms.push(project.elemID.name)
+            }
             return undefined
           }
           return Promise.all(
@@ -156,8 +168,8 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
-    if (projectsWithOutForms.length > 0) {
-      const message = `Unable to fetch forms for the following projects: ${projectsWithOutForms.join(', ')}. This issue is likely due to insufficient permissions.`
+    if (projectsWithoutForms.length > 0) {
+      const message = `Unable to fetch forms for the following projects: ${projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
       log.debug(message)
       errors.push({
         message,
@@ -166,7 +178,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     }
     const projectsWithUntitledFormsArr = Array.from(projectsWithUntitledForms)
     if (projectsWithUntitledFormsArr.length > 0) {
-      const message = `Unable to fetch untitled forms for the following projects: ${projectsWithUntitledFormsArr.join(', ')}. Please provide a title for them or delete them.`
+      const message = `Salto does not support fetching untitled forms, found in the following projects: ${projectsWithUntitledFormsArr.join(', ')}`
       log.debug(message)
       errors.push({
         message,

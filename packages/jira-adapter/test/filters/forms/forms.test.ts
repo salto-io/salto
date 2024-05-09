@@ -44,6 +44,9 @@ describe('forms filter', () => {
   const projectType = createEmptyType(PROJECT_TYPE)
   let projectInstance: InstanceElement
   let elements: Element[]
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
   describe('on fetch', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -242,6 +245,143 @@ describe('forms filter', () => {
     })
   })
   describe('on fetch errors', () => {
+    let projectInstanceTwo: InstanceElement
+    const goodDetailedResponse = {
+      updated: '2023-09-28T08:20:31.552322Z',
+      uuid: 'uuid',
+      design: {
+        settings: {
+          templateId: 6,
+          name: 'name',
+          submit: {
+            lock: false,
+            pdf: false,
+          },
+          templateFormUuid: 'templateFormUuid',
+        },
+        layout: [
+          {
+            version: 1,
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  {
+                    type: 'text',
+                    text: 'form 6 content',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        conditions: {},
+        sections: {
+          36: {
+            t: 'sh',
+            i: {
+              co: {
+                cIds: {
+                  3: ['2'],
+                },
+              },
+            },
+            o: {
+              sIds: ['4'],
+            },
+          },
+        },
+        questions: {
+          3: {
+            type: 'cm',
+            label: 'Items to be verified',
+            description: '',
+            choices: [
+              {
+                id: '1',
+                label: 'Education',
+                other: false,
+              },
+              {
+                id: '2',
+                label: 'Licenses',
+                other: false,
+              },
+            ],
+            questionKey: '',
+          },
+        },
+      },
+    }
+    const badDetailedResponse = {
+      updated: '2023-09-28T08:20:31.552322Z',
+      uuid: 'uuid',
+      design: {
+        settings: {
+          templateId: 6,
+          name: '',
+          submit: {
+            lock: false,
+            pdf: false,
+          },
+          templateFormUuid: 'templateFormUuid',
+        },
+        layout: [
+          {
+            version: 1,
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  {
+                    type: 'text',
+                    text: 'form 6 content',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        conditions: {},
+        sections: {
+          36: {
+            t: 'sh',
+            i: {
+              co: {
+                cIds: {
+                  3: ['2'],
+                },
+              },
+            },
+            o: {
+              sIds: ['4'],
+            },
+          },
+        },
+        questions: {
+          3: {
+            type: 'cm',
+            label: 'Items to be verified',
+            description: '',
+            choices: [
+              {
+                id: '1',
+                label: 'Education',
+                other: false,
+              },
+              {
+                id: '2',
+                label: 'Licenses',
+                other: false,
+              },
+            ],
+            questionKey: '',
+          },
+        },
+      },
+    }
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
@@ -260,7 +400,18 @@ describe('forms filter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
-      connection.post.mockResolvedValueOnce({
+      projectInstanceTwo = new InstanceElement(
+        'project2',
+        projectType,
+        {
+          id: 22222,
+          name: 'project2',
+          projectTypeKey: 'service_desk',
+          key: 'project2Key',
+        },
+        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
+      )
+      connection.post.mockResolvedValue({
         status: 200,
         data: {
           unparsedData: {
@@ -270,94 +421,123 @@ describe('forms filter', () => {
           },
         },
       })
-
-      connection.get.mockResolvedValueOnce({
-        status: 200,
-        data: [
-          {
-            id: 1,
-            name: '',
-          },
-        ],
-      })
-
-      connection.get.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          updated: '2023-09-28T08:20:31.552322Z',
-          uuid: 'uuid',
-          design: {
-            settings: {
-              templateId: 6,
-              name: '',
-              submit: {
-                lock: false,
-                pdf: false,
-              },
-              templateFormUuid: 'templateFormUuid',
-            },
-            layout: [
+      elements = [projectInstance, projectInstanceTwo, projectType]
+    })
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+    it("should return single saltoError when failed to fetch form becuase it doesn't have a title", async () => {
+      connection.get.mockImplementation(async url => {
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/11111/forms') {
+          return {
+            status: 200,
+            data: [
               {
-                version: 1,
-                type: 'doc',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'form 6 content',
-                      },
-                    ],
-                  },
-                ],
+                id: 1,
+                name: '',
               },
             ],
-            conditions: {},
-            sections: {
-              36: {
-                t: 'sh',
-                i: {
-                  co: {
-                    cIds: {
-                      3: ['2'],
-                    },
-                  },
-                },
-                o: {
-                  sIds: ['4'],
-                },
+          }
+        }
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms/1') {
+          return {
+            status: 200,
+            data: badDetailedResponse,
+          }
+        }
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/22222/forms') {
+          return {
+            status: 200,
+            data: [
+              {
+                id: 2,
+                name: '',
               },
-            },
-            questions: {
-              3: {
-                type: 'cm',
-                label: 'Items to be verified',
-                description: '',
-                choices: [
-                  {
-                    id: '1',
-                    label: 'Education',
-                    other: false,
-                  },
-                  {
-                    id: '2',
-                    label: 'Licenses',
-                    other: false,
-                  },
-                ],
-                questionKey: '',
-              },
-            },
-          },
-        },
+            ],
+          }
+        }
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/2/projects/22222/forms/2') {
+          return {
+            status: 200,
+            data: badDetailedResponse,
+          }
+        }
+        throw new Error('Unexpected url')
       })
-      elements = [projectInstance, projectType]
-    })
-    it("should return saltoError when failed to fetch form becuase it doesn't have name", async () => {
       const res = (await filter.onFetch(elements)) as FilterResult
       expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual('Unable to fetch form for project project1 as it is missing a title.')
+      expect(res.errors?.[0].message).toEqual(
+        'Salto does not support fetching untitled forms, found in the following projects: project1, project2',
+      )
+    })
+    it('should return single saltoError when failed to fetch form because data is empty', async () => {
+      connection.get.mockImplementation(async url => {
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/11111/forms') {
+          return {
+            status: 200,
+            data: [],
+          }
+        }
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/22222/forms') {
+          return {
+            status: 200,
+            data: [],
+          }
+        }
+        throw new Error('Unexpected url')
+      })
+      const res = (await filter.onFetch(elements)) as FilterResult
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors?.[0].message).toEqual(
+        'Unable to fetch forms for the following projects: project1, project2. This issue is likely due to insufficient permissions.',
+      )
+    })
+    it('should add form1 to the elements and add saltoError when failed to fetch form2 data for projectTwo', async () => {
+      connection.get.mockImplementation(async url => {
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/11111/forms') {
+          return {
+            status: 200,
+            data: [
+              {
+                id: 1,
+                name: 'form1',
+              },
+            ],
+          }
+        }
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms/1') {
+          return {
+            status: 200,
+            data: goodDetailedResponse,
+          }
+        }
+        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/22222/forms') {
+          return {
+            status: 200,
+            data: [],
+          }
+        }
+        throw new Error('Unexpected url')
+      })
+      const res = (await filter.onFetch(elements)) as FilterResult
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors?.[0].message).toEqual(
+        'Unable to fetch forms for the following projects: project2. This issue is likely due to insufficient permissions.',
+      )
+      const instances = elements.filter(isInstanceElement)
+      const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
+      expect(formInstance).toBeDefined()
+    })
+    it('should not add forms to elements and not add an error for a bad unexpected response', async () => {
+      connection.get.mockResolvedValue({
+        status: 404,
+        data: {},
+      })
+      const res = (await filter.onFetch(elements)) as FilterResult
+      expect(res.errors).toHaveLength(0)
+      const instances = elements.filter(isInstanceElement)
+      const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
+      expect(formInstance).toBeUndefined()
     })
   })
   describe('deploy', () => {

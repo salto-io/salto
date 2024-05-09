@@ -537,8 +537,7 @@ describe('forms filter', () => {
         },
       })
       const res = (await filter.onFetch(elements)) as FilterResult
-      expect(res.errors).toHaveLength(2)
-      expect(res.errors?.[0].message).toEqual('Failed to fetch forms for project project1')
+      expect(res.errors).toHaveLength(0)
       const instances = elements.filter(isInstanceElement)
       const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
       expect(formInstance).toBeUndefined()

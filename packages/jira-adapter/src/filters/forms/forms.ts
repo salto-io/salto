@@ -136,10 +136,6 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
               log.error(
                 `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
               )
-              errors.push({
-                message: `Failed to fetch forms for project ${project.value.name}`,
-                severity: 'Error' as SeverityLevel,
-              })
             }
             return undefined
           }

@@ -30,15 +30,15 @@ import {
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   getParent,
+  inspectValue,
   invertNaclCase,
   mapKeysRecursive,
   naclCase,
   pathNaclCase,
-  safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { resolveValues } from '@salto-io/adapter-components'
+import { resolveValues, client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
 import { getCloudId } from '../automation/cloud_id'
@@ -50,6 +50,11 @@ import { getLookUpName } from '../../reference_mapping'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+
+const isExpectedPermissionError = (
+  response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>,
+): boolean => response.status === 200 && response.data.length === 0
+
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
   const project = getParent(form)
@@ -125,11 +130,16 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
           const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
           const res = await client.get({ url })
           if (!isFormsResponse(res)) {
-            log.trace(
-              `Failed to fetch forms for project ${project.value.name} with the following response: ${safeJsonStringify(res)}`,
-            )
-            if (res.status === 200 && res.data.length === 0) {
+            if (isExpectedPermissionError(res)) {
               projectsWithoutForms.push(project.elemID.name)
+            } else {
+              log.error(
+                `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
+              )
+              errors.push({
+                message: `Failed to fetch forms for project ${project.value.name}`,
+                severity: 'Error' as SeverityLevel,
+              })
             }
             return undefined
           }

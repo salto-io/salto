@@ -525,16 +525,20 @@ describe('forms filter', () => {
         'Unable to fetch forms for the following projects: project2. This issue is likely due to insufficient permissions.',
       )
       const instances = elements.filter(isInstanceElement)
-      const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
-      expect(formInstance).toBeDefined()
+      const formInstances = instances.filter(e => e.elemID.typeName === FORM_TYPE)
+      expect(formInstances).toHaveLength(1)
+      expect(formInstances[0]?.elemID.name).toEqual('project1Key_form1')
     })
     it('should not add forms to elements and not add an error for a bad unexpected response', async () => {
       connection.get.mockResolvedValue({
         status: 404,
-        data: {},
+        data: {
+          message: 'not found',
+        },
       })
       const res = (await filter.onFetch(elements)) as FilterResult
-      expect(res.errors).toHaveLength(0)
+      expect(res.errors).toHaveLength(2)
+      expect(res.errors?.[0].message).toEqual('Failed to fetch forms for project project1')
       const instances = elements.filter(isInstanceElement)
       const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
       expect(formInstance).toBeUndefined()

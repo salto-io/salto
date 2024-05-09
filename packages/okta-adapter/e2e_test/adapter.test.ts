@@ -19,7 +19,7 @@ import {
   Change,
   CORE_ANNOTATIONS,
   DeployResult,
-  Element,
+  Element, getAllChangeData,
   getChangeData,
   InstanceElement,
   isAdditionChange,
@@ -54,7 +54,8 @@ import {
   ACCESS_POLICY_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   APPLICATION_TYPE_NAME,
-  AUTHENTICATOR_TYPE_NAME, BRAND_TYPE_NAME,
+  AUTHENTICATOR_TYPE_NAME,
+  BRAND_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
   INACTIVE_STATUS,
@@ -69,6 +70,7 @@ import {
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
+import OktaClient from '../src/client/client'
 
 const { awu } = collections.asynciterable
 const { getInstanceName } = elementsUtils
@@ -78,12 +80,12 @@ const log = logger(module)
 jest.setTimeout(1000 * 60 * 10)
 
 const createInstance = ({
-  typeName,
-  valuesOverride,
-  types,
-  parent,
-  name,
-}: {
+                          typeName,
+                          valuesOverride,
+                          types,
+                          parent,
+                          name,
+                        }: {
   typeName: string
   valuesOverride: Values
   types: ObjectType[]
@@ -114,7 +116,16 @@ const createInstance = ({
   )
 }
 
-const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): InstanceElement[] => {
+const getIdForDefaultBrand = async (client: OktaClient): Promise<string> => {
+  const brandEntries = (await client.get({ url: '/api/v1/brands' })).data
+  if (_.isArray(brandEntries) && brandEntries.length === 1 && _.isString(brandEntries[0].id)) {
+    return brandEntries[0].id
+  }
+  log.error(`Received unexpected result for default brand: ${inspectValue(brandEntries)}`)
+  throw new Error('Could not find default brand')
+}
+
+const createChangesForDeploy = async (types: ObjectType[], testSuffix: string, client: OktaClient): Promise<Change[]> => {
   const createName = (type: string): string => `Test${type}${testSuffix}`
 
   const groupInstance = createInstance({
@@ -252,40 +263,52 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
     parent: app,
     name: groupInstance.elemID.name,
   })
+  const brandId = await getIdForDefaultBrand(client)
+  const defaultBrand = createInstance({
+    typeName: BRAND_TYPE_NAME,
+    types,
+    valuesOverride: {
+      id: brandId,
+      removePoweredByOkta: false,
+      agreeToCustomPrivacyPolicy: true,
+    },
+  })
   const brand = createInstance({
     typeName: BRAND_TYPE_NAME,
     types,
     valuesOverride: {
+      id: brandId,
       removePoweredByOkta: true,
       agreeToCustomPrivacyPolicy: false,
     },
   })
   return [
-    groupInstance,
-    anotherGroupInstance,
-    ruleInstance,
-    zoneInstance,
-    accessPolicy,
-    accessPolicyRule,
-    profileEnrollment,
-    profileEnrollmentRule,
-    app,
-    appGroupAssignment,
-    brand,
+    toChange({ after: groupInstance }),
+    toChange({ after: anotherGroupInstance }),
+    toChange({ after: ruleInstance }),
+    toChange({ after: zoneInstance }),
+    toChange({ after: accessPolicy }),
+    toChange({ after: accessPolicyRule }),
+    toChange({ after: profileEnrollment }),
+    toChange({ after: profileEnrollmentRule }),
+    toChange({ after: app }),
+    toChange({ after: appGroupAssignment }),
+    toChange({ before: defaultBrand, after: brand }),
   ]
 }
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => {},
+  reportProgress: () => {
+  },
 }
 
-const deployChanges = async (adapterAttr: Reals, instancesToAdd: InstanceElement[]): Promise<DeployResult[]> => {
-  const planElementById = _.keyBy(instancesToAdd, inst => inst.elemID.getFullName())
-  const deployResults = await awu(instancesToAdd)
-    .map(async instance => {
+const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<DeployResult[]> => {
+  const planElementById = _.keyBy(changes.map(getChangeData), inst => inst.elemID.getFullName())
+  return awu(changes)
+    .map(async change => {
       const deployResult = await adapterAttr.adapter.deploy({
-        changeGroup: { groupID: instance.elemID.getFullName(), changes: [toChange({ after: instance })] },
+        changeGroup: { groupID: getChangeData(change).elemID.getFullName(), changes: [change] },
         progressReporter: nullProgressReporter,
       })
       expect(deployResult.errors).toHaveLength(0)
@@ -302,7 +325,6 @@ const deployChanges = async (adapterAttr: Reals, instancesToAdd: InstanceElement
       return deployResult
     })
     .toArray()
-  return deployResults
 }
 
 const removeApp = async (adapterAttr: Reals, changes: Change<InstanceElement>[]): Promise<void> => {
@@ -346,9 +368,11 @@ describe('Okta adapter E2E', () => {
     const testSuffix = uuidv4().slice(0, 8)
     let elements: Element[] = []
     let deployResults: DeployResult[]
+    let types: ObjectType[] = []
+    let changesToDeploy: Change[] = []
 
-    const deployAndFetch = async (instancesToAdd: InstanceElement[]): Promise<void> => {
-      deployResults = await deployChanges(adapterAttr, instancesToAdd)
+    const deployAndFetch = async (changes: Change[]): Promise<void> => {
+      deployResults = await deployChanges(adapterAttr, changes)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
@@ -384,28 +408,28 @@ describe('Okta adapter E2E', () => {
         DEFAULT_CONFIG,
       )
 
-      const types = firstFetchResult.elements.filter(isObjectType)
-      const instancesToAdd = createInstancesForDeploy(types, testSuffix)
-      await deployAndFetch(instancesToAdd)
+      types = firstFetchResult.elements.filter(isObjectType)
+      changesToDeploy = await createChangesForDeploy(types, testSuffix, adapterAttr.client)
+      await deployAndFetch(changesToDeploy)
     })
 
     afterAll(async () => {
-      const appliedChanges = deployResults
-        .flatMap(res => res.appliedChanges)
-        .filter(isAdditionChange)
-        .filter(isInstanceChange)
+      let reversedChanges = changesToDeploy.map(change => {
+        // Reverse the change
+        const data = getAllChangeData(change)
+        return toChange({ before: data[1], after: data[0] })
+      })
 
       // Application must be removed separately
-      await removeApp(adapterAttr, appliedChanges)
+      await removeApp(adapterAttr, reversedChanges.filter(isAdditionChange).filter(isInstanceChange))
 
-      const removalChanges = appliedChanges
+      reversedChanges = reversedChanges
         // Application was removed in the prev step
         .filter(change => getChangeData(change).elemID.typeName !== APPLICATION_TYPE_NAME)
-        .map(change => toChange({ before: getChangeData(change) }))
 
-      removalChanges.forEach(change => {
+      reversedChanges.forEach(change => {
         const instance = getChangeData(change)
-        removalChanges
+        reversedChanges
           .map(getChangeData)
           .flatMap(getParents)
           .filter(parent => parent.elemID.isEqual(instance.elemID))
@@ -414,7 +438,7 @@ describe('Okta adapter E2E', () => {
           })
       })
 
-      deployResults = await awu(removalChanges)
+      deployResults = await awu(reversedChanges)
         .map(change =>
           adapterAttr.adapter.deploy({
             changeGroup: {

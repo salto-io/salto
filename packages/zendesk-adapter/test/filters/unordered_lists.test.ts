@@ -80,7 +80,15 @@ describe('Unordered lists filter', () => {
           ],
         },
         {
+          parent_field_id: new ReferenceExpression(customThreeInstance.elemID, customThreeInstance),
+          value: true,
+        },
+        {
           value: 'b',
+        },
+        {
+          parent_field_id: new ReferenceExpression(customOneInstance.elemID, customOneInstance),
+          value: true,
         },
       ],
       end_user_conditions: [
@@ -453,17 +461,19 @@ describe('Unordered lists filter', () => {
   describe('ticket_form', () => {
     it('sort correctly', async () => {
       const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'valid form')
-      expect(instances[0].value.agent_conditions).toHaveLength(3)
-      expect(instances[0].value.agent_conditions[0].value.elemID.name).toEqual('customA')
-      expect(instances[0].value.agent_conditions[1].value).toEqual('b')
-      expect(instances[0].value.agent_conditions[2].value.elemID.name).toEqual('customC')
+      expect(instances[0].value.agent_conditions).toHaveLength(5)
+      expect(instances[0].value.agent_conditions[0].parent_field_id.elemID.name).toEqual('customA')
+      expect(instances[0].value.agent_conditions[1].parent_field_id.elemID.name).toEqual('customC')
+      expect(instances[0].value.agent_conditions[2].value.elemID.name).toEqual('customA')
+      expect(instances[0].value.agent_conditions[3].value).toEqual('b')
+      expect(instances[0].value.agent_conditions[4].value.elemID.name).toEqual('customC')
       expect(instances[0].value.end_user_conditions).toHaveLength(3)
       expect(instances[0].value.end_user_conditions[0].value.elemID.name).toEqual('customA')
       expect(instances[0].value.end_user_conditions[1].value).toEqual('b')
       expect(instances[0].value.end_user_conditions[2].value.elemID.name).toEqual('customC')
-      expect(instances[0].value.agent_conditions[0].child_fields).toHaveLength(2)
-      expect(instances[0].value.agent_conditions[0].child_fields[0].id.elemID.name).toEqual('fieldA')
-      expect(instances[0].value.agent_conditions[0].child_fields[1].id.elemID.name).toEqual('fieldC')
+      expect(instances[0].value.agent_conditions[2].child_fields).toHaveLength(2)
+      expect(instances[0].value.agent_conditions[2].child_fields[0].id.elemID.name).toEqual('fieldA')
+      expect(instances[0].value.agent_conditions[2].child_fields[1].id.elemID.name).toEqual('fieldC')
       expect(instances[0].value.end_user_conditions[0].child_fields).toHaveLength(2)
       expect(instances[0].value.end_user_conditions[0].child_fields[0].id.elemID.name).toEqual('fieldA')
       expect(instances[0].value.end_user_conditions[0].child_fields[1].id.elemID.name).toEqual('fieldC')

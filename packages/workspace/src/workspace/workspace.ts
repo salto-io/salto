@@ -95,7 +95,7 @@ import {
   deserializeValidationErrors,
 } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
-import { ReferenceTargetIndexValue, updateReferenceIndexes } from './reference_indexes'
+import { ReferenceTargetIndexEntry, ReferenceTargetIndexValue, updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
@@ -180,6 +180,10 @@ export type FromSourceWithEnv = {
   envName?: string
 }
 
+type IncomingReferenceInfo = {
+  sourceId: ElemID
+} & Pick<ReferenceInfo, 'sourceScope'>
+
 const isFromSourceWithEnv = (value: { source: FromSource } | FromSourceWithEnv): value is FromSourceWithEnv =>
   value.source === 'env'
 
@@ -244,8 +248,9 @@ export type Workspace = {
     id: ElemID,
     envName?: string,
     includeWeakReferences?: boolean,
-  ) => Promise<{ id: ElemID; type: ReferenceType }[]>
+  ) => Promise<ReferenceTargetIndexEntry[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
+  getElementIncomingReferenceInfos: (id: ElemID, envName?: string) => Promise<IncomingReferenceInfo[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
   getElementsAuthorsById: (envName?: string) => Promise<Record<string, AuthorInformation>>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
@@ -1210,6 +1215,40 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
+  const getElementOutgoingReferences: Workspace['getElementOutgoingReferences'] = async (
+    id,
+    envName = currentEnv(),
+    includeWeakReferences = true,
+  ) => {
+    const baseId = id.createBaseID().parent.getFullName()
+    const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
+
+    if (referencesTree === undefined) {
+      return []
+    }
+
+    const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
+    const references = Array.from(
+      idPath === ''
+        ? // Empty idPath means we are requesting the base level element, which includes all references
+          referencesTree.values()
+        : referencesTree.valuesWithPrefix(idPath),
+    ).flat()
+
+    const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
+    return _.uniqBy(filteredReferences, ref => ref.id.getFullName())
+  }
+
+  const getElementIncomingReferences: Workspace['getElementIncomingReferences'] = async (
+    id,
+    envName = currentEnv(),
+  ) => {
+    if (!id.isBaseID()) {
+      throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
+    }
+    return (await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())) ?? []
+  }
+
   const workspace: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1285,31 +1324,14 @@ export const loadWorkspace = async (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id),
     getReferenceSourcesIndex: async (envName = currentEnv()) =>
       (await getWorkspaceState()).states[envName].referenceSources,
-    getElementOutgoingReferences: async (id, envName = currentEnv(), includeWeakReferences = true) => {
-      const baseId = id.createBaseID().parent.getFullName()
-      const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
-
-      if (referencesTree === undefined) {
-        return []
-      }
-
-      const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-      const references = Array.from(
-        idPath === ''
-          ? // Empty idPath means we are requesting the base level element, which includes all references
-            referencesTree.values()
-          : referencesTree.valuesWithPrefix(idPath),
-      ).flat()
-
-      const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
-      return _.uniqBy(filteredReferences, ref => ref.id.getFullName())
-    },
-    getElementIncomingReferences: async (id, envName = currentEnv()) => {
-      if (!id.isBaseID()) {
-        throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
-      }
-      return (await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())) ?? []
-    },
+    getElementOutgoingReferences,
+    getElementIncomingReferences,
+    getElementIncomingReferenceInfos: async (id, envName = currentEnv()) =>
+      awu(await getElementIncomingReferences(id, envName))
+        .flatMap(sourceId => getElementOutgoingReferences(sourceId, envName))
+        .filter(outgoingReference => outgoingReference.id.isEqual(id))
+        .map<IncomingReferenceInfo>(outgoingReference => ({ sourceId: id, sourceScope: outgoingReference.sourceScope }))
+        .toArray(),
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)

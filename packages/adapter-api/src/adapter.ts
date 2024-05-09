@@ -205,6 +205,7 @@ export type ReferenceInfo = {
   source: ElemID
   target: ElemID
   type: ReferenceType
+  sourceScope?: 'baseId' | 'value'
 }
 
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>

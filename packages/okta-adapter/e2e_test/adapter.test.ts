@@ -427,7 +427,7 @@ describe('Okta adapter E2E', () => {
       }
       log.info('Okta adapter E2E: Log counts = %o', log.getLogCount())
     })
-    it('should fetch the regular instances and types', async () => {
+    describe('fetch the regular instances and types', () => {
       const expectedTypes = [
         'AccessPolicy',
         'AccessPolicyRule',
@@ -463,6 +463,8 @@ describe('Okta adapter E2E', () => {
         'OrgSetting',
         'Brand',
         'BrandTheme',
+        'SignInPage',
+        'ErrorPage',
         'RateLimitAdminNotifications',
         'PerClientRateLimitSettings',
         'SmsTemplate',
@@ -487,18 +489,27 @@ describe('Okta adapter E2E', () => {
         APPLICATION_TYPE_NAME,
       ])
 
-      const createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
-      const createdInstances = elements.filter(isInstanceElement)
-      expectedTypes.forEach(typeName => {
-        expect(createdTypeNames).toContain(typeName)
-        if (typesWithInstances.has(typeName)) {
-          expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
-        }
+      let createdTypeNames: string[]
+      let createdInstances: InstanceElement[]
+      beforeAll(async () => {
+        createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
+        createdInstances = elements.filter(isInstanceElement)
       })
-      const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
-      expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
-      // Validate subdomain field exist as we use it in many flows
-      expect(orgSettingInst[0]?.value.subdomain).toBeDefined()
+
+      expectedTypes.forEach(typeName => {
+        it(`should fetch ${typeName}`, async () => {
+          expect(createdTypeNames).toContain(typeName)
+          if (typesWithInstances.has(typeName)) {
+            expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
+          }
+        })
+      })
+      it('should fetch OrgSetting and validate subdomain field', async () => {
+        const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
+        expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
+        // Validate subdomain field exist as we use it in many flows
+        expect(orgSettingInst[0]?.value.subdomain).toBeDefined()
+      })
     })
     it('should fetch the newly deployed instances', async () => {
       const deployInstances = deployResults

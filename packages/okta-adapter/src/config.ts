@@ -825,6 +825,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           toField: 'BrandTheme',
           context: [{ name: 'brandId', fromField: 'id' }],
         },
+        {
+          type: 'SignInPage',
+          toField: 'SignInPage',
+          context: [{ name: 'brandId', fromField: 'id' }],
+        },
+        {
+          type: 'ErrorPage',
+          toField: 'ErrorPage',
+          context: [{ name: 'brandId', fromField: 'id' }],
+        },
       ],
     },
     transformation: {
@@ -837,6 +847,74 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
     transformation: {
       dataField: '.',
+    },
+  },
+  SignInPage: {
+    request: {
+      url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
+    },
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+      serviceUrl: '/admin/customizations/brands',
+      dataField: '.',
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
+        method: 'delete',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
+    },
+  },
+  ErrorPage: {
+    request: {
+      url: '/api/v1/brands/{brandId}/pages/error/customized',
+    },
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+      serviceUrl: '/admin/customizations/brands',
+      dataField: '.',
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/pages/error/customized',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/brands/{brandId}/pages/error/customized',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/api/v1/brands/{brandId}/pages/error/customized',
+        method: 'delete',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
     },
   },
   GroupSchema: {
@@ -918,8 +996,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-      standaloneFields: [{ fieldName: 'BrandTheme' }],
-      fieldTypeOverrides: [{ fieldName: 'BrandTheme', fieldType: 'list<BrandTheme>' }],
+      standaloneFields: [{ fieldName: 'BrandTheme' }, { fieldName: 'SignInPage' }, { fieldName: 'ErrorPage' }],
+      fieldTypeOverrides: [
+        { fieldName: 'BrandTheme', fieldType: 'list<BrandTheme>' },
+        { fieldName: 'SignInPage', fieldType: 'SignInPage' },
+        { fieldName: 'ErrorPage', fieldType: 'ErrorPage' },
+      ],
       serviceUrl: '/admin/customizations/footer',
     },
     deployRequests: {

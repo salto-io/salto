@@ -17,13 +17,15 @@ import {
   ChangeError,
   ChangeValidator,
   InstanceElement,
+  ReadOnlyElementsSource,
   getChangeData,
   isAdditionChange,
   isInstanceChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { isDomainExist } from '../fix_elements/replace_groups_domain'
+import { fetch } from '@salto-io/adapter-components'
+import { isDomainExist as isGroupDomainExist } from '../fix_elements/replace_groups_domain'
 import { DOMAIN_TYPE_NAME, GROUP_TYPE_NAME } from '../constants'
 import { DEFAULT_PRIMARY_DOMAIN, UserConfig } from '../config'
 
@@ -43,6 +45,21 @@ const domainsNotFetchedWarning = (group: InstanceElement): ChangeError => ({
   detailedMessage: `The domain ${group.value.email} cannot be validated because domains are excluded from the fetch. If the domain exists in the environment, the deploy will fail.`,
 })
 
+const isDomainExist = async (
+  group: InstanceElement,
+  elementSource: ReadOnlyElementsSource,
+  isDomainsFetched: boolean,
+): Promise<boolean> => {
+  if (!isDomainsFetched) {
+    return false
+  }
+  const domains = await awu(await elementSource.getAll())
+    .filter(isInstanceElement)
+    .filter(e => e.elemID.typeName === DOMAIN_TYPE_NAME)
+    .toArray()
+  return isGroupDomainExist(group, domains)
+}
+
 /**
  * This CV warns if a group email is in a domain that does not exist in the deployed environment.
  */
@@ -52,17 +69,16 @@ export const groupDomainValidator =
     if (elementSource === undefined) {
       return []
     }
-    const isDomainFetched = config.fetch.exclude.some(exclude => exclude.type === DOMAIN_TYPE_NAME)
-    const domains = await awu(await elementSource.getAll())
-      .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === DOMAIN_TYPE_NAME)
-      .toArray()
-    const noDomainError = isDomainFetched ? domainsNotFetchedWarning : domainNotExistError
-    return changes
+    const fetchQuery = fetch.query.createElementQuery(config.fetch)
+    const isDomainsFetched = fetchQuery.isTypeMatch(DOMAIN_TYPE_NAME)
+
+    const noDomainError = isDomainsFetched ? domainNotExistError : domainsNotFetchedWarning
+    return awu(changes)
       .filter(isAdditionChange)
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(group => group.elemID.typeName === GROUP_TYPE_NAME)
-      .filter(group => !isDomainExist(group, domains))
+      .filter(async group => !(await isDomainExist(group, elementSource, isDomainsFetched)))
       .flatMap(instance => [noDomainError(instance)])
+      .toArray()
   }

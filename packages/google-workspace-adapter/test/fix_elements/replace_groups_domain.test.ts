@@ -79,7 +79,7 @@ describe('replaceGroupsDomainHandler', () => {
         const clone = nonLegitGroup.clone()
         clone.value.email = 'testGroup2@legit.com'
         expect(response.fixedElements).toEqual([clone])
-        expect(response.errors[0].message).toEqual('Replaced to domain of the testGroup2 group to legit.com.')
+        expect(response.errors[0].message).toEqual('Replaced the domain of group testGroup2 with legit.com.')
       })
     })
     describe('when the primary domain does not exist', () => {
@@ -108,7 +108,7 @@ describe('replaceGroupsDomainHandler', () => {
       const clone = nonLegitGroup.clone()
       clone.value.email = 'testGroup2@super-legit.com'
       expect(response.fixedElements).toEqual([clone])
-      expect(response.errors[0].message).toEqual('Replaced to domain of the testGroup2 group to super-legit.com.')
+      expect(response.errors[0].message).toEqual('Replaced the domain of group testGroup2 with super-legit.com.')
     })
   })
 })

@@ -26,8 +26,8 @@ const { awu } = collections.asynciterable
 const replaceDomainInfo = (group: InstanceElement, domain: string): ChangeError => ({
   elemID: group.elemID,
   severity: 'Info',
-  message: `Replaced to domain of the ${group.value.name} group to ${domain}.`,
-  detailedMessage: `Replaced to domain of the ${group.value.name} group to ${domain}.`,
+  message: `Replaced the domain of group ${group.value.name} with ${domain}.`,
+  detailedMessage: `Replaced the domain of group ${group.value.name} with ${domain}.`,
 })
 
 export const isDomainExist = (group: InstanceElement, domains: InstanceElement[]): boolean => {

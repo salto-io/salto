@@ -69,7 +69,6 @@ import {
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
-import { elements } from '@salto-io/cli/dist/test/mocks'
 
 const { awu } = collections.asynciterable
 const { getInstanceName } = elementsUtils
@@ -404,7 +403,7 @@ describe('Okta adapter E2E', () => {
         .filter(isInstanceChange)
 
       // Application must be removed separately
-      await removeApp(adapterAttr, appliedChanges)
+      await removeAllApps(adapterAttr, appliedChanges)
 
       const removalChanges = appliedChanges
         // Application was removed in the prev step

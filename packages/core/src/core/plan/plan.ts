@@ -139,7 +139,11 @@ const compareValuesAndLazyResolveRefs = async (
   }
 
   if (_.isPlainObject(first) && _.isPlainObject(second)) {
-    if (!values.setsEqual(new Set(Object.keys(first)), new Set(Object.keys(second)))) {
+    if (Object.keys(first).length !== Object.keys(second).length) {
+      return false
+    }
+    const secondKeys = new Set(Object.keys(second))
+    if (Object.keys(first).some(k => !secondKeys.has(k))) {
       return false
     }
     return !(await awu(Object.keys(first)).some(

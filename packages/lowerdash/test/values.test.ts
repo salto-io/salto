@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { isDefined, isPlainObject, isPlainRecord, lookupValue, setsEqual } from '../src/values'
+import { isDefined, isPlainObject, isPlainRecord, lookupValue } from '../src/values'
 
 describe('isDefined', () => {
   describe('with undefined value', () => {
@@ -77,23 +77,5 @@ describe('lookupValue', () => {
   })
   it('should return true', () => {
     expect(lookupValue({ a: 'a', b: ['c', 'd'] }, val => val === 'd')).toBeTruthy()
-  })
-})
-
-describe('setsEqual', () => {
-  it('should return true for empty sets', () => {
-    expect(setsEqual(new Set(), new Set())).toBeTruthy()
-  })
-
-  it('should return true for identical sets', () => {
-    expect(setsEqual(new Set([1, 2, 3]), new Set([1, 2, 3]))).toBeTruthy()
-  })
-
-  it('should return false for sets of different lengths', () => {
-    expect(setsEqual(new Set([1, 2, 3]), new Set([1, 2, 3, 4, 5]))).toBeFalsy()
-  })
-
-  it('should return false for different sets of equal length', () => {
-    expect(setsEqual(new Set([1, 2, 4]), new Set([1, 2, 3]))).toBeFalsy()
   })
 })

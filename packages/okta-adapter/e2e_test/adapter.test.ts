@@ -299,7 +299,7 @@ const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<Dep
 }
 
 const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement>[]): Promise<void> => {
-  awu(changes)
+  await awu(changes)
     .map(change => getChangeData(change))
     .filter(inst => inst.elemID.typeName === APPLICATION_TYPE_NAME)
     .forEach(async activeApp => {
@@ -331,13 +331,13 @@ const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement
     })
 }
 
-const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<InstanceElement>[]> => {
-  return elements
+const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<InstanceElement>[]> =>
+  elements
     .filter(isInstanceElement)
     .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
     .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
     .map(instance => toChange({ before: instance }))
-}
+
 
 const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): Promise<void> => {
   log.debug('Cleaning up the environment before starting e2e test')

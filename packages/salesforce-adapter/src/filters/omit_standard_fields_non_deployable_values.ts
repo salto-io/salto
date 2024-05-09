@@ -29,17 +29,15 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     filterName: 'omitStandardFieldsNonDeployableValues',
     warningMessage:
       'Error occurred when attempting to omit standard fields non deployable values',
-    fetchFilterFunc: async (elements) => {
-      const standardFields = elements
+    fetchFilterFunc: async (elements) =>
+      elements
         .filter(isCustomObjectSync)
         .flatMap((customObject) => Object.values(customObject.fields))
         .filter(isStandardField)
-
-      standardFields.forEach((field) => {
-        delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-        delete field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]
-      })
-    },
+        .forEach((field) => {
+          delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+          delete field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]
+        }),
   }),
 })
 

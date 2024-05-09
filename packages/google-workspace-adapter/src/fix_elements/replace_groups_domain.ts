@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-import { FixElementsHandler } from '@salto-io/adapter-components'
+import { FixElementsHandler, fetch } from '@salto-io/adapter-components'
 import { ChangeError, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { DEFAULT_PRIMARY_DOMAIN, UserConfig } from '../config'
 import { Options } from '../definitions/types'
 import { DOMAIN_TYPE_NAME, GROUP_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const replaceDomainInfo = (group: InstanceElement, domain: string): ChangeError => ({
   elemID: group.elemID,
@@ -31,6 +33,11 @@ const replaceDomainInfo = (group: InstanceElement, domain: string): ChangeError 
 })
 
 export const isDomainExist = (group: InstanceElement, domains: InstanceElement[]): boolean => {
+  const groupEmail = group.value.email
+  if (groupEmail === undefined || groupEmail.split('@').length !== 2) {
+    log.error(`Group ${group.value.name} has an invalid email: ${groupEmail}`)
+    return true
+  }
   const domainName = group.value.email.split('@')[1]
   return domains.some(domain => domain.value.domainName === domainName)
 }
@@ -57,6 +64,15 @@ export const replaceGroupsDomainHandler: FixElementsHandler<Options, UserConfig>
     if (groups.length === 0) {
       return { errors: [], fixedElements: [] }
     }
+
+    const fetchQuery = fetch.query.createElementQuery(config.fetch)
+    const isDomainsFetched = fetchQuery.isTypeMatch(DOMAIN_TYPE_NAME)
+    if (!isDomainsFetched) {
+      // If domains are not fetched, we cannot validate the domain and fix them
+      // The group_domain CV will warn about it
+      return { errors: [], fixedElements: [] }
+    }
+
     const domains = await awu(await elementsSource.getAll())
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === DOMAIN_TYPE_NAME)

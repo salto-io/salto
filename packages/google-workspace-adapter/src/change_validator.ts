@@ -21,13 +21,16 @@ import {
   systemRoleValidator,
   groupMemberRoleValidator,
   roleAssignmentAdditionValidator,
+  groupDomainValidator,
 } from './change_validators'
+import { UserConfig } from './config'
 
-export default (): Record<string, ChangeValidator> => ({
+export default ({ config }: { config: UserConfig }): Record<string, ChangeValidator> => ({
   domainReadOnly: domainReadOnlyValidator,
   roleReadOnly: roleReadOnlyValidator,
   schemaFields: schemaFieldsValidator,
   systemRole: systemRoleValidator,
   groupMemberRole: groupMemberRoleValidator,
   roleAssignmentAddition: roleAssignmentAdditionValidator,
+  groupDomain: groupDomainValidator(config),
 })

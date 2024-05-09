@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-export { roleReadOnlyValidator } from './role_read_only'
-export { groupMemberRoleValidator } from './group_member_role'
-export { domainReadOnlyValidator } from './domain_read_only'
-export { systemRoleValidator } from './system_role'
-export { schemaFieldsValidator } from './schema_fields'
-export { roleAssignmentAdditionValidator } from './role_assignment_addition'
-export { groupDomainValidator } from './group_domain'
+import { FixElementsFunc } from '@salto-io/adapter-api'
+import { FixElementsArgs } from '@salto-io/adapter-components'
+import { UserConfig } from '../config'
+import { Options } from '../definitions/types'
+import { replaceGroupsDomainHandler } from './replace_groups_domain'
+
+export const createFixElementFunctions = (
+  args: FixElementsArgs<Options, UserConfig>,
+): Record<string, FixElementsFunc> => ({
+  replaceGroupsDomain: replaceGroupsDomainHandler(args),
+})

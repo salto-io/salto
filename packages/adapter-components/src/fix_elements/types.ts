@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
-export { roleReadOnlyValidator } from './role_read_only'
-export { groupMemberRoleValidator } from './group_member_role'
-export { domainReadOnlyValidator } from './domain_read_only'
-export { systemRoleValidator } from './system_role'
-export { schemaFieldsValidator } from './schema_fields'
-export { roleAssignmentAdditionValidator } from './role_assignment_addition'
-export { groupDomainValidator } from './group_domain'
+import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { APIDefinitionsOptions, ResolveCustomNameMappingOptionsType, UserConfig } from '../definitions'
+
+export type FixElementsArgs<
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
+> = {
+  config: Co
+  elementsSource: ReadOnlyElementsSource
+}
+
+export type FixElementsHandler<
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
+> = (args: FixElementsArgs<Options, Co>) => FixElementsFunc

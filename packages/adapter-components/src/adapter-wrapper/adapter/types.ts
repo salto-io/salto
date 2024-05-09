@@ -18,6 +18,7 @@ import {
   ChangeValidator,
   DependencyChanger,
   ElemIdGetter,
+  FixElementsFunc,
   InstanceElement,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
@@ -61,6 +62,7 @@ export interface AdapterParams<
   >
   elementSource: ReadOnlyElementsSource
   adapterName: string
+  fixElements: FixElementsFunc | undefined
   // TODO SALTO-5578 pass in account name as well
 }
 

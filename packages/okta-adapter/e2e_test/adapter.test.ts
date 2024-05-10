@@ -509,13 +509,11 @@ describe('Okta adapter E2E', () => {
         createdInstances = elements.filter(isInstanceElement)
       })
 
-      expectedTypes.forEach(typeName => {
-        it(`should fetch ${typeName}`, async () => {
-          expect(createdTypeNames).toContain(typeName)
-          if (typesWithInstances.has(typeName)) {
-            expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
-          }
-        })
+      it.each(expectedTypes)('should fetch %s', async typeName => {
+        expect(createdTypeNames).toContain(typeName)
+        if (typesWithInstances.has(typeName)) {
+          expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
+        }
       })
       it('should fetch OrgSetting and validate subdomain field', async () => {
         const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)

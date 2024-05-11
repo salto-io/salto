@@ -21,11 +21,8 @@ import {
   ElementSelector,
   createElementSelectors,
   FromSource,
-  selectElementIdsByTraversal,
-  nacl,
-  staticFiles,
 } from '@salto-io/workspace'
-import { parser } from '@salto-io/parser'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -712,32 +709,8 @@ type PrintElementArgs = {
   onlyValue: boolean
 } & EnvArg
 export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = async ({ workspace, input, output }) => {
-  const { validSelectors, invalidSelectors } = createElementSelectors(input.selectors)
-  if (!_.isEmpty(invalidSelectors)) {
-    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
-    return CliExitCode.UserInputError
-  }
-
-  await validateAndSetEnv(workspace, input, output)
-  const elementSource = input.source === 'nacl' ? await workspace.elements() : workspace.state()
-
-  const relevantIds = await selectElementIdsByTraversal({
-    selectors: validSelectors,
-    source: elementSource,
-    referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
-  })
-
-  await awu(relevantIds).forEach(async id => {
-    const value = await elementSource.get(id)
-    // We build a new static files source each time to avoid having to keep
-    // all the static files loaded in memory
-    const functions = nacl.getFunctions(staticFiles.buildInMemStaticFilesSource())
-    const dumpedValue = isElement(value)
-      ? await parser.dumpElements([value], functions)
-      : await parser.dumpValues(value, functions)
-    const outputStr = input.onlyValue ? dumpedValue : `${id.getFullName()}: ${dumpedValue}`
-    outputLine(outputStr, output)
-  })
+  const result = await workspace.getElementIncomingReferenceInfos(ElemID.fromFullName(input.selectors[0]))
+  outputLine(safeJsonStringify(result), output)
   return CliExitCode.Success
 }
 

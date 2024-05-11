@@ -108,6 +108,7 @@ const log = logger(module)
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { partition } = promises.array
+const {isDefined} = values
 
 export const COMMON_ENV_PREFIX = ''
 
@@ -182,7 +183,7 @@ export type FromSourceWithEnv = {
 
 type IncomingReferenceInfo = {
   sourceId: ElemID
-} & Pick<ReferenceInfo, 'sourceScope'>
+} & Required<Pick<ReferenceInfo, 'sourceScope'>>
 
 const isFromSourceWithEnv = (value: { source: FromSource } | FromSourceWithEnv): value is FromSourceWithEnv =>
   value.source === 'env'
@@ -1326,12 +1327,23 @@ export const loadWorkspace = async (
       (await getWorkspaceState()).states[envName].referenceSources,
     getElementOutgoingReferences,
     getElementIncomingReferences,
-    getElementIncomingReferenceInfos: async (id, envName = currentEnv()) =>
-      awu(await getElementIncomingReferences(id, envName))
-        .flatMap(sourceId => getElementOutgoingReferences(sourceId, envName))
-        .filter(outgoingReference => outgoingReference.id.isEqual(id))
-        .map<IncomingReferenceInfo>(outgoingReference => ({ sourceId: id, sourceScope: outgoingReference.sourceScope }))
-        .toArray(),
+    getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
+      const getReferenceInfo = async (sourceId: ElemID): Promise<IncomingReferenceInfo | undefined> => {
+        const outgoingReference = (await getElementOutgoingReferences(sourceId, envName)).find(ref => ref.id.isEqual(id))
+        if (outgoingReference === undefined) {
+          return undefined
+        }
+        return {
+          sourceId,
+          sourceScope: outgoingReference.sourceScope ?? 'baseId',
+        } as IncomingReferenceInfo
+      }
+      const sourceIds = await getElementIncomingReferences(id, envName)
+      return awu(sourceIds)
+      .map(getReferenceInfo)
+      .filter(isDefined)
+      .toArray()
+    },
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)

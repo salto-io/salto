@@ -53,8 +53,6 @@ export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = Req
   readonly?: boolean
 
   polling?: PollingArgs
-
-  retry?: PollingArgs
 }
 
 export type DeployHTTPEndpointDetails = Omit<HTTPEndpointDetails<'none'>, 'pagination' | 'readonly'>

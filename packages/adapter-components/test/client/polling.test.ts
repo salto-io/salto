@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-import { executeWithPolling, Response, ResponseValue } from '../../src/client'
+import { executeWithPolling, HTTPError, Response, ResponseValue } from '../../src/client'
 
 describe('polling', () => {
   describe('executeWithPolling', () => {
     const polling = {
       checkStatus: (response: Response<ResponseValue | ResponseValue[]>): boolean => response.status === 200,
       retries: 3,
-      interval: 50,
+      interval: 100,
+      retryOnStatus: [400],
     }
     it('should call the singleClientCall few times function and return its response', async () => {
       const singleClientCall = jest
@@ -46,7 +47,7 @@ describe('polling', () => {
         )
       const response = await executeWithPolling<string>('args', polling, singleClientCall)
       expect(singleClientCall).toHaveBeenCalledTimes(3)
-      expect(singleClientCall).toHaveBeenCalledWith('args', undefined)
+      expect(singleClientCall).toHaveBeenCalledWith('args')
       expect(response).toEqual({ data: 'done polling', status: 200 })
     })
     it('should throw an error if polling fails', async () => {
@@ -65,6 +66,62 @@ describe('polling', () => {
           status: 201,
         })
 
+      await expect(executeWithPolling<string>('args', polling, singleClientCall)).rejects.toThrow()
+    })
+    it('should retry on retryOnStatus and return the response', async () => {
+      const singleClientCall = jest
+        .fn()
+        .mockRejectedValueOnce(
+          new HTTPError('Not Found', {
+            data: {},
+            status: 400,
+          }),
+        )
+        .mockResolvedValue({
+          data: 'done polling',
+          status: 200,
+        })
+      const response = await executeWithPolling<string>('args', polling, singleClientCall)
+      expect(singleClientCall).toHaveBeenCalledTimes(2)
+      expect(singleClientCall).toHaveBeenCalledWith('args')
+      expect(response).toEqual({ data: 'done polling', status: 200 })
+    })
+    it('should throw an error if polling fails after retrying', async () => {
+      const singleClientCall = jest
+        .fn()
+        .mockRejectedValueOnce(
+          new HTTPError('Not Found', {
+            data: {},
+            status: 400,
+          }),
+        )
+        .mockRejectedValueOnce(
+          new HTTPError('Not Found', {
+            data: {},
+            status: 400,
+          }),
+        )
+        .mockRejectedValueOnce(
+          new HTTPError('Not Found', {
+            data: {},
+            status: 400,
+          }),
+        )
+      await expect(executeWithPolling<string>('args', polling, singleClientCall)).rejects.toThrow()
+    })
+    it('should throw an error if polling fails with a non retryStatus', async () => {
+      const singleClientCall = jest
+        .fn()
+        .mockRejectedValueOnce(
+          new HTTPError('Not Found', {
+            data: {},
+            status: 404,
+          }),
+        )
+        .mockResolvedValueOnce({
+          data: 'done polling',
+          status: 200,
+        })
       await expect(executeWithPolling<string>('args', polling, singleClientCall)).rejects.toThrow()
     })
   })

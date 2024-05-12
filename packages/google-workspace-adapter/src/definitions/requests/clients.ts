@@ -40,7 +40,7 @@ export const createClientDefinitions = (
               polling: {
                 interval: 5000,
                 retries: 3,
-                checkStatus: response => response.status !== 400,
+                checkStatus: response => response.status === 200,
                 retryOnStatus: [400],
               },
             },

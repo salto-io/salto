@@ -15,29 +15,28 @@
  */
 import _ from 'lodash'
 import {
-  Element,
   Field,
   ReferenceExpression,
   InstanceElement,
   ElemID,
   getField,
   isReferenceExpression,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { resolvePath, GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { multiIndex } from '@salto-io/lowerdash'
 
 const log = logger(module)
 
 export type ContextValueMapperFunc = (val: string) => string | undefined
 export type ContextFunc = ({
   instance,
-  elemByElemID,
+  elementsSource,
   field,
   fieldPath,
 }: {
   instance: InstanceElement
-  elemByElemID: multiIndex.Index<[string], Element>
+  elementsSource: ReadOnlyElementsSource
   field: Field
   fieldPath?: ElemID
   levelsUp?: number
@@ -79,7 +78,7 @@ export const neighborContextGetter =
     contextValueMapper?: ContextValueMapperFunc
     getLookUpName: GetLookupNameFunc
   }): ContextFunc =>
-  async ({ instance, elemByElemID, fieldPath }) => {
+  async ({ instance, elementsSource, fieldPath }) => {
     if (fieldPath === undefined || contextFieldName === undefined) {
       return undefined
     }
@@ -88,7 +87,7 @@ export const neighborContextGetter =
       const contextField = await getField(await instance.getType(), fieldPath.createTopLevelParentID().path)
       const refWithValue = new ReferenceExpression(
         context.elemID,
-        context.value ?? elemByElemID.get(context.elemID.getFullName()),
+        context.value ?? (await elementsSource.get(context.elemID)),
       )
       return getLookUpName({ ref: refWithValue, field: contextField, path, element: instance })
     }

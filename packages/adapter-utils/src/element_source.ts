@@ -17,7 +17,7 @@ import { ReadOnlyElementsSource, Element, ElemID, Value, isElement } from '@salt
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
-import { resolveTypeShallow } from './utils'
+import { resolvePath, resolveTypeShallow } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -76,9 +76,20 @@ export const buildElementsSourceFromElements = (
   }
 
   const get = async (id: ElemID): Promise<Value> => {
-    const element = elementsMap[id.getFullName()]
+    let element: Readonly<Element> | undefined = elementsMap[id.getFullName()]
     if (element !== undefined) {
       return element
+    }
+
+    if (!id.isTopLevel()) {
+      const { parent } = id.createTopLevelParentID()
+      const topLevel = elementsMap[parent.getFullName()]
+      if (topLevel !== undefined) {
+        element = resolvePath(topLevel, id)
+        if (element !== undefined) {
+          return element
+        }
+      }
     }
 
     return awu(fallbackSources)

@@ -221,6 +221,7 @@ describe('fields with context references filter', () => {
           productRuleValues.SBQQ__LookupProductField__c,
         )
       })
+
       it('Should replace value of field that exists in lookup object with reference', () => {
         const value = productRule.value.SBQQ__LookupMessageField__c
         expect(value).toBeInstanceOf(ReferenceExpression)
@@ -244,6 +245,7 @@ describe('fields with context references filter', () => {
           productRuleValues.SBQQ__LookupProductField__c,
         )
       })
+
       it('Should replace value of field that exists in lookup object with reference', () => {
         const value = productRule.value.SBQQ__LookupMessageField__c
         expect(value).toBeInstanceOf(ReferenceExpression)

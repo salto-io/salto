@@ -19,18 +19,16 @@ import {
   InstanceElement,
   ObjectType,
   ReferenceExpression,
-  Element,
   Field,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { multiIndex, collections } from '@salto-io/lowerdash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DASHBOARD_GADGET_TYPE, FILTER_TYPE_NAME, JIRA } from '../../src/constants'
 import {
   gadgetValuesContextFunc,
   gadgetValueSerialize,
   gadgetDashboradValueLookup,
 } from '../../src/references/dashboard_gadget_properties'
-
-const { awu } = collections.asynciterable
 
 describe('DashboardGadgetReferences', () => {
   let dashboardGadgetType: ObjectType
@@ -82,36 +80,32 @@ describe('DashboardGadgetReferences', () => {
     })
   })
 
-  describe('gadgetValuesCont{extFunc', () => {
+  describe('gadgetValuesContextFunc', () => {
     let field: Field
-    let elemByElemID: multiIndex.Index<[string], Element>
+    let elementsSource: ReadOnlyElementsSource
 
     beforeEach(async () => {
       // field are elemByElemID are only needed because it is mandatory in ContextFunc, but are not going to be used
       field = new Field(filterType, 'mock', filterType)
-      const indexer = multiIndex.buildMultiIndex<Element>().addIndex({
-        name: 'elemByElemID',
-        key: elem => [elem.elemID.getFullName()],
-      })
-      elemByElemID = (await indexer.process(awu([]))).elemByElemID
+      elementsSource = buildElementsSourceFromElements([])
     })
 
     it('should return undefined if fieldPath is undefined', async () => {
-      const result = await gadgetValuesContextFunc({ instance, elemByElemID, field })
+      const result = await gadgetValuesContextFunc({ instance, elementsSource, field })
       expect(result).toBeUndefined()
     })
 
     it('should return FIELD_TYPE_NAME for valid keys: ystattype, xstattype, statistictype, statType', async () => {
       const fieldPath = instance.elemID.createNestedID('properties', 'values', '4', 'value')
-      const result1 = await gadgetValuesContextFunc({ instance, elemByElemID, field, fieldPath })
+      const result1 = await gadgetValuesContextFunc({ instance, elementsSource, field, fieldPath })
       expect(result1).toEqual('Field')
     })
     it('should determine type based on value prefix for the key: projectOrFilterId', async () => {
       const projectPath = instance.elemID.createNestedID('properties', 'values', '2', 'value')
       const filterPath = instance.elemID.createNestedID('properties', 'values', '3', 'value')
-      const result1 = await gadgetValuesContextFunc({ instance, elemByElemID, field, fieldPath: projectPath })
+      const result1 = await gadgetValuesContextFunc({ instance, elementsSource, field, fieldPath: projectPath })
       expect(result1).toEqual('Project')
-      const result2 = await gadgetValuesContextFunc({ instance, elemByElemID, field, fieldPath: filterPath })
+      const result2 = await gadgetValuesContextFunc({ instance, elementsSource, field, fieldPath: filterPath })
       expect(result2).toEqual('Filter')
     })
   })

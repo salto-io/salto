@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import {
+  BuiltinTypes,
   ElemID,
   InstanceElement,
   ObjectType,
@@ -34,6 +35,12 @@ describe('elementSource', () => {
       const elements = [
         new ObjectType({ elemID: new ElemID('adapter', 'type1') }),
         new ObjectType({ elemID: new ElemID('adapter', 'type2') }),
+        new ObjectType({
+          elemID: new ElemID('adapter', 'nestedType'),
+          fields: {
+            strField: { refType: BuiltinTypes.STRING },
+          },
+        }),
       ]
       const elementsSource = buildElementsSourceFromElements(elements)
 
@@ -58,12 +65,22 @@ describe('elementSource', () => {
       })
 
       describe('get', () => {
-        it('should return element if exists', async () => {
+        it('should return element if it exists', async () => {
           expect(await elementsSource.get(new ElemID('adapter', 'type1'))).toBe(elements[0])
         })
 
-        it('should return undefined if not exists', async () => {
+        it('should return undefined if it does not exists', async () => {
           expect(await elementsSource.get(new ElemID('adapter', 'type3'))).toBeUndefined()
+        })
+
+        it('should return a nested field if it exists', async () => {
+          expect(await elementsSource.get(new ElemID('adapter', 'nestedType', 'field', 'strField'))).toBe(
+            elements[2].fields.strField,
+          )
+        })
+
+        it('should return a nested field if it does not exist', async () => {
+          expect(await elementsSource.get(new ElemID('adapter', 'nestedType', 'field', 'numField'))).toBeUndefined()
         })
       })
 

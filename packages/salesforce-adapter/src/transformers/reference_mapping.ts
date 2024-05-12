@@ -1041,9 +1041,7 @@ export type ReferenceResolverFinder = (
 export const generateReferenceResolverFinder = (
   defs: FieldReferenceDefinition[],
 ): ReferenceResolverFinder => {
-  const referenceDefinitions = defs.map((def) =>
-    FieldReferenceResolver.create(def),
-  )
+  const referenceDefinitions = defs.map(FieldReferenceResolver.create)
 
   const matchersByFieldName = _(referenceDefinitions)
     .filter((def) => _.isString(def.src.field))

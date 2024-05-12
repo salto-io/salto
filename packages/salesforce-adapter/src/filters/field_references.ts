@@ -17,7 +17,6 @@ import {
   Element,
   isInstanceElement,
   isReferenceExpression,
-  isField,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
@@ -102,10 +101,10 @@ const contextStrategyLookup: Record<
   ReferenceContextStrategyName,
   referenceUtils.ContextFunc
 > = {
-  instanceParent: async ({ instance, elemByElemID }) => {
+  instanceParent: async ({ instance, elementsSource }) => {
     const parentRef = getParents(instance)[0]
     const parent = isReferenceExpression(parentRef)
-      ? elemByElemID.get(parentRef.elemID.getFullName())
+      ? await elementsSource.get(parentRef.elemID)
       : undefined
     return parent !== undefined ? apiName(parent) : undefined
   },
@@ -176,39 +175,32 @@ export const addReferences = async (
 ): Promise<void> => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
-  const elementsWithFields = flatMapAsync(
+  const elementsAndFields = flatMapAsync(
     await referenceElements.getAll(),
     extractFlatCustomObjectFields,
   )
-  // TODO - when transformValues becomes async the first index can be to elemID and not the whole
-  // element and we can use the element source directly instead of creating the second index
-  const { elemLookup, elemByElemID } = await multiIndex
+  const { elemIDLookup } = await multiIndex
     .buildMultiIndex<Element>()
     .addIndex({
-      name: 'elemLookup',
+      name: 'elemIDLookup',
       filter: hasApiName,
       key: async (elem) => [await metadataType(elem), await apiName(elem)],
+      map: (elem) => elem.elemID,
     })
-    .addIndex({
-      name: 'elemByElemID',
-      filter: (elem) => !isField(elem),
-      key: (elem) => [elem.elemID.getFullName()],
-    })
-    .process(elementsWithFields)
+    .process(elementsAndFields)
 
   const fieldsWithResolvedReferences = new Set<string>()
-  await awu(elements)
-    .filter(isInstanceElement)
-    .forEach(async (instance) => {
-      instance.value = await replaceReferenceValues({
-        instance,
-        resolverFinder,
-        elemLookupMaps: { elemLookup },
-        fieldsWithResolvedReferences,
-        elemByElemID,
-        contextStrategyLookup,
-      })
+  const instances = elements.filter(isInstanceElement)
+  await awu(instances).forEach(async (instance) => {
+    instance.value = await replaceReferenceValues({
+      instance,
+      resolverFinder,
+      elemIDLookupMaps: { elemIDLookup },
+      fieldsWithResolvedReferences,
+      elementsSource: referenceElements,
+      contextStrategyLookup,
     })
+  })
   log.debug('added references in the following fields: %s', [
     ...fieldsWithResolvedReferences,
   ])

@@ -25,8 +25,10 @@ import {
   ElemID,
   cloneDeepWithoutRefs,
   isElement,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
+  buildElementsSourceFromElements,
   GetLookupNameFunc,
   GetLookupNameFuncArgs,
   TransformFunc,
@@ -69,16 +71,16 @@ const isRelativeSerializer = <CustomIndexField extends string>(
 export const replaceReferenceValues = async <TContext extends string, CustomIndexField extends string>({
   instance,
   resolverFinder,
-  elemLookupMaps,
+  elemIDLookupMaps,
   fieldsWithResolvedReferences,
-  elemByElemID,
+  elementsSource,
   contextStrategyLookup = emptyContextStrategyLookup,
 }: {
   instance: InstanceElement
   resolverFinder: ReferenceResolverFinder<TContext, CustomIndexField>
-  elemLookupMaps: Record<string, multiIndex.Index<[string, string], Element>>
+  elemIDLookupMaps: Record<string, multiIndex.Index<[string, string], ElemID>>
   fieldsWithResolvedReferences: Set<string>
-  elemByElemID: multiIndex.Index<[string], Element>
+  elementsSource: ReadOnlyElementsSource
   contextStrategyLookup?: Record<TContext, ContextFunc>
 }): Promise<Values> => {
   const getRefElem = async ({
@@ -98,15 +100,20 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
     lookupIndexName?: string
     createMissingReference?: CreateMissingRefFunc
   }): Promise<Element | undefined> => {
-    const defaultIndex = Object.values(elemLookupMaps).length === 1 ? Object.values(elemLookupMaps)[0] : undefined
-    const findElem = (value: string, targetType?: string): Element | undefined => {
-      const lookup = lookupIndexName !== undefined ? elemLookupMaps[lookupIndexName] : defaultIndex
+    const defaultIndex = Object.values(elemIDLookupMaps).length === 1 ? Object.values(elemIDLookupMaps)[0] : undefined
+    const findElem = async (value: string, targetType?: string): Promise<Element | undefined> => {
+      const lookup = lookupIndexName !== undefined ? elemIDLookupMaps[lookupIndexName] : defaultIndex
 
       if (targetType === undefined || lookup === undefined) {
         return undefined
       }
 
-      return lookup.get(targetType, value)
+      const elemID = lookup.get(targetType, value)
+      if (elemID === undefined) {
+        return undefined
+      }
+
+      return elementsSource.get(elemID)
     }
 
     const isValidContextFunc = (funcName?: string): boolean =>
@@ -116,19 +123,19 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
     }
     const parentContextFunc =
       target.parentContext !== undefined ? contextStrategyLookup[target.parentContext] : doNothing
-    const elemParent = target.parent ?? (await parentContextFunc({ instance, elemByElemID, field, fieldPath: path }))
+    const elemParent = target.parent ?? (await parentContextFunc({ instance, elementsSource, field, fieldPath: path }))
 
     const typeContextFunc = target.typeContext !== undefined ? contextStrategyLookup[target.typeContext] : doNothing
     const elemType =
       target.type ??
       (await typeContextFunc({
         instance,
-        elemByElemID,
+        elementsSource,
         field,
         fieldPath: path,
       }))
     return (
-      findElem(target.lookup(valTransformation.transform(val), elemParent), elemType) ??
+      (await findElem(target.lookup(valTransformation.transform(val), elemParent), elemType)) ??
       createMissingReference?.({
         value: val.toString(),
         typeName: elemType,
@@ -269,28 +276,26 @@ export const addReferences = async <
   // copied from Salesforce - both should be handled similarly:
   // TODO - when transformValues becomes async the first index can be to elemID and not the whole
   // element and we can use the element source directly instead of creating the second index
-  const indexer = multiIndex.buildMultiIndex<Element>().addIndex({
-    name: 'elemByElemID',
-    key: elem => [elem.elemID.getFullName()],
-  })
+  const indexer = multiIndex.buildMultiIndex<Element>()
 
   fieldsToGroupBy.forEach(fieldName =>
     indexer.addIndex({
       name: fieldName,
       filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
       key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
+      map: inst => inst.elemID,
     }),
   )
-  const { elemByElemID, ...fieldLookups } = await indexer.process(awu(contextElements))
+  const fieldLookups = await indexer.process(awu(contextElements))
 
   const fieldsWithResolvedReferences = new Set<string>()
   await awu(instances).forEach(async instance => {
     instance.value = await replaceReferenceValues({
       instance,
       resolverFinder,
-      elemLookupMaps: fieldLookups as Record<string, multiIndex.Index<[string, string], Element>>,
+      elemIDLookupMaps: fieldLookups as Record<string, multiIndex.Index<[string, string], ElemID>>,
       fieldsWithResolvedReferences,
-      elemByElemID,
+      elementsSource: buildElementsSourceFromElements(contextElements),
       contextStrategyLookup,
     })
   })

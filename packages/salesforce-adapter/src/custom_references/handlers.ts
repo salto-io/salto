@@ -46,7 +46,7 @@ const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
   {
     profiles: false,
     managedElements: false,
-    permisisonSets: true,
+    permisisonSets: false,
   }
 
 export const customReferencesConfiguration = (

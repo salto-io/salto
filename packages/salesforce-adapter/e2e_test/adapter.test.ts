@@ -125,6 +125,12 @@ const { makeArray } = collections.array
 const { PROFILE_METADATA_TYPE } = constants
 const { isDefined } = lowerDashValues
 
+const extractReferenceTo = (annotations: Values): (string | undefined)[] =>
+  makeArray(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).map(
+    (ref: ReferenceExpression | string): string | undefined =>
+      isReferenceExpression(ref) ? ref.elemID.typeName : ref,
+  )
+
 describe('Salesforce adapter E2E with real account', () => {
   let client: SalesforceClient
   let adapter: SalesforceAdapter
@@ -231,6 +237,30 @@ describe('Salesforce adapter E2E with real account', () => {
             ),
           ),
         )
+
+        // Test picklist values
+        expect(
+          lead.fields.CleanStatus.annotations[
+            constants.FIELD_ANNOTATIONS.VALUE_SET
+          ]
+            .map((val: Values) => val[constants.CUSTOM_VALUE.FULL_NAME])
+            .sort(),
+        ).toEqual([
+          'Acknowledged',
+          'Different',
+          'Inactive',
+          'Matched',
+          'NotFound',
+          'Pending',
+          'SelectMatch',
+          'Skipped',
+        ])
+
+        // Test lookup reference_to annotation
+        expect(extractReferenceTo(lead.fields.OwnerId.annotations)).toEqual([
+          'Group',
+          'User',
+        ])
 
         // Test default value for checkbox
         expect(
@@ -1509,6 +1539,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testLookup = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Lookup label')
+        expect(extractReferenceTo(annotations)).toEqual(['Opportunity'])
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         const lookupFilter =
           annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
@@ -1545,6 +1576,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testMasterDetail = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('MasterDetail label')
+        expect(extractReferenceTo(annotations)).toEqual(['Case'])
         expect(
           annotations[constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL],
         ).toBe(true)

@@ -542,6 +542,19 @@ describe('forms filter', () => {
       const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
       expect(formInstance).toBeUndefined()
     })
+    it('should add saltoError response when 403 error is thrown from jira client', async () => {
+      connection.get.mockRejectedValue({
+        response: {
+          status: 403,
+          data: 'insufficient permissions',
+        },
+      })
+      const res = (await filter.onFetch(elements)) as FilterResult
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors?.[0].message).toEqual(
+        'Unable to fetch forms for the following projects: project1, project2. This issue is likely due to insufficient permissions.',
+      )
+    })
   })
   describe('deploy', () => {
     let formInstance: InstanceElement

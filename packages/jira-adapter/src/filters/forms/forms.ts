@@ -127,6 +127,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     const forms = (
       await Promise.all(
         jsmProjects.flatMap(async project => {
+          try {
           const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
           const res = await client.get({ url })
           if (!isFormsResponse(res)) {
@@ -139,7 +140,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
             }
             return undefined
           }
-          return Promise.all(
+          return await Promise.all(
             res.data.map(async formResponse => {
               const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
               const detailedRes = await client.get({ url: detailedUrl })
@@ -165,6 +166,15 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
               )
             }),
           )
+          } catch (e) {
+            log.error(
+              `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(e)}`,
+            )
+            if (e.response?.status === 403) {
+              projectsWithoutForms.push(project.elemID.name)
+            }
+            return undefined
+          }
         }),
       )
     )

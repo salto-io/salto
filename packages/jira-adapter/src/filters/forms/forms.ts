@@ -128,44 +128,44 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       await Promise.all(
         jsmProjects.flatMap(async project => {
           try {
-          const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-          const res = await client.get({ url })
-          if (!isFormsResponse(res)) {
-            if (isExpectedPermissionError(res)) {
-              projectsWithoutForms.push(project.elemID.name)
-            } else {
-              log.error(
-                `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
-              )
+            const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
+            const res = await client.get({ url })
+            if (!isFormsResponse(res)) {
+              if (isExpectedPermissionError(res)) {
+                projectsWithoutForms.push(project.elemID.name)
+              } else {
+                log.error(
+                  `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
+                )
+              }
+              return undefined
             }
-            return undefined
-          }
-          return await Promise.all(
-            res.data.map(async formResponse => {
-              const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-              const detailedRes = await client.get({ url: detailedUrl })
-              if (!isDetailedFormsResponse(detailedRes.data)) {
-                projectsWithUntitledForms.add(project.elemID.name)
-                return undefined
-              }
-              const name = naclCase(`${project.value.key}_${formResponse.name}`)
-              const formValue = detailedRes.data
-              const parentPath = project.path ?? []
-              const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
-              if (jsmDuckTypeApiDefinitions === undefined) {
-                return undefined
-              }
-              return new InstanceElement(
-                name,
-                formType,
-                formValue,
-                [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
-                {
-                  [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
-                },
-              )
-            }),
-          )
+            return await Promise.all(
+              res.data.map(async formResponse => {
+                const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
+                const detailedRes = await client.get({ url: detailedUrl })
+                if (!isDetailedFormsResponse(detailedRes.data)) {
+                  projectsWithUntitledForms.add(project.elemID.name)
+                  return undefined
+                }
+                const name = naclCase(`${project.value.key}_${formResponse.name}`)
+                const formValue = detailedRes.data
+                const parentPath = project.path ?? []
+                const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
+                if (jsmDuckTypeApiDefinitions === undefined) {
+                  return undefined
+                }
+                return new InstanceElement(
+                  name,
+                  formType,
+                  formValue,
+                  [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
+                  {
+                    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
+                  },
+                )
+              }),
+            )
           } catch (e) {
             log.error(
               `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(e)}`,

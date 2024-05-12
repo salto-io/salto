@@ -17,9 +17,9 @@ import _ from 'lodash'
 import path from 'path'
 import { logger } from '@salto-io/logging'
 import {
-  Field,
   getChangeData,
   isElement,
+  isField,
   ObjectType,
   ElemID,
   Element,
@@ -33,7 +33,7 @@ import {
   isTypeReference,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
-import { getPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { inspectValue, resolvePath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 
@@ -45,14 +45,20 @@ const log = logger(module)
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
 
+export type Location = parser.SourceRange & { indexInParent?: number }
+
 export type DetailedChangeWithSource = DetailedChange & {
-  location: parser.SourceRange
-  indexInParent?: number
+  location: Location
   requiresIndent?: boolean
 }
 
 const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string =>
   `${path.join(...(pathParts ?? ['unsorted']))}${FILE_EXTENSION}`
+
+type positionInParent = {
+  followingElementIDs: ElemID[]
+  indexInParent?: number
+}
 
 export const getChangeLocations = (
   change: DetailedChange,
@@ -73,43 +79,43 @@ export const getChangeLocations = (
     }
   }
 
-  const getFollowingElementsInParent = (): [ElemID[], number | undefined] => {
+  const getPositionInParent = (): positionInParent => {
     if (change.baseChange === undefined) {
-      log.warn(`No base change: ${change}`)
-      return [[], undefined]
+      log.warn('No base change: %s', inspectValue(change))
+      return { followingElementIDs: [] }
     }
 
     const changeData = getChangeData(change)
-    const parent = changeData instanceof Field ? changeData.parent : getChangeData(change.baseChange)
-    const pathInParent = getPath(parent, change.id)
-    if (pathInParent === undefined) {
-      log.warn(`Could not get path for ${change.id} in parent: ${parent}`)
-      return [[], undefined]
-    }
+    const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
 
-    const container = _.get(parent, pathInParent.slice(0, -1))
-    if (!(container instanceof Object)) {
-      log.warn(`Got non object container ${container} for path ${pathInParent.slice(0, -1)} in parent: ${parent}`)
-      return [[], undefined]
+    const container = resolvePath(parent, change.id.createParentID())
+    if (!_.isObjectLike(container)) {
+      log.warn(
+        'Got non object container %s for path %s in parent: %s',
+        inspectValue(container),
+        inspectValue(change.id.createParentID()),
+        inspectValue(parent),
+      )
+      return { followingElementIDs: [] }
     }
 
     const idNameParts = change.id.getFullNameParts()
-    const elementName = idNameParts.pop() as string // Element can't have an empty ID
+    const elementName = change.id.name
     const index = Object.keys(container).indexOf(elementName)
     if (index === -1) {
-      log.warn(`Element ${elementName} not found in container: ${container}`)
-      return [[], undefined]
+      log.warn('Element %s not found in container: %s', elementName, inspectValue(container))
+      return { followingElementIDs: [] }
     }
 
-    return [
-      Object.keys(container)
+    return {
+      followingElementIDs: Object.keys(container)
         .slice(index + 1)
         .map(k => ElemID.fromFullNameParts([...idNameParts, k])),
-      index,
-    ]
+      indexInParent: index,
+    }
   }
 
-  const findLocations = (): { location: parser.SourceRange; indexInParent?: number; requiresIndent?: boolean }[] => {
+  const findLocations = (): { location: Location; requiresIndent?: boolean }[] => {
     if (change.action !== 'add') {
       // We want to get the location of the existing element
       const possibleLocations = sourceMap.get(change.id.getFullName()) ?? []
@@ -124,8 +130,8 @@ export const getChangeLocations = (
       }
     } else if (!change.id.isTopLevel()) {
       const fileName = createFileNameFromPath(change.path)
-      const [followingElements, indexInParent] = getFollowingElementsInParent()
-      const possibleFollowingElementsRanges = followingElements
+      const { followingElementIDs, indexInParent } = getPositionInParent()
+      const possibleFollowingElementsRanges = followingElementIDs
         .map(elemID => sourceMap.get(elemID.getFullName()))
         .filter(isDefined)
         .flat()
@@ -137,8 +143,8 @@ export const getChangeLocations = (
               filename: fileName,
               start: possibleFollowingElementsRanges[0].start,
               end: possibleFollowingElementsRanges[0].start,
+              indexInParent,
             },
-            indexInParent,
           },
         ]
       }
@@ -308,7 +314,7 @@ export const updateNaclFileData = async (
       newData,
       start: change.location.start.byte,
       end: change.location.end.byte,
-      indexInParent: change.indexInParent,
+      indexInParent: change.location.indexInParent,
       action: change.action,
     }
   }

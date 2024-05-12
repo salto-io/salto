@@ -497,8 +497,8 @@ describe('updateNaclFileData', () => {
             filename: 'file',
             start: { col: 3, line: 3, byte: 40 },
             end: { col: 3, line: 3, byte: 40 },
+            indexInParent: 3,
           },
-          indexInParent: 3,
         },
         {
           ...toChange({ after: mockType.fields.numArray }),
@@ -507,8 +507,8 @@ describe('updateNaclFileData', () => {
             filename: 'file',
             start: { col: 3, line: 3, byte: 40 },
             end: { col: 3, line: 3, byte: 40 },
+            indexInParent: 2,
           },
-          indexInParent: 2,
         },
       ]
     })

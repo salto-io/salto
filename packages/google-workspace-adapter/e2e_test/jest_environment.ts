@@ -24,11 +24,10 @@ import { Credentials } from '../src/auth'
 
 const log = logger(module)
 
-export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> => {
-  const addEnvName = (varName: string): string => (envName === undefined ? varName : [varName, envName].join('_'))
-  const googleWorkspaceClientIdVarName = addEnvName('GOOGLE_WORKSPACE_CLIENT_ID')
-  const googleWorkspaceClientSecretVarName = addEnvName('GOOGLE_WORKSPACE_CLIENT_SECRET')
-  const googleWorkspaceRefreshTokenVarName = addEnvName('GOOGLE_WORKSPACE_REFRESH_TOKEN')
+export const credsSpec = (): CredsSpec<Required<Credentials>> => {
+  const googleWorkspaceClientIdVarName = 'GOOGLE_WORKSPACE_CLIENT_ID'
+  const googleWorkspaceClientSecretVarName = 'GOOGLE_WORKSPACE_CLIENT_SECRET'
+  const googleWorkspaceRefreshTokenVarName = 'GOOGLE_WORKSPACE_REFRESH_TOKEN'
   return {
     envHasCreds: env => googleWorkspaceClientIdVarName in env,
     fromEnv: env => {
@@ -42,8 +41,8 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
     validate: async (_creds: Credentials): Promise<void> => {
       // TODO
     },
-    typeName: 'google_workspace',
-    globalProp: envName ? `google_workspace_${envName}` : 'google_workspace',
+    typeName: 'google-workspace',
+    globalProp: 'google-workspace',
   }
 }
 

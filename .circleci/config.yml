@@ -108,3 +108,4 @@ workflows:
             - find_changed_packages
           checkout: false
           configuration_path: .circleci/continue_config.yml
+          workspace_path: .

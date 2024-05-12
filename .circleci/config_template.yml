@@ -116,6 +116,8 @@ jobs:
     working_directory: /mnt/ramdisk/project
 
     steps:
+      - attach_workspace:
+          at: .
       - when:
           condition: << parameters.e2e_or_unittest >> == 'e2e'
           steps:

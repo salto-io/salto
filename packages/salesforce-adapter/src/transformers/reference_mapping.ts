@@ -270,7 +270,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'field',
-      parentTypes: ['ReportColumn', 'PermissionSetFieldPermissions'],
+      parentTypes: ['ReportColumn'],
     },
     target: { type: CUSTOM_FIELD },
   },
@@ -430,7 +430,6 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
         'FlowRecordCreate',
         'FlowRecordDelete',
         'FlowStart',
-        'PermissionSetObjectPermissions',
       ],
     },
     target: { type: CUSTOM_OBJECT },
@@ -893,9 +892,17 @@ export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefiniti
       src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
       target: { type: CUSTOM_FIELD },
     },
+    {
+      src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
+      target: { type: CUSTOM_FIELD },
+    },
   ]
 
-export const referencesFromProfile: FieldReferenceDefinition[] = [
+const referencesFromProfileOrPermissionSet: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
+    target: { type: CUSTOM_OBJECT },
+  },
   {
     src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
@@ -948,7 +955,7 @@ export const referencesFromProfile: FieldReferenceDefinition[] = [
 const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   ...defaultFieldNameToTypeMappingDefs,
   ...fieldPermissionEnumDisabledExtraMappingDefs,
-  ...referencesFromProfile,
+  ...referencesFromProfileOrPermissionSet,
 ]
 
 export const getReferenceMappingDefs = (args: {
@@ -960,7 +967,7 @@ export const getReferenceMappingDefs = (args: {
     refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
   }
   if (args.otherProfileRefs) {
-    refDefs = refDefs.concat(referencesFromProfile)
+    refDefs = refDefs.concat(referencesFromProfileOrPermissionSet)
   }
   return refDefs
 }

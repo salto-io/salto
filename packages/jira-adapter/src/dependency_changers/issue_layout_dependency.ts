@@ -58,13 +58,7 @@ export const issueLayoutDependencyChanger: DependencyChanger = async changes => 
 
   const issueLayoutsKeysToProject = Object.fromEntries(
     AdditionOrModificationChanges.filter(({ change }) => getChangeData(change).elemID.typeName === ISSUE_LAYOUT_TYPE)
-      .map(({ key, change }) => {
-        const parentChange = getSpecificChange(getParent(getChangeData(change))?.elemID, AdditionOrModificationChanges)
-        const project =
-          parentChange !== undefined ? getChangeData(parentChange.change) : getParent(getChangeData(change))
-
-        return [key, project]
-      })
+      .map(({ key, change }) => [key, getParent(getChangeData(change))])
       .filter(([_, project]) => project !== undefined) as [string, InstanceElement][],
   )
 
@@ -81,13 +75,7 @@ export const issueLayoutDependencyChanger: DependencyChanger = async changes => 
     ) as string[][]
 
   Object.entries(issueLayoutsKeysToProject).forEach(([issueLayoutKey, project]) => {
-    const projectIssueTypeScreenSchemeChange = getSpecificChange(
-      project.value.issueTypeScreenScheme?.elemID,
-      AdditionOrModificationChanges,
-    )
-    const projectIssueTypeMapping = projectIssueTypeScreenSchemeChange
-      ? getChangeData(projectIssueTypeScreenSchemeChange.change).value.issueTypeMappings
-      : project.value.issueTypeScreenScheme?.value.value.issueTypeMappings
+    const projectIssueTypeMapping = project.value.issueTypeScreenScheme?.value.value.issueTypeMappings
     const issueLayoutKeyToProjectScreenSchemesKeys = projectIssueTypeMapping
       ?.map((issueTypeMapping: issueTypeMappingStruct) =>
         getSpecificChange(issueTypeMapping.screenSchemeId.elemID, AdditionOrModificationChanges),

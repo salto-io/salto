@@ -487,7 +487,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true, useOldFormat: false },
+        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true, useOldFormat: true },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },

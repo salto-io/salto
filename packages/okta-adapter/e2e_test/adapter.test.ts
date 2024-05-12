@@ -53,6 +53,8 @@ import {
   ACCESS_POLICY_RULE_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  APP_LOGO_TYPE_NAME,
+  APP_USER_SCHEMA_TYPE_NAME,
   APPLICATION_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
@@ -76,6 +78,8 @@ const log = logger(module)
 
 // Set long timeout as we communicate with Okta APIs
 jest.setTimeout(1000 * 60 * 10)
+
+const TEST_PREFIX = 'Test'
 
 const createInstance = ({
   typeName,
@@ -114,7 +118,7 @@ const createInstance = ({
   )
 }
 
-const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): InstanceElement[] => {
+const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
   const createName = (type: string): string => `Test${type}${testSuffix}`
 
   const groupInstance = createInstance({
@@ -253,16 +257,16 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
     name: groupInstance.elemID.name,
   })
   return [
-    groupInstance,
-    anotherGroupInstance,
-    ruleInstance,
-    zoneInstance,
-    accessPolicy,
-    accessPolicyRule,
-    profileEnrollment,
-    profileEnrollmentRule,
-    app,
-    appGroupAssignment,
+    toChange({ after: groupInstance }),
+    toChange({ after: anotherGroupInstance }),
+    toChange({ after: ruleInstance }),
+    toChange({ after: zoneInstance }),
+    toChange({ after: accessPolicy }),
+    toChange({ after: accessPolicyRule }),
+    toChange({ after: profileEnrollment }),
+    toChange({ after: profileEnrollmentRule }),
+    toChange({ after: app }),
+    toChange({ after: appGroupAssignment }),
   ]
 }
 
@@ -271,12 +275,12 @@ const nullProgressReporter: ProgressReporter = {
   reportProgress: () => {},
 }
 
-const deployChanges = async (adapterAttr: Reals, instancesToAdd: InstanceElement[]): Promise<DeployResult[]> => {
-  const planElementById = _.keyBy(instancesToAdd, inst => inst.elemID.getFullName())
-  const deployResults = await awu(instancesToAdd)
-    .map(async instance => {
+const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<DeployResult[]> => {
+  const planElementById = _.keyBy(changes.map(getChangeData), inst => inst.elemID.getFullName())
+  return awu(changes)
+    .map(async change => {
       const deployResult = await adapterAttr.adapter.deploy({
-        changeGroup: { groupID: instance.elemID.getFullName(), changes: [toChange({ after: instance })] },
+        changeGroup: { groupID: getChangeData(change).elemID.getFullName(), changes: [change] },
         progressReporter: nullProgressReporter,
       })
       expect(deployResult.errors).toHaveLength(0)
@@ -293,41 +297,55 @@ const deployChanges = async (adapterAttr: Reals, instancesToAdd: InstanceElement
       return deployResult
     })
     .toArray()
-  return deployResults
 }
 
-const removeApp = async (adapterAttr: Reals, changes: Change<InstanceElement>[]): Promise<void> => {
-  const activeApp = changes
+const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement>[]): Promise<void> => {
+  await awu(changes)
     .map(change => getChangeData(change))
-    .find(inst => inst.elemID.typeName === APPLICATION_TYPE_NAME)
-  if (activeApp === undefined) {
-    throw new Error('Could not find deployed application, failed to clean e2e changes')
-  }
-  const inactiveApp = activeApp.clone()
-  inactiveApp.value.status = INACTIVE_STATUS
-  // Application must be deactivated before removal
-  const appDeactivationChange = toChange({ before: activeApp, after: inactiveApp })
-  const appDeployResult = await adapterAttr.adapter.deploy({
-    changeGroup: {
-      groupID: getChangeData(appDeactivationChange).elemID.getFullName(),
-      changes: [appDeactivationChange],
-    },
-    progressReporter: nullProgressReporter,
-  })
+    .filter(inst => inst.elemID.typeName === APPLICATION_TYPE_NAME)
+    .forEach(async activeApp => {
+      const inactiveApp = activeApp.clone()
+      inactiveApp.value.status = INACTIVE_STATUS
+      // Application must be deactivated before removal
+      const appDeactivationChange = toChange({ before: activeApp, after: inactiveApp })
+      const appDeployResult = await adapterAttr.adapter.deploy({
+        changeGroup: {
+          groupID: getChangeData(appDeactivationChange).elemID.getFullName(),
+          changes: [appDeactivationChange],
+        },
+        progressReporter: nullProgressReporter,
+      })
 
-  const appRemovalChange = appDeployResult.appliedChanges.find(
-    change => getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME,
-  )
-  if (appRemovalChange === undefined) {
-    throw new Error('Could not find deployed application, failed to clean e2e changes')
-  }
-  await adapterAttr.adapter.deploy({
-    changeGroup: {
-      groupID: getChangeData(appRemovalChange).elemID.getFullName(),
-      changes: [toChange({ before: getChangeData(appRemovalChange) })],
-    },
-    progressReporter: nullProgressReporter,
-  })
+      const appRemovalChange = appDeployResult.appliedChanges.find(
+        change => getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME,
+      )
+      if (appRemovalChange === undefined) {
+        throw new Error('Could not find deployed application, failed to clean e2e changes')
+      }
+      await adapterAttr.adapter.deploy({
+        changeGroup: {
+          groupID: getChangeData(appRemovalChange).elemID.getFullName(),
+          changes: [toChange({ before: getChangeData(appRemovalChange) })],
+        },
+        progressReporter: nullProgressReporter,
+      })
+    })
+}
+
+const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<InstanceElement>[]> =>
+  elements
+    .filter(isInstanceElement)
+    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
+    .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
+    .map(instance => toChange({ before: instance }))
+
+const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): Promise<void> => {
+  log.debug('Cleaning up the environment before starting e2e test')
+  const cleanupChanges = await getChangesForInitialCleanup(elements)
+  const removals = cleanupChanges.filter(change => getChangeData(change).elemID.typeName !== APPLICATION_TYPE_NAME)
+  await removeAllApps(adapterAttr, cleanupChanges)
+  await deployChanges(adapterAttr, removals)
+  log.debug('Environment cleanup successful')
 }
 
 describe('Okta adapter E2E', () => {
@@ -338,8 +356,8 @@ describe('Okta adapter E2E', () => {
     let elements: Element[] = []
     let deployResults: DeployResult[]
 
-    const deployAndFetch = async (instancesToAdd: InstanceElement[]): Promise<void> => {
-      deployResults = await deployChanges(adapterAttr, instancesToAdd)
+    const deployAndFetch = async (changes: Change[]): Promise<void> => {
+      deployResults = await deployChanges(adapterAttr, changes)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
@@ -366,18 +384,14 @@ describe('Okta adapter E2E', () => {
         { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
         DEFAULT_CONFIG,
       )
-      const firstFetchResult = await adapterAttr.adapter.fetch({
+      const fetchBeforeCleanupResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
+      const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
+      await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 
-      adapterAttr = realAdapter(
-        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements(firstFetchResult.elements) },
-        DEFAULT_CONFIG,
-      )
-
-      const types = firstFetchResult.elements.filter(isObjectType)
-      const instancesToAdd = createInstancesForDeploy(types, testSuffix)
-      await deployAndFetch(instancesToAdd)
+      const changesToDeploy = createChangesForDeploy(types, testSuffix)
+      await deployAndFetch(changesToDeploy)
     })
 
     afterAll(async () => {
@@ -387,7 +401,7 @@ describe('Okta adapter E2E', () => {
         .filter(isInstanceChange)
 
       // Application must be removed separately
-      await removeApp(adapterAttr, appliedChanges)
+      await removeAllApps(adapterAttr, appliedChanges)
 
       const removalChanges = appliedChanges
         // Application was removed in the prev step
@@ -427,7 +441,7 @@ describe('Okta adapter E2E', () => {
       }
       log.info('Okta adapter E2E: Log counts = %o', log.getLogCount())
     })
-    it('should fetch the regular instances and types', async () => {
+    describe('fetch the regular instances and types', () => {
       const expectedTypes = [
         'AccessPolicy',
         'AccessPolicyRule',
@@ -487,18 +501,26 @@ describe('Okta adapter E2E', () => {
         APPLICATION_TYPE_NAME,
       ])
 
-      const createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
-      const createdInstances = elements.filter(isInstanceElement)
-      expectedTypes.forEach(typeName => {
+      let createdTypeNames: string[]
+      let createdInstances: InstanceElement[]
+
+      beforeAll(async () => {
+        createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
+        createdInstances = elements.filter(isInstanceElement)
+      })
+
+      it.each(expectedTypes)('should fetch %s', async typeName => {
         expect(createdTypeNames).toContain(typeName)
         if (typesWithInstances.has(typeName)) {
           expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
         }
       })
-      const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
-      expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
-      // Validate subdomain field exist as we use it in many flows
-      expect(orgSettingInst[0]?.value.subdomain).toBeDefined()
+      it('should fetch OrgSetting and validate subdomain field', async () => {
+        const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
+        expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
+        // Validate subdomain field exist as we use it in many flows
+        expect(orgSettingInst[0]?.value.subdomain).toBeDefined()
+      })
     })
     it('should fetch the newly deployed instances', async () => {
       const deployInstances = deployResults
@@ -509,8 +531,8 @@ describe('Okta adapter E2E', () => {
       deployInstances.forEach(deployedInstance => {
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
         expect(instance).toBeDefined()
-        // Omit '_links' as this field is hidden
-        const originalValue = _.omit(instance?.value, '_links')
+        // Omit hidden fields
+        const originalValue = _.omit(instance?.value, ['_links', 'customName'])
         const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
         if (!isEqualResult) {
           log.error(

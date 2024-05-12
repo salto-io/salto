@@ -326,15 +326,7 @@ workflows:
     jobs:
       - save_project_cache
 
-      - test:
-          matrix:
-            parameters:
-              e2e_or_unittest:
-                - e2e
-                - unittest
-              package_name:
-                - ${PACKAGES_TO_TEST}
-
+      TEST_MATRIX
       - test_cli_mac:
           requires:
             - package_cli
@@ -347,13 +339,9 @@ workflows:
           requires:
             - package_cli
 
-      - package_cli:
-          requires:
-            - test
+      - package_cliDOES_NEED_TEST_REQUIREMENT
 
-      - package_vscode_extension:
-          requires:
-            - test
+      - package_vscode_extensionDOES_NEED_TEST_REQUIREMENT
 
       - sync_s3_pkg_latest:
           requires:

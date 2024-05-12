@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 const { execSync } = require('child_process')
-const { existsSync, readFileSync, writeFileSync, readdirSync } = require('fs')
+const { readFileSync, writeFileSync } = require('fs')
 const path = require('path')
 
 function getChangedFiles() {
@@ -99,12 +99,21 @@ function main() {
     }
   }
 
-  // Add the list of packages to config.yml
+  // Add the list of packages to config.yml if necessary
   const configTemplatePath = path.join(__dirname, '..', 'config_template.yml')
   const continueConfigFilePath = path.join(__dirname, '..', 'continue_config.yml')
-  const configData = readFileSync(configTemplatePath, 'utf8')
-  configData.replace('${PACKAGES_TO_TEST}', Array.from(packagesToTest).join('\n              - '))
-  writeFileSync(continueConfigFilePath, configData)
+  const configTemplate = readFileSync(configTemplatePath, 'utf8')
+  const packagesArray = Array.from(packagesToTest)
+  let alteredConfigTemplate
+  if (packagesArray.length === 0) {
+    alteredConfigTemplate = configTemplate.replace('DOES_NEED_TEST_REQUIREMENT', '').replace('TEST_MATRIX', '')
+  } else {
+    const requireTests = ':\n    requires:\n      - test'
+    const testMatrix = '- test:\n    matrix:\n      parameters:\n        e2e_or_unittest:\n          - e2e\n          - unittest\n        package_name:\n          - '.concat(packagesArray.join('\n              - '))
+    alteredConfigTemplate = configTemplate.replace('/DOES_NEED_TEST_REQUIREMENT/g', requireTests).replace('TEST_MATRIX', testMatrix)
+  }
+  writeFileSync(continueConfigFilePath, alteredConfigTemplate)
+  console.log(alteredConfigTemplate)
   console.log(`Updated ${continueConfigFilePath} with packages to test: ${Array.from(packagesToTest).join(', ')}`)
 }
 

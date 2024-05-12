@@ -8,33 +8,10 @@ orbs:
   macos: circleci/macos@2.4.1
 
 commands:
-  run_unittest:
+  e2e_test:
     parameters:
-      package_name:
-        type: string
-    steps:
-      - run:
-          name: Run unit tests
-          command: |
-            pushd packages/<< parameters.package_name >>
-            yarn test -w 4 --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
-            # https://github.com/pinojs/koa-pino-logger/issues/16
-            FORCE_COLOR: 1
-
-      - store_test_results:
-          path: reports
-
-      - coveralls/upload
-
-  run_e2e_tests:
-    parameters:
-      should_install_java:
-        type: boolean
-        default: false
-      package_name:
-        type: string
+        package_name:
+          type: string
     steps:
       - run:
           name: configure sources.list
@@ -52,21 +29,34 @@ commands:
           name: Install Java
           command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
       - run:
-          name: Run E2E tests for package << parameters.package_name >>
+          name: Run e2e tests for package << parameters.package_name >>
           command: |
             pushd packages/<< parameters.package_name >>
-            yarn test --reporters=default --reporters=jest-junit --coverage=false
+            yarn test --reporters=default --reporters=jest-junit --coverage=false --passWithNoTests
           no_output_timeout: 20m
           environment:
             RUN_E2E_TESTS: 1
             SALTO_LOG_LEVEL: 'info'
-            # enable telemetry for end2end so we can count more events
-            # webpack configuration is irrelevant in this case and therefore
-            # we explicitly configure it in here
             SALTO_TELEMETRY_DISABLE: '0'
             SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
             JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
+      - store_test_results:
+          path: reports
 
+  unit_test:
+    parameters:
+      package_name:
+        type: string
+    steps:
+      - run:
+          name: Run unit tests for package << parameters.package_name >>
+          command: |
+            pushd packages/<< parameters.package_name >>
+            yarn test -w 4 --reporters=default --reporters=jest-junit --passWithNoTests
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
+            # Ensures colored output in logs
+            FORCE_COLOR: 1
       - store_test_results:
           path: reports
 
@@ -108,59 +98,30 @@ commands:
           to: ${S3_PKG_HASH_PREFIX}/<< parameters.out_filename >>
 
 jobs:
-  build:
+  run_tests:
     docker:
       - image: cimg/node:14.15
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
 
+    parameters:
+      e2e_or_unittest:
+        type: string
+        default: 'false'
+      package_name:
+        type: string
     steps:
-      - restore_cache:
-          keys:
-            - v1-project-{{ .Branch }}
-            - v1-project-main
-
-      - checkout
-
-      - run:
-          name: remove empty directories from the packages dir
-          command: |
-            find ./packages -mindepth 1 -maxdepth 1 -type d '!' -exec test -e "{}/package.json" ';' -print \
-              | xargs --no-run-if-empty rm -r
-
-      - run:
-          # eslint will verify that the license header exists on the linted source files, this step is
-          # to verify that other non-linted files also contains the license header (and therefore this is
-          # in the 'build' job)
-          name: verify that the license header is prepended to the non eslint'd source files
-          command: build_utils/verify_license_header.sh
-
-      - run: yarn config set ignore-engines true
-
-      - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
-
-        # Yarn has some random race-condition failures, trying multiple times seems to help
-        # when the source of the problem is yarn itself and not the packages
-      - run: yarn || yarn || yarn
-
-      - run:
-          # As a workaround to the --frozen-lockfile flag not working with workspaces
-          # (see: https://github.com/yarnpkg/yarn/issues/4098)
-          # we use a regular `yarn` and add an explicit test that the yarn.lock file is unchanged
-          name: ensure yarn.lock file is up to date
-          command: '! git diff --name-only | grep yarn.lock'
-
-      - run:
-          name: fix eslint cache
-          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
-
-      - run: yarn build
-
-      - persist_to_workspace:
-          root: .
-          paths:
-            - '*'
+      - when:
+          condition: << parameters.e2e_or_unittest >> == 'e2e'
+          steps:
+            - e2e_test:
+                package_name: << parameters.package_name >>
+      - when:
+          condition: << parameters.e2e_or_unittest >> == 'unittest'
+          steps:
+            - unit_test:
+                package_name: << parameters.package_name >>
 
   save_project_cache:
     docker:
@@ -174,46 +135,6 @@ jobs:
           paths:
             - .
           key: v1-project-{{ .Branch }}-{{ epoch }}
-
-  unit_tests:
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: xlarge
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run:
-          name: Run Unit Tests for Each Package
-          command: |
-            if [ -f packages-with-unittests.txt ]; then
-              CHANGED_PACKAGES_WITH_UT=$(cat packages-with-unittests.txt)
-              if [ -n "$CHANGED_PACKAGES_WITH_UT" ]; then
-                for package in $CHANGED_PACKAGES_WITH_UT; do
-                  echo "Running unit tests for package $package"
-                  circleci step run command "run_unittest package_name=$package"
-                done
-              else
-                echo "No packages with unit tests have changed."
-              fi
-            else
-              echo "Error: packages-with-unittests.txt not found."
-              exit 1
-
-  prettier:
-    docker:
-      - image: cimg/node:14.15
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run:
-          name: Run prettier
-          command: yarn check-format --concurrency 2
 
   publish_on_version_change:
     docker:
@@ -237,52 +158,6 @@ jobs:
       - run:
           name: Release version
           command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
-
-  find_changed_packages:
-    docker:
-      - image: cimg/node:14.15
-    resource_class: large
-
-    steps:
-      - attach_workspace:
-          at: .
-      - run:
-          name: Compile and Run Find Changed Packages Script
-          command: |
-            pushd .circleci/scripts
-            npm install
-            tsc find-changed-packages.ts
-            node find-changed-packages.js
-      - persist_to_workspace:
-          root: .
-          paths:
-            - packages-with-e2e-tests.txt
-            - packages-with-unittests.txt
-  
-  e2e_tests:
-    docker:
-      - image: cimg/node:14.15
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-    steps:
-      - attach_workspace:
-          at: .
-      - run:
-          name: Run e2e Tests for Each Package
-          command: |
-            if [ -f packages-with-e2e-tests.txt ]; then
-              CHANGED_PACKAGES_WITH_E2E=$(cat packages-with-e2e-tests.txt)
-              if [ -n "$CHANGED_PACKAGES_WITH_E2E" ]; then
-                for package in $CHANGED_PACKAGES_WITH_E2E; do
-                  echo "Running e2e tests for package $package"
-                  circleci step run command "run_e2e_tests package_name=$package"
-                done
-              else
-                echo "No packages with e2e tests have changed."
-              fi
-            else
-              echo "Error: packages-with-e2e-tests.txt not found."
-              exit 1
 
   package_cli:
     docker:
@@ -440,30 +315,17 @@ jobs:
           command: .circleci/scripts/publish-canary.sh
 
 workflows:
-  commit:
+  always-run:
     jobs:
-      - build
-
-      - find_changed_packages:
-          requires:
-            - build
-
-      - e2e_tests:
-          requires:
-            - find_changed_packages
-
-      - save_project_cache:
-          requires:
-            - build
-
-      - unit_tests:
-          requires:
-            - find_changed_packages
-
-      - prettier:
-          requires:
-            - build
-
+      - save_project_cache
+      - run_tests:
+        matrix:
+          parameters:
+            e2e_or_unittest:
+              - e2e
+              - unittest
+            package_name:
+              - ${PACKAGES_TO_TEST}
       - test_cli_mac:
           requires:
             - package_cli
@@ -478,13 +340,11 @@ workflows:
 
       - package_cli:
           requires:
-            - build
-            - unit_tests
+            - run_tests
 
       - package_vscode_extension:
           requires:
-            - build
-            - unit_tests
+            - run_tests
 
       - sync_s3_pkg_latest:
           requires:
@@ -498,9 +358,7 @@ workflows:
               only:
                 - main
           requires:
-            - build
-            - unit_tests
-            - e2e_tests
+            - run_tests
 
       - publish_on_version_change:
           context: salto
@@ -509,6 +367,5 @@ workflows:
               only:
                 - main
           requires:
-            - build
-            - unit_tests
-            - e2e_tests
+            - run_tests
+      

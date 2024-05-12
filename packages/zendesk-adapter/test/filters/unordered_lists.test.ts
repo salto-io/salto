@@ -287,11 +287,13 @@ describe('Unordered lists filter', () => {
         { title: 'bravo', type: 'alpha' },
       ],
     })
+    const referenceExpressionInWorkspaceApps = new ReferenceExpression(new ElemID('zendesk', 'd'))
     const workspaceWithMultipleApps = new InstanceElement('workspaceWithNoApps', workspaceType, {
       apps: [
-        { name: 'c', position: 3 },
-        { name: 'b', position: 2 },
-        { name: 'a', position: 1 },
+        { id: 'b', position: 2 },
+        { id: 'c', position: 3 },
+        { id: referenceExpressionInWorkspaceApps, position: 1 },
+        { id: 'a', position: 1 },
       ],
     })
 
@@ -581,13 +583,15 @@ describe('Unordered lists filter', () => {
     })
 
     it('should sort apps by position', async () => {
-      expect(instance.value.apps).toHaveLength(3)
-      expect(instance.value.apps[0].name).toEqual('a')
+      expect(instance.value.apps).toHaveLength(4)
       expect(instance.value.apps[0].position).toEqual(1)
-      expect(instance.value.apps[1].name).toEqual('b')
-      expect(instance.value.apps[1].position).toEqual(2)
-      expect(instance.value.apps[2].name).toEqual('c')
-      expect(instance.value.apps[2].position).toEqual(3)
+      expect(instance.value.apps[0].id.elemID.getFullName()).toEqual('zendesk.d')
+      expect(instance.value.apps[1].id).toEqual('a')
+      expect(instance.value.apps[1].position).toEqual(1)
+      expect(instance.value.apps[2].id).toEqual('b')
+      expect(instance.value.apps[2].position).toEqual(2)
+      expect(instance.value.apps[3].id).toEqual('c')
+      expect(instance.value.apps[3].position).toEqual(3)
     })
   })
   describe('routing attribute', () => {

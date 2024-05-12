@@ -86,17 +86,11 @@ jobs:
           name: Compile and Run Find Changed Packages Script
           command: |
             pushd .circleci/scripts
-            npm install
             node find_changed_packages
-            popd
-            for package in $(cat packages-to-test.txt); do
-              echo "                - $package" >> config.yml
-            done
-
       - persist_to_workspace:
           root: .
           paths:
-            - continue_config.yml
+            - .circleci/continue_config.yml
   
 
 workflows:

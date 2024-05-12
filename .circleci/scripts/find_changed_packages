@@ -100,11 +100,12 @@ function main() {
   }
 
   // Add the list of packages to config.yml
-  const configFilePath = path.join(__dirname, '..', 'config.yml')
-  const configData = readFileSync(configFilePath, 'utf8')
+  const configTemplatePath = path.join(__dirname, '..', 'config_template.yml')
+  const continueConfigFilePath = path.join(__dirname, '..', 'continue_config.yml')
+  const configData = readFileSync(configTemplatePath, 'utf8')
   configData.replace('${PACKAGES_TO_TEST}', Array.from(packagesToTest).join('\n              - '))
-  writeFileSync(configFilePath, configData)
-  console.log(`Updated ${configFilePath} with packages to test: ${Array.from(packagesToTest).join(', ')}`)
+  writeFileSync(continueConfigFilePath, configData)
+  console.log(`Updated ${continueConfigFilePath} with packages to test: ${Array.from(packagesToTest).join(', ')}`)
 }
 
 main()

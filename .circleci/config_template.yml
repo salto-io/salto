@@ -59,6 +59,10 @@ commands:
             FORCE_COLOR: 1
       - store_test_results:
           path: reports
+      - persist_to_workspace:
+          root: .
+          paths:
+            - packages/<< parameters.package_name >>/reports/unittests
 
   set_s3_pkg_urls:
     steps:
@@ -98,19 +102,19 @@ commands:
           to: ${S3_PKG_HASH_PREFIX}/<< parameters.out_filename >>
 
 jobs:
-  run_tests:
+  test:
+    parameters:
+      e2e_or_unittest:
+        type: string
+      package_name:
+        type: string
+
     docker:
       - image: cimg/node:14.15
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
 
-    parameters:
-      e2e_or_unittest:
-        type: string
-        default: 'false'
-      package_name:
-        type: string
     steps:
       - when:
           condition: << parameters.e2e_or_unittest >> == 'e2e'
@@ -122,6 +126,7 @@ jobs:
           steps:
             - unit_test:
                 package_name: << parameters.package_name >>
+            - coveralls/upload
 
   save_project_cache:
     docker:
@@ -315,17 +320,19 @@ jobs:
           command: .circleci/scripts/publish-canary.sh
 
 workflows:
-  always-run:
+  commit:
     jobs:
       - save_project_cache
-      - run_tests:
-        matrix:
-          parameters:
-            e2e_or_unittest:
-              - e2e
-              - unittest
-            package_name:
-              - ${PACKAGES_TO_TEST}
+
+      - test:
+          matrix:
+            parameters:
+              e2e_or_unittest:
+                - e2e
+                - unittest
+              package_name:
+                - ${PACKAGES_TO_TEST}
+
       - test_cli_mac:
           requires:
             - package_cli
@@ -340,11 +347,11 @@ workflows:
 
       - package_cli:
           requires:
-            - run_tests
+            - test
 
       - package_vscode_extension:
           requires:
-            - run_tests
+            - test
 
       - sync_s3_pkg_latest:
           requires:
@@ -358,7 +365,7 @@ workflows:
               only:
                 - main
           requires:
-            - run_tests
+            - test
 
       - publish_on_version_change:
           context: salto
@@ -367,5 +374,5 @@ workflows:
               only:
                 - main
           requires:
-            - run_tests
+            - test
       

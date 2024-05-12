@@ -96,11 +96,11 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - config.yml
+            - continue_config.yml
   
 
 workflows:
-  always-run:
+  commit:
     jobs:
       - build
       - find_changed_packages:

@@ -106,4 +106,5 @@ workflows:
       - continuation/continue:
           requires:
             - find_changed_packages
+          checkout: false
           configuration_path: .circleci/continue_config.yml

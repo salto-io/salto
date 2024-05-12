@@ -106,8 +106,10 @@ workflows:
       - find_changed_packages:
           requires:
             - build
-      - prettier
+      - prettier:
+          requires:
+            - build
       - continuation/continue:
           requires:
             - find_changed_packages
-          configuration_path: .circleci/config.yml
+          configuration_path: .circleci/continue_config.yml

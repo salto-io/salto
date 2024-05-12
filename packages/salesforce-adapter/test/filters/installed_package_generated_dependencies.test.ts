@@ -26,7 +26,6 @@ import {
   buildFilterContext,
   createCustomMetadataType,
   createCustomObjectType,
-  defaultFilterContext,
 } from '../utils'
 import filterCreator from '../../src/filters/installed_package_generated_dependencies'
 import { API_NAME } from '../../src/constants'
@@ -52,7 +51,11 @@ describe('installedPackageElementsFilter', () => {
           ),
         ]
         filter = filterCreator({
-          config: defaultFilterContext,
+          config: buildFilterContext({
+            customReferencesSettings: {
+              managedElements: false,
+            },
+          }),
         }) as FilterWith<'onFetch'>
       })
 

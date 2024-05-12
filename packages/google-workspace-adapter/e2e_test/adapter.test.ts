@@ -40,17 +40,12 @@ describe('Google Workspace adapter E2E', () => {
 
     beforeAll(async () => {
       log.resetLogCount()
-      console.log('beforeAll0')
       credLease = await credsLease()
-      console.log('beforeAll1')
       adapterAttr = realAdapter({ credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) })
-      console.log('beforeAll2')
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
-      console.log('beforeAll3')
       elements = fetchResult.elements
-      console.log('beforeAll4')
     })
 
     afterAll(async () => {

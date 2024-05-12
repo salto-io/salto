@@ -209,7 +209,11 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = ['profiles', 'managedElements'] as const
+const customReferencesHandlersNames = [
+  'profiles',
+  'managedElements',
+  'permisisonSets',
+] as const
 export type CustomReferencesHandlers =
   (typeof customReferencesHandlersNames)[number]
 

@@ -257,7 +257,7 @@ const sectionsReferenceParams: Record<section, ReferenceFromSectionParams> = {
   },
 }
 
-const mapProfileSections = <T>(
+export const mapProfileOrPermissionSetSections = <T>(
   profile: InstanceElement,
   f: (
     sectionName: string,
@@ -276,7 +276,7 @@ const mapProfileSections = <T>(
   )
 
 const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
-  mapProfileSections(
+  mapProfileOrPermissionSetSections(
     profile,
     (sectionName, sectionEntryKey, target, sourceField) => ({
       source: profile.elemID.createNestedID(
@@ -307,7 +307,7 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
 
 const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
   _(
-    mapProfileSections(
+    mapProfileOrPermissionSetSections(
       profile,
       (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
         [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),

@@ -614,6 +614,7 @@ describe('FieldReferences filter', () => {
       const modifiedDefs = getReferenceMappingDefs({
         enumFieldPermissions: false,
         otherProfileRefs: false,
+        permissionsSetRefs: false,
       }).map((def) => _.omit(def, 'serializationStrategy'))
       await addReferences(
         elements,
@@ -948,6 +949,7 @@ describe('getReferenceMappingDefs', () => {
       defs = getReferenceMappingDefs({
         enumFieldPermissions: false,
         otherProfileRefs: false,
+        permissionsSetRefs: false,
       })
     })
     it('should not have any profile-related references', () => {
@@ -961,6 +963,7 @@ describe('getReferenceMappingDefs', () => {
       defs = getReferenceMappingDefs({
         enumFieldPermissions: false,
         otherProfileRefs: true,
+        permissionsSetRefs: true,
       })
     })
     it('should have profile-related references, but not FLS', () => {
@@ -979,6 +982,7 @@ describe('getReferenceMappingDefs', () => {
       defs = getReferenceMappingDefs({
         enumFieldPermissions: true,
         otherProfileRefs: false,
+        permissionsSetRefs: false,
       })
     })
     it('should have only FLS-related profile references', () => {
@@ -997,6 +1001,7 @@ describe('getReferenceMappingDefs', () => {
       defs = getReferenceMappingDefs({
         enumFieldPermissions: true,
         otherProfileRefs: true,
+        permissionsSetRefs: true,
       })
     })
     it('should have only all profile references', () => {

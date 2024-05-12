@@ -304,15 +304,12 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
     const additionalValidStatuses = mergedEndpointDef.additionalValidStatuses ?? []
     const { polling } = mergedEndpointDef
 
-    const singleClientCall = async (
-      args: ClientDataParams,
-      shouldRetry = true,
-    ): Promise<Response<ResponseValue | ResponseValue[]>> => {
+    const singleClientCall = async (args: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>> => {
       try {
         return await client[finalEndpointIdentifier.method ?? 'get'](args)
       } catch (e) {
         const status = e.response?.status
-        if (additionalValidStatuses.includes(status) || (polling?.retryOnStatus?.includes(status) && shouldRetry)) {
+        if (additionalValidStatuses.includes(status)) {
           log.debug(
             'Suppressing %d error %o, for path %s in method %s',
             status,

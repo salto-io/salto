@@ -21,7 +21,7 @@ describe('polling', () => {
     const polling = {
       checkStatus: (response: Response<ResponseValue | ResponseValue[]>): boolean => response.status === 200,
       retries: 3,
-      interval: 100,
+      interval: 50,
     }
     it('should call the singleClientCall few times function and return its response', async () => {
       const singleClientCall = jest
@@ -46,7 +46,7 @@ describe('polling', () => {
         )
       const response = await executeWithPolling<string>('args', polling, singleClientCall)
       expect(singleClientCall).toHaveBeenCalledTimes(3)
-      expect(singleClientCall).toHaveBeenCalledWith('args')
+      expect(singleClientCall).toHaveBeenCalledWith('args', undefined)
       expect(response).toEqual({ data: 'done polling', status: 200 })
     })
     it('should throw an error if polling fails', async () => {

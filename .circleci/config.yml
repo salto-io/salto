@@ -87,7 +87,7 @@ jobs:
           command: |
             pushd .circleci/scripts
             npm install
-            node .circleci/scripts/find-changed-packages
+            node find-changed-packages
             popd
             for package in $(cat packages-to-test.txt); do
               echo "                - $package" >> config.yml

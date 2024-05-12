@@ -345,6 +345,41 @@ describe('getChangeLocations', () => {
       ])
     })
   })
+
+  describe('with addition of value to array', () => {
+    it('should add the value before the following value', () => {
+      const change = {
+        ...toChange({ after: mockInstance.value.strArray[1] }),
+        id: mockInstance.elemID.createNestedID('strArray', '1'),
+        baseChange: toChange({ after: mockInstance }),
+        path: ['file'],
+      }
+      const sourceMap = new Map([
+        [
+          mockInstance.elemID.createNestedID('strArray', '2').getFullName(),
+          [
+            {
+              filename: 'file.nacl',
+              start: { line: 2, col: 5, byte: 12 },
+              end: { line: 5, col: 5, byte: 26 },
+            },
+          ],
+        ],
+      ])
+      result = getChangeLocations(change, sourceMap)
+      expect(result).toEqual([
+        {
+          ...change,
+          location: {
+            filename: 'file.nacl',
+            start: { line: 2, col: 5, byte: 12 },
+            end: { line: 2, col: 5, byte: 12 },
+            indexInParent: 1,
+          },
+        },
+      ])
+    })
+  })
 })
 
 describe('updateNaclFileData', () => {

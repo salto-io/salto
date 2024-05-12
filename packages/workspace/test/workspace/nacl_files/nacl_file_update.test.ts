@@ -164,8 +164,8 @@ describe('getChangeLocations', () => {
             filename: 'file.nacl',
             start: { line: 2, col: 5, byte: 12 },
             end: { line: 2, col: 5, byte: 12 },
+            indexInParent: 1,
           },
-          indexInParent: 1,
         },
       ])
     })
@@ -304,8 +304,8 @@ describe('getChangeLocations', () => {
             filename: 'file.nacl',
             start: { line: 2, col: 5, byte: 12 },
             end: { line: 2, col: 5, byte: 12 },
+            indexInParent: 1,
           },
-          indexInParent: 1,
         },
       ])
     })
@@ -339,8 +339,8 @@ describe('getChangeLocations', () => {
             filename: 'file.nacl',
             start: { line: 2, col: 5, byte: 12 },
             end: { line: 2, col: 5, byte: 12 },
+            indexInParent: 1,
           },
-          indexInParent: 1,
         },
       ])
     })

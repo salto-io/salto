@@ -33,7 +33,7 @@ import {
   isTypeReference,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
-import { inspectValue, resolvePath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { inspectValue, getPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 
@@ -87,8 +87,13 @@ export const getChangeLocations = (
 
     const changeData = getChangeData(change)
     const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
+    const pathInParent = getPath(parent, change.id)
+    if (pathInParent === undefined) {
+      log.warn('Could not get path for %s in parent: %s', inspectValue(change.id), inspectValue(parent))
+      return { followingElementIDs: [] }
+    }
 
-    const container = resolvePath(parent, change.id.createParentID())
+    const container = _.get(parent, pathInParent.slice(0, -1))
     if (!_.isObjectLike(container)) {
       log.warn(
         'Got non object container %s for path %s in parent: %s',
@@ -99,7 +104,7 @@ export const getChangeLocations = (
       return { followingElementIDs: [] }
     }
 
-    const idNameParts = change.id.getFullNameParts()
+    const idNameParts = change.id.getFullNameParts().slice(0, -1)
     const elementName = change.id.name
     const index = Object.keys(container).indexOf(elementName)
     if (index === -1) {

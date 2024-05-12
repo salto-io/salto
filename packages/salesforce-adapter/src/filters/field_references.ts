@@ -227,7 +227,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
         'generateRefsInProfiles',
       ),
       permissionsSetRefs:
-        config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets'),
+        !config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets'),
     })
     await addReferences(
       elements,

@@ -34,16 +34,19 @@ import {
 } from '../types'
 import { profilesHandler } from './profiles'
 import { managedElementsHandler } from './managed_elements'
+import { permissionSetsHandler } from './permission_sets'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   profiles: profilesHandler,
   managedElements: managedElementsHandler,
+  permisisonSets: permissionSetsHandler,
 }
 
 const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
   {
     profiles: false,
     managedElements: false,
+    permisisonSets: true,
   }
 
 export const customReferencesConfiguration = (

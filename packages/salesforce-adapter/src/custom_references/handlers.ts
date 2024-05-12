@@ -45,8 +45,8 @@ const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
 const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
   {
     profiles: false,
-    managedElements: false,
-    permisisonSets: false,
+    managedElements: true,
+    permisisonSets: true,
   }
 
 export const customReferencesConfiguration = (

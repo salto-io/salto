@@ -274,7 +274,6 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/apps-integrations/targets/targets' },
         elemID: { parts: [{ fieldName: 'title' }, { fieldName: 'type' }] },
-        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -488,7 +487,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
+        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true, useOldFormat: false },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -711,9 +710,6 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        serviceUrl: { path: '/admin/apps-integrations/apps/support-apps' },
-        elemID: { parts: [{ fieldName: 'settings.name' }, { fieldName: 'product' }] },
-        path: { pathParts: [{ parts: [{ fieldName: 'settings.name' }, { fieldName: 'product' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -745,6 +741,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/apps-integrations/apis/zendesk-api/oauth_clients' },
         elemID: { parts: [{ fieldName: 'identifier' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -1276,7 +1273,7 @@ const createCustomizations = (): Record<
             typeName: 'business_hours_schedule_holiday',
             addParentAnnotation: true,
             referenceFromParent: true,
-            nestPathUnderParent: true,
+            nestPathUnderParent: false,
           },
         },
       },

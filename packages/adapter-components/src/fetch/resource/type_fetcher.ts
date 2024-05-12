@@ -162,12 +162,6 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
           }
         }),
       )
-      // eslint-disable-next-line no-console
-      console.log('hi')
-
-      // eslint-disable-next-line no-console
-      console.log(allFragments)
-
       const toServiceID = serviceIDKeyCreator({
         serviceIDFields: def.serviceIDFields ?? [],
         typeID: new ElemID(adapterName, typeName),

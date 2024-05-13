@@ -89,6 +89,7 @@ import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_cust
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import workflowAccountSpecificValues from './filters/workflow_account_specific_values'
 import alignFieldNamesFilter from './filters/align_field_names'
+import removeMissingReferencesFromForms from './filters/remove_missing_references_from_forms'
 import {
   Filter,
   LocalFilterCreator,
@@ -205,6 +206,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: serviceUrls, addsNewInformation: true },
   { creator: addBundleReferences },
   { creator: addPermissionsToCustomRecordAndRole },
+  { creator: removeMissingReferencesFromForms },
   // omitFieldsFilter should be the last onFetch filter to run
   { creator: omitFieldsFilter },
   // additionalChanges should be right after addReferencingWorkbooks

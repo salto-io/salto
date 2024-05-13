@@ -26,7 +26,7 @@ import { fieldsHandler } from '../../../src/custom_references/weak_references/fi
 import { NETSUITE, SCRIPT_ID, TRANSACTION_FORM } from '../../../src/constants'
 import { transactionFormType } from '../../../src/autogen/types/standard_types/transactionForm'
 
-describe('permissions_references', () => {
+describe('fields references', () => {
   let instance1: InstanceElement
   let instance2: InstanceElement
   let instance3: InstanceElement
@@ -88,13 +88,21 @@ describe('permissions_references', () => {
         id: new ReferenceExpression(inst1.elemID.createNestedID(SCRIPT_ID), inst1.value.scriptid, inst1),
       },
       parentField: {
+        stringField: {
+          id: 'some string id',
+          index: 0,
+        },
         field2: {
           id: '[type=transactionbodycustomfield, scriptid=instance2]',
-          index: 0,
+          index: 1,
         },
         field3: {
           id: '[type=transactionbodycustomfield, scriptid=instance3]',
-          index: 1,
+          index: 2,
+        },
+        field4: {
+          id: '[scriptid=instance4]',
+          index: 3,
         },
       },
     },
@@ -182,7 +190,7 @@ describe('permissions_references', () => {
             severity: 'Info',
             message: 'Deploying without all referenced fields',
             detailedMessage:
-              'This form1.field1 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
+              'form1.field1 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
           },
         ])
 
@@ -208,7 +216,7 @@ describe('permissions_references', () => {
             severity: 'Info',
             message: 'Deploying without all referenced fields',
             detailedMessage:
-              'This form1.parentField.field2 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
+              'form1.parentField.field2 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
           },
         ])
 
@@ -221,7 +229,17 @@ describe('permissions_references', () => {
         expect(fixedForm.value.stringId).toEqual(form1.value.stringId)
       })
     })
-    it('should remove generated references and their related fields', async () => {
+    it('should not remove unresolved netsuite references', async () => {
+      const clonedForm2 = form2.clone()
+      const elementsSource = buildElementsSourceFromElements([instance1, instance2, instance3])
+      const fixes = await fieldsHandler.removeWeakReferences({ elementsSource })([form2])
+      expect(clonedForm2).toEqual(form2)
+
+      expect(fixes.errors.length).toEqual(0)
+
+      expect(fixes.fixedElements).toHaveLength(0)
+    })
+    it('should remove unresolved generated references and their related fields', async () => {
       const clonedForm2 = form2.clone()
       const elementsSource = buildElementsSourceFromElements([instance1, instance3])
       const fixes = await fieldsHandler.removeWeakReferences({ elementsSource })([form2])
@@ -235,7 +253,7 @@ describe('permissions_references', () => {
           severity: 'Info',
           message: 'Deploying without all referenced fields',
           detailedMessage:
-            'This form2.parentField.field2 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
+            'form2.parentField.field2 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
         },
       ])
 
@@ -246,14 +264,21 @@ describe('permissions_references', () => {
       expect(fixedForm.value.field1).toEqual(form2.value.field1)
       expect(fixedForm.value.parentField.field2).toBeUndefined()
       expect(fixedForm.value.parentField.field3.id).toEqual(form2.value.parentField.field3.id)
-      expect(fixedForm.value.parentField.field3.index).toEqual(0)
+      expect(fixedForm.value.parentField.stringField.index).toEqual(0)
+      expect(fixedForm.value.parentField.field3.index).toEqual(1)
       expect(fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].length).toEqual(1)
       expect(fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][0]).toEqual(
         form2.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][1],
       )
     })
+
     it('should do nothing if all references are valid', async () => {
       const clonedForm2 = form2.clone()
+
+      // Remove the invalid reference
+      delete clonedForm2.value.parentField.field4
+      delete form2.value.parentField.field4
+
       const elementsSource = buildElementsSourceFromElements([instance1, instance2, instance3])
       const fixes = await fieldsHandler.removeWeakReferences({ elementsSource })([form2])
       expect(clonedForm2).toEqual(form2)

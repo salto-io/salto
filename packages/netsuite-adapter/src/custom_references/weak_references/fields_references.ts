@@ -45,10 +45,10 @@ type MappedList = Record<string, { index: number; [key: string]: Value }>
 
 const formTypeNames = new Set([ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM])
 
-const isFormInstanceElement = (element: Value): element is InstanceElement =>
+export const isFormInstanceElement = (element: Value): element is InstanceElement =>
   isInstanceElement(element) && formTypeNames.has(element.elemID.typeName)
 
-const isGeneratedDependency = (val: unknown): val is GeneratedDependency =>
+export const isGeneratedDependency = (val: unknown): val is GeneratedDependency =>
   values.isPlainRecord(val) && isReferenceExpression(val.reference)
 
 const getIdReferencesRecord = (formInstance: InstanceElement): Record<string, ReferenceExpression> => {
@@ -186,7 +186,7 @@ const fixIndexInMappedList = (mappedList: MappedList): void =>
       mappedList[key][INDEX] = index
     })
 
-const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
+export const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
   const pathsToFixIndex = new Set<string>(
     pathsToRemove.map(path => form.elemID.getRelativePath(path.createParentID()).join('.')),
   )
@@ -243,7 +243,7 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
           elemID: instance.elemID,
           severity: 'Info',
           message: 'Deploying without all referenced fields',
-          detailedMessage: `This ${fullPath} is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.`,
+          detailedMessage: `${fullPath} is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.`,
         }
       }),
     )

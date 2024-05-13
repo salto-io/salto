@@ -38,16 +38,16 @@ import { createCustomObjectType, createMetadataTypeElement } from '../utils'
 import { profilesHandler } from '../../src/custom_references/profiles'
 
 describe('profiles', () => {
+  const createTestInstances = (
+    fields: Values,
+  ): [InstanceElement, InstanceElement] => [
+    new InstanceElement('test', mockTypes.Profile, fields),
+    new InstanceElement('test', mockTypes.PermissionSet, fields),
+  ]
   describe('weak references handler', () => {
     let refs: ReferenceInfo[]
     let profileInstance: InstanceElement
     let permissionSetInstance: InstanceElement
-    const createTestInstances = (
-      fields: Values,
-    ): [InstanceElement, InstanceElement] => [
-      new InstanceElement('test', mockTypes.Profile, fields),
-      new InstanceElement('test', mockTypes.PermissionSet, fields),
-    ]
 
     describe('fields', () => {
       describe('when the fields are inaccessible', () => {
@@ -1004,7 +1004,7 @@ describe('profiles', () => {
   })
 
   describe('fix elements', () => {
-    const profileInstance = new InstanceElement('test', mockTypes.Profile, {
+    const [profileInstance, permissionSetInstance] = createTestInstances({
       fieldPermissions: {
         Account: {
           testField__c: 'ReadWrite',
@@ -1076,9 +1076,10 @@ describe('profiles', () => {
       it('should drop fields', async () => {
         const { fixedElements, errors } = await fixElementsFunc([
           profileInstance,
+          permissionSetInstance,
         ])
-        expect(fixedElements).toEqual([
-          new InstanceElement('test', mockTypes.Profile, {
+        expect(fixedElements).toEqual(
+          createTestInstances({
             fieldPermissions: {
               Account: {},
             },
@@ -1092,10 +1093,18 @@ describe('profiles', () => {
               Case: {},
             },
           }),
-        ])
+        )
         expect(errors).toEqual([
           {
             elemID: profileInstance.elemID,
+            severity: 'Info',
+            message:
+              'Dropping profile/permission set fields which reference missing types',
+            detailedMessage:
+              'The profile/permission set has 8 fields which reference types which are not available in the workspace.',
+          },
+          {
+            elemID: permissionSetInstance.elemID,
             severity: 'Info',
             message:
               'Dropping profile/permission set fields which reference missing types',
@@ -1141,6 +1150,7 @@ describe('profiles', () => {
 
       it('should drop fields', async () => {
         const { fixedElements, errors } = await fixElementsFunc([
+          permissionSetInstance,
           profileInstance,
         ])
         expect(fixedElements).toBeEmpty()
@@ -1172,9 +1182,10 @@ describe('profiles', () => {
       it('should drop fields', async () => {
         const { fixedElements, errors } = await fixElementsFunc([
           profileInstance,
+          permissionSetInstance,
         ])
-        expect(fixedElements).toEqual([
-          new InstanceElement('test', mockTypes.Profile, {
+        expect(fixedElements).toEqual(
+          createTestInstances({
             fieldPermissions: {
               Account: {},
             },
@@ -1215,10 +1226,18 @@ describe('profiles', () => {
               },
             },
           }),
-        ])
+        )
         expect(errors).toEqual([
           {
             elemID: profileInstance.elemID,
+            severity: 'Info',
+            message:
+              'Dropping profile/permission set fields which reference missing types',
+            detailedMessage:
+              'The profile/permission set has 4 fields which reference types which are not available in the workspace.',
+          },
+          {
+            elemID: permissionSetInstance.elemID,
             severity: 'Info',
             message:
               'Dropping profile/permission set fields which reference missing types',

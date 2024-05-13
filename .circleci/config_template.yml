@@ -326,7 +326,8 @@ workflows:
     jobs:
       - save_project_cache
 
-      TEST_MATRIX
+      <TEST_MATRIX>
+
       - test_cli_mac:
           requires:
             - package_cli
@@ -339,9 +340,9 @@ workflows:
           requires:
             - package_cli
 
-      - package_cliDOES_NEED_TEST_REQUIREMENT
+      - package_cli<NEEDS_TEST_REQUIREMENT>
 
-      - package_vscode_extensionDOES_NEED_TEST_REQUIREMENT
+      - package_vscode_extension<NEEDS_TEST_REQUIREMENT>
 
       - sync_s3_pkg_latest:
           requires:
@@ -354,8 +355,7 @@ workflows:
             branches:
               only:
                 - main
-          requires:
-            - test
+          <NEEDS_TEST_REQUIREMENT_NO_COLON>
 
       - publish_on_version_change:
           context: salto
@@ -363,6 +363,5 @@ workflows:
             branches:
               only:
                 - main
-          requires:
-            - test
+          <NEEDS_TEST_REQUIREMENT_NO_COLON>
       

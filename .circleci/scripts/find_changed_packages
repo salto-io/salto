@@ -106,11 +106,12 @@ function main() {
   const packagesArray = Array.from(packagesToTest)
   let alteredConfigTemplate
   if (packagesArray.length === 0) {
-    alteredConfigTemplate = configTemplate.replace('DOES_NEED_TEST_REQUIREMENT', '').replace('TEST_MATRIX', '')
+    alteredConfigTemplate = configTemplate.replace(/<NEEDS_TEST_REQUIREMENT_NO_COLON>/g, '').replace(/<NEEDS_TEST_REQUIREMENT>/g, '').replace('<TEST_MATRIX>', '')
   } else {
-    const requireTests = ':\n    requires:\n      - test'
+    const requireTestsWithColon = ':\n    requires:\n      - test'
+    const requireTestsWithoutColon = '\n    requires:\n      - test'
     const testMatrix = '- test:\n    matrix:\n      parameters:\n        e2e_or_unittest:\n          - e2e\n          - unittest\n        package_name:\n          - '.concat(packagesArray.join('\n              - '))
-    alteredConfigTemplate = configTemplate.replace('/DOES_NEED_TEST_REQUIREMENT/g', requireTests).replace('TEST_MATRIX', testMatrix)
+    alteredConfigTemplate = configTemplate.replace(/<NEEDS_TEST_REQUIREMENT_NO_COLON>/g, requireTestsWithoutColon).replace(/<NEEDS_TEST_REQUIREMENT>/g, requireTestsWithColon).replace('<TEST_MATRIX>', testMatrix)
   }
   writeFileSync(continueConfigFilePath, alteredConfigTemplate)
   console.log(alteredConfigTemplate)

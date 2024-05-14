@@ -213,11 +213,13 @@ export const localState = (
     const filePaths = await currentContentProvider.findStateFiles(currentFilePrefix)
     const stateFilesHash = await currentContentProvider.getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash')) ?? toMD5(safeJsonStringify([]))
-    if (quickAccessHash !== stateFilesHash) {
+    const cachedAccounts = await awu(quickAccessStateData.accounts.entries()).toArray()
+    if (quickAccessHash !== stateFilesHash || cachedAccounts.length === 0) {
       log.debug(
-        'found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s)',
+        'found different hash or obsolete cache - loading state data (quickAccessHash=%s stateFilesHash=%s cachedAccounts = %o)',
         quickAccessHash,
         stateFilesHash,
+        cachedAccounts,
       )
       await syncQuickAccessStateData({
         stateData: quickAccessStateData,

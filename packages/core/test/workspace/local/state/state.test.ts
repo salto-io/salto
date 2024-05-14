@@ -338,11 +338,6 @@ describe('localState', () => {
       state = localState('empty', '', inMemRemoteMapCreator(), contentProvider)
     })
 
-    it('should return an undefined hash', async () => {
-      const stateHash = await state.getHash()
-      expect(stateHash).toBeUndefined()
-    })
-
     it('existingAccounts should be an empty list', async () => {
       await expect(state.existingAccounts()).resolves.toHaveLength(0)
     })

@@ -473,16 +473,16 @@ describe('forms filter', () => {
     it('should return single saltoError when failed to fetch form because data is empty', async () => {
       connection.get.mockImplementation(async url => {
         if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/11111/forms') {
-          return {
-            status: 200,
-            data: [],
-          }
+          throw new clientUtils.HTTPError('insufficient permissions', {
+            status: 403,
+            data: {},
+          })
         }
         if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/22222/forms') {
-          return {
-            status: 200,
-            data: [],
-          }
+          throw new clientUtils.HTTPError('insufficient permissions', {
+            status: 403,
+            data: {},
+          })
         }
         throw new Error('Unexpected url')
       })
@@ -512,10 +512,10 @@ describe('forms filter', () => {
           }
         }
         if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/22222/forms') {
-          return {
-            status: 200,
-            data: [],
-          }
+          throw new clientUtils.HTTPError('insufficient permissions', {
+            status: 403,
+            data: {},
+          })
         }
         throw new Error('Unexpected url')
       })

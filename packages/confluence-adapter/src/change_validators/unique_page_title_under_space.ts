@@ -42,10 +42,9 @@ export const uniquePageTitleUnderSpaceValidator: ChangeValidator = async (change
   const spaceNameIdToPageInstances = await awu(await elementSource.getAll()).reduce<Record<string, InstanceElement[]>>(
     (record, elem) => {
       if (isInstanceElement(elem) && elem.elemID.typeName === PAGE_TYPE_NAME) {
-        const spaceElemId = elem.value.spaceId.elemID
-          .getFullName()
+        const spaceElemId = elem.value.spaceId.elemID.getFullName()
         record[spaceElemId] ??= []
-        record[spaceElemId].push(elem) 
+        record[spaceElemId].push(elem)
       }
       return record
     },
@@ -62,7 +61,8 @@ export const uniquePageTitleUnderSpaceValidator: ChangeValidator = async (change
       }, {}),
   )
   return pageChanges.flatMap(pageInstFromChange => {
-    const titleToPageIndex = spaceNameToTitleToPageInstancesIndex[pageInstFromChange.value.spaceId.elemID.getFullName()] ?? {}
+    const titleToPageIndex =
+      spaceNameToTitleToPageInstancesIndex[pageInstFromChange.value.spaceId.elemID.getFullName()] ?? {}
     const pageWithTheSameTitle = titleToPageIndex[pageInstFromChange.value.title]?.find(
       page => !page.elemID.isEqual(pageInstFromChange.elemID),
     )

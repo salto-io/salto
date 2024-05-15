@@ -815,7 +815,7 @@ multiline
     const elements = await awu(parsed.elements)
       .filter(element => !isContainerType(element))
       .toArray()
-    expect(elements[0].annotations.str).toEqual('\n' + '        this is a unicode test ‍')
+    expect(elements[0].annotations.str).toEqual('\n        this is a unicode test ‍')
   })
 
   describe('simple error tests', () => {

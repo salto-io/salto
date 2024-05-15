@@ -3396,18 +3396,31 @@ describe('workspace', () => {
         },
       }
       const customRefs: ReferenceInfo[] = [
+        // Make sure we only return info from outgoing references to the specific target element
+        {
+          source: sourceInstance.elemID.createNestedID('value', 'nested'),
+          target: new ElemID('adapter', 'test', 'instance', 'anotherTarget'),
+          type: 'strong',
+        },
         {
           source: sourceInstance.elemID.createNestedID('value', 'nested'),
           target: targetElementId.createNestedID('value', 'nested1'),
           type: 'weak',
         },
         // This is an invalid scenario where two ReferenceInfos with the same source refer to the same target baseId.
-        // The method should prefer the first entry.
+        // The implementation should prefer the first entry (type: 'weak').
         {
           source: sourceInstance.elemID.createNestedID('value', 'nested'),
           target: targetElementId.createNestedID('value', 'nested2'),
           type: 'strong',
         },
+        // Make sure we support references from both parent & child
+        {
+          source: sourceInstance.elemID.createNestedID('value', 'nested', 'nested'),
+          target: targetElementId.createNestedID('value', 'nested1'),
+          type: 'weak',
+        },
+        // Case where the target is baseId
         { source: anotherSourceInstance.elemID, target: targetElementId, type: 'weak', sourceScope: 'value' },
       ]
       workspace = await createWorkspace(
@@ -3428,6 +3441,11 @@ describe('workspace', () => {
       expect(incomingReferenceInfos).toEqual([
         { source: anotherSourceInstance.elemID, type: 'weak', sourceScope: 'value' },
         { source: sourceInstance.elemID.createNestedID('value', 'nested'), type: 'weak', sourceScope: 'baseId' },
+        {
+          source: sourceInstance.elemID.createNestedID('value', 'nested', 'nested'),
+          type: 'weak',
+          sourceScope: 'baseId',
+        },
       ])
     })
   })

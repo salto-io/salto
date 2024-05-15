@@ -1329,7 +1329,9 @@ export const loadWorkspace = async (
     getElementIncomingReferences,
     getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
       const getReferenceInfo = async (sourceId: ElemID): Promise<IncomingReferenceInfo | undefined> => {
-        const outgoingReferences = await getElementOutgoingReferences(sourceId, envName)
+        const outgoingReferences = (await getElementOutgoingReferences(sourceId, envName)).filter(
+          outgoingReference => id.isEqual(outgoingReference.id) || id.isParentOf(outgoingReference.id),
+        )
         if (outgoingReferences.length === 0) {
           log.warn('Failed to find outgoing reference from %s to %s', sourceId.getFullName(), id.getFullName())
           return undefined

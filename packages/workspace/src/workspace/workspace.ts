@@ -1329,13 +1329,20 @@ export const loadWorkspace = async (
     getElementIncomingReferences,
     getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
       const getReferenceInfo = async (sourceId: ElemID): Promise<IncomingReferenceInfo | undefined> => {
-        const outgoingReference = (await getElementOutgoingReferences(sourceId, envName)).find(ref =>
-          id.isEqual(ref.id.createBaseID().parent),
-        )
-        if (outgoingReference === undefined) {
+        const outgoingReferences = await getElementOutgoingReferences(sourceId, envName)
+        if (outgoingReferences.length === 0) {
           log.warn('Failed to find outgoing reference from %s to %s', sourceId.getFullName(), id.getFullName())
           return undefined
         }
+        if (outgoingReferences.length > 2) {
+          log.warn(
+            'Found multiple outgoing references from %s to %s. Using first from %s',
+            sourceId.getFullName(),
+            id.getFullName(),
+            safeJsonStringify(outgoingReferences),
+          )
+        }
+        const [outgoingReference] = outgoingReferences
         return {
           source: sourceId,
           sourceScope: outgoingReference.sourceScope,

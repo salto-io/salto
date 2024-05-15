@@ -142,7 +142,6 @@ const getIdForDefaultBrandTheme = async (client: OktaClient, brandId: string): P
   }
   log.error(`Received unexpected result for brand theme for brandId ${brandId}: ${inspectValue(themeEntries)}`)
   throw new Error('Could not find BrandTheme with the provided brandId')
-
 }
 
 const createChangesForDeploy = async (

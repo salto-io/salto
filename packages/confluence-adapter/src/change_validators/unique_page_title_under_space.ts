@@ -39,33 +39,30 @@ export const uniquePageTitleUnderSpaceValidator: ChangeValidator = async (change
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === PAGE_TYPE_NAME)
 
-  const spaceNameIdToPagesInstances = await awu(await elementSource.getAll()).reduce<Record<string, InstanceElement[]>>(
+  const spaceNameIdToPageInstances = await awu(await elementSource.getAll()).reduce<Record<string, InstanceElement[]>>(
     (record, elem) => {
       if (isInstanceElement(elem) && elem.elemID.typeName === PAGE_TYPE_NAME) {
-        const spaceElemId = elem.value.spaceId.elemID.getFullName()
-        if (record[spaceElemId]) {
-          record[spaceElemId].push(elem)
-        } else {
-          record[spaceElemId] = [elem]
-        }
+        const spaceElemId = elem.value.spaceId.elemID
+          .getFullName()
+        record[spaceElemId] ??= []
+        record[spaceElemId].push(elem) 
       }
       return record
     },
     {},
   )
-  const spaceNameToTitlePagesIndex = _.mapValues(spaceNameIdToPagesInstances, pages =>
-    pages.reduce<Record<string, InstanceElement[]>>((record, page) => {
-      const { title } = page.value
-      if (record[title]) {
+  const spaceNameToTitleToPageInstancesIndex: Record<string, Record<string, InstanceElement[]>> = _.mapValues(
+    spaceNameIdToPageInstances,
+    pages =>
+      pages.reduce<Record<string, InstanceElement[]>>((record, page) => {
+        const { title } = page.value
+        record[title] ??= []
         record[title].push(page)
-      } else {
-        record[title] = [page]
-      }
-      return record
-    }, {}),
+        return record
+      }, {}),
   )
   return pageChanges.flatMap(pageInstFromChange => {
-    const titleToPageIndex = spaceNameToTitlePagesIndex[pageInstFromChange.value.spaceId.elemID.getFullName()] ?? {}
+    const titleToPageIndex = spaceNameToTitleToPageInstancesIndex[pageInstFromChange.value.spaceId.elemID.getFullName()] ?? {}
     const pageWithTheSameTitle = titleToPageIndex[pageInstFromChange.value.title]?.find(
       page => !page.elemID.isEqual(pageInstFromChange.elemID),
     )
@@ -76,8 +73,8 @@ export const uniquePageTitleUnderSpaceValidator: ChangeValidator = async (change
       {
         elemID: pageInstFromChange.elemID,
         severity: 'Error',
-        message: 'Page title must be unique under space',
-        detailedMessage: `Page title: ${pageInstFromChange.value.title} is already in use by page: ${pageWithTheSameTitle.elemID.getFullName()}`,
+        message: '"Page" title must be unique under space',
+        detailedMessage: `"Page" title: ${pageInstFromChange.value.title} is already in use by page: ${pageWithTheSameTitle.elemID.getFullName()}`,
       },
     ]
   })

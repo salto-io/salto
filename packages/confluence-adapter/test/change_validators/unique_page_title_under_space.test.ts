@@ -58,7 +58,7 @@ describe('uniquePageTitleUnderSpaceValidator', () => {
 
     expect(res).toHaveLength(1)
     expect(res[0].detailedMessage).toEqual(
-      'Page title: title in space1 is already in use by page: confluence.page.instance.page1',
+      '"Page" title: title in space1 is already in use by page: confluence.page.instance.page1',
     )
   })
   it('should return change error for duplicate page titles on modification', async () => {
@@ -74,7 +74,7 @@ describe('uniquePageTitleUnderSpaceValidator', () => {
 
     expect(res).toHaveLength(1)
     expect(res[0].detailedMessage).toEqual(
-      'Page title: title in space1 is already in use by page: confluence.page.instance.page1',
+      '"Page" title: title in space1 is already in use by page: confluence.page.instance.page1',
     )
   })
   it('should not return change error when modifying a page', async () => {

@@ -32,7 +32,7 @@ export const uniqueSpaceKeyValidator: ChangeValidator = async (changes, elementS
     log.warn('elementSource is undefined, skipping uniqueSpaceKeyValidator')
     return []
   }
-  const spaceChangesInstances = changes
+  const spaceChangeInstances = changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
@@ -50,7 +50,7 @@ export const uniqueSpaceKeyValidator: ChangeValidator = async (changes, elementS
       }
       return record
     }, {})
-  return spaceChangesInstances.flatMap(spaceFromChange => {
+  return spaceChangeInstances.flatMap(spaceFromChange => {
     const spaceWithTheSameKey = spaceKeyToElemId[spaceFromChange.value.key]?.find(
       elemId => !elemId.isEqual(spaceFromChange.elemID),
     )

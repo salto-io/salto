@@ -181,9 +181,7 @@ export type FromSourceWithEnv = {
   envName?: string
 }
 
-type IncomingReferenceInfo = {
-  sourceId: ElemID
-} & Required<Pick<ReferenceInfo, 'type' | 'sourceScope'>>
+type IncomingReferenceInfo = Required<Pick<ReferenceInfo, 'source' | 'type' | 'sourceScope'>>
 
 const isFromSourceWithEnv = (value: { source: FromSource } | FromSourceWithEnv): value is FromSourceWithEnv =>
   value.source === 'env'
@@ -459,7 +457,7 @@ export const listElementsDependenciesInWorkspace = async ({
     return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
   }, 'List dependencies in workspace')
 
-export type GetCustomReferencesFunc = (
+export type WorkspaceGetCustomReferencesFunc = (
   elements: Element[],
   accountToServiceName: Record<string, string>,
   adaptersConfig: AdaptersConfigSource,
@@ -474,7 +472,7 @@ export const loadWorkspace = async (
   ignoreFileChanges = false,
   persistent = true,
   mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
-  getCustomReferences: GetCustomReferencesFunc = async () => [],
+  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -1332,13 +1330,14 @@ export const loadWorkspace = async (
     getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
       const getReferenceInfo = async (sourceId: ElemID): Promise<IncomingReferenceInfo | undefined> => {
         const outgoingReference = (await getElementOutgoingReferences(sourceId, envName)).find(ref =>
-          ref.id.isEqual(id),
+          id.isEqual(ref.id.createBaseID().parent),
         )
         if (outgoingReference === undefined) {
+          log.warn('Failed to find outgoing reference from %s to %s', sourceId.getFullName(), id.getFullName())
           return undefined
         }
         return {
-          sourceId,
+          source: sourceId,
           sourceScope: outgoingReference.sourceScope,
           type: outgoingReference.type,
         }
@@ -1651,7 +1650,7 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
-  getCustomReferences: GetCustomReferencesFunc = async () => [],
+  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({

@@ -3375,13 +3375,16 @@ describe('workspace', () => {
   })
 
   describe('getElementIncomingReferenceInfos', () => {
-    const testType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
-    const targetElementId = new ElemID('adapter', 'test', 'instance', 'target')
-    const sourceInstance = new InstanceElement('source', testType)
-    const anotherSourceInstance = new InstanceElement('anotherSource', testType)
+    let targetElementId: ElemID
+    let sourceInstance: InstanceElement
+    let anotherSourceInstance: InstanceElement
 
     let workspace: Workspace
     beforeEach(async () => {
+      const testType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
+      targetElementId = new ElemID('adapter', 'test', 'instance', 'target')
+      sourceInstance = new InstanceElement('source', testType)
+      anotherSourceInstance = new InstanceElement('anotherSource', testType)
       const elementSources = {
         default: {
           naclFiles: createMockNaclFileSource([sourceInstance, anotherSourceInstance]),
@@ -3393,7 +3396,7 @@ describe('workspace', () => {
         },
       }
       const customRefs: ReferenceInfo[] = [
-        { source: sourceInstance.elemID, target: targetElementId, type: 'weak' },
+        { source: sourceInstance.elemID, target: targetElementId.createNestedID('value', 'nested'), type: 'weak' },
         { source: anotherSourceInstance.elemID, target: targetElementId, type: 'weak', sourceScope: 'value' },
       ]
       workspace = await createWorkspace(
@@ -3412,8 +3415,8 @@ describe('workspace', () => {
     it('should return correct incoming reference infos', async () => {
       const incomingReferenceInfos = await workspace.getElementIncomingReferenceInfos(targetElementId)
       expect(incomingReferenceInfos).toEqual([
-        { sourceId: anotherSourceInstance.elemID, type: 'weak', sourceScope: 'value' },
-        { sourceId: sourceInstance.elemID, type: 'weak', sourceScope: 'baseId' },
+        { source: anotherSourceInstance.elemID, type: 'weak', sourceScope: 'value' },
+        { source: sourceInstance.elemID, type: 'weak', sourceScope: 'baseId' },
       ])
     })
   })
@@ -3461,6 +3464,25 @@ describe('workspace', () => {
           state: createState([]),
         },
       }
+
+      const customRefs: ReferenceInfo[] = [
+        // undefined sourceScope
+        { source: instanceElement.elemID, target: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak' },
+        // baseId sourceScope
+        {
+          source: instanceElement.elemID,
+          target: new ElemID('adapter', 'test', 'instance', 'target2'),
+          type: 'weak',
+          sourceScope: 'baseId',
+        },
+        // value sourceScope
+        {
+          source: instanceElement.elemID,
+          target: new ElemID('adapter', 'test', 'instance', 'target3'),
+          type: 'weak',
+          sourceScope: 'value',
+        },
+      ]
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -3469,71 +3491,24 @@ describe('workspace', () => {
         undefined,
         undefined,
         elementSources,
+        undefined,
+        async (..._args) => customRefs,
       )
-    })
-
-    describe('sourceScope', () => {
-      let instanceElemId: ElemID
-      beforeEach(async () => {
-        const instanceElement = new InstanceElement('source', new ObjectType({ elemID: new ElemID('adapter', 'test') }))
-        instanceElemId = instanceElement.elemID
-        const elementSources = {
-          default: {
-            naclFiles: createMockNaclFileSource([instanceElement]),
-            state: createState([]),
-          },
-          '': {
-            naclFiles: createMockNaclFileSource([]),
-            state: createState([]),
-          },
-        }
-        const customRefs: ReferenceInfo[] = [
-          // undefined sourceScope
-          { source: instanceElemId, target: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak' },
-          // baseId sourceScope
-          {
-            source: instanceElemId,
-            target: new ElemID('adapter', 'test', 'instance', 'target2'),
-            type: 'weak',
-            sourceScope: 'baseId',
-          },
-          // value sourceScope
-          {
-            source: instanceElemId,
-            target: new ElemID('adapter', 'test', 'instance', 'target3'),
-            type: 'weak',
-            sourceScope: 'value',
-          },
-        ]
-        workspace = await createWorkspace(
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          elementSources,
-          undefined,
-          async (..._args) => customRefs,
-        )
-      })
-      it('should return correct outgoing references', async () => {
-        const outgoingRefs = await workspace.getElementOutgoingReferences(instanceElemId)
-        expect(outgoingRefs).toEqual([
-          { id: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak', sourceScope: 'baseId' },
-          { id: new ElemID('adapter', 'test', 'instance', 'target2'), type: 'weak', sourceScope: 'baseId' },
-          { id: new ElemID('adapter', 'test', 'instance', 'target3'), type: 'weak', sourceScope: 'value' },
-        ])
-      })
     })
 
     it('top level instance should return all references under it without duplicates', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(
         new ElemID('adapter', 'test', 'instance', 'test'),
       )
-      expect(instanceRefs).toMatchObject(
-        [ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })),
-      )
+      expect(instanceRefs).toEqual([
+        { id: ref1.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: ref2.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: templateRef1.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: templateRef2.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak', sourceScope: 'baseId' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target2'), type: 'weak', sourceScope: 'baseId' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target3'), type: 'weak', sourceScope: 'value' },
+      ])
     })
 
     it('instance field should return all references nested under it', async () => {

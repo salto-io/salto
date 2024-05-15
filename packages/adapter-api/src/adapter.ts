@@ -205,6 +205,9 @@ export type ReferenceInfo = {
   source: ElemID
   target: ElemID
   type: ReferenceType
+  // The source scope states what part of the reference source actually depends on the target
+  // When it is "baseId" it means the existence of the whole "base element" which includes the source depends on the target
+  // When it is "value" it means that only the specific value in the source ID depends on the target
   sourceScope?: 'baseId' | 'value'
 }
 

@@ -871,6 +871,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         url: '/api/v1/domains',
         method: 'post',
       },
+      remove: {
+        url: '/api/v1/domains/{domainId}',
+        method: 'delete',
+        urlParamsToFields: {
+          domainId: 'id',
+        },
+        omitRequestBody: true,
+      },
     },
   },
   'api__v1__email_domains@uuuub': {

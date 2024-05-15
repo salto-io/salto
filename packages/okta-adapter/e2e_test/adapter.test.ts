@@ -482,7 +482,7 @@ describe('Okta adapter E2E', () => {
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
       await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 
-      const changesToDeploy: Change[] = await createChangesForDeploy(types, testSuffix, adapterAttr.client)
+      const changesToDeploy = await createChangesForDeploy(types, testSuffix, adapterAttr.client)
       await deployAndFetch(changesToDeploy)
     })
 

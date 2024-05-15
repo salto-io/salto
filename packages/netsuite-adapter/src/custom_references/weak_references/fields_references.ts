@@ -236,17 +236,15 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
       .filter(values.isDefined)
       .toArray()
 
-    const formErrors: ChangeError[] = fixedFormsWithPaths.flatMap(({ instance, paths }) =>
-      paths.map(path => {
-        const fullPath = `${instance.elemID.name}.${instance.elemID.getRelativePath(path).join('.')}`
-        return {
-          elemID: instance.elemID,
-          severity: 'Info',
-          message: 'Deploying without all referenced fields',
-          detailedMessage: `${fullPath} is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.`,
-        }
-      }),
-    )
+    const formErrors: ChangeError[] = fixedFormsWithPaths.map(({ instance, paths }) => {
+      const allPaths = paths.map(path => instance.elemID.getRelativePath(path).join('.'))
+      return {
+        elemID: instance.elemID,
+        severity: 'Info',
+        message: 'Deploying without all referenced fields',
+        detailedMessage: `This form references fields that do not exist in the target environment. As a result, this form will be deployed without these fields: ${allPaths.join(', ')}`,
+      }
+    })
 
     return {
       fixedElements: fixedFormsWithPaths.map(element => element.instance),

@@ -190,7 +190,7 @@ describe('fields references', () => {
             severity: 'Info',
             message: 'Deploying without all referenced fields',
             detailedMessage:
-              'form1.field1 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
+              'This form references fields that do not exist in the target environment. As a result, this form will be deployed without these fields: field1',
           },
         ])
 
@@ -216,7 +216,7 @@ describe('fields references', () => {
             severity: 'Info',
             message: 'Deploying without all referenced fields',
             detailedMessage:
-              'form1.parentField.field2 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
+              'This form references fields that do not exist in the target environment. As a result, this form will be deployed without these fields: parentField.field2',
           },
         ])
 
@@ -253,7 +253,7 @@ describe('fields references', () => {
           severity: 'Info',
           message: 'Deploying without all referenced fields',
           detailedMessage:
-            'form2.parentField.field2 is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.',
+            'This form references fields that do not exist in the target environment. As a result, this form will be deployed without these fields: parentField.field2',
         },
       ])
 

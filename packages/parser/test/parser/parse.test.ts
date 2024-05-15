@@ -802,6 +802,22 @@ multiline
     expect(elements[0].annotations.str.length).toEqual(stringLength)
   })
 
+  it('test', async () => {
+    const body = `
+    type salesforce.escapedQuotes {
+      str = '''
+
+        this is a unicode test ‍
+      '''
+    }
+ `
+    const parsed = await parse(Buffer.from(body), 'none', functions)
+    const elements = await awu(parsed.elements)
+      .filter(element => !isContainerType(element))
+      .toArray()
+    expect(elements[0].annotations.str).toEqual('\n' + '        this is a unicode test ‍')
+  })
+
   describe('simple error tests', () => {
     it('fails on invalid inheritance syntax', async () => {
       const body = `

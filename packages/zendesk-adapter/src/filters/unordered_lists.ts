@@ -40,8 +40,13 @@ import {
 const log = logger(module)
 
 type ChildField = { id: ReferenceExpression }
-// eslint-disable-next-line camelcase
-type Condition = { child_fields: ChildField[]; value: ReferenceExpression | string }
+type Condition = {
+  // eslint-disable-next-line camelcase
+  parent_field_id: ReferenceExpression
+  // eslint-disable-next-line camelcase
+  child_fields: ChildField[]
+  value: ReferenceExpression | string
+}
 
 const getInstanceByFullName = (type: string, instances: InstanceElement[]): Record<string, InstanceElement> =>
   _.keyBy(
@@ -171,10 +176,13 @@ const sortConditions = (
       return
     }
     if (isValidConditions(conditions, customFieldById)) {
-      form.value[conditionType] = _.sortBy(conditions, condition =>
-        _.isString(condition.value) || _.isBoolean(condition.value)
-          ? condition.value
-          : [customFieldById[condition.value.elemID.getFullName()].value.value],
+      form.value[conditionType] = _.sortBy(
+        conditions,
+        condition =>
+          _.isString(condition.value) || _.isBoolean(condition.value)
+            ? condition.value
+            : [customFieldById[condition.value.elemID.getFullName()].value.value],
+        condition => condition.parent_field_id?.elemID?.getFullName(),
       )
     } else {
       log.warn(`could not sort conditions for ${form.elemID.getFullName()}`)

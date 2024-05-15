@@ -171,7 +171,7 @@ import { ZendeskFetchOptions } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
-import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
+import { filterOutInactiveInstancesForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -524,7 +524,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       }),
     }
     // eslint-disable-next-line no-console
-    console.log(this.adapterDefinitions, filterOutInactiveInstancesForType, filterOutInactiveItemForType)
+    console.log(this.adapterDefinitions, filterOutInactiveInstancesForType)
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
     this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       if (clientsBySubdomain[subdomain] === undefined) {
@@ -586,37 +586,28 @@ export default class ZendeskAdapter implements AdapterOperations {
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()
     // Zendesk Support and (if enabled) global Zendesk Guide types
-    // const defaultSubdomainResult = await getAllElements({
-    //   adapterName: ZENDESK,
-    //   types: this.userConfig.apiDefinitions.types,
-    //   shouldAddRemainingTypes: !isGuideInFetch,
-    //   // tags are "fetched" in a filter
-    //   supportedTypes: _.omit(supportedTypes, 'tag'),
-    //   fetchQuery: this.fetchQuery,
-    //   paginator: this.paginator,
-    //   nestedFieldFinder: findDataField,
-    //   computeGetArgs,
-    //   typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
-    //   getElemIdFunc: this.getElemIdFunc,
-    //   customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
-    // })
-
-    const defaultSubdomainResult = await fetchUtils.getElements({
+    const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,
+      types: this.userConfig.apiDefinitions.types,
+      shouldAddRemainingTypes: !isGuideInFetch,
+      // tags are "fetched" in a filter
+      supportedTypes: _.omit(supportedTypes, 'tag'),
       fetchQuery: this.fetchQuery,
+      paginator: this.paginator,
+      nestedFieldFinder: findDataField,
+      computeGetArgs,
+      typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
-      definitions: this.adapterDefinitions,
-      // predefinedTypes: _.pickBy({'tag': }),
-      customItemFilter: filterOutInactiveItemForType(this.userConfig),
+      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     })
 
-    addRemainingTypes({
-      adapterName: ZENDESK,
-      elements: defaultSubdomainResult.elements,
-      typesConfig: this.userConfig.apiDefinitions.types,
-      supportedTypes,
-      typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
-    })
+    // const defaultSubdomainResult = await fetchUtils.getElements({
+    //   adapterName: ZENDESK,
+    //   fetchQuery: this.fetchQuery,
+    //   getElemIdFunc: this.getElemIdFunc,
+    //   definitions: this.adapterDefinitions,
+    //   // predefinedTypes: _.pickBy(supportedTypes, isObjectType),
+    // })
 
     if (!isGuideInFetch) {
       return defaultSubdomainResult

@@ -34,6 +34,18 @@ export const createClientDefinitions = (
             omitBody: true,
           },
         },
+        customizations: {
+          '/admin/directory/v1/customer/my_customer/roleassignments': {
+            post: {
+              polling: {
+                interval: 5000,
+                retries: 3,
+                checkStatus: response => response.status === 200,
+                retryOnStatus: [400],
+              },
+            },
+          },
+        },
       },
     },
     groupSettings: {

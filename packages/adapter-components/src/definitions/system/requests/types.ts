@@ -38,6 +38,8 @@ export type PollingArgs = {
   interval: number
   retries: number
   checkStatus: (response: Response<ResponseValue | ResponseValue[]>) => boolean
+  // This param allows to retry on error status codes, this is only needed when you know your polling will throw in the process
+  retryOnStatus?: number[]
 }
 
 export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = RequestArgs & {

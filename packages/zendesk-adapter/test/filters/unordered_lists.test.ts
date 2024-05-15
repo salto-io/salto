@@ -80,7 +80,15 @@ describe('Unordered lists filter', () => {
           ],
         },
         {
+          parent_field_id: new ReferenceExpression(customThreeInstance.elemID, customThreeInstance),
+          value: true,
+        },
+        {
           value: 'b',
+        },
+        {
+          parent_field_id: new ReferenceExpression(customOneInstance.elemID, customOneInstance),
+          value: true,
         },
       ],
       end_user_conditions: [
@@ -287,11 +295,13 @@ describe('Unordered lists filter', () => {
         { title: 'bravo', type: 'alpha' },
       ],
     })
+    const referenceExpressionInWorkspaceApps = new ReferenceExpression(new ElemID('zendesk', 'd'))
     const workspaceWithMultipleApps = new InstanceElement('workspaceWithNoApps', workspaceType, {
       apps: [
-        { name: 'c', position: 3 },
-        { name: 'b', position: 2 },
-        { name: 'a', position: 1 },
+        { id: 'b', position: 2 },
+        { id: 'c', position: 3 },
+        { id: referenceExpressionInWorkspaceApps, position: 1 },
+        { id: 'a', position: 1 },
       ],
     })
 
@@ -453,17 +463,19 @@ describe('Unordered lists filter', () => {
   describe('ticket_form', () => {
     it('sort correctly', async () => {
       const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'valid form')
-      expect(instances[0].value.agent_conditions).toHaveLength(3)
-      expect(instances[0].value.agent_conditions[0].value.elemID.name).toEqual('customA')
-      expect(instances[0].value.agent_conditions[1].value).toEqual('b')
-      expect(instances[0].value.agent_conditions[2].value.elemID.name).toEqual('customC')
+      expect(instances[0].value.agent_conditions).toHaveLength(5)
+      expect(instances[0].value.agent_conditions[0].parent_field_id.elemID.name).toEqual('customA')
+      expect(instances[0].value.agent_conditions[1].parent_field_id.elemID.name).toEqual('customC')
+      expect(instances[0].value.agent_conditions[2].value.elemID.name).toEqual('customA')
+      expect(instances[0].value.agent_conditions[3].value).toEqual('b')
+      expect(instances[0].value.agent_conditions[4].value.elemID.name).toEqual('customC')
       expect(instances[0].value.end_user_conditions).toHaveLength(3)
       expect(instances[0].value.end_user_conditions[0].value.elemID.name).toEqual('customA')
       expect(instances[0].value.end_user_conditions[1].value).toEqual('b')
       expect(instances[0].value.end_user_conditions[2].value.elemID.name).toEqual('customC')
-      expect(instances[0].value.agent_conditions[0].child_fields).toHaveLength(2)
-      expect(instances[0].value.agent_conditions[0].child_fields[0].id.elemID.name).toEqual('fieldA')
-      expect(instances[0].value.agent_conditions[0].child_fields[1].id.elemID.name).toEqual('fieldC')
+      expect(instances[0].value.agent_conditions[2].child_fields).toHaveLength(2)
+      expect(instances[0].value.agent_conditions[2].child_fields[0].id.elemID.name).toEqual('fieldA')
+      expect(instances[0].value.agent_conditions[2].child_fields[1].id.elemID.name).toEqual('fieldC')
       expect(instances[0].value.end_user_conditions[0].child_fields).toHaveLength(2)
       expect(instances[0].value.end_user_conditions[0].child_fields[0].id.elemID.name).toEqual('fieldA')
       expect(instances[0].value.end_user_conditions[0].child_fields[1].id.elemID.name).toEqual('fieldC')
@@ -581,13 +593,15 @@ describe('Unordered lists filter', () => {
     })
 
     it('should sort apps by position', async () => {
-      expect(instance.value.apps).toHaveLength(3)
-      expect(instance.value.apps[0].name).toEqual('a')
+      expect(instance.value.apps).toHaveLength(4)
       expect(instance.value.apps[0].position).toEqual(1)
-      expect(instance.value.apps[1].name).toEqual('b')
-      expect(instance.value.apps[1].position).toEqual(2)
-      expect(instance.value.apps[2].name).toEqual('c')
-      expect(instance.value.apps[2].position).toEqual(3)
+      expect(instance.value.apps[0].id.elemID.getFullName()).toEqual('zendesk.d')
+      expect(instance.value.apps[1].id).toEqual('a')
+      expect(instance.value.apps[1].position).toEqual(1)
+      expect(instance.value.apps[2].id).toEqual('b')
+      expect(instance.value.apps[2].position).toEqual(2)
+      expect(instance.value.apps[3].id).toEqual('c')
+      expect(instance.value.apps[3].position).toEqual(3)
     })
   })
   describe('routing attribute', () => {

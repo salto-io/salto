@@ -40,8 +40,13 @@ import {
 const log = logger(module)
 
 type ChildField = { id: ReferenceExpression }
-// eslint-disable-next-line camelcase
-type Condition = { child_fields: ChildField[]; value: ReferenceExpression | string }
+type Condition = {
+  // eslint-disable-next-line camelcase
+  parent_field_id: ReferenceExpression
+  // eslint-disable-next-line camelcase
+  child_fields: ChildField[]
+  value: ReferenceExpression | string
+}
 
 const getInstanceByFullName = (type: string, instances: InstanceElement[]): Record<string, InstanceElement> =>
   _.keyBy(
@@ -171,10 +176,13 @@ const sortConditions = (
       return
     }
     if (isValidConditions(conditions, customFieldById)) {
-      form.value[conditionType] = _.sortBy(conditions, condition =>
-        _.isString(condition.value) || _.isBoolean(condition.value)
-          ? condition.value
-          : [customFieldById[condition.value.elemID.getFullName()].value.value],
+      form.value[conditionType] = _.sortBy(
+        conditions,
+        condition =>
+          _.isString(condition.value) || _.isBoolean(condition.value)
+            ? condition.value
+            : [customFieldById[condition.value.elemID.getFullName()].value.value],
+        condition => condition.parent_field_id?.elemID?.getFullName(),
       )
     } else {
       log.warn(`could not sort conditions for ${form.elemID.getFullName()}`)
@@ -265,8 +273,9 @@ const orderAppInstallationsInWorkspace = (instances: InstanceElement[]): void =>
     .forEach(workspace => {
       const appsList = workspace.value.apps
       if (_.isArray(appsList)) {
-        // _.sortBy is stable, so the order of apps with the same position will not change
-        workspace.value.apps = _.sortBy(appsList, ['position'])
+        workspace.value.apps = _.sortBy(appsList, 'position', app =>
+          isReferenceExpression(app.id) ? app.id.elemID.getFullName() : undefined,
+        )
       } else if (appsList !== undefined) {
         log.warn(
           `orderAppInstallationsInWorkspace - app installations are not a list in ${appsList.elemID.getFullName()}`,

@@ -45,7 +45,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     connectionCreatorFromConfig: () => createConnection,
     credentialsFromConfig: defaultCredentialsFromConfig,
     // TODO add other customizations if needed (check which ones are available - e.g. additional filters)
-    additionalChangeValidators: createChangeValidator(),
+    additionalChangeValidators: createChangeValidator,
   },
   // add names of clients that should be created (if undefined, the adapter wrapper will create them)
   initialClients: {

@@ -114,6 +114,7 @@ import organizationWideDefaults from './filters/organization_settings'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
+import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
 import {
   CUSTOM_REFS_CONFIG,
   FetchElements,
@@ -266,6 +267,8 @@ export const allFilters: Array<
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: installedPackageGeneratedDependencies },
+  { creator: omitStandardFieldsNonDeployableValuesFilter },
+  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter
   { creator: customTypeSplit },
   { creator: mergeProfilesWithSourceValuesFilter },
   // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter

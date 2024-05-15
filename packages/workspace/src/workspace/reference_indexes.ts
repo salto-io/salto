@@ -41,7 +41,7 @@ import { RemoteMap, RemoteMapEntry } from './remote_map'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export const REFERENCE_INDEXES_VERSION = 7
+export const REFERENCE_INDEXES_VERSION = 8
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
 type ChangeReferences = {

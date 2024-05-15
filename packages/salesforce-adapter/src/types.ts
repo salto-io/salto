@@ -131,6 +131,7 @@ export type OptionalFeatures = {
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
+  omitStandardFieldsNonDeployableValues?: boolean
 }
 
 export type ChangeValidatorName =
@@ -208,7 +209,11 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = ['profiles', 'managedElements'] as const
+const customReferencesHandlersNames = [
+  'profiles',
+  'managedElements',
+  'permisisonSets',
+] as const
 export type CustomReferencesHandlers =
   (typeof customReferencesHandlersNames)[number]
 
@@ -853,6 +858,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
+    omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

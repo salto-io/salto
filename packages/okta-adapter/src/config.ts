@@ -871,6 +871,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         url: '/api/v1/domains',
         method: 'post',
       },
+      modify: {
+        url: '/api/v1/domains/{domainId}',
+        method: 'put',
+        urlParamsToFields: {
+          domainId: 'id',
+        },
+      },
       remove: {
         url: '/api/v1/domains/{domainId}',
         method: 'delete',
@@ -1954,6 +1961,7 @@ export type ChangeValidatorName =
   | 'brandThemeRemoval'
   | 'appUserSchemaRemoval'
   | 'domainAddition'
+  | 'domainModification'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1986,6 +1994,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     brandThemeRemoval: { refType: BuiltinTypes.BOOLEAN },
     appUserSchemaRemoval: { refType: BuiltinTypes.BOOLEAN },
     domainAddition: { refType: BuiltinTypes.BOOLEAN },
+    domainModification: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -84,20 +84,20 @@ jest.setTimeout(1000 * 60 * 10)
 
 const TEST_PREFIX = 'Test'
 
-
 const getTransformationConfig = (type: string): configUtils.TransformationConfig =>
   configUtils.getConfigWithDefault(
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[type].transformation ?? {},
-    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation)
+    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
+  )
 
 const createInstance = ({
-                          typeName,
-                          valuesOverride,
-                          types,
-                          parent,
-                          extendsParentId = true,
-                          name,
-                        }: {
+  typeName,
+  valuesOverride,
+  types,
+  parent,
+  extendsParentId = true,
+  name,
+}: {
   typeName: string
   valuesOverride: Values
   types: ObjectType[]
@@ -116,7 +116,7 @@ const createInstance = ({
   }
   const { idFields } = getTransformationConfig(typeName)
   const instName = name ?? getInstanceName(instValues, idFields ?? [], typeName)
-  const naclName = naclCase((parent && extendsParentId) ? `${parent.elemID.name}__${instName}` : String(instName))
+  const naclName = naclCase(parent && extendsParentId ? `${parent.elemID.name}__${instName}` : String(instName))
   return new InstanceElement(
     naclName,
     type,
@@ -135,8 +135,11 @@ const getIdForDefaultBrand = async (client: OktaClient): Promise<string> => {
   throw new Error('Could not find default brand')
 }
 
-
-const createChangesForDeploy = async (types: ObjectType[], testSuffix: string, client: OktaClient): Promise<Change[]> => {
+const createChangesForDeploy = async (
+  types: ObjectType[],
+  testSuffix: string,
+  client: OktaClient,
+): Promise<Change[]> => {
   const createName = (type: string): string => `${TEST_PREFIX}${type}${testSuffix}`
 
   const groupInstance = createInstance({
@@ -331,8 +334,7 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string, c
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => {
-  },
+  reportProgress: () => {},
 }
 
 const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<DeployResult[]> => {
@@ -594,8 +596,10 @@ describe('Okta adapter E2E', () => {
         expect(instance).toBeDefined()
         // Omit hidden fields
         const typeTransformation = getTransformationConfig(deployedInstance.elemID.typeName)
-        const fieldsToIgnoreInComparison: string[] =
-          [...typeTransformation?.fieldsToOmit ?? [], ...typeTransformation.fieldsToHide ?? []].map(f => f.fieldName)
+        const fieldsToIgnoreInComparison: string[] = [
+          ...(typeTransformation?.fieldsToOmit ?? []),
+          ...(typeTransformation.fieldsToHide ?? []),
+        ].map(f => f.fieldName)
         const originalValue = _.omit(instance?.value, fieldsToIgnoreInComparison)
         const deployedValue = _.omit(deployedInstance.value, fieldsToIgnoreInComparison)
         const isEqualResult = isEqualValues(originalValue, deployedValue)

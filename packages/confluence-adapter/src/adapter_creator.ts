@@ -58,7 +58,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       // customPathsFilterCreator must run after fieldReferencesFilter
       customPathsFilterCreator,
     }),
-    additionalChangeValidators: createChangeValidator(),
+    additionalChangeValidators: createChangeValidator,
   },
 
   initialClients: {

@@ -56,7 +56,9 @@ import {
   APP_LOGO_TYPE_NAME,
   APP_USER_SCHEMA_TYPE_NAME,
   APPLICATION_TYPE_NAME,
-  AUTHENTICATOR_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME,
+  AUTHENTICATOR_TYPE_NAME,
+  BRAND_THEME_TYPE_NAME,
+  BRAND_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
   INACTIVE_STATUS,
@@ -593,7 +595,7 @@ describe('Okta adapter E2E', () => {
         // Omit hidden fields
         const typeTransformation = getTransformationConfig(deployedInstance.elemID.typeName)
         const fieldsToIgnoreInComparison: string[] =
-          [...typeTransformation?.fieldsToOmit ?? [], ... typeTransformation.fieldsToHide ?? []].map(f => f.fieldName)
+          [...typeTransformation?.fieldsToOmit ?? [], ...typeTransformation.fieldsToHide ?? []].map(f => f.fieldName)
         const originalValue = _.omit(instance?.value, fieldsToIgnoreInComparison)
         const deployedValue = _.omit(deployedInstance.value, fieldsToIgnoreInComparison)
         const isEqualResult = isEqualValues(originalValue, deployedValue)

@@ -29,6 +29,7 @@ import {
   LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
   PERMISSION_TYPE_NAME,
+  SPACE_SETTINGS_TYPE_NAME,
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
@@ -244,12 +245,33 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    settings: {
+    [SPACE_SETTINGS_TYPE_NAME]: {
       requestsByAction: {
+        default: {
+          request: {
+            endpoint: {
+              queryArgs: {
+                spaceKey: '{spaceKey}',
+              },
+            },
+            context: {
+              spaceKey: '{_parent.0.key}',
+            },
+          },
+        },
         customizations: {
           modify: [
             {
+              condition: {
+                transformForCheck: {
+                  pick: ['custom'],
+                },
+              },
               request: {
+                transformation: {
+                  pick: ['custom'],
+                  adjust: ({ value }) => ({ value: { ..._.get(value, 'custom') } }),
+                },
                 endpoint: {
                   path: '/wiki/rest/api/settings/lookandfeel/custom',
                   method: 'post',

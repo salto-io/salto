@@ -44,6 +44,7 @@ import {
   StaticFile,
   isStaticFile,
   TemplateExpression,
+  ReferenceInfo,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
@@ -3373,6 +3374,50 @@ describe('workspace', () => {
     })
   })
 
+  describe('getElementIncomingReferenceInfos', () => {
+    const testType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
+    const targetElementId = new ElemID('adapter', 'test', 'instance', 'target')
+    const sourceInstance = new InstanceElement('source', testType)
+    const anotherSourceInstance = new InstanceElement('anotherSource', testType)
+
+    let workspace: Workspace
+    beforeEach(async () => {
+      const elementSources = {
+        default: {
+          naclFiles: createMockNaclFileSource([sourceInstance, anotherSourceInstance]),
+          state: createState([]),
+        },
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+          state: createState([]),
+        },
+      }
+      const customRefs: ReferenceInfo[] = [
+        { source: sourceInstance.elemID, target: targetElementId, type: 'weak' },
+        { source: anotherSourceInstance.elemID, target: targetElementId, type: 'weak', sourceScope: 'value' },
+      ]
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        elementSources,
+        undefined,
+        async (..._args) => customRefs,
+      )
+    })
+
+    it('should return correct incoming reference infos', async () => {
+      const incomingReferenceInfos = await workspace.getElementIncomingReferenceInfos(targetElementId)
+      expect(incomingReferenceInfos).toEqual([
+        { sourceId: anotherSourceInstance.elemID, type: 'weak', sourceScope: 'value' },
+        { sourceId: sourceInstance.elemID, type: 'weak', sourceScope: 'baseId' },
+      ])
+    })
+  })
+
   describe('getElementOutgoingReferences', () => {
     let workspace: Workspace
     const ref1 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'ref1'))
@@ -3380,7 +3425,7 @@ describe('workspace', () => {
     const templateRef1 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template1'))
     const templateRef2 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template2'))
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       const instanceElement = new InstanceElement('test', new ObjectType({ elemID: new ElemID('adapter', 'test') }), {
         ref: ref1,
         ref2,
@@ -3425,6 +3470,61 @@ describe('workspace', () => {
         undefined,
         elementSources,
       )
+    })
+
+    describe('sourceScope', () => {
+      let instanceElemId: ElemID
+      beforeEach(async () => {
+        const instanceElement = new InstanceElement('source', new ObjectType({ elemID: new ElemID('adapter', 'test') }))
+        instanceElemId = instanceElement.elemID
+        const elementSources = {
+          default: {
+            naclFiles: createMockNaclFileSource([instanceElement]),
+            state: createState([]),
+          },
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+            state: createState([]),
+          },
+        }
+        const customRefs: ReferenceInfo[] = [
+          // undefined sourceScope
+          { source: instanceElemId, target: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak' },
+          // baseId sourceScope
+          {
+            source: instanceElemId,
+            target: new ElemID('adapter', 'test', 'instance', 'target2'),
+            type: 'weak',
+            sourceScope: 'baseId',
+          },
+          // value sourceScope
+          {
+            source: instanceElemId,
+            target: new ElemID('adapter', 'test', 'instance', 'target3'),
+            type: 'weak',
+            sourceScope: 'value',
+          },
+        ]
+        workspace = await createWorkspace(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          elementSources,
+          undefined,
+          async (..._args) => customRefs,
+        )
+      })
+      it('should return correct outgoing references', async () => {
+        const outgoingRefs = await workspace.getElementOutgoingReferences(instanceElemId)
+        expect(outgoingRefs).toEqual([
+          { id: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak', sourceScope: 'baseId' },
+          { id: new ElemID('adapter', 'test', 'instance', 'target2'), type: 'weak', sourceScope: 'baseId' },
+          { id: new ElemID('adapter', 'test', 'instance', 'target3'), type: 'weak', sourceScope: 'value' },
+        ])
+      })
     })
 
     it('top level instance should return all references under it without duplicates', async () => {
@@ -4346,6 +4446,7 @@ describe('getElementFileNames', () => {
 describe('non persistent workspace', () => {
   it('should not allow flush when the ws is non-persistent', async () => {
     const nonPWorkspace = await createWorkspace(
+      undefined,
       undefined,
       undefined,
       undefined,

@@ -108,7 +108,7 @@ const log = logger(module)
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { partition } = promises.array
-const {isDefined} = values
+const { isDefined } = values
 
 export const COMMON_ENV_PREFIX = ''
 
@@ -183,7 +183,7 @@ export type FromSourceWithEnv = {
 
 type IncomingReferenceInfo = {
   sourceId: ElemID
-} & Required<Pick<ReferenceInfo, 'sourceScope'>>
+} & Required<Pick<ReferenceInfo, 'type' | 'sourceScope'>>
 
 const isFromSourceWithEnv = (value: { source: FromSource } | FromSourceWithEnv): value is FromSourceWithEnv =>
   value.source === 'env'
@@ -249,7 +249,7 @@ export type Workspace = {
     id: ElemID,
     envName?: string,
     includeWeakReferences?: boolean,
-  ) => Promise<ReferenceTargetIndexEntry[]>
+  ) => Promise<Required<ReferenceTargetIndexEntry>[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementIncomingReferenceInfos: (id: ElemID, envName?: string) => Promise<IncomingReferenceInfo[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
@@ -459,7 +459,7 @@ export const listElementsDependenciesInWorkspace = async ({
     return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
   }, 'List dependencies in workspace')
 
-type GetCustomReferencesFunc = (
+export type GetCustomReferencesFunc = (
   elements: Element[],
   accountToServiceName: Record<string, string>,
   adaptersConfig: AdaptersConfigSource,
@@ -1234,7 +1234,9 @@ export const loadWorkspace = async (
         ? // Empty idPath means we are requesting the base level element, which includes all references
           referencesTree.values()
         : referencesTree.valuesWithPrefix(idPath),
-    ).flat()
+    )
+      .flat()
+      .map(ref => ({ ...ref, sourceScope: ref.sourceScope ?? 'baseId' }))
 
     const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
     return _.uniqBy(filteredReferences, ref => ref.id.getFullName())
@@ -1329,20 +1331,20 @@ export const loadWorkspace = async (
     getElementIncomingReferences,
     getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
       const getReferenceInfo = async (sourceId: ElemID): Promise<IncomingReferenceInfo | undefined> => {
-        const outgoingReference = (await getElementOutgoingReferences(sourceId, envName)).find(ref => ref.id.isEqual(id))
+        const outgoingReference = (await getElementOutgoingReferences(sourceId, envName)).find(ref =>
+          ref.id.isEqual(id),
+        )
         if (outgoingReference === undefined) {
           return undefined
         }
         return {
           sourceId,
-          sourceScope: outgoingReference.sourceScope ?? 'baseId',
-        } as IncomingReferenceInfo
+          sourceScope: outgoingReference.sourceScope,
+          type: outgoingReference.type,
+        }
       }
       const sourceIds = await getElementIncomingReferences(id, envName)
-      return awu(sourceIds)
-      .map(getReferenceInfo)
-      .filter(isDefined)
-      .toArray()
+      return awu(sourceIds).map(getReferenceInfo).filter(isDefined).toArray()
     },
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {

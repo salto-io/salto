@@ -39,7 +39,7 @@ export type DeployableRequestDefinition<ClientOptions extends string> = {
 
   request: DeployRequestDefinition<ClientOptions>
 
-  // define what (if any) part of the response should be copied back to the workspace (via the original change).
+  // define what (if any) part of the response should be copied back to the workspace (via the original change), or be available for subsequent calls within the operation.
   // by default, only values of fields marked as service id are copied
   copyFromResponse?: {
     // default: true
@@ -47,6 +47,13 @@ export type DeployableRequestDefinition<ClientOptions extends string> = {
     updateServiceIDs?: boolean
     // default: nothing
     additional?: TransformDefinition<ChangeAndContext>
+    // values that should be available as extra context to other requests within the deployment
+    // default: nothing
+    toSharedContext?: TransformDefinition<ChangeAndContext> & {
+      // when true, the transformation result will be stored under a path based on the elem id, to avoid unintentional overlaps
+      // default: true
+      nestUnderElemID?: boolean
+    }
   }
 }
 

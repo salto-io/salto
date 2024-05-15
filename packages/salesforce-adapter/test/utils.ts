@@ -46,6 +46,7 @@ import {
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import {
+  CustomReferencesSettings,
   LastChangeDateOfTypesWithNestedInstances,
   OptionalFeatures,
 } from '../src/types'
@@ -444,11 +445,16 @@ export const createCustomSettingsObject = (
 
 export const buildFilterContext = ({
   optionalFeatures,
+  customReferencesSettings,
 }: {
   optionalFeatures?: OptionalFeatures
+  customReferencesSettings?: CustomReferencesSettings
 }): FilterContext => ({
   systemFields: SYSTEM_FIELDS,
-  fetchProfile: buildFetchProfile({ fetchParams: { optionalFeatures } }),
+  fetchProfile: buildFetchProfile({
+    fetchParams: { optionalFeatures },
+    customReferencesSettings,
+  }),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
   flsProfiles: [constants.ADMIN_PROFILE],

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
-import { adjustLabelsToIdsFunc } from '../transformation_utils'
+import { adjustLabelsToIdsFunc, adjustRestriction } from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
@@ -28,6 +28,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
+import { adjustHomepageToId, spaceMergeAndTransformAdjust } from '../utils/space'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created_at: {
@@ -85,6 +86,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         elemID: {
           parts: [{ fieldName: 'prefix' }, { fieldName: 'name' }],
         },
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
+        },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
       },
     },
   },
@@ -94,16 +103,20 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         endpoint: {
           path: '/wiki/rest/api/space',
           queryArgs: {
-            expand: 'metadata,description,description.plain,metadata.labels,description.view',
+            expand: 'metadata,description,description.plain,metadata.labels,description.view,homepage',
           },
         },
         transformation: {
           root: 'results',
+          adjust: adjustHomepageToId,
         },
       },
     ],
     resource: {
       directFetch: true,
+      mergeAndTransform: {
+        adjust: spaceMergeAndTransformAdjust,
+      },
       recurseInto: {
         permissions: {
           typeName: PERMISSION_TYPE_NAME,
@@ -140,8 +153,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
+        },
       },
       fieldCustomizations: {
+        permissionInternalIdMap: {
+          hide: true,
+        },
         id: {
           hide: true,
         },
@@ -150,7 +169,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             typeName: TEMPLATE_TYPE_NAME,
             addParentAnnotation: true,
             referenceFromParent: false,
-            nestPathUnderParent: false,
+            nestPathUnderParent: true,
           },
         },
         settings: {
@@ -159,6 +178,11 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             addParentAnnotation: true,
             referenceFromParent: false,
             nestPathUnderParent: true,
+          },
+        },
+        permissions: {
+          sort: {
+            properties: [{ path: 'principalId' }, { path: 'type' }, { path: 'key' }, { path: 'targetType' }],
           },
         },
       },
@@ -192,6 +216,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: {
           extendsParent: true,
+        },
+        alias: {
+          aliasComponents: [{ fieldName: '_parent.0', referenceFieldName: '_alias' }],
         },
       },
     },
@@ -232,6 +259,13 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         elemID: {
           // Confluence does not allow pages with the same title in the same space
           parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
+        },
+        path: {
+          // only the filename matters, the paths are updated in the custom_paths filter
+          pathParts: [{ parts: [{ fieldName: 'title' }] }],
+        },
+        alias: {
+          aliasComponents: [{ fieldName: 'title' }],
         },
       },
       fieldCustomizations: {
@@ -282,6 +316,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         elemID: {
           parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
         },
+        alias: {
+          aliasComponents: [{ fieldName: 'title' }],
+        },
       },
       fieldCustomizations: {
         version: {
@@ -301,15 +338,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
-          adjust: item => ({
-            value: {
-              operation: _.get(item.value, 'operation'),
-              restrictions: {
-                user: _.get(item.value, 'restrictions.user.results'),
-                group: _.get(item.value, 'restrictions.group.results'),
-              },
-            },
-          }),
+          adjust: adjustRestriction,
         },
       },
     ],
@@ -341,6 +370,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         elemID: {
           extendsParent: true,
           parts: [{ fieldName: 'name' }],
+        },
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
         },
       },
       fieldCustomizations: {
@@ -374,6 +406,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: {
           parts: [{ fieldName: 'name' }],
+        },
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
         },
       },
       fieldCustomizations: {

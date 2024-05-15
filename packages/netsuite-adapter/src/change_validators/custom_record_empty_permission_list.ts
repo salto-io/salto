@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { getChangeData, isAdditionOrModificationChange, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { NetsuiteChangeValidator } from './types'
 import { isCustomRecordType } from '../types'
@@ -31,7 +31,7 @@ const usePermissionOnListWithEmptyList = (customRecordType: ObjectType): boolean
 
 const changeValidator: NetsuiteChangeValidator = async changes =>
   changes
-    .filter(isAdditionOrModificationChange)
+    .filter(isAdditionChange)
     .map(getChangeData)
     .filter(isObjectType)
     .filter(isCustomRecordType)
@@ -41,8 +41,8 @@ const changeValidator: NetsuiteChangeValidator = async changes =>
       severity: 'Error',
       message: 'Access Type is "Permission List" with No Permissions Specified',
       detailedMessage:
-        `Cannot deploy a Custom Record Type without specifying permissions when the access type is set to '${USE_PERMISSION_LIST}'.` +
-        `To deploy this Custom Record Type, you must either add permissions or change the access type to '${REQUIRE_CUSTOM_RECORD_ENTRIES_PERMISSION}' or '${NO_PERMISSION_REQUIRED}'.`,
+        `Cannot create a Custom Record Type without specifying permissions when the access type is set to '${USE_PERMISSION_LIST}'.` +
+        `To create this Custom Record Type, you must either add permissions or change the access type to '${REQUIRE_CUSTOM_RECORD_ENTRIES_PERMISSION}' or '${NO_PERMISSION_REQUIRED}'.`,
     }))
 
 export default changeValidator

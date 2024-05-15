@@ -254,14 +254,8 @@ export const createFormType = (): {
   }
 }
 
-export const isFormsResponse = createSchemeGuard<FormsResponse>(
-  FORMS_RESPONSE_SCHEME,
-  'bad forms response from jira server',
-)
-export const isDetailedFormsResponse = createSchemeGuard<DetailedFormDataResponse>(
-  DETAILED_FORM_RESPONSE_SCHEME,
-  'bad detailed form response from jira server',
-)
+export const isFormsResponse = createSchemeGuard<FormsResponse>(FORMS_RESPONSE_SCHEME)
+export const isDetailedFormsResponse = createSchemeGuard<DetailedFormDataResponse>(DETAILED_FORM_RESPONSE_SCHEME)
 
 type createFormResponse = {
   id: number

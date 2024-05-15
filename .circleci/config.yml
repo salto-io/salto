@@ -5,8 +5,53 @@ orbs:
   aws-s3: circleci/aws-s3@1.0.15
   aws-cli: circleci/aws-cli@2.0.3
   coveralls: coveralls/coveralls@1.0.6
+  macos: circleci/macos@2.4.1
 
 commands:
+  run_e2e_tests:
+    parameters:
+      should_install_java:
+        type: boolean
+        default: false
+      package_name:
+        type: string
+    steps:
+      - run:
+          name: configure sources.list
+          command: |
+            if curl -sL https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/apt/sources.list -o /tmp/sources.list; then
+              echo "found sources.list file"
+              sudo mv /tmp/sources.list /etc/apt/sources.list
+              sudo apt update
+            else
+              echo "did not find sources.list file, using the default one"
+            fi
+            echo "using sources.list:"
+            cat /etc/apt/sources.list
+      - when:
+          condition: << parameters.should_install_java >>
+          steps:
+            run:
+              name: Install Java
+              command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
+      - run:
+          name: Run E2E tests for package << parameters.package_name >>
+          command: |
+            pushd packages/<< parameters.package_name >>
+            yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
+          no_output_timeout: 20m
+          environment:
+            SALTO_LOG_LEVEL: 'info'
+            # enable telemetry for end2end so we can count more events
+            # webpack configuration is irrelevant in this case and therefore
+            # we explicitly configure it in here
+            SALTO_TELEMETRY_DISABLE: '0'
+            SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
+            JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
+
+      - store_test_results:
+          path: reports
+
   set_s3_pkg_urls:
     steps:
       - run:
@@ -171,48 +216,22 @@ jobs:
           name: Release version
           command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
 
-  e2e_test:
+  e2e_tests:
+    parameters:
+      package_name:
+        type: string
+      should_install_java:
+        type: boolean
     docker:
       - image: cimg/node:14.15
-
     resource_class: large
     working_directory: /mnt/ramdisk/project
-
     steps:
       - attach_workspace:
           at: .
-
-      - run:
-          name: configure sources.list
-          command: |
-            if curl -sL https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/apt/sources.list -o /tmp/sources.list; then
-              echo "found sources.list file"
-              sudo mv /tmp/sources.list /etc/apt/sources.list
-              sudo apt update
-            else
-              echo "did not find sources.list file, using the default one"
-            fi
-            echo "using sources.list:"
-            cat /etc/apt/sources.list
-      - run:
-          name: Install java
-          command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
-      - run:
-          name: Run E2E tests
-          command: yarn test --reporters=default --reporters=jest-junit --coverage=false
-          no_output_timeout: 20m
-          environment:
-            RUN_E2E_TESTS: '1'
-            SALTO_LOG_LEVEL: 'info'
-            # enable telemetry for end2end so we can count more events
-            # webpack configuration is irrelevant in this case and therefore
-            # we explicitly configure it in here
-            SALTO_TELEMETRY_DISABLE: '0'
-            SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
-            JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
-
-      - store_test_results:
-          path: reports
+      - run_e2e_tests:
+          package_name: <<parameters.package_name>>
+          should_install_java: <<parameters.should_install_java>>     
 
   package_cli:
     docker:
@@ -235,6 +254,7 @@ jobs:
   test_cli_mac:
     macos:
       xcode: 14.2.0
+    resource_class: macos.m1.medium.gen1
 
     steps:
       - set_s3_pkg_urls
@@ -242,6 +262,8 @@ jobs:
       - aws-s3/copy:
           from: ${S3_PKG_HASH_PREFIX}/cli/mac/salto
           to: .
+
+      - macos/install-rosetta
 
       - run:
           command: chmod +x ./salto
@@ -367,21 +389,43 @@ jobs:
           command: .circleci/scripts/publish-canary.sh
 
 workflows:
-  version: 2
-
   commit:
     jobs:
       - build
+
+      - e2e_tests:
+          requires:
+            - build
+          matrix:
+            alias: e2e_tests_without_java
+            parameters:
+              package_name: 
+                - cli
+                - okta-adapter
+                - salesforce-adapter
+                - stripe-adapter
+                - zendesk-adapter
+                - zuora-billing-adapter
+              should_install_java: 
+                - false
+
+      - e2e_tests:
+          requires:
+            - build
+          matrix:
+            alias: e2e_tests_with_java
+            parameters:
+              package_name: 
+                - jira-adapter
+                - netsuite-adapter
+              should_install_java: 
+                - true
 
       - save_project_cache:
           requires:
             - build
 
       - unit_test:
-          requires:
-            - build
-
-      - e2e_test:
           requires:
             - build
 
@@ -405,13 +449,11 @@ workflows:
           requires:
             - build
             - unit_test
-            # - e2e_test
 
       - package_vscode_extension:
           requires:
             - build
             - unit_test
-            # - e2e_test
 
       - sync_s3_pkg_latest:
           requires:
@@ -427,7 +469,8 @@ workflows:
           requires:
             - build
             - unit_test
-            - e2e_test
+            - e2e_tests_without_java
+            - e2e_tests_with_java
 
       - publish_on_version_change:
           context: salto
@@ -438,4 +481,5 @@ workflows:
           requires:
             - build
             - unit_test
-            - e2e_test
+            - e2e_tests_without_java
+            - e2e_tests_with_java

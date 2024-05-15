@@ -15,7 +15,9 @@
  */
 import _ from 'lodash'
 import {
+  BuiltinTypes,
   Change,
+  Field,
   getChangeData,
   InstanceElement,
   isInstanceChange,
@@ -51,7 +53,8 @@ export const overrideInstanceTypeForDeploy = <Options extends FetchApiDefinition
   // make sure all service id fields are there even on additions (which might not have values for them)
   defQuery.query(typeName)?.resource?.serviceIDFields?.forEach(fieldName => {
     if (generatedType.type.fields[fieldName] === undefined) {
-      generatedType.type.fields[fieldName] = instance.getTypeSync().fields[fieldName]
+      generatedType.type.fields[fieldName] =
+        instance.getTypeSync().fields[fieldName] ?? new Field(generatedType.type, fieldName, BuiltinTypes.SERVICE_ID)
     }
   })
 

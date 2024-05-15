@@ -49,6 +49,7 @@ export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
 export const CUSTOM_REFS_CONFIG = 'customReferences'
+export const FIX_ELEMENTS_CONFIG = 'fixElements'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
 const METADATA_TYPE = 'metadataType'
@@ -130,6 +131,7 @@ export type OptionalFeatures = {
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
+  omitStandardFieldsNonDeployableValues?: boolean
 }
 
 export type ChangeValidatorName =
@@ -207,11 +209,20 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesTypeNames = ['profiles'] as const
-type customReferencesTypes = (typeof customReferencesTypeNames)[number]
+const customReferencesHandlersNames = [
+  'profiles',
+  'managedElements',
+  'permisisonSets',
+] as const
+export type CustomReferencesHandlers =
+  (typeof customReferencesHandlersNames)[number]
 
 export type CustomReferencesSettings = Partial<
-  Record<customReferencesTypes, boolean>
+  Record<CustomReferencesHandlers, boolean>
+>
+
+export type FixElementsSettings = Partial<
+  Record<CustomReferencesHandlers, boolean>
 >
 
 const objectIdSettings = new ObjectType({
@@ -324,7 +335,17 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
 const customReferencesSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoCustomReferencesSettings'),
   fields: Object.fromEntries(
-    customReferencesTypeNames.map((name) => [
+    customReferencesHandlersNames.map((name) => [
+      name,
+      { refType: BuiltinTypes.BOOLEAN },
+    ]),
+  ),
+})
+
+const fixElementsSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoFixElementsSettings'),
+  fields: Object.fromEntries(
+    customReferencesHandlersNames.map((name) => [
       name,
       { refType: BuiltinTypes.BOOLEAN },
     ]),
@@ -354,7 +375,6 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
-  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
 }
 
 export type FetchParameters = {
@@ -457,6 +477,8 @@ export type SalesforceConfig = {
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
   [DEPLOY_CONFIG]?: UserDeployConfig
+  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
+  [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
 }
 
 type DataManagementConfigSuggestions = {
@@ -653,9 +675,6 @@ const dataManagementType = new ObjectType({
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
     },
-    [CUSTOM_REFS_CONFIG]: {
-      refType: customReferencesSettingsType,
-    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -839,6 +858,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
+    omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1012,6 +1032,12 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
         changeValidatorConfigType,
       ),
     },
+    [CUSTOM_REFS_CONFIG]: {
+      refType: customReferencesSettingsType,
+    },
+    [FIX_ELEMENTS_CONFIG]: {
+      refType: fixElementsSettingsType,
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1047,6 +1073,9 @@ export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
   readonly dataManagement?: DataManagement
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
+  readonly isCustomReferencesHandlerEnabled: (
+    name: CustomReferencesHandlers,
+  ) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean

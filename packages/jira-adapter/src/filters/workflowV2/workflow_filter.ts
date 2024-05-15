@@ -68,9 +68,6 @@ import {
   STATUS_CATEGORY_ID_TO_KEY,
   TASK_STATUS,
   WorkflowVersion,
-  CONDITION_LIST_FIELDS,
-  VALIDATOR_LIST_FIELDS,
-  TRIGGER_LIST_FIELDS,
   ID_TO_UUID_PATH_NAME_TO_RECURSE,
   isAdditionOrModificationWorkflowChange,
   CONDITION_GROUPS_PATH_NAME_TO_RECURSE,
@@ -79,6 +76,7 @@ import {
   isDeploymentWorkflowPayload,
   PayloadWorkflowStatus,
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
+  TRANSITION_LIST_FIELDS,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
@@ -143,19 +141,20 @@ const fetchWorkflowData = async (paginator: clientUtils.Paginator): Promise<Work
 const convertIdsStringToList = (ids: string): string[] => ids.split(',')
 
 const convertTransitionParametersFields = (
+  workflowName: string,
   transitions: Values[],
   convertFunc: (parameters: Values, fieldSet: Set<string>) => void,
 ): void => {
-  transitions?.forEach((transition: Values) => {
-    transition.conditions?.conditions?.forEach((condition: Values) => {
-      convertFunc(condition?.parameters, CONDITION_LIST_FIELDS)
-    })
-    transition.validators?.forEach((validator: Values) => {
-      convertFunc(validator?.parameters, VALIDATOR_LIST_FIELDS)
-    })
-    transition.triggers?.forEach((trigger: Values) => {
-      convertFunc(trigger?.parameters, TRIGGER_LIST_FIELDS)
-    })
+  walkOnValue({
+    elemId: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE, 'instance', workflowName, 'transitions'),
+    value: transitions,
+    func: ({ value, path }) => {
+      if (_.isPlainObject(value) && path.name === 'parameters') {
+        convertFunc(value, TRANSITION_LIST_FIELDS)
+        return WALK_NEXT_STEP.SKIP
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
   })
 }
 
@@ -222,7 +221,7 @@ const createWorkflowInstances = async ({
     const workflowInstances = (
       await Promise.all(
         response.data.workflows.map(async workflow => {
-          convertTransitionParametersFields(workflow.transitions, convertParametersFieldsToList)
+          convertTransitionParametersFields(workflow.name, workflow.transitions, convertParametersFieldsToList)
           convertPropertiesToList([...(workflow.statuses ?? []), ...(workflow.transitions ?? [])])
           if (workflow.id === undefined) {
             // should never happen
@@ -409,9 +408,7 @@ const getWorkflowPayload = (
   return workflowPayload
 }
 
-const getWorkflowsFromWorkflowScheme = async (
-  workflowSchemeInstance: InstanceElement,
-): Promise<ReferenceExpression[]> => {
+export const getWorkflowsFromWorkflowScheme = (workflowSchemeInstance: InstanceElement): ReferenceExpression[] => {
   const { defaultWorkflow } = workflowSchemeInstance.value
   const workflows = makeArray(workflowSchemeInstance.value.items)
     .filter(isWorkflowSchemeItem)
@@ -422,10 +419,18 @@ const getWorkflowsFromWorkflowScheme = async (
 
 // active workflow is a workflow that is associated with a project using a workflow scheme
 const getActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
-  const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
+  const projects = await log.timeTrace(
+    () => getInstancesFromElementSource(elementsSource, [PROJECT_TYPE]),
+    'Fetching all projects from elements source',
+  )
   const activeWorkflows = await awu(projects)
     .filter(projectHasWorkflowSchemeReference)
-    .map(project => project.value.workflowScheme.getResolvedValue(elementsSource))
+    .map(project =>
+      log.timeTrace(
+        () => project.value.workflowScheme.getResolvedValue(elementsSource),
+        `Resolving workflow scheme ${project.value.workflowScheme.elemID.getFullName()} for project ${project.elemID.getFullName()}`,
+      ),
+    )
     .filter(isInstanceElement)
     .flatMap(getWorkflowsFromWorkflowScheme)
     .map(workflowRef => workflowRef.elemID.getFullName())
@@ -661,7 +666,11 @@ const getWorkflowForDeploy = async (
 ): Promise<InstanceElement> => {
   const resolvedInstance = await resolveValues(workflowInstance, getLookUpName)
   resolvedInstance.value.transitions = Object.values(resolvedInstance.value.transitions ?? [])
-  convertTransitionParametersFields(resolvedInstance.value.transitions, convertParametersFieldsToString)
+  convertTransitionParametersFields(
+    resolvedInstance.value.name,
+    resolvedInstance.value.transitions,
+    convertParametersFieldsToString,
+  )
   convertPropertiesToMap([...(resolvedInstance.value.statuses ?? []), ...(resolvedInstance.value.transitions ?? [])])
   walkOnElement({ element: resolvedInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
   walkOnElement({ element: resolvedInstance, func: insertConditionGroups })
@@ -751,7 +760,9 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     },
     deploy: async changes => {
       const [relevantChanges, leftoverChanges] = _.partition(changes, isAdditionOrModificationWorkflowChange)
-      const activeWorkflowsNames = await getActiveWorkflowsNamesPromise()
+      const activeWorkflowsNames = !_.isEmpty(relevantChanges)
+        ? await getActiveWorkflowsNamesPromise()
+        : new Set<string>()
       const deployResult = await deployChanges(relevantChanges, async change =>
         deployWorkflow({
           change,

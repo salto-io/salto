@@ -45,6 +45,7 @@ const importantValuesMap: Record<string, ImportantValues> = {
     { value: 'trigger', highlighted: true, indexed: false },
     { value: 'components', highlighted: true, indexed: false },
     { value: 'trigger.type', highlighted: false, indexed: true },
+    { value: 'labels', highlighted: true, indexed: true },
   ],
   [BOARD_TYPE_NAME]: [
     { value: 'name', highlighted: true, indexed: false },
@@ -103,12 +104,9 @@ const importantValuesMap: Record<string, ImportantValues> = {
 }
 
 // Adds relevant important values for the Jira adapter
-const filter: FilterCreator = ({ config }) => ({
+const filter: FilterCreator = () => ({
   name: 'addImportantValues',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (!config.fetch.showImportantValues) {
-      return
-    }
     const objectTypes = elements.filter(isObjectType)
     objectTypes.forEach(obj => {
       const { typeName } = obj.elemID

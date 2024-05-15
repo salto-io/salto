@@ -157,6 +157,7 @@ describe('Netsuite adapter E2E with real account', () => {
   }
 
   beforeAll(async () => {
+    log.resetLogCount()
     await adapterCreator.install?.()
     credentialsLease = await credsLease()
     logging(`using account ${credentialsLease.value.accountId}`)
@@ -166,6 +167,7 @@ describe('Netsuite adapter E2E with real account', () => {
     if (credentialsLease?.return) {
       await credentialsLease.return()
     }
+    log.info('Netsuite adapter E2E: Log counts = %o', log.getLogCount())
   })
 
   // Set long timeout as we communicate with Netsuite APIs
@@ -1060,22 +1062,52 @@ describe('Netsuite adapter E2E with real account', () => {
         expect(loadedFeaturesInstance).toEqual(fetchedFeaturesInstance)
       })
 
-      it('should load existing folders correctly', async () => {
-        expect(findElement(loadedElements, topLevelFolder.elemID)).toEqual(alignInactiveFields(topLevelFolder))
-        expect(findElement(loadedElements, innerFolder.elemID)).toEqual(alignInactiveFields(innerFolder))
+      it('should load existing folder with default attributes when attributes were not passed', async () => {
+        expect(findElement(loadedElements, topLevelFolder.elemID)).toEqual(
+          alignInactiveFields(
+            new InstanceElement(
+              topLevelFolder.elemID.name,
+              additionalTypes[FOLDER],
+              {
+                bundleable: false,
+                isinactive: false,
+                isprivate: false,
+                path: '/SuiteScripts',
+              },
+              ['netsuite', 'FileCabinet', 'SuiteScripts', 'SuiteScripts'],
+              {
+                [CORE_ANNOTATIONS.ALIAS]: 'SuiteScripts',
+              },
+            ),
+          ),
+        )
       })
 
-      it('should load existing file with new content', async () => {
-        const loadedExistingFile = findElement(loadedElements, existingFileInstance.elemID) as InstanceElement
-        const loadedContent = loadedExistingFile.value.content
-        delete loadedExistingFile.value.content
-        delete existingFileInstance.value.content
-        expect(loadedExistingFile).toEqual(alignInactiveFields(existingFileInstance))
-        expect(loadedContent).toEqual(
-          new StaticFile({
-            filepath: 'netsuite/FileCabinet/SuiteScripts/b/existing.js',
-            content: Buffer.from('console.log("Hello Back!")'),
-          }),
+      it('should load existing file with default attributes when attributes were not passed, and with its new content', async () => {
+        expect(findElement(loadedElements, existingFileInstance.elemID)).toEqual(
+          alignInactiveFields(
+            new InstanceElement(
+              existingFileInstance.elemID.name,
+              additionalTypes[FILE],
+              {
+                availablewithoutlogin: false,
+                bundleable: false,
+                generateurltimestamp: false,
+                hideinbundle: false,
+                isinactive: false,
+                path: '/SuiteScripts/b/existing.js',
+                content: new StaticFile({
+                  filepath: 'netsuite/FileCabinet/SuiteScripts/b/existing.js',
+                  content: Buffer.from('console.log("Hello Back!")'),
+                }),
+              },
+              ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'existing.js'],
+              {
+                [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(innerFolder.elemID)],
+                [CORE_ANNOTATIONS.ALIAS]: 'existing.js',
+              },
+            ),
+          ),
         )
       })
 

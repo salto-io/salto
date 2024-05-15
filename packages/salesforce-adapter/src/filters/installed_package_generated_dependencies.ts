@@ -16,8 +16,8 @@
 import {
   Element,
   ElemID,
+  Field,
   isInstanceElement,
-  isObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections, multiIndex, values } from '@salto-io/lowerdash'
@@ -34,34 +34,30 @@ import {
 } from '../constants'
 import {
   buildElementsSourceForFetch,
-  getNamespace,
   getNamespaceSync,
   isInstanceOfType,
-  isStandardObject,
+  isStandardObjectSync,
   metadataTypeSync,
 } from './utils'
 import { apiName } from '../transformers/transformer'
 
 const { isDefined } = values
-const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 const log = logger(module)
 
-const addInstalledPackageReference = async (
+const installedPackageReference = (
   element: Element,
   installedPackageNamespaceToRef: multiIndex.Index<[string], ElemID>,
-): Promise<boolean> => {
-  const namespace = await getNamespace(element)
+): ReferenceExpression | undefined => {
+  const namespace = getNamespaceSync(element)
   if (namespace === undefined) {
-    return false
+    return undefined
   }
   const installedPackageElemID = installedPackageNamespaceToRef.get(namespace)
   if (installedPackageElemID === undefined) {
-    return false
+    return undefined
   }
-  const reference = new ReferenceExpression(installedPackageElemID)
-  extendGeneratedDependencies(element, [{ reference }])
-  return true
+  return new ReferenceExpression(installedPackageElemID)
 }
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
@@ -83,27 +79,49 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     if (_.isEmpty(Object.keys(installedPackageNamespaceToRef))) {
       return
     }
-    const affectedTopLevelElements = await awu(elements)
-      .filter((element) =>
-        addInstalledPackageReference(element, installedPackageNamespaceToRef),
+    const topLevelElementsReferences = elements
+      .map((element): [Element, ReferenceExpression | undefined] => [
+        element,
+        installedPackageReference(element, installedPackageNamespaceToRef),
+      ])
+      .filter(
+        (
+          elementReference,
+        ): elementReference is [Element, ReferenceExpression] =>
+          elementReference[1] !== undefined,
       )
-      .toArray()
     // CustomFields of Standard Objects
-    const affectedFields = await awu(elements)
-      .filter(isObjectType)
-      .filter(isStandardObject)
+    const fieldsReferences = elements
+      .filter(isStandardObjectSync)
       .flatMap((standardObject) => Object.values(standardObject.fields))
-      .filter((standardObject) =>
-        addInstalledPackageReference(
-          standardObject,
-          installedPackageNamespaceToRef,
-        ),
+      .map((field): [Field, ReferenceExpression | undefined] => [
+        field,
+        installedPackageReference(field, installedPackageNamespaceToRef),
+      ])
+      .filter(
+        (fieldReference): fieldReference is [Field, ReferenceExpression] =>
+          fieldReference[1] !== undefined,
       )
-      .toArray()
-    log.debug(
-      `Added InstalledPackage instance generated dependencies to ${affectedTopLevelElements.length + affectedFields.length} Elements`,
-    )
-    const instancesInWrongPath = affectedTopLevelElements
+
+    if (
+      !config.fetchProfile.isCustomReferencesHandlerEnabled('managedElements')
+    ) {
+      topLevelElementsReferences
+        .concat(fieldsReferences)
+        .map(([element, reference]) =>
+          extendGeneratedDependencies(element, [{ reference }]),
+        )
+      log.debug(
+        `Added InstalledPackage instance generated dependencies to ${topLevelElementsReferences.length + fieldsReferences.length} Elements`,
+      )
+    } else {
+      log.debug(
+        'Managed elements custom references handler enabled, not adding explicit references.',
+      )
+    }
+
+    const instancesInWrongPath = topLevelElementsReferences
+      .map(([element, _reference]) => element)
       .filter(isInstanceElement)
       .filter(
         (instance) =>
@@ -126,7 +144,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         },
       )
       log.debug(
-        `some Metadata Instances are not under the InstalledPackages directory. summary: ${safeJsonStringify(summary)}`,
+        `Some Metadata Instances are not under the InstalledPackages directory. summary: ${safeJsonStringify(summary)}`,
       )
     }
   },

@@ -13,31 +13,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Values } from '../src/values'
-import { CORE_ANNOTATIONS, getRestriction, createRestriction } from '../src/builtins'
+import { CORE_ANNOTATIONS, getRestriction, createRestriction, isServiceId } from '../src/builtins'
 
 describe('builtins', () => {
   describe('getRestriction', () => {
-    let result: ReturnType<typeof getRestriction>
-    describe('when element has restriction', () => {
-      let annotations: Values
-      beforeEach(() => {
-        annotations = {
-          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 10 }),
-        }
-        result = getRestriction({ annotations })
-      })
-      it('should a reference to the restriction', () => {
-        expect(result).toBe(annotations[CORE_ANNOTATIONS.RESTRICTION])
-      })
+    it('should a reference to the restriction when element has restriction', () => {
+      const annotations = {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 10 }),
+      }
+      const result = getRestriction({ annotations })
+      expect(result).toBe(annotations[CORE_ANNOTATIONS.RESTRICTION])
     })
-    describe('when element has no restriction', () => {
-      beforeEach(() => {
-        result = getRestriction({ annotations: {} })
+
+    it('should return an empty object when element has no restriction', () => {
+      const result = getRestriction({ annotations: {} })
+      expect(result).toEqual({})
+    })
+  })
+
+  describe('isServiceId', () => {
+    it('should return true when service ID is true', () => {
+      const result = isServiceId({
+        annotations: {
+          _service_id: true,
+        },
       })
-      it('should return an empty object', () => {
-        expect(result).toEqual({})
+      expect(result).toEqual(true)
+    })
+
+    it('should return false when service ID is false', () => {
+      const result = isServiceId({
+        annotations: {
+          _service_id: false,
+        },
       })
+      expect(result).toEqual(false)
+    })
+
+    it('should return false when service ID is missing', () => {
+      const result = isServiceId({
+        annotations: {},
+      })
+      expect(result).toEqual(false)
+    })
+
+    it('should return false when annotations are missing', () => {
+      const result = isServiceId({})
+      expect(result).toEqual(false)
     })
   })
 })

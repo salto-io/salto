@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, FixElementsFunc, ObjectType } from '@salto-io/adapter-api'
 import { combineElementFixers } from '../../src/references/element_fixers'
 
 describe('combineElementFixers', () => {
   let type1: ObjectType
   let type2: ObjectType
+  let fixers: Record<string, FixElementsFunc>
 
   beforeEach(() => {
     type1 = new ObjectType({
@@ -28,11 +29,9 @@ describe('combineElementFixers', () => {
     type2 = new ObjectType({
       elemID: new ElemID('adapter', 'type2'),
     })
-  })
 
-  it('should run all the element fixers', async () => {
-    const fixElementsFunc = combineElementFixers([
-      async elements => {
+    fixers = {
+      fixer1: async elements => {
         const type1AfterFix = elements[0].clone()
         type1AfterFix.annotations.fix1 = true
 
@@ -52,7 +51,7 @@ describe('combineElementFixers', () => {
         }
       },
 
-      async elements => {
+      fixer2: async elements => {
         const type1AfterFix = elements[0].clone()
         type1AfterFix.annotations.fix2 = true
 
@@ -68,34 +67,70 @@ describe('combineElementFixers', () => {
           ],
         }
       },
-    ])
+    }
+  })
 
-    const fixes = await fixElementsFunc([type1, type2])
+  describe('with no config', () => {
+    it('should run all the element fixers', async () => {
+      const fixElementsFunc = combineElementFixers(fixers)
 
-    expect(fixes.errors).toEqual([
-      {
-        elemID: type1.elemID,
-        severity: 'Info',
-        message: 'message1',
-        detailedMessage: 'detailedMessage1',
-      },
-      {
-        elemID: type1.elemID,
-        severity: 'Info',
-        message: 'message2',
-        detailedMessage: 'detailedMessage2',
-      },
-    ])
+      const fixes = await fixElementsFunc([type1, type2])
 
-    const [type1AfterFix, type2AfterFix] = fixes.fixedElements
+      expect(fixes.errors).toEqual([
+        {
+          elemID: type1.elemID,
+          severity: 'Info',
+          message: 'message1',
+          detailedMessage: 'detailedMessage1',
+        },
+        {
+          elemID: type1.elemID,
+          severity: 'Info',
+          message: 'message2',
+          detailedMessage: 'detailedMessage2',
+        },
+      ])
 
-    expect(type1AfterFix.annotations).toEqual({
-      fix1: true,
-      fix2: true,
+      const [type1AfterFix, type2AfterFix] = fixes.fixedElements
+
+      expect(type1AfterFix.annotations).toEqual({
+        fix1: true,
+        fix2: true,
+      })
+
+      expect(type2AfterFix.annotations).toEqual({
+        fix1: true,
+      })
     })
+  })
 
-    expect(type2AfterFix.annotations).toEqual({
-      fix1: true,
+  describe('with some enabled', () => {
+    it('should run only enabled element fixers', async () => {
+      const fixElementsFunc = combineElementFixers(fixers, {
+        fixer1: true,
+        fixer2: false,
+      })
+
+      const fixes = await fixElementsFunc([type1, type2])
+
+      expect(fixes.errors).toEqual([
+        {
+          elemID: type1.elemID,
+          severity: 'Info',
+          message: 'message1',
+          detailedMessage: 'detailedMessage1',
+        },
+      ])
+
+      const [type1AfterFix, type2AfterFix] = fixes.fixedElements
+
+      expect(type1AfterFix.annotations).toEqual({
+        fix1: true,
+      })
+
+      expect(type2AfterFix.annotations).toEqual({
+        fix1: true,
+      })
     })
   })
 })

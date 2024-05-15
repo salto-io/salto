@@ -55,6 +55,7 @@ describe('add alias filter', () => {
       fetchQuery: createMockQuery(),
       config: {},
       definitions,
+      sharedContext: {},
     }) as FilterType
 
   describe('when fetch definition is undefined', () => {

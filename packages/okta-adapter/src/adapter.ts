@@ -80,6 +80,8 @@ import userFilter from './filters/user'
 import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
+import brandThemeAdditionFilter from './filters/brand_theme_addition'
+import brandThemeRemovalFilter from './filters/brand_theme_removal'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
 import unorderedListsFilter from './filters/unordered_lists'
@@ -88,7 +90,7 @@ import profileMappingPropertiesFilter from './filters/profile_mapping_properties
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
 import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
-import policyRulePrioritiesFilter from './filters/policy_rule_priority'
+import policyPrioritiesFilter from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
@@ -99,6 +101,7 @@ import {
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
   OKTA,
+  POLICY_PRIORITY_TYPE_NAMES,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
 } from './constants'
 import { getLookUpName } from './reference_mapping'
@@ -136,12 +139,13 @@ const DEFAULT_FILTERS = [
   defaultPolicyRuleDeployment,
   schemaFieldsRemovalFilter,
   appLogoFilter,
+  brandThemeAdditionFilter,
+  brandThemeRemovalFilter,
   brandThemeFilesFilter,
   fieldReferencesFilter,
   // should run after fieldReferencesFilter
   domainParentFilter,
   // should run after fieldReferencesFilter
-  policyRulePrioritiesFilter,
   // should run after fieldReferencesFilter
   addAliasFilter,
   // should run after fieldReferencesFilter and userFilter
@@ -165,6 +169,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
   ...POLICY_RULE_PRIORITY_TYPE_NAMES,
+  ...POLICY_PRIORITY_TYPE_NAMES,
 ]
 
 export interface OktaAdapterParams {

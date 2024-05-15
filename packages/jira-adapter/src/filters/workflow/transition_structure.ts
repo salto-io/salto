@@ -151,10 +151,12 @@ export const walkOverTransitionIds = (transition: WorkflowTransitionV1, func: (v
   transition.rules?.postFunctions
     ?.filter(postFunction => postFunction.type === SCRIPT_RUNNER_POST_FUNCTION_TYPE)
     .forEach(postFunction => {
-      if (postFunction.configuration?.scriptRunner?.transitionId === undefined) {
-        return
+      if (
+        postFunction.configuration?.scriptRunner?.transitionId !== undefined &&
+        !_.isEmpty(postFunction.configuration.scriptRunner.transitionId)
+      ) {
+        func(postFunction.configuration.scriptRunner)
       }
-      func(postFunction.configuration.scriptRunner)
     })
 }
 
@@ -163,7 +165,7 @@ export const walkOverTransitionIdsV2 = (transition: WorkflowTransitionV2, func: 
     ?.filter(
       action =>
         action.parameters?.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE &&
-        action.parameters.scriptRunner?.transitionId !== undefined,
+        !_.isEmpty(action.parameters.scriptRunner?.transitionId),
     )
     .forEach(action => {
       func(action.parameters.scriptRunner)

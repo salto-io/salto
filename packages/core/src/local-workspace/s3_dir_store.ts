@@ -23,10 +23,12 @@ import Bottleneck from 'bottleneck'
 import getStream from 'get-stream'
 import { Readable } from 'stream'
 import { values } from '@salto-io/lowerdash'
+import _ from 'lodash'
 
 const log = logger(module)
 
 const DEFAULT_CONCURRENCY_LIMIT = 100
+const DELETION_BATCH_SIZE = 1000 // AWS limit
 
 export const buildS3DirectoryStore = ({
   bucketName,
@@ -40,6 +42,7 @@ export const buildS3DirectoryStore = ({
   concurrencyLimit?: number
 }): staticFiles.StateStaticFilesStore => {
   let updated: Record<string, dirStore.File<Buffer>> = {}
+  let deleted = new Set<string>()
   const s3 = S3Client ?? createS3Client()
   const bottleneck = new Bottleneck({ maxConcurrent: concurrencyLimit })
 
@@ -125,19 +128,60 @@ export const buildS3DirectoryStore = ({
       return Array.from(paths)
     }, `listing s3 objects for ${baseDir}`)
 
+  const deleteMany = async (fileNames: string[]): Promise<void> => {
+    const objectIdentifiers: AWS.ObjectIdentifier[] = fileNames.map(fileName => ({
+      Key: getFullPath(fileName),
+    }))
+
+    const batches = _.chunk(objectIdentifiers, DELETION_BATCH_SIZE)
+    const batchPromises = batches.map(batch =>
+      bottleneck.schedule(async () => {
+        log.trace('Deleting batch of objects from S3 bucket %s', bucketName)
+        const result = await s3.deleteObjects({
+          Bucket: bucketName,
+          Delete: { Objects: batch },
+        })
+        log.trace('Deleted batch of objects from S3 bucket %s: %s', bucketName, safeJsonStringify(result?.Deleted))
+      }),
+    )
+
+    try {
+      await Promise.all(batchPromises)
+    } catch (err) {
+      log.error('Failed to delete objects from S3 bucket %s: %s', bucketName, safeJsonStringify(err))
+      throw err
+    }
+  }
+
   const flush = async (): Promise<void> => {
     const files = Object.values(updated)
     updated = {}
     await Promise.all(files.map(f => writeFile(f)))
+
+    if (deleted.size > 0) {
+      const toDelete = Array.from(deleted)
+      deleted = new Set()
+      await deleteMany(toDelete)
+    }
   }
 
   return {
-    get: async filePath => (updated[filePath] ? updated[filePath] : readFile(filePath)),
+    get: async filePath => {
+      if (deleted.has(filePath)) {
+        return undefined
+      }
+      return updated[filePath] ? updated[filePath] : readFile(filePath)
+    },
     set: async file => {
       updated[file.filename] = file
+      deleted.delete(file.filename)
     },
     list,
     getFullPath: filePath => `s3://${bucketName}/${getFullPath(filePath)}`,
     flush,
+    delete: async fileName => {
+      deleted.add(fileName)
+      delete updated[fileName]
+    },
   }
 }

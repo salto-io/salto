@@ -724,6 +724,39 @@ describe('pino based logger', () => {
           .toContain("customProp1: 'customVal1', customProp2: { aNumber: 42 }")
       })
     })
+    describe('when getLogCount is called', () => {
+      beforeEach(() => {
+        logger = createLogger()
+        logger.log('warn', 'test')
+      })
+
+      it('should log levelCountRecord correctly', () => {
+        expect(logger.getLogCount()).toEqual({
+          warn: 1,
+          error: 0,
+          info: 0,
+          debug: 0,
+          trace: 0,
+        })
+      })
+      it('should init levelCountRecord correctly', () => {
+        expect(logger.getLogCount()).toEqual({
+          warn: 1,
+          error: 0,
+          info: 0,
+          debug: 0,
+          trace: 0,
+        })
+        logger.resetLogCount()
+        expect(logger.getLogCount()).toEqual({
+          error: 0,
+          warn: 0,
+          info: 0,
+          debug: 0,
+          trace: 0,
+        })
+      })
+    })
 
     describe('when format is "json"', () => {
       beforeEach(() => {

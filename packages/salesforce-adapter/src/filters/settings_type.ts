@@ -82,10 +82,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
    * @param elements
    */
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
-    // SALTO-4820. This filter shouldn't run in quick fetch as it takes a relatively long time
-    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
-      return {}
-    }
     // Fetch list of all settings types
     const { elements: settingsList, configChanges: listObjectsConfigChanges } =
       await listMetadataObjects(client, SETTINGS_METADATA_TYPE, () => true)

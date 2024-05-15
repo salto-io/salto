@@ -52,7 +52,7 @@ import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
-import { getCustomReferences } from './weak_references/handlers'
+import { getCustomReferences } from './custom_references/handlers'
 import { dependencyChanger } from './dependency_changer'
 
 type ValidatorsActivationConfig =
@@ -200,6 +200,8 @@ const adapterConfigFromConfig = (
     enumFieldPermissions: config?.value?.[ENUM_FIELD_PERMISSIONS],
     client: config?.value?.[CLIENT_CONFIG],
     deploy: config?.value?.[DEPLOY_CONFIG],
+    fixElements: config?.value?.fixElements,
+    customReferences: config?.value?.customReferences,
     // Deprecated and used for backwards compatibility (SALTO-4468)
   }
   Object.keys(config?.value ?? {})
@@ -281,10 +283,12 @@ export const adapter: Adapter = {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.deploy(opts)
       },
+
       validate: async (opts) => {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.validate(opts)
       },
+
       deployModifiers: {
         changeValidator: createChangeValidator({
           config,
@@ -295,6 +299,7 @@ export const adapter: Adapter = {
         dependencyChanger,
         getChangeGroupIds,
       },
+
       validationModifiers: {
         changeValidator: createChangeValidator({
           config,
@@ -302,6 +307,11 @@ export const adapter: Adapter = {
           checkOnly: true,
           client,
         }),
+      },
+
+      fixElements: async (elements) => {
+        const salesforceAdapter = createSalesforceAdapter()
+        return salesforceAdapter.fixElements(elements)
       },
     }
   },

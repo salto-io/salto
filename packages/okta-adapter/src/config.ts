@@ -38,6 +38,7 @@ import {
   AUTHENTICATOR_TYPE_NAME,
   DEVICE_ASSURANCE,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
+  POLICY_PRIORITY_TYPE_NAMES,
 } from './constants'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
 import { DEFAULT_APP_URLS_VALIDATOR_VALUE } from './change_validators/app_urls'
@@ -303,17 +304,18 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
   })
   return Object.assign({}, ...policiesConfig)
 }
-const getPoliceyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] => {
-  const policyRulePrioritiesConfig = POLICY_RULE_PRIORITY_TYPE_NAMES.map(typeName => ({
+const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] => {
+  const policyPrioritiesConfig = POLICY_RULE_PRIORITY_TYPE_NAMES.concat(POLICY_PRIORITY_TYPE_NAMES).map(typeName => ({
     // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
     [typeName]: {
       deployRequests: {
         add: { url: '', method: 'put' },
         modify: { url: '', method: 'put' },
+        remove: { url: '', method: 'delete' },
       },
     },
   }))
-  return Object.assign({}, ...policyRulePrioritiesConfig)
+  return Object.assign({}, ...policyPrioritiesConfig)
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
@@ -956,6 +958,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'map<unknown>' }],
     },
     deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+          themeId: 'id',
+        },
+        fieldsToIgnore: ['id'],
+      },
       modify: {
         url: '/api/v1/brands/{brandId}/themes/{themeId}',
         method: 'put',
@@ -964,6 +975,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           themeId: 'id',
         },
         fieldsToIgnore: ['id', 'logo', 'favicon', '_links'],
+      },
+      remove: {
+        // BrandThemes are removed automatically by Okta when the Brand is removed.
+        // We use an empty URL here to mark this action as supported in case a user removed the theme
+        // alongside its Brand.
+        // A separate Change Validator ensures that mappings aren't removed by themselves.
+        url: '',
+        method: 'delete', // This is just for typing, we intercept it in a filter and use `get`.
       },
     },
   },
@@ -1363,7 +1382,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
   },
   ...getPolicyConfig(),
-  ...getPoliceyRulePriorityConfig(),
+  ...getPolicyAndPolicyRulePriorityConfig(),
   api__v1__behaviors: {
     request: {
       url: '/api/v1/behaviors',
@@ -1918,6 +1937,7 @@ export type ChangeValidatorName =
   | 'profileMappingRemoval'
   | 'brandRemoval'
   | 'dynamicOSVersion'
+  | 'brandThemeRemoval'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1947,6 +1967,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     profileMappingRemoval: { refType: BuiltinTypes.BOOLEAN },
     brandRemoval: { refType: BuiltinTypes.BOOLEAN },
     dynamicOSVersion: { refType: BuiltinTypes.BOOLEAN },
+    brandThemeRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

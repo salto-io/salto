@@ -76,7 +76,7 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/wiki/rest/api/space').reply(200)
+    mockAxiosAdapter.onGet('/wiki/rest/api/space').replyOnce(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
@@ -108,34 +108,79 @@ describe('adapter', () => {
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
           BLOG_POST_TYPE_NAME,
           PAGE_TYPE_NAME,
+          SPACE_TYPE_NAME,
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'confluence.blog_post',
-          'confluence.blog_post.instance.22_This_is_My_super_blog@ussss',
           'confluence.blog_post.instance.65539_Hey__I_m_am_a_first_blog_post@ulstsssss',
+          'confluence.blog_post.instance.Omri_Farkash_This_is_My_super_blog@sussss',
           'confluence.blog_post__body',
           'confluence.blog_post__version',
           'confluence.global_template',
           'confluence.page',
-          'confluence.page.instance.22_Getting_started_in_Confluence@usss',
-          'confluence.page.instance.22_Overview',
-          'confluence.page.instance.22_This_is_my_page_yay@ussss',
+          'confluence.page.instance.Omri_Farkash_Getting_started_in_Confluence@susss',
+          'confluence.page.instance.Omri_Farkash_Overview@su',
+          'confluence.page.instance.Omri_Farkash_This_is_my_page_yay@sussss',
           'confluence.page__body',
           'confluence.page__restriction',
           'confluence.page__restriction__restrictions',
           'confluence.page__version',
           'confluence.space',
+          'confluence.space.instance.My_first_space@s',
+          'confluence.space.instance.Omri_Farkash@s',
+          'confluence.space__permissionInternalIdMap',
+          'confluence.space__permissions',
         ])
+        expect(
+          Object.fromEntries(
+            elements
+              .filter(isInstanceElement)
+              .filter(e => e.elemID.typeName === 'page')
+              .map(e => [e.elemID.name, e.path]),
+          ),
+        ).toEqual({
+          'Omri_Farkash_Overview@su': [
+            'confluence',
+            'Records',
+            'space',
+            'Omri_Farkash',
+            'pages',
+            'Overview',
+            'Overview',
+          ],
+          'Omri_Farkash_This_is_my_page_yay@sussss': [
+            'confluence',
+            'Records',
+            'space',
+            'Omri_Farkash',
+            'pages',
+            'Overview',
+            'This_is_my_page_yay',
+            'This_is_my_page_yay',
+          ],
+          'Omri_Farkash_Getting_started_in_Confluence@susss': [
+            'confluence',
+            'Records',
+            'space',
+            'Omri_Farkash',
+            'pages',
+            'Overview',
+            'This_is_my_page_yay',
+            'Getting_started_in_Confluence',
+            'Getting_started_in_Confluence',
+          ],
+        })
         expect(
           elements
             .filter(isInstanceElement)
-            .find(e => e.elemID.getFullName() === 'confluence.blog_post.instance.22_This_is_My_super_blog@ussss')
-            ?.value,
+            .find(
+              e => e.elemID.getFullName() === 'confluence.blog_post.instance.Omri_Farkash_This_is_My_super_blog@sussss',
+            )?.value,
         ).toEqual({
           authorId: 'mockId22',
           createdAt: '2024-03-20T10:30:12.473Z',
           id: '22',
-          spaceId: '22',
+          spaceId: expect.any(ReferenceExpression),
           status: 'current',
           title: 'This is My super blog',
           version: {

@@ -76,7 +76,6 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
-  showImportantValues?: boolean // temp, should be removed
 }
 
 export type MaskingConfig = {
@@ -160,7 +159,6 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     addAlias: true,
     enableIssueLayouts: true,
     enableNewWorkflowAPI: false,
-    showImportantValues: false,
   },
   deploy: {
     forceDelete: false,
@@ -199,6 +197,8 @@ export type ChangeValidatorName =
   | 'deployTypesNotSupported'
   | 'readOnlyProjectRoleChange'
   | 'defaultFieldConfiguration'
+  | 'fieldConfigurationDescriptionLength'
+  | 'fieldConfigurationItemDescriptionLength'
   | 'screen'
   | 'issueTypeScheme'
   | 'issueTypeSchemeDefaultType'
@@ -209,7 +209,9 @@ export type ChangeValidatorName =
   | 'emptyValidatorWorkflowChange'
   | 'readOnlyWorkflow'
   | 'dashboardGadgets'
+  | 'referencedWorkflowDeletion'
   | 'dashboardLayout'
+  | 'issueLayouts'
   | 'permissionType'
   | 'automations'
   | 'activeSchemeDeletion'
@@ -258,6 +260,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
     readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },
     defaultFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
+    fieldConfigurationDescriptionLength: { refType: BuiltinTypes.BOOLEAN },
+    fieldConfigurationItemDescriptionLength: { refType: BuiltinTypes.BOOLEAN },
     screen: { refType: BuiltinTypes.BOOLEAN },
     issueTypeScheme: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeDefaultType: { refType: BuiltinTypes.BOOLEAN },
@@ -266,9 +270,11 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     status: { refType: BuiltinTypes.BOOLEAN },
     privateApi: { refType: BuiltinTypes.BOOLEAN },
     emptyValidatorWorkflowChange: { refType: BuiltinTypes.BOOLEAN },
+    referencedWorkflowDeletion: { refType: BuiltinTypes.BOOLEAN },
     readOnlyWorkflow: { refType: BuiltinTypes.BOOLEAN },
     dashboardGadgets: { refType: BuiltinTypes.BOOLEAN },
     dashboardLayout: { refType: BuiltinTypes.BOOLEAN },
+    issueLayouts: { refType: BuiltinTypes.BOOLEAN },
     permissionType: { refType: BuiltinTypes.BOOLEAN },
     automations: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeDeletion: { refType: BuiltinTypes.BOOLEAN },
@@ -345,7 +351,6 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
-    showImportantValues: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,

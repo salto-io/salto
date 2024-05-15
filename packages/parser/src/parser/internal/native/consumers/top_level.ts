@@ -36,7 +36,7 @@ import {
   invalidVarDefinition,
   missingLabelsError,
   missingBlockOpen,
-  ambigiousBlock,
+  ambiguousBlock,
 } from '../errors'
 import {
   primitiveType,
@@ -291,7 +291,7 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
       start: consumedLabels.range.start,
       end: blockToIgnore.range.end,
     }
-    context.errors.push(ambigiousBlock({ ...range, filename: context.filename }))
+    context.errors.push(ambiguousBlock({ ...range, filename: context.filename }))
     consumedElement = {
       range,
       value: undefined,

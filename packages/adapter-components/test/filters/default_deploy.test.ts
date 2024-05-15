@@ -88,6 +88,7 @@ describe('default deploy filter', () => {
         include: [{ type: 'something' }],
         exclude: [],
       }),
+      sharedContext: {},
     }) as FilterType
   })
 
@@ -170,6 +171,7 @@ describe('default deploy filter', () => {
             include: [{ type: 'something' }],
             exclude: [],
           }),
+          sharedContext: {},
         }).deploy?.([]),
       ).rejects.toThrow('could not find deploy definitions')
     })

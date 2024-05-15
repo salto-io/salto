@@ -25,16 +25,19 @@ describe('buildS3DirectoryStore', () => {
   let getObjectMock: jest.Mock
   let listObjectsV2Mock: jest.Mock
   let putObjectMock: jest.Mock
+  let deleteManyObjectsMock: jest.Mock
 
   beforeEach(() => {
     getObjectMock = jest.fn().mockResolvedValue(undefined)
     listObjectsV2Mock = jest.fn().mockResolvedValue(undefined)
     putObjectMock = jest.fn().mockResolvedValue(undefined)
+    deleteManyObjectsMock = jest.fn().mockResolvedValue(undefined)
 
     const mockS3Client = {
       getObject: getObjectMock,
       listObjectsV2: listObjectsV2Mock,
       putObject: putObjectMock,
+      deleteObjects: deleteManyObjectsMock,
     }
 
     directoryStore = buildS3DirectoryStore({
@@ -210,6 +213,110 @@ describe('buildS3DirectoryStore', () => {
   describe('getFullPath', () => {
     it('should throw on unexpected error', async () => {
       expect(directoryStore.getFullPath('somePath')).toBe(`s3://${bucketName}/baseDir/somePath`)
+    })
+  })
+  describe('delete', () => {
+    it('should delete the file', async () => {
+      await directoryStore.delete('a/b')
+
+      expect(deleteManyObjectsMock).not.toHaveBeenCalled()
+
+      await directoryStore.flush()
+
+      expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Delete: {
+          Objects: [{ Key: 'baseDir/a/b' }],
+        },
+      })
+    })
+    it('should delete the file with a single API call', async () => {
+      await directoryStore.delete('a/b')
+      await directoryStore.delete('a/c')
+
+      expect(deleteManyObjectsMock).not.toHaveBeenCalled()
+
+      await directoryStore.flush()
+
+      expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Delete: {
+          Objects: [{ Key: 'baseDir/a/b' }, { Key: 'baseDir/a/c' }],
+        },
+      })
+    })
+    it('should delete a batch of 1000 files each API Call', async () => {
+      const files = Array.from({ length: 2000 }, (_, i) => `a/${i}`)
+      files.forEach(async file => directoryStore.delete(file))
+
+      expect(deleteManyObjectsMock).not.toHaveBeenCalled()
+
+      await directoryStore.flush()
+
+      expect(deleteManyObjectsMock).toHaveBeenCalledTimes(2)
+      expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Delete: {
+          Objects: files.slice(0, 1000).map(file => ({ Key: `baseDir/${file}` })),
+        },
+      })
+      expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Delete: {
+          Objects: files.slice(1000).map(file => ({ Key: `baseDir/${file}` })),
+        },
+      })
+    })
+
+    it('should throw on unexpected error', async () => {
+      putObjectMock.mockRejectedValue(new Error())
+      await directoryStore.set({ filename: '', buffer: Buffer.from('aaa') })
+      await expect(directoryStore.flush()).rejects.toThrow()
+      expect(putObjectMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Key: 'baseDir',
+        Body: Buffer.from('aaa'),
+      })
+    })
+  })
+  describe('when deleting the file and then setting the file', () => {
+    it('should wrirte the file', async () => {
+      await directoryStore.delete('a/b')
+      await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') })
+
+      expect(deleteManyObjectsMock).not.toHaveBeenCalled()
+      expect(putObjectMock).not.toHaveBeenCalled()
+      await directoryStore.flush()
+
+      expect(deleteManyObjectsMock).not.toHaveBeenCalled()
+      expect(putObjectMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Key: 'baseDir/a/b',
+        Body: Buffer.from('aaa'),
+      })
+    })
+    describe('when setting the file and then deleting the file', () => {
+      it('should delete the file with a single API call', async () => {
+        await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') })
+        await directoryStore.delete('a/b')
+
+        expect(deleteManyObjectsMock).not.toHaveBeenCalled()
+        expect(putObjectMock).not.toHaveBeenCalled()
+
+        await directoryStore.flush()
+        expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+          Bucket: bucketName,
+          Delete: {
+            Objects: [{ Key: 'baseDir/a/b' }],
+          },
+        })
+        expect(putObjectMock).not.toHaveBeenCalled()
+      })
+      it('should not get the file', async () => {
+        await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') })
+        await directoryStore.delete('a/b')
+        expect(await directoryStore.get('a/b')).toBeUndefined()
+      })
     })
   })
 })

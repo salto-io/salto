@@ -98,6 +98,7 @@ import {
 } from './filter'
 import restoreDeletedListItemsWithoutScriptId from './filters/restore_deleted_list_items_without_scriptid'
 import restoreDeletedListItems from './filters/restore_deleted_list_items'
+import addPermissionsToCustomRecordAndRole from './filters/add_permissions_to_cutomRecord_and_roles'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
@@ -206,6 +207,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
   { creator: serviceUrls, addsNewInformation: true },
   { creator: addBundleReferences },
+  { creator: addPermissionsToCustomRecordAndRole },
   // omitFieldsFilter should be the last onFetch filter to run
   { creator: omitFieldsFilter },
   // additionalChanges should be right after addReferencingWorkbooks
@@ -341,7 +343,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
 
     this.fixElementsFunc = combineElementFixers(
-      Object.values(customReferenceHandlers).map(handler => handler.removeWeakReferences({ elementsSource })),
+      _.mapValues(customReferenceHandlers, handler => handler.removeWeakReferences({ elementsSource })),
     )
   }
 
@@ -406,7 +408,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         ...fileCabinetContent,
         ...(this.userConfig.fetch.addBundles !== false ? bundlesCustomInfo : []),
       ]
-      const elements = await createElements(elementsToCreate, this.elementsSource, this.getElemIdFunc)
+      const elements = await createElements(elementsToCreate, this.getElemIdFunc)
       const [standardInstances, types] = _.partition(elements, isInstanceElement)
       const [objectTypes, otherTypes] = _.partition(types, isObjectType)
       const [customRecordTypes, standardTypes] = _.partition(objectTypes, isCustomRecordType)

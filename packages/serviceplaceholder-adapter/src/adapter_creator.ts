@@ -15,6 +15,7 @@
  */
 import { createAdapter, credentials } from '@salto-io/adapter-components'
 import { Credentials, credentialsType } from './auth'
+import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
 import { ADAPTER_NAME } from './constants'
@@ -44,6 +45,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     connectionCreatorFromConfig: () => createConnection,
     credentialsFromConfig: defaultCredentialsFromConfig,
     // TODO add other customizations if needed (check which ones are available - e.g. additional filters)
+    additionalChangeValidators: createChangeValidator,
   },
   // add names of clients that should be created (if undefined, the adapter wrapper will create them)
   initialClients: {

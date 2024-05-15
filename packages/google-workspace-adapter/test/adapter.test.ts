@@ -75,7 +75,9 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('https://admin.googleapis.com/admin/directory/v1/users?customer=my_customer').reply(200)
+    mockAxiosAdapter
+      .onGet('https://admin.googleapis.com/admin/directory/v1/customers/my_customer')
+      .reply(200, { customerDomain: 'localhost' })
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
@@ -140,6 +142,17 @@ describe('adapter', () => {
           'google_workspace.schema.instance.uri',
           'google_workspace.schema__fields',
         ])
+        expect(
+          Object.fromEntries(
+            elements
+              .filter(isInstanceElement)
+              .filter(e => e.elemID.typeName === 'orgUnit')
+              .map(e => [e.elemID.name, e.path]),
+          ),
+        ).toEqual({
+          '_@d': ['google_workspace', 'Records', 'orgUnit', 'Salto_Neta_test1', 'Salto_Neta_test1'],
+          '_uri@d': ['google_workspace', 'Records', 'orgUnit', 'Salto_Neta_test1', 'uri', 'uri'],
+        })
         expect(
           elements
             .filter(isInstanceElement)

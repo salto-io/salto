@@ -21,6 +21,7 @@ import {
   METADATA_CONFIG,
   OptionalFeatures,
   MetadataQuery,
+  CustomReferencesSettings,
 } from '../types'
 import {
   buildDataManagement,
@@ -32,6 +33,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
 } from '../constants'
 import { mergeWithDefaultImportantValues } from './important_values'
+import { customReferencesConfiguration } from '../custom_references/handlers'
 
 type OptionalFeaturesDefaultValues = {
   [FeatureName in keyof OptionalFeatures]?: boolean
@@ -47,16 +49,19 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendedCustomFieldInformation: false,
   importantValues: true,
   hideTypesFolder: false,
+  omitStandardFieldsNonDeployableValues: true,
 }
 
 type BuildFetchProfileParams = {
   fetchParams: FetchParameters
+  customReferencesSettings?: CustomReferencesSettings
   metadataQuery?: MetadataQuery
   maxItemsInRetrieveRequest?: number
 }
 
 export const buildFetchProfile = ({
   fetchParams,
+  customReferencesSettings,
   metadataQuery = buildMetadataQuery({ fetchParams }),
   maxItemsInRetrieveRequest = DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
 }: BuildFetchProfileParams): FetchProfile => {
@@ -70,10 +75,15 @@ export const buildFetchProfile = ({
     warningSettings,
     additionalImportantValues,
   } = fetchParams
+  const enabledCustomReferencesHandlers = customReferencesConfiguration(
+    customReferencesSettings,
+  )
   return {
     dataManagement: data && buildDataManagement(data),
     isFeatureEnabled: (name) =>
       optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
+    isCustomReferencesHandlerEnabled: (name) =>
+      enabledCustomReferencesHandlers[name] ?? false,
     shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
     maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
     preferActiveFlowVersions: preferActiveFlowVersions ?? false,

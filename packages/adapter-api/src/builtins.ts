@@ -65,7 +65,6 @@ const StandardBuiltinTypes = {
 const restrictionType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.RESTRICTION),
   fields: {
-    // eslint-disable-next-line camelcase
     enforce_value: {
       refType: new TypeReference(StandardBuiltinTypes.BOOLEAN.elemID, StandardBuiltinTypes.BOOLEAN),
     },

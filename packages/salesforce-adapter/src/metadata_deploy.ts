@@ -279,6 +279,11 @@ const processDeployResponse = (
   }: DeployMessage): ElemID | undefined => {
     const rawElemId = typeAndNameToElemId[componentType]?.[fullName]
     if (rawElemId === undefined) {
+      log.debug(
+        'Unable to match deploy message for %s[%s] with an ElemID.',
+        fullName,
+        componentType,
+      )
       return undefined
     }
     if (rawElemId.typeName === CUSTOM_OBJECT) {
@@ -319,6 +324,13 @@ const processDeployResponse = (
       message: failure.problem,
       severity: 'Error' as SeverityLevel,
     }))
+
+  if (failedComponentErrors.some((error) => error.elemID === undefined)) {
+    log.trace(
+      'Some deploy messages could not be mapped to an ElemID. typeAndNameToElemId=%s',
+      _.pickBy(typeAndNameToElemId, (value) => !_.isEmpty(value)),
+    )
+  }
 
   const successfulComponentProblems = allSuccessMessages
     .filter((message) => message.problem)

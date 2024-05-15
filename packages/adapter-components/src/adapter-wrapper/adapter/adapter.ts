@@ -32,6 +32,7 @@ import {
   ChangeValidator,
   DependencyChanger,
   TypeMap,
+  FixElementsFunc,
 } from '@salto-io/adapter-api'
 import { logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -56,7 +57,9 @@ import { ElementQuery, createElementQuery } from '../../fetch/query'
 import {
   createChangeValidator,
   deployNotSupportedValidator,
+  createCheckDeploymentBasedOnDefinitionsValidator,
   getDefaultChangeValidators,
+  DEFAULT_CHANGE_VALIDATORS,
 } from '../../deployment/change_validators'
 import { generateOpenApiTypes } from '../../openapi/type_elements/type_elements'
 import { generateLookupFunc } from '../../references'
@@ -116,6 +119,7 @@ export class AdapterImpl<
     additionalChangeValidators,
     dependencyChangers,
     referenceResolver,
+    fixElements,
   }: AdapterParams<Credentials, Options, Co>) {
     this.adapterName = adapterName
     this.clients = clients
@@ -136,6 +140,7 @@ export class AdapterImpl<
           config: this.userConfig,
           getElemIdFunc: this.getElemIdFunc,
           elementSource,
+          sharedContext: {},
         },
         filterCreators,
         objects.concatObjects,
@@ -144,13 +149,21 @@ export class AdapterImpl<
     this.configInstance = configInstance
     this.changeValidators = {
       ...getDefaultChangeValidators(),
-      ...(this.definitions.deploy?.instances === undefined ? { deployNotSupported: deployNotSupportedValidator } : {}),
+      ...(this.definitions.deploy?.instances === undefined
+        ? { deployNotSupported: deployNotSupportedValidator }
+        : {
+            createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator({
+              deployDefinitions: this.definitions.deploy,
+            }),
+          }),
       ...additionalChangeValidators,
     }
     // TODO combine with infra changers after SALTO-5571
     this.dependencyChangers = dependencyChangers ?? []
 
     this.referenceResolver = referenceResolver
+
+    this.fixElements = fixElements
   }
 
   @logDuration('generating types from swagger')
@@ -204,12 +217,24 @@ export class AdapterImpl<
 
     const result = (await this.createFiltersRunner().onFetch(elements)) || {}
 
+    const changeValidatorsToOmitFromConfig = [
+      ...Object.keys(DEFAULT_CHANGE_VALIDATORS),
+      'createCheckDeploymentBasedOnDefinitions',
+      'deployNotSupported',
+    ]
+    const changeValidatorNames = Object.keys(this.changeValidators).filter(
+      name => !changeValidatorsToOmitFromConfig.includes(name),
+    )
+
     const updatedConfig =
       this.configInstance && configChanges
         ? getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
-            configType: createUserConfigType({ adapterName: this.adapterName }),
+            configType: createUserConfigType({
+              adapterName: this.adapterName,
+              changeValidatorNames,
+            }),
           })
         : undefined
 
@@ -313,7 +338,10 @@ export class AdapterImpl<
   }
 
   public get deployModifiers(): DeployModifiers {
-    const changeValidator = createChangeValidator({ validators: this.changeValidators })
+    const changeValidator = createChangeValidator({
+      validators: this.changeValidators,
+      validatorsActivationConfig: this.userConfig.deploy?.changeValidators,
+    })
 
     if (this.definitions.deploy?.instances !== undefined) {
       return {
@@ -327,4 +355,6 @@ export class AdapterImpl<
       changeValidator,
     }
   }
+
+  fixElements: FixElementsFunc | undefined = undefined
 }

@@ -171,8 +171,8 @@ describe('issueTypeFilter', () => {
       })
       it('should not set icon content and add error if failed to fetch icon due to an http error', async () => {
         mockGet.mockImplementation(() => {
-          throw new clientUtils.HTTPError('404 Item not found', {
-            status: 404,
+          throw new clientUtils.HTTPError('500 Internal request', {
+            status: 500,
             data: {
               errorMessages: ['The content was not found.'],
             },
@@ -183,8 +183,8 @@ describe('issueTypeFilter', () => {
         expect(res).toEqual({
           errors: [
             {
-              message: 'Failed to fetch attachment content from Jira API. error: 404 Item not found',
-              severity: 'Error',
+              message: 'Failed to fetch attachment content from Jira API. error: 500 Internal request',
+              severity: 'Warning',
             },
           ],
         })
@@ -206,7 +206,29 @@ describe('issueTypeFilter', () => {
             {
               message:
                 'Failed to fetch attachment content from Jira API. error: Error: Failed to fetch attachment content, response is not a buffer.',
-              severity: 'Error',
+              severity: 'Warning',
+            },
+          ],
+        })
+      })
+      it('should not set icon content and add error if failed to fetch icon due to 404 response', async () => {
+        mockGet.mockImplementation(params => {
+          if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
+            return {
+              status: 404,
+              data: {},
+            }
+          }
+          throw new Error('Err')
+        })
+        const res = await filter.onFetch?.([instance])
+        expect(instance.value.avatar).toBeUndefined()
+        expect(res).toEqual({
+          errors: [
+            {
+              message:
+                'Failed to fetch attachment content from Jira API. error: Error: Failed to fetch issue type icon. It might be corrupted. To fix this, upload a new icon in your jira instance.',
+              severity: 'Warning',
             },
           ],
         })

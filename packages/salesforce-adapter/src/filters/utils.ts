@@ -54,7 +54,13 @@ import {
   setAdditionalPropertiesAnnotation,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
-import { chunks, collections, types, values } from '@salto-io/lowerdash'
+import {
+  chunks,
+  collections,
+  promises,
+  types,
+  values,
+} from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import {
@@ -93,8 +99,18 @@ import {
   UNIX_TIME_ZERO_STRING,
   VALUE_SET_FIELDS,
   LAST_MODIFIED_DATE,
+  CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
+  VALUE_SET_DEFINITION_FIELDS,
+  DEFAULT_VALUE_FORMULA,
+  FORMULA,
+  FIELD_DEPENDENCY_FIELDS,
 } from '../constants'
-import { JSONBool, SalesforceRecord } from '../client/types'
+import {
+  CustomField,
+  CustomObject,
+  JSONBool,
+  SalesforceRecord,
+} from '../client/types'
 import * as transformer from '../transformers/transformer'
 import {
   apiName,
@@ -115,6 +131,7 @@ const { splitDuplicates } = collections.array
 const { makeArray } = collections.array
 const { weightedChunks } = chunks
 const { isDefined } = values
+const { pickAsync } = promises.object
 const log = logger(module)
 
 const METADATA_VALUES_SCHEME = Joi.object({
@@ -849,6 +866,14 @@ export const getChangedAtSingletonInstance = async (
 export const isCustomType = (element: Element): element is ObjectType =>
   isObjectType(element) &&
   ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
+
+const pickFromDuplicates = (
+  duplicateProperties: ReadonlyArray<FileProperties>,
+): FileProperties | undefined =>
+  _(duplicateProperties)
+    .sortBy((prop) => new Date(prop.lastModifiedDate))
+    .last()
+
 const removeDuplicateFileProps = (
   files: FileProperties[],
 ): FileProperties[] => {
@@ -862,7 +887,7 @@ const removeDuplicateFileProps = (
       props,
     )
   })
-  return uniques.concat(duplicates.map((props) => props[0]))
+  return uniques.concat(duplicates.map(pickFromDuplicates).filter(isDefined))
 }
 export const listMetadataObjects = async (
   client: SalesforceClient,
@@ -893,9 +918,19 @@ export const toListType = (type: TypeElement): ListType =>
 // if you want instances of all custom objects use isInstanceOfCustomObject
 export const isInstanceOfTypeSync =
   (...typeNames: string[]) =>
-  (elem: Element): elem is InstanceElement =>
-    isInstanceElement(elem) &&
-    typeNames.includes(apiNameSync(elem.getTypeSync()) ?? '')
+  (elem: Element): elem is InstanceElement => {
+    if (!isInstanceElement(elem)) {
+      return false
+    }
+
+    const typeApiName = apiNameSync(elem.getTypeSync())
+    if (typeApiName !== undefined) {
+      return typeNames.includes(typeApiName)
+    }
+
+    // If the type isn't resolved yet fall back on checking the type in the element ID
+    return typeNames.includes(elem.elemID.typeName)
+  }
 
 export const isInstanceOfTypeChangeSync =
   (...typeNames: string[]) =>
@@ -1025,3 +1060,118 @@ export const isProfileRelatedMetadataType = (
   PROFILE_RELATED_METADATA_TYPES.includes(
     typeName as ProfileRelatedMetadataType,
   )
+
+export const toCustomField = async (
+  field: Field,
+  omitInternalAnnotations = true,
+): Promise<CustomField> => {
+  const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
+  const newField = new CustomField(
+    await apiName(field, true),
+    transformer.fieldTypeName(field.refType.elemID.name),
+    field.annotations[CORE_ANNOTATIONS.REQUIRED],
+    field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
+    field.annotations[DEFAULT_VALUE_FORMULA],
+    makeArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET]),
+    fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
+    fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
+    field.annotations[FIELD_ANNOTATIONS.RESTRICTED],
+    field.annotations[VALUE_SET_DEFINITION_FIELDS.SORTED],
+    field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME],
+    field.annotations[FORMULA],
+    field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS],
+    field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
+    field.annotations[FIELD_ANNOTATIONS.RELATIONSHIP_NAME],
+    field.annotations[FIELD_ANNOTATIONS.LENGTH],
+    field.annotations[
+      FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD
+    ],
+  )
+
+  // Skip the assignment of the following annotations that are defined as annotationType
+  const annotationsHandledInCtor = [
+    FIELD_ANNOTATIONS.VALUE_SET,
+    FIELD_ANNOTATIONS.RESTRICTED,
+    VALUE_SET_DEFINITION_FIELDS.SORTED,
+    VALUE_SET_FIELDS.VALUE_SET_NAME,
+    DEFAULT_VALUE_FORMULA,
+    FIELD_ANNOTATIONS.LENGTH,
+    FIELD_ANNOTATIONS.DEFAULT_VALUE,
+    CORE_ANNOTATIONS.REQUIRED,
+    FIELD_ANNOTATIONS.RELATIONSHIP_NAME,
+    FIELD_ANNOTATIONS.REFERENCE_TO,
+    FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS,
+    FIELD_ANNOTATIONS.FIELD_DEPENDENCY,
+  ]
+
+  // Annotations that are used by the adapter but do not exist in the CustomObject
+  const internalUseAnnotations = [
+    API_NAME,
+    FIELD_ANNOTATIONS.CREATABLE,
+    FIELD_ANNOTATIONS.UPDATEABLE,
+    FIELD_ANNOTATIONS.QUERYABLE,
+    INTERNAL_ID_ANNOTATION,
+  ]
+
+  const annotationsToSkip = [
+    ...annotationsHandledInCtor,
+    ...internalUseAnnotations,
+    // We cannot deploy labels on standard fields
+    ...(transformer.isCustom(apiNameSync(field)) ? [] : [LABEL]),
+  ]
+  const isAllowed = async (annotationName: string): Promise<boolean> =>
+    (omitInternalAnnotations &&
+      Object.keys((await field.getType()).annotationRefTypes).includes(
+        annotationName,
+      ) &&
+      !annotationsToSkip.includes(annotationName)) ||
+    (!omitInternalAnnotations &&
+      !annotationsHandledInCtor.includes(annotationName))
+  // Convert the annotations' names to the required API name
+  _.assign(
+    newField,
+    await pickAsync(field.annotations, (_val, annotationName) =>
+      isAllowed(annotationName),
+    ),
+  )
+  return newField
+}
+
+const getCustomFields = (
+  element: ObjectType,
+  skipFields: string[],
+): Promise<CustomField[]> =>
+  awu(Object.values(element.fields))
+    .filter((field) => !transformer.isLocalOnly(field))
+    .map((field) => toCustomField(field))
+    .filter((field) => !skipFields.includes(field.fullName))
+    .filter((field) =>
+      CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(field.type),
+    )
+    .toArray()
+
+export const toCustomProperties = async (
+  element: ObjectType,
+  includeFields: boolean,
+  skipFields: string[] = [],
+): Promise<CustomObject> => {
+  // Skip the assignment of the following annotations that are defined as annotationType
+  const annotationsToSkip = [
+    API_NAME, // we use it as fullName
+    METADATA_TYPE, // internal annotation
+    INTERNAL_ID_ANNOTATION, // internal annotation
+    KEY_PREFIX, // non-deployable annotation
+  ]
+
+  const isAllowed = (annotationName: string): boolean =>
+    Object.keys(element.annotationRefTypes).includes(annotationName) &&
+    !annotationsToSkip.includes(annotationName)
+  return {
+    fullName: await apiName(element),
+    label: element.annotations[LABEL],
+    ...(includeFields
+      ? { fields: await getCustomFields(element, skipFields) }
+      : {}),
+    ..._.pickBy(element.annotations, (_val, name) => isAllowed(name)),
+  }
+}

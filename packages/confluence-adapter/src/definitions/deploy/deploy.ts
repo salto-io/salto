@@ -15,37 +15,66 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import { isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
-import { increasePagesVersion } from '../transformation_utils'
+import {
+  addSpaceKey,
+  adjustPageOnModification,
+  homepageAdditionToModification,
+  shouldDeleteRestrictionOnPageModification,
+  shouldNotModifyRestrictionOnPageAddition,
+} from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
+  LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
+  PERMISSION_TYPE_NAME,
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
+import { spaceChangeGroupWithItsHomepage } from '../utils/space'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
-
-const isSpaceChange = ({ change }: definitions.deploy.ChangeAndContext): boolean => {
-  if (!isModificationChange(change)) {
-    return false
-  }
-  return !_.isEqual(_.omit(change.data.before.value, 'permissions'), _.omit(change.data.after.value, 'permissions'))
-}
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
   const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
     AdditionalAction,
     ClientOptions
   >({
-    [BLOG_POST_TYPE_NAME]: { bulkPath: 'wiki/api/v2/blogposts', idField: 'id' },
-    [GLOBAL_TEMPLATE_TYPE_NAME]: { bulkPath: 'wiki/rest/api/template', idField: 'templateId' },
+    [BLOG_POST_TYPE_NAME]: { bulkPath: '/wiki/api/v2/blogposts', idField: 'id' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    [LABEL_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          // TODO add change validator to explain labels are not deployed directly SALTO-5816
+          add: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+        },
+      },
+    },
     [PAGE_TYPE_NAME]: {
+      toActionNames: homepageAdditionToModification,
       requestsByAction: {
         customizations: {
           add: [
@@ -60,9 +89,34 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
               },
             },
+            {
+              condition: {
+                custom: () => shouldNotModifyRestrictionOnPageAddition,
+              },
+              request: {
+                earlySuccess: true,
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/content/{id}/restriction',
+                  method: 'put',
+                },
+                transformation: {
+                  pick: ['restriction'],
+                  adjust: ({ value }) => ({ value: { results: _.get(value, 'restriction') } }),
+                },
+              },
+            },
           ],
           modify: [
             {
+              condition: {
+                transformForCheck: {
+                  omit: ['restriction', 'version'],
+                },
+              },
               request: {
                 endpoint: {
                   path: '/wiki/api/v2/pages/{id}',
@@ -70,12 +124,49 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['restriction'],
-                  adjust: increasePagesVersion,
+                  adjust: adjustPageOnModification,
                 },
               },
               copyFromResponse: {
                 additional: {
                   pick: ['version.number'],
+                },
+              },
+            },
+            {
+              condition: {
+                custom: () => shouldDeleteRestrictionOnPageModification,
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/content/{id}/restriction',
+                  method: 'delete',
+                },
+              },
+            },
+            {
+              condition: {
+                custom: () => shouldDeleteRestrictionOnPageModification,
+              },
+              request: {
+                // delete page restrictions are setting them to default, so no need to make another request
+                earlySuccess: true,
+              },
+            },
+            {
+              condition: {
+                transformForCheck: {
+                  pick: ['restriction'],
+                },
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/content/{id}/restriction',
+                  method: 'put',
+                },
+                transformation: {
+                  pick: ['restriction'],
+                  adjust: ({ value }) => ({ value: { results: _.get(value, 'restriction') } }),
                 },
               },
             },
@@ -94,6 +185,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     [SPACE_TYPE_NAME]: {
+      referenceResolution: {
+        when: 'early',
+      },
+      changeGroupId: spaceChangeGroupWithItsHomepage,
       requestsByAction: {
         customizations: {
           add: [
@@ -104,7 +199,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  omit: ['permissions'],
+                  omit: ['permissions', 'homepage'],
+                },
+              },
+              copyFromResponse: {
+                toSharedContext: {
+                  root: 'homepage',
+                  pick: ['id'],
                 },
               },
             },
@@ -112,7 +213,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           modify: [
             {
               condition: {
-                custom: () => isSpaceChange,
+                transformForCheck: {
+                  omit: ['permissions'],
+                },
               },
               request: {
                 endpoint: {
@@ -157,7 +260,59 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    // If updating the template deploy definitions, check if need to update global template as well
     [TEMPLATE_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            context: {
+              space_key: '{_parent.0.key}',
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template',
+                  method: 'post',
+                },
+                transformation: {
+                  adjust: addSpaceKey,
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template',
+                  method: 'put',
+                },
+                transformation: {
+                  adjust: addSpaceKey,
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template/{templateId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    // If updating the global template deploy definitions, check if need to update template as well
+    // This differs from the template definitions in the context queryArgs (no spaceKey)
+    [GLOBAL_TEMPLATE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [
@@ -177,11 +332,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/wiki/rest/api/template',
                   method: 'put',
                 },
-                context: {
-                  queryArgs: {
-                    spaceKey: '{space.key}',
-                  },
-                },
               },
             },
           ],
@@ -190,6 +340,45 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/wiki/rest/api/template/{templateId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    // Permission is not a top-level type, we use it to deploy permissions changes on space instances
+    [PERMISSION_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            context: {
+              spaceKey: '{_parent.0.value.key}',
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/space/{spaceKey}/permission',
+                  method: 'post',
+                },
+              },
+              copyFromResponse: {
+                additional: {
+                  pick: ['id'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/space/{spaceKey}/permission/{id}',
                   method: 'delete',
                 },
               },
@@ -217,5 +406,10 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
     },
     customizations: createCustomizations(),
   },
-  dependencies: [],
+  dependencies: [
+    {
+      first: { type: PAGE_TYPE_NAME },
+      second: { type: SPACE_TYPE_NAME, action: 'add' },
+    },
+  ],
 })

@@ -840,31 +840,77 @@ describe('automationDeploymentFilter', () => {
                   objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
                   schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
                 },
+                children: [
+                  {
+                    component: 'ACTION',
+                    schemaVersion: 1,
+                    value: {
+                      objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                      schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+                    },
+                    children: [],
+                    conditions: [],
+                  },
+                ],
+                conditions: [],
               },
             ],
           })
         })
         it('should add missing fields to assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
+          config.fetch.enableJSMPremium = true
           await filter.preDeploy([toChange({ after: automationInstance })])
-          expect(automationInstance.value.components[0].value).toEqual({
-            objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-            schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
-            schemaLabel: 'schemaName',
-            objectTypeLabel: 'objectTypeName',
-            workspaceId: 'w11',
+          expect(automationInstance.value.components[0]).toEqual({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+              schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+              schemaLabel: 'schemaName',
+              objectTypeLabel: 'objectTypeName',
+              workspaceId: 'w11',
+            },
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                  schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+                  schemaLabel: 'schemaName',
+                  objectTypeLabel: 'objectTypeName',
+                  workspaceId: 'w11',
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
+            conditions: [],
           })
         })
         it('should modify only assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
+          config.fetch.enableJSMPremium = true
           automationInstance.value.components.push({
             component: 'ACTION',
             schemaVersion: 1,
             value: {
               attribute: 'value',
             },
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                  schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
+            conditions: [],
           })
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
@@ -874,13 +920,33 @@ describe('automationDeploymentFilter', () => {
             objectTypeLabel: 'objectTypeName',
             workspaceId: 'w11',
           })
-          expect(automationInstance.value.components[1].value).toEqual({
-            attribute: 'value',
+          expect(automationInstance.value.components[1]).toEqual({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              attribute: 'value',
+            },
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                  schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+                  schemaLabel: 'schemaName',
+                  objectTypeLabel: 'objectTypeName',
+                  workspaceId: 'w11',
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
+            conditions: [],
           })
         })
         it('should not add missing fields to assets components when enable JSM is false', async () => {
           config.fetch.enableJSM = false
-          config.fetch.enableJsmExperimental = false
+          config.fetch.enableJSMPremium = false
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
@@ -890,14 +956,14 @@ describe('automationDeploymentFilter', () => {
         it('should do nothing if there are no components', async () => {
           automationInstance.value.components.value = undefined
           config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
+          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components.value).toBeUndefined()
         })
         it('should do nothing if the component is not assets component', async () => {
           automationInstance.value.components = undefined
           config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
+          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components).toBeUndefined()
         })
@@ -916,6 +982,18 @@ describe('automationDeploymentFilter', () => {
                 value: {
                   requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
                 },
+                children: [
+                  {
+                    component: 'ACTION',
+                    schemaVersion: 10,
+                    value: {
+                      requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+                    },
+                    children: [],
+                    conditions: [],
+                  },
+                ],
+                conditions: [],
               },
             ],
           })
@@ -923,9 +1001,26 @@ describe('automationDeploymentFilter', () => {
         it('should add missing fields to requestType components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
           await filter.preDeploy([toChange({ after: automationInstance })])
-          expect(automationInstance.value.components[0].value).toEqual({
-            requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
-            serviceDesk: '55',
+          expect(automationInstance.value.components[0]).toEqual({
+            component: 'ACTION',
+            schemaVersion: 10,
+            value: {
+              requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+              serviceDesk: '55',
+            },
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 10,
+                value: {
+                  requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+                  serviceDesk: '55',
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
+            conditions: [],
           })
         })
         it('should modify only requestType components when enable JSM is true', async () => {
@@ -936,14 +1031,41 @@ describe('automationDeploymentFilter', () => {
             value: {
               attribute: 'value',
             },
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
           })
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
             serviceDesk: '55',
           })
-          expect(automationInstance.value.components[1].value).toEqual({
-            attribute: 'value',
+          expect(automationInstance.value.components[1]).toEqual({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              attribute: 'value',
+            },
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+                  serviceDesk: '55',
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
           })
         })
         it('should not add missing fields to requestType components when enable JSM is false', async () => {
@@ -962,7 +1084,7 @@ describe('automationDeploymentFilter', () => {
         it('should do nothing if the component is not requestType component', async () => {
           automationInstance.value.components = undefined
           config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
+          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components).toBeUndefined()
         })
@@ -987,22 +1109,55 @@ describe('automationDeploymentFilter', () => {
                   schemaLabel: 'schemaName',
                   objectTypeLabel: 'objectTypeName',
                 },
+                children: [
+                  {
+                    component: 'ACTION',
+                    schemaVersion: 1,
+                    value: {
+                      objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                      workspaceId: 'w11',
+                      schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+                      schemaLabel: 'schemaName',
+                      objectTypeLabel: 'objectTypeName',
+                    },
+                    children: [],
+                    conditions: [],
+                  },
+                ],
+                conditions: [],
               },
             ],
           })
         })
         it('should remove extra fields for assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
+          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
-          expect(automationInstance.value.components[0].value).toEqual({
-            objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-            schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+          expect(automationInstance.value.components[0]).toEqual({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+              schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+            },
+            children: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                  schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
+            conditions: [],
           })
         })
         it('should not remove missing fields to assets components when enable JSM is false', async () => {
           config.fetch.enableJSM = false
-          config.fetch.enableJsmExperimental = false
+          config.fetch.enableJSMPremium = false
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
@@ -1015,13 +1170,13 @@ describe('automationDeploymentFilter', () => {
         it('should do nothing if there are no components', async () => {
           automationInstance.value.components = undefined
           config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
+          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components).toBeUndefined()
         })
         it('should modify only assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
+          config.fetch.enableJSMPremium = true
           automationInstance.value.components.push({
             component: 'ACTION',
             schemaVersion: 1,
@@ -1054,6 +1209,8 @@ describe('automationDeploymentFilter', () => {
                   requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
                   serviceDesk: '55',
                 },
+                children: [],
+                conditions: [],
               },
             ],
           })
@@ -1087,13 +1244,42 @@ describe('automationDeploymentFilter', () => {
             value: {
               attribute: 'value',
             },
+            children: [],
+            conditions: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+                  serviceDesk: '55',
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
           })
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
           })
-          expect(automationInstance.value.components[1].value).toEqual({
-            attribute: 'value',
+          expect(automationInstance.value.components[1]).toEqual({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              attribute: 'value',
+            },
+            children: [],
+            conditions: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+                },
+                children: [],
+                conditions: [],
+              },
+            ],
           })
         })
       })

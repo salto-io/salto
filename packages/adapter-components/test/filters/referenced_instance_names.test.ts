@@ -639,6 +639,7 @@ describe('referenced instances', () => {
         definitions,
         config: {},
         fetchQuery: createMockQuery(),
+        sharedContext: {},
       }) as FilterType
       elements = generateElements()
       await filter.onFetch(elements)

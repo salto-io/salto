@@ -114,7 +114,9 @@ import organizationWideDefaults from './filters/organization_settings'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
+import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
 import {
+  CUSTOM_REFS_CONFIG,
   FetchElements,
   FetchProfile,
   MetadataQuery,
@@ -179,7 +181,7 @@ import {
   buildMetadataQueryForFetchWithChangesDetection,
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
-import { fixElementsFunc } from './weak_references/handlers'
+import { fixElementsFunc } from './custom_references/handlers'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -265,6 +267,8 @@ export const allFilters: Array<
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: installedPackageGeneratedDependencies },
+  { creator: omitStandardFieldsNonDeployableValuesFilter },
+  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter
   { creator: customTypeSplit },
   { creator: mergeProfilesWithSourceValuesFilter },
   // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter
@@ -540,7 +544,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }
-    this.fixElementsFunc = fixElementsFunc({ elementsSource })
+    this.fixElementsFunc = fixElementsFunc({ elementsSource, config })
   }
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
@@ -588,6 +592,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({
       fetchParams,
+      customReferencesSettings: this.userConfig[CUSTOM_REFS_CONFIG],
       metadataQuery,
       maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
     })
@@ -695,7 +700,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     checkOnly: boolean,
   ): Promise<DeployResult> {
     const fetchParams = this.userConfig.fetch ?? {}
-    const fetchProfile = buildFetchProfile({ fetchParams })
+    const fetchProfile = buildFetchProfile({
+      fetchParams,
+      customReferencesSettings: this.userConfig[CUSTOM_REFS_CONFIG],
+    })
     log.debug(
       `about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(
         changeGroup.changes

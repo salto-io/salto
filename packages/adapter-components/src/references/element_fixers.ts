@@ -16,6 +16,7 @@
 import { FixElementsFunc, Element, ChangeError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { getEnabledEntries } from '../config_utils'
 
 const { awu } = collections.asynciterable
 
@@ -29,12 +30,13 @@ const getFixedElements = (elements: Element[], fixedElements: Element[]): Elemen
 }
 
 /**
- * Combine several fixElements functions into one that will run all of them.
+ * Combine several fixElements functions into one that will run the enabled ones.
  */
 export const combineElementFixers =
-  (fixers: FixElementsFunc[]): FixElementsFunc =>
-  async elements =>
-    awu(fixers).reduce(
+  (fixersByName: Record<string, FixElementsFunc>, enabledFixers: Record<string, boolean> = {}): FixElementsFunc =>
+  async elements => {
+    const fixers = Object.values(getEnabledEntries(fixersByName, enabledFixers))
+    return awu(fixers).reduce(
       async (allFixes, currentFixer) => {
         const updatedElements = getFixedElements(elements, allFixes.fixedElements)
         const newFixes = await currentFixer(updatedElements)
@@ -45,3 +47,4 @@ export const combineElementFixers =
       },
       { fixedElements: [] as Element[], errors: [] as ChangeError[] },
     )
+  }

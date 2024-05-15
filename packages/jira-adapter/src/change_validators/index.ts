@@ -16,7 +16,9 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
-import { defaultFieldConfigurationValidator } from './default_field_configuration'
+import { defaultFieldConfigurationValidator } from './field_configuration/default_field_configuration'
+import { fieldConfigurationDescriptionLengthValidator } from './field_configuration/field_configuration_description_length'
+import { fieldConfigurationItemDescriptionLengthValidator } from './field_configuration/field_configuration_item_description_length'
 import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
 import JiraClient from '../client/client'
@@ -44,6 +46,7 @@ import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
 import { workflowTransitionDuplicateNameValidator } from './workflows/workflow_transition_duplicate_names'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
+import { issueLayoutsValidator } from './issue_layouts_validator'
 import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
 import { fieldContextValidator } from './field_contexts/field_contexts'
 import { workflowSchemeMigrationValidator } from './workflow_scheme_migration'
@@ -68,6 +71,7 @@ import { defaultAttributeValidator } from './assets/default_attribute'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 import { addJsmProjectValidator } from './adding_jsm_project'
 import { jsmPermissionsValidator } from './jsm/jsm_permissions'
+import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 
 const { deployTypesNotSupportedValidator, createChangeValidator } = deployment.changeValidators
 
@@ -79,6 +83,8 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     deployTypesNotSupported: deployTypesNotSupportedValidator,
     readOnlyProjectRoleChange: readOnlyProjectRoleChangeValidator,
     defaultFieldConfiguration: defaultFieldConfigurationValidator,
+    fieldConfigurationDescriptionLength: fieldConfigurationDescriptionLengthValidator,
+    fieldConfigurationItemDescriptionLength: fieldConfigurationItemDescriptionLengthValidator,
     screen: screenValidator,
     issueTypeScheme: issueTypeSchemeValidator,
     issueTypeSchemeDefaultType: issueTypeSchemeDefaultTypeValidator,
@@ -89,11 +95,13 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     emptyValidatorWorkflowChange: emptyValidatorWorkflowChangeValidator,
     readOnlyWorkflow: readOnlyWorkflowValidator,
     dashboardGadgets: dashboardGadgetsValidator,
+    issueLayouts: issueLayoutsValidator(client, config),
     dashboardLayout: dashboardLayoutValidator,
     permissionType: permissionTypeValidator,
     automations: automationsValidator,
     activeSchemeDeletion: activeSchemeDeletionValidator,
     sameIssueTypeNameChange: sameIssueTypeNameChangeValidator,
+    referencedWorkflowDeletion: referencedWorkflowDeletionChangeValidator(config),
     statusMigrationChange: statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),

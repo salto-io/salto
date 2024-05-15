@@ -46,7 +46,7 @@
     },
     {
       "name": "intercom-adapter",
-      "path": "packages/intercom-adapter"
+      "path": "packages/intercom-adapter",
     },
     {
       "name": "jira-adapter",
@@ -120,14 +120,14 @@
       "name": "serviceplaceholder-adapter",
       "path": "packages/serviceplaceholder-adapter",
     },
-		{
-				"name": "google-workspace-adapter",
-				"path": "packages/google-workspace-adapter"
+    {
+      "name": "google-workspace-adapter",
+      "path": "packages/google-workspace-adapter",
     },
     {
-			"name": "confluence-adapter",
-			"path": "packages/confluence-adapter"
-		}
+      "name": "confluence-adapter",
+      "path": "packages/confluence-adapter",
+    },
   ],
   "settings": {
     "files.exclude": {
@@ -147,6 +147,7 @@
       "combobox",
       "complexvalue",
       "createable",
+      "creds",
       "customizer",
       "datasource",
       "DATETIME",
@@ -157,6 +158,7 @@
       "FILTERSCOPES",
       "flexi",
       "groupable",
+      "helter",
       "ISBLANK",
       "jsforce",
       "layoutable",
@@ -167,6 +169,7 @@
       "modstamp",
       "multienv",
       "MULTIPICKLIST",
+      "mutli",
       "nacl",
       "naclcase",
       "nacls",
@@ -209,6 +212,7 @@
       "Soql",
       "staticfile",
       "staticresources",
+      "subdir",
       "subflow",
       "subresources",
       "subtab",

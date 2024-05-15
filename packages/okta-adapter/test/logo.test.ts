@@ -196,5 +196,25 @@ describe('logo filter', () => {
         new Error('some okta error. More info: cause1,cause2 (status code: 400)'),
       )
     })
+    it('should call send Logo Request with removal', async () => {
+      const mockDelete = mockConnection.delete
+      const appLogoChange = toChange({ before: appLogoInstance })
+      await deployLogo(appLogoChange, client)
+      expect(mockDelete).toHaveBeenCalledTimes(1)
+      expect(mockDelete).toHaveBeenCalledWith('/api/v1/apps/11/logo', undefined)
+    })
+    it('should allow 404 status when removing a logo', async () => {
+      const mockDelete = mockConnection.delete
+      mockDelete.mockRejectedValue(
+        new clientUtils.HTTPError('message', {
+          status: 404,
+          data: {},
+        }),
+      )
+      const appLogoChange = toChange({ before: appLogoInstance })
+      await deployLogo(appLogoChange, client)
+      expect(mockDelete).toHaveBeenCalledTimes(1)
+      expect(mockDelete).toHaveBeenCalledWith('/api/v1/apps/11/logo', undefined)
+    })
   })
 })

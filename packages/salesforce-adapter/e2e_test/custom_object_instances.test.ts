@@ -22,6 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { SalesforceRecord } from '../src/client/types'
 import SalesforceAdapter from '../index'
 import realAdapter from './adapter'
@@ -52,6 +53,7 @@ import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { testHelpers } from './jest_environment'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 /* eslint-disable camelcase */
 describe('custom object instances e2e', () => {
@@ -112,6 +114,7 @@ describe('custom object instances e2e', () => {
     }),
   }
   beforeAll(async () => {
+    log.resetLogCount()
     credLease = await testHelpers().credentials()
     const adapterParams = realAdapter(
       {
@@ -275,5 +278,6 @@ describe('custom object instances e2e', () => {
     if (credLease.return) {
       await credLease.return()
     }
+    log.info('custom object instances e2e: Log counts = %o', log.getLogCount())
   })
 })

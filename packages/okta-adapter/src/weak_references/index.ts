@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import { WeakReferencesHandler } from './weak_references_handler'
-import { policyRulePrioritiesHandler } from './policy_rule_priorities'
+import { policyPrioritiesHandler } from './policy_priorities'
 
 export const weakReferenceHandlers: Record<string, WeakReferencesHandler> = {
-  policyRulePrioritiesHandler,
+  policyPrioritiesHandler,
 }

@@ -39,8 +39,8 @@ describe('custom record empty permission list validator', () => {
       severity: 'Error',
       message: 'Access Type is "Permission List" with No Permissions Specified',
       detailedMessage:
-        "Cannot deploy a Custom Record Type without specifying permissions when the access type is set to 'USEPERMISSIONLIST'." +
-        "To deploy this Custom Record Type, you must either add permissions or change the access type to 'CUSTRECORDENTRYPERM' or 'NONENEEDED'.",
+        "Cannot create a Custom Record Type without specifying permissions when the access type is set to 'USEPERMISSIONLIST'." +
+        "To create this Custom Record Type, you must either add permissions or change the access type to 'CUSTRECORDENTRYPERM' or 'NONENEEDED'.",
     })
   })
   it('should not return an error when there are permissions', async () => {

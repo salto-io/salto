@@ -24,6 +24,9 @@ import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
 import { customConvertError } from './error_utils'
 import transformTemplateBodyToTemplateExpressionFilterCreator from './filters/transform_template_body_to_template_expression'
+import customPathsFilterCreator from './filters/custom_paths'
+import deploySpaceAndPermissionsFilterCreator from './filters/deploy_space_and_permissions'
+import createChangeValidator from './change_validator'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
 const { defaultCredentialsFromConfig } = credentials
@@ -47,10 +50,15 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     connectionCreatorFromConfig: () => createConnection,
     credentialsFromConfig: defaultCredentialsFromConfig,
     customizeFilterCreators: args => ({
+      // deploySpaceAndPermissionsFilterCreator should run before default deploy filter
+      deploySpaceAndPermissionsFilterCreator: deploySpaceAndPermissionsFilterCreator(args),
       ...filters.createCommonFilters<Options, UserConfig>(args),
       // transform template body must run after references are created (fieldReferencesFilter)
       transformTemplateBodyToTemplateExpressionFilterCreator,
+      // customPathsFilterCreator must run after fieldReferencesFilter
+      customPathsFilterCreator,
     }),
+    additionalChangeValidators: createChangeValidator,
   },
 
   initialClients: {

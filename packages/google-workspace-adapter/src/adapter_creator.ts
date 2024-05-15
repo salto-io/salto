@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, createAdapter, credentials } from '@salto-io/adapter-components'
+import { BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import { client as clientUtils, createAdapter, credentials, filters } from '@salto-io/adapter-components'
 import { Credentials, basicCredentialsType } from './auth'
+import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnectionForApp } from './client/connection'
 import { ADAPTER_NAME } from './constants'
@@ -32,6 +33,8 @@ import {
   oauthAccessTokenCredentialsType,
   oauthRequestParametersType,
 } from './client/oauth'
+import customPathsFilterCreator from './filters/custom_paths'
+import { createFixElementFunctions } from './fix_elements'
 
 const { validateCredentials, DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -67,6 +70,11 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       createConnection: createConnectionForApp(DIRECTORY_APP_NAME),
     }),
   defaultConfig: DEFAULT_CONFIG,
+  additionalConfigFields: {
+    deploy: {
+      defaultDomain: { refType: BuiltinTypes.STRING },
+    },
+  },
   definitionsCreator: ({ clients }) => ({
     clients: createClientDefinitions(clients),
     pagination: PAGINATION,
@@ -77,6 +85,13 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   operationsCustomizations: {
     connectionCreatorFromConfig: () => createConnectionForApp(DIRECTORY_APP_NAME),
     credentialsFromConfig: defaultCredentialsFromConfig,
+    customizeFilterCreators: args => ({
+      ...filters.createCommonFilters<Options, UserConfig>(args),
+      // customPathsFilterCreator must run after fieldReferencesFilter
+      customPathsFilterCreator,
+    }),
+    additionalChangeValidators: createChangeValidator,
+    customizeFixElements: createFixElementFunctions,
   },
   initialClients: {
     main: undefined,

@@ -36,6 +36,7 @@ import {
   FORM_TYPE,
   PROJECT_TYPE,
 } from '../../constants'
+import { isJsmEnabledInService } from '../../filters/account_info'
 
 const { awu } = collections.asynciterable
 const { createPaginator, getWithCursorPagination } = clientUtils
@@ -66,6 +67,10 @@ const getAdditionChangedProjectsNames = (changes: ReadonlyArray<Change>): string
 export const jsmPermissionsValidator: (config: JiraConfig, client: JiraClient) => ChangeValidator =
   (config, client) => async changes => {
     if (!config.fetch.enableJSM) {
+      return []
+    }
+    const isJsmEnabled = await isJsmEnabledInService(client)
+    if (!isJsmEnabled) {
       return []
     }
 

@@ -204,7 +204,11 @@ const accountIdsScenarios = (
   // sixth scenario the type is Automation, various conditions and actions that contain user name
   if (path.typeName === AUTOMATION_TYPE) {
     // issue field conditions with a user field type
-    if (USER_TYPE_FIELDS.includes(value.selectedFieldType) && value.compareFieldValue?.type === 'ID') {
+    if (
+      USER_TYPE_FIELDS.includes(value.selectedFieldType) &&
+      value.compareFieldValue?.type === 'ID' &&
+      (value.compareFieldValue.value !== undefined || value.compareFieldValue.values !== undefined)
+    ) {
       callbackValueOrValues({
         value: value.compareFieldValue,
         path: path.createNestedID('compareFieldValue'),

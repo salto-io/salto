@@ -47,7 +47,8 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       return
     }
     const data = await stateData()
-    await data.accounts.setAll(accounts.map(account => ({ key: account, value: account })))
+    const existingAccounts = (await data.accounts.get('account_names')) ?? []
+    await data.accounts.set('account_names', _.union(existingAccounts, accounts))
   }
 
   const updateStatePathIndex = async (
@@ -137,7 +138,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    existingAccounts: async (): Promise<string[]> => awu((await stateData()).accounts.keys()).toArray(),
+    existingAccounts: async (): Promise<string[]> => (await (await stateData()).accounts.get('account_names')) ?? [],
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> => (await stateData()).topLevelPathIndex,
     clear: async () => {

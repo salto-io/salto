@@ -199,7 +199,7 @@ export const localState = (
     await stateData.pathIndex.clear()
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
     await stateData.accounts.clear()
-    await stateData.accounts.setAll(res.accounts.map(account => ({ key: account, value: account })))
+    await stateData.accounts.set('account_names', res.accounts)
     await stateData.saltoMetadata.set('hash', newHash)
   }
 

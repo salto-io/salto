@@ -53,7 +53,7 @@ describe('state', () => {
     stateStaticFilesSource = mockStaticFilesSource() as MockInterface<StaticFilesSource>
     loadStateData = async () => ({
       elements: createInMemoryElementSource([elem]),
-      accounts: new InMemoryRemoteMap([{ key: adapter, value: adapter }]),
+      accounts: new InMemoryRemoteMap([{ key: 'account_names', value: [adapter] }]),
       pathIndex,
       topLevelPathIndex,
       saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),

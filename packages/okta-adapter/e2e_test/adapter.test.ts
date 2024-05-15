@@ -292,8 +292,6 @@ const createChangesForDeploy = async (
     types,
     valuesOverride: {
       id: brandId,
-      removePoweredByOkta: false,
-      agreeToCustomPrivacyPolicy: true,
     },
     name: 'unnamed_0',
   })
@@ -313,15 +311,6 @@ const createChangesForDeploy = async (
     types,
     valuesOverride: {
       id: brandThemeId,
-      primaryColorHex: '#1662dd',
-      primaryColorContrastHex: '#ffffff',
-      secondaryColorHex: '#ebebed',
-      secondaryColorContrastHex: '#000000',
-      signInPageTouchPointVariant: 'OKTA_DEFAULT',
-      endUserDashboardTouchPointVariant: 'OKTA_DEFAULT',
-      errorPageTouchPointVariant: 'OKTA_DEFAULT',
-      emailTemplateTouchPointVariant: 'OKTA_DEFAULT',
-      loadingPageTouchPointVariant: 'OKTA_DEFAULT',
     },
     parent: defaultBrand,
     name: 'unnamed_0',
@@ -336,11 +325,6 @@ const createChangesForDeploy = async (
       primaryColorContrastHex: '#000000',
       secondaryColorHex: '#abcabc',
       secondaryColorContrastHex: '#ffffff',
-      signInPageTouchPointVariant: 'OKTA_DEFAULT',
-      endUserDashboardTouchPointVariant: 'OKTA_DEFAULT',
-      errorPageTouchPointVariant: 'OKTA_DEFAULT',
-      emailTemplateTouchPointVariant: 'OKTA_DEFAULT',
-      loadingPageTouchPointVariant: 'OKTA_DEFAULT',
     },
     parent: brand,
     name: 'unnamed_0',
@@ -621,18 +605,12 @@ describe('Okta adapter E2E', () => {
         .map(change => getChangeData(change)) as InstanceElement[]
 
       deployInstances.forEach(deployedInstance => {
-        elements.filter(isInstanceElement).forEach(e => log.info('Instance %s', e.elemID.getFullName()))
+        elements.filter(isInstanceElement).forEach(e => log.trace('Instance %s', e.elemID.getFullName()))
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
         expect(instance).toBeDefined()
         // Omit hidden fields
-        const typeTransformation = getTransformationConfig(deployedInstance.elemID.typeName)
-        const fieldsToIgnoreInComparison: string[] = [
-          ...(typeTransformation?.fieldsToOmit ?? []),
-          ...(typeTransformation.fieldsToHide ?? []),
-        ].map(f => f.fieldName)
-        const originalValue = _.omit(instance?.value, fieldsToIgnoreInComparison)
-        const deployedValue = _.omit(deployedInstance.value, fieldsToIgnoreInComparison)
-        const isEqualResult = isEqualValues(originalValue, deployedValue)
+        const originalValue = _.omit(instance?.value, ['_links', 'customName', 'logo', 'favicon'])
+        const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
         if (!isEqualResult) {
           log.error(
             'Received unexpected result when deploying instance: %s. Deployed value: %s , Received value after fetch: %s',

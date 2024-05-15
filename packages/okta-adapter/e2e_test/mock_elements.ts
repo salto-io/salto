@@ -24,7 +24,7 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
-  USER_SCHEMA_TYPE_NAME,
+  USER_SCHEMA_TYPE_NAME, BRAND_TYPE_NAME, BRAND_THEME_TYPE_NAME,
 } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
@@ -195,5 +195,20 @@ export const mockDefaultValues: Record<string, Values> = {
         },
       },
     },
+  },
+  [BRAND_TYPE_NAME]: {
+    removePoweredByOkta: false,
+    agreeToCustomPrivacyPolicy: true,
+  },
+  [BRAND_THEME_TYPE_NAME]: {
+    primaryColorHex: '#1662dd',
+    primaryColorContrastHex: '#ffffff',
+    secondaryColorHex: '#ebebed',
+    secondaryColorContrastHex: '#000000',
+    signInPageTouchPointVariant: 'OKTA_DEFAULT',
+    endUserDashboardTouchPointVariant: 'OKTA_DEFAULT',
+    errorPageTouchPointVariant: 'OKTA_DEFAULT',
+    emailTemplateTouchPointVariant: 'OKTA_DEFAULT',
+    loadingPageTouchPointVariant: 'OKTA_DEFAULT',
   },
 }

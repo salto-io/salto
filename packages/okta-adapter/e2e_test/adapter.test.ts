@@ -135,6 +135,16 @@ const getIdForDefaultBrand = async (client: OktaClient): Promise<string> => {
   throw new Error('Could not find default brand')
 }
 
+const getIdForDefaultBrandTheme = async (client: OktaClient, brandId: string): Promise<string> => {
+  const themeEntries = (await client.get({ url: `/api/v1/brands/${brandId}/themes` })).data
+  if (_.isArray(themeEntries) && themeEntries.length === 1 && _.isString(themeEntries[0].id)) {
+    return themeEntries[0].id
+  }
+  log.error(`Received unexpected result for brand theme for brandId ${brandId}: ${inspectValue(themeEntries)}`)
+  throw new Error('Could not find BrandTheme with the provided brandId')
+
+}
+
 const createChangesForDeploy = async (
   types: ObjectType[],
   testSuffix: string,
@@ -298,14 +308,35 @@ const createChangesForDeploy = async (
     },
     name: 'unnamed_0',
   })
-  const brandTheme = createInstance({
+  const brandThemeId = await getIdForDefaultBrandTheme(client, brandId)
+  const defaultBrandTheme = createInstance({
     typeName: BRAND_THEME_TYPE_NAME,
     types,
     valuesOverride: {
+      id: brandThemeId,
       primaryColorHex: '#1662dd',
       primaryColorContrastHex: '#ffffff',
       secondaryColorHex: '#ebebed',
       secondaryColorContrastHex: '#000000',
+      signInPageTouchPointVariant: 'OKTA_DEFAULT',
+      endUserDashboardTouchPointVariant: 'OKTA_DEFAULT',
+      errorPageTouchPointVariant: 'OKTA_DEFAULT',
+      emailTemplateTouchPointVariant: 'OKTA_DEFAULT',
+      loadingPageTouchPointVariant: 'OKTA_DEFAULT',
+    },
+    parent: defaultBrand,
+    name: 'unnamed_0',
+    extendsParentId: false,
+  })
+  const brandTheme = createInstance({
+    typeName: BRAND_THEME_TYPE_NAME,
+    types,
+    valuesOverride: {
+      id: brandThemeId,
+      primaryColorHex: '#abcabc',
+      primaryColorContrastHex: '#000000',
+      secondaryColorHex: '#abcabc',
+      secondaryColorContrastHex: '#ffffff',
       signInPageTouchPointVariant: 'OKTA_DEFAULT',
       endUserDashboardTouchPointVariant: 'OKTA_DEFAULT',
       errorPageTouchPointVariant: 'OKTA_DEFAULT',
@@ -328,7 +359,7 @@ const createChangesForDeploy = async (
     toChange({ after: app }),
     toChange({ after: appGroupAssignment }),
     toChange({ before: defaultBrand, after: brand }),
-    toChange({ before: brandTheme, after: brandTheme }),
+    toChange({ before: defaultBrandTheme, after: brandTheme }),
   ]
 }
 

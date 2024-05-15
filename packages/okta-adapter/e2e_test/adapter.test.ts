@@ -57,6 +57,8 @@ import {
   APP_USER_SCHEMA_TYPE_NAME,
   APPLICATION_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
+  BRAND_THEME_TYPE_NAME,
+  BRAND_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
   INACTIVE_STATUS,
@@ -71,6 +73,7 @@ import {
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
+import OktaClient from '../src/client/client'
 
 const { awu } = collections.asynciterable
 const { getInstanceName } = elementsUtils
@@ -81,17 +84,25 @@ jest.setTimeout(1000 * 60 * 10)
 
 const TEST_PREFIX = 'Test'
 
+const getTransformationConfig = (type: string): configUtils.TransformationConfig =>
+  configUtils.getConfigWithDefault(
+    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[type].transformation ?? {},
+    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
+  )
+
 const createInstance = ({
   typeName,
   valuesOverride,
   types,
   parent,
+  extendsParentId = true,
   name,
 }: {
   typeName: string
   valuesOverride: Values
   types: ObjectType[]
   parent?: InstanceElement
+  extendsParentId?: boolean
   name?: string
 }): InstanceElement => {
   const instValues = {
@@ -103,12 +114,9 @@ const createInstance = ({
     log.warn(`Could not find type ${typeName}, error while creating instance`)
     throw new Error(`Failed to find type ${typeName}`)
   }
-  const { idFields } = configUtils.getConfigWithDefault(
-    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[typeName].transformation ?? {},
-    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
-  )
-  const instName = name ?? getInstanceName(instValues, idFields, typeName)
-  const naclName = naclCase(parent ? `${parent.elemID.name}__${instName}` : String(instName))
+  const { idFields } = getTransformationConfig(typeName)
+  const instName = name ?? getInstanceName(instValues, idFields ?? [], typeName)
+  const naclName = naclCase(parent && extendsParentId ? `${parent.elemID.name}__${instName}` : String(instName))
   return new InstanceElement(
     naclName,
     type,
@@ -118,8 +126,30 @@ const createInstance = ({
   )
 }
 
-const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
-  const createName = (type: string): string => `Test${type}${testSuffix}`
+const getIdForDefaultBrand = async (client: OktaClient): Promise<string> => {
+  const brandEntries = (await client.get({ url: '/api/v1/brands' })).data
+  if (_.isArray(brandEntries) && brandEntries.length === 1 && _.isString(brandEntries[0].id)) {
+    return brandEntries[0].id
+  }
+  log.error(`Received unexpected result for default brand: ${inspectValue(brandEntries)}`)
+  throw new Error('Could not find default brand')
+}
+
+const getIdForDefaultBrandTheme = async (client: OktaClient, brandId: string): Promise<string> => {
+  const themeEntries = (await client.get({ url: `/api/v1/brands/${brandId}/themes` })).data
+  if (_.isArray(themeEntries) && themeEntries.length === 1 && _.isString(themeEntries[0].id)) {
+    return themeEntries[0].id
+  }
+  log.error(`Received unexpected result for brand theme for brandId ${brandId}: ${inspectValue(themeEntries)}`)
+  throw new Error('Could not find BrandTheme with the provided brandId')
+}
+
+const createChangesForDeploy = async (
+  types: ObjectType[],
+  testSuffix: string,
+  client: OktaClient,
+): Promise<Change[]> => {
+  const createName = (type: string): string => `${TEST_PREFIX}${type}${testSuffix}`
 
   const groupInstance = createInstance({
     typeName: GROUP_TYPE_NAME,
@@ -256,6 +286,50 @@ const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change
     parent: app,
     name: groupInstance.elemID.name,
   })
+  const brandId = await getIdForDefaultBrand(client)
+  const defaultBrand = createInstance({
+    typeName: BRAND_TYPE_NAME,
+    types,
+    valuesOverride: {
+      id: brandId,
+    },
+    name: 'unnamed_0',
+  })
+  const brand = createInstance({
+    typeName: BRAND_TYPE_NAME,
+    types,
+    valuesOverride: {
+      id: brandId,
+      removePoweredByOkta: true,
+      agreeToCustomPrivacyPolicy: false,
+    },
+    name: 'unnamed_0',
+  })
+  const brandThemeId = await getIdForDefaultBrandTheme(client, brandId)
+  const defaultBrandTheme = createInstance({
+    typeName: BRAND_THEME_TYPE_NAME,
+    types,
+    valuesOverride: {
+      id: brandThemeId,
+    },
+    parent: defaultBrand,
+    name: 'unnamed_0',
+    extendsParentId: false,
+  })
+  const brandTheme = createInstance({
+    typeName: BRAND_THEME_TYPE_NAME,
+    types,
+    valuesOverride: {
+      id: brandThemeId,
+      primaryColorHex: '#abcabc',
+      primaryColorContrastHex: '#000000',
+      secondaryColorHex: '#abcabc',
+      secondaryColorContrastHex: '#ffffff',
+    },
+    parent: brand,
+    name: 'unnamed_0',
+    extendsParentId: false,
+  })
   return [
     toChange({ after: groupInstance }),
     toChange({ after: anotherGroupInstance }),
@@ -267,6 +341,8 @@ const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change
     toChange({ after: profileEnrollmentRule }),
     toChange({ after: app }),
     toChange({ after: appGroupAssignment }),
+    toChange({ before: defaultBrand, after: brand }),
+    toChange({ before: defaultBrandTheme, after: brandTheme }),
   ]
 }
 
@@ -390,7 +466,7 @@ describe('Okta adapter E2E', () => {
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
       await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 
-      const changesToDeploy = createChangesForDeploy(types, testSuffix)
+      const changesToDeploy = await createChangesForDeploy(types, testSuffix, adapterAttr.client)
       await deployAndFetch(changesToDeploy)
     })
 
@@ -529,10 +605,11 @@ describe('Okta adapter E2E', () => {
         .map(change => getChangeData(change)) as InstanceElement[]
 
       deployInstances.forEach(deployedInstance => {
+        elements.filter(isInstanceElement).forEach(e => log.trace('Instance %s', e.elemID.getFullName()))
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
         expect(instance).toBeDefined()
         // Omit hidden fields
-        const originalValue = _.omit(instance?.value, ['_links', 'customName'])
+        const originalValue = _.omit(instance?.value, ['_links', 'customName', 'logo', 'favicon'])
         const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
         if (!isEqualResult) {
           log.error(

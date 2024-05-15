@@ -317,7 +317,7 @@ const createCustomizations = (): Record<
         transformation: { root: 'value' },
       },
     ],
-    resource: { directFetch: true },
+    resource: { directFetch: false },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -639,7 +639,7 @@ const createCustomizations = (): Record<
         ticket_form_ids: { omit: true },
         id: { fieldType: 'number', hide: true },
         help_center_state: {
-          fieldType: 'number',
+          fieldType: 'string',
           restrictions: {
             enforce_value: true,
             values: ['enabled', 'disabled', 'restricted'],
@@ -797,7 +797,7 @@ const createCustomizations = (): Record<
           fieldType: 'string',
           restrictions: {
             enforce_value: true,
-            values: ['accepted', 'declined', 'pending', 'inactive'],
+            values: ['inbound', 'outbound'],
           },
         },
       },

@@ -171,7 +171,7 @@ import { ZendeskFetchOptions } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
-import { filterOutInactiveInstancesForType } from './inactive'
+import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -524,7 +524,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       }),
     }
     // eslint-disable-next-line no-console
-    console.log(this.adapterDefinitions, filterOutInactiveInstancesForType)
+    console.log(this.adapterDefinitions, filterOutInactiveInstancesForType, filterOutInactiveItemForType)
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
     this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       if (clientsBySubdomain[subdomain] === undefined) {
@@ -606,8 +606,17 @@ export default class ZendeskAdapter implements AdapterOperations {
     //   fetchQuery: this.fetchQuery,
     //   getElemIdFunc: this.getElemIdFunc,
     //   definitions: this.adapterDefinitions,
-    //   // predefinedTypes: _.pickBy(supportedTypes, isObjectType),
+    //   // predefinedTypes: _.pickBy({'tag': }),
+    //   customItemFilter: filterOutInactiveItemForType(this.userConfig),
     // })
+
+    addRemainingTypes({
+      adapterName: ZENDESK,
+      elements: defaultSubdomainResult.elements,
+      typesConfig: this.userConfig.apiDefinitions.types,
+      supportedTypes,
+      typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
+    })
 
     if (!isGuideInFetch) {
       return defaultSubdomainResult

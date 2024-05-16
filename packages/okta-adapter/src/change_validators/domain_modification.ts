@@ -28,12 +28,10 @@ export const domainModificationValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === DOMAIN_TYPE_NAME )
+    .filter(change => getChangeData(change).elemID.typeName === DOMAIN_TYPE_NAME)
     .map(getAllChangeData)
-    .filter(([before, after]) =>
-      !_.isEqual(_.omit(before.value, 'brandId'), _.omit(after.value, 'brandId'))
-    )
-    .map(([instance, ]) => ({
+    .filter(([before, after]) => !_.isEqual(_.omit(before.value, 'brandId'), _.omit(after.value, 'brandId')))
+    .map(([instance]) => ({
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Cannot modify any domain fields except its brand',

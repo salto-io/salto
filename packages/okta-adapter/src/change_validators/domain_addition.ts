@@ -22,7 +22,7 @@ export const domainAdditionValidator: ChangeValidator = async changes =>
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === DOMAIN_TYPE_NAME )
+    .filter(instance => instance.elemID.typeName === DOMAIN_TYPE_NAME)
     .filter(instance => instance.value.brandId === undefined)
     .map(instance => ({
       elemID: instance.elemID,

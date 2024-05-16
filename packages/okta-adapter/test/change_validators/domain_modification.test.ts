@@ -36,7 +36,7 @@ describe('domainModificationValidator', () => {
     ])
   })
 
-  it('should not return an error when only modifying a domain\'s brand', async () => {
+  it("should not return an error when only modifying a domain's brand", async () => {
     const brand1 = new InstanceElement('brand1', brandType, {})
     const brand2 = new InstanceElement('brand2', brandType, {})
     const domainWithBrand1 = new InstanceElement('mydomain', domainType, {
@@ -48,13 +48,17 @@ describe('domainModificationValidator', () => {
       brandId: new ReferenceExpression(brand2.elemID, brand2),
     })
 
-    expect(await domainModificationValidator([toChange({
-      before: domainWithBrand1,
-      after: domainWithBrand2,
-    })])).toEqual([])
+    expect(
+      await domainModificationValidator([
+        toChange({
+          before: domainWithBrand1,
+          after: domainWithBrand2,
+        }),
+      ]),
+    ).toEqual([])
   })
 
-  it('should return an error when modifying a domain\'s brand and another field', async () => {
+  it("should return an error when modifying a domain's brand and another field", async () => {
     const brand1 = new InstanceElement('brand1', brandType, {})
     const brand2 = new InstanceElement('brand2', brandType, {})
     const domainWithBrand1 = new InstanceElement('mydomain', domainType, {
@@ -67,11 +71,15 @@ describe('domainModificationValidator', () => {
       brandId: new ReferenceExpression(brand2.elemID, brand2),
     })
 
-    expect(await domainModificationValidator([toChange({
-      before: domainWithBrand1,
-      after: domainWithBrand2,
-      certificateSourceType: 'OKTA_MANAGED',
-    })])).toEqual([
+    expect(
+      await domainModificationValidator([
+        toChange({
+          before: domainWithBrand1,
+          after: domainWithBrand2,
+          certificateSourceType: 'OKTA_MANAGED',
+        }),
+      ]),
+    ).toEqual([
       {
         elemID: domainWithBrand1.elemID,
         severity: 'Error',

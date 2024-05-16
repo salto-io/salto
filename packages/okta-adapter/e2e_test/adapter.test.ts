@@ -58,7 +58,7 @@ import {
   APPLICATION_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   BRAND_THEME_TYPE_NAME,
-  BRAND_TYPE_NAME,
+  BRAND_TYPE_NAME, DOMAIN_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
   INACTIVE_STATUS,
@@ -330,6 +330,22 @@ const createChangesForDeploy = async (
     name: 'unnamed_0',
     extendsParentId: false,
   })
+  // The Domain creation API differs between paid and non-paid Okta accounts, and production code only supports the
+  // paid account version, which requires an associated brand to create. There's a change validator that enforces this.
+  // This e2e test runs in a non-paid Okta account, which doesn't support multiple brands.
+  // However, conveniently, the domain creation API works in non-paid account only if we _don't_ provide a brand ID.
+  // And even more conveniently, this e2e test doesn't run any change validator prior to deploying.
+  // We use this to create a domain here without a brand ID, even though it's not supported in production code.
+  // This allows us to both test the domain deploy actions (even if they're not exactly like production), but moreover
+  // it allows us to test custom page creation, which requires a custom domain to exist.
+  const domain = createInstance({
+    typeName: DOMAIN_TYPE_NAME,
+    types,
+    valuesOverride: {
+      domain: 'subdomain.salto.io',
+      // If Okta's free tier ever supports multiple brands in non-paid accounts, we can add a brandId here.
+    },
+  })
   return [
     toChange({ after: groupInstance }),
     toChange({ after: anotherGroupInstance }),
@@ -343,6 +359,7 @@ const createChangesForDeploy = async (
     toChange({ after: appGroupAssignment }),
     toChange({ before: defaultBrand, after: brand }),
     toChange({ before: defaultBrandTheme, after: brandTheme }),
+    toChange({ after: domain }),
   ]
 }
 
@@ -553,6 +570,7 @@ describe('Okta adapter E2E', () => {
         'OrgSetting',
         'Brand',
         'BrandTheme',
+        'Domain',
         'RateLimitAdminNotifications',
         'PerClientRateLimitSettings',
         'SmsTemplate',
@@ -575,6 +593,9 @@ describe('Okta adapter E2E', () => {
         USER_SCHEMA_TYPE_NAME,
         USERTYPE_TYPE_NAME,
         APPLICATION_TYPE_NAME,
+        BRAND_TYPE_NAME,
+        BRAND_THEME_TYPE_NAME,
+        DOMAIN_TYPE_NAME,
       ])
 
       let createdTypeNames: string[]
@@ -605,8 +626,10 @@ describe('Okta adapter E2E', () => {
         .map(change => getChangeData(change))
         .filter(isInstanceElement)
 
+      elements.filter(isInstanceElement).forEach(e => log.trace('Instance %s', e.elemID.getFullName()))
+
       deployInstances.forEach(deployedInstance => {
-        elements.filter(isInstanceElement).forEach(e => log.trace('Instance %s', e.elemID.getFullName()))
+        log.trace('Checking instance %s', deployedInstance.elemID.getFullName())
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
         expect(instance).toBeDefined()
         // Omit hidden fields

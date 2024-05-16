@@ -792,6 +792,7 @@ export const fixElements = async (
   workspace: Workspace,
   selectors: ElementSelector[],
 ): Promise<{ errors: ChangeError[]; changes: DetailedChange[] }> => {
+  log.trace('Fixing elements by the following selectors: %o', selectors.map(selector => selector.origin))
   const accounts = workspace.accounts()
   const adapters = await getAdapters(
     accounts,
@@ -820,6 +821,10 @@ export const fixElements = async (
     .map(id => workspace.getValue(id))
     .filter(values.isDefined)
     .toArray()
+
+  if (_.isEmpty(elements)) {
+    return { errors: [], changes: [] }
+  }
 
   const idToElement = _.keyBy(elements, e => e.elemID.getFullName())
 

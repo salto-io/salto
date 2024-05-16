@@ -1381,7 +1381,7 @@ describe('fetch', () => {
         const expectedHiddenInstanceAlternateId = instanceWithHiddenAlternateId.clone()
         expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId.refType)
         expectedHiddenInstanceAlternateId.refType.type = expect.anything()
-        expect(getChangeData(changes[1].change)).toEqual(expectedHiddenInstanceAlternateId)
+        expect(expectedHiddenInstanceAlternateId.isEqual(getChangeData(changes[1].change))).toBeTrue()
       })
     })
 
@@ -1408,7 +1408,8 @@ describe('fetch', () => {
         const expectedHiddenInstanceAlternateId = instanceWithHiddenAlternateId.clone()
         expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId.refType)
         expectedHiddenInstanceAlternateId.refType.type = expect.anything()
-        expect(passed).toEqual([expectedHiddenInstanceAlternateId])
+        expect(passed.length).toBe(1)
+        expect(passed[0].isEqual(expectedHiddenInstanceAlternateId)).toBeTrue()
       })
     })
   })

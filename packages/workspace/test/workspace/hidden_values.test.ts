@@ -37,8 +37,9 @@ import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
 import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
-import { createInMemoryElementSource } from '../../src/workspace/elements_source'
+import { RemoteElementSource, createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAddChange, createRemoveChange } from '../../src/workspace/nacl_files/multi_env/projections'
+import { State } from '../../src/workspace/state'
 
 const { awu } = collections.asynciterable
 
@@ -624,30 +625,39 @@ describe('handleHiddenChanges', () => {
   })
 
   describe("when an instance type's hidden_value value is changes", () => {
-    const obj = new ObjectType({
-      elemID: ElemID.fromFullName('salto.obj'),
-      path: ['this', 'is', 'path', 'to', 'obj'],
+    let obj: ObjectType
+    let hiddenObj: ObjectType
+    let inst: InstanceElement
+    let hidden1: InstanceElement
+    let hidden2: InstanceElement
+    let hidden: InstanceElement
+    let state: State
+    let visibleSource: RemoteElementSource
+
+    beforeEach(() => {
+      obj = new ObjectType({
+        elemID: ElemID.fromFullName('salto.obj'),
+        path: ['this', 'is', 'path', 'to', 'obj'],
+      })
+      hiddenObj = new ObjectType({
+        elemID: ElemID.fromFullName('salto.hidden'),
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        },
+        path: ['this', 'is', 'path', 'to', 'hiddenObj'],
+      })
+      inst = new InstanceElement('visi', obj, {}, ['this', 'is', 'path', 'to', 'inst'])
+      hidden1 = new InstanceElement('hidden', hiddenObj, { a: 1 }, ['this', 'is', 'path', 'to', 'hidden'])
+      hidden2 = new InstanceElement('hidden', hiddenObj, { b: 2 }, ['this', 'is', 'path', 'to', 'hidden2'])
+      hidden = new InstanceElement('hidden', hiddenObj, { a: 1, b: 2 })
+      state = mockState([obj, hiddenObj, inst, hidden])
+      visibleSource = createInMemoryElementSource([obj, hiddenObj, inst])
     })
-    const hiddenObj = new ObjectType({
-      elemID: ElemID.fromFullName('salto.hidden'),
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      },
-      path: ['this', 'is', 'path', 'to', 'hiddenObj'],
-    })
-    const inst = new InstanceElement('visi', obj, {}, ['this', 'is', 'path', 'to', 'inst'])
-    const hidden1 = new InstanceElement('hidden', hiddenObj, { a: 1 }, ['this', 'is', 'path', 'to', 'hidden'])
-    const hidden2 = new InstanceElement('hidden', hiddenObj, { b: 2 }, ['this', 'is', 'path', 'to', 'hidden2'])
-    const hidden = new InstanceElement('hidden', hiddenObj, { a: 1, b: 2 })
-    const state = mockState([obj, hiddenObj, inst, hidden])
-    const visibleSource = createInMemoryElementSource([obj, hiddenObj, inst])
     describe("when the type's hidden_value values is changed to true", () => {
       let changes: DetailedChange[]
 
       beforeEach(async () => {
-        const objClone = obj.clone()
-        objClone.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-        await state.set(objClone)
+        obj.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
         const toHiddenChange = createAddChange(true, obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE))
         changes = (await handleHiddenChanges([toHiddenChange], state, visibleSource)).visible
       })
@@ -663,9 +673,7 @@ describe('handleHiddenChanges', () => {
       let changes: DetailedChange[]
 
       beforeEach(async () => {
-        const hiddenObjClone = hiddenObj.clone()
-        delete hiddenObjClone.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
-        await state.set(hiddenObjClone)
+        delete hiddenObj.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
         // This only updates the pathIndex
         await state.updateStateFromChanges({
           changes: [],

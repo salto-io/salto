@@ -5,15 +5,11 @@ setup: true
 orbs:
   continuation: circleci/continuation@1.0.0
 
-# commands:
-
 jobs:
-  build:
+  find_changed_packages:
     docker:
       - image: cimg/node:14.15
-
-    resource_class: xlarge
-    working_directory: /mnt/ramdisk/project
+    resource_class: large
 
     steps:
       - restore_cache:
@@ -43,45 +39,6 @@ jobs:
         # Yarn has some random race-condition failures, trying multiple times seems to help
         # when the source of the problem is yarn itself and not the packages
       - run: yarn || yarn || yarn
-
-      - run:
-          # As a workaround to the --frozen-lockfile flag not working with workspaces
-          # (see: https://github.com/yarnpkg/yarn/issues/4098)
-          # we use a regular `yarn` and add an explicit test that the yarn.lock file is unchanged
-          name: ensure yarn.lock file is up to date
-          command: '! git diff --name-only | grep yarn.lock'
-
-      - run:
-          name: fix eslint cache
-          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
-
-      - run: yarn build
-
-      - persist_to_workspace:
-          root: .
-          paths:
-            - '*'
-
-  prettier:
-    docker:
-      - image: cimg/node:14.15
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run:
-          name: Run prettier
-          command: yarn check-format --concurrency 2
-
-  find_changed_packages:
-    docker:
-      - image: cimg/node:14.15
-    resource_class: large
-
-    steps:
-      - attach_workspace:
-          at: .
       - run:
           name: Compile and Run Find Changed Packages Script
           command: |
@@ -96,13 +53,7 @@ jobs:
 workflows:
   commit:
     jobs:
-      - build
-      - find_changed_packages:
-          requires:
-            - build
-      - prettier:
-          requires:
-            - build
+      - find_changed_packages
       - continuation/continue:
           requires:
             - find_changed_packages

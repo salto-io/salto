@@ -102,6 +102,71 @@ commands:
           to: ${S3_PKG_HASH_PREFIX}/<< parameters.out_filename >>
 
 jobs:
+  build:
+    docker:
+      - image: cimg/node:14.15
+
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - restore_cache:
+          keys:
+            - v1-project-{{ .Branch }}
+            - v1-project-main
+
+      - checkout
+
+      - run:
+          name: remove empty directories from the packages dir
+          command: |
+            find ./packages -mindepth 1 -maxdepth 1 -type d '!' -exec test -e "{}/package.json" ';' -print \
+              | xargs --no-run-if-empty rm -r
+
+      - run:
+          # eslint will verify that the license header exists on the linted source files, this step is
+          # to verify that other non-linted files also contains the license header (and therefore this is
+          # in the 'build' job)
+          name: verify that the license header is prepended to the non eslint'd source files
+          command: build_utils/verify_license_header.sh
+
+      - run: yarn config set ignore-engines true
+
+      - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
+
+        # Yarn has some random race-condition failures, trying multiple times seems to help
+        # when the source of the problem is yarn itself and not the packages
+      - run: yarn || yarn || yarn
+
+      - run:
+          # As a workaround to the --frozen-lockfile flag not working with workspaces
+          # (see: https://github.com/yarnpkg/yarn/issues/4098)
+          # we use a regular `yarn` and add an explicit test that the yarn.lock file is unchanged
+          name: ensure yarn.lock file is up to date
+          command: '! git diff --name-only | grep yarn.lock'
+
+      - run:
+          name: fix eslint cache
+          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
+
+      - run: yarn build
+
+      - persist_to_workspace:
+          root: .
+          paths:
+            - '*'
+  prettier:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run prettier
+          command: yarn check-format --concurrency 2
+
   test:
     parameters:
       e2e_or_unittest:
@@ -324,9 +389,21 @@ jobs:
 workflows:
   commit:
     jobs:
-      - save_project_cache
+      - build
+      - prettier:
+          requires:
+            - build
 
-      <TEST_MATRIX>
+      - save_project_cache:
+          requires:
+            - build
+
+      # <TEST_MATRIX>
+
+      - package_cli:
+          requires:
+            - build
+            # <NEEDS_TEST_REQUIREMENT>
 
       - test_cli_mac:
           requires:
@@ -340,9 +417,9 @@ workflows:
           requires:
             - package_cli
 
-      - package_cli<NEEDS_TEST_REQUIREMENT>
-
-      - package_vscode_extension<NEEDS_TEST_REQUIREMENT>
+      - package_vscode_extension:
+          requires:
+            - build
 
       - sync_s3_pkg_latest:
           requires:
@@ -355,7 +432,9 @@ workflows:
             branches:
               only:
                 - main
-          <NEEDS_TEST_REQUIREMENT_NO_COLON>
+          requires:
+              - build
+              # <NEEDS_TEST_REQUIREMENT>
 
       - publish_on_version_change:
           context: salto
@@ -363,5 +442,7 @@ workflows:
             branches:
               only:
                 - main
-          <NEEDS_TEST_REQUIREMENT_NO_COLON>
+          requires:
+            - build
+            # <NEEDS_TEST_REQUIREMENT>
       

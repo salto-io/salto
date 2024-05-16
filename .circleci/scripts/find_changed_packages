@@ -85,7 +85,7 @@ function main() {
 
   // if on main branch, run all tests
   if (process.env.CIRCLE_BRANCH === 'main') {
-    console.log('Running all tests.')
+    console.log('Running all tests because we are on the main branch.')
     for (const pkg of dependencyGraph.keys()) {
       packagesToTest.add(pkg)
     }
@@ -106,12 +106,10 @@ function main() {
   const packagesArray = Array.from(packagesToTest)
   let alteredConfigTemplate
   if (packagesArray.length === 0) {
-    alteredConfigTemplate = configTemplate.replace(/<NEEDS_TEST_REQUIREMENT_NO_COLON>/g, '').replace(/<NEEDS_TEST_REQUIREMENT>/g, '').replace('<TEST_MATRIX>', '')
+    alteredConfigTemplate = configTemplate.replace(/# <NEEDS_TEST_REQUIREMENT>/g, '').replace('<TEST_MATRIX>', '')
   } else {
-    const requireTestsWithColon = ':\n    requires:\n      - test'
-    const requireTestsWithoutColon = '\n    requires:\n      - test'
     const testMatrix = '- test:\n    matrix:\n      parameters:\n        e2e_or_unittest:\n          - e2e\n          - unittest\n        package_name:\n          - '.concat(packagesArray.join('\n              - '))
-    alteredConfigTemplate = configTemplate.replace(/<NEEDS_TEST_REQUIREMENT_NO_COLON>/g, requireTestsWithoutColon).replace(/<NEEDS_TEST_REQUIREMENT>/g, requireTestsWithColon).replace('<TEST_MATRIX>', testMatrix)
+    alteredConfigTemplate = configTemplate.replace(/# <NEEDS_TEST_REQUIREMENT>/g, '- test').replace('<TEST_MATRIX>', testMatrix)
   }
   writeFileSync(continueConfigFilePath, alteredConfigTemplate)
   console.log(alteredConfigTemplate)

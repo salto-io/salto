@@ -196,8 +196,6 @@ const getEntriesForType = async (params: GetEntriesParams): Promise<Entries> => 
 
   const instances = await awu(entriesValues)
     .flatMap(async (entry, index) => {
-      // eslint-disable-next-line no-console
-      // console.log(nestedFieldDetails, entry, index)
       if (nestedFieldDetails !== undefined) {
         return awu(makeArray(entry[nestedFieldDetails.field.name]))
           .map((nestedEntry, nestedIndex) => {

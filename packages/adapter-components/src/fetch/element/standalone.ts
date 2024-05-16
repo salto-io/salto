@@ -133,14 +133,14 @@ const extractStandaloneInstancesFromField =
         parent: standaloneDef.addParentAnnotation !== false ? parent : undefined,
       }),
     )
-    newInstances.forEach(inst => instanceOutput.push(inst))
+    newInstances.reverse().forEach(inst => instanceOutput.push(inst))
 
     if (standaloneDef.referenceFromParent === false) {
       return undefined
     }
     const refs = newInstances.map(inst => new ReferenceExpression(inst.elemID, inst))
     if (Array.isArray(value)) {
-      return refs
+      return refs.reverse()
     }
     return refs[0]
   }

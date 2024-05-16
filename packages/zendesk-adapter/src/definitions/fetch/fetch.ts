@@ -1141,7 +1141,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
       },
-      fieldCustomizations: { id: { hide: true }, name: { hide: true } },
+      fieldCustomizations: { id: { hide: true } },
     },
   },
 

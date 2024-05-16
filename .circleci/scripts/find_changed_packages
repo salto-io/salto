@@ -109,7 +109,17 @@ function main() {
   if (packagesArray.length === 0) {
     alteredConfigTemplate = configTemplate.replace(/# <NEEDS_TEST_REQUIREMENT>/g, '').replace('<TEST_MATRIX>', '')
   } else {
-    const testMatrix = '- test:\n          matrix:\n            parameters:\n              e2e_or_unittest:\n                - e2e\n                - unittest\n              package_name:\n                - '.concat(packagesArray.join('\n                - '))
+    const testMatrix = `
+      - test:
+          requires:
+            - build
+          matrix:
+            parameters:
+              e2e_or_unittest:
+                - e2e
+                - unittest
+              package_name:
+                - ${packagesArray.join('\n                - ')}`
     alteredConfigTemplate = configTemplate.replace(/# <NEEDS_TEST_REQUIREMENT>/g, '- test').replace('# <TEST_MATRIX>', testMatrix)
   }
   writeFileSync(continueConfigFilePath, alteredConfigTemplate)

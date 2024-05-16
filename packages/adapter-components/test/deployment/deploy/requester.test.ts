@@ -120,6 +120,9 @@ describe('DeployRequester', () => {
                           instanceId: '{obj.id}',
                         },
                         endpoint: {
+                          queryArgs: {
+                            instanceId: '{instanceId}',
+                          },
                           path: '/test/endpoint/{instanceId}',
                           method: 'delete',
                         },
@@ -281,7 +284,7 @@ describe('DeployRequester', () => {
     ).rejects.toThrow('Could not find requests for change adapter.test.instance.instance action modify')
   })
 
-  it('should use context in URL', async () => {
+  it('should use context in URL and queryParams', async () => {
     client.delete.mockResolvedValue({
       status: 200,
       data: {},
@@ -304,6 +307,7 @@ describe('DeployRequester', () => {
     expect(client.delete).toHaveBeenCalledWith(
       expect.objectContaining({
         url: '/test/endpoint/1',
+        queryParams: { instanceId: '1' },
       }),
     )
   })

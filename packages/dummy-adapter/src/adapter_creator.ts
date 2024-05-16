@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import fs from 'fs'
 import _ from 'lodash'
 import {
   Adapter,
@@ -25,10 +24,9 @@ import {
   GetCustomReferencesFunc,
   FetchResult,
   LoadElementsFromFolderArgs,
-  ProgressReporter,
 } from '@salto-io/adapter-api'
 import DummyAdapter from './adapter'
-import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
+import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType, loadElementsFromDirs } from './generator'
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
@@ -62,24 +60,9 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
-const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => {},
-}
-
-const loadElementsFromFolder = async ({ baseDir }: LoadElementsFromFolderArgs): Promise<FetchResult> => {
-  const otherConfigPath = `${baseDir}/dummy.nacl`
-  let otherConfig: Record<string, unknown>
-
-  try {
-    otherConfig = JSON.parse(fs.readFileSync(otherConfigPath, { encoding: 'utf8' }))
-  } catch (err) {
-    throw new Error(`Failed to read config file for loadElementsFromFolder in ${otherConfigPath}: ${err.message}`)
-  }
-
-  const otherAdapter = new DummyAdapter(otherConfig as GeneratorParams)
-  return otherAdapter.fetch({ progressReporter: nullProgressReporter })
-}
+const loadElementsFromFolder = async ({ baseDir }: LoadElementsFromFolderArgs): Promise<FetchResult> => ({
+  elements: await loadElementsFromDirs([baseDir]),
+})
 
 export const adapter: Adapter = {
   operations: context => new DummyAdapter(context.config?.value as GeneratorParams),

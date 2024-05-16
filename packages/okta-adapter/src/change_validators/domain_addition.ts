@@ -28,5 +28,5 @@ export const domainAdditionValidator: ChangeValidator = async changes =>
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Cannot add domain without a brand',
-      detailedMessage: `Domain ${instance.elemID.getFullName()} must have a brand.`,
+      detailedMessage: `Domain ${instance.value.domain} must have a brand.`,
     }))

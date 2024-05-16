@@ -33,9 +33,9 @@ export const domainModificationValidator: ChangeValidator = async changes =>
     .filter(([before, after]) =>
       !_.isEqual(_.omit(before.value, 'brandId'), _.omit(after.value, 'brandId'))
     )
-    .map(([, instance]) => ({
+    .map(([instance, ]) => ({
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Cannot modify any domain fields except its brand',
-      detailedMessage: `Domain ${instance.elemID.getFullName()} can only modify its brand.`,
+      detailedMessage: `Domain ${instance.value.domain} can only modify its brand.`,
     }))

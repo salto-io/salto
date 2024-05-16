@@ -55,9 +55,52 @@ export type DetailedChangeWithSource = DetailedChange & {
 const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string =>
   `${path.join(...(pathParts ?? ['unsorted']))}${FILE_EXTENSION}`
 
-type positionInParent = {
+type PositionInParent = {
   followingElementIDs: ElemID[]
   indexInParent?: number
+}
+
+const getPositionInParent = (change: DetailedChange): PositionInParent => {
+  if (change.baseChange === undefined) {
+    log.warn('No base change: %s', inspectValue(change))
+    return { followingElementIDs: [] }
+  }
+
+  const changeData = getChangeData(change)
+  const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
+  const pathInParent = getPath(parent, change.id)
+  if (pathInParent === undefined) {
+    log.warn('Could not get path for %s in parent: %s', change.id.getFullName(), inspectValue(parent))
+    return { followingElementIDs: [] }
+  }
+  if (pathInParent.length === 0) {
+    return { followingElementIDs: [] }
+  }
+
+  const container = _.get(parent, pathInParent.slice(0, -1))
+  if (!_.isObjectLike(container)) {
+    log.warn(
+      'Got non object container at path %s: %s',
+      change.id.createParentID().getFullName(),
+      inspectValue(container),
+    )
+    return { followingElementIDs: [] }
+  }
+
+  const idNameParts = change.id.getFullNameParts().slice(0, -1)
+  const elementName = change.id.name
+  const index = Object.keys(container).indexOf(elementName)
+  if (index === -1) {
+    log.warn('Element %s not found in container: %s', elementName, inspectValue(container))
+    return { followingElementIDs: [] }
+  }
+
+  return {
+    followingElementIDs: Object.keys(container)
+      .slice(index + 1)
+      .map(k => ElemID.fromFullNameParts([...idNameParts, k])),
+    indexInParent: index,
+  }
 }
 
 export const getChangeLocations = (
@@ -79,47 +122,6 @@ export const getChangeLocations = (
     }
   }
 
-  const getPositionInParent = (): positionInParent => {
-    if (change.baseChange === undefined) {
-      log.warn('No base change: %s', inspectValue(change))
-      return { followingElementIDs: [] }
-    }
-
-    const changeData = getChangeData(change)
-    const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
-    const pathInParent = getPath(parent, change.id)
-    if (pathInParent === undefined) {
-      log.warn('Could not get path for %s in parent: %s', inspectValue(change.id), inspectValue(parent))
-      return { followingElementIDs: [] }
-    }
-
-    const container = _.get(parent, pathInParent.slice(0, -1))
-    if (!_.isObjectLike(container)) {
-      log.warn(
-        'Got non object container %s for path %s in parent: %s',
-        inspectValue(container),
-        inspectValue(change.id.createParentID()),
-        inspectValue(parent),
-      )
-      return { followingElementIDs: [] }
-    }
-
-    const idNameParts = change.id.getFullNameParts().slice(0, -1)
-    const elementName = change.id.name
-    const index = Object.keys(container).indexOf(elementName)
-    if (index === -1) {
-      log.warn('Element %s not found in container: %s', elementName, inspectValue(container))
-      return { followingElementIDs: [] }
-    }
-
-    return {
-      followingElementIDs: Object.keys(container)
-        .slice(index + 1)
-        .map(k => ElemID.fromFullNameParts([...idNameParts, k])),
-      indexInParent: index,
-    }
-  }
-
   const findLocations = (): { location: Location; requiresIndent?: boolean }[] => {
     if (change.action !== 'add') {
       // We want to get the location of the existing element
@@ -135,19 +137,18 @@ export const getChangeLocations = (
       }
     } else if (!change.id.isTopLevel()) {
       const fileName = createFileNameFromPath(change.path)
-      const { followingElementIDs, indexInParent } = getPositionInParent()
-      const possibleFollowingElementsRanges = followingElementIDs
-        .map(elemID => sourceMap.get(elemID.getFullName()))
+      const { followingElementIDs, indexInParent } = getPositionInParent(change)
+      const possibleFollowingElementsRange = followingElementIDs
+        .flatMap(elemID => sourceMap.get(elemID.getFullName()))
         .filter(isDefined)
-        .flat()
-        .filter(sr => sr.filename === fileName)
-      if (possibleFollowingElementsRanges.length > 0) {
+        .find(sr => sr.filename === fileName)
+      if (possibleFollowingElementsRange !== undefined) {
         return [
           {
             location: {
               filename: fileName,
-              start: possibleFollowingElementsRanges[0].start,
-              end: possibleFollowingElementsRanges[0].start,
+              start: possibleFollowingElementsRange.start,
+              end: possibleFollowingElementsRange.start,
               indexInParent,
             },
           },
@@ -166,6 +167,7 @@ export const getChangeLocations = (
         // TODO: figure out how to choose the correct location if there is more than one option
         return [{ location: lastNestedLocation(foundInPath ?? possibleLocations[0]), requiresIndent: true }]
       }
+      log.error('No possible locations found for %s.', parentID.getFullName())
     }
     // Fallback to using the path from the element itself
     const naclFilePath = change.path ?? getChangeData(change).path
@@ -341,10 +343,7 @@ export const updateNaclFileData = async (
 
           if (change.action === 'remove') {
             // For removals, dropping newline and indent at the end of the block to avoid empty lines
-            const lastNewlineIndex = data.search(/\s+$/)
-            if (lastNewlineIndex !== -1) {
-              data = data.slice(0, lastNewlineIndex)
-            }
+            data = data.trimEnd()
           }
 
           parts.push({

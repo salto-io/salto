@@ -30,9 +30,16 @@ import {
   updateNaclFileData,
 } from '../../../src/workspace/nacl_files/nacl_file_update'
 
-const mockType = new ObjectType({
-  elemID: new ElemID('salto', 'mock'),
-  fields: {
+const createMockType = ({
+  dropFields = [],
+  withAnnotations = false,
+  dropAnnotations = [],
+}: {
+  dropFields?: ('file' | 'numArray' | 'strArray' | 'obj')[]
+  withAnnotations?: boolean
+  dropAnnotations?: ('anno1' | 'anno2' | 'anno3')[]
+}): ObjectType => {
+  const fields = {
     file: { refType: BuiltinTypes.STRING },
     numArray: { refType: new ListType(BuiltinTypes.NUMBER) },
     strArray: { refType: new ListType(BuiltinTypes.STRING) },
@@ -46,25 +53,35 @@ const mockType = new ObjectType({
         }),
       ),
     },
-  },
-  annotations: {
+  }
+  dropFields.forEach(field => delete fields[field])
+
+  const annotations = {
     anno1: 'Annotation 1',
     anno2: 'Annotation 2',
     anno3: 'Annotation 3',
-  },
-  path: ['this', 'is', 'happening'],
-})
+  }
+  dropAnnotations.forEach(annotation => delete annotations[annotation])
 
-const mockInstance = new InstanceElement('mock', mockType, {
-  file: 'data.nacl',
-  numArray: [1, 2, 3],
-  strArray: ['a', 'b', 'c'],
-})
+  return new ObjectType({
+    elemID: new ElemID('salto', 'mock'),
+    fields,
+    annotations: withAnnotations ? annotations : undefined,
+    path: ['this', 'is', 'happening'],
+  })
+}
+
+const createMockInstance = (withAnnotations = false): InstanceElement =>
+  new InstanceElement('mock', createMockType({ withAnnotations }), {
+    file: 'data.nacl',
+    numArray: [1, 2, 3],
+    strArray: ['a', 'b', 'c'],
+  })
 
 describe('getNestedStaticFiles', () => {
   const mockInstanceWithFiles = new InstanceElement(
     'mockInstance',
-    mockType,
+    createMockType({}),
     {
       numArray: ['12', '13', new StaticFile({ filepath: 'arr', hash: 'X' })],
       strArray: 'should be list',
@@ -104,6 +121,7 @@ describe('getChangeLocations', () => {
 
   describe('with addition of top level element', () => {
     it('should add the element at the end of the file', () => {
+      const mockType = createMockType({})
       const change: DetailedChange = { ...toChange({ after: mockType }), id: mockType.elemID }
       result = getChangeLocations(change, new Map())
       expect(result).toEqual([
@@ -119,7 +137,7 @@ describe('getChangeLocations', () => {
     })
 
     it('should use the default filename when no path is provided', () => {
-      const noPath = mockType.clone()
+      const noPath = createMockType({})
       noPath.path = undefined
       const change: DetailedChange = { ...toChange({ after: noPath }), id: noPath.elemID }
       result = getChangeLocations(change, new Map())
@@ -138,10 +156,11 @@ describe('getChangeLocations', () => {
 
   describe('with addition of field', () => {
     it('should add the field before a following field', () => {
+      const mockType = createMockType({})
       const change: DetailedChange = {
         ...toChange({ after: mockType.fields.numArray }),
         id: mockType.fields.numArray.elemID,
-        baseChange: toChange({ after: mockType }),
+        baseChange: toChange({ before: createMockType({ dropFields: ['numArray'] }), after: mockType }),
         path: ['file'],
       }
       const sourceMap = new Map([
@@ -171,10 +190,11 @@ describe('getChangeLocations', () => {
     })
 
     it('should add the field at the end of the parent when no following fields are found', () => {
+      const mockType = createMockType({})
       const change: DetailedChange = {
         ...toChange({ after: mockType.fields.numArray }),
         id: mockType.fields.numArray.elemID,
-        baseChange: toChange({ after: mockType }),
+        baseChange: toChange({ before: createMockType({ dropFields: ['numArray'] }), after: mockType }),
         path: ['file'],
       }
       const sourceMap = new Map([
@@ -214,10 +234,11 @@ describe('getChangeLocations', () => {
     })
 
     it("should add the field to the end of the file when the parent isn't in the source map", () => {
+      const mockType = createMockType({})
       const change: DetailedChange = {
         ...toChange({ after: mockType.fields.numArray }),
         id: mockType.fields.numArray.elemID,
-        baseChange: toChange({ after: mockType }),
+        baseChange: toChange({ before: createMockType({ dropFields: ['numArray'] }), after: mockType }),
         path: ['file'],
       }
       result = getChangeLocations(change, new Map())
@@ -234,6 +255,7 @@ describe('getChangeLocations', () => {
     })
 
     it('should add the field to the end of the parent when the base change is undefined', () => {
+      const mockType = createMockType({})
       const change: DetailedChange = {
         ...toChange({ after: mockType.fields.numArray }),
         id: mockType.fields.numArray.elemID,
@@ -278,10 +300,14 @@ describe('getChangeLocations', () => {
 
   describe('with addition of annotation', () => {
     it('should add the annotation before a following annotation', () => {
+      const mockType = createMockType({ withAnnotations: true })
       const change: DetailedChange = {
         ...toChange({ after: mockType.annotations.anno2 }),
         id: mockType.elemID.createNestedID('attr', 'anno2'),
-        baseChange: toChange({ after: mockType }),
+        baseChange: toChange({
+          before: createMockType({ withAnnotations: true, dropAnnotations: ['anno2'] }),
+          after: mockType,
+        }),
         path: ['file'],
       }
       const sourceMap = new Map([
@@ -313,10 +339,17 @@ describe('getChangeLocations', () => {
 
   describe('with addition of value', () => {
     it('should add the value before a following value', () => {
+      const mockInstance = createMockInstance()
       const change: DetailedChange = {
         ...toChange({ after: mockInstance.value.numArray }),
         id: mockInstance.elemID.createNestedID('numArray'),
-        baseChange: toChange({ after: mockInstance }),
+        baseChange: toChange({
+          before: new InstanceElement('mock', createMockType({}), {
+            file: 'data.nacl',
+            strArray: ['a', 'b', 'c'],
+          }),
+          after: mockInstance,
+        }),
         path: ['file'],
       }
       const sourceMap = new Map([
@@ -348,10 +381,18 @@ describe('getChangeLocations', () => {
 
   describe('with addition of value to array', () => {
     it('should add the value before the following value', () => {
+      const mockInstance = createMockInstance()
       const change = {
         ...toChange({ after: mockInstance.value.strArray[1] }),
         id: mockInstance.elemID.createNestedID('strArray', '1'),
-        baseChange: toChange({ after: mockInstance }),
+        baseChange: toChange({
+          before: new InstanceElement('mock', createMockType({}), {
+            file: 'data.nacl',
+            numArray: [1, 2, 3],
+            strArray: ['a', 'c'],
+          }),
+          after: mockInstance,
+        }),
         path: ['file'],
       }
       const sourceMap = new Map([
@@ -394,9 +435,6 @@ describe('updateNaclFileData', () => {
   }
   "List<salto.obj>" obj {
   }
-  anno1 = "Annotation 1"
-  anno2 = "Annotation 2"
-  anno3 = "Annotation 3"
 }
 `
 
@@ -407,9 +445,6 @@ describe('updateNaclFileData', () => {
   }
   "List<string>" strArray {
   }
-  anno1 = "Annotation 1"
-  anno2 = "Annotation 2"
-  anno3 = "Annotation 3"
 }
 `
 
@@ -420,9 +455,6 @@ describe('updateNaclFileData', () => {
   }
   "List<salto.obj>" obj {
   }
-  anno1 = "Annotation 1"
-  anno2 = "Annotation 2"
-  anno3 = "Annotation 3"
 }
 `
 
@@ -431,14 +463,12 @@ describe('updateNaclFileData', () => {
   }
   "List<salto.obj>" obj {
   }
-  anno1 = "Annotation 1"
-  anno2 = "Annotation 2"
-  anno3 = "Annotation 3"
 }
 `
 
   describe('when the data is empty and there is an element addition', () => {
     beforeEach(() => {
+      const mockType = createMockType({})
       changes = [
         {
           ...toChange({ after: mockType }),
@@ -460,6 +490,7 @@ describe('updateNaclFileData', () => {
 
   describe('when data contains an element which is removed', () => {
     beforeAll(() => {
+      const mockType = createMockType({})
       changes = [
         {
           ...toChange({ before: mockType }),
@@ -481,6 +512,7 @@ describe('updateNaclFileData', () => {
 
   describe('when data contains an element to which fields are added at the end', () => {
     beforeAll(() => {
+      const mockType = createMockType({})
       changes = [
         {
           ...toChange({ after: mockType.fields.obj }),
@@ -503,6 +535,7 @@ describe('updateNaclFileData', () => {
 
   describe('when data contains an element to which fields are added in the middle', () => {
     beforeAll(() => {
+      const mockType = createMockType({})
       changes = [
         {
           ...toChange({ after: mockType.fields.numArray }),
@@ -524,6 +557,7 @@ describe('updateNaclFileData', () => {
 
   describe('when data contains an element to which multiple fields are added in the middle', () => {
     beforeAll(() => {
+      const mockType = createMockType({})
       changes = [
         {
           ...toChange({ after: mockType.fields.strArray }),
@@ -556,6 +590,7 @@ describe('updateNaclFileData', () => {
 
   describe('when data contains an element from which a field is removed at the end', () => {
     beforeAll(() => {
+      const mockType = createMockType({})
       changes = [
         {
           ...toChange({ before: mockType.fields.obj }),
@@ -577,6 +612,7 @@ describe('updateNaclFileData', () => {
 
   describe('when data contains an element from which a field is removed in the middle', () => {
     beforeAll(() => {
+      const mockType = createMockType({})
       changes = [
         {
           ...toChange({ before: mockType.fields.numArray }),

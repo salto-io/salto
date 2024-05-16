@@ -20,8 +20,11 @@ import {
   InstanceElement,
   isInstanceChange,
   getChangeData,
-  isAdditionChange,
   toChange,
+  isAdditionOrModificationChange,
+  isAdditionChange,
+  AdditionChange,
+  ModificationChange,
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -37,9 +40,14 @@ const log = logger(module)
 const DEFINITIONS = 'definitions'
 const BASE = 'base'
 
+type AdditionOrModificationInstanceChange = AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+
 type AppUserSchema = {
   id: string
 }
+
+const isAdditionOrModificationInstanceChange = (val: Change): val is AdditionOrModificationInstanceChange =>
+  isInstanceChange(val) && isAdditionOrModificationChange(val)
 
 const AppUserSchemaSchema = Joi.object({
   id: Joi.string().required(),
@@ -79,11 +87,11 @@ const getAppUserSchemaInstance = (
   return createdAppUserSchemaInstance
 }
 
-const deployAppUserSchemaAddition = async (
-  change: Change<InstanceElement>,
+const makeModificationFromAddition = async (
+  change: AdditionChange<InstanceElement>,
   client: OktaClient,
   apiDefinitions: OktaSwaggerApiConfig,
-): Promise<void> => {
+): Promise<ModificationChange<InstanceElement>> => {
   const appUserSchemaInstance = getChangeData(change)
   const parentApplicationId = getParents(appUserSchemaInstance)[0]?.id
   if (parentApplicationId === undefined) {
@@ -95,11 +103,6 @@ const deployAppUserSchemaAddition = async (
 
   const autoCreatedAppUserSchema = await getAutoCreatedAppUserSchema(parentApplicationId, client)
 
-  const customProperties = appUserSchemaInstance.value.definitions?.custom?.properties
-  if (customProperties === undefined || _.isEmpty(customProperties)) {
-    return
-  }
-
   // Assign the id created by the service to the app user schema
   appUserSchemaInstance.value.id = autoCreatedAppUserSchema.id
 
@@ -108,35 +111,42 @@ const deployAppUserSchemaAddition = async (
     appUserSchemaInstance,
     apiDefinitions,
   )
-
-  // Remove the base property from the auto created app user schema
-  // as we do in removeBaseFromAppUserSchemaHandler
-  _.unset(autoCreatedAppUserSchemaInstance.value, [DEFINITIONS, BASE])
-
-  await defaultDeployWithStatus(
-    toChange({ before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance }),
-    client,
-    apiDefinitions,
-  )
+  return { action: 'modify', data: { before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance.clone() } }
 }
-
+const deployAppUserSchema = async (
+  change: AdditionOrModificationInstanceChange,
+  client: OktaClient,
+  apiDefinitions: OktaSwaggerApiConfig,
+): Promise<void> => {
+  const modifiedChange = isAdditionChange(change)
+    ? await makeModificationFromAddition(change, client, apiDefinitions)
+    : change
+  const { before } = modifiedChange.data
+  const after = modifiedChange.data.after.clone()
+  if (before.value[DEFINITIONS]?.[BASE] !== undefined) {
+    _.set(after.value, [DEFINITIONS, BASE], before.value[DEFINITIONS][BASE])
+  } else {
+    _.unset(after.value, [DEFINITIONS, BASE])
+  }
+  await defaultDeployWithStatus(toChange({ before, after }), client, apiDefinitions)
+}
 /**
  * Deploy addition changes of appUserSchema by changing them to modification changes,
  * because appUserSchema automatically created by the service when deploying new Application
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
-  name: 'appUserSchemaAdditionDeployment',
+  name: 'appUserSchemaDeployment',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        isInstanceChange(change) &&
-        isAdditionChange(change) &&
+        isAdditionOrModificationInstanceChange(change) &&
         getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME,
     )
 
-    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployAppUserSchemaAddition(change, client, config[API_DEFINITIONS_CONFIG]),
+    const deployResult = await deployChanges(
+      relevantChanges.filter(isAdditionOrModificationInstanceChange),
+      async change => deployAppUserSchema(change, client, config[API_DEFINITIONS_CONFIG]),
     )
 
     return {

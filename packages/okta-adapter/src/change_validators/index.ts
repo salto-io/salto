@@ -31,6 +31,7 @@ import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { usersValidator } from './user'
 import { appWithGroupPushValidator } from './app_with_group_push'
 import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
+import { appUserSchemaBaseChangesValidator } from './app_user_schema_base_changes'
 import { appGroupAssignmentValidator } from './app_group_assignments'
 import { appUrlsValidator } from './app_urls'
 import { profileMappingRemovalValidator } from './profile_mapping_removal'
@@ -82,6 +83,7 @@ export default ({
     enabledAuthenticators: enabledAuthenticatorsValidator,
     users: usersValidator(client, userConfig),
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
+    appUserSchemaBaseChanges: appUserSchemaBaseChangesValidator,
     appWithGroupPush: appWithGroupPushValidator,
     groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
     appGroupAssignment: appGroupAssignmentValidator,

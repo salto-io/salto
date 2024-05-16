@@ -19,7 +19,7 @@ import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, CORE_ANNO
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
-import appUserSchemaAdditionDeployment from '../../src/filters/app_user_schema_addition_deployment'
+import appUserSchemaDeployment from '../../src/filters/app_user_schema_deployment'
 import { APP_USER_SCHEMA_TYPE_NAME, OKTA } from '../../src/constants'
 
 type FilterType = filterUtils.FilterWith<'deploy'>
@@ -28,8 +28,9 @@ describe('appUserSchemaAdditionDeployment', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let client: OktaClient
   let filter: FilterType
+  let appUserSchemaInstance: InstanceElement
   const appUserSchemaType = new ObjectType({ elemID: new ElemID(OKTA, APP_USER_SCHEMA_TYPE_NAME) })
-  const appUserSchemaInstance = new InstanceElement(
+  const appUserSchema = new InstanceElement(
     'appUserSchema',
     appUserSchemaType,
     {
@@ -43,6 +44,19 @@ describe('appUserSchemaAdditionDeployment', () => {
               title: 'custom prop',
             },
           },
+        },
+        base: {
+          id: '#base',
+          type: 'object',
+          properties: {
+            baseProp: {
+              title: 'base prop',
+            },
+            notDefaultProp: {
+              title: 'not default prop',
+            },
+          },
+          required: ['baseProp'],
         },
       },
     },
@@ -74,14 +88,14 @@ describe('appUserSchemaAdditionDeployment', () => {
           properties: {},
         },
         base: {
-          id: '#base 2',
-          type: 'object 2',
+          id: '#base',
+          type: 'object',
           properties: {
-            userName: {
-              title: 'title2',
+            baseProp: {
+              title: 'base prop',
             },
           },
-          required: ['userName'],
+          required: ['baseProp'],
         },
       },
     },
@@ -92,11 +106,12 @@ describe('appUserSchemaAdditionDeployment', () => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
-    filter = appUserSchemaAdditionDeployment(getFilterParams({ client })) as typeof filter
+    filter = appUserSchemaDeployment(getFilterParams({ client })) as typeof filter
+    appUserSchemaInstance = appUserSchema.clone()
   })
 
-  describe('deploy', () => {
-    it('should successfully deploy changes as modification changes', async () => {
+  describe('addition deploy', () => {
+    it('should successfully deploy addition changes as modification changes', async () => {
       mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
       const changes = [toChange({ after: appUserSchemaInstance })]
       const result = await filter.deploy(changes)
@@ -105,6 +120,7 @@ describe('appUserSchemaAdditionDeployment', () => {
       const instance = getChangeData(appliedChanges[0]) as InstanceElement
       expect(instance.value).toEqual({
         // validate id assigned to value
+        // TODO make sure with Shir that I want the id to chagne but everything else don't
         id: 'appUserSchemaId',
         title: 'user schema test',
         definitions: {
@@ -116,6 +132,19 @@ describe('appUserSchemaAdditionDeployment', () => {
                 title: 'custom prop',
               },
             },
+          },
+          base: {
+            id: '#base',
+            type: 'object',
+            properties: {
+              baseProp: {
+                title: 'base prop',
+              },
+              notDefaultProp: {
+                title: 'not default prop',
+              },
+            },
+            required: ['baseProp'],
           },
         },
       })
@@ -140,7 +169,7 @@ describe('appUserSchemaAdditionDeployment', () => {
       expect(result.deployResult.errors).toHaveLength(1)
       expect(result.deployResult.errors[0].message).toEqual('Invalid app user schema response')
     })
-    it('should deploy nothing where there are no properties in custom', async () => {
+    it('should succeed when there are no properties in custom', async () => {
       mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
       mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
       mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
@@ -155,18 +184,65 @@ describe('appUserSchemaAdditionDeployment', () => {
       const withoutDefinitions = appUserSchemaInstance.clone()
       delete withoutDefinitions.value.definitions
 
+      const instancesWithId = [withoutProperties, withEmptyProperties, withoutCustom, withoutDefinitions].map(
+        instance => {
+          const res = instance.clone()
+          res.value.id = 'appUserSchemaId'
+          return res
+        },
+      )
       const result = await filter.deploy([
-        toChange({ after: withoutProperties }),
-        toChange({ after: withEmptyProperties }),
-        toChange({ after: withoutCustom }),
-        toChange({ after: withoutDefinitions }),
+        toChange({ after: withoutProperties.clone() }),
+        toChange({ after: withEmptyProperties.clone() }),
+        toChange({ after: withoutCustom.clone() }),
+        toChange({ after: withoutDefinitions.clone() }),
       ])
       const { appliedChanges } = result.deployResult
       expect(appliedChanges).toHaveLength(4)
-      // it doesn't matter what is the values of the applied changes because it should do nothing
+      expect(appliedChanges.map(getChangeData)).toEqual(instancesWithId)
       expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/apps/1/default', undefined)
       expect(mockConnection.get).toHaveBeenCalledTimes(4)
       expect(result.deployResult.errors).toHaveLength(0)
+    })
+  })
+  describe('modification deploy', () => {
+    it('should successfully deploy modification changes', async () => {
+      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
+
+      const after = appUserSchemaInstance.clone()
+      after.value.definitions.custom.properties.customProp.title = 'new custom prop'
+      after.value.definitions.base.properties.baseProp.title = 'new base prop'
+
+      const changes = [toChange({ before: appUserSchemaInstance, after: after.clone() })]
+      const result = await filter.deploy(changes)
+      const { appliedChanges } = result.deployResult
+      expect(appliedChanges).toHaveLength(1)
+      const instance = getChangeData(appliedChanges[0])
+      expect(instance).toEqual(after)
+    })
+    it('should handle empty base in the before', async () => {
+      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
+      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
+
+      const after = appUserSchemaInstance.clone()
+      after.value.definitions.custom.properties.customProp.title = 'new custom prop'
+      after.value.definitions.base.properties.baseProp.title = 'new base prop'
+
+      const before1 = appUserSchemaInstance.clone()
+      delete before1.value.definitions.base
+
+      const before2 = appUserSchemaInstance.clone()
+      delete before2.value.definitions
+
+      const changes = [
+        toChange({ before: before1, after: after.clone() }),
+        toChange({ before: before2, after: after.clone() }),
+      ]
+      const result = await filter.deploy(changes)
+      const { appliedChanges } = result.deployResult
+      expect(appliedChanges).toHaveLength(2)
+      expect(getChangeData(appliedChanges[0])).toEqual(after)
+      expect(getChangeData(appliedChanges[1])).toEqual(after)
     })
   })
 })

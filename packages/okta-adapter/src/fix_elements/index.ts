@@ -18,11 +18,9 @@ import { FixElementsFunc } from '@salto-io/adapter-api'
 import { omitMissingUsersHandler } from './missing_users'
 import { FixElementsArgs } from './types'
 import { weakReferenceHandlers } from '../weak_references'
-import { removeBaseFromAppUserSchemaHandler } from './remove_base_app_user_schema'
 
 export const createFixElementFunctions = (args: FixElementsArgs): Record<string, FixElementsFunc> => ({
   omitMissingUsers: omitMissingUsersHandler(args),
-  removeBaseFromAppUserSchema: removeBaseFromAppUserSchemaHandler,
   ..._.mapValues(weakReferenceHandlers, handler =>
     handler.removeWeakReferences({ elementsSource: args.elementsSource }),
   ),

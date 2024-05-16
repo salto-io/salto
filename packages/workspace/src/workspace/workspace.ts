@@ -248,6 +248,7 @@ export type Workspace = {
     id: ElemID,
     envName?: string,
     includeWeakReferences?: boolean,
+    includeChildrenRefs?: boolean,
   ) => Promise<Required<ReferenceTargetIndexEntry>[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementIncomingReferenceInfos: (id: ElemID, envName?: string) => Promise<IncomingReferenceInfo[]>
@@ -1219,6 +1220,7 @@ export const loadWorkspace = async (
     id,
     envName = currentEnv(),
     includeWeakReferences = true,
+    includeChildrenRefs = true,
   ) => {
     const baseId = id.createBaseID().parent.getFullName()
     const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
@@ -1226,13 +1228,16 @@ export const loadWorkspace = async (
     if (referencesTree === undefined) {
       return []
     }
-
     const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-    const references = Array.from(
-      idPath === ''
-        ? // Empty idPath means we are requesting the base level element, which includes all references
-          referencesTree.values()
-        : referencesTree.valuesWithPrefix(idPath),
+    const references = (
+      includeChildrenRefs
+        ? Array.from(
+            idPath === ''
+              ? // Empty idPath means we are requesting the base level element, which includes all references
+                referencesTree.values()
+              : referencesTree.valuesWithPrefix(idPath),
+          )
+        : referencesTree.get(idPath) ?? []
     )
       .flat()
       .map(ref => ({ ...ref, sourceScope: ref.sourceScope ?? DEFAULT_SOURCE_SCOPE }))
@@ -1330,19 +1335,23 @@ export const loadWorkspace = async (
     getElementIncomingReferences,
     getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
       const getReferenceInfo = async (sourceId: ElemID): Promise<IncomingReferenceInfo | undefined> => {
-        const outgoingReferences = (await getElementOutgoingReferences(sourceId, envName)).filter(
+        const outgoingReferences = (await getElementOutgoingReferences(sourceId, envName, true, true)).filter(
           outgoingReference => id.isEqual(outgoingReference.id) || id.isParentOf(outgoingReference.id),
         )
         if (outgoingReferences.length === 0) {
-          log.warn('Failed to find outgoing reference from %s to %s', sourceId.getFullName(), id.getFullName())
+          log.warn(
+            'Failed to find outgoing reference from %s to %s. This means the value on either of the referenceIndexes is outdated.',
+            sourceId.getFullName(),
+            id.getFullName(),
+          )
           return undefined
         }
-        if (outgoingReferences.length > 2) {
+        if (outgoingReferences.length > 1) {
           log.warn(
             'Found multiple outgoing references from %s to %s. Using first from %s',
             sourceId.getFullName(),
             id.getFullName(),
-            safeJsonStringify(outgoingReferences),
+            inspectValue(outgoingReferences),
           )
         }
         const [outgoingReference] = outgoingReferences

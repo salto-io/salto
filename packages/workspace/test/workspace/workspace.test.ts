@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import _ from 'lodash'
 import wu from 'wu'
 import {
@@ -3383,7 +3384,11 @@ describe('workspace', () => {
     beforeEach(async () => {
       const testType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
       targetElementId = new ElemID('adapter', 'test', 'instance', 'target')
-      sourceInstance = new InstanceElement('source', testType)
+      sourceInstance = new InstanceElement('source', testType, {
+        nested: {
+          nested: 'value',
+        },
+      })
       anotherSourceInstance = new InstanceElement('anotherSource', testType)
       const elementSources = {
         default: {
@@ -3398,28 +3403,29 @@ describe('workspace', () => {
       const customRefs: ReferenceInfo[] = [
         // Make sure we only return info from outgoing references to the specific target element
         {
-          source: sourceInstance.elemID.createNestedID('value', 'nested'),
+          source: sourceInstance.elemID.createNestedID('nested'),
           target: new ElemID('adapter', 'test', 'instance', 'anotherTarget'),
           type: 'strong',
         },
+        // Make sure we support references from both parent & child
         {
-          source: sourceInstance.elemID.createNestedID('value', 'nested'),
-          target: targetElementId.createNestedID('value', 'nested1'),
+          source: sourceInstance.elemID.createNestedID('nested', 'nested'),
+          target: targetElementId.createNestedID('field1'),
+          type: 'strong',
+        },
+        {
+          source: sourceInstance.elemID.createNestedID('nested'),
+          target: targetElementId.createNestedID('field2'),
           type: 'weak',
         },
         // This is an invalid scenario where two ReferenceInfos with the same source refer to the same target baseId.
         // The implementation should prefer the first entry (type: 'weak').
         {
-          source: sourceInstance.elemID.createNestedID('value', 'nested'),
-          target: targetElementId.createNestedID('value', 'nested2'),
+          source: sourceInstance.elemID.createNestedID('nested'),
+          target: targetElementId.createNestedID('field3'),
           type: 'strong',
         },
-        // Make sure we support references from both parent & child
-        {
-          source: sourceInstance.elemID.createNestedID('value', 'nested', 'nested'),
-          target: targetElementId.createNestedID('value', 'nested1'),
-          type: 'weak',
-        },
+
         // Case where the target is baseId
         { source: anotherSourceInstance.elemID, target: targetElementId, type: 'weak', sourceScope: 'value' },
       ]
@@ -3438,12 +3444,12 @@ describe('workspace', () => {
 
     it('should return correct incoming reference infos', async () => {
       const incomingReferenceInfos = await workspace.getElementIncomingReferenceInfos(targetElementId)
-      expect(incomingReferenceInfos).toEqual([
+      expect(incomingReferenceInfos).toIncludeSameMembers([
         { source: anotherSourceInstance.elemID, type: 'weak', sourceScope: 'value' },
-        { source: sourceInstance.elemID.createNestedID('value', 'nested'), type: 'weak', sourceScope: 'baseId' },
+        { source: sourceInstance.elemID.createNestedID('nested'), type: 'weak', sourceScope: 'baseId' },
         {
-          source: sourceInstance.elemID.createNestedID('value', 'nested', 'nested'),
-          type: 'weak',
+          source: sourceInstance.elemID.createNestedID('nested', 'nested'),
+          type: 'strong',
           sourceScope: 'baseId',
         },
       ])
@@ -3511,6 +3517,11 @@ describe('workspace', () => {
           type: 'weak',
           sourceScope: 'value',
         },
+        {
+          source: new ElemID('adapter', 'test', 'instance', 'test', 'inner'),
+          target: new ElemID('adapter', 'test', 'instance', 'target4'),
+          type: 'strong',
+        },
       ]
       workspace = await createWorkspace(
         undefined,
@@ -3529,7 +3540,7 @@ describe('workspace', () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(
         new ElemID('adapter', 'test', 'instance', 'test'),
       )
-      expect(instanceRefs).toEqual([
+      expect(instanceRefs).toIncludeSameMembers([
         { id: ref1.elemID, type: 'strong', sourceScope: 'baseId' },
         { id: ref2.elemID, type: 'strong', sourceScope: 'baseId' },
         { id: templateRef1.elemID, type: 'strong', sourceScope: 'baseId' },
@@ -3537,6 +3548,7 @@ describe('workspace', () => {
         { id: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak', sourceScope: 'baseId' },
         { id: new ElemID('adapter', 'test', 'instance', 'target2'), type: 'weak', sourceScope: 'baseId' },
         { id: new ElemID('adapter', 'test', 'instance', 'target3'), type: 'weak', sourceScope: 'value' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target4'), type: 'strong', sourceScope: 'baseId' },
       ])
     })
 
@@ -3544,9 +3556,24 @@ describe('workspace', () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(
         new ElemID('adapter', 'test', 'instance', 'test', 'inner'),
       )
-      expect(instanceRefs).toMatchObject(
-        [ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })),
+      expect(instanceRefs).toIncludeSameMembers([
+        { id: ref2.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: templateRef1.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: templateRef2.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target4'), type: 'strong', sourceScope: 'baseId' },
+      ])
+    })
+
+    it('instance field should not return nested references under it when includeChildrenRefs is false', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferences(
+        new ElemID('adapter', 'test', 'instance', 'test', 'inner'),
+        undefined,
+        true,
+        false,
       )
+      expect(instanceRefs).toIncludeSameMembers([
+        { id: new ElemID('adapter', 'test', 'instance', 'target4'), type: 'strong', sourceScope: 'baseId' },
+      ])
     })
 
     it('specific nested instance field path should return references under it', async () => {

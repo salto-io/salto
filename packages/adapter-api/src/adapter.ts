@@ -201,6 +201,9 @@ export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<Referen
 
 export type ReferenceType = 'strong' | 'weak'
 
+export type ReferenceSourceScope = 'baseId' | 'value'
+export const DEFAULT_SOURCE_SCOPE: ReferenceSourceScope = 'baseId'
+
 /**
  * **sourceScope**
  *
@@ -213,9 +216,8 @@ export type ReferenceInfo = {
   source: ElemID
   target: ElemID
   type: ReferenceType
-  sourceScope?: 'baseId' | 'value'
+  sourceScope?: ReferenceSourceScope
 }
-export const DEFAULT_SOURCE_SCOPE: ReferenceInfo['sourceScope'] = 'baseId'
 
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>
 

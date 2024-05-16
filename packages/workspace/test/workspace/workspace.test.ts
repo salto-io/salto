@@ -3378,8 +3378,8 @@ describe('workspace', () => {
     let targetElementId: ElemID
     let sourceInstance: InstanceElement
     let anotherSourceInstance: InstanceElement
-
     let workspace: Workspace
+
     beforeEach(async () => {
       const testType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
       targetElementId = new ElemID('adapter', 'test', 'instance', 'target')

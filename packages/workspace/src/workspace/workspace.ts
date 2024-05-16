@@ -38,6 +38,7 @@ import {
   isObjectType,
   isModificationChange,
   TypeReference,
+  DEFAULT_SOURCE_SCOPE,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -1234,7 +1235,7 @@ export const loadWorkspace = async (
         : referencesTree.valuesWithPrefix(idPath),
     )
       .flat()
-      .map(ref => ({ ...ref, sourceScope: ref.sourceScope ?? 'baseId' }))
+      .map(ref => ({ ...ref, sourceScope: ref.sourceScope ?? DEFAULT_SOURCE_SCOPE }))
 
     const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
     return _.uniqBy(filteredReferences, ref => ref.id.getFullName())

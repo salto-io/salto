@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
+import { isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   addSpaceKey,
@@ -246,6 +247,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     [SPACE_SETTINGS_TYPE_NAME]: {
+      toActionNames: ({ change }) => {
+        if (isAdditionOrModificationChange(change)) {
+          return ['modify']
+        }
+        return [change.action]
+      }, // no addition of space settings, we should modify instead
       requestsByAction: {
         default: {
           request: {

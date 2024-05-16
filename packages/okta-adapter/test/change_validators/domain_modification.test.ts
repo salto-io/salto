@@ -84,7 +84,7 @@ describe('domainModificationValidator', () => {
         elemID: domainWithBrand1.elemID,
         severity: 'Error',
         message: 'Cannot modify any domain fields except its brand',
-        detailedMessage: 'Domain example.com can only modify its brand.',
+        detailedMessage: 'Domain subdomain.example.com can only modify its brand.',
       },
     ])
   })

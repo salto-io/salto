@@ -610,7 +610,11 @@ describe('DeployRequester', () => {
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
     })
-    expect(client.delete).toHaveBeenCalledWith({ url: '/test/endpoint/1', data: undefined, queryParams: undefined })
+    expect(client.delete).toHaveBeenCalledWith({
+      url: '/test/endpoint/1',
+      data: undefined,
+      queryParams: { instanceId: '1' },
+    })
   })
 
   it('should include request body when deploy request config contains omitRequestBody=false', async () => {
@@ -646,7 +650,7 @@ describe('DeployRequester', () => {
     expect(client.delete).toHaveBeenCalledWith({
       url: '/test/endpoint/1',
       data: { id: '1', creatableField: 'creatableValue', ignored: 'ignored' },
-      queryParams: undefined,
+      queryParams: { instanceId: '1' },
     })
   })
 

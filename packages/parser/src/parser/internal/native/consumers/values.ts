@@ -19,7 +19,7 @@
 // want all of the functions to be defined inside consume value since its icky.
 
 import { Value, TemplateExpression, ElemID, Values } from '@salto-io/adapter-api'
-import _, { trimEnd } from 'lodash'
+import _ from 'lodash'
 import { Token } from 'moo'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -105,25 +105,15 @@ const createTemplateExpressions = (
     }),
   })
 
-const trimToken = (token: Required<Token>): Required<Token> => ({
-  ...token,
-  text: trimEnd(token.text, '\r\n'),
-  value: trimEnd(token.value, '\r\n'),
-})
-
 const createStringValue = (
   context: ParseContext,
   tokens: Required<Token>[],
-  trim?: boolean,
   transformFunc?: (context: ParseContext, token: Required<Token>) => string,
 ): string | TemplateExpression => {
-  const trimmedTokens =
-    trim && tokens.length > 0 ? [...tokens.slice(0, -1), trimToken(tokens[tokens.length - 1])] : tokens
-
-  const simpleString = _.every(trimmedTokens, token => [TOKEN_TYPES.CONTENT, TOKEN_TYPES.ESCAPE].includes(token.type))
+  const simpleString = _.every(tokens, token => [TOKEN_TYPES.CONTENT, TOKEN_TYPES.ESCAPE].includes(token.type))
   return simpleString
-    ? createSimpleStringValue(context, trimmedTokens, transformFunc)
-    : createTemplateExpressions(context, trimmedTokens, transformFunc)
+    ? createSimpleStringValue(context, tokens, transformFunc)
+    : createTemplateExpressions(context, tokens, transformFunc)
 }
 
 const consumeStringData = (context: ParseContext): ConsumerReturnType<Required<Token>[]> => {
@@ -268,12 +258,14 @@ const consumeMultilineString: Consumer<string | TemplateExpression> = context =>
     tokens.push(context.lexer.next())
   }
   if (tokens.length > 0) {
+    // We get rid of the trailing newline
     tokens[tokens.length - 1].value = tokens[tokens.length - 1].value.slice(0, -1)
+    tokens[tokens.length - 1].text = tokens[tokens.length - 1].text.slice(0, -1)
   }
-  // We get rid of the trailing newline
+
   // Getting the position of the end marker
   const end = positionAtEnd(context.lexer.next())
-  const value = createStringValue(context, tokens, true, (_c, t) => unescapeMultilineString(t.text))
+  const value = createStringValue(context, tokens, (_c, t) => unescapeMultilineString(t.text))
   return {
     value,
     range: { start, end },

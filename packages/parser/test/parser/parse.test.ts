@@ -802,7 +802,11 @@ multiline
     expect(elements[0].annotations.str.length).toEqual(stringLength)
   })
 
-  it('test', async () => {
+  it('parse multiline string with a U+200D unicode before a \\n', async () => {
+    // we have this test as this unicode character joins characters together. in our case, the problem is when this
+    // joiner is the last character in the string - because we add a \n before the closing ''', parsing that unicode
+    // character “correctly” means joining the \n with whatever came before the \u+200D, which makes it not a \n anymore
+    // This test makes sure that we parse it correctly.
     const body = `
     type salesforce.escapedQuotes {
       str = '''

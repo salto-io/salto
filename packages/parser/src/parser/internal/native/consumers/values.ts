@@ -258,10 +258,11 @@ const consumeMultilineString: Consumer<string | TemplateExpression> = context =>
     tokens.push(context.lexer.next())
   }
   if (tokens.length > 0) {
+    // We get rid of the trailing newline
     tokens[tokens.length - 1].value = tokens[tokens.length - 1].value.slice(0, -1)
     tokens[tokens.length - 1].text = tokens[tokens.length - 1].text.slice(0, -1)
   }
-  // We get rid of the trailing newline
+
   // Getting the position of the end marker
   const end = positionAtEnd(context.lexer.next())
   const value = createStringValue(context, tokens, (_c, t) => unescapeMultilineString(t.text))

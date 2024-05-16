@@ -162,8 +162,9 @@ const getAttachmentContent = async ({
   const client = brandIdToClient[attachment.value.brand]
   let res
   try {
+    const path = attachment.value.relative_path
     res = await client.get({
-      url: `${attachment.value.relative_path}`,
+      url: `${path.substring(0, path.lastIndexOf('/'))}`,
       responseType: 'arraybuffer',
     })
   } catch (e) {

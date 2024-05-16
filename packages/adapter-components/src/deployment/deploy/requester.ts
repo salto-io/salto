@@ -282,7 +282,13 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
     throwOnUnresolvedReferences(data)
 
     const callArgs = {
-      queryParams: mergedEndpointDef.queryArgs,
+      queryParams:
+        mergedEndpointDef.queryArgs !== undefined
+          ? replaceAllArgs({
+              value: mergedEndpointDef.queryArgs,
+              context: _.merge({}, value, additionalContext),
+            })
+          : undefined,
       headers: mergedEndpointDef.headers,
       data,
     }

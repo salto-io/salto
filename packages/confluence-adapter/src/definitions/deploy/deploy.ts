@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
+import { isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   addSpaceKey,
@@ -29,6 +30,7 @@ import {
   LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
   PERMISSION_TYPE_NAME,
+  SPACE_SETTINGS_TYPE_NAME,
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
@@ -244,12 +246,39 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    settings: {
+    [SPACE_SETTINGS_TYPE_NAME]: {
+      toActionNames: ({ change }) => {
+        if (isAdditionOrModificationChange(change)) {
+          return ['modify']
+        }
+        return [change.action]
+      }, // no addition of space settings, we should modify instead
       requestsByAction: {
+        default: {
+          request: {
+            endpoint: {
+              queryArgs: {
+                spaceKey: '{spaceKey}',
+              },
+            },
+            context: {
+              spaceKey: '{_parent.0.key}',
+            },
+          },
+        },
         customizations: {
           modify: [
             {
+              condition: {
+                transformForCheck: {
+                  pick: ['custom'],
+                },
+              },
               request: {
+                transformation: {
+                  pick: ['custom'],
+                  adjust: ({ value }) => ({ value: { ..._.get(value, 'custom') } }),
+                },
                 endpoint: {
                   path: '/wiki/rest/api/settings/lookandfeel/custom',
                   method: 'post',

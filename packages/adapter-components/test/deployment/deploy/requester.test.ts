@@ -120,6 +120,9 @@ describe('DeployRequester', () => {
                           instanceId: '{obj.id}',
                         },
                         endpoint: {
+                          queryArgs: {
+                            instanceId: '{instanceId}',
+                          },
                           path: '/test/endpoint/{instanceId}',
                           method: 'delete',
                         },
@@ -281,7 +284,7 @@ describe('DeployRequester', () => {
     ).rejects.toThrow('Could not find requests for change adapter.test.instance.instance action modify')
   })
 
-  it('should use context in URL', async () => {
+  it('should use context in URL and queryParams', async () => {
     client.delete.mockResolvedValue({
       status: 200,
       data: {},
@@ -304,6 +307,7 @@ describe('DeployRequester', () => {
     expect(client.delete).toHaveBeenCalledWith(
       expect.objectContaining({
         url: '/test/endpoint/1',
+        queryParams: { instanceId: '1' },
       }),
     )
   })
@@ -606,7 +610,11 @@ describe('DeployRequester', () => {
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
     })
-    expect(client.delete).toHaveBeenCalledWith({ url: '/test/endpoint/1', data: undefined, queryParams: undefined })
+    expect(client.delete).toHaveBeenCalledWith({
+      url: '/test/endpoint/1',
+      data: undefined,
+      queryParams: { instanceId: '1' },
+    })
   })
 
   it('should include request body when deploy request config contains omitRequestBody=false', async () => {
@@ -642,7 +650,7 @@ describe('DeployRequester', () => {
     expect(client.delete).toHaveBeenCalledWith({
       url: '/test/endpoint/1',
       data: { id: '1', creatableField: 'creatableValue', ignored: 'ignored' },
-      queryParams: undefined,
+      queryParams: { instanceId: '1' },
     })
   })
 

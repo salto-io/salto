@@ -27,11 +27,16 @@ import { isCustom } from '../transformers/transformer'
 import { apiNameSync, getFLSProfiles } from '../filters/utils'
 import { SalesforceConfig } from '../types'
 
+const profileNameOrNumberOfProfiles = (profiles: string[]): string =>
+  profiles.length === 1
+    ? `the following profile: ${profiles[0]}`
+    : `${profiles.length} profiles`
+
 const createObjectFLSInfo = (
   field: ObjectType,
   flsProfiles: string[],
 ): ChangeError => ({
-  message: 'CustomObject visibility in Profiles.',
+  message: `Read/write access to this Custom Object will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
   detailedMessage: `Deploying this new CustomObject will make it and it's CustomFields accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
   severity: 'Info',
   elemID: field.elemID,
@@ -41,7 +46,7 @@ const createFieldFLSInfo = (
   field: Field,
   flsProfiles: string[],
 ): ChangeError => ({
-  message: 'CustomField visibility in Profiles.',
+  message: `Read/write access to this CustomField will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
   detailedMessage: `Deploying this new CustomField will make it accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
   severity: 'Info',
   elemID: field.elemID,

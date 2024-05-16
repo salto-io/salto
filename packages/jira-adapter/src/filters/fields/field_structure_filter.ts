@@ -243,7 +243,7 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
       new ListType(BuiltinTypes.STRING),
     )
     fieldContextType.fields.defaultValue = new Field(fieldContextType, 'defaultValue', fieldContextDefaultValueType)
-    fieldContextType.fields.options = new Field(fieldType, 'options', new MapType(fieldContextOptionType))
+    fieldContextType.fields.options = new Field(fieldContextType, 'options', new MapType(fieldContextOptionType))
 
     fieldContextOptionType.fields.position = new Field(fieldContextOptionType, 'position', BuiltinTypes.NUMBER)
     fieldContextOptionType.fields.cascadingOptions = new Field(

@@ -16,6 +16,7 @@
 import { retry } from '@salto-io/lowerdash'
 import { ResponseValue, Response } from './http_connection'
 import { PollingArgs } from '../definitions'
+import { HTTPError } from './http_client'
 
 const {
   withRetry,
@@ -28,10 +29,16 @@ export const executeWithPolling = async <T>(
   singleClientCall: (args: T) => Promise<Response<ResponseValue | ResponseValue[]>>,
 ): Promise<Response<ResponseValue | ResponseValue[]>> => {
   const pollingFunc = async (): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
-    const response = await singleClientCall(args)
-    return polling.checkStatus(response) ? response : undefined
+    try {
+      const response = await singleClientCall(args)
+      return polling.checkStatus(response) ? response : undefined
+    } catch (e) {
+      if (e instanceof HTTPError && polling.retryOnStatus?.includes(e.response?.status)) {
+        return undefined
+      }
+      throw e
+    }
   }
-
   const pollingResult = await withRetry(() => pollingFunc(), {
     strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
   })

@@ -16,12 +16,10 @@
 import {
   isInstanceElement,
   Element,
-  ObjectType,
   InstanceElement,
-  ElemID,
   CORE_ANNOTATIONS,
   ReferenceExpression,
-  BuiltinTypes,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -39,22 +37,6 @@ const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
 
 const FILTER_NAME = 'customObjectFieldOptionsFilter'
-
-export const customObjectFieldOptionType = new ObjectType({
-  elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME),
-  fields: {
-    id: {
-      refType: BuiltinTypes.SERVICE_ID_NUMBER,
-      annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-    },
-    // name is not added because it's not needed
-    raw_name: { refType: BuiltinTypes.STRING },
-    value: { refType: BuiltinTypes.STRING },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-  },
-})
 
 type CustomObjectFieldOption = {
   id: number
@@ -89,6 +71,13 @@ const onFetch = async (elements: Element[]): Promise<void> => {
       log.error(
         `custom_field_options of ${customObjectField.elemID.getFullName()} is not in the expected format - ${inspectValue(options)}`,
       )
+      return
+    }
+    const customObjectFieldOptionType = elements
+      .filter(isObjectType)
+      .find(e => e.elemID.typeName === CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME)
+    if (customObjectFieldOptionType === undefined) {
+      log.error(`${CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME} object type not found`)
       return
     }
     const optionInstances = options.map(option => {

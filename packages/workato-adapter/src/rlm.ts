@@ -162,7 +162,7 @@ const CONNECTION_SCHEMA = Joi.object({
 
 const RECIPE_CONFIG_SCHEMA = Joi.array().items(
   Joi.object({
-    account_id: CONNECTION_SCHEMA.required(),
+    account_id: CONNECTION_SCHEMA.optional(),
     keyword: Joi.string().required(),
     provider: Joi.string().required(),
     skip_validation: Joi.boolean().required(),

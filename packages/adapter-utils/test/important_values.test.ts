@@ -23,6 +23,7 @@ import {
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '../src/element_source'
 import { getImportantValues, toImportantValues } from '../src/important_values'
@@ -201,12 +202,21 @@ describe('getImportantValues', () => {
         other: 'bla',
       },
     })
+    const instNoImportant = inst.clone()
+    instNoImportant.refType = new TypeReference(objNoImportant.elemID, objNoImportant)
     const elementSourceNoImportant = buildElementsSourceFromElements([objNoImportant, userType])
-    const res = await getImportantValues({
-      element: inst,
-      elementSource: elementSourceNoImportant,
-    })
-    expect(res).toEqual([])
+    expect(
+      await getImportantValues({
+        element: instNoImportant,
+      }),
+    ).toEqual([])
+    instNoImportant.refType = new TypeReference(objNoImportant.elemID)
+    expect(
+      await getImportantValues({
+        element: instNoImportant,
+        elementSource: elementSourceNoImportant,
+      }),
+    ).toEqual([])
   })
   it('should return only indexed values', async () => {
     const res = await getImportantValues({

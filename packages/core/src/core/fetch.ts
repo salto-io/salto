@@ -35,6 +35,7 @@ import {
   isAdditionChange,
   isAdditionOrModificationChange,
   isElement,
+  isEqualElements,
   isInstanceElement,
   isModificationChange,
   isObjectType,
@@ -53,6 +54,7 @@ import {
   toChange,
   toServiceIdsString,
   TypeMap,
+  TypeReference,
   Value,
   Values,
 } from '@salto-io/adapter-api'
@@ -470,6 +472,39 @@ const runPostFetch = async ({
   )
 }
 
+// SALTO-5878 safety due to changed order of precedence when resolving referenced values / types - can remove if we don't see this log
+const updateInconsistentTypes = (validAccountElements: Element[]): void =>
+  log.timeDebug(() => {
+    const objectTypesByElemID = _.keyBy(validAccountElements.filter(isObjectType), e => e.elemID.getFullName())
+    const isInconsistentType = (e: InstanceElement | Field): boolean =>
+      e.refType.type !== undefined &&
+      objectTypesByElemID[e.refType.elemID.getFullName()] !== undefined &&
+      !isEqualElements(e.refType.type, objectTypesByElemID[e.refType.elemID.getFullName()])
+    const fields = Object.values(objectTypesByElemID)
+      .flatMap(obj => Object.values(obj.fields))
+      .filter(f => isObjectType(f.refType.type))
+    const elementsWithInconsistentTypes: (InstanceElement | Field)[] = validAccountElements
+      .filter(isInstanceElement)
+      .filter(isInconsistentType)
+    fields.forEach(f => {
+      if (isInconsistentType(f)) {
+        elementsWithInconsistentTypes.push(f)
+      }
+    })
+
+    if (elementsWithInconsistentTypes.length > 0) {
+      log.warn(
+        'found inconsistent types in the following %d types (%d elements), the types will be resolved from the element source. %s',
+        _.uniq(elementsWithInconsistentTypes.map(e => e.refType.elemID.getFullName())).length,
+        elementsWithInconsistentTypes.length,
+        elementsWithInconsistentTypes.map(e => e.elemID.getFullName()).join(','),
+      )
+      elementsWithInconsistentTypes.forEach(e => {
+        e.refType = new TypeReference(e.refType.elemID)
+      })
+    }
+  }, 'looking for inconsistent types (SALTO-5878)')
+
 const fetchAndProcessMergeErrors = async (
   accountsToAdapters: Record<string, AdapterOperations>,
   stateElements: elementSource.ElementsSource,
@@ -619,6 +654,8 @@ const fetchAndProcessMergeErrors = async (
     log.debug(
       `after merge there are ${processErrorsResult.keptElements.length} elements [errors=${mergeErrorsArr.length}]`,
     )
+
+    updateInconsistentTypes(validAccountElements)
 
     return {
       accountElements: validAccountElements,

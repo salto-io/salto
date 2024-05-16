@@ -26,6 +26,7 @@ import { customConvertError } from './error_utils'
 import transformTemplateBodyToTemplateExpressionFilterCreator from './filters/transform_template_body_to_template_expression'
 import customPathsFilterCreator from './filters/custom_paths'
 import deploySpaceAndPermissionsFilterCreator from './filters/deploy_space_and_permissions'
+import createChangeValidator from './change_validator'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
 const { defaultCredentialsFromConfig } = credentials
@@ -57,6 +58,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       // customPathsFilterCreator must run after fieldReferencesFilter
       customPathsFilterCreator,
     }),
+    additionalChangeValidators: createChangeValidator,
   },
 
   initialClients: {

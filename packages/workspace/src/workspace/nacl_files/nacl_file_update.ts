@@ -252,10 +252,7 @@ export const updateNaclFileData = async (
 
           if (change.action === 'remove') {
             // For removals, dropping newline and indent at the end of the block to avoid empty lines
-            const lastNewlineIndex = data.search(/\s+$/)
-            if (lastNewlineIndex !== -1) {
-              data = data.slice(0, lastNewlineIndex)
-            }
+            data = data.trimEnd()
           }
 
           parts.push({

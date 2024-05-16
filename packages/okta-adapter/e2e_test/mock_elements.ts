@@ -216,6 +216,6 @@ export const mockDefaultValues: Record<string, Values> = {
   },
   [DOMAIN_TYPE_NAME]: {
     certificateSourceType: 'OKTA_MANAGED',
-    validationStatus: 'NOT_STARTED'
+    validationStatus: 'NOT_STARTED',
   },
 }

@@ -59,6 +59,7 @@ commands:
             FORCE_COLOR: 1
       - store_test_results:
           path: reports
+      - coveralls/upload
       - persist_to_workspace:
           root: .
           paths:
@@ -193,7 +194,6 @@ jobs:
           steps:
             - unit_test:
                 package_name: << parameters.package_name >>
-            - coveralls/upload
 
   save_project_cache:
     docker:
@@ -397,12 +397,13 @@ workflows:
       - save_project_cache:
           requires:
             - build
-      # <TEST_MATRIX>
+      # <TEST_MATRIX_E2E>
+      # <TEST_MATRIX_UNITTEST>
 
       - package_cli:
           requires:
             - build
-            # <NEEDS_TEST_REQUIREMENT>
+            # <NEEDS_UNITTEST_REQUIREMENT>
 
       - test_cli_mac:
           requires:
@@ -433,7 +434,8 @@ workflows:
                 - main
           requires:
               - build
-              # <NEEDS_TEST_REQUIREMENT>
+              # <NEEDS_E2E_TEST_REQUIREMENT>
+              # <NEEDS_UNITTEST_REQUIREMENT>
 
       - publish_on_version_change:
           context: salto
@@ -443,5 +445,6 @@ workflows:
                 - main
           requires:
             - build
-            # <NEEDS_TEST_REQUIREMENT>
+            # <NEEDS_E2E_TEST_REQUIREMENT>
+            # <NEEDS_UNITTEST_REQUIREMENT>
       

@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 const { execSync } = require('child_process')
-const { readFileSync, writeFileSync } = require('fs')
+const { readFileSync, writeFileSync, existsSync, readdirSync } = require('fs')
 const path = require('path')
 
 function getChangedFiles() {
@@ -51,15 +51,17 @@ function generateDependencyGraph(workspaceInfo) {
   return graph
 }
 
-// function hasE2eTests(packageName: string): boolean {
-//   const e2eDir = path.join(__dirname, 'packages', packageName, 'e2e_test')
-//   return existsSync(e2eDir) && readdirSync(e2eDir).some(file => file.endsWith('.test.ts'))
-// }
+function hasE2eTests(packageName) {
+  const e2eDir = path.join(__dirname, '..', '..', 'packages', packageName, 'e2e_test')
+  console.log('e2eDir:', e2eDir, 'exists:', existsSync(e2eDir))
+  return existsSync(e2eDir) && readdirSync(e2eDir).some(file => file.endsWith('.test.ts'))
+}
 
-// function hasUnitTests(packageName: string): boolean {
-//   const e2eDir = path.join(__dirname, 'packages', packageName, 'test')
-//   return existsSync(e2eDir) && readdirSync(e2eDir).some(file => file.endsWith('.test.ts'))
-// }
+function hasUnitTests(packageName) {
+  const utDir = path.join(__dirname, '..', '..', 'packages', packageName, 'test')
+  console.log('utDir:', utDir, 'exists:', existsSync(utDir))
+  return existsSync(utDir) && readdirSync(utDir).some(file => file.endsWith('.test.ts'))
+}
 
 function findChangedPackages() {
   const changedFiles = getChangedFiles()
@@ -105,23 +107,51 @@ function main() {
   const continueConfigFilePath = path.join(__dirname, '..', 'continue_config.yml')
   const configTemplate = readFileSync(configTemplatePath, 'utf8')
   const packagesArray = Array.from(packagesToTest, pkg => pkg.replace('@salto-io/', '')).sort()
-  let alteredConfigTemplate
-  if (packagesArray.length === 0) {
-    alteredConfigTemplate = configTemplate.replace(/# <NEEDS_TEST_REQUIREMENT>/g, '').replace('<TEST_MATRIX>', '')
-  } else {
-    const testMatrix = `
+  const e2ePackagesToTest = []
+  const unitPackagesToTest = []
+  console.log('Packages to test:', packagesArray)
+  for (pkg of packagesArray) {
+    console.log('Package:', pkg)
+    if (hasE2eTests(pkg)) {
+      console.log('Package has e2e tests')
+      e2ePackagesToTest.push(pkg)
+    }
+    if (hasUnitTests(pkg)) {
+      console.log('Package has unit tests')
+      unitPackagesToTest.push(pkg)
+    }
+  }
+  const e2eTestMatrix = `
       - test:
           requires:
             - build
           matrix:
+            alias: test_e2e
             parameters:
               e2e_or_unittest:
                 - e2e
+              package_name:
+                - ${e2ePackagesToTest.join('\n                - ')}`
+const unitTestMatrix = `
+      - test:
+          requires:
+            - build
+          matrix:
+            alias: test_unittest
+            parameters:
+              e2e_or_unittest:
                 - unittest
               package_name:
-                - ${packagesArray.join('\n                - ')}`
-    alteredConfigTemplate = configTemplate.replace(/# <NEEDS_TEST_REQUIREMENT>/g, '- test').replace('# <TEST_MATRIX>', testMatrix)
-  }
+                - ${unitPackagesToTest.join('\n                - ')}`
+
+  let alteredConfigTemplate
+  if (packagesArray.length === 0) {
+    alteredConfigTemplate = configTemplate.replace(/# <NEEDS_UNITTEST_REQUIREMENT>/g, '').replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '').replace('# <TEST_MATRIX_E2E>', '').replace('# <TEST_MATRIX_UNITTEST>', '')
+  } 
+
+  alteredConfigTemplate = e2ePackagesToTest.length > 0 ? configTemplate.replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '- test_e2e').replace('# <TEST_MATRIX_E2E>', e2eTestMatrix) : configTemplate.replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '').replace('# <TEST_MATRIX_E2E>', '')
+  alteredConfigTemplate = unitPackagesToTest.length > 0 ? alteredConfigTemplate.replace(/# <NEEDS_UNITTEST_REQUIREMENT>/g, '- test_unittest').replace('# <TEST_MATRIX_UNITTEST>', unitTestMatrix) : alteredConfigTemplate.replace(/# <NEEDS_UNITTEST_REQUIREMENT>/g, '').replace('# <TEST_MATRIX_UNITTEST>', '')
+  
   writeFileSync(continueConfigFilePath, alteredConfigTemplate)
   console.log(alteredConfigTemplate)
   console.log(`Updated ${continueConfigFilePath} with packages to test: ${Array.from(packagesToTest).join(', ')}`)

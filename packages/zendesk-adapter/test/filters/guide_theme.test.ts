@@ -24,6 +24,7 @@ import {
   ObjectType,
   ReferenceExpression,
   StaticFile,
+  TemplateExpression,
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -82,7 +83,12 @@ const themeSettingsType = new ObjectType({
   },
 })
 
-const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo', has_help_center: true })
+const brand1 = new InstanceElement('brand', brandType, {
+  id: 1,
+  name: 'oneTwo',
+  has_help_center: true,
+  brand_url: 'url',
+})
 const themeWithId = new InstanceElement('themeWithId', themeType, {
   id: 'park?',
   name: 'SixFlags',
@@ -95,7 +101,13 @@ const newThemeWithFiles = new InstanceElement('newThemeWithFiles', themeType, {
     files: {
       'file1_txt@v': {
         filename: 'file1.txt',
-        content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('file1content') }),
+        content: Buffer.from('file1content'),
+      },
+      'fileWithReference_js@v': {
+        filename: 'fileWithReference.js',
+        content: new TemplateExpression({
+          parts: ['var PREFIX_123 = ', new ReferenceExpression(brand1.elemID, brand1)],
+        }),
       },
     },
     folders: {},
@@ -353,9 +365,15 @@ describe('filterCreator', () => {
 
     describe('create theme', () => {
       let changes: Change<InstanceElement>[]
+      let resolvedChanges: Change<InstanceElement>[]
 
       beforeEach(() => {
         changes = [toChange({ after: newThemeWithFiles.clone() })]
+        const resolvedNewThemeWithFiles = newThemeWithFiles.clone()
+        resolvedNewThemeWithFiles.value.id = 'newId'
+        resolvedNewThemeWithFiles.value.root.files['fileWithReference_js@v'].content =
+          Buffer.from('var PREFIX_123 = url')
+        resolvedChanges = [toChange({ after: resolvedNewThemeWithFiles })]
       })
 
       describe('with no errors', () => {
@@ -366,11 +384,26 @@ describe('filterCreator', () => {
 
         it('should apply the change and return no errors', async () => {
           expect(await filter.deploy?.(changes)).toEqual({
-            deployResult: { appliedChanges: changes, errors: [] },
+            deployResult: { appliedChanges: resolvedChanges, errors: [] },
             leftoverChanges: [],
           })
           expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
-          expect(mockCreate).toHaveBeenCalled()
+          expect(mockCreate).toHaveBeenCalledWith(
+            {
+              brandId: new ReferenceExpression(brand1.elemID, brand1),
+              staticFiles: [
+                {
+                  filename: 'file1.txt',
+                  content: Buffer.from('file1content'),
+                },
+                {
+                  filename: 'fileWithReference.js',
+                  content: Buffer.from('var PREFIX_123 = url'),
+                },
+              ],
+            },
+            expect.anything(),
+          )
           expect(mockPublish).not.toHaveBeenCalled()
         })
 
@@ -446,6 +479,7 @@ describe('filterCreator', () => {
 
     describe('update theme', () => {
       let changes: Change<InstanceElement>[]
+      let resolvedChanges: Change<InstanceElement>[]
 
       beforeEach(() => {
         const before = newThemeWithFiles.clone()
@@ -453,9 +487,13 @@ describe('filterCreator', () => {
         const after = newThemeWithFiles.clone()
         after.value.root.files['file1_txt@v'] = {
           filename: 'file1.txt',
-          content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('newContent') }),
+          content: Buffer.from('newContent'),
         }
         changes = [toChange({ before, after })]
+        const resolvedAfter = after.clone()
+        resolvedAfter.value.id = 'newId'
+        resolvedAfter.value.root.files['fileWithReference_js@v'].content = Buffer.from('var PREFIX_123 = url')
+        resolvedChanges = [toChange({ before, after: resolvedAfter })]
       })
 
       describe('with no errors', () => {
@@ -467,11 +505,26 @@ describe('filterCreator', () => {
 
         it('should apply the change and return no errors', async () => {
           expect(await filter.deploy?.(changes)).toEqual({
-            deployResult: { appliedChanges: changes, errors: [] },
+            deployResult: { appliedChanges: resolvedChanges, errors: [] },
             leftoverChanges: [],
           })
           expect((changes[0] as ModificationChange<InstanceElement>).data.after.value.id).toEqual('newId')
-          expect(mockCreate).toHaveBeenCalled()
+          expect(mockCreate).toHaveBeenCalledWith(
+            {
+              brandId: new ReferenceExpression(brand1.elemID, brand1),
+              staticFiles: [
+                {
+                  filename: 'file1.txt',
+                  content: Buffer.from('newContent'),
+                },
+                {
+                  filename: 'fileWithReference.js',
+                  content: Buffer.from('var PREFIX_123 = url'),
+                },
+              ],
+            },
+            expect.anything(),
+          )
           expect(mockDelete).toHaveBeenCalledWith('oldId', expect.anything())
           expect(mockPublish).not.toHaveBeenCalled()
         })

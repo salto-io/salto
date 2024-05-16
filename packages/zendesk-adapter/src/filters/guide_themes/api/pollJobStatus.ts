@@ -50,7 +50,7 @@ export const pollJobStatus = async (
   jobId: string,
   client: ZendeskClient,
   interval = 5000,
-  retries = 5,
+  retries = 10,
 ): Promise<{ success: boolean; errors: string[] }> => {
   log.trace('Polling job status')
   try {

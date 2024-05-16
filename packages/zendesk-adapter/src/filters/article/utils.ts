@@ -164,7 +164,7 @@ const getAttachmentContent = async ({
   try {
     const path = attachment.value.relative_path
     res = await client.get({
-      url: `${path.substring(0, path.lastIndexOf('/') + 1)}`,
+      url: `${path.substring(0, path.lastIndexOf('/'))}`,
       responseType: 'arraybuffer',
     })
   } catch (e) {

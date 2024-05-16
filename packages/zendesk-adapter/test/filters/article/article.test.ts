@@ -344,13 +344,13 @@ describe('article filter', () => {
         ) {
           return { status: 200, data: { article_attachments: [] } }
         }
-        if (params.url === '/hc/article_attachments/20222022/') {
+        if (params.url === '/hc/article_attachments/20222022') {
           return {
             status: 200,
             data: content,
           }
         }
-        if (params.url === '/hc/article_attachments/123/' || params.url === '/hc/article_attachments/133/') {
+        if (params.url === '/hc/article_attachments/123' || params.url === '/hc/article_attachments/133') {
           return {
             status: 200,
             data: content,

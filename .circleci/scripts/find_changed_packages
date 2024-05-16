@@ -80,6 +80,7 @@ function main() {
   console.log('Changed packages:', changedPackages)
 
   const dependencyGraph = generateDependencyGraph(fetchWorkspacesInfo())
+  console.log('Dependency graph:', dependencyGraph)
 
   const packagesToTest = new Set()
 

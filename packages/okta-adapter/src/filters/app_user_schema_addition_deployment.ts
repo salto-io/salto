@@ -22,11 +22,10 @@ import {
   getChangeData,
   isAdditionChange,
   toChange,
-  Value,
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { getParents, transformValues } from '@salto-io/adapter-utils'
+import { getParents } from '@salto-io/adapter-utils'
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
@@ -35,18 +34,8 @@ import { deployChanges, defaultDeployWithStatus } from '../deployment'
 
 const log = logger(module)
 
-const findDifferences = (object1: Value, object2: Value): Value => {
-  const differences: Value = {}
-
-  _.forEach(object1, (value, key) => {
-    if (!_.isEqual(value, object2[key])) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      differences[key] = _.isObject(value) && _.isObject(object2[key]) ? findDifferences(value, object2[key]) : value
-    }
-  })
-
-  return differences
-}
+const DEFINITIONS = 'definitions'
+const BASE = 'base'
 
 type AppUserSchema = {
   id: string
@@ -103,9 +92,16 @@ const deployAppUserSchemaAddition = async (
       `Could not find parent application id for user schema ${appUserSchemaInstance.elemID.name} from type ${appUserSchemaInstance.elemID.typeName}`,
     )
   }
+
   const autoCreatedAppUserSchema = await getAutoCreatedAppUserSchema(parentApplicationId, client)
 
+  const customProperties = appUserSchemaInstance.value.definitions?.custom?.properties
+  if (customProperties === undefined || _.isEmpty(customProperties)) {
+    return
+  }
+
   // Assign the id created by the service to the app user schema
+  appUserSchemaInstance.value.id = autoCreatedAppUserSchema.id
 
   const autoCreatedAppUserSchemaInstance = getAppUserSchemaInstance(
     autoCreatedAppUserSchema,
@@ -113,34 +109,9 @@ const deployAppUserSchemaAddition = async (
     apiDefinitions,
   )
 
-  appUserSchemaInstance.value.id = autoCreatedAppUserSchema.id
-
-  // appUserSchemaInstance.value.definitions.custom.properties = {}
-
-  if (appUserSchemaInstance.isEqual(autoCreatedAppUserSchemaInstance)) {
-    return
-  }
-
-  const bla = findDifferences(appUserSchemaInstance, autoCreatedAppUserSchemaInstance)
-  log.debug(bla)
-
-  const removedEmpty = await transformValues({
-    values: autoCreatedAppUserSchemaInstance.value,
-    type: await autoCreatedAppUserSchemaInstance.getType(),
-    transformFunc: ({ value }) => value,
-    strict: false,
-    allowEmpty: false,
-  })
-  if (removedEmpty) {
-    autoCreatedAppUserSchemaInstance.value = removedEmpty
-  }
-
-  const bla2 = findDifferences(appUserSchemaInstance, autoCreatedAppUserSchemaInstance)
-  log.debug(bla2)
-
-  if (appUserSchemaInstance.isEqual(autoCreatedAppUserSchemaInstance)) {
-    return
-  }
+  // Remove the base property from the auto created app user schema
+  // as we do in removeBaseFromAppUserSchemaHandler
+  _.unset(autoCreatedAppUserSchemaInstance.value, [DEFINITIONS, BASE])
 
   await defaultDeployWithStatus(
     toChange({ before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance }),

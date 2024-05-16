@@ -34,21 +34,15 @@ describe('appUserSchemaAdditionDeployment', () => {
     appUserSchemaType,
     {
       title: 'user schema test',
-      definition: {
+      definitions: {
         custom: {
           id: '#custom',
           type: 'object',
-          properties: {},
-        },
-        base: {
-          id: '#base',
-          type: 'object',
           properties: {
-            userName: {
-              title: 'title',
+            customProp: {
+              title: 'custom prop',
             },
           },
-          required: ['userName'],
         },
       },
     },
@@ -62,6 +56,37 @@ describe('appUserSchemaAdditionDeployment', () => {
     },
   )
 
+  const notFoundError = new clientUtils.HTTPError('message', {
+    status: 404,
+    data: {},
+  })
+
+  const resolvedAppUserSchema = {
+    status: 200,
+    data: {
+      id: 'appUserSchemaId',
+      name: 'app user shcema test 2',
+      title: 'user schema test 2',
+      definitions: {
+        custom: {
+          id: '#custom 2',
+          type: 'object 2',
+          properties: {},
+        },
+        base: {
+          id: '#base 2',
+          type: 'object 2',
+          properties: {
+            userName: {
+              title: 'title2',
+            },
+          },
+          required: ['userName'],
+        },
+      },
+    },
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
     const { client: cli, connection } = mockClient()
@@ -72,31 +97,7 @@ describe('appUserSchemaAdditionDeployment', () => {
 
   describe('deploy', () => {
     it('should successfully deploy changes as modification changes', async () => {
-      mockConnection.get.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          id: 'appUserSchemaId',
-          name: 'app user shcema test 2',
-          title: 'user schema test 2',
-          definition: {
-            custom: {
-              id: '#custom 2',
-              type: 'object 2',
-              properties: {},
-            },
-            base: {
-              id: '#base 2',
-              type: 'object 2',
-              properties: {
-                userName: {
-                  title: 'title2',
-                },
-              },
-              required: ['userName'],
-            },
-          },
-        },
-      })
+      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
       const changes = [toChange({ after: appUserSchemaInstance })]
       const result = await filter.deploy(changes)
       const { appliedChanges } = result.deployResult
@@ -106,21 +107,15 @@ describe('appUserSchemaAdditionDeployment', () => {
         // validate id assigned to value
         id: 'appUserSchemaId',
         title: 'user schema test',
-        definition: {
+        definitions: {
           custom: {
             id: '#custom',
             type: 'object',
-            properties: {},
-          },
-          base: {
-            id: '#base',
-            type: 'object',
             properties: {
-              userName: {
-                title: 'title',
+              customProp: {
+                title: 'custom prop',
               },
             },
-            required: ['userName'],
           },
         },
       })
@@ -137,14 +132,41 @@ describe('appUserSchemaAdditionDeployment', () => {
         `Could not find parent application id for user schema ${noParentName} from type ${APP_USER_SCHEMA_TYPE_NAME}`,
       ])
     })
-
-    it('should return error when application request fails', async () => {
-      mockConnection.get.mockRejectedValue({ status: 404, data: { errorSummary: 'resource not found' } })
+    it('should return error when app user schema request fails', async () => {
+      mockConnection.get.mockRejectedValueOnce(notFoundError)
       const result = await filter.deploy([toChange({ after: appUserSchemaInstance })])
       expect(result.deployResult.appliedChanges).toHaveLength(0)
       expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/apps/1/default', undefined)
       expect(result.deployResult.errors).toHaveLength(1)
-      expect(result.deployResult.errors[0].message).toContain('Failed to get /api/v1/meta/schemas/apps/1/default')
+      expect(result.deployResult.errors[0].message).toEqual('Invalid app user schema response')
+    })
+    it('should deploy nothing where there are no properties in custom', async () => {
+      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
+      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
+      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
+      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
+
+      const withoutProperties = appUserSchemaInstance.clone()
+      delete withoutProperties.value.definitions.custom.properties
+      const withEmptyProperties = appUserSchemaInstance.clone()
+      withEmptyProperties.value.definitions.custom.properties = {}
+      const withoutCustom = appUserSchemaInstance.clone()
+      delete withoutCustom.value.definitions.custom
+      const withoutDefinitions = appUserSchemaInstance.clone()
+      delete withoutDefinitions.value.definitions
+
+      const result = await filter.deploy([
+        toChange({ after: withoutProperties }),
+        toChange({ after: withEmptyProperties }),
+        toChange({ after: withoutCustom }),
+        toChange({ after: withoutDefinitions }),
+      ])
+      const { appliedChanges } = result.deployResult
+      expect(appliedChanges).toHaveLength(4)
+      // it doesn't matter what is the values of the applied changes because it should do nothing
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/apps/1/default', undefined)
+      expect(mockConnection.get).toHaveBeenCalledTimes(4)
+      expect(result.deployResult.errors).toHaveLength(0)
     })
   })
 })

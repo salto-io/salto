@@ -20,7 +20,10 @@ import { collections } from '@salto-io/lowerdash'
 import { PERMISSION_SET_METADATA_TYPE } from '../constants'
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { WeakReferencesHandler } from '../types'
-import { mapProfileOrPermissionSetSections } from './profiles'
+import {
+  mapProfileOrPermissionSetSections,
+  removeWeakReferencesFromProfilesOrPermissionSets,
+} from './profile_permission_set_utils'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -59,7 +62,20 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   return refs
 }
 
+const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
+  ({ elementsSource }) =>
+  async (elements) => {
+    const permissionSets = elements.filter(
+      isInstanceOfTypeSync(PERMISSION_SET_METADATA_TYPE),
+    )
+
+    return removeWeakReferencesFromProfilesOrPermissionSets(
+      permissionSets,
+      elementsSource,
+    )
+  }
+
 export const permissionSetsHandler: WeakReferencesHandler = {
   findWeakReferences,
-  removeWeakReferences: () => async () => ({ fixedElements: [], errors: [] }),
+  removeWeakReferences,
 }

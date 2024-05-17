@@ -121,6 +121,19 @@ function main() {
       unitPackagesToTest.push(pkg)
     }
   }
+  const unitTestCoverage = `
+  coverage_unittests:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - coveralls/upload:
+          parallel_finished: true
+          carryforward: "${unitPackagesToTest.join(' ')}"
+`
   const e2eTestMatrix = `
       - test:
           requires:
@@ -132,7 +145,7 @@ function main() {
                 - e2e
               package_name:
                 - ${e2ePackagesToTest.join('\n                - ')}`
-const unitTestMatrix = `
+    const unitTestMatrixAndCoverage = `
       - test:
           requires:
             - build
@@ -142,15 +155,15 @@ const unitTestMatrix = `
               e2e_or_unittest:
                 - unittest
               package_name:
-                - ${unitPackagesToTest.join('\n                - ')}`
+                - ${unitPackagesToTest.join('\n                - ')}
+                
+      - coverage_unittests:
+          requires:
+            - test_unittest
+`
 
-  let alteredConfigTemplate
-  if (packagesArray.length === 0) {
-    alteredConfigTemplate = configTemplate.replace(/# <NEEDS_UNITTEST_REQUIREMENT>/g, '').replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '').replace('# <TEST_MATRIX_E2E>', '').replace('# <TEST_MATRIX_UNITTEST>', '')
-  } 
-
-  alteredConfigTemplate = e2ePackagesToTest.length > 0 ? configTemplate.replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '- test_e2e').replace('# <TEST_MATRIX_E2E>', e2eTestMatrix) : configTemplate.replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '').replace('# <TEST_MATRIX_E2E>', '')
-  alteredConfigTemplate = unitPackagesToTest.length > 0 ? alteredConfigTemplate.replace(/# <NEEDS_UNITTEST_REQUIREMENT>/g, '- test_unittest').replace('# <TEST_MATRIX_UNITTEST>', unitTestMatrix) : alteredConfigTemplate.replace(/# <NEEDS_UNITTEST_REQUIREMENT>/g, '').replace('# <TEST_MATRIX_UNITTEST>', '')
+  let alteredConfigTemplate = e2ePackagesToTest.length > 0 ? configTemplate.replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '- test_e2e').replace(/# <TEST_MATRIX_E2E>/g, e2eTestMatrix) : configTemplate.replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '').replace(/# <TEST_MATRIX_E2E>/g, '')
+  alteredConfigTemplate = unitPackagesToTest.length > 0 ? alteredConfigTemplate.replace(/# <NEEDS_UNITTEST_REQUIREMENT>/g, '- test_unittest').replace(/# <TEST_MATRIX_UNITTEST_AND_COVERAGE>/g, unitTestMatrixAndCoverage).replace(/# <UNITTESTS_COVERAGE>/g, unitTestCoverage) : alteredConfigTemplate.replace(/# <NEEDS_UNITTEST_REQUIREMENT>/g, '').replace(/# <TEST_MATRIX_UNITTEST_AND_COVERAGE>/g, '').replace(/# <UNITTESTS_COVERAGE>/g, '')
   
   writeFileSync(continueConfigFilePath, alteredConfigTemplate)
   console.log(alteredConfigTemplate)

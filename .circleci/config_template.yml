@@ -4,7 +4,7 @@ orbs:
   win: circleci/windows@2.2.0
   aws-s3: circleci/aws-s3@1.0.15
   aws-cli: circleci/aws-cli@2.0.3
-  coveralls: coveralls/coveralls@1.0.6
+  coveralls: coveralls/coveralls@2.2.1
   macos: circleci/macos@2.4.1
 
 commands:
@@ -52,19 +52,23 @@ commands:
           name: Run unit tests for package << parameters.package_name >>
           command: |
             pushd packages/<< parameters.package_name >>
-            yarn test -w 4 --reporters=default --reporters=jest-junit --passWithNoTests
+            yarn test -w 4 --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
             # Ensures colored output in logs
             FORCE_COLOR: 1
       - store_test_results:
           path: reports
-      - coveralls/upload
+      - coveralls/upload:
+          flag_name: <<parameters.package_name>>
+          parallel: true
+          verbose: true
+
       - persist_to_workspace:
           root: .
           paths:
             - packages/<< parameters.package_name >>/reports/unittests
-
+  
   set_s3_pkg_urls:
     steps:
       - run:
@@ -156,6 +160,7 @@ jobs:
           root: .
           paths:
             - '*'
+
   prettier:
     docker:
       - image: cimg/node:14.15
@@ -386,6 +391,8 @@ jobs:
           name: Publish canary version
           command: .circleci/scripts/publish-canary.sh
 
+# <UNITTESTS_COVERAGE>
+
 workflows:
   commit:
     jobs:
@@ -398,7 +405,7 @@ workflows:
           requires:
             - build
       # <TEST_MATRIX_E2E>
-      # <TEST_MATRIX_UNITTEST>
+      # <TEST_MATRIX_UNITTEST_AND_COVERAGE>
 
       - package_cli:
           requires:

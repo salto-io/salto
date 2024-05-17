@@ -95,6 +95,7 @@ import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
 import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
+import domainParentFilter from './filters/domain_parent'
 import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
@@ -143,7 +144,9 @@ const DEFAULT_FILTERS = [
   brandThemeFilesFilter,
   fieldReferencesFilter,
   // should run after fieldReferencesFilter
-  policyPrioritiesFilter,
+  domainParentFilter,
+  // should run after fieldReferencesFilter
+  // should run after fieldReferencesFilter
   addAliasFilter,
   // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,

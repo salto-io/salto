@@ -792,7 +792,6 @@ export const fixElements = async (
   workspace: Workspace,
   selectors: ElementSelector[],
 ): Promise<{ errors: ChangeError[]; changes: DetailedChange[] }> => {
-  log.trace('Fixing elements by the following selectors: %o', selectors.map(selector => selector.origin))
   const accounts = workspace.accounts()
   const adapters = await getAdapters(
     accounts,
@@ -822,7 +821,14 @@ export const fixElements = async (
     .filter(values.isDefined)
     .toArray()
 
+  log.debug(
+    'about to fixElements: %o, found by selectors: %o',
+    elements.map(element => element.elemID.getFullName()),
+    selectors.map(selector => selector.origin),
+  )
+
   if (_.isEmpty(elements)) {
+    log.debug('fixElements found no elements to fix')
     return { errors: [], changes: [] }
   }
 

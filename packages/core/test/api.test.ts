@@ -1643,7 +1643,7 @@ describe('api.ts', () => {
     it('should return empty results when there are no elements to fix', async () => {
       const res = await api.fixElements(
         ws,
-        [workspace.createElementSelector('test1.test2')] // this selector doesn't match any element in workspace
+        [workspace.createElementSelector('test1.test2')], // this selector doesn't match any element in workspace
       )
 
       expect(res).toEqual({ changes: [], errors: [] })

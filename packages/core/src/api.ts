@@ -821,6 +821,17 @@ export const fixElements = async (
     .filter(values.isDefined)
     .toArray()
 
+  log.debug(
+    'about to fixElements: %o, found by selectors: %o',
+    elements.map(element => element.elemID.getFullName()),
+    selectors.map(selector => selector.origin),
+  )
+
+  if (_.isEmpty(elements)) {
+    log.debug('fixElements found no elements to fix')
+    return { errors: [], changes: [] }
+  }
+
   const idToElement = _.keyBy(elements, e => e.elemID.getFullName())
 
   const fixes = await fixElementsContinuously(workspace, elements, adapters, MAX_FIX_RUNS)

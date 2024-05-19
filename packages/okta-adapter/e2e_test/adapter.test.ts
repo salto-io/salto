@@ -19,7 +19,8 @@ import {
   Change,
   CORE_ANNOTATIONS,
   DeployResult,
-  Element, getAllChangeData,
+  Element,
+  getAllChangeData,
   getChangeData,
   InstanceElement,
   isAdditionChange,
@@ -92,13 +93,13 @@ const getTransformationConfig = (type: string): configUtils.TransformationConfig
   )
 
 const createInstance = ({
-                          typeName,
-                          valuesOverride,
-                          types,
-                          parent,
-                          extendsParentId = true,
-                          name,
-                        }: {
+  typeName,
+  valuesOverride,
+  types,
+  parent,
+  extendsParentId = true,
+  name,
+}: {
   typeName: string
   valuesOverride: Values
   types: ObjectType[]
@@ -144,7 +145,6 @@ const getIdForDefaultBrandTheme = async (client: OktaClient, brandId: string): P
   log.error(`Received unexpected result for brand theme for brandId ${brandId}: ${inspectValue(themeEntries)}`)
   throw new Error('Could not find BrandTheme with the provided brandId')
 }
-
 
 const createBrandChangesForDeploy = async (
   types: ObjectType[],
@@ -216,7 +216,6 @@ const createBrandChangesForDeploy = async (
     toChange({ after: domain }),
   ]
 }
-
 
 const createChangesForDeploy = async (
   types: ObjectType[],
@@ -371,14 +370,13 @@ const createChangesForDeploy = async (
     toChange({ after: profileEnrollmentRule }),
     toChange({ after: app }),
     toChange({ after: appGroupAssignment }),
-    ...await createBrandChangesForDeploy(types, client),
+    ...(await createBrandChangesForDeploy(types, client)),
   ]
 }
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => {
-  },
+  reportProgress: () => {},
 }
 
 const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<DeployResult[]> => {
@@ -438,17 +436,25 @@ const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement
     })
 }
 
-const getChangesForInitialCleanup = async (elements: Element[], types: ObjectType[], client: OktaClient): Promise<Change<InstanceElement>[]> => {
+const getChangesForInitialCleanup = async (
+  elements: Element[],
+  types: ObjectType[],
+  client: OktaClient,
+): Promise<Change<InstanceElement>[]> => {
   const cleanupChanges: Change<InstanceElement>[] = []
-  cleanupChanges.concat(elements
-    .filter(isInstanceElement)
-    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
-    .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
-    .map(instance => toChange({ before: instance })))
+  cleanupChanges.concat(
+    elements
+      .filter(isInstanceElement)
+      .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
+      .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
+      .map(instance => toChange({ before: instance })),
+  )
   // Brand related instances don't have the test prefix, so we remove them explicitly.
-  cleanupChanges.concat((await createBrandChangesForDeploy(types, client))
-    .map(getAllChangeData)
-    .map(([before, after]) => toChange({ before: after, after: before })))
+  cleanupChanges.concat(
+    (await createBrandChangesForDeploy(types, client))
+      .map(getAllChangeData)
+      .map(([before, after]) => toChange({ before: after, after: before })),
+  )
   return cleanupChanges
 }
 

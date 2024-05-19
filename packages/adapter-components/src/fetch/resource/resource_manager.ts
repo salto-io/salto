@@ -117,12 +117,14 @@ export const createResourceManager = <ClientOptions extends string>({
           const failFetchError = wu(e.handlerErrors.values()).find(err => err instanceof AbortFetchOnFailure)
           if (failFetchError !== undefined) {
             // Since there may be other errors in the handlerErrors, we log them all
-            log.error('Received at least one AbortFetchOnFailure error, failing the entire fetch. Full error:', e)
+            log.error(
+              `Received at least one AbortFetchOnFailure error, failing the entire fetch. Full error: ${e}, stack: ${e.stack}`,
+            )
             throw failFetchError
           }
         }
-        // If we got here, it means that the error is not an AbortFetchOnFailure error, so we revert to
-        // the original error behavior, where this section wasn't wrapped in a try-catch.
+        // If we got here, it means that the error is not an AbortFetchOnFailure error, so we throw the error as is
+        // and let the caller decide how to handle it
         throw e
       }
     },

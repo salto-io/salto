@@ -570,5 +570,49 @@ describe('issueLayoutDependencyChanger', () => {
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
       expect(dependencyChanges).toHaveLength(0)
     })
+    it('should create dependencies if the project issueTypeScreenScheme is defined but not a reference', async () => {
+      projectInstance1.value.issueTypeScreenScheme = 'issueTypeScreenSchemeInstance1'
+      const inputChanges = new Map([
+        ['issueLayoutInstance1', toChange({ after: issueLayoutInstance1 })],
+        ['issueTypeScreenSchemeInstance1', toChange({ after: issueTypeScreenSchemeInstance1 })],
+        ['issueTypeSchemeInstance1', toChange({ after: issueTypeSchemeInstance1 })],
+        ['screenSchemeInstance1', toChange({ after: screenSchemeInstance1 })],
+        ['projectInstance1', toChange({ after: projectInstance1 })],
+      ])
+
+      const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges).toHaveLength(1)
+
+      expect(dependencyChanges).toContainEqual({
+        action: 'add',
+        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
+      })
+    })
+    it('should create dependencies if screenSchemeId is undefined', async () => {
+      issueTypeScreenSchemeInstance1.value.issueTypeMappings = [
+        {
+          screenSchemeId: undefined,
+        },
+      ]
+      const inputChanges = new Map([
+        ['issueLayoutInstance1', toChange({ after: issueLayoutInstance1 })],
+        ['issueTypeScreenSchemeInstance1', toChange({ after: issueTypeScreenSchemeInstance1 })],
+        ['issueTypeSchemeInstance1', toChange({ after: issueTypeSchemeInstance1 })],
+        ['screenSchemeInstance1', toChange({ after: screenSchemeInstance1 })],
+        ['projectInstance1', toChange({ after: projectInstance1 })],
+      ])
+
+      const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges).toHaveLength(2)
+
+      expect(dependencyChanges).toContainEqual({
+        action: 'add',
+        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
+      })
+      expect(dependencyChanges).toContainEqual({
+        action: 'add',
+        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
+      })
+    })
   })
 })

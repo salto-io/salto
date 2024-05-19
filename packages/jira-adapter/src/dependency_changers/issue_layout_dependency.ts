@@ -23,6 +23,7 @@ import {
   isInstanceChange,
   CORE_ANNOTATIONS,
   ElemID,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { ISSUE_LAYOUT_TYPE } from '../constants'
@@ -75,13 +76,14 @@ export const issueLayoutDependencyChanger: DependencyChanger = async changes => 
     ) as string[][]
 
   Object.entries(issueLayoutsKeysToProject).forEach(([issueLayoutKey, project]) => {
-    const projectIssueTypeMapping = project.value.issueTypeScreenScheme?.value.value.issueTypeMappings
-    const issueLayoutKeyToProjectScreenSchemesKeys = projectIssueTypeMapping
-      ?.map((issueTypeMapping: issueTypeMappingStruct) =>
-        getSpecificChange(issueTypeMapping.screenSchemeId.elemID, AdditionOrModificationChanges),
-      )
-      .filter((change: ChangeWithKey) => change !== undefined)
-      .map((change: ChangeWithKey) => [issueLayoutKey, change.key])
+    const issueLayoutKeyToProjectScreenSchemesKeys = isReferenceExpression(project.value.issueTypeScreenScheme)
+      ? project.value.issueTypeScreenScheme.value.value.issueTypeMappings
+          ?.map((issueTypeMapping: issueTypeMappingStruct) =>
+            getSpecificChange(issueTypeMapping.screenSchemeId?.elemID, AdditionOrModificationChanges),
+          )
+          .filter((change: ChangeWithKey) => change !== undefined)
+          .map((change: ChangeWithKey) => [issueLayoutKey, change.key])
+      : undefined
 
     if (
       issueLayoutKeyToProjectScreenSchemesKeys !== undefined &&

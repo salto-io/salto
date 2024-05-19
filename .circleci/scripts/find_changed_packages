@@ -4,8 +4,8 @@ const { execSync } = require('child_process')
 const { readFileSync, writeFileSync, existsSync, readdirSync } = require('fs')
 const path = require('path')
 
-function getChangedFiles() {
-  const output = execSync('git log --name-status origin/main..HEAD').toString()
+function getChangedFiles(branchLocation) {
+  const output = execSync(`git log --name-status ${branchLocation}/main..HEAD`).toString()
   return output
     .split('\n')
     .filter(line => line.startsWith('M') || line.startsWith('A') || line.startsWith('D'))
@@ -63,8 +63,8 @@ function hasUnitTests(packageName) {
   return existsSync(utDir) && readdirSync(utDir).some(file => file.endsWith('.test.ts'))
 }
 
-function findChangedPackages() {
-  const changedFiles = getChangedFiles()
+function findChangedPackages(branchLocation) {
+  const changedFiles = getChangedFiles(branchLocation)
   const changedPackages = new Set()
 
   for (const file of changedFiles) {
@@ -78,7 +78,13 @@ function findChangedPackages() {
 }
 
 function main() {
-  const changedPackages = findChangedPackages()
+  const args = process.argv.slice(2); // Skip the first two elements
+  console.log(`User provided arguments: ${args}`);
+
+  const branchLocation = args.length > 0 ? args[0] : 'origin'
+  console.log(`attempting to use ${branchLocation} as main branch location`)
+
+  const changedPackages = findChangedPackages(branchLocation)
   console.log('Changed packages:', changedPackages)
 
   const dependencyGraph = generateDependencyGraph(fetchWorkspacesInfo())

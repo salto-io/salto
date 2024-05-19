@@ -346,7 +346,7 @@ describe('filterCreator', () => {
         mockCreate.mockResolvedValue({ themeId: 'newId', errors: [] })
         mockPublish.mockResolvedValue([])
       })
-      it('should not fail', async () => {
+      it('should fail with an invalid theme', async () => {
         const invalidTheme = new InstanceElement('invalidTheme', themeType, {
           name: 'SevenFlags',
           brand_id: new ReferenceExpression(brand1.elemID, brand1),
@@ -354,7 +354,52 @@ describe('filterCreator', () => {
         })
         const changes = [toChange({ after: invalidTheme })]
         expect(await filter.deploy?.(changes)).toEqual({
-          deployResult: { appliedChanges: changes, errors: [] },
+          deployResult: {
+            appliedChanges: [],
+            errors: [
+              {
+                elemID: invalidTheme.elemID,
+                message: 'Invalid theme directory',
+                severity: 'Error',
+              },
+            ],
+          },
+          leftoverChanges: [],
+        })
+        expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
+        expect(mockCreate).toHaveBeenCalled()
+        expect(mockPublish).not.toHaveBeenCalled()
+      })
+
+      it('should fail with a file with unresolved reference', async () => {
+        const elemID = new ElemID('adapter', 'test', 'instance', 'not', 'top', 'level')
+        const invalidTheme = new InstanceElement('invalidTheme', themeType, {
+          name: 'SevenFlags',
+          brand_id: new ReferenceExpression(brand1.elemID, brand1),
+          root: {
+            files: {
+              'fileWithReference_js@v': {
+                filename: 'fileWithReference.js',
+                content: new TemplateExpression({
+                  parts: ['var SUPER_DUPER_PREFIX_123 = ', new ReferenceExpression(elemID, { invalid: 'ref' })],
+                }),
+              },
+            },
+            folders: {},
+          },
+        })
+        const changes = [toChange({ after: invalidTheme })]
+        expect(await filter.deploy?.(changes)).toEqual({
+          deployResult: {
+            appliedChanges: [],
+            errors: [
+              {
+                elemID: invalidTheme.elemID,
+                message: 'Error while resolving references in file fileWithReference.js',
+                severity: 'Error',
+              },
+            ],
+          },
           leftoverChanges: [],
         })
         expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
@@ -365,15 +410,9 @@ describe('filterCreator', () => {
 
     describe('create theme', () => {
       let changes: Change<InstanceElement>[]
-      let resolvedChanges: Change<InstanceElement>[]
 
       beforeEach(() => {
         changes = [toChange({ after: newThemeWithFiles.clone() })]
-        const resolvedNewThemeWithFiles = newThemeWithFiles.clone()
-        resolvedNewThemeWithFiles.value.id = 'newId'
-        resolvedNewThemeWithFiles.value.root.files['fileWithReference_js@v'].content =
-          Buffer.from('var PREFIX_123 = url')
-        resolvedChanges = [toChange({ after: resolvedNewThemeWithFiles })]
       })
 
       describe('with no errors', () => {
@@ -384,7 +423,7 @@ describe('filterCreator', () => {
 
         it('should apply the change and return no errors', async () => {
           expect(await filter.deploy?.(changes)).toEqual({
-            deployResult: { appliedChanges: resolvedChanges, errors: [] },
+            deployResult: { appliedChanges: changes, errors: [] },
             leftoverChanges: [],
           })
           expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
@@ -479,7 +518,6 @@ describe('filterCreator', () => {
 
     describe('update theme', () => {
       let changes: Change<InstanceElement>[]
-      let resolvedChanges: Change<InstanceElement>[]
 
       beforeEach(() => {
         const before = newThemeWithFiles.clone()
@@ -490,10 +528,6 @@ describe('filterCreator', () => {
           content: Buffer.from('newContent'),
         }
         changes = [toChange({ before, after })]
-        const resolvedAfter = after.clone()
-        resolvedAfter.value.id = 'newId'
-        resolvedAfter.value.root.files['fileWithReference_js@v'].content = Buffer.from('var PREFIX_123 = url')
-        resolvedChanges = [toChange({ before, after: resolvedAfter })]
       })
 
       describe('with no errors', () => {
@@ -505,7 +539,7 @@ describe('filterCreator', () => {
 
         it('should apply the change and return no errors', async () => {
           expect(await filter.deploy?.(changes)).toEqual({
-            deployResult: { appliedChanges: resolvedChanges, errors: [] },
+            deployResult: { appliedChanges: changes, errors: [] },
             leftoverChanges: [],
           })
           expect((changes[0] as ModificationChange<InstanceElement>).data.after.value.id).toEqual('newId')

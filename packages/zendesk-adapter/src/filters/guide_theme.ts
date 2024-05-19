@@ -199,14 +199,14 @@ export const unzipFolderToElements = async ({
   return elements
 }
 
-const isDeployThemeFile = (file: ThemeFile | DeployInputThemeFile): file is DeployInputThemeFile => {
-  const isContentBuffer = Buffer.isBuffer(file.content) || isTemplateExpression(file.content)
-  if (isContentBuffer === false) {
+const isDeployInputThemeFile = (file: ThemeFile | DeployInputThemeFile): file is DeployInputThemeFile => {
+  const isValidContent = Buffer.isBuffer(file.content) || isTemplateExpression(file.content)
+  if (isValidContent === false) {
     log.error(
       `content for file ${file.filename} is not a buffer or a template expression, will not add it to the deploy`,
     )
   }
-  return isContentBuffer
+  return isValidContent
 }
 const isThemeDirectory = (dir: unknown): dir is ThemeDirectory => {
   if (!isPlainRecord(dir)) {
@@ -215,18 +215,32 @@ const isThemeDirectory = (dir: unknown): dir is ThemeDirectory => {
   return isPlainRecord(dir.files) && isPlainRecord(dir.folders)
 }
 
-const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployOutputThemeFile[] => {
+const extractFilesFromThemeDirectory = (
+  themeDirectory: ThemeDirectory,
+): { files: DeployOutputThemeFile[]; errors: string[] } => {
   let files: DeployOutputThemeFile[] = []
+  let errors: string[] = []
   if (!isThemeDirectory(themeDirectory)) {
     // TODO should be tested in SALTO-5320
     log.error('current theme directory is not valid: %o', inspectValue(themeDirectory))
-    return files
+    return { files, errors: ['Invalid theme directory'] }
   }
   // Add all files in the current directory
   Object.values(themeDirectory.files).forEach(fileRecord => {
-    if (isDeployThemeFile(fileRecord)) {
+    if (isDeployInputThemeFile(fileRecord)) {
       if (isTemplateExpression(fileRecord.content)) {
-        replaceTemplatesWithValues({ values: [fileRecord], fieldName: 'content' }, {}, prepRef)
+        try {
+          replaceTemplatesWithValues({ values: [fileRecord], fieldName: 'content' }, {}, prepRef)
+        } catch (e) {
+          log.error('Error while resolving references in file %s', fileRecord.filename)
+          errors.push(`Error while resolving references in file ${fileRecord.filename}`)
+          return
+        }
+        if (isTemplateExpression(fileRecord.content)) {
+          log.error('Failed to resolve all references in file %s', fileRecord.filename)
+          errors.push(`Failed to resolve all references in file ${fileRecord.filename}`)
+          return
+        }
         // The content is replaced and is now a string
         fileRecord.content = Buffer.from(fileRecord.content as unknown as string)
       }
@@ -238,9 +252,11 @@ const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployO
   })
   // Recursively add files from subdirectories
   Object.values(themeDirectory.folders).forEach(subdirectory => {
-    files = files.concat(extractFilesFromThemeDirectory(subdirectory))
+    const { files: subFiles, errors: subErrors } = extractFilesFromThemeDirectory(subdirectory)
+    files = files.concat(subFiles)
+    errors = errors.concat(subErrors)
   })
-  return files
+  return { files, errors }
 }
 
 const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
@@ -265,11 +281,12 @@ const createTheme = async (
 ): Promise<string[]> => {
   const live = isLiveTheme
   const { brand_id: brandId, root } = change.data.after.value
-  const staticFiles = extractFilesFromThemeDirectory(root)
+  const { files: staticFiles, errors: extractionErrors } = extractFilesFromThemeDirectory(root)
   const { themeId, errors: elementErrors } = await create({ brandId, staticFiles }, client)
   if (themeId === undefined) {
     return [
       ...elementErrors,
+      ...extractionErrors,
       // TODO check if we need this error
       `Missing theme id from create theme response for theme ${change.data.after.elemID.getFullName()}`,
     ]
@@ -279,7 +296,7 @@ const createTheme = async (
     const publishErrors = await publish(themeId, client)
     return publishErrors
   }
-  return elementErrors
+  return [...elementErrors, ...extractionErrors]
 }
 
 const updateTheme = async (
@@ -458,7 +475,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
               })),
             }
           }
-          return { appliedChange: clonedChange, errors: [] }
+          // We return the original change with the updated theme id (with TemplateExpressions)
+          return { appliedChange: change, errors: [] }
         }),
     )
     const errors = processedChanges.flatMap(change => change.errors)

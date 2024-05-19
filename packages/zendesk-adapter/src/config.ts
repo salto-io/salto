@@ -3011,7 +3011,6 @@ export type ChangeValidatorName =
   | 'guideDisabled'
   | 'guideThemeDeleteLive'
   | 'guideThemeUpdateMetadata'
-  | 'guideThemeReadonly'
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
@@ -3088,7 +3087,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     organizationExistence: { refType: BuiltinTypes.BOOLEAN },
     badFormatWebhookAction: { refType: BuiltinTypes.BOOLEAN },
     guideDisabled: { refType: BuiltinTypes.BOOLEAN },
-    guideThemeReadonly: { refType: BuiltinTypes.BOOLEAN },
     guideThemeDeleteLive: { refType: BuiltinTypes.BOOLEAN },
     guideThemeUpdateMetadata: { refType: BuiltinTypes.BOOLEAN },
     additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },

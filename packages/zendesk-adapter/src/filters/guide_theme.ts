@@ -26,6 +26,7 @@ import {
   isModificationChange,
   isObjectType,
   isReferenceExpression,
+  isTemplateExpression,
   MapType,
   ModificationChange,
   SaltoElementError,
@@ -33,7 +34,13 @@ import {
   StaticFile,
   TemplateExpression,
 } from '@salto-io/adapter-api'
-import { getInstancesFromElementSource, inspectValue, naclCase } from '@salto-io/adapter-utils'
+import {
+  applyFunctionToChangeData,
+  getInstancesFromElementSource,
+  inspectValue,
+  naclCase,
+  replaceTemplatesWithValues,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues, values } from '@salto-io/lowerdash'
 import { parserUtils } from '@salto-io/parser'
@@ -60,16 +67,18 @@ import {
   TemplateEngineCreator,
 } from './template_engines/creator'
 import { getBrandsForGuideThemes, matchBrandSubdomainFunc } from './utils'
+import { prepRef } from './article/utils'
 
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
 const { awu } = collections.asynciterable
 
 type ThemeFile = { filename: string; content: StaticFile }
-type DeployThemeFile = { filename: string; content: Buffer }
+type DeployInputThemeFile = { filename: string; content: Buffer | TemplateExpression }
+type DeployOutputThemeFile = { filename: string; content: Buffer }
 
 export type ThemeDirectory = {
-  files: Record<string, ThemeFile | DeployThemeFile>
+  files: Record<string, ThemeFile | DeployInputThemeFile>
   folders: Record<string, ThemeDirectory>
 }
 
@@ -190,14 +199,15 @@ export const unzipFolderToElements = async ({
   return elements
 }
 
-const isDeployThemeFile = (file: ThemeFile | DeployThemeFile): file is DeployThemeFile => {
-  const isContentBuffer = Buffer.isBuffer(file.content)
-  if (isContentBuffer === false) {
-    log.error(`content for file ${file.filename} is not a buffer, will not add it to the deploy`)
+const isDeployInputThemeFile = (file: ThemeFile | DeployInputThemeFile): file is DeployInputThemeFile => {
+  const isValidContent = Buffer.isBuffer(file.content) || isTemplateExpression(file.content)
+  if (isValidContent === false) {
+    log.error(
+      `content for file ${file.filename} is not a buffer or a template expression, will not add it to the deploy`,
+    )
   }
-  return isContentBuffer
+  return isValidContent
 }
-
 const isThemeDirectory = (dir: unknown): dir is ThemeDirectory => {
   if (!isPlainRecord(dir)) {
     return false
@@ -205,24 +215,48 @@ const isThemeDirectory = (dir: unknown): dir is ThemeDirectory => {
   return isPlainRecord(dir.files) && isPlainRecord(dir.folders)
 }
 
-const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployThemeFile[] => {
-  let files: DeployThemeFile[] = []
+const extractFilesFromThemeDirectory = (
+  themeDirectory: ThemeDirectory,
+): { files: DeployOutputThemeFile[]; errors: string[] } => {
+  let files: DeployOutputThemeFile[] = []
+  let errors: string[] = []
   if (!isThemeDirectory(themeDirectory)) {
     // TODO should be tested in SALTO-5320
     log.error('current theme directory is not valid: %o', inspectValue(themeDirectory))
-    return files
+    return { files, errors: ['Invalid theme directory'] }
   }
   // Add all files in the current directory
   Object.values(themeDirectory.files).forEach(fileRecord => {
-    if (isDeployThemeFile(fileRecord)) {
-      files.push(fileRecord)
+    if (isDeployInputThemeFile(fileRecord)) {
+      if (isTemplateExpression(fileRecord.content)) {
+        try {
+          replaceTemplatesWithValues({ values: [fileRecord], fieldName: 'content' }, {}, prepRef)
+        } catch (e) {
+          log.error('Error while resolving references in file %s', fileRecord.filename)
+          errors.push(`Error while resolving references in file ${fileRecord.filename}`)
+          return
+        }
+        if (isTemplateExpression(fileRecord.content)) {
+          log.error('Failed to resolve all references in file %s', fileRecord.filename)
+          errors.push(`Failed to resolve all references in file ${fileRecord.filename}`)
+          return
+        }
+        // The content is replaced and is now a string
+        fileRecord.content = Buffer.from(fileRecord.content as unknown as string)
+      }
+      files.push({
+        filename: fileRecord.filename,
+        content: fileRecord.content,
+      })
     }
   })
   // Recursively add files from subdirectories
   Object.values(themeDirectory.folders).forEach(subdirectory => {
-    files = files.concat(extractFilesFromThemeDirectory(subdirectory))
+    const { files: subFiles, errors: subErrors } = extractFilesFromThemeDirectory(subdirectory)
+    files = files.concat(subFiles)
+    errors = errors.concat(subErrors)
   })
-  return files
+  return { files, errors }
 }
 
 const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
@@ -247,11 +281,12 @@ const createTheme = async (
 ): Promise<string[]> => {
   const live = isLiveTheme
   const { brand_id: brandId, root } = change.data.after.value
-  const staticFiles = extractFilesFromThemeDirectory(root)
+  const { files: staticFiles, errors: extractionErrors } = extractFilesFromThemeDirectory(root)
   const { themeId, errors: elementErrors } = await create({ brandId, staticFiles }, client)
   if (themeId === undefined) {
     return [
       ...elementErrors,
+      ...extractionErrors,
       // TODO check if we need this error
       `Missing theme id from create theme response for theme ${change.data.after.elemID.getFullName()}`,
     ]
@@ -261,7 +296,7 @@ const createTheme = async (
     const publishErrors = await publish(themeId, client)
     return publishErrors
   }
-  return elementErrors
+  return [...elementErrors, ...extractionErrors]
 }
 
 const updateTheme = async (
@@ -420,19 +455,27 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       themeChanges
         .filter(isAdditionOrModificationChange)
         .map(async (change): Promise<{ appliedChange?: Change<InstanceElement>; errors: SaltoElementError[] }> => {
-          const isLiveTheme = liveThemesNames.has(getChangeData(change).elemID.getFullName())
-          const elementErrors = isModificationChange(change)
-            ? await updateTheme(change, client, isLiveTheme)
-            : await createTheme(change, client, isLiveTheme)
+          const clonedChange = await applyFunctionToChangeData<
+            AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+          >(change, inst => inst.clone())
+          const isLiveTheme = liveThemesNames.has(getChangeData(clonedChange).elemID.getFullName())
+          const elementErrors = isModificationChange(clonedChange)
+            ? await updateTheme(clonedChange, client, isLiveTheme)
+            : await createTheme(clonedChange, client, isLiveTheme)
+          if (getChangeData(clonedChange).value.id !== undefined) {
+            // The theme id is set in the createTheme function
+            getChangeData(change).value.id = getChangeData(clonedChange).value.id
+          }
           if (elementErrors.length > 0) {
             return {
               errors: elementErrors.map(e => ({
-                elemID: change.data.after.elemID,
+                elemID: clonedChange.data.after.elemID,
                 message: e,
                 severity: 'Error',
               })),
             }
           }
+          // We return the original change with the updated theme id (with TemplateExpressions)
           return { appliedChange: change, errors: [] }
         }),
     )

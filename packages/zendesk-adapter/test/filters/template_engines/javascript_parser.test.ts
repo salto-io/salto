@@ -21,7 +21,8 @@ describe('parsePotentialReferencesByPrefix', () => {
   it('should return an array of initial assignments to variable definitions with the given prefix', () => {
     const code = `
         const myVar1 = "hello";
-        let myVar2 = "world";
+        let myVar2 = 1234567;
+        const myVarArray = [1, 2, 3];
         const otherVar = "test";
       `
     const prefix = 'myVar'
@@ -33,7 +34,19 @@ describe('parsePotentialReferencesByPrefix', () => {
       },
       {
         loc: { start: 54, end: 61 },
-        value: { parts: ['"world"'] },
+        value: { parts: ['1234567'] },
+      },
+      {
+        loc: { start: 91, end: 92 },
+        value: { parts: ['1'] },
+      },
+      {
+        loc: { start: 94, end: 95 },
+        value: { parts: ['2'] },
+      },
+      {
+        loc: { start: 97, end: 98 },
+        value: { parts: ['3'] },
       },
     ])
   })
@@ -94,5 +107,14 @@ describe('parsePotentialReferencesByPrefix', () => {
         value: { parts: ["'catch_", new ReferenceExpression(article.elemID, article), "_miss_1144226'"] },
       },
     ])
+  })
+
+  it('returns an empty array if there were parse errors', () => {
+    const code = `
+      const myVar = 'hello missing end quote;
+    `
+    const prefix = 'myVar'
+    const result = parsePotentialReferencesByPrefix(code, {}, prefix)
+    expect(result).toEqual([])
   })
 })

@@ -33,15 +33,23 @@ const matchVariableDeclarationWithPrefix = (
       declarationNode.id.type === 'Identifier' &&
       declarationNode.id.name.startsWith(prefix) &&
       declarationNode.init &&
-      declarationNode.init.type === 'Literal' &&
-      ['string', 'number'].includes(typeof declarationNode.init.value)
+      ['Literal', 'ArrayExpression'].includes(declarationNode.init.type)
     ) {
       if (declarationNode.init.loc === undefined || declarationNode.init.loc === null) {
         log.warn('Could not find location for variable declaration')
-      } else if (declarationNode.init.value) {
+      } else if (declarationNode.init.type === 'Literal' && declarationNode.init.value) {
         matches.push({
           value: (declarationNode.init.raw ?? declarationNode.init.value).toString(),
           loc: declarationNode.init.loc,
+        })
+      } else if (declarationNode.init.type === 'ArrayExpression') {
+        declarationNode.init.elements.forEach(element => {
+          if (element != null && element.type === 'Literal' && element.value && element.loc) {
+            matches.push({
+              value: (element.raw ?? element.value).toString(),
+              loc: element.loc,
+            })
+          }
         })
       }
     }
@@ -84,13 +92,18 @@ export const parsePotentialReferencesByPrefix = (
 ): PotentialReference<TemplateExpression>[] => {
   const expressionToTemplateParts = (expression: string): TemplatePart[] =>
     expression.split(/(\d+)/).map(id => extractIdIfElementExists(idsToElements, id))
-  const expressionMatches = parsePotentialExpressions(content, prefix)
+  try {
+    const expressionMatches = parsePotentialExpressions(content, prefix)
 
-  const newlineIndexes = findLineStartIndexes(content)
-  return expressionMatches.map(expression => ({
-    value: createTemplateExpression({
-      parts: expressionToTemplateParts(expression.value),
-    }),
-    loc: sourceLocationToIndexRange(newlineIndexes, expression.loc),
-  }))
+    const newlineIndexes = findLineStartIndexes(content)
+    return expressionMatches.map(expression => ({
+      value: createTemplateExpression({
+        parts: expressionToTemplateParts(expression.value),
+      }),
+      loc: sourceLocationToIndexRange(newlineIndexes, expression.loc),
+    }))
+  } catch (e) {
+    log.warn('Failed to parse potential references by prefix with %o', e)
+    return []
+  }
 }

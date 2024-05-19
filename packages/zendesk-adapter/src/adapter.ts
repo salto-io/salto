@@ -510,7 +510,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const otherDefinitions = {
       clients: createClientDefinitions({ main: this.client }),
       pagination: PAGINATION,
-      fetch: createFetchDefinitions(this.userConfig),
+      fetch: createFetchDefinitions(this.userConfig, this.nonSupportedTypesToOmit()),
     }
 
     this.adapterDefinitions = {
@@ -564,7 +564,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     )
   }
 
-  private filterSupportedTypes(): Record<string, string[]> {
+  private nonSupportedTypesToOmit(): string[] {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideThemesEnabledInConfig = isGuideThemesEnabled(this.userConfig[FETCH_CONFIG])
     const keysToOmit = isGuideEnabledInConfig
@@ -573,6 +573,11 @@ export default class ZendeskAdapter implements AdapterOperations {
     if (!isGuideThemesEnabledInConfig) {
       keysToOmit.push(GUIDE_THEME_TYPE_NAME)
     }
+    return keysToOmit
+  }
+
+  private filterSupportedTypes(): Record<string, string[]> {
+    const keysToOmit = this.nonSupportedTypesToOmit()
     const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
     return _.omit(allSupportedTypes, ...keysToOmit)
   }
@@ -582,38 +587,45 @@ export default class ZendeskAdapter implements AdapterOperations {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()
-    // Zendesk Support and (if enabled) global Zendesk Guide types
-    const defaultSubdomainResult = await getAllElements({
-      adapterName: ZENDESK,
-      types: this.userConfig.apiDefinitions.types,
-      shouldAddRemainingTypes: !isGuideInFetch,
-      // tags are "fetched" in a filter
-      supportedTypes: _.omit(supportedTypes, 'tag'),
-      fetchQuery: this.fetchQuery,
-      paginator: this.paginator,
-      nestedFieldFinder: findDataField,
-      computeGetArgs,
-      typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
-      getElemIdFunc: this.getElemIdFunc,
-      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
-    })
 
-    // const defaultSubdomainResult = await fetchUtils.getElements({
-    //   adapterName: ZENDESK,
-    //   fetchQuery: this.fetchQuery,
-    //   getElemIdFunc: this.getElemIdFunc,
-    //   definitions: this.adapterDefinitions,
-    //   // predefinedTypes: _.pickBy({'tag': }),
-    //   customItemFilter: filterOutInactiveItemForType(this.userConfig),
-    // })
+    // const fetchOld = true
+    const fetchOld = false
 
-    addRemainingTypes({
-      adapterName: ZENDESK,
-      elements: defaultSubdomainResult.elements,
-      typesConfig: this.userConfig.apiDefinitions.types,
-      supportedTypes,
-      typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
-    })
+    let defaultSubdomainResult
+    if (fetchOld) {
+      // Zendesk Support and (if enabled) global Zendesk Guide types
+      defaultSubdomainResult = await getAllElements({
+        adapterName: ZENDESK,
+        types: this.userConfig.apiDefinitions.types,
+        shouldAddRemainingTypes: !isGuideInFetch,
+        // tags are "fetched" in a filter
+        supportedTypes: _.omit(supportedTypes, 'tag'),
+        fetchQuery: this.fetchQuery,
+        paginator: this.paginator,
+        nestedFieldFinder: findDataField,
+        computeGetArgs,
+        typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
+        getElemIdFunc: this.getElemIdFunc,
+        customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
+      })
+    } else {
+      defaultSubdomainResult = await fetchUtils.getElements({
+        adapterName: ZENDESK,
+        fetchQuery: this.fetchQuery,
+        getElemIdFunc: this.getElemIdFunc,
+        definitions: this.adapterDefinitions,
+        customItemFilter: filterOutInactiveItemForType(this.userConfig),
+      })
+      if (!isGuideInFetch) {
+        addRemainingTypes({
+          adapterName: ZENDESK,
+          elements: defaultSubdomainResult.elements,
+          typesConfig: this.userConfig.apiDefinitions.types,
+          supportedTypes,
+          typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
+        })
+      }
+    }
 
     if (!isGuideInFetch) {
       return defaultSubdomainResult

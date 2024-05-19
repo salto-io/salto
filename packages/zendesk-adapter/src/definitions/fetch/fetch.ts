@@ -18,6 +18,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import * as transforms from './transforms'
+import { EVERYONE_USER_TYPE } from '../../constants'
 
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
 // when in doubt, it's best to hide fields only for relevant types, or to omit them.
@@ -1239,6 +1240,53 @@ const createCustomizations = (): Record<
 
   workspace_order: {},
 
+  permission_group: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/guide/permission_groups' },
+        transformation: { root: 'permission_groups' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/knowledge/permissions/{id}' },
+      },
+      fieldCustomizations: { id: { hide: true, fieldType: 'number' } },
+    },
+  },
+
+  user_segment: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/help_center/user_segments' },
+        transformation: { root: 'user_segments' },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/knowledge/user_segments/edit/{id}' },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        // list items can be user IDs (number) or user email (string)
+        added_user_ids: { fieldType: 'List<unknown>' },
+        // list items can be organization IDs (number) or organization names (email)
+        organization_ids: { fieldType: 'List<unknown>' },
+        // everyone user type is added as a type we created for user_segment
+        user_type: {
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['signed_in_users', 'staff', EVERYONE_USER_TYPE] },
+        },
+      },
+    },
+  },
+
   business_hours_schedule: {
     requests: [
       {
@@ -1296,6 +1344,7 @@ const createCustomizations = (): Record<
 
 export const createFetchDefinitions = (
   _fetchConfig: ZendeskConfig,
+  typesToOmit: string[],
 ): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => ({
   instances: {
     default: {
@@ -1305,6 +1354,6 @@ export const createFetchDefinitions = (
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },
     },
-    customizations: createCustomizations(),
+    customizations: _.omit(createCustomizations(), typesToOmit),
   },
 })

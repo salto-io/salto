@@ -40,6 +40,14 @@ export class NodeSkippedError extends Error {
   }
 }
 
+// Errors that should be thrown *during* the walk. (The default behavior is to finish the walk and only then throw the errors that were encountered).
+// Please note that async jobs that have already started will not be interrupted; however, the function will return with an error.
+export class FatalError extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
+
 export class WalkError extends Error {
   readonly handlerErrors: ReadonlyMap<NodeId, Error>
   readonly circularDependencyError?: CircularDependencyError
@@ -86,6 +94,10 @@ class WalkErrors<T> extends Map<NodeId, Error> {
     }
     visited.add(idAsString)
     super.set(nodeId, value)
+    if (value instanceof FatalError) {
+      this.nodeMap.forEach((_, id) => this.set(id, new NodeSkippedError(nodeId), visited))
+      throw new WalkError(this, undefined)
+    }
     this.nodeMap
       .getReverse(nodeId)
       .forEach(dependentNode => this.set(dependentNode, new NodeSkippedError(nodeId), visited))
@@ -401,10 +413,11 @@ export class DAG<T> extends DataNodeMap<T> {
       wu(this.freeNodes(affectedNodes)).forEach(node => {
         try {
           handler(node)
-          next(this.deleteNode(node))
         } catch (e) {
           errors.set(node, e)
+          return
         }
+        next(this.deleteNode(node))
       })
     }
     next(this.keys())

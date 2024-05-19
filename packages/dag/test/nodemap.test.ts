@@ -23,6 +23,7 @@ import {
   DataNodeMap,
   DAG,
   AbstractNodeMap,
+  FatalError,
 } from '../src/nodemap'
 
 class MaxCounter {
@@ -643,6 +644,33 @@ describe('NodeMap', () => {
         })
       })
 
+      describe('when the handler throws a FatalError', () => {
+        let error: Error
+        beforeEach(() => {
+          try {
+            subject.walkSync((id: NodeId) => {
+              if (id === 2) {
+                throw new FatalError('My error message')
+              }
+              return undefined
+            })
+          } catch (e) {
+            error = e
+          }
+        })
+
+        it('should throw before all nodes are visited, and set NodeSkippedError for the rest', () => {
+          expect(error).toBeDefined()
+          expect(error).toBeInstanceOf(WalkError)
+
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.size).toBe(3)
+          expect(errors.get(2)).toBeInstanceOf(FatalError)
+          expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+        })
+      })
+
       describe('when there is a circular dependency AND the handler throws an error', () => {
         class MyError extends Error {}
 
@@ -882,6 +910,42 @@ describe('NodeMap', () => {
             expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
             expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
           })
+        })
+      })
+
+      describe('when the handler throws a FatalError', () => {
+        let error: Error
+        let resolve: (value: void | PromiseLike<void>) => void
+        beforeEach(async () => {
+          subject.addNode(6, [3])
+          await subject
+            .walkAsync(async (id: NodeId) => {
+              if (id === 3) {
+                throw new FatalError('My error message')
+              }
+              if (id === 4) {
+                return new Promise(r => {
+                  resolve = r
+                })
+              }
+              return undefined
+            })
+            .catch(e => {
+              error = e
+            })
+        })
+
+        it('should throw before all promises are resolved and add NodeSkippedError for remaining nodes', () => {
+          expect(error).toBeDefined()
+          expect(error).toBeInstanceOf(WalkError)
+
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.size).toBe(3)
+          expect(errors.get(3)).toBeInstanceOf(FatalError)
+          expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(6)).toBeInstanceOf(NodeSkippedError)
+
+          resolve()
         })
       })
 

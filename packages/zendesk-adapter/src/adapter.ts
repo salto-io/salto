@@ -29,7 +29,6 @@ import {
   InstanceElement,
   isInstanceChange,
   isInstanceElement,
-  // isObjectType,
   isReferenceExpression,
   isSaltoError,
   ReadOnlyElementsSource,
@@ -43,7 +42,6 @@ import {
   resolveChangeElement,
   resolveValues,
   definitions,
-  definitions as definitionsUtils,
   fetch as fetchUtils,
   restoreChangeElement,
 } from '@salto-io/adapter-components'
@@ -158,7 +156,6 @@ import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
-// import { filterOutInactiveInstancesForType } from './inactive'
 import handleIdenticalAttachmentConflicts from './filters/handle_identical_attachment_conflicts'
 import addImportantValuesFilter from './filters/add_important_values'
 import customObjectFilter from './filters/custom_objects/custom_object'
@@ -464,7 +461,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
-  private adapterDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
+  private adapterDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -518,7 +515,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     this.adapterDefinitions = {
       ...otherDefinitions,
-      fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
+      fetch: definitions.mergeWithUserElemIDDefinitions({
         userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
         fetchConfig: otherDefinitions.fetch,
       }),
@@ -586,29 +583,29 @@ export default class ZendeskAdapter implements AdapterOperations {
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()
     // Zendesk Support and (if enabled) global Zendesk Guide types
-    // const defaultSubdomainResult = await getAllElements({
-    //   adapterName: ZENDESK,
-    //   types: this.userConfig.apiDefinitions.types,
-    //   shouldAddRemainingTypes: !isGuideInFetch,
-    //   // tags are "fetched" in a filter
-    //   supportedTypes: _.omit(supportedTypes, 'tag'),
-    //   fetchQuery: this.fetchQuery,
-    //   paginator: this.paginator,
-    //   nestedFieldFinder: findDataField,
-    //   computeGetArgs,
-    //   typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
-    //   getElemIdFunc: this.getElemIdFunc,
-    //   customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
-    // })
-
-    const defaultSubdomainResult = await fetchUtils.getElements({
+    const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,
+      types: this.userConfig.apiDefinitions.types,
+      shouldAddRemainingTypes: !isGuideInFetch,
+      // tags are "fetched" in a filter
+      supportedTypes: _.omit(supportedTypes, 'tag'),
       fetchQuery: this.fetchQuery,
+      paginator: this.paginator,
+      nestedFieldFinder: findDataField,
+      computeGetArgs,
+      typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
-      definitions: this.adapterDefinitions,
-      // predefinedTypes: _.pickBy({'tag': }),
-      customItemFilter: filterOutInactiveItemForType(this.userConfig),
+      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     })
+
+    // const defaultSubdomainResult = await fetchUtils.getElements({
+    //   adapterName: ZENDESK,
+    //   fetchQuery: this.fetchQuery,
+    //   getElemIdFunc: this.getElemIdFunc,
+    //   definitions: this.adapterDefinitions,
+    //   // predefinedTypes: _.pickBy({'tag': }),
+    //   customItemFilter: filterOutInactiveItemForType(this.userConfig),
+    // })
 
     addRemainingTypes({
       adapterName: ZENDESK,
@@ -750,7 +747,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
     const updatedConfig =
       this.configInstance && configChanges
-        ? definitionsUtils.getUpdatedConfigFromConfigChanges({
+        ? definitions.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,

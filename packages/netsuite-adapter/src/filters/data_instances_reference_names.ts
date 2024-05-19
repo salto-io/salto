@@ -23,7 +23,6 @@ import { INTERNAL_ID, NAME_FIELD } from '../constants'
 
 const log = logger(module)
 
-const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 type ReferenceNameParams = {
@@ -95,7 +94,7 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
   remote: true,
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
-    await awu(REFERENCE_NAMES_PARAMS).forEach(params => addMissingReferenceNames(instances, params, client))
+    await Promise.all(REFERENCE_NAMES_PARAMS.map(params => addMissingReferenceNames(instances, params, client)))
   },
 })
 

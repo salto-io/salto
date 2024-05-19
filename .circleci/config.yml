@@ -44,6 +44,7 @@ jobs:
           command: |
             pushd .circleci/scripts
             node find_changed_packages
+            node update_config_template
       - persist_to_workspace:
           root: .
           paths:

@@ -505,6 +505,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/universaldirectory#app/{_parent.0.id}',
     },
     deployRequests: {
+      // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator for removals
+      remove: {
+        url: '',
+        method: 'delete',
+      },
       modify: {
         url: '/api/v1/meta/schemas/apps/{applicationId}/default',
         method: 'post',
@@ -1933,6 +1938,7 @@ export type ChangeValidatorName =
   | 'brandRemoval'
   | 'dynamicOSVersion'
   | 'brandThemeRemoval'
+  | 'appUserSchemaRemoval'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1963,6 +1969,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     brandRemoval: { refType: BuiltinTypes.BOOLEAN },
     dynamicOSVersion: { refType: BuiltinTypes.BOOLEAN },
     brandThemeRemoval: { refType: BuiltinTypes.BOOLEAN },
+    appUserSchemaRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

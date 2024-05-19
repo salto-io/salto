@@ -19,10 +19,6 @@ import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import * as transforms from './transforms'
 
-// TODO example - adjust and remove:
-// * irrelevant definitions and comments
-// * unneeded function args
-
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
 // when in doubt, it's best to hide fields only for relevant types, or to omit them.
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {

@@ -19,8 +19,6 @@ import { AdditionalAction, ClientOptions } from '../types'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
-// TODO example - remove if not needed. check @adapter-components/deployment for helper functions
-
 // business hour schedule holiday deployment:
 // first, the "usual" call to create/modify/delete
 // for create or modify, a separate call is then made to deploy intervals

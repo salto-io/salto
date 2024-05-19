@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 
-// TODO improve example in SALTO-5428
 export const transform: definitions.AdjustFunction = ({ value }) => {
   if (!lowerdashValues.isPlainObject(value)) {
     throw new Error('unexpected value for business hour schedule holiday, not transforming')

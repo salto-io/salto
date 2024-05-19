@@ -1778,7 +1778,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   resource_collections: {
     request: {
       url: '/api/v2/resource_collections',
-      paginationField: 'settings',
+      paginationField: 'next_page',
     },
   },
   // eslint-disable-next-line camelcase

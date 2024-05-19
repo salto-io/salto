@@ -19,18 +19,14 @@ import { CURSOR_BASED_PAGINATION_FIELD, PAGE_SIZE } from '../../config'
 
 const { cursorPagination } = fetchUtils.request.pagination
 
-// TODO adjust - replace with the correct pagination function(s), remove unneeded ones
-
 export const pathChecker: fetchUtils.request.pagination.PathCheckerFunc = (current, next) =>
   next === `${current}.json` || next === `${current}`
 
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   basic_cursor: {
-    // TODON see if can simplify and use the function directly
     funcCreator: () => cursorPagination({ pathChecker, paginationField: 'next_page' }),
   },
   basic_cursor_with_args: {
-    // TODON see if can simplify and use the function directly
     funcCreator: () => cursorPagination({ pathChecker, paginationField: 'next_page' }),
     clientArgs: {
       queryArgs: {
@@ -39,7 +35,6 @@ export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinit
     },
   },
   links: {
-    // TODON look under meta.has_more and do not continue if false!
     funcCreator: () => cursorPagination({ pathChecker, paginationField: CURSOR_BASED_PAGINATION_FIELD }),
     clientArgs: {
       queryArgs: {
@@ -48,7 +43,6 @@ export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinit
     },
   },
   settings: {
-    // TODON look under meta.has_more and do not continue if false!
     funcCreator: () => cursorPagination({ pathChecker, paginationField: 'settings' }),
   },
 }

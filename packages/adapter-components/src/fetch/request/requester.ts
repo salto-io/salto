@@ -174,7 +174,7 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
           mergedRequestDef.endpoint.method ?? 'get',
           typeName,
         )
-        // return false
+        return false
       }
       return true
     }) as ValueGeneratedItem[]

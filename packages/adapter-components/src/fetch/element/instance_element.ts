@@ -77,6 +77,7 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
     )
 
   // TODO filter instances by fetch query before extracting standalone fields (SALTO-5425)
+
   const instancesWithStandalone = extractStandaloneInstances({
     adapterName,
     instances,

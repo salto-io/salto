@@ -470,7 +470,6 @@ export const getAllElements = async ({
   })
   const objectTypes = Object.fromEntries(elements.filter(isObjectType).map(e => [e.elemID.name, e]))
   const instancesAndTypes = [...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e))]
-
   if (shouldAddRemainingTypes) {
     addRemainingTypes({
       adapterName,
@@ -480,7 +479,6 @@ export const getAllElements = async ({
       typeDefaultConfig: typeDefaults,
     })
   }
-
   return {
     elements: instancesAndTypes,
     configChanges: getUniqueConfigSuggestions(configSuggestions),

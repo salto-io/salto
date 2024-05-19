@@ -365,7 +365,7 @@ const createCustomizations = (): Record<
     requests: [
       {
         endpoint: { path: '/api/v2/macros/categories' },
-        transformation: { root: 'categories' },
+        transformation: { root: '.' },
       },
     ],
     resource: { directFetch: true },
@@ -376,6 +376,7 @@ const createCustomizations = (): Record<
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
+        categories: { fieldType: 'list<string>' },
       },
     },
   },

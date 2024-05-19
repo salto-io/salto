@@ -131,6 +131,7 @@ export type ReferenceContextStrategyName =
   | 'parentFieldType'
   | 'workflowStatusPropertiesContext'
   | 'parentFieldId'
+  | 'parentField'
   | 'gadgetPropertyValue'
   | 'referenceTypeTypeName'
 
@@ -144,6 +145,10 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
   workflowStatusPropertiesContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefType }),
   parentFieldId: neighborContextFunc({
     contextFieldName: 'fieldId',
+    contextValueMapper: resolutionAndPriorityToTypeName,
+  }),
+  parentField: neighborContextFunc({
+    contextFieldName: 'field',
     contextValueMapper: resolutionAndPriorityToTypeName,
   }),
   gadgetPropertyValue: gadgetValuesContextFunc,
@@ -426,6 +431,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'groupId',
     missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'value', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { typeContext: 'parentField' },
   },
   {
     src: { field: 'customIssueEventId', parentTypes: ['WorkflowTransitions'] },

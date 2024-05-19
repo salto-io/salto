@@ -65,6 +65,7 @@ const isRelevantInstance = (instance: InstanceElement): boolean =>
   Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS).includes(instance.elemID.typeName) ||
   Object.keys(TYPE_NAME_TO_TAG_FIELD_NAMES).includes(instance.elemID.typeName) ||
   isRelevantCheckboxInstance(instance)
+
 const createTagReferenceExpression = (tag: string): ReferenceExpression =>
   new ReferenceExpression(new ElemID(ZENDESK, TAG_TYPE_NAME, 'instance', naclCase(tag)))
 

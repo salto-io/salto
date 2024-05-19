@@ -24,6 +24,7 @@ import {
   isInstanceElement,
   isRemovalChange,
   ObjectType,
+  Element,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -128,24 +129,27 @@ const getPropertyValue = async (instance: InstanceElement, key: string, client: 
     return undefined
   }
 }
+export const getDashboardPropertiesAsync = async (client: JiraClient, elements: Element[]): Promise<void> => {
+  await Promise.all(
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
+      .map(async instance => {
+        const keys = await getPropertiesKeys(instance, client)
+        instance.value.properties = _.pickBy(
+          Object.fromEntries(
+            await Promise.all(keys.map(async key => [key, await getPropertyValue(instance, key, client)])),
+          ),
+          values.isDefined,
+        )
+      }),
+  )
+}
 
-const filter: FilterCreator = ({ client, config }) => ({
+const filter: FilterCreator = ({ client, config, adapterContext }) => ({
   name: 'gadgetFilter',
   onFetch: async elements => {
-    await Promise.all(
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
-        .map(async instance => {
-          const keys = await getPropertiesKeys(instance, client)
-          instance.value.properties = _.pickBy(
-            Object.fromEntries(
-              await Promise.all(keys.map(async key => [key, await getPropertyValue(instance, key, client)])),
-            ),
-            values.isDefined,
-          )
-        }),
-    )
+    await adapterContext.getDashboardPropertiesAsync
 
     const gadgetType = findObject(elements, DASHBOARD_GADGET_TYPE)
     if (gadgetType === undefined) {

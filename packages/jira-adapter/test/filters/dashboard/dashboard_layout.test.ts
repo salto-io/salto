@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
-import dashboardLayoutFilter from '../../../src/filters/dashboard/dashboard_layout'
+import dashboardLayoutFilter, { getDashboardLayoutsAsync } from '../../../src/filters/dashboard/dashboard_layout'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
@@ -72,7 +72,7 @@ describe('dashboardLayoutFilter', () => {
 
   describe('onFetch', () => {
     it('should add layout to the instance', async () => {
-      await filter.onFetch([instance])
+      await getDashboardLayoutsAsync(client, [instance])
 
       expect(instance.value.layout).toBe('AAA')
       expect(connection.get).toHaveBeenCalledWith('/rest/dashboards/1.0/1', undefined)

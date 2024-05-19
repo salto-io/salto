@@ -27,7 +27,7 @@ import _ from 'lodash'
 import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
-import gadgetFilter from '../../../src/filters/dashboard/gadget'
+import gadgetFilter, { getDashboardPropertiesAsync } from '../../../src/filters/dashboard/gadget'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
@@ -142,6 +142,7 @@ describe('gadgetFilter', () => {
     })
 
     it('should add properties values', async () => {
+      await getDashboardPropertiesAsync(client, [instance])
       await filter.onFetch?.([instance])
 
       expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties', undefined)
@@ -185,6 +186,7 @@ describe('gadgetFilter', () => {
 
         throw new Error('Unexpected url')
       })
+      await getDashboardPropertiesAsync(client, [instance])
       await filter.onFetch?.([instance])
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', undefined)
@@ -196,6 +198,8 @@ describe('gadgetFilter', () => {
 
     it('should not add properties when keys request failed', async () => {
       connection.get.mockRejectedValue(new Error('Failed to get keys'))
+      await getDashboardPropertiesAsync(client, [instance])
+
       await filter.onFetch?.([instance])
 
       expect(instance.value.properties).toEqual({})
@@ -237,6 +241,8 @@ describe('gadgetFilter', () => {
 
         throw new Error('Unexpected url')
       })
+      await getDashboardPropertiesAsync(client, [instance])
+
       await filter.onFetch?.([instance])
 
       expect(instance.value.properties).toEqual({
@@ -277,6 +283,8 @@ describe('gadgetFilter', () => {
 
         throw new Error('Unexpected url')
       })
+      await getDashboardPropertiesAsync(client, [instance])
+
       await filter.onFetch?.([instance])
 
       expect(instance.value.properties).toEqual({

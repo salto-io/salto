@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import {
+  Element,
   AdditionChange,
   getChangeData,
   InstanceElement,
@@ -73,36 +74,40 @@ export const deployLayout = async (
   })
 }
 
-const filter: FilterCreator = ({ client, config }) => ({
+export const getDashboardLayoutsAsync = async (client: JiraClient, elements: Element[]): Promise<void> => {
+  await Promise.all(
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
+      .map(async instance => {
+        try {
+          const response = await client.get({
+            url: `/rest/dashboards/1.0/${instance.value.id}`,
+          })
+
+          if (Array.isArray(response.data)) {
+            log.error(
+              `Invalid response from server when fetching dashboard layout for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`,
+            )
+            return
+          }
+          instance.value.layout = response.data.layout
+        } catch (err) {
+          log.warn(`Failed to fetch dashboard layout for ${instance.elemID.getFullName()}: ${err}`)
+        }
+      }),
+  )
+}
+
+const filter: FilterCreator = ({ config, adapterContext }) => ({
   name: 'dashboardLayoutFilter',
-  onFetch: async elements => {
+  onFetch: async () => {
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping dashboard layout filter because private API is not enabled')
       return
     }
 
-    await Promise.all(
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
-        .map(async instance => {
-          try {
-            const response = await client.get({
-              url: `/rest/dashboards/1.0/${instance.value.id}`,
-            })
-
-            if (Array.isArray(response.data)) {
-              log.error(
-                `Invalid response from server when fetching dashboard layout for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`,
-              )
-              return
-            }
-            instance.value.layout = response.data.layout
-          } catch (err) {
-            log.warn(`Failed to fetch dashboard layout for ${instance.elemID.getFullName()}: ${err}`)
-          }
-        }),
-    )
+    await adapterContext.dashboardLayoutPromise
   },
 })
 

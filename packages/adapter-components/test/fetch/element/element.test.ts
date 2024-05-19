@@ -220,10 +220,8 @@ describe('element', () => {
                 resource: {
                   directFetch: true,
                   onError: {
-                    result: {
-                      action: 'failEntireFetch',
-                      value: true,
-                    },
+                    action: 'failEntireFetch',
+                    value: true,
                   },
                 },
               },
@@ -250,10 +248,8 @@ describe('element', () => {
                 resource: {
                   directFetch: true,
                   onError: {
-                    result: {
-                      action: 'customSaltoError',
-                      value: customSaltoError,
-                    },
+                    action: 'customSaltoError',
+                    value: customSaltoError,
                   },
                 },
               },
@@ -282,10 +278,8 @@ describe('element', () => {
                 resource: {
                   directFetch: true,
                   onError: {
-                    result: {
-                      action: 'configSuggestion',
-                      value: configSuggestion,
-                    },
+                    action: 'configSuggestion',
+                    value: configSuggestion,
                   },
                 },
               },

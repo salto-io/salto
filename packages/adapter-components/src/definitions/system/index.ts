@@ -32,7 +32,6 @@ export {
   NameMappingFunctionMap,
   DefaultWithCustomizations,
   ArgsWithCustomizer,
-  ResultWithCustomizer,
   OptionsWithDefault,
   TransformFunction,
   AdjustFunction,

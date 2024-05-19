@@ -214,13 +214,11 @@ describe('fetch', () => {
                   resource: {
                     directFetch: false,
                     onError: {
-                      result: {
-                        action: 'configSuggestion',
-                        value: {
-                          reason: 'error fetching options',
-                          type: 'typeToExclude',
-                          value: 'some value',
-                        },
+                      action: 'configSuggestion',
+                      value: {
+                        reason: 'error fetching options',
+                        type: 'typeToExclude',
+                        value: 'some value',
                       },
                     },
                   },
@@ -241,10 +239,8 @@ describe('fetch', () => {
                   resource: {
                     directFetch: false,
                     onError: {
-                      result: {
-                        action: 'customSaltoError',
-                        value: customSaltoError,
-                      },
+                      action: 'customSaltoError',
+                      value: customSaltoError,
                     },
                   },
                 },

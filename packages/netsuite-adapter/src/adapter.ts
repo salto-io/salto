@@ -143,14 +143,8 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
-  // excludeCustomRecordTypes should run before customRecordTypesType,
-  // because otherwise there will be broken references to excluded types.
-  { creator: excludeCustomRecordTypes },
   { creator: restoreDeletedListItems },
   { creator: restoreDeletedListItemsWithoutScriptId },
-  // excludeCustomRecordTypes should run before customRecordTypesType,
-  // because otherwise there will be broken references to excluded types.
-  { creator: excludeCustomRecordTypes },
   { creator: customRecordTypesType },
   { creator: omitSdfUntypedValues },
   { creator: dataInstancesIdentifiers },

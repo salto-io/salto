@@ -356,8 +356,21 @@ const createCustomizations = ({
     },
   },
   ApplicationGroupAssignment: {
-    requests: [{ endpoint: { path: 'api/v1/apps/{appId}/groups' } }],
-    resource: { directFetch: false },
+    requests: [
+      {
+        endpoint: { path: 'api/v1/apps/{appId}/groups' },
+        transformation: {
+          // assign app id from context to value to be used as service id
+          adjust: ({ value, context }) => ({
+            value: { ...(_.isObject(value) ? { ...value, appId: context.appId } : {}) },
+          }),
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+      serviceIDFields: ['id', 'appId'],
+    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -365,6 +378,7 @@ const createCustomizations = ({
         serviceUrl: { path: '/admin/app/{_parent.0.name}/instance/{_parent.0.id}/#tab-assignments' },
       },
       fieldCustomizations: {
+        appId: { fieldType: 'string', hide: true },
         _links: { omit: true },
         profile: { fieldType: 'map<unknown>' },
       },
@@ -463,6 +477,7 @@ const createCustomizations = ({
               properties: {
                 typeName: 'ProfileMappingProperties',
                 context: { args: { id: { root: 'id' } } },
+                single: true,
               },
             }
           : {}),
@@ -497,7 +512,7 @@ const createCustomizations = ({
     resource: {
       directFetch: true,
       recurseInto: {
-        themes: {
+        BrandTheme: {
           typeName: 'BrandTheme',
           context: { args: { brandId: { root: 'id' } } },
         },
@@ -756,7 +771,7 @@ const createCustomizations = ({
     requests: [{ endpoint: { path: '/api/v1/domains' }, transformation: { root: 'domains' } }],
     resource: { directFetch: true },
     element: {
-      topLevel: { isTopLevel: true, elemID: { parts: [{ fieldName: 'domain' }] , extendsParent: true } },
+      topLevel: { isTopLevel: true, elemID: { parts: [{ fieldName: 'domain' }], extendsParent: true } },
       fieldCustomizations: {
         id: { hide: true },
         _links: { omit: true },

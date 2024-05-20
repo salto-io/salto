@@ -25,7 +25,10 @@ import { deployChanges, defaultDeployChange } from '../deployment'
 
 const log = logger(module)
 
-const getThemeIdByBrand = async (brandId: string, client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface): Promise<string> => {
+const getThemeIdByBrand = async (
+  brandId: string,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<string> => {
   const themeEntries = (
     await client.get({
       url: `/api/v1/brands/${brandId}/themes`,
@@ -71,7 +74,11 @@ const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployBrandThemeAddition(change, definitions.clients.options.main.httpClient, oldApiDefinitions[API_DEFINITIONS_CONFIG]),
+      deployBrandThemeAddition(
+        change,
+        definitions.clients.options.main.httpClient,
+        oldApiDefinitions[API_DEFINITIONS_CONFIG],
+      ),
     )
 
     return {

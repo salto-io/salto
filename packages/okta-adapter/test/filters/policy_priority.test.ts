@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-import { filterUtils, elements as elementUtils, client as clientUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
+import {
+  filterUtils,
+  elements as elementUtils,
+  client as clientUtils,
+  definitions as definitionsUtils,
+} from '@salto-io/adapter-components'
 import {
   CORE_ANNOTATIONS,
   ElemID,

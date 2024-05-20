@@ -243,7 +243,9 @@ export default class OktaAdapter implements AdapterOperations {
         filterCreators,
         objects.concatObjects,
       )
-    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ client, config: this.userConfig, elementsSource }))
+    this.fixElementsFunc = combineElementFixers(
+      createFixElementFunctions({ client, config: this.userConfig, elementsSource }),
+    )
   }
 
   private async handleClassicEngineOrg(): Promise<definitionsUtils.ConfigChangeSuggestion | undefined> {

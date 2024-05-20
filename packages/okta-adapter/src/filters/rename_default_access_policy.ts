@@ -21,7 +21,7 @@ import {
   ReferenceExpression,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { getParent, hasValidParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, hasValidParent, invertNaclCase, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -86,7 +86,11 @@ const filter: FilterCreator = ({ getElemIdFunc }) => ({
     )
 
     const renamedRules = defaultPolicyRules.map(rule => {
-      const updatedRuleName = getDefaultAccessPolicyName(`${defaultName}__${rule.value.name}`, rule, getElemIdFunc)
+      const updatedRuleName = getDefaultAccessPolicyName(
+        `${invertNaclCase(defaultName)}__${rule.value.name}`,
+        rule,
+        getElemIdFunc,
+      )
       return new InstanceElement(
         updatedRuleName,
         rule.getTypeSync(),

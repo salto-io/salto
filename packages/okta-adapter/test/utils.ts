@@ -84,10 +84,11 @@ export const createDefinitions = ({
 }): definitionsUtils.RequiredDefinitions<OktaFetchOptions> => {
   const cli = client ?? mockClient().client
   return {
-  clients: createClientDefinitions({ main: cli, private: cli }),
-  pagination: PAGINATION,
-  fetch: createFetchDefinitions(DEFAULT_CONFIG, usePrivateAPI, getAdminUrl(cli.baseUrl)),
-}}
+    clients: createClientDefinitions({ main: cli, private: cli }),
+    pagination: PAGINATION,
+    fetch: createFetchDefinitions(DEFAULT_CONFIG, usePrivateAPI, getAdminUrl(cli.baseUrl)),
+  }
+}
 
 export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>): Parameters<FilterCreator>[0] => ({
   paginator: mockClient().paginator,
@@ -98,6 +99,6 @@ export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>):
   oldApiDefinitions: OLD_API_DEFINITIONS_CONFIG,
   baseUrl: 'https://dev-00000000.okta.com',
   isOAuthLogin: false,
-  ...(params ?? {}),
   sharedContext: {},
+  ...(params ?? {}),
 })

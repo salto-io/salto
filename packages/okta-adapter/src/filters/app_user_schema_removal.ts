@@ -21,7 +21,10 @@ import { FilterCreator } from '../filter'
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
 
-const verifyApplicationIsDeleted = async (applicationId: string, client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface): Promise<boolean> => {
+const verifyApplicationIsDeleted = async (
+  applicationId: string,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<boolean> => {
   try {
     return (
       (
@@ -60,7 +63,10 @@ const filterCreator: FilterCreator = ({ definitions }) => ({
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
       const appUserSchemaInstance = getChangeData(change)
       const parentApplicationId = getParents(appUserSchemaInstance)[0]?.id
-      if (!_.isString(parentApplicationId) || !(await verifyApplicationIsDeleted(parentApplicationId, definitions.clients.options.main.httpClient))) {
+      if (
+        !_.isString(parentApplicationId) ||
+        !(await verifyApplicationIsDeleted(parentApplicationId, definitions.clients.options.main.httpClient))
+      ) {
         throw new Error('Expected the parent Application to be deleted')
       }
     })

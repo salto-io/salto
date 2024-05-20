@@ -56,12 +56,6 @@ function hasE2eTests(packageName) {
   return existsSync(e2eDir) && readdirSync(e2eDir).some(file => file.endsWith('.test.ts'))
 }
 
-function hasUnitTests(packageName) {
-  const utDir = path.join(__dirname, '..', '..', 'packages', packageName, 'test')
-  console.log('utDir:', utDir, 'exists:', existsSync(utDir))
-  return existsSync(utDir) && readdirSync(utDir).some(file => file.endsWith('.test.ts'))
-}
-
 function findChangedPackages(branchLocation) {
   const changedFiles = getChangedFiles(branchLocation)
   const changedPackages = new Set()
@@ -77,8 +71,8 @@ function findChangedPackages(branchLocation) {
 }
 
 function main() {
-  const args = process.argv.slice(2); // Skip the first two elements
-  console.log(`User provided arguments: ${args}`);
+  const args = process.argv.slice(2)
+  console.log(`User provided arguments: ${args}`)
 
   const branchLocation = args.length > 0 ? args[0] : 'origin'
   console.log(`attempting to use ${branchLocation} as main branch location`)
@@ -109,7 +103,6 @@ function main() {
     }
   }
 
-  // Add the list of packages to config.yml if necessary
   const packagesArray = Array.from(packagesToTest, pkg => pkg.replace('@salto-io/', '')).sort()
   const e2ePackagesToTest = []
   const utPackagesToTest = []
@@ -120,26 +113,8 @@ function main() {
       console.log('Package has e2e tests')
       e2ePackagesToTest.push(pkg)
     }
-    // TODO: Coveralls goes crazy when we don't run all unittests. When we fix that, we can uncomment this
-    // if (hasUnitTests(pkg)) {
-    //   console.log('Package has unit tests')
-    //   utPackagesToTest.push(pkg)
-    // }
   }
 
-  // adding all unittests because of coveralls issue
-  for (const pkg of allPackages) {
-    const packageName = pkg.replace('@salto-io/', '')
-    if (hasUnitTests(packageName)) {
-      utPackagesToTest.push(packageName)
-    }
-  }
-
-  // write packages that have unittests to test in unit_tests
-  const packagesWithUnitTestsFilePath = path.join(__dirname, '..', 'ut_packages_to_test.txt')
-  writeFileSync(packagesWithUnitTestsFilePath, utPackagesToTest.join('\n'))
-
-  // write packages that have e2e tests to test in e2e_tests
   const packagesWithE2eTestsFilePath = path.join(__dirname, '..', 'e2e_packages_to_test.txt')
   writeFileSync(packagesWithE2eTestsFilePath, e2ePackagesToTest.join('\n'))
 }

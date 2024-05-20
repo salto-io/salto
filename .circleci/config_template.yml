@@ -42,32 +42,6 @@ commands:
             JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
       - store_test_results:
           path: reports
-
-  unit_test:
-    parameters:
-      package_name:
-        type: string
-    steps:
-      - run:
-          name: Run unit tests for package << parameters.package_name >>
-          command: |
-            pushd packages/<< parameters.package_name >>
-            yarn test -w 4 --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
-            # Ensures colored output in logs
-            FORCE_COLOR: 1
-      - store_test_results:
-          path: reports
-      - coveralls/upload:
-          flag_name: <<parameters.package_name>>
-          parallel: true
-          verbose: true
-
-      - persist_to_workspace:
-          root: .
-          paths:
-            - packages/<< parameters.package_name >>/reports/unittests
   
   set_s3_pkg_urls:
     steps:
@@ -173,10 +147,8 @@ jobs:
           name: Run prettier
           command: yarn check-format --concurrency 2
 
-  test:
+  e2e_test:
     parameters:
-      e2e_or_unittest:
-        type: string
       package_name:
         type: string
 
@@ -189,16 +161,29 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - when:
-          condition: << parameters.e2e_or_unittest >> == 'e2e'
-          steps:
-            - e2e_test:
-                package_name: << parameters.package_name >>
-      - when:
-          condition: << parameters.e2e_or_unittest >> == 'unittest'
-          steps:
-            - unit_test:
-                package_name: << parameters.package_name >>
+      - e2e_test:
+          package_name: << parameters.package_name >>
+
+  unit_test:
+    docker:
+      - image: cimg/node:14.15
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Run unit tests
+          command: |
+            yarn test -w 4 --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
+            # Ensures colored output in logs
+            FORCE_COLOR: 1
+      - store_test_results:
+          path: reports
+      - coveralls/upload
 
   save_project_cache:
     docker:
@@ -391,7 +376,6 @@ jobs:
           name: Publish canary version
           command: .circleci/scripts/publish-canary.sh
 
-# <UNITTESTS_COVERAGE>
 
 workflows:
   commit:
@@ -401,16 +385,19 @@ workflows:
           requires:
             - build
 
+      - unit_test:
+          requires:
+            - build
+      
       - save_project_cache:
           requires:
             - build
       # <TEST_MATRIX_E2E>
-      # <TEST_MATRIX_UNITTEST_AND_COVERAGE>
 
       - package_cli:
           requires:
             - build
-            # <NEEDS_UNITTEST_REQUIREMENT>
+            - unit_test
 
       - test_cli_mac:
           requires:
@@ -441,8 +428,8 @@ workflows:
                 - main
           requires:
               - build
+              - unit_test
               # <NEEDS_E2E_TEST_REQUIREMENT>
-              # <NEEDS_UNITTEST_REQUIREMENT>
 
       - publish_on_version_change:
           context: salto
@@ -452,6 +439,6 @@ workflows:
                 - main
           requires:
             - build
+            - unit_test
             # <NEEDS_E2E_TEST_REQUIREMENT>
-            # <NEEDS_UNITTEST_REQUIREMENT>
       

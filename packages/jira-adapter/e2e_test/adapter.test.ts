@@ -100,9 +100,7 @@ each([
       fetchedTypes = fetchedElements.filter(isObjectType).map(e => e.elemID.typeName)
     })
     it.each(Object.keys(getDefaultConfig({ isDataCenter }).apiDefinitions.types))('%s', expectedType => {
-      if (expectedType !== 'Automation') {
-        expect(fetchedTypes).toContain(expectedType)
-      }
+      expect(fetchedTypes).toContain(expectedType)
     })
     const scriptRunnerTypes = getDefaultConfig({ isDataCenter }).scriptRunnerApiDefinitions?.types
     if (scriptRunnerTypes !== undefined) {

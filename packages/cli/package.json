@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/cli",
-  "version": "0.3.57",
+  "version": "0.3.58",
   "license": "Apache-2.0",
   "description": "cli on top of salto core",
   "repository": {
@@ -38,16 +38,16 @@
     "package": "node ./package_native.js"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.57",
-    "@salto-io/adapter-utils": "0.3.57",
-    "@salto-io/core": "0.3.57",
-    "@salto-io/dag": "0.3.57",
-    "@salto-io/file": "0.3.57",
-    "@salto-io/logging": "0.3.57",
-    "@salto-io/lowerdash": "0.3.57",
-    "@salto-io/parser": "0.3.57",
-    "@salto-io/salesforce-adapter": "0.3.57",
-    "@salto-io/workspace": "0.3.57",
+    "@salto-io/adapter-api": "0.3.58",
+    "@salto-io/adapter-utils": "0.3.58",
+    "@salto-io/core": "0.3.58",
+    "@salto-io/dag": "0.3.58",
+    "@salto-io/file": "0.3.58",
+    "@salto-io/logging": "0.3.58",
+    "@salto-io/lowerdash": "0.3.58",
+    "@salto-io/parser": "0.3.58",
+    "@salto-io/salesforce-adapter": "0.3.58",
+    "@salto-io/workspace": "0.3.58",
     "chalk": "^2.4.2",
     "commander": "^10.0.0",
     "express": "^4.17.1",
@@ -65,8 +65,8 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.3.57",
-    "@salto-io/test-utils": "0.3.57",
+    "@salto-io/e2e-credentials-store": "0.3.58",
+    "@salto-io/test-utils": "0.3.58",
     "@types/express": "^4.17.7",
     "@types/inquirer": "7.3.1",
     "@types/jest": "^27.4.0",

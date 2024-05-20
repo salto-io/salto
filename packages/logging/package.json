@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/logging",
-  "version": "0.3.57",
+  "version": "0.3.58",
   "license": "Apache-2.0",
   "description": "Salto Logging library",
   "repository": {
@@ -30,7 +30,7 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/lowerdash": "0.3.57",
+    "@salto-io/lowerdash": "0.3.58",
     "chalk": "^2.4.2",
     "fast-safe-stringify": "^2.0.7",
     "lodash": "^4.17.21",

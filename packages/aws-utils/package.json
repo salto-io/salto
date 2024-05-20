@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/aws-utils",
-  "version": "0.3.57",
+  "version": "0.3.58",
   "license": "Apache-2.0",
   "description": "Salto AWS Utils",
   "repository": {
@@ -33,10 +33,10 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.198.0",
     "@aws-sdk/middleware-retry": "3.198.0",
-    "@salto-io/logging": "0.3.57"
+    "@salto-io/logging": "0.3.58"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.57",
+    "@salto-io/test-utils": "0.3.58",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",

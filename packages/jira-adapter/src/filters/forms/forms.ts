@@ -16,6 +16,7 @@
 
 import {
   CORE_ANNOTATIONS,
+  Element,
   Change,
   InstanceElement,
   ReferenceExpression,
@@ -38,7 +39,7 @@ import {
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { resolveValues } from '@salto-io/adapter-components'
+import { resolveValues, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
 import { getCloudId } from '../automation/cloud_id'
@@ -47,9 +48,19 @@ import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 import { getLookUpName } from '../../reference_mapping'
+import { JiraConfig } from '../../config/config'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+
+type projectForms = {
+  projectsWithoutForms: string[]
+  projectsWithUntitledForms: Set<string>
+}
+
+const isExpectedPermissionError = (
+  response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>,
+): boolean => response.status === 200 && response.data.length === 0
 
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
@@ -91,110 +102,139 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
   }
 }
 
+export const getFormsRequestsAsync = async (
+  client: JiraClient,
+  config: JiraConfig,
+  fetchQuery: elementUtils.query.ElementQuery,
+  elements: Element[],
+): Promise<projectForms | string> => {
+  if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
+    return 'do not enter the filter'
+  }
+  const cloudId = await getCloudId(client)
+  const { formType, subTypes } = createFormType()
+  setTypeDeploymentAnnotations(formType)
+  await addAnnotationRecursively(formType, CORE_ANNOTATIONS.CREATABLE)
+  await addAnnotationRecursively(formType, CORE_ANNOTATIONS.UPDATABLE)
+  await addAnnotationRecursively(formType, CORE_ANNOTATIONS.DELETABLE)
+  elements.push(formType)
+  subTypes.forEach(subType => {
+    elements.push(subType)
+  })
+
+  const jsmProjects = elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
+    .filter(project => project.value.projectTypeKey === SERVICE_DESK)
+
+  const projectForms: projectForms = {
+    projectsWithoutForms: [],
+    projectsWithUntitledForms: new Set(),
+  }
+  const forms = (
+    await Promise.all(
+      jsmProjects.flatMap(async project => {
+        try {
+          const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
+          const res = await client.get({ url })
+          if (!isFormsResponse(res)) {
+            if (isExpectedPermissionError(res)) {
+              projectForms.projectsWithoutForms.push(project.elemID.name)
+            } else {
+              log.error(
+                `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
+              )
+            }
+            return undefined
+          }
+          return await Promise.all(
+            res.data.map(async formResponse => {
+              const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
+              const detailedRes = await client.get({ url: detailedUrl })
+              if (!isDetailedFormsResponse(detailedRes.data)) {
+                projectForms.projectsWithUntitledForms.add(project.elemID.name)
+                return undefined
+              }
+              const name = naclCase(`${project.value.key}_${formResponse.name}`)
+              const formValue = detailedRes.data
+              const parentPath = project.path ?? []
+              const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
+              if (jsmDuckTypeApiDefinitions === undefined) {
+                return undefined
+              }
+              return new InstanceElement(
+                name,
+                formType,
+                formValue,
+                [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
+                {
+                  [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
+                },
+              )
+            }),
+          )
+        } catch (e) {
+          log.error(
+            `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(e)}`,
+          )
+          if (e.response?.status === 403) {
+            projectForms.projectsWithoutForms.push(project.elemID.name)
+          }
+          return undefined
+        }
+      }),
+    )
+  )
+    .flat()
+    .filter(isDefined)
+  forms.forEach(form => {
+    form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
+    elements.push(form)
+  })
+  return projectForms
+}
+
+export const checkErrorsInFetchForms = async (
+  formsRequestsAsync: projectForms | string,
+): Promise<{ errors: SaltoError[] } | undefined> => {
+  const errors: SaltoError[] = []
+  if (typeof formsRequestsAsync === 'string') {
+    return { errors: [] }
+  }
+  if (formsRequestsAsync === undefined) {
+    return undefined
+  }
+
+  if (formsRequestsAsync.projectsWithoutForms.length > 0) {
+    const message = `Unable to fetch forms for the following projects: ${formsRequestsAsync.projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
+    log.debug(message)
+    errors.push({
+      message,
+      severity: 'Warning' as SeverityLevel,
+    })
+  }
+  const projectsWithUntitledFormsArr = Array.from(formsRequestsAsync.projectsWithUntitledForms)
+  if (projectsWithUntitledFormsArr.length > 0) {
+    const message = `Salto does not support fetching untitled forms, found in the following projects: ${projectsWithUntitledFormsArr.join(', ')}`
+    log.debug(message)
+    errors.push({
+      message,
+      severity: 'Warning' as SeverityLevel,
+    })
+  }
+
+  return { errors }
+}
 /*
  * This filter fetches all forms from Jira Service Management and creates an instance element for each form.
  * We use filter because we need to use cloudId which is not available in the infrastructure.
  */
-const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
+const filter: FilterCreator = ({ config, client, adapterContext }) => ({
   name: 'formsFilter',
-  onFetch: async elements => {
-    if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
-      return { errors: [] }
-    }
-    const cloudId = await getCloudId(client)
-    const { formType, subTypes } = createFormType()
-    setTypeDeploymentAnnotations(formType)
-    await addAnnotationRecursively(formType, CORE_ANNOTATIONS.CREATABLE)
-    await addAnnotationRecursively(formType, CORE_ANNOTATIONS.UPDATABLE)
-    await addAnnotationRecursively(formType, CORE_ANNOTATIONS.DELETABLE)
-    elements.push(formType)
-    subTypes.forEach(subType => {
-      elements.push(subType)
-    })
+  onFetch: async () => {
+    const formsRequestsAsync = adapterContext.getFormsRequestsAsync
 
-    const jsmProjects = elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
-      .filter(project => project.value.projectTypeKey === SERVICE_DESK)
-
-    const errors: SaltoError[] = []
-    const projectsWithoutForms: string[] = []
-    const projectsWithUntitledForms: Set<string> = new Set()
-    const forms = (
-      await Promise.all(
-        jsmProjects.flatMap(async project => {
-          try {
-            const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-            const res = await client.get({ url })
-            if (!isFormsResponse(res)) {
-              log.debug(
-                `Didn't fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
-              )
-              return undefined
-            }
-            return await Promise.all(
-              res.data.map(async formResponse => {
-                const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-                const detailedRes = await client.get({ url: detailedUrl })
-                if (!isDetailedFormsResponse(detailedRes.data)) {
-                  projectsWithUntitledForms.add(project.elemID.name)
-                  return undefined
-                }
-                const name = naclCase(`${project.value.key}_${formResponse.name}`)
-                const formValue = detailedRes.data
-                const parentPath = project.path ?? []
-                const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
-                if (jsmDuckTypeApiDefinitions === undefined) {
-                  return undefined
-                }
-                return new InstanceElement(
-                  name,
-                  formType,
-                  formValue,
-                  [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
-                  {
-                    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
-                  },
-                )
-              }),
-            )
-          } catch (e) {
-            log.error(
-              `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(e)}`,
-            )
-            if (e.response?.status === 403) {
-              projectsWithoutForms.push(project.elemID.name)
-            }
-            return undefined
-          }
-        }),
-      )
-    )
-      .flat()
-      .filter(isDefined)
-    forms.forEach(form => {
-      form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
-      elements.push(form)
-    })
-    if (projectsWithoutForms.length > 0) {
-      const message = `Unable to fetch forms for the following projects: ${projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
-      log.debug(message)
-      errors.push({
-        message,
-        severity: 'Warning' as SeverityLevel,
-      })
-    }
-    const projectsWithUntitledFormsArr = Array.from(projectsWithUntitledForms)
-    if (projectsWithUntitledFormsArr.length > 0) {
-      const message = `Salto does not support fetching untitled forms, found in the following projects: ${projectsWithUntitledFormsArr.join(', ')}`
-      log.debug(message)
-      errors.push({
-        message,
-        severity: 'Warning' as SeverityLevel,
-      })
-    }
-
-    return { errors }
+    return checkErrorsInFetchForms(formsRequestsAsync)
   },
   preDeploy: async changes => {
     changes

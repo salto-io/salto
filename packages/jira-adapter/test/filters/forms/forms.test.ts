@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-import { filterUtils, elements as adapterElements, client as clientUtils } from '@salto-io/adapter-components'
+import {
+  filterUtils,
+  elements as adapterElements,
+  client as clientUtils,
+  elements as elementUtils,
+} from '@salto-io/adapter-components'
 import _ from 'lodash'
 import {
   InstanceElement,
@@ -25,12 +30,13 @@ import {
   ObjectType,
   ElemID,
   BuiltinTypes,
+  Values,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { FilterResult } from '../../../src/filter'
-import { getDefaultConfig } from '../../../src/config/config'
-import formsFilter from '../../../src/filters/forms/forms'
+import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
+import formsFilter, { getFormsRequestsAsync, checkErrorsInFetchForms } from '../../../src/filters/forms/forms'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { FORM_TYPE, JIRA, PROJECT_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
@@ -40,21 +46,26 @@ describe('forms filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy', FilterResult>
   let filter: FilterType
   let connection: MockInterface<clientUtils.APIConnection>
+  let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
   let client: JiraClient
+  let config: JiraConfig
   const projectType = createEmptyType(PROJECT_TYPE)
   let projectInstance: InstanceElement
   let elements: Element[]
+  const adapterContext: Values = {}
+
   afterEach(() => {
     jest.clearAllMocks()
   })
   describe('on fetch', () => {
     beforeEach(async () => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      fetchQuery = elementUtils.query.createMockQuery()
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
-      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+      filter = formsFilter(getFilterParams({ config, client, adapterContext })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
         projectType,
@@ -161,6 +172,7 @@ describe('forms filter', () => {
       elements = [projectInstance, projectType]
     })
     it('should add forms to elements when enableJSM is true', async () => {
+      await getFormsRequestsAsync(client, config, fetchQuery, elements)
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
@@ -235,16 +247,17 @@ describe('forms filter', () => {
       })
     })
     it('should not add forms to elements when enableJSM is false', async () => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      await getFormsRequestsAsync(client, config, fetchQuery, elements)
       config.fetch.enableJSM = false
-      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
-      await filter.onFetch(elements)
+      filter = formsFilter(getFilterParams({ config, client, adapterContext })) as typeof filter
       const instances = elements.filter(isInstanceElement)
       const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
       expect(formInstance).toBeUndefined()
     })
   })
   describe('on fetch errors', () => {
+    fetchQuery = elementUtils.query.createMockQuery()
     let projectInstanceTwo: InstanceElement
     const goodDetailedResponse = {
       updated: '2023-09-28T08:20:31.552322Z',
@@ -383,12 +396,12 @@ describe('forms filter', () => {
       },
     }
     beforeEach(async () => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
-      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+      filter = formsFilter(getFilterParams({ config, client, adapterContext })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
         projectType,
@@ -464,9 +477,10 @@ describe('forms filter', () => {
         }
         throw new Error('Unexpected url')
       })
-      const res = (await filter.onFetch(elements)) as FilterResult
-      expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual(
+      const formsRequestsAsync = await getFormsRequestsAsync(client, config, fetchQuery, elements)
+      const res = await checkErrorsInFetchForms(formsRequestsAsync)
+      expect(res?.errors).toHaveLength(1)
+      expect(res?.errors?.[0].message).toEqual(
         'Salto does not support fetching untitled forms, found in the following projects: project1, project2',
       )
     })
@@ -486,9 +500,10 @@ describe('forms filter', () => {
         }
         throw new Error('Unexpected url')
       })
-      const res = (await filter.onFetch(elements)) as FilterResult
-      expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual(
+      const formsRequestsAsync = await getFormsRequestsAsync(client, config, fetchQuery, elements)
+      const res = await checkErrorsInFetchForms(formsRequestsAsync)
+      expect(res?.errors).toHaveLength(1)
+      expect(res?.errors?.[0].message).toEqual(
         'Unable to fetch forms for the following projects: project1, project2. This issue is likely due to insufficient permissions.',
       )
     })
@@ -519,9 +534,10 @@ describe('forms filter', () => {
         }
         throw new Error('Unexpected url')
       })
-      const res = (await filter.onFetch(elements)) as FilterResult
-      expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual(
+      const formsRequestsAsync = await getFormsRequestsAsync(client, config, fetchQuery, elements)
+      const res = await checkErrorsInFetchForms(formsRequestsAsync)
+      expect(res?.errors).toHaveLength(1)
+      expect(res?.errors?.[0].message).toEqual(
         'Unable to fetch forms for the following projects: project2. This issue is likely due to insufficient permissions.',
       )
       const instances = elements.filter(isInstanceElement)
@@ -536,8 +552,9 @@ describe('forms filter', () => {
           message: 'not found',
         },
       })
-      const res = (await filter.onFetch(elements)) as FilterResult
-      expect(res.errors).toHaveLength(0)
+      const formsRequestsAsync = await getFormsRequestsAsync(client, config, fetchQuery, elements)
+      const res = await checkErrorsInFetchForms(formsRequestsAsync)
+      expect(res?.errors).toHaveLength(0)
       const instances = elements.filter(isInstanceElement)
       const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
       expect(formInstance).toBeUndefined()
@@ -549,9 +566,10 @@ describe('forms filter', () => {
           data: 'insufficient permissions',
         },
       })
-      const res = (await filter.onFetch(elements)) as FilterResult
-      expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0].message).toEqual(
+      const formsRequestsAsync = await getFormsRequestsAsync(client, config, fetchQuery, elements)
+      const res = await checkErrorsInFetchForms(formsRequestsAsync)
+      expect(res?.errors).toHaveLength(1)
+      expect(res?.errors?.[0].message).toEqual(
         'Unable to fetch forms for the following projects: project1, project2. This issue is likely due to insufficient permissions.',
       )
     })
@@ -589,12 +607,12 @@ describe('forms filter', () => {
     })
 
     beforeEach(async () => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
-      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+      filter = formsFilter(getFilterParams({ config, client, adapterContext })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
         projectType,
@@ -840,9 +858,9 @@ describe('forms filter', () => {
       expect(connection.post).toHaveBeenCalledTimes(0)
     })
     it('should not deploy if enableJSM is false', async () => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = false
-      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+      filter = formsFilter(getFilterParams({ config, client, adapterContext })) as typeof filter
       const res = await filter.deploy([{ action: 'add', data: { after: formInstance } }])
       expect(res.leftoverChanges).toHaveLength(1)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -883,12 +901,12 @@ describe('forms filter', () => {
   describe('preDeploy', () => {
     let formInstance: InstanceElement
     beforeEach(async () => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
-      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+      filter = formsFilter(getFilterParams({ config, client, adapterContext })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
         projectType,
@@ -995,12 +1013,12 @@ describe('forms filter', () => {
   describe('onDeploy', () => {
     let formInstance: InstanceElement
     beforeEach(async () => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
-      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+      filter = formsFilter(getFilterParams({ config, client, adapterContext })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
         projectType,

@@ -1,0 +1,122 @@
+#! /usr/bin/env node
+
+const { execSync } = require('child_process')
+const { readFileSync, writeFileSync, existsSync, readdirSync } = require('fs')
+const path = require('path')
+
+function getChangedFiles(branchLocation) {
+  const output = execSync(`git log --name-status ${branchLocation}/main..HEAD`).toString()
+  return output
+    .split('\n')
+    .filter(line => line.startsWith('M') || line.startsWith('A') || line.startsWith('D'))
+    .map(line => line.split('\t')[1])
+    .filter(file => file && file.startsWith('packages/'))
+}
+
+function fetchWorkspacesInfo() {
+  const output = execSync('yarn workspaces info', { encoding: 'utf8' })
+  const jsonOutput = output.substring(output.indexOf('{'), output.lastIndexOf('}') + 1)
+  return JSON.parse(jsonOutput)
+}
+
+function resolveTransitiveDependencies(packageName, workspaceInfo, resolved, seen = new Set()) {
+  if (seen.has(packageName)) {
+    return
+  }
+  seen.add(packageName)
+
+  const packageInfo = workspaceInfo[packageName]
+  if (!packageInfo) {
+    return
+  }
+
+  for (const dep of packageInfo.workspaceDependencies) {
+    if (!resolved.has(dep)) {
+      resolved.add(dep)
+      resolveTransitiveDependencies(dep, workspaceInfo, resolved, seen)
+    }
+  }
+}
+
+function generateDependencyGraph(workspaceInfo) {
+  const graph = {}
+
+  for (const packageName of Object.keys(workspaceInfo)) {
+    const resolvedDependencies = new Set()
+    resolveTransitiveDependencies(packageName, workspaceInfo, resolvedDependencies)
+    graph[packageName] = Array.from(resolvedDependencies)
+  }
+
+  return graph
+}
+
+function hasE2eTests(packageName) {
+  const e2eDir = path.join(__dirname, '..', '..', 'packages', packageName, 'e2e_test')
+  console.log('e2eDir:', e2eDir, 'exists:', existsSync(e2eDir))
+  return existsSync(e2eDir) && readdirSync(e2eDir).some(file => file.endsWith('.test.ts'))
+}
+
+function findChangedPackages(branchLocation) {
+  const changedFiles = getChangedFiles(branchLocation)
+  const changedPackages = new Set()
+
+  for (const file of changedFiles) {
+    const parts = file.split('/')
+    if (parts.length > 1) {
+      changedPackages.add('@salto-io/' + parts[1])
+    }
+  }
+
+  return Array.from(changedPackages)
+}
+
+function main() {
+  const args = process.argv.slice(2)
+  console.log(`User provided arguments: ${args}`)
+
+  const branchLocation = args.length > 0 ? args[0] : 'origin'
+  console.log(`attempting to use ${branchLocation} as main branch location`)
+
+  const changedPackages = findChangedPackages(branchLocation)
+  console.log('Changed packages:', changedPackages)
+
+  const dependencyGraph = generateDependencyGraph(fetchWorkspacesInfo())
+  console.log('Dependency graph:', dependencyGraph)
+
+  const packagesToTest = new Set()
+  const allPackages = Object.keys(dependencyGraph).map(pkg => pkg.replace('@salto-io/', ''))
+  console.log(allPackages)
+
+  // if on main branch, run all tests
+  if (process.env.CIRCLE_BRANCH === 'main') {
+    console.log('Running all tests because we are on the main branch.')
+    for (const pkg of allPackages) {
+      packagesToTest.add(pkg)
+    }
+  } else {
+    // Otherwise, run tests for all changed packages and their dependencies
+    for (const pkg of changedPackages) {
+      packagesToTest.add(pkg)
+      for (const dep of dependencyGraph[pkg]) {
+        packagesToTest.add(dep)
+      }
+    }
+  }
+
+  const packagesArray = Array.from(packagesToTest, pkg => pkg.replace('@salto-io/', '')).sort()
+  const e2ePackagesToTest = []
+  const utPackagesToTest = []
+  console.log('Packages to test:', packagesArray)
+  for (pkg of packagesArray) {
+    console.log('Package:', pkg)
+    if (hasE2eTests(pkg)) {
+      console.log('Package has e2e tests')
+      e2ePackagesToTest.push(pkg)
+    }
+  }
+
+  const packagesWithE2eTestsFilePath = path.join(__dirname, '..', 'e2e_packages_to_test.txt')
+  writeFileSync(packagesWithE2eTestsFilePath, e2ePackagesToTest.join('\n'))
+}
+
+main()

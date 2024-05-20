@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/e2e-credentials-store",
-  "version": "0.3.57",
+  "version": "0.3.58",
   "license": "Apache-2.0",
   "description": "Salto E2E tests credentials store",
   "repository": {
@@ -30,9 +30,9 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/logging": "0.3.57",
-    "@salto-io/lowerdash": "0.3.57",
-    "@salto-io/persistent-pool": "0.3.57",
+    "@salto-io/logging": "0.3.58",
+    "@salto-io/lowerdash": "0.3.58",
+    "@salto-io/persistent-pool": "0.3.58",
     "easy-table": "^1.1.1",
     "humanize-duration": "^3.22.0",
     "yargs": "^13.3.0"

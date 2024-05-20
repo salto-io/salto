@@ -601,8 +601,8 @@ export const getDanglingStaticFiles = (
     .filter(isRemovalOrModificationChange)
     .map(change => change.data.before)
     .flatMap(getNestedStaticFiles)
-    .filter(file => !staticFileIndex?.has(file.filepath))
     .filter(file => !afterFilePaths.has(file.filepath))
+    .filter(async file => !staticFileIndex?.has(file.filepath))
 }
 
 const buildNaclFilesSource = (
@@ -851,14 +851,7 @@ const buildNaclFilesSource = (
     const removeDanglingStaticFiles = async (allChanges: DetailedChange[]): Promise<void> => {
       const { staticFilesIndex } = await getState()
 
-      await Promise.all(
-        getDanglingStaticFiles(allChanges, staticFilesIndex).map(async file => {
-          const filePath = await staticFilesIndex.get(file.filepath)
-          if (!filePath) {
-            await staticFilesSource.delete(file)
-          }
-        }),
-      )
+      await Promise.all(getDanglingStaticFiles(allChanges, staticFilesIndex).map(file => staticFilesSource.delete(file)))
     }
     const changesByFileName = await groupChangesByFilename(changes)
     log.debug(

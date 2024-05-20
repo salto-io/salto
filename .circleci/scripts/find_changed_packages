@@ -13,7 +13,6 @@ function getChangedFiles(branchLocation) {
     .filter(file => file && file.startsWith('packages/'))
 }
 
-// Fetch workspace info using `yarn workspaces info`
 function fetchWorkspacesInfo() {
   const output = execSync('yarn workspaces info', { encoding: 'utf8' })
   const jsonOutput = output.substring(output.indexOf('{'), output.lastIndexOf('}') + 1)
@@ -91,11 +90,13 @@ function main() {
   console.log('Dependency graph:', dependencyGraph)
 
   const packagesToTest = new Set()
+  const allPackages = Object.keys(dependencyGraph).map(pkg => pkg.replace('@salto-io/', ''))
+  console.log(allPackages)
 
   // if on main branch, run all tests
   if (process.env.CIRCLE_BRANCH === 'main') {
     console.log('Running all tests because we are on the main branch.')
-    for (const pkg of dependencyGraph.keys()) {
+    for (const pkg of allPackages) {
       packagesToTest.add(pkg)
     }
   } else {
@@ -119,9 +120,18 @@ function main() {
       console.log('Package has e2e tests')
       e2ePackagesToTest.push(pkg)
     }
-    if (hasUnitTests(pkg)) {
-      console.log('Package has unit tests')
-      utPackagesToTest.push(pkg)
+    // TODO: Coveralls goes crazy when we don't run all unittests. When we fix that, we can uncomment this
+    // if (hasUnitTests(pkg)) {
+    //   console.log('Package has unit tests')
+    //   utPackagesToTest.push(pkg)
+    // }
+  }
+
+  // adding all unittests because of coveralls issue
+  for (const pkg of allPackages) {
+    const packageName = pkg.replace('@salto-io/', '')
+    if (hasUnitTests(packageName)) {
+      utPackagesToTest.push(packageName)
     }
   }
 

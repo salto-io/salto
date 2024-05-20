@@ -87,6 +87,7 @@ import {
   transformValuesSync,
   TransformFuncSync,
   getIndependentElemIDs,
+  getInstancesFromElementSource,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2732,6 +2733,27 @@ describe('Test utils.ts', () => {
       const res = getIndependentElemIDs([elemID, anotherElemID])
       expect(res).toHaveLength(2)
       expect(res).toEqual([elemID, anotherElemID])
+    })
+  })
+  describe('getInstancesFromElementSource', () => {
+    it('should return elements of type from element source', async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const instA = new InstanceElement('instA', type)
+      const instB = new InstanceElement('instB', type)
+      const source = buildElementsSourceFromElements([instA, instB, type])
+      const res = await getInstancesFromElementSource(source, ['type'])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([instA, instB])
+    })
+    it('should use elementSource.list() and not elementSource.getAll()', async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const instA = new InstanceElement('instA', type)
+      const source = buildElementsSourceFromElements([instA])
+      const listSpy = jest.spyOn(source, 'list')
+      const getAllSpy = jest.spyOn(source, 'getAll')
+      await getInstancesFromElementSource(source, ['type'])
+      expect(listSpy).toHaveBeenCalled()
+      expect(getAllSpy).not.toHaveBeenCalled()
     })
   })
 })

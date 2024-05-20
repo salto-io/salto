@@ -1050,9 +1050,9 @@ export const getInstancesFromElementSource = async (
   elementSource: ReadOnlyElementsSource,
   typeNames: string[],
 ): Promise<InstanceElement[]> =>
-  awu(await elementSource.getAll())
-    .filter(isInstanceElement)
-    .filter(instance => typeNames.includes(instance.elemID.typeName))
+  awu(await elementSource.list())
+    .filter(id => id.idType === 'instance' && typeNames.includes(id.typeName))
+    .map(id => elementSource.get(id))
     .toArray()
 
 export const validateReferenceExpression =

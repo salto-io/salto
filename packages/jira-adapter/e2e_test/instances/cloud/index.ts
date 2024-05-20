@@ -28,6 +28,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import * as fs from 'fs'
 import * as path from 'path'
 import {
+  AUTOMATION_TYPE,
   CALENDAR_TYPE,
   ESCALATION_SERVICE_TYPE,
   FORM_TYPE,
@@ -59,6 +60,7 @@ import { createReference, findType } from '../../utils'
 import { createWorkflowValues } from './workflow'
 import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createNotificationSchemeValues } from './notificationScheme'
+import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFilterValues } from './filter'
 import { createIssueLayoutValues } from './issueLayout'
@@ -157,11 +159,11 @@ export const createInstances = (
     createNotificationSchemeValues(randomString),
   )
 
-  // const automation = new InstanceElement(
-  //   randomString,
-  //   findType(AUTOMATION_TYPE, fetchedElements),
-  //   createAutomationValues(randomString, fetchedElements),
-  // )
+  const automation = new InstanceElement(
+    randomString,
+    findType(AUTOMATION_TYPE, fetchedElements),
+    createAutomationValues(randomString, fetchedElements),
+  )
 
   const kanbanBoard = new InstanceElement(
     `kanban${randomString}`,
@@ -313,7 +315,7 @@ export const createInstances = (
     [fieldConfiguration],
     [securityScheme, securityLevel],
     [notificationScheme],
-    // [automation],
+    [automation],
     [kanbanBoard],
     [scrumBoard],
     [filter],

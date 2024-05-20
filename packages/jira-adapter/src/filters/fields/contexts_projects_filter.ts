@@ -26,6 +26,7 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
+import { Mutex } from 'async-mutex'
 import { applyFunctionToChangeData, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { PROJECT_TYPE } from '../../constants'
@@ -67,6 +68,7 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
     adapterContext.afterContextToProjects = {}
     adapterContext.beforeContextToProjects = {}
     adapterContext.deployedProjectIds = new Set<string>()
+    adapterContext.mutex = new Mutex()
   }
 
   const updateContextToProjectChanges = (projectChange: Change<InstanceElement>): void => {
@@ -137,6 +139,7 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
           adapterContext.deployedProjectIds.add(getChangeData(change).elemID.getFullName())
         })
 
+      const release = await adapterContext.mutex.acquire()
       const missingChanges = await getContextChanges()
       missingChanges.forEach(change => changes.push(change))
 
@@ -166,6 +169,7 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
           delete adapterContext.afterContextToProjects[getChangeData(change).elemID.getFullName()]
           delete adapterContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()]
         })
+      release()
     },
 
     onDeploy: async changes =>

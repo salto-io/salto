@@ -214,13 +214,14 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
           }
         : undefined
       const { data, status } = await this.resourceClient.get(url, requestConfig)
-      log.debug('Received response for resource request %s with status %d', url, status)
       log.trace(
-        'Full HTTP response for resource %s: %s',
+        'Full HTTP response for GET on %s: %s',
         url,
         safeJsonStringify({
           url,
-          response: data,
+          status,
+          requestConfig,
+          response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
         }),
       )
       return {

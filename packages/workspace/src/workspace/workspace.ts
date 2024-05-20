@@ -315,7 +315,7 @@ export type Workspace = {
     isTemplate?: boolean
   }): Promise<StaticFile | undefined>
   getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
-  getElemIdsByStaticFilePaths(filePaths?: Set<string>, envName?: string): Promise<Record<string, string>>
+  getElemIdsByStaticFilePaths(filePaths?: Set<string>, envName?: string): Promise<Record<string, string[]>>
   getAliases(envName?: string): Promise<ReadOnlyRemoteMap<string>>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>
@@ -1185,18 +1185,23 @@ export const loadWorkspace = async (
   const getElemIdsByStaticFilePaths = async (
     filePaths?: Set<string>,
     envName?: string,
-  ): Promise<Record<string, string>> => {
+  ): Promise<Record<string, string[]>> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
-    return Object.fromEntries(
-      await awu(currentWorkspaceState.states[env].referencedStaticFiles.entries())
-        .flatMap(({ key: id, value: fileNames }) =>
-          fileNames
-            .filter(filename => filePaths === undefined || filePaths.has(filename))
-            .map(filename => [filename, id]),
-        )
-        .toArray(),
-    )
+    const result: Record<string, string[]> = {}
+    await awu(currentWorkspaceState.states[env].referencedStaticFiles.entries())
+      .flatMap(({ key: id, value: fileNames }) =>
+        fileNames
+          .filter(filename => filePaths === undefined || filePaths.has(filename))
+          .map(filename => [filename, id] as [string, string]),
+      )
+      .forEach(([filename, id]) => {
+        if (!result[filename]) {
+          result[filename] = []
+        }
+        result[filename].push(id)
+      })
+    return result
   }
   const getAliases = async (envName?: string): Promise<ReadOnlyRemoteMap<string>> => {
     const env = envName ?? currentEnv()

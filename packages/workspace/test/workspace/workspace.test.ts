@@ -2632,8 +2632,8 @@ describe('workspace', () => {
         it('should return full map', async () => {
           const result = await workspace.getElemIdsByStaticFilePaths()
           expect(result).toEqual({
-            'static1.nacl': 'salesforce.lead.instance.someName1',
-            'static2.nacl': 'salesforce.lead.instance.someName2',
+            'static1.nacl': ['salesforce.lead.instance.someName1'],
+            'static2.nacl': ['salesforce.lead.instance.someName2', 'salesforce.lead.instance.someName3'],
           })
         })
       })
@@ -2642,7 +2642,7 @@ describe('workspace', () => {
           it('should return a mapping that only contains the given paths', async () => {
             const result = await workspace.getElemIdsByStaticFilePaths(new Set(['static1.nacl']))
             expect(result).toEqual({
-              'static1.nacl': 'salesforce.lead.instance.someName1',
+              'static1.nacl': ['salesforce.lead.instance.someName1'],
             })
           })
         })

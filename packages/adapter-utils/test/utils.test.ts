@@ -87,6 +87,7 @@ import {
   transformValuesSync,
   TransformFuncSync,
   getIndependentElemIDs,
+  getInstancesFromElementSource,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2732,6 +2733,27 @@ describe('Test utils.ts', () => {
       const res = getIndependentElemIDs([elemID, anotherElemID])
       expect(res).toHaveLength(2)
       expect(res).toEqual([elemID, anotherElemID])
+    })
+  })
+  describe('getInstancesFromElementSource', () => {
+    it('should return elements of type from element source', async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const instA = new InstanceElement('instA', type)
+      const instB = new InstanceElement('instB', type)
+      const source = buildElementsSourceFromElements([instA, instB, type])
+      const res = await getInstancesFromElementSource(source, ['type'])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([instA, instB])
+    })
+    it('should not return elements from other types from element source', async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const typeB = new ObjectType({ elemID: new ElemID('salto', 'typeB') })
+      const instA = new InstanceElement('instA', type)
+      const instB = new InstanceElement('instB', typeB)
+      const source = buildElementsSourceFromElements([instA, instB, type, typeB])
+      const res = await getInstancesFromElementSource(source, ['type'])
+      expect(res).toHaveLength(1)
+      expect(res).toEqual([instA])
     })
   })
 })

@@ -38,9 +38,7 @@ export const credsSpec = (): CredsSpec<Required<Credentials>> => {
         refreshToken: envUtils.required(googleWorkspaceRefreshTokenVarName),
       }
     },
-    validate: async (_creds: Credentials): Promise<void> => {
-      // TODO
-    },
+    validate: async (_creds: Credentials): Promise<void> => undefined,
     typeName: 'google-workspace',
     globalProp: 'google-workspace',
   }

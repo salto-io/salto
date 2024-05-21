@@ -43,9 +43,7 @@ const adapter: Adapter<Args, Credentials> = {
     clientSecret: args.clientSecret,
     refreshToken: args.refreshToken,
   }),
-  validateCredentials: async () => {
-    // TODO
-  },
+  validateCredentials: async () => undefined,
 }
 
 export default adapter

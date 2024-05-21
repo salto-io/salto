@@ -36,9 +36,9 @@ import {
   buildElementsSourceFromElements,
   detailedCompare,
   inspectValue,
-  naclCase,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
+import { fetch as fetchUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -54,6 +54,7 @@ import {
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
+import { createFetchDefinitions } from '../src/definitions'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -85,9 +86,16 @@ const createInstance = ({
     log.warn(`Could not find type ${typeName}, error while creating instance`)
     throw new Error(`Failed to find type ${typeName}`)
   }
-
-  const naclName = naclCase(String(name))
-  return new InstanceElement(naclName, type, instValues, undefined, undefined)
+  const fetchDefinitions = createFetchDefinitions()
+  const elemIDDef = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)?.element
+    ?.topLevel?.elemID
+  if (elemIDDef === undefined) {
+    log.warn(`Could not find type elemID definitions for type ${typeName}, error while creating instance`)
+    throw new Error(`Could not find type elemID definitions for type ${typeName}`)
+  }
+  const elemIDFunc = fetchUtils.element.createElemIDFunc<never>({ elemIDDef, typeID: type.elemID })
+  const elemID = elemIDFunc({ entry: instValues, defaultName: 'unnamed_0' })
+  return new InstanceElement(elemID, type, instValues, undefined, undefined)
 }
 
 const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
@@ -129,7 +137,7 @@ const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<Dep
       })
       expect(deployResult.errors).toHaveLength(0)
       expect(deployResult.appliedChanges).not.toHaveLength(0)
-      deployResult.appliedChanges // need to update reference expressions
+      deployResult.appliedChanges
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
         .forEach(updatedElement => {

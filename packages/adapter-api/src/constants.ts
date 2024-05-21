@@ -21,7 +21,7 @@ export const CORE_ANNOTATIONS = {
   HIDDEN_VALUE: '_hidden_value',
   DEPENDS_ON: '_depends_on',
   PARENT: '_parent',
-  GENERATED_DEPENDENCIES: '_generated_dependencies',
+  GENERATED_DEPENDENCIES: '_generated_dependencies' as const,
   SERVICE_URL: '_service_url',
   SERVICE_ID: '_service_id',
   CREATED_BY: '_created_by',

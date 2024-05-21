@@ -18,6 +18,7 @@ import {
   CORE_ANNOTATIONS,
   ElemID,
   InstanceElement,
+  ObjectType,
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
@@ -27,10 +28,9 @@ import filterCreator from '../../src/filters/generated_dependencies'
 
 describe('Generated dependencies filter', () => {
   let filter: FilterWith<'preDeploy' | 'onDeploy'>
-  let preDeployChanges: Change[]
 
-  const generateChanges = (): Change[] => {
-    const typeBefore = createCustomObjectType('mock', {
+  const generateTypeBefore = (): ObjectType =>
+    createCustomObjectType('mock', {
       annotations: {
         [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
           {
@@ -46,7 +46,8 @@ describe('Generated dependencies filter', () => {
         ],
       },
     })
-    const typeAfter = createCustomObjectType('mock', {
+  const generateTypeAfter = (): ObjectType =>
+    createCustomObjectType('mock', {
       annotations: {
         [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
           {
@@ -62,91 +63,58 @@ describe('Generated dependencies filter', () => {
         ],
       },
     })
-    const instanceToAdd = new InstanceElement(
-      'toAdd',
-      typeAfter,
-      undefined,
-      undefined,
-      {
-        [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
-          {
-            reference: new ReferenceExpression(
-              new ElemID('salesforce', 'refType', 'instance', 'inst'),
-            ),
-          },
-          {
-            reference: new ReferenceExpression(
-              new ElemID('salesforce', 'otherRefType', 'instance', 'inst'),
-            ),
-          },
-        ],
-      },
-    )
-    const instanceToRemove = new InstanceElement(
-      'toRemove',
-      typeBefore,
-      undefined,
-      undefined,
-      {
-        [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
-          {
-            reference: new ReferenceExpression(
-              new ElemID('salesforce', 'refType', 'instance', 'inst'),
-            ),
-          },
-          {
-            reference: new ReferenceExpression(
-              new ElemID('salesforce', 'otherRefType', 'instance', 'inst'),
-            ),
-          },
-        ],
-      },
-    )
+  const generateInstance = (type: ObjectType): InstanceElement =>
+    new InstanceElement('inst', type, undefined, undefined, {
+      [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
+        {
+          reference: new ReferenceExpression(
+            new ElemID('salesforce', 'refType', 'instance', 'inst'),
+          ),
+        },
+        {
+          reference: new ReferenceExpression(
+            new ElemID('salesforce', 'otherRefType', 'instance', 'inst'),
+          ),
+        },
+      ],
+    })
+  const generateTypeWithNoAnnotations = (): ObjectType =>
+    createCustomObjectType('mock', {})
+  const generateInstanceWithNoAnnotations = (
+    type: ObjectType,
+  ): InstanceElement => new InstanceElement('inst', type)
+
+  const generateChanges = (): Change[] => {
+    const typeAfter = generateTypeAfter()
 
     return [
-      toChange({ before: typeBefore, after: typeAfter }),
-      toChange({ after: instanceToAdd }),
-      toChange({ before: instanceToRemove }),
+      toChange({ before: generateTypeBefore(), after: typeAfter }),
+      toChange({ after: generateInstance(typeAfter) }),
     ]
   }
 
-  const generateChangesNoGeneratedDependencies = (): Change[] => {
-    const type = createCustomObjectType('mock', {})
-    const instanceToAdd = new InstanceElement('toAdd', type)
-    const instanceToRemove = new InstanceElement('toRemove', type)
+  const generateChangesWithNoGeneratedDependenciesAfter = (): Change[] => {
+    const typeAfter = generateTypeWithNoAnnotations()
 
     return [
-      toChange({ before: type, after: type }),
-      toChange({ after: instanceToAdd }),
-      toChange({ before: instanceToRemove }),
+      toChange({ before: generateTypeBefore(), after: typeAfter }),
+      toChange({ after: generateInstanceWithNoAnnotations(typeAfter) }),
     ]
   }
 
-  const runPreDeploy = async (...changes: Change[]): Promise<Change[]> => {
-    await filter.preDeploy(changes)
-    return changes
-  }
-
-  const runOnDeploy = async (...changes: Change[]): Promise<Change[]> => {
-    await filter.onDeploy(changes)
-    return changes
-  }
-
-  beforeAll(() => {
+  beforeEach(() => {
     filter = filterCreator({ config: defaultFilterContext }) as typeof filter
   })
 
-  describe('preDeploy', () => {
-    it('should remove generated dependencies', async () => {
-      preDeployChanges = await runPreDeploy(...generateChanges())
-      expect(preDeployChanges).toEqual(generateChangesNoGeneratedDependencies())
-    })
-  })
+  describe('preDeploy and onDeploy', () => {
+    it('should remove generated dependencies and restore them', async () => {
+      const changes = generateChanges()
 
-  describe('onDeploy', () => {
-    it('should restore generated dependencies', async () => {
-      const onDeployChanges = await runOnDeploy(...preDeployChanges)
-      expect(onDeployChanges).toEqual(generateChanges())
+      await filter.preDeploy(changes)
+      expect(changes).toEqual(generateChangesWithNoGeneratedDependenciesAfter())
+
+      await filter.onDeploy(changes)
+      expect(changes).toEqual(generateChanges())
     })
   })
 })

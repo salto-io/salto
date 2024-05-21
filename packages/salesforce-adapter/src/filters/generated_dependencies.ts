@@ -15,55 +15,60 @@
  */
 import {
   ChangeDataType,
-  ChangeDataKeys,
-  changeId,
   CORE_ANNOTATIONS,
+  getChangeData,
+  isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
+
+type ElementWithGeneratedDependencies = ChangeDataType & {
+  annotations: ChangeDataType['annotations'] & {
+    [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: DetailedDependency[]
+  }
+}
 
 /**
  * Remove generated dependencies before deploy.
  */
 const filterCreator: LocalFilterCreator = () => {
-  let generatedDependencies: Record<
-    string,
-    Record<ChangeDataKeys, DetailedDependency[]>
-  >
-
-  const popGeneratedDependencies = (
-    element?: ChangeDataType,
-  ): DetailedDependency[] | undefined => {
-    const deps = element?.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
-    delete element?.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
-    return deps
-  }
+  let generatedDependencies: Record<string, DetailedDependency[]>
 
   return {
     name: 'generatedDependencies',
     preDeploy: async (changes) => {
       generatedDependencies = Object.fromEntries(
-        changes.map((change) => [
-          changeId(change),
-          Object.fromEntries(
-            Object.entries(change.data)
-              .map(([k, element]) => [k, popGeneratedDependencies(element)])
-              .filter(([, dependencies]) => dependencies !== undefined),
-          ),
-        ]),
+        changes
+          .filter(isAdditionOrModificationChange)
+          .map(getChangeData)
+          .filter(
+            (element): element is ElementWithGeneratedDependencies =>
+              element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] !==
+              undefined,
+          )
+          .map((element) => {
+            const deps =
+              element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+            const optionalElement: ChangeDataType = element // Deletion not supported for required keys
+            delete optionalElement.annotations[
+              CORE_ANNOTATIONS.GENERATED_DEPENDENCIES
+            ]
+            return [element.elemID.getFullName(), deps]
+          }),
       )
     },
     onDeploy: async (changes) => {
-      changes.forEach((change) => {
-        const id = changeId(change)
-        Object.entries(change.data).forEach(([k, element]) => {
-          const deps = generatedDependencies[id]?.[k as ChangeDataKeys]
-          if (deps === undefined) {
-            return
-          }
-          element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = deps
+      changes
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .filter(
+          (element) =>
+            generatedDependencies[element.elemID.getFullName()] !== undefined,
+        )
+        .forEach((element) => {
+          element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] =
+            generatedDependencies[element.elemID.getFullName()]
         })
-      })
     },
   }
 }

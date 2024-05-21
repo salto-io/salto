@@ -138,7 +138,7 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
       createExtractor(
         {
           ...requestDef,
-          context: { ...requestDef.context, context },
+          context: { ...requestDef.context, ...context },
         },
         typeName,
       )

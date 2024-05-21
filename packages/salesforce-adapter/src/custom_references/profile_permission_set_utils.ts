@@ -74,18 +74,18 @@ type ReferenceFromSectionParams = {
 }
 
 const mapSectionEntries = <T>(
-  profile: InstanceElement,
+  profileOrPermissionSet: InstanceElement,
   sectionName: section,
   { filter = () => true, targetsGetter }: ReferenceFromSectionParams,
   f: (sectionEntryKey: string, target: ElemID, sourceField?: string) => T,
 ): T[] => {
-  const sectionValue = profile.value[sectionName]
+  const sectionValue = profileOrPermissionSet.value[sectionName]
   if (!_.isPlainObject(sectionValue)) {
     if (sectionValue !== undefined) {
       log.warn(
         'Section %s of %s is not an object, skipping.',
         sectionName,
-        profile.elemID,
+        profileOrPermissionSet.elemID,
       )
     }
     return []

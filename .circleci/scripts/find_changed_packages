@@ -40,6 +40,7 @@ function resolveTransitiveDependencies(packageName, workspaceInfo, resolved, see
 
 function generateDependencyGraph(workspaceInfo) {
   const graph = {}
+  const invertedGraph = {}
 
   for (const packageName of Object.keys(workspaceInfo)) {
     const resolvedDependencies = new Set()
@@ -47,7 +48,17 @@ function generateDependencyGraph(workspaceInfo) {
     graph[packageName] = Array.from(resolvedDependencies)
   }
 
-  return graph
+  for (const [pkg, dependencies] of Object.entries(graph)) {
+    dependencies.forEach((dep) => {
+      if (!invertedGraph[dep]) {
+        invertedGraph[dep] = [];
+      }
+      invertedGraph[dep].push(pkg);
+    });
+  }
+
+
+  return invertedGraph
 }
 
 function hasE2eTests(packageName) {
@@ -85,7 +96,6 @@ function main() {
 
   const packagesToTest = new Set()
   const allPackages = Object.keys(dependencyGraph).map(pkg => pkg.replace('@salto-io/', ''))
-  console.log(allPackages)
 
   // if on main branch, run all tests
   if (process.env.CIRCLE_BRANCH === 'main') {

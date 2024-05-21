@@ -133,6 +133,8 @@ const extractStandaloneInstancesFromField =
         parent: standaloneDef.addParentAnnotation !== false ? parent : undefined,
       }),
     )
+
+    // reversing here to preserve the order of the subtypes inside the element list
     newInstances.reverse().forEach(inst => instanceOutput.push(inst))
 
     if (standaloneDef.referenceFromParent === false) {

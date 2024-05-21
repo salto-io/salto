@@ -63,6 +63,7 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
   convertJsonIdsToReferences?: boolean
   omitInactive?: OmitInactiveConfig
   omitTicketStatusTicketField?: boolean
+  useNewInfra?: boolean
 }
 
 export type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }

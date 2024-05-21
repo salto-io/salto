@@ -520,8 +520,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         fetchConfig: otherDefinitions.fetch,
       }),
     }
-    // eslint-disable-next-line no-console
-    console.log(this.adapterDefinitions, filterOutInactiveInstancesForType, filterOutInactiveItemForType)
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
     this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       if (clientsBySubdomain[subdomain] === undefined) {
@@ -588,11 +586,11 @@ export default class ZendeskAdapter implements AdapterOperations {
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()
 
-    // const fetchOld = true
-    const fetchOld = false
-
+    // Temporarily get fetch method from the config. This is used for testing purposes
+    // and should be removed once we are confident the new infra behaves nicely - SALTO-5761
+    const { useNewInfra } = this.userConfig[FETCH_CONFIG]
     let defaultSubdomainResult
-    if (fetchOld) {
+    if (useNewInfra !== true) {
       // Zendesk Support and (if enabled) global Zendesk Guide types
       defaultSubdomainResult = await getAllElements({
         adapterName: ZENDESK,

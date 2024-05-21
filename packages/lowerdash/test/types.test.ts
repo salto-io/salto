@@ -55,6 +55,7 @@ describe('types', () => {
       expect(res).toEqual('no')
     })
   })
+
   describe('AtLeastOne, RequiredMember', () => {
     type TestType = AtLeastOne<{
       first: number

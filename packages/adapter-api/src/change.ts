@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { AdditionDiff, ModificationDiff, RemovalDiff, ActionName } from '@salto-io/dag'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { values as lowerDashValues, types as lowerDashTypes } from '@salto-io/lowerdash'
 import {
   ObjectType,
   InstanceElement,
@@ -37,6 +37,7 @@ export type AdditionChange<T> = AdditionDiff<T>
 export type ModificationChange<T> = ModificationDiff<T>
 export type RemovalChange<T> = RemovalDiff<T>
 export type Change<T = ChangeDataType> = AdditionChange<T> | ModificationChange<T> | RemovalChange<T>
+export type ChangeDataKeys = lowerDashTypes.ExtractKeys<Change['data']>
 
 export type ChangeData<T extends Change<unknown>> = T extends Change<infer U> ? U : never
 export const isModificationChange = <T extends Change<unknown>>(

@@ -13,14 +13,11 @@ function main() {
   console.log('e2ePackagesToTest:', e2ePackagesToTest)
 
   const e2eTestMatrix = `
-      - test:
+      - test_e2e:
           requires:
             - build
           matrix:
-            alias: test_e2e
             parameters:
-              e2e_or_unittest:
-                - e2e
               package_name:
                 - ${e2ePackagesToTest.join('\n                - ')}`
 

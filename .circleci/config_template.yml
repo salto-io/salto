@@ -8,7 +8,7 @@ orbs:
   macos: circleci/macos@2.4.1
 
 commands:
-  e2e_test:
+  test_e2e:
     parameters:
         package_name:
           type: string
@@ -147,7 +147,7 @@ jobs:
           name: Run prettier
           command: yarn check-format --concurrency 2
 
-  e2e_test:
+  test_e2e:
     parameters:
       package_name:
         type: string
@@ -161,7 +161,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - e2e_test:
+      - test_e2e:
           package_name: << parameters.package_name >>
 
   unit_test:

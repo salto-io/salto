@@ -89,7 +89,6 @@ import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_cust
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import workflowAccountSpecificValues from './filters/workflow_account_specific_values'
 import alignFieldNamesFilter from './filters/align_field_names'
-import removeMissingReferencesFromForms from './filters/remove_missing_references_from_forms'
 import {
   Filter,
   LocalFilterCreator,
@@ -138,6 +137,7 @@ import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 import { buildNetsuiteBundlesQuery } from './config/bundle_query'
 import { customReferenceHandlers } from './custom_references'
+import { getOrCreateScriptIdListElements } from './scriptid_list'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -206,7 +206,6 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: serviceUrls, addsNewInformation: true },
   { creator: addBundleReferences },
   { creator: addPermissionsToCustomRecordAndRole },
-  { creator: removeMissingReferencesFromForms },
   // omitFieldsFilter should be the last onFetch filter to run
   { creator: omitFieldsFilter },
   // additionalChanges should be right after addReferencingWorkbooks
@@ -462,6 +461,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const serverTimeElements =
       serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
 
+    const scriptIdListElements = await getOrCreateScriptIdListElements(instancesIds, this.elementsSource, isPartial)
+
     const elements = ([] as ChangeDataType[])
       .concat(standardInstances)
       .concat(standardTypes)
@@ -471,6 +472,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(suiteQLTableElements)
       .concat(suiteAppConfigElements)
       .concat(serverTimeElements)
+      .concat(scriptIdListElements)
 
     await this.createFiltersRunner({
       operation: 'fetch',

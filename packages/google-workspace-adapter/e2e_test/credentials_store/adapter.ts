@@ -23,7 +23,7 @@ type Args = {
 }
 
 const adapter: Adapter<Args, Credentials> = {
-  name: 'okta',
+  name: 'google-workspace',
   credentialsOpts: {
     clientId: {
       type: 'string',

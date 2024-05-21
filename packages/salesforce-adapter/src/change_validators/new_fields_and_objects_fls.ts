@@ -37,7 +37,7 @@ const createObjectFLSInfo = (
   flsProfiles: string[],
 ): ChangeError => ({
   message: `Read/write access to this Custom Object will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
-  detailedMessage: `Deploying this new CustomObject will make it and it's CustomFields accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
+  detailedMessage: `Deploying this new Custom Object will make it and it's Custom Fields accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
   severity: 'Info',
   elemID: field.elemID,
 })
@@ -46,8 +46,8 @@ const createFieldFLSInfo = (
   field: Field,
   flsProfiles: string[],
 ): ChangeError => ({
-  message: `Read/write access to this CustomField will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
-  detailedMessage: `Deploying this new CustomField will make it accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
+  message: `Read/write access to this Custom Field will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
+  detailedMessage: `Deploying this new Custom Field will make it accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
   severity: 'Info',
   elemID: field.elemID,
 })

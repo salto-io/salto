@@ -70,7 +70,7 @@ describe('new Fields and Objects FLS Change Validator', () => {
         elemID: addedField.elemID,
         severity: 'Info',
         message: expect.stringContaining(
-          'Read/write access to this CustomField will be granted to 2 profiles',
+          'Read/write access to this Custom Field will be granted to 2 profiles',
         ),
         detailedMessage: expect.stringContaining(
           CUSTOM_FLS_PROFILES.join(', '),
@@ -102,7 +102,7 @@ describe('new Fields and Objects FLS Change Validator', () => {
         elemID: addedField.elemID,
         severity: 'Info',
         message: expect.stringContaining(
-          'Read/write access to this CustomField will be granted to the following profile: Admin',
+          'Read/write access to this Custom Field will be granted to the following profile: Admin',
         ),
         detailedMessage: expect.stringContaining(
           DEFAULT_FLS_PROFILES.join(', '),

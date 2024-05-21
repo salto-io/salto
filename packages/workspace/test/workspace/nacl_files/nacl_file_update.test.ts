@@ -17,12 +17,15 @@ import {
   InstanceElement,
   StaticFile,
   ElemID,
+  Element,
   BuiltinTypes,
   ObjectType,
   ListType,
   toChange,
   DetailedChange,
 } from '@salto-io/adapter-api'
+import { dumpElements, parse, SourceMap } from '@salto-io/parser/src/parser'
+import { SourcePos } from '@salto-io/parser/src/parser/internal/types'
 import {
   getNestedStaticFiles,
   getChangeLocations,
@@ -117,13 +120,24 @@ describe('getNestedStaticFiles', () => {
 })
 
 describe('getChangeLocations', () => {
-  let result: DetailedChangeWithSource[]
+  const sourceMapForElement = async (elem: Element): Promise<SourceMap> =>
+    (await parse(Buffer.from(await dumpElements([elem])), 'file.nacl')).sourceMap
+
+  const locationForElement = (elemID: ElemID, sourceMap: SourceMap, member: 'start' | 'end' = 'start'): SourcePos => {
+    const pos = sourceMap.get(elemID.getFullName())?.[0][member]
+    if (pos === undefined) {
+      throw new Error('location is undefined')
+    }
+    pos.col -= 1
+    pos.byte -= 1
+    return pos
+  }
 
   describe('with addition of top level element', () => {
     it('should add the element at the end of the file', () => {
       const mockType = createMockType({})
       const change: DetailedChange = { ...toChange({ after: mockType }), id: mockType.elemID }
-      result = getChangeLocations(change, new Map())
+      const result = getChangeLocations(change, new Map())
       expect(result).toEqual([
         {
           ...change,
@@ -140,7 +154,7 @@ describe('getChangeLocations', () => {
       const noPath = createMockType({})
       noPath.path = undefined
       const change: DetailedChange = { ...toChange({ after: noPath }), id: noPath.elemID }
-      result = getChangeLocations(change, new Map())
+      const result = getChangeLocations(change, new Map())
       expect(result).toEqual([
         {
           ...change,
@@ -155,78 +169,52 @@ describe('getChangeLocations', () => {
   })
 
   describe('with addition of field', () => {
-    it('should add the field before a following field', () => {
+    it('should add the field before a following field', async () => {
+      const mockTypeBefore = createMockType({ dropFields: ['numArray'] })
       const mockType = createMockType({})
       const change: DetailedChange = {
         ...toChange({ after: mockType.fields.numArray }),
         id: mockType.fields.numArray.elemID,
-        baseChange: toChange({ before: createMockType({ dropFields: ['numArray'] }), after: mockType }),
+        baseChange: toChange({ before: mockTypeBefore, after: mockType }),
         path: ['file'],
       }
-      const sourceMap = new Map([
-        [
-          mockType.fields.obj.elemID.getFullName(),
-          [
-            {
-              filename: 'file.nacl',
-              start: { line: 2, col: 5, byte: 12 },
-              end: { line: 5, col: 5, byte: 26 },
-            },
-          ],
-        ],
-      ])
-      result = getChangeLocations(change, sourceMap)
+      const sourceMap = await sourceMapForElement(mockTypeBefore)
+      const result = getChangeLocations(change, sourceMap)
+      const pos = locationForElement(mockTypeBefore.fields.strArray.elemID, sourceMap)
+
       expect(result).toEqual([
         {
           ...change,
           location: {
             filename: 'file.nacl',
-            start: { line: 2, col: 5, byte: 12 },
-            end: { line: 2, col: 5, byte: 12 },
+            start: pos,
+            end: pos,
             indexInParent: 1,
           },
         },
       ])
     })
 
-    it('should add the field at the end of the parent when no following fields are found', () => {
+    it('should add the field at the end of the parent when no following fields are found', async () => {
+      const mockTypeBefore = createMockType({ dropFields: ['obj'] })
       const mockType = createMockType({})
       const change: DetailedChange = {
-        ...toChange({ after: mockType.fields.numArray }),
-        id: mockType.fields.numArray.elemID,
-        baseChange: toChange({ before: createMockType({ dropFields: ['numArray'] }), after: mockType }),
+        ...toChange({ after: mockType.fields.obj }),
+        id: mockType.fields.obj.elemID,
+        baseChange: toChange({ before: mockTypeBefore, after: mockType }),
         path: ['file'],
       }
-      const sourceMap = new Map([
-        [
-          mockType.elemID.getFullName(),
-          [
-            {
-              filename: 'file.nacl',
-              start: { line: 1, col: 1, byte: 0 },
-              end: { line: 10, col: 2, byte: 126 },
-            },
-          ],
-        ],
-        [
-          mockType.fields.file.elemID.getFullName(),
-          [
-            {
-              filename: 'file.nacl',
-              start: { line: 2, col: 5, byte: 12 },
-              end: { line: 5, col: 5, byte: 26 },
-            },
-          ],
-        ],
-      ])
-      result = getChangeLocations(change, sourceMap)
+      const sourceMap = await sourceMapForElement(mockTypeBefore)
+      const result = getChangeLocations(change, sourceMap)
+      const pos = locationForElement(mockTypeBefore.elemID, sourceMap, 'end')
+
       expect(result).toEqual([
         {
           ...change,
           location: {
             filename: 'file.nacl',
-            start: { line: 10, col: 1, byte: 125 },
-            end: { line: 10, col: 1, byte: 125 },
+            start: pos,
+            end: pos,
           },
           requiresIndent: true,
         },
@@ -241,7 +229,7 @@ describe('getChangeLocations', () => {
         baseChange: toChange({ before: createMockType({ dropFields: ['numArray'] }), after: mockType }),
         path: ['file'],
       }
-      result = getChangeLocations(change, new Map())
+      const result = getChangeLocations(change, new Map())
       expect(result).toEqual([
         {
           ...change,
@@ -254,43 +242,24 @@ describe('getChangeLocations', () => {
       ])
     })
 
-    it('should add the field to the end of the parent when the base change is undefined', () => {
+    it('should add the field to the end of the parent when the base change is undefined', async () => {
       const mockType = createMockType({})
       const change: DetailedChange = {
         ...toChange({ after: mockType.fields.numArray }),
         id: mockType.fields.numArray.elemID,
         path: ['file'],
       }
-      const sourceMap = new Map([
-        [
-          mockType.elemID.getFullName(),
-          [
-            {
-              filename: 'file.nacl',
-              start: { line: 1, col: 1, byte: 0 },
-              end: { line: 10, col: 2, byte: 126 },
-            },
-          ],
-        ],
-        [
-          mockType.fields.obj.elemID.getFullName(),
-          [
-            {
-              filename: 'file.nacl',
-              start: { line: 2, col: 5, byte: 12 },
-              end: { line: 5, col: 5, byte: 26 },
-            },
-          ],
-        ],
-      ])
-      result = getChangeLocations(change, sourceMap)
+      const sourceMap = await sourceMapForElement(mockType)
+      const result = getChangeLocations(change, sourceMap)
+      const pos = locationForElement(mockType.elemID, sourceMap, 'end')
+
       expect(result).toEqual([
         {
           ...change,
           location: {
             filename: 'file.nacl',
-            start: { line: 10, col: 1, byte: 125 },
-            end: { line: 10, col: 1, byte: 125 },
+            start: pos,
+            end: pos,
           },
           requiresIndent: true,
         },
@@ -299,37 +268,29 @@ describe('getChangeLocations', () => {
   })
 
   describe('with addition of annotation', () => {
-    it('should add the annotation before a following annotation', () => {
+    it('should add the annotation before a following annotation', async () => {
+      const mockTypeBefore = createMockType({ withAnnotations: true, dropAnnotations: ['anno2'] })
       const mockType = createMockType({ withAnnotations: true })
       const change: DetailedChange = {
         ...toChange({ after: mockType.annotations.anno2 }),
         id: mockType.elemID.createNestedID('attr', 'anno2'),
         baseChange: toChange({
-          before: createMockType({ withAnnotations: true, dropAnnotations: ['anno2'] }),
+          before: mockTypeBefore,
           after: mockType,
         }),
         path: ['file'],
       }
-      const sourceMap = new Map([
-        [
-          mockType.elemID.createNestedID('attr', 'anno3').getFullName(),
-          [
-            {
-              filename: 'file.nacl',
-              start: { line: 2, col: 5, byte: 12 },
-              end: { line: 5, col: 5, byte: 26 },
-            },
-          ],
-        ],
-      ])
-      result = getChangeLocations(change, sourceMap)
+      const sourceMap = await sourceMapForElement(mockTypeBefore)
+      const result = getChangeLocations(change, sourceMap)
+      const pos = locationForElement(mockType.elemID.createNestedID('attr', 'anno3'), sourceMap)
+
       expect(result).toEqual([
         {
           ...change,
           location: {
             filename: 'file.nacl',
-            start: { line: 2, col: 5, byte: 12 },
-            end: { line: 2, col: 5, byte: 12 },
+            start: pos,
+            end: pos,
             indexInParent: 1,
           },
         },
@@ -338,83 +299,32 @@ describe('getChangeLocations', () => {
   })
 
   describe('with addition of value', () => {
-    it('should add the value before a following value', () => {
+    it('should add the value before a following value', async () => {
+      const mockInstanceBefore = new InstanceElement('mock', createMockType({}), {
+        file: 'data.nacl',
+        strArray: ['a', 'b', 'c'],
+      })
       const mockInstance = createMockInstance()
       const change: DetailedChange = {
         ...toChange({ after: mockInstance.value.numArray }),
         id: mockInstance.elemID.createNestedID('numArray'),
         baseChange: toChange({
-          before: new InstanceElement('mock', createMockType({}), {
-            file: 'data.nacl',
-            strArray: ['a', 'b', 'c'],
-          }),
+          before: mockInstanceBefore,
           after: mockInstance,
         }),
         path: ['file'],
       }
-      const sourceMap = new Map([
-        [
-          mockInstance.elemID.createNestedID('strArray').getFullName(),
-          [
-            {
-              filename: 'file.nacl',
-              start: { line: 2, col: 5, byte: 12 },
-              end: { line: 5, col: 5, byte: 26 },
-            },
-          ],
-        ],
-      ])
-      result = getChangeLocations(change, sourceMap)
-      expect(result).toEqual([
-        {
-          ...change,
-          location: {
-            filename: 'file.nacl',
-            start: { line: 2, col: 5, byte: 12 },
-            end: { line: 2, col: 5, byte: 12 },
-            indexInParent: 1,
-          },
-        },
-      ])
-    })
-  })
+      const sourceMap = await sourceMapForElement(mockInstanceBefore)
+      const result = getChangeLocations(change, sourceMap)
+      const pos = locationForElement(mockInstance.elemID.createNestedID('strArray'), sourceMap)
 
-  describe('with addition of value to array', () => {
-    it('should add the value before the following value', () => {
-      const mockInstance = createMockInstance()
-      const change = {
-        ...toChange({ after: mockInstance.value.strArray[1] }),
-        id: mockInstance.elemID.createNestedID('strArray', '1'),
-        baseChange: toChange({
-          before: new InstanceElement('mock', createMockType({}), {
-            file: 'data.nacl',
-            numArray: [1, 2, 3],
-            strArray: ['a', 'c'],
-          }),
-          after: mockInstance,
-        }),
-        path: ['file'],
-      }
-      const sourceMap = new Map([
-        [
-          mockInstance.elemID.createNestedID('strArray', '2').getFullName(),
-          [
-            {
-              filename: 'file.nacl',
-              start: { line: 2, col: 5, byte: 12 },
-              end: { line: 5, col: 5, byte: 26 },
-            },
-          ],
-        ],
-      ])
-      result = getChangeLocations(change, sourceMap)
       expect(result).toEqual([
         {
           ...change,
           location: {
             filename: 'file.nacl',
-            start: { line: 2, col: 5, byte: 12 },
-            end: { line: 2, col: 5, byte: 12 },
+            start: pos,
+            end: pos,
             indexInParent: 1,
           },
         },

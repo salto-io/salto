@@ -87,7 +87,6 @@ const getPositionInParent = (change: DetailedChange): PositionInParent => {
     return { followingElementIDs: [] }
   }
 
-  const idNameParts = change.id.getFullNameParts().slice(0, -1)
   const elementName = change.id.name
   const index = Object.keys(container).indexOf(elementName)
   if (index === -1) {
@@ -98,7 +97,7 @@ const getPositionInParent = (change: DetailedChange): PositionInParent => {
   return {
     followingElementIDs: Object.keys(container)
       .slice(index + 1)
-      .map(k => ElemID.fromFullNameParts([...idNameParts, k])),
+      .map(k => change.id.createSiblingID(k)),
     indexInParent: index,
   }
 }
@@ -200,7 +199,7 @@ const fixEdgeIndentation = (data: string, action: ActionName, initialIndentation
     lines.push(lastLine)
   }
   if (action === 'add') {
-    /* When adding the placement we are given is right before the closing bracket.
+    /* When adding the placement we are given is right before following member or the closing bracket of the parent.
      * The string that dump gave us has an empty last line, meaning we have to recreate the
      * indentation that was there previously. We also have to slice from the beginning of the first
      * line the initial indentation that was there in the beginning.

@@ -179,15 +179,12 @@ export const addReferences = async (
     await referenceElements.getAll(),
     extractFlatCustomObjectFields,
   )
-  const { elemIDLookup } = await multiIndex
-    .buildMultiIndex<Element>()
-    .addIndex({
-      name: 'elemIDLookup',
-      filter: hasApiName,
-      key: async (elem) => [await metadataType(elem), await apiName(elem)],
-      map: (elem) => elem.elemID,
-    })
-    .process(elementsAndFields)
+  const elemIDLookup = await multiIndex.keyByAsync({
+    iter: elementsAndFields,
+    filter: hasApiName,
+    key: async (elem) => [await metadataType(elem), await apiName(elem)],
+    map: (elem) => elem.elemID,
+  })
 
   const fieldsWithResolvedReferences = new Set<string>()
   const instances = elements.filter(isInstanceElement)

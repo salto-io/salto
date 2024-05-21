@@ -131,5 +131,26 @@ describe('queueFetch filter', () => {
       await filter.onFetch([queueInstance])
       expect(queueInstance.value.jql).toEqual('assignee = currentUser() AND resolution = Unresolved')
     })
+    it('should not add canBeHidden and favourite fields if response has empty categories', async () => {
+      mockGet.mockImplementation(async params => {
+        if (params.url === '/rest/servicedesk/1/servicedesk/PROJ1/queues/categories') {
+          return {
+            status: 200,
+            data: {
+              categories: [],
+            },
+          }
+        }
+        return {
+          status: 200,
+          data: [],
+        }
+      })
+      await filter.onFetch([queueInstance])
+      expect(queueInstance.value.fields).toBeUndefined()
+      expect(queueInstance.value.columns).toEqual(['Summary'])
+      expect(queueInstance.value.canBeHidden).toBeUndefined()
+      expect(queueInstance.value.favourite).toBeUndefined()
+    })
   })
 })

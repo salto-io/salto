@@ -24,12 +24,17 @@ import {
   Values,
   Value,
   ElemID,
+  Change,
+  isFieldChange,
+  Field,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
+  apiNameSync,
   buildSelectQueries,
-  isInstanceOfType,
+  isCustomObjectSync,
+  isInstanceOfTypeSync,
   queryClient,
 } from '../filters/utils'
 import SalesforceClient from '../client/client'
@@ -65,7 +70,7 @@ type TypeWithUserFields = (typeof TYPES_WITH_USER_FIELDS)[number]
 type TypesWithUserFields = Record<TypeWithUserFields, UserFieldGetter[]>
 
 type UserRef = {
-  elemId: ElemID
+  elemID: ElemID
   field: string
   user: string
 }
@@ -197,7 +202,7 @@ const getUsersFromInstance = async (
   const users: UserRef[] = topLevelGetters.flatMap((getter) =>
     getter
       .getter(instance.value)
-      .map((user) => ({ user, elemId: instance.elemID, field: getter.field })),
+      .map((user) => ({ user, elemID: instance.elemID, field: getter.field })),
   )
 
   const gettersBySubType = new Map(
@@ -213,7 +218,7 @@ const getUsersFromInstance = async (
     if (subTypeGetter && path) {
       const userRefs = subTypeGetter
         .getter(value)
-        .map((user) => ({ user, elemId: path, field: subTypeGetter.field }))
+        .map((user) => ({ user, elemID: path, field: subTypeGetter.field }))
       users.push(...userRefs)
     }
     return value
@@ -256,12 +261,84 @@ const getSalesforceUsers = async (
     .toArray()
 }
 
-const unknownUserError = ({ elemId, field, user }: UserRef): ChangeError => ({
-  elemID: elemId,
+const unknownUserInInstanceError = ({
+  elemID,
+  field,
+  user,
+}: UserRef): ChangeError => ({
+  elemID,
   severity: 'Error',
   message: 'User does not exist',
-  detailedMessage: `The field ${field} in '${elemId.getFullName()}' refers to the user '${user}' which does not exist in this Salesforce environment`,
+  detailedMessage: `The field ${field} in '${elemID.getFullName()}' refers to the user '${user}' which does not exist in this Salesforce environment`,
 })
+
+const unknownUserInCustomFieldAnnotationError = ({
+  elemID,
+  user,
+}: UserRef): ChangeError => ({
+  elemID,
+  severity: 'Error',
+  message: 'Data Owner user does not exist',
+  detailedMessage: `The "Data Owner" property of the field ${elemID.getFullName()} refers to the user ${user} which does not exist in this Salesforce environment`,
+})
+
+type CustomFieldWithBusinessOwnerAnnotation = Field & {
+  annotations: Field['annotations'] & {
+    businessOwnerUser: string
+  }
+}
+
+const isCustomFieldWithBusinessOwnerAnnotation = (
+  field: Field,
+): field is CustomFieldWithBusinessOwnerAnnotation =>
+  isCustomObjectSync(field.parent) &&
+  field.annotations?.businessOwnerUser !== undefined
+
+const getInstanceUsersFromChanges = async (
+  changes: ReadonlyArray<Change>,
+): Promise<UserRef[]> => {
+  const instancesOfInterest = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(isInstanceOfTypeSync(...Object.keys(USER_GETTERS)))
+
+  return getUsersFromInstances(USER_GETTERS, instancesOfInterest)
+}
+
+const getCustomFieldUsersFromChanges = (
+  changes: ReadonlyArray<Change>,
+): UserRef[] => {
+  const changedCustomFields = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isFieldChange)
+    .map(getChangeData)
+    .filter(isCustomFieldWithBusinessOwnerAnnotation)
+
+  return changedCustomFields
+    .filter(
+      (customField) => customField.annotations?.businessOwnerUser !== undefined,
+    )
+    .flatMap((customField) => ({
+      user: customField.annotations.businessOwnerUser,
+      elemID: customField.elemID,
+      field: apiNameSync(customField) ?? '',
+    }))
+}
+
+const findMissingUsers = async (
+  client: SalesforceClient,
+  referencedUsers: ReadonlyArray<UserRef>,
+): Promise<UserRef[]> => {
+  const existingUsers = new Set(
+    await getSalesforceUsers(
+      client,
+      referencedUsers.map(({ user }) => user),
+    ),
+  )
+
+  return referencedUsers.filter(({ user }) => !existingUsers.has(user))
+}
 
 /**
  * Fields that reference users may refer to users that don't exist. The most common case would be when deploying
@@ -270,27 +347,15 @@ const unknownUserError = ({ elemId, field, user }: UserRef): ChangeError => ({
 const changeValidator =
   (client: SalesforceClient): ChangeValidator =>
   async (changes) => {
-    const instancesOfInterest = await awu(changes)
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .map(getChangeData)
-      .filter(isInstanceOfType(...Object.keys(USER_GETTERS)))
-      .toArray()
-
-    const userRefs = await getUsersFromInstances(
-      USER_GETTERS,
-      instancesOfInterest,
-    )
-    const existingUsers = new Set(
-      await getSalesforceUsers(
-        client,
-        userRefs.map(({ user }) => user),
-      ),
-    )
-
-    return userRefs
-      .filter(({ user }) => !existingUsers.has(user))
-      .map(unknownUserError)
+    const usersFromInstances = await getInstanceUsersFromChanges(changes)
+    const usersFromCustomFields = getCustomFieldUsersFromChanges(changes)
+    const instancesErrors = (
+      await findMissingUsers(client, usersFromInstances)
+    ).map(unknownUserInInstanceError)
+    const customFieldsErrors = (
+      await findMissingUsers(client, usersFromCustomFields)
+    ).map(unknownUserInCustomFieldAnnotationError)
+    return instancesErrors.concat(customFieldsErrors)
   }
 
 export default changeValidator

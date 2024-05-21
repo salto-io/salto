@@ -602,7 +602,8 @@ describe('Okta adapter E2E', () => {
       const deployInstances = deployResults
         .map(res => res.appliedChanges)
         .flat()
-        .map(change => getChangeData(change)) as InstanceElement[]
+        .map(change => getChangeData(change))
+        .filter(isInstanceElement)
 
       deployInstances.forEach(deployedInstance => {
         elements.filter(isInstanceElement).forEach(e => log.trace('Instance %s', e.elemID.getFullName()))

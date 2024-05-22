@@ -15,12 +15,7 @@
  */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import {
-  APPLICATION_TYPE_NAME,
-  AUTHORIZATION_POLICY,
-  POLICY_TYPE_NAMES,
-  AUTOMATION_TYPE_NAME,
-} from '../constants'
+import { APPLICATION_TYPE_NAME, AUTHORIZATION_POLICY, POLICY_TYPE_NAMES, AUTOMATION_TYPE_NAME } from '../constants'
 
 const TYPES_TO_FIELDS: Record<string, string[]> = {
   [APPLICATION_TYPE_NAME]: ['AppUserSchema', 'Groups'],

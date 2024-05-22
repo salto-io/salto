@@ -45,7 +45,6 @@ describe('deleteFieldsFilter', () => {
       expect(accessPolicy.value).toEqual({ id: 'BBB' })
     })
     it('should do nothing if field is missing', async () => {
-
       const applicationInstance = new InstanceElement('application', applicationType, {
         label: 'app',
         status: 'ACTIVE',

@@ -327,9 +327,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   Group: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'source', fieldType: 'Group__source' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'source', fieldType: 'Group__source' }],
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([{ fieldName: 'lastMembershipUpdated' }, { fieldName: '_links' }]),
       idFields: ['profile.name'],

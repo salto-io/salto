@@ -129,7 +129,7 @@ const enrichTypeWithFields = async (
 const createOrganizationType = (config: FilterContext): ObjectType =>
   new ObjectType({
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-    fields: config.fetchProfile.isFeatureEnabled('hideTypesFolder')
+    fields: config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')
       ? {
           [LATEST_SUPPORTED_API_VERSION_FIELD]: {
             refType: BuiltinTypes.NUMBER,
@@ -231,7 +231,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         queryResult[0],
       )
 
-      if (config.fetchProfile.isFeatureEnabled('hideTypesFolder')) {
+      if (config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')) {
         await addLatestSupportedAPIVersion(client, organizationInstance)
       }
 

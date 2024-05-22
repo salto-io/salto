@@ -36,7 +36,7 @@ describe('organization-wide defaults filter', () => {
   const filter = filterCreator({
     config: buildFilterContext({
       optionalFeatures: {
-        hideTypesFolder: true,
+        latestSupportedApiVersion: true,
       },
     }),
     client,
@@ -182,12 +182,12 @@ describe('organization-wide defaults filter', () => {
         },
       ])
     })
-    it('should not add LatestSupportedApiVersion when hideTypesFolder feature is disabled', async () => {
+    it('should not add LatestSupportedApiVersion when latestSupportedApiVersion feature is disabled', async () => {
       const elements: Element[] = []
       const filterWithFeatureDisabled = filterCreator({
         config: buildFilterContext({
           optionalFeatures: {
-            hideTypesFolder: false,
+            latestSupportedApiVersion: false,
           },
         }),
         client,

@@ -866,6 +866,27 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/domains',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/domains/{domainId}',
+        method: 'put',
+        urlParamsToFields: {
+          domainId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/domains/{domainId}',
+        method: 'delete',
+        urlParamsToFields: {
+          domainId: 'id',
+        },
+        omitRequestBody: true,
+      },
+    },
   },
   'api__v1__email_domains@uuuub': {
     request: {
@@ -1939,6 +1960,8 @@ export type ChangeValidatorName =
   | 'dynamicOSVersion'
   | 'brandThemeRemoval'
   | 'appUserSchemaRemoval'
+  | 'domainAddition'
+  | 'domainModification'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1970,6 +1993,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     dynamicOSVersion: { refType: BuiltinTypes.BOOLEAN },
     brandThemeRemoval: { refType: BuiltinTypes.BOOLEAN },
     appUserSchemaRemoval: { refType: BuiltinTypes.BOOLEAN },
+    domainAddition: { refType: BuiltinTypes.BOOLEAN },
+    domainModification: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

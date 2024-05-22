@@ -290,6 +290,14 @@ export class ElemID {
     return { parent, path }
   }
 
+  createSiblingID(name: string): ElemID {
+    if (this.isTopLevel()) {
+      throw new Error(`Cannot create sibling for top level element ID ${this.getFullName()}.`)
+    }
+
+    return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts.slice(0, -1), name)
+  }
+
   getRelativePath(other: ElemID): ReadonlyArray<string> {
     if (!this.isEqual(other) && !this.isParentOf(other)) {
       throw new Error(

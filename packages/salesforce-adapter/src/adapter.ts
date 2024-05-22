@@ -279,9 +279,9 @@ export const allFilters: Array<
   { creator: metadataInstancesAliasesFilter },
   { creator: importantValuesFilter },
   { creator: hideTypesFolder },
+  { creator: generatedDependenciesFilter },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
-  { creator: generatedDependenciesFilter },
 ]
 
 // By default we run all filters and provide a client

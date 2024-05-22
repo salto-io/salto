@@ -128,29 +128,6 @@ export const createEmptyType = (type: string): ObjectType =>
     elemID: new ElemID(JIRA, type),
   })
 
-/*
-  conditions = {
-        operation = "ALL"
-        conditions = [
-          {
-            ruleKey = "system:restrict-issue-transition"
-            parameters = {
-              denyUserCustomFields = jira.Field.instance.Affected_hardware__textfield__c@suuuu
-            }
-          },
-          {
-            ruleKey = "system:check-field-value"
-            parameters = {
-              fieldId = jira.Field.instance.a_b__float__c@ruuuu
-              fieldValue = "[\"\"]"
-              comparator = "="
-              comparisonType = "NUMBER"
-            }
-          },
-        ]
-      }
-      */
-
 export const createSkeletonWorkflowV2TransitionConditionGroup = (): WorkflowV2ConditionGroup => ({
   operation: 'ALL',
   conditions: [],

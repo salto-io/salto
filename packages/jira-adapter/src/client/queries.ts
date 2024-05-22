@@ -30,16 +30,3 @@ export const QUERY_INSTALLED_APPS = `query jira_manageApps_getEcosystemInstalled
         }
     }
 }`
-
-// export const QUERY_INSTALLED_APPS   `query jira_manageApps_getEcosystemInstalledApps($cloudId: ID!) {
-//     extensionContexts(contextIds: [$cloudId]) {
-//         installations(after: "") {
-//             nodes {
-//                 app {
-//                     id
-//                     name
-//                 }
-//             }
-//         }
-//     }
-// }`

@@ -23,9 +23,14 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   CustomReferenceSerializationStrategyName
 >[] = [
   {
-    src: { field: 'id', parentTypes: ['service__escalation_policy', 'schedule__escalation_policies'] },
+    src: { field: 'id', parentTypes: ['service__escalation_policy'] },
     serializationStrategy: 'id',
     target: { type: 'escalationPolicy' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['escalationPolicy__escalation_rules__targets'] },
+    serializationStrategy: 'id',
+    target: { type: 'schedule' },
   },
   // {
   //   src: { field: 'escalation_policy', parentTypes: ['service'] },

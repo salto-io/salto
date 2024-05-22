@@ -19,11 +19,16 @@ import * as constants from './constants'
 
 export type Credentials = {
   accessToken: string
+  subdomain: string
 }
 
 export const credentialsType = createMatchingObjectType<Credentials>({
   elemID: new ElemID(constants.ADAPTER_NAME),
   fields: {
+    subdomain: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
     accessToken: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },

@@ -22,12 +22,14 @@ const log = logger(module)
 
 export const validateCredentials = async ({
   connection,
+  credentials,
 }: {
   connection: clientUtils.APIConnection
+  credentials: Credentials
 }): Promise<AccountInfo> => {
   try {
     await connection.get('/services')
-    return { accountId: 'googoo' }
+    return { accountId: credentials.subdomain }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)

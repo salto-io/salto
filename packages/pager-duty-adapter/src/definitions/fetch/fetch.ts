@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
+import { Credentials } from '../../auth'
 
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
 // when in doubt, it's best to hide fields only for relevant types, or to omit them.
@@ -32,6 +33,9 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
     omit: true,
   },
   self: {
+    omit: true,
+  },
+  html_url: {
     omit: true,
   },
 }
@@ -63,8 +67,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        // TODO understand if we can use this fields and hide it
-        serviceUrl: { path: '{html_url}' },
+        serviceUrl: { path: '/services/{id}' },
       },
     },
   },
@@ -85,6 +88,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: { path: '/business_services/{id}' },
       },
     },
   },
@@ -105,6 +109,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: { path: '/teams/{id}' },
       },
     },
   },
@@ -125,6 +130,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: { path: '/escalation_policies/{id}' },
       },
       fieldCustomizations: {
         services: {
@@ -153,12 +159,18 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: { path: '/schedules/{id}' },
+      },
+      fieldCustomizations: {
+        escalation_policies: {
+          omit: true,
+        },
       },
     },
   },
 })
 
-export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<Options> => ({
+export const createFetchDefinitions = (credentials: Credentials): definitions.fetch.FetchApiDefinitions<Options> => ({
   instances: {
     default: {
       resource: {
@@ -167,6 +179,7 @@ export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<
       element: {
         topLevel: {
           elemID: { parts: DEFAULT_ID_PARTS },
+          serviceUrl: { baseUrl: credentials.subdomain },
         },
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },

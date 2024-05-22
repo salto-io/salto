@@ -115,6 +115,7 @@ import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
+import generatedDependenciesFilter from './filters/generated_dependencies'
 import {
   CUSTOM_REFS_CONFIG,
   FetchElements,
@@ -280,6 +281,7 @@ export const allFilters: Array<
   { creator: hideTypesFolder },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
+  { creator: generatedDependenciesFilter },
 ]
 
 // By default we run all filters and provide a client

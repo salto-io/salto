@@ -29,7 +29,7 @@ describe('domainAdditionValidator', () => {
         elemID: domain.elemID,
         severity: 'Error',
         message: 'Cannot add domain without a brand',
-        detailedMessage: 'Domain subdomain.example.com must have a brand.',
+        detailedMessage: 'Cannot add domain without a brand',
       },
     ])
   })

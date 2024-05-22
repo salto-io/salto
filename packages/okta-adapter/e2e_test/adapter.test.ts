@@ -207,7 +207,6 @@ const createBrandChangesForDeploy = async (
     types,
     valuesOverride: {
       domain: 'subdomain.salto.io',
-      // If Okta's free tier ever supports multiple brands in non-paid accounts, we can add a brandId here.
     },
   })
   return [

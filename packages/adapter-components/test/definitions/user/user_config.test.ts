@@ -15,7 +15,7 @@
  */
 import { BuiltinTypes, InstanceElement, Values } from '@salto-io/adapter-api'
 import { UserConfig, createUserConfigType, mergeWithDefaultConfig } from '../../../src/definitions/user'
-import { adapterConfigFromConfig } from '../../../src/definitions/user/user_config'
+import { adapterConfigFromConfig, updateDeprecatedConfig } from '../../../src/definitions/user/user_config'
 
 describe('config_shared', () => {
   describe('createUserConfigType', () => {
@@ -139,6 +139,183 @@ describe('config_shared', () => {
         },
         deploy: {},
         topLevelProp: 'val',
+      })
+    })
+  })
+  describe('updateDeprecatedConfig', () => {
+    const defaultConfig = {
+      fetch: {
+        include: [{ type: '.*' }],
+        exclude: [],
+        customFlag: true,
+      },
+    }
+    const configType = createUserConfigType({
+      adapterName: 'myAdapter',
+      additionalFetchFields: { customFlag: { refType: BuiltinTypes.BOOLEAN } },
+      defaultConfig,
+    })
+    describe('with no deprecated apiDefinitions', () => {
+      const config = new InstanceElement('config', configType, {
+        fetch: {
+          include: [{ type: '.*' }],
+          exclude: [{ type: 'typeB' }],
+          customFlag: false,
+        },
+      })
+      it('should return undefined', () => {
+        const res = updateDeprecatedConfig(config)
+        expect(res).toBeUndefined()
+      })
+    })
+    describe('with deprecated apiDefinitions', () => {
+      it('should convert elemID related transformation to elemID config from the new format', () => {
+        const config = new InstanceElement('config', configType, {
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [{ type: 'typeB' }],
+            customFlag: false,
+            apiDefinitions: {
+              types: {
+                foo: {
+                  transformation: { idFields: ['name', 'status'] },
+                },
+                bar: {
+                  transformation: {
+                    idFields: ['&id', 'name'],
+                    extendsParentId: false,
+                  },
+                },
+                myType: {
+                  transformation: {
+                    idFields: [],
+                    extendsParentId: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+
+        const res = updateDeprecatedConfig(config)
+        expect(res?.config?.value).toEqual({
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [{ type: 'typeB' }],
+            customFlag: false,
+            elemID: {
+              foo: {
+                parts: [{ fieldName: 'name' }, { fieldName: 'status' }],
+              },
+              bar: {
+                parts: [{ fieldName: 'id', isReference: true }, { fieldName: 'name' }],
+                extendsParent: false,
+              },
+              myType: {
+                parts: [],
+                extendsParent: true,
+              },
+            },
+          },
+        })
+        expect(res?.message).toEqual(
+          'The configuration options "apiDefinitions" is deprecated. The following changes will update the deprecated options to the "fetch" configuration option.',
+        )
+      })
+      it('should remove any empty parts from apiDefinitions', () => {
+        const config = new InstanceElement('config', configType, {
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [{ type: 'typeB' }],
+            apiDefinitions: {
+              typeDefaults: {
+                transformation: {},
+              },
+              types: {
+                foo: {
+                  transformation: { idFields: ['name', 'status'] },
+                  request: {},
+                },
+                bar: {
+                  request: { recurseInto: [] } // not sure this case is legit
+                }
+              },
+            },
+          },
+        })
+
+        const res = updateDeprecatedConfig(config)
+        expect(res?.config?.value).toEqual({
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [{ type: 'typeB' }],
+            elemID: {
+              foo: {
+                parts: [{ fieldName: 'name' }, { fieldName: 'status' }],
+              },
+            },
+          },
+        })
+      })
+      it('should not remove non empty parts from apiDefinitions that are not elemID related', () => {
+        const config = new InstanceElement('config', configType, {
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [{ type: 'typeB' }],
+            apiDefinitions: {
+              typeDefaults: {
+                transformation: {},
+              },
+              types: {
+                foo: {
+                  transformation: { idFields: ['name', 'status'] },
+                },
+                bar: {
+                  request: { url: '/bars'}
+                }
+              },
+            },
+          },
+        })
+
+        const res = updateDeprecatedConfig(config)
+        expect(res?.config?.value).toEqual({
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [{ type: 'typeB' }],
+            elemID: {
+              foo: {
+                parts: [{ fieldName: 'name' }, { fieldName: 'status' }],
+              },
+            },
+            apiDefinitions: {
+              types: {
+                bar: { request: { url: '/bars' } }
+              },
+            },
+          },
+        })
+      })
+      it('should not return updated config if no elemID related definitions are found', () => {
+        const config = new InstanceElement('config', configType, {
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [],
+            apiDefinitions: {
+              typeDefaults: {
+                transformation: {},
+              },
+              types: {
+                foo: {
+                  request: { url: '/foos'}
+                },
+              },
+            },
+          },
+        })
+
+        const res = updateDeprecatedConfig(config)
+        expect(res).toBeUndefined()
       })
     })
   })

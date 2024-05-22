@@ -27,3 +27,21 @@ export const concatObjects = <T extends Record<string, ReadonlyArray<unknown> | 
         .filter(isDefined)
         .flat(),
   ) as T
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const cleanEmptyObjects = (object: any): any | undefined => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cleanObject = (obj: any): any => {
+    if (Array.isArray(obj)) {
+      return obj.filter(item => !_.isEmpty(item)).map(item => cleanObject(item))
+    }
+    if (_.isPlainObject(obj)) {
+      const mapped = _.mapValues(obj, val => _.isEmpty(val) ? undefined : cleanObject(val))
+      return _.omitBy(mapped, _.isEmpty)
+    }
+    return obj
+  }
+
+  const cleanedRoot = cleanObject(object)
+  return _.isEmpty(cleanedRoot) ? undefined : cleanedRoot
+}

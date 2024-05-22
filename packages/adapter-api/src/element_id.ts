@@ -258,14 +258,6 @@ export class ElemID {
     return new ElemID(this.adapter, this.typeName)
   }
 
-  createSiblingID(name: string): ElemID {
-    if (this.isTopLevel()) {
-      throw new Error(`Cannot create sibling for top level element ID ${this.getFullName()}.`)
-    }
-
-    return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts.slice(0, -1), name)
-  }
-
   createAllElemIdParents(): ElemID[] {
     return this.isTopLevel() ? [this] : [this, ...this.createParentID().createAllElemIdParents()]
   }
@@ -296,6 +288,14 @@ export class ElemID {
       }
     }
     return { parent, path }
+  }
+
+  createSiblingID(name: string): ElemID {
+    if (this.isTopLevel()) {
+      throw new Error(`Cannot create sibling for top level element ID ${this.getFullName()}.`)
+    }
+
+    return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts.slice(0, -1), name)
   }
 
   getRelativePath(other: ElemID): ReadonlyArray<string> {

@@ -829,6 +829,68 @@ describe('Test elements.ts', () => {
         })
       })
     })
+    describe('createSiblingID', () => {
+      describe('from type ID', () => {
+        it('should fail', () => {
+          expect(() => typeId.createSiblingID('sibling')).toThrow()
+        })
+      })
+      describe('from field ID', () => {
+        let sibling: ElemID
+        beforeEach(() => {
+          sibling = fieldId.createSiblingID('sibling')
+        })
+        it('should keep the original id type', () => {
+          expect(sibling.idType).toEqual(fieldId.idType)
+        })
+        it('should have the new name', () => {
+          expect(sibling.name).toEqual('sibling')
+        })
+        it('should have the same non-terminal name parts', () => {
+          expect(sibling.getFullNameParts().slice(0, -1)).toEqual(fieldId.getFullNameParts().slice(0, -1))
+        })
+      })
+      describe('from annotation ID', () => {
+        let sibling: ElemID
+        beforeEach(() => {
+          sibling = annotationTypeId.createSiblingID('sibling')
+        })
+        it('should keep the original id type', () => {
+          expect(sibling.idType).toEqual(annotationTypeId.idType)
+        })
+        it('should have the new name', () => {
+          expect(sibling.name).toEqual('sibling')
+        })
+        it('should have the same non-terminal name parts', () => {
+          expect(sibling.getFullNameParts().slice(0, -1)).toEqual(annotationTypeId.getFullNameParts().slice(0, -1))
+        })
+      })
+      describe('from instance ID', () => {
+        it('should fail', () => {
+          expect(() => typeInstId.createSiblingID('sibling')).toThrow()
+        })
+      })
+      describe('from value ID', () => {
+        let sibling: ElemID
+        beforeEach(() => {
+          sibling = valueId.createSiblingID('sibling')
+        })
+        it('should keep the original id type', () => {
+          expect(sibling.idType).toEqual(valueId.idType)
+        })
+        it('should have the new name', () => {
+          expect(sibling.name).toEqual('sibling')
+        })
+        it('should have the same non-terminal name parts', () => {
+          expect(sibling.getFullNameParts().slice(0, -1)).toEqual(valueId.getFullNameParts().slice(0, -1))
+        })
+      })
+      describe('from variable ID', () => {
+        it('should fail', () => {
+          expect(() => variableId.createSiblingID('sibling')).toThrow()
+        })
+      })
+    })
     describe('isAttrID', () => {
       it('should identify non-instance element annotation IDs', () => {
         const objectAnno = new ElemID('salto', 'obj', 'attr', 'something')

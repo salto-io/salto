@@ -31,6 +31,7 @@ import {
   isStaticFile,
   TypeReference,
   isTypeReference,
+  AdditionChange,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { inspectValue, getPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -60,7 +61,7 @@ type PositionInParent = {
   indexInParent?: number
 }
 
-const getPositionInParent = (change: DetailedChange): PositionInParent => {
+const getPositionInParent = <T>(change: DetailedChange<T> & AdditionChange<T>): PositionInParent => {
   if (change.baseChange === undefined) {
     log.warn('No base change: %s', inspectValue(change))
     return { followingElementIDs: [] }
@@ -74,6 +75,7 @@ const getPositionInParent = (change: DetailedChange): PositionInParent => {
     return { followingElementIDs: [] }
   }
   if (pathInParent.length === 0) {
+    // This is a top level element
     return { followingElementIDs: [] }
   }
 
@@ -88,16 +90,15 @@ const getPositionInParent = (change: DetailedChange): PositionInParent => {
   }
 
   const elementName = change.id.name
-  const index = Object.keys(container).indexOf(elementName)
+  const containerKeys = Object.keys(container)
+  const index = containerKeys.indexOf(elementName)
   if (index === -1) {
     log.warn('Element %s not found in container: %s', elementName, inspectValue(container))
     return { followingElementIDs: [] }
   }
 
   return {
-    followingElementIDs: Object.keys(container)
-      .slice(index + 1)
-      .map(k => change.id.createSiblingID(k)),
+    followingElementIDs: containerKeys.slice(index + 1).map(k => change.id.createSiblingID(k)),
     indexInParent: index,
   }
 }
@@ -142,6 +143,7 @@ export const getChangeLocations = (
         .filter(isDefined)
         .find(sr => sr.filename === fileName)
       if (possibleFollowingElementsRange !== undefined) {
+        // Returning the start location of the first element following the one we are adding in the same file
         return [
           {
             location: {
@@ -159,10 +161,9 @@ export const getChangeLocations = (
       const possibleLocations = sourceMap.get(parentID.getFullName()) ?? []
       if (possibleLocations.length > 0) {
         const foundInPath = possibleLocations.find(sr => sr.filename === fileName)
-        /* When adding a nested change we need to increase one level of indentation because
-         * we get the placement of the closing brace of the next line. The closing brace will
-         * be indented one line less then wanted change.
-         */
+        // When adding a nested change we need to increase one level of indentation because
+        // we get the placement of the closing brace of the next line. The closing brace will
+        // be indented one line less then wanted change.
         // TODO: figure out how to choose the correct location if there is more than one option
         return [{ location: lastNestedLocation(foundInPath ?? possibleLocations[0]), requiresIndent: true }]
       }
@@ -194,26 +195,22 @@ const fixEdgeIndentation = (data: string, action: ActionName, initialIndentation
   const [firstLine] = lines
   const lastLine = lines.pop()
   if (lastLine !== undefined && lastLine !== '') {
-    /* This currently never happens. The last line that is returned from hclDump is empty.
-     */
+    // This currently never happens. The last line that is returned from hclDump is empty.
     lines.push(lastLine)
   }
   if (action === 'add') {
-    /* When adding the placement we are given is right before following member or the closing bracket of the parent.
-     * The string that dump gave us has an empty last line, meaning we have to recreate the
-     * indentation that was there previously. We also have to slice from the beginning of the first
-     * line the initial indentation that was there in the beginning.
-     */
+    // When adding the placement we are given is right before following member or the closing bracket of the parent.
+    // The string that dump gave us has an empty last line, meaning we have to recreate the
+    // indentation that was there previously. We also have to slice from the beginning of the first
+    // line the initial indentation that was there in the beginning.
     return [
       firstLine.slice(initialIndentationLevel),
       ...lines.slice(1),
       firstLine.slice(0, initialIndentationLevel),
     ].join('\n')
   }
-  /*
-   * If we reached here we are handling modify.
-   * The first line is already indented. We need to remove the excess indentation in the first line.
-   */
+  // If we reached here we are handling modify.
+  // The first line is already indented. We need to remove the excess indentation in the first line.
   return [firstLine.trimLeft(), ...lines.slice(1)].join('\n')
 }
 

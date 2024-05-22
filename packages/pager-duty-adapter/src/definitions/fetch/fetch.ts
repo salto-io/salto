@@ -27,11 +27,11 @@ const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCusto
   updated_at: {
     hide: true,
   },
+  // type: {
+  //   hide: true,
+  // },
 }
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
-  type: {
-    omit: true,
-  },
   self: {
     omit: true,
   },

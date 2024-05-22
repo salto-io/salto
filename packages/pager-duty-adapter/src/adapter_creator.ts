@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { client as clientUtils, createAdapter, credentials } from '@salto-io/adapter-components'
+import { client as clientUtils, createAdapter, credentials as defaultCredentials } from '@salto-io/adapter-components'
 import { Credentials, credentialsType } from './auth'
 import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
@@ -24,7 +24,7 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
 
-const { defaultCredentialsFromConfig } = credentials
+const { defaultCredentialsFromConfig } = defaultCredentials
 
 const { DEFAULT_RETRY_OPTS } = clientUtils
 

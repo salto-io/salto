@@ -13,26 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from '../types'
-import { getBusinessHoursScheduleDefinition } from './business_hours_schedule'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
-
-// TODO example - adjust and remove irrelevant definitions. check @adapter-components/deployment for helper functions
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
   const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
     AdditionalAction,
     ClientOptions
   >({
-    group: { bulkPath: '/api/v2/groups', nestUnderField: 'group' },
+    service: { bulkPath: '/services', nestUnderField: 'service' },
+    businessService: { bulkPath: '/business_services', nestUnderField: 'business_service' },
+    escalationPolicy: { bulkPath: '/escalation_policies', nestUnderField: 'escalation_policy' },
+    schedule: { bulkPath: '/schedules', nestUnderField: 'schedule' },
+    team: { bulkPath: '/teams', nestUnderField: 'team' },
   })
-  const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
-    business_hours_schedule: getBusinessHoursScheduleDefinition(),
-  }
-  return _.merge(standardRequestDefinitions, customDefinitions)
+  return standardRequestDefinitions
 }
 
 export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitions<never, ClientOptions> => ({
@@ -50,14 +47,5 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
     },
     customizations: createCustomizations(),
   },
-  dependencies: [
-    // {
-    //   first: { type: 'dynamic_content_item', action: 'add' },
-    //   second: { type: 'dynamic_content_item_variant', action: 'add' },
-    // },
-    // {
-    //   first: { type: 'dynamic_content_item', action: 'remove' },
-    //   second: { type: 'dynamic_content_item_variant', action: 'remove' },
-    // },
-  ],
+  dependencies: [],
 })

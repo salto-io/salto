@@ -16,8 +16,6 @@
 import { definitions } from '@salto-io/adapter-components'
 import { ClientOptions, PaginationOptions } from '../types'
 
-// TODO adjust, remove unnecessary customizations
-
 export const createClientDefinitions = (
   clients: Record<ClientOptions, definitions.RESTApiClientDefinition<PaginationOptions>['httpClient']>,
 ): definitions.ApiDefinitions<{ clientOptions: ClientOptions; paginationOptions: PaginationOptions }>['clients'] => ({
@@ -29,20 +27,11 @@ export const createClientDefinitions = (
         default: {
           get: {
             pagination: 'cursor',
-            // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
             readonly: true,
           },
           delete: {
             omitBody: true,
           },
-        },
-        customizations: {
-          // '/api/v2/groups': {
-          //   get: {
-          //     pagination: 'offset',
-          //     queryArgs: { type: 'a' },
-          //   },
-          // },
         },
       },
     },

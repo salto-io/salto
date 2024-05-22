@@ -41,7 +41,7 @@ const installedPackageReference = (
       'instance',
       naclCase(namespace),
     ]),
-    type: 'weak',
+    type: 'strong',
   }
 }
 

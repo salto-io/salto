@@ -23,7 +23,8 @@ import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
 import { getProductSettings } from '../product_settings'
-import { JSP_API_HEADERS, PRIVATE_API_HEADERS } from './headers'
+import { JSP_API_HEADERS, PRIVATE_API_HEADERS, EXPERIMENTAL_API_HEADERS } from './headers'
+import { QUERY_INSTALLED_APPS } from './queries'
 
 const log = logger(module)
 
@@ -40,6 +41,39 @@ const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
 }
 
 const RATE_LIMIT_HEADER_PREFIX = 'x-ratelimit-'
+
+export const GET_CLOUD_ID_URL = '/_edge/tenant_info'
+export const GQL_BASE_URL_GIRA = '/rest/gira/1'
+export const GQL_BASE_URL_GATEWAY = '/gateway/api/graphql'
+
+export type ExtensionType = {
+  name: string
+  id: string
+}
+type UPMExtensionType = {
+  name: string
+  key: string
+  enabled: boolean
+  userInstalled: boolean
+}
+
+export const EXTENSION_ID_LENGTH = 36
+export const EXTENSION_ID_ARI_PREFIX = 'ari:cloud:ecosystem::app/'
+
+export type CloudIdResponseType = {
+  cloudId: string
+}
+
+const CLOUD_ID_RESPONSE_SCHEME = Joi.object({
+  cloudId: Joi.required(),
+})
+  .unknown(true)
+  .required()
+
+const isCloudIdResponse = createSchemeGuard<CloudIdResponseType>(
+  CLOUD_ID_RESPONSE_SCHEME,
+  'Failed to get cloud id response',
+)
 
 export type graphQLResponseType = {
   data: unknown
@@ -60,7 +94,7 @@ const isGraphQLResponse = createSchemeGuard<graphQLResponseType>(
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<Credentials, definitions.ClientRateLimitConfig> {
   readonly isDataCenter: boolean
-
+  private cloudId: string | undefined
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig> & { isDataCenter: boolean },
   ) {
@@ -72,6 +106,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
     this.isDataCenter = clientOpts.isDataCenter
+    this.cloudId = undefined
   }
 
   public get baseUrl(): string {
@@ -165,14 +200,19 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     url: string
     query: string
     variables?: Record<string, unknown>
+    headers?: Record<string, string>
   }): Promise<graphQLResponseType> {
+    let headers = args.headers
+    if (headers === undefined) {
+      headers = args.url === GQL_BASE_URL_GATEWAY ? EXPERIMENTAL_API_HEADERS : PRIVATE_API_HEADERS
+    }
     const response = await this.sendRequest('post', {
       url: args.url,
       data: {
         query: args.query,
         variables: args.variables,
       },
-      headers: PRIVATE_API_HEADERS,
+      headers,
     })
     if (isGraphQLResponse(response.data)) {
       if (response.data.errors !== undefined && response.data.errors.length > 0) {
@@ -246,5 +286,61 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
         ...(args.headers ?? {}),
       },
     })
+  }
+
+  public async getCloudId(): Promise<string> {
+    if (this.cloudId === undefined) {
+      const response = await this.get({
+        url: GET_CLOUD_ID_URL,
+      })
+      if (!isCloudIdResponse(response.data)) {
+        throw new Error(`'Failed to get cloud id, received invalid response' ${response.data}`)
+      }
+      this.cloudId = response.data.cloudId
+    }
+
+    return this.cloudId
+  }
+
+  public setCloudId(cloudId?: string) {
+    this.cloudId = cloudId
+  }
+
+  private async getInstalledExtensionsUPM(): Promise<ExtensionType[]> {
+    const upmResponse = await this.get({
+      url: '/rest/plugins/1.0/',
+    })
+    return _.get(upmResponse, 'data.plugins', [])
+      .filter((plugin: UPMExtensionType) => plugin.enabled && plugin.userInstalled)
+      .map(
+        (plugin: UPMExtensionType): ExtensionType => ({
+          name: _.get(plugin, 'name'),
+          id: _.get(plugin, 'key'),
+        }),
+      )
+  }
+
+  private async getInstalledExtensionsGQL(): Promise<ExtensionType[]> {
+    const cloudId = await this.getCloudId()
+
+    const gqlResponse = await this.gqlPost({
+      url: '/gateway/api/graphql',
+      query: QUERY_INSTALLED_APPS,
+      variables: { cloudId: `ari:cloud:jira::site/${cloudId}` },
+    })
+
+    return _.get(gqlResponse, 'data.ecosystem.appInstallationsByContext.nodes', []).map(
+      (node: { app: { id: string; name: string } }) => ({
+        id: _.get(node, 'app.id').substring(
+          EXTENSION_ID_ARI_PREFIX.length,
+          EXTENSION_ID_ARI_PREFIX.length + EXTENSION_ID_LENGTH,
+        ),
+        name: _.get(node, 'app.name'),
+      }),
+    )
+  }
+
+  public async getInstalledExtensions(): Promise<ExtensionType[]> {
+    return [...(await this.getInstalledExtensionsUPM()), ...(await this.getInstalledExtensionsGQL())]
   }
 }

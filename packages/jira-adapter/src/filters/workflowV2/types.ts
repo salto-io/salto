@@ -83,15 +83,31 @@ export type WorkflowStatusAndPort = {
   port?: number
 }
 
-export type WorkflowTransitionV2 = {
+export type WorkflowV2TransitionRuleParameters = {
+  appKey?: string
+  key?: string
+}
+
+export type WorkflowV2TransitionRule = {
+  ruleKey: string
+  parameters?: WorkflowV2TransitionRuleParameters
+}
+
+export type WorkflowV2ConditionGroup = {
+  operation: string
+  conditionGroups?: WorkflowV2ConditionGroup[]
+  conditions: WorkflowV2TransitionRule[]
+}
+
+export type WorkflowV2Transition = {
   id?: string
   type: string
   name: string
   from?: WorkflowStatusAndPort[]
   to?: WorkflowStatusAndPort
-  actions?: Values[]
-  conditions?: Values
-  validators?: Values[]
+  actions?: WorkflowV2TransitionRule[]
+  conditions?: WorkflowV2ConditionGroup
+  validators?: WorkflowV2TransitionRule[]
 }
 
 type WorkflowDataResponse = {
@@ -116,13 +132,13 @@ export type Workflow = {
   version?: WorkflowVersion
   scope: WorkflowScope
   id?: string
-  transitions: WorkflowTransitionV2[]
+  transitions: WorkflowV2Transition[]
   statuses: Values[]
 }
 
 export type WorkflowV2Instance = InstanceElement & {
   value: InstanceElement['value'] &
-    Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowTransitionV2> }
+    Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowV2Transition> }
 }
 
 const TRANSITION_SCHEME = Joi.object({
@@ -165,7 +181,7 @@ const WORKFLOW_SCHEMA = Joi.object({
   .unknown(true)
   .required()
 
-const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, WorkflowTransitionV2> }>(
+const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, WorkflowV2Transition> }>(
   WORKFLOW_SCHEMA,
   'Received an invalid workflow values',
 )

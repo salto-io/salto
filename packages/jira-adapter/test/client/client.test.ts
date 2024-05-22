@@ -17,6 +17,7 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import * as clientUtils from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
+import { DEFAULT_CLOUD_ID } from '../utils'
 
 describe('client', () => {
   let client: JiraClient
@@ -160,5 +161,13 @@ describe('client', () => {
     mockAxios.onPost().reply(200, { data: { layoutConfiguration: null }, errors: [error] })
     result = await client.gqlPost({ url: 'www.test.com', query: 'query' })
     expect(result).toEqual({ data: { layoutConfiguration: null }, errors: [error] })
+  })
+  it('should check if getCloudId throws an error if the response is not as expected', async () => {
+    mockAxios.onGet().replyOnce(200, { data: { some_field: '' } })
+    await expect(client.getCloudId()).rejects.toThrow()
+  })
+  it('should check if getCloudId returns the CloudID if the response is of the proper format', async () => {
+    mockAxios.onGet().replyOnce(200, { cloudId: DEFAULT_CLOUD_ID })
+    expect(await client.getCloudId()).toEqual(DEFAULT_CLOUD_ID)
   })
 })

@@ -55,6 +55,7 @@ type JiraDeployConfig = definitions.UserDeployConfig &
     forceDelete: boolean
     taskMaxRetries: number
     taskRetryDelay: number
+    ignoreMissingExtensions: boolean
   }
 
 type JiraFetchFilters = definitions.DefaultFetchCriteria & {
@@ -164,6 +165,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     forceDelete: false,
     taskMaxRetries: 180,
     taskRetryDelay: 1000,
+    ignoreMissingExtensions: false,
   },
   masking: {
     automationHeaders: [],
@@ -221,6 +223,7 @@ export type ChangeValidatorName =
   | 'workflowStatusMappings'
   | 'inboundTransition'
   | 'issueTypeSchemeMigration'
+  | 'missingExtensionsTransitionRules'
   | 'activeSchemeChange'
   | 'masking'
   | 'issueTypeDeletion'
@@ -284,6 +287,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
     inboundTransition: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    missingExtensionsTransitionRules: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
     masking: { refType: BuiltinTypes.BOOLEAN },
     issueTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
@@ -315,11 +319,13 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+
 const jiraDeployConfigType = definitions.createUserDeployConfigType(JIRA, changeValidatorConfigType, {
   ...defaultMissingUserFallbackField,
   taskMaxRetries: { refType: BuiltinTypes.NUMBER },
   taskRetryDelay: { refType: BuiltinTypes.NUMBER },
   forceDelete: { refType: BuiltinTypes.BOOLEAN },
+  ignoreMissingExtensions: { refType: BuiltinTypes.BOOLEAN },
 })
 
 const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
@@ -404,6 +410,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.enableNewWorkflowAPI',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
+      'deploy.ignoreMissingExtensions',
       SCRIPT_RUNNER_API_DEFINITIONS,
       JSM_DUCKTYPE_API_DEFINITIONS,
     ]),

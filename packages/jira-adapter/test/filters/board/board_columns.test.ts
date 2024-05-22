@@ -13,14 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ListType,
+  ObjectType,
+  Values,
+  Element,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
-import boardColumnsFilter, { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
+import boardColumnsFilter, { COLUMNS_CONFIG_FIELD, filterBoardColumns } from '../../../src/filters/board/board_columns'
 import { getFilterParams, mockClient } from '../../utils'
+import JiraClient from '../../../src/client/client'
 
 describe('boardColumnsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -28,20 +38,18 @@ describe('boardColumnsFilter', () => {
   let type: ObjectType
   let columnConfigType: ObjectType
   let config: JiraConfig
+  let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
+  let elements: Element[]
+  const adapterContext: Values = {}
+  let paginator: clientUtils.Paginator
 
   beforeEach(async () => {
-    const { client, paginator, connection: conn } = mockClient()
+    const mockCli = mockClient()
+    client = mockCli.client
+    connection = mockCli.connection
+    paginator = mockCli.paginator
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    connection = conn
-
-    filter = boardColumnsFilter(
-      getFilterParams({
-        client,
-        paginator,
-        config,
-      }),
-    ) as typeof filter
 
     columnConfigType = new ObjectType({
       elemID: new ElemID(JIRA, BOARD_COLUMN_CONFIG_TYPE),
@@ -81,17 +89,26 @@ describe('boardColumnsFilter', () => {
         },
       },
     })
+    elements = [instance]
+    filter = boardColumnsFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        adapterContext,
+      }),
+    ) as typeof filter
   })
 
-  describe('onFetch', () => {
+  describe('async get', () => {
     it('should move column config out of config', async () => {
-      await filter.onFetch([instance])
+      filterBoardColumns(client, elements)
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toBeDefined()
       expect(instance.value.config[COLUMNS_CONFIG_FIELD]).toBeUndefined()
     })
 
     it('should remove first column if kanban', async () => {
-      await filter.onFetch([instance])
+      filterBoardColumns(client, elements)
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
           {
@@ -105,7 +122,7 @@ describe('boardColumnsFilter', () => {
 
     it('should not remove first column if scrum', async () => {
       instance.value.type = 'scrum'
-      await filter.onFetch([instance])
+      filterBoardColumns(client, elements)
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
           {
@@ -120,7 +137,7 @@ describe('boardColumnsFilter', () => {
       })
     })
 
-    it('should remove second redundant backlog column', async () => {
+    it('should not remove second redundant backlog column', async () => {
       instance.value.config[COLUMNS_CONFIG_FIELD].columns.splice(1, 0, { name: 'Backlog' })
       connection.get.mockResolvedValue({
         status: 200,
@@ -137,10 +154,12 @@ describe('boardColumnsFilter', () => {
           },
         },
       })
-
-      await filter.onFetch([instance])
+      filterBoardColumns(client, elements)
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
+          {
+            name: 'Backlog',
+          },
           {
             name: 'someColumn',
             statuses: ['1'],
@@ -170,8 +189,7 @@ describe('boardColumnsFilter', () => {
           },
         },
       })
-
-      await filter.onFetch([instance])
+      filterBoardColumns(client, elements)
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
           {
@@ -188,13 +206,120 @@ describe('boardColumnsFilter', () => {
 
     it('should do nothing if board does not have config', async () => {
       delete instance.value.config
+      filterBoardColumns(client, elements)
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toBeUndefined()
+    })
+    it('should not add deployment annotations when usePrivateApi is false', async () => {
+      config.client.usePrivateAPI = false
+      elements = [type, columnConfigType]
+      filterBoardColumns(client, elements)
+      expect(type.fields[COLUMNS_CONFIG_FIELD].annotations).toEqual({})
+      expect(columnConfigType.fields.columns.annotations).toEqual({})
+    })
+  })
+  describe('onFetch', () => {
+    it('should remove second redundant backlog column', async () => {
+      instance.value.config[COLUMNS_CONFIG_FIELD].columns.splice(1, 0, { name: 'Backlog' })
+      instance.value[COLUMNS_CONFIG_FIELD] = instance.value.config[COLUMNS_CONFIG_FIELD]
+      delete instance.value.config[COLUMNS_CONFIG_FIELD]
+      instance.value[COLUMNS_CONFIG_FIELD].columns.forEach((column: Values) => {
+        if (column.statuses !== undefined) {
+          column.statuses = column.statuses.map((status: Values) => status.id)
+        }
+      })
+      instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
 
-      await filter.onFetch([instance])
+      adapterContext.boardsPromise = [
+        {
+          instance,
+          promiseResponse: {
+            status: 200,
+            data: {
+              [COLUMNS_CONFIG_FIELD]: {
+                columns: [
+                  {
+                    name: 'Backlog',
+                  },
+                  {
+                    name: 'someColumn',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ]
+      await filter.onFetch(elements)
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
+        columns: [
+          {
+            name: 'someColumn',
+            statuses: ['1'],
+          },
+        ],
+        constraintType: 'issueCount',
+      })
+    })
+    it('should not remove second backlog column if it is returned from the config request', async () => {
+      instance.value.config[COLUMNS_CONFIG_FIELD].columns.splice(1, 0, { name: 'Backlog' })
+      instance.value[COLUMNS_CONFIG_FIELD] = instance.value.config[COLUMNS_CONFIG_FIELD]
+      delete instance.value.config[COLUMNS_CONFIG_FIELD]
+      instance.value[COLUMNS_CONFIG_FIELD].columns.forEach((column: Values) => {
+        if (column.statuses !== undefined) {
+          column.statuses = column.statuses.map((status: Values) => status.id)
+        }
+      })
+      instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
+      adapterContext.boardsPromise = [
+        {
+          instance,
+          promiseResponse: {
+            status: 200,
+            data: {
+              [COLUMNS_CONFIG_FIELD]: {
+                columns: [
+                  {
+                    name: 'Backlog',
+                  },
+                  {
+                    name: 'Backlog',
+                  },
+                  {
+                    name: 'someColumn',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ]
+
+      await filter.onFetch(elements)
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
+        columns: [
+          {
+            name: 'Backlog',
+          },
+          {
+            name: 'someColumn',
+            statuses: ['1'],
+          },
+        ],
+        constraintType: 'issueCount',
+      })
+    })
+
+    it('should do nothing if the boardsPromise return empty list', async () => {
+      delete instance.value.config
+      adapterContext.boardsPromise = []
+      await filter.onFetch(elements)
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toBeUndefined()
     })
 
     it('should add deployment annotations', async () => {
-      await filter.onFetch([type, columnConfigType])
+      elements = [type, columnConfigType]
+      adapterContext.boardsPromise = []
+      await filter.onFetch(elements)
       expect(type.fields[COLUMNS_CONFIG_FIELD].annotations).toEqual({
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.CREATABLE]: true,
@@ -209,7 +334,9 @@ describe('boardColumnsFilter', () => {
 
     it('should not add deployment annotations when usePrivateApi is false', async () => {
       config.client.usePrivateAPI = false
-      await filter.onFetch([type, columnConfigType])
+      elements = [type, columnConfigType]
+      adapterContext.boardsPromise = []
+      await filter.onFetch(elements)
 
       expect(type.fields[COLUMNS_CONFIG_FIELD].annotations).toEqual({})
       expect(columnConfigType.fields.columns.annotations).toEqual({})

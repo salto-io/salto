@@ -18,13 +18,11 @@ import { FilterCreator } from '../filter'
 import {
   APPLICATION_TYPE_NAME,
   AUTHORIZATION_POLICY,
-  GROUP_TYPE_NAME,
   POLICY_TYPE_NAMES,
   AUTOMATION_TYPE_NAME,
 } from '../constants'
 
 const TYPES_TO_FIELDS: Record<string, string[]> = {
-  [GROUP_TYPE_NAME]: ['roles'],
   [APPLICATION_TYPE_NAME]: ['AppUserSchema', 'Groups'],
   [AUTHORIZATION_POLICY]: ['policyRules'],
   [AUTOMATION_TYPE_NAME]: ['policyRules'],

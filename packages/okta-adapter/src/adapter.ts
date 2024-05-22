@@ -47,7 +47,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { CLIENT_CONFIG, FETCH_CONFIG, OLD_API_DEFINITIONS_CONFIG } from './config'
-import { configType, OktaUserConfig, OktaUserFetchConfig } from './user_config'
+import { configType, OktaUserConfig } from './user_config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -216,7 +216,7 @@ export default class OktaAdapter implements AdapterOperations {
     this.definitions = {
       ...definitions,
       fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
-        userElemID: userConfig.fetch.elemID as OktaUserFetchConfig['elemID'],
+        userElemID: userConfig.fetch.elemID,
         fetchConfig: definitions.fetch,
       }),
     }
@@ -252,9 +252,9 @@ export default class OktaAdapter implements AdapterOperations {
     const { isClassicOrg: isClassicOrgByConfig } = this.userConfig[FETCH_CONFIG]
     const isClassicOrg = isClassicOrgByConfig ?? (await isClassicEngineOrg(this.client))
     if (isClassicOrg) {
-      const updatedCustomizations = _.pickBy(
+      const updatedCustomizations = _.omit(
         this.definitions.fetch.instances.customizations,
-        (_v, key) => !CLASSIC_ENGINE_UNSUPPORTED_TYPES.includes(key),
+        CLASSIC_ENGINE_UNSUPPORTED_TYPES,
       )
       this.definitions.fetch.instances.customizations = updatedCustomizations
       return {

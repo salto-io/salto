@@ -179,18 +179,13 @@ describe('Google Workspace adapter E2E', () => {
 
     const deployAndFetch = async (changes: Change[]): Promise<void> => {
       deployResults = await deployChanges(adapterAttr, changes)
+      // Google workspace API takes time to reflect the changes from the deploy.
+      // So, we need to wait for some time before fetching in order to get the new elements.
       await sleep(5000)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
       elements = fetchResult.elements
-      log.info(
-        'Fetched these Test elements: %o',
-        elements
-          .filter(isInstanceElement)
-          .filter(checkNameField)
-          .map(e => e.elemID.getFullName()),
-      )
       adapterAttr = realAdapter({
         credentials: credLease.value,
         elementsSource: buildElementsSourceFromElements(elements),
@@ -274,6 +269,9 @@ describe('Google Workspace adapter E2E', () => {
 
       deployInstances.forEach(deployedInstance => {
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
+        if (instance === undefined) {
+          log.error('Failed to fetch instance after deploy: %s', deployedInstance.elemID.getFullName())
+        }
         expect(instance).toBeDefined()
         // Omit hidden fieldId from fields
         const originalValue = _.omit(instance?.value, ['fields.roles.fieldId'])

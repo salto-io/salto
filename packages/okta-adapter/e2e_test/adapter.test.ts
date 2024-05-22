@@ -591,7 +591,6 @@ describe('Okta adapter E2E', () => {
         'ProfileEnrollmentPolicy',
         'ProfileEnrollmentPolicyRule',
         'Role',
-        'RoleAssignment',
         'OrgSetting',
         'Brand',
         'BrandTheme',

@@ -55,7 +55,7 @@ describe('managed elements', () => {
           {
             source: customObjectFromInstalledPackage.elemID,
             target: PACKAGE_ID,
-            type: 'weak',
+            type: 'strong',
           },
         ])
       })
@@ -91,7 +91,7 @@ describe('managed elements', () => {
             {
               source: customFieldFromInstalledPackage.elemID,
               target: PACKAGE_ID,
-              type: 'weak',
+              type: 'strong',
             },
           ])
         })
@@ -121,7 +121,7 @@ describe('managed elements', () => {
             {
               source: customMetadataFromInstalledPackage.elemID,
               target: PACKAGE_ID,
-              type: 'weak',
+              type: 'strong',
             },
           ])
         })
@@ -151,7 +151,7 @@ describe('managed elements', () => {
             {
               source: instanceFromInstalledPackage.elemID,
               target: PACKAGE_ID,
-              type: 'weak',
+              type: 'strong',
             },
           ])
         })

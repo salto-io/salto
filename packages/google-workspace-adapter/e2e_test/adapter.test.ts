@@ -39,7 +39,7 @@ import {
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { fetch as fetchUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
@@ -57,6 +57,8 @@ import { mockDefaultValues } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
 
 const { awu } = collections.asynciterable
+const { sleep } = promises.timeout
+
 const log = logger(module)
 
 jest.setTimeout(1000 * 60 * 10)
@@ -177,6 +179,9 @@ describe('Google Workspace adapter E2E', () => {
 
     const deployAndFetch = async (changes: Change[]): Promise<void> => {
       deployResults = await deployChanges(adapterAttr, changes)
+      // Google workspace API takes time to reflect the changes from the deploy.
+      // So, we need to wait for some time before fetching in order to get the new elements.
+      await sleep(5000)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
@@ -264,6 +269,9 @@ describe('Google Workspace adapter E2E', () => {
 
       deployInstances.forEach(deployedInstance => {
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
+        if (instance === undefined) {
+          log.error('Failed to fetch instance after deploy: %s', deployedInstance.elemID.getFullName())
+        }
         expect(instance).toBeDefined()
         // Omit hidden fieldId from fields
         const originalValue = _.omit(instance?.value, ['fields.roles.fieldId'])

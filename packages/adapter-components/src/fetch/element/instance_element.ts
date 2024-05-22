@@ -46,7 +46,7 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
     return elementDef?.topLevel?.custom(elementDef)(args)
   }
 
-  if (elementDef.topLevel.singleton && entries.length !== 1) {
+  if (elementDef.topLevel.singleton && entries.length > 1) {
     log.warn(`Expected one instance for singleton type: ${typeName} but received: ${entries.length}`)
     throw new InvalidSingletonType(
       `Could not fetch type ${typeName}, singleton types should not have more than one instance`,

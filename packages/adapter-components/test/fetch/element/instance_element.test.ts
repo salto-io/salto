@@ -170,5 +170,33 @@ describe('instance element', () => {
       expect(Object.keys(res.types[0].fields).sort()).toEqual(['str', 'with_spaces@s'])
       expect(res.instances[0].value).toEqual({ str: 'A', 'with_spaces@s': 'a' })
     })
+    it('should return fetch warning when singleton type has more than one entry', () => {
+      expect(() =>
+        generateInstancesWithInitialTypes({
+          adapterName: 'myAdapter',
+          entries: [{ str: 'A' }, { str: 'B' }],
+          typeName: 'myType',
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+            customizations: { myType: { element: { topLevel: { isTopLevel: true, singleton: true } } } },
+          }),
+          customNameMappingFunctions: {},
+          definedTypes: {},
+        }),
+      ).toThrow('Could not fetch type myType, singleton types should not have more than one instance')
+    })
+    it('should not return fetch warning when there are no entries for singleton type', () => {
+      const res = generateInstancesWithInitialTypes({
+        adapterName: 'myAdapter',
+        entries: [],
+        typeName: 'myType',
+        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+          customizations: { myType: { element: { topLevel: { isTopLevel: true, singleton: true } } } },
+        }),
+        customNameMappingFunctions: {},
+        definedTypes: {},
+      })
+      expect(res.errors).toBeUndefined()
+      expect(res.instances).toHaveLength(0)
+    })
   })
 })

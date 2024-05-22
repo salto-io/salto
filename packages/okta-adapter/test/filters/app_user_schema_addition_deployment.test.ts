@@ -15,7 +15,15 @@
  */
 
 import { MockInterface } from '@salto-io/test-utils'
-import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+  getChangeData,
+  CORE_ANNOTATIONS,
+  SaltoElementError,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
@@ -24,7 +32,7 @@ import { APP_USER_SCHEMA_TYPE_NAME, OKTA } from '../../src/constants'
 
 type FilterType = filterUtils.FilterWith<'deploy'>
 
-describe('appUserSchemaAdditionDeployment', () => {
+describe('appUserSchemaDeployment', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let client: OktaClient
   let filter: FilterType
@@ -74,6 +82,13 @@ describe('appUserSchemaAdditionDeployment', () => {
     status: 404,
     data: {},
   })
+
+  const otherError = new clientUtils.HTTPError('message', {
+    status: 505,
+    data: {},
+  })
+
+  const successResponse = { status: 200, data: '' }
 
   const resolvedAppUserSchema = {
     status: 200,
@@ -243,6 +258,83 @@ describe('appUserSchemaAdditionDeployment', () => {
       expect(appliedChanges).toHaveLength(2)
       expect(getChangeData(appliedChanges[0])).toEqual(after)
       expect(getChangeData(appliedChanges[1])).toEqual(after)
+    })
+  })
+  describe('removal deploy', () => {
+    it('should successfully deploy removal of app user schema as a verification when application is not found in the service', async () => {
+      mockConnection.get.mockRejectedValue(notFoundError)
+      const changes = [toChange({ before: appUserSchemaInstance })]
+      const result = await filter.deploy(changes)
+      const { appliedChanges, errors } = result.deployResult
+
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/apps/1', undefined)
+      expect(errors).toHaveLength(0)
+      expect(appliedChanges).toHaveLength(1)
+      expect(appliedChanges.map(change => getChangeData(change))[0]).toEqual(appUserSchemaInstance)
+    })
+    it('should fail when the parent application exists', async () => {
+      mockConnection.get.mockResolvedValue(successResponse)
+      const changes = [toChange({ before: appUserSchemaInstance })]
+      const result = await filter.deploy(changes)
+      const { appliedChanges, errors } = result.deployResult
+
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/apps/1', undefined)
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toEqual('Expected the parent Application to be deleted')
+      expect(appliedChanges).toHaveLength(0)
+    })
+    it('should fail when there is no parent applicaton', async () => {
+      delete appUserSchemaInstance.annotations[CORE_ANNOTATIONS.PARENT]
+      const changes = [toChange({ before: appUserSchemaInstance })]
+      const result = await filter.deploy(changes)
+      const { appliedChanges, errors } = result.deployResult
+
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toEqual('Expected the parent Application to be deleted')
+      expect(appliedChanges).toHaveLength(0)
+    })
+    it('should fail when the client returns another error', async () => {
+      mockConnection.get.mockRejectedValue(otherError)
+      const changes = [toChange({ before: appUserSchemaInstance })]
+      const result = await filter.deploy(changes)
+      const { appliedChanges, errors } = result.deployResult
+
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toEqual('Failed to get /api/v1/apps/1 with error: Error: message')
+      expect(appliedChanges).toHaveLength(0)
+    })
+    it('should handle multiple changes', async () => {
+      mockConnection.get.mockRejectedValueOnce(notFoundError) // first app is deleted
+      mockConnection.get.mockResolvedValueOnce(successResponse) // second app exists
+
+      const otherAppUserSchemaType = new ObjectType({
+        elemID: new ElemID(OKTA, APP_USER_SCHEMA_TYPE_NAME, 'instance', 'other'),
+      })
+      const otherAppUserSchemaInstance = new InstanceElement(
+        'appUserSchema',
+        otherAppUserSchemaType,
+        {
+          name: 'C',
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: {
+            id: '2',
+          },
+        },
+      )
+
+      const changes = [toChange({ before: appUserSchemaInstance }), toChange({ before: otherAppUserSchemaInstance })]
+      const result = await filter.deploy(changes)
+      const { appliedChanges, errors } = result.deployResult
+
+      expect(mockConnection.get).toHaveBeenCalledTimes(2)
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/apps/1', undefined)
+      expect(appliedChanges).toHaveLength(1)
+      expect(getChangeData(appliedChanges[0]).elemID.isEqual(appUserSchemaInstance.elemID)).toBeTruthy()
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toEqual('Expected the parent Application to be deleted')
+      expect((errors[0] as SaltoElementError).elemID.isEqual(otherAppUserSchemaInstance.elemID)).toBeTruthy()
     })
   })
 })

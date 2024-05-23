@@ -77,6 +77,7 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import OktaClient from '../src/client/client'
+import { OktaFetchOptions } from '../src/definitions/types'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -108,7 +109,7 @@ const createInstance = ({
     log.warn(`Could not find type ${typeName}, error while creating instance`)
     throw new Error(`Failed to find type ${typeName}`)
   }
-  const fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG, true, 'baseUrl')
+  const fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG, true)
   const elemIDDef = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)?.element
     ?.topLevel?.elemID
   if (elemIDDef === undefined) {
@@ -462,6 +463,14 @@ const deployCleanup = async (adapterAttr: Reals, types: ObjectType[], elements: 
   log.debug('Environment cleanup successful')
 }
 
+const getHiddenFieldsToOmit = (fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaFetchOptions>, typeName: string): string[] => {
+  const customizations = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)?.element?.fieldCustomizations
+  return Object.entries(customizations ?? {})
+    .filter(([, customization]) => customization.hide === true)
+    .map(([fieldName, ]) => fieldName)
+    .filter(fieldName => fieldName !== 'id')
+}
+
 describe('Okta adapter E2E', () => {
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
@@ -469,6 +478,7 @@ describe('Okta adapter E2E', () => {
     const testSuffix = uuidv4().slice(0, 8)
     let elements: Element[] = []
     let deployResults: DeployResult[]
+    let fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaFetchOptions>
 
     const deployAndFetch = async (changes: Change[]): Promise<void> => {
       deployResults = await deployChanges(adapterAttr, changes)
@@ -501,6 +511,7 @@ describe('Okta adapter E2E', () => {
       const fetchBeforeCleanupResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
+      fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG, true)
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
       await deployCleanup(adapterAttr, types, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 
@@ -649,12 +660,10 @@ describe('Okta adapter E2E', () => {
       deployInstances.forEach(deployedInstance => {
         log.trace('Checking instance %s', deployedInstance.elemID.getFullName())
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
-        if (instance === undefined) {
-          log.error('Shir - failed to find instance %s in fetched elements', deployedInstance.elemID.getFullName())
-        }
         expect(instance).toBeDefined()
-        // Omit hidden fields
-        const originalValue = _.omit(instance?.value, ['_links', 'customName', 'logo', 'favicon'])
+        // Omit hidden fields that are not written to nacl after deployment
+        const fieldsToOmit = getHiddenFieldsToOmit(fetchDefinitions, deployedInstance.elemID.typeName)
+        const originalValue = _.omit(instance?.value, fieldsToOmit)
         const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
         if (!isEqualResult) {
           log.error(

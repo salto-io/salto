@@ -69,6 +69,16 @@ const areEqualSchemas = (first: SchemaOrReference, second: SchemaOrReference, re
     return undefined
   })
 
+const extractLastArg = (endpoint: string): string | undefined => {
+  const parts = endpoint.split('/')
+  const lastParamIdx = _(parts).findLastIndex(part => new RegExp(/\{[^}]+\}/).test(part))
+  if (lastParamIdx !== -1) {
+    const match = parts[lastParamIdx].match(/\{([^}]+)\}/)
+    return match ? match[1] : undefined
+  }
+  return undefined
+}
+
 /*
  * Util function to get the inner schema of a schema or reference
  */
@@ -121,6 +131,8 @@ const getTypeNameAndDataField = ({
 }): { typeName: string; field: string } | undefined => {
   const schema = isReferenceObject(schemaOrRef) ? refs.get(schemaOrRef.$ref) : schemaOrRef
   if (schema === undefined) {
+    // eslint-disable-next-line no-console
+    console.log('Failed to get typeName for endpoint %s', endpoint)
     log.error('Failed to get typeName and data field for endpoint %s', endpoint)
     return undefined
   }
@@ -128,6 +140,10 @@ const getTypeNameAndDataField = ({
   const matchingItemEndpoint = listEndpointToItemEndpoint[endpoint]
   // if there's a matching single item endpoint, we look for a field that matches the single item schema
   if (matchingItemEndpoint !== undefined) {
+    if (endpoint === '/event_orchestrations') {
+      // eslint-disable-next-line no-console
+      console.log('in matchingItemEndpoint stategy for edpoint %s, found matchin single', endpoint, matchingItemEndpoint) // TODOS remove
+    }
     const itemSchemaOrRef = schemaByEndpoint[matchingItemEndpoint]
     const { schemaOrRef: innerItemSchemaOrRef } = getInnerSchemaOrRef({
       schemaOrRef: itemSchemaOrRef,
@@ -136,6 +152,10 @@ const getTypeNameAndDataField = ({
     })
     const matching = Object.entries(extractProperties(schema, refs).allProperties).find(
       ([_propName, propSchemaOrRef]) => {
+        if (endpoint === '/event_orchestrations') { // TODOS remove
+          // eslint-disable-next-line no-console
+          console.log('prop name is', _propName) // TODOS remove
+        }
         const { schemaOrRef: propInnerSchemaOrRef } = getInnerSchemaOrRef({
           schemaOrRef: propSchemaOrRef as SchemaOrReference,
           refs,
@@ -211,7 +231,13 @@ export const createFetchRequestDef = ({
           schemaByEndpoint,
           knownPageFieldsToIgnore
         })
+        if(endpoint === '/event_orchestrations'){
+          // eslint-disable-next-line no-console
+          console.log('res is %s', safeJsonStringify(res)) // TODOS remove
+        }
         if (!res) {
+          // eslint-disable-next-line no-console
+          console.log('failed to find matching schema name for endpoint %s', endpoint) // TODOS remove
           log.error('failed to find matching schema name for schema %s', safeJsonStringify(schema))
           return
         }
@@ -231,5 +257,155 @@ export const createFetchRequestDef = ({
       }
     })
   log.debug('created fetch request definitions: %o', safeJsonStringify(updatedDefs))
+  return updatedDefs
+}
+
+
+/*
+ * Converts swagger spec to request definitions
+ * if includeSubResources is true, recurseInto definitions will be added
+ */
+export const getResourceDef = ({
+  loadedSwagger,
+  resourceDefinitions,
+  types,
+  includeSubResources,
+  // TODOS add optional pre calculated data field
+}: {
+  loadedSwagger: LoadedSwagger
+  resourceDefinitions?: Record<string, Pick<InstanceFetchApiDefinitions, 'resource'>>
+  types?: string[]
+  includeSubResources?: boolean
+}): Record<string, Pick<InstanceFetchApiDefinitions, 'resource'>> => {
+  log.debug('creating fetch resource definitions for types %o, %s', types, includeSubResources)
+  const swaggerVersion = getSwaggerVersion(loadedSwagger)
+  const endpointsBySchema: Record<string, SchemaOrReference> = Object.fromEntries(
+    Object.entries(loadedSwagger.document.paths)
+      .filter(([url, def]) => isDefined(def.get) && !isSingleItemEndpoint(url))
+      .map(([url, def]) => [url, toSchema(swaggerVersion, def.get.responses[200] ?? def.get.responses['2XX'])])
+      .filter(([_url, schema]) => isDefined(schema)),
+  )
+
+  // const [dependentEndpoints, independentEndpoints] = _.partition(Object.entries(endpointsBySchema), ([url, _schema]) =>
+  //   isDependentEndpoint(url),
+  // )
+  const independentEndpoints = Object.entries(endpointsBySchema).filter(([ url, _schema ]) => !isDependentEndpoint(url))
+
+  const endpointsByParentEndpoint = _.groupBy(Object.keys(endpointsBySchema), endpoint => getParentEndpoint(endpoint))
+  // eslint-disable-next-line no-console
+  // console.log('endpointsByParentEndpoint %s', safeJsonStringify(endpointsByParentEndpoint)) // TODOS remove, just for debug
+
+  const updatedDefs = { ...resourceDefinitions }
+  independentEndpoints.forEach(([url, schema]) => {
+    try {
+      const typeName = getTypeNameAndDataField({
+        endpoint: url,
+        schemaOrRef: schema,
+        refs: loadedSwagger.parser.$refs,
+        listEndpointToItemEndpoint: {}, // TODOS should be empty ???
+        schemaByEndpoint: endpointsBySchema,
+      })?.typeName
+      if (!typeName) {
+        return
+      }
+      if (updatedDefs[typeName] === undefined) {
+        Object.assign(updatedDefs, { [typeName]: { resource: { directFetch: true } } })
+      }
+      updatedDefs[typeName].resource = { directFetch: true, ...updatedDefs[typeName].resource }
+
+      if (includeSubResources && endpointsByParentEndpoint[url] !== undefined) {
+        const recurseIntoEndpoints = endpointsByParentEndpoint[url]
+        recurseIntoEndpoints.forEach(subResourceEndpoint => {
+          // add recurse into info to request (TODOS - extract to function)
+          try {
+            const subResourceDetails = getTypeNameAndDataField({
+              endpoint: subResourceEndpoint,
+              schemaOrRef: endpointsBySchema[subResourceEndpoint],
+              refs: loadedSwagger.parser.$refs,
+              listEndpointToItemEndpoint: {}, // TODOS should be empty ???
+              schemaByEndpoint: endpointsBySchema,
+            })
+            const subResourceTypeName = subResourceDetails?.typeName
+            const lastEndpointParam = extractLastArg(subResourceEndpoint)
+            if (subResourceTypeName === undefined || lastEndpointParam === undefined) {
+              // eslint-disable-next-line no-console
+              console.log('Failed to extract subresource defs for subresource %s and parent %s', subResourceEndpoint, url)
+              return // TODOS log error and etc
+            }
+
+            // set recurseInto def in the parent type
+            _.set(
+              updatedDefs,
+              [typeName, 'resource', 'recurseInto'],
+              {
+                [subResourceTypeName]: {
+                  typeName: subResourceTypeName,
+                  context: { 
+                    args: { [lastEndpointParam]: { root: 'id'}}
+                  }
+                }
+              }
+            )
+
+            // set request def in the sub resource type definitions
+            // TODOSSS
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.log('failed to get type name and data field for subresource %s', subResourceEndpoint)
+            log.error('failed to get type name and data field for subresource %s', subResourceEndpoint)
+          }
+        })
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.log('failed to update resource definitions for endpoint %s', url)
+    }
+  })
+
+  // TODOS  - this part if implemented correctly will handle all level of subresources
+  // the above implementation is only for the first level of subresources
+  // if (!includeSubResources) {
+  //   return updatedDefs
+  // }
+  // const dependentEndpointsByParent = _.groupBy(Object.keys(endpointsBySchema), endpoint => getParentEndpoint(endpoint))
+  // const graph = createDependencyGraphV2(dependentEndpointsByParent)
+  // wu(graph.evaluationOrder()).forEach(nodeId => {
+  //   const schema = endpointsBySchema[nodeId.toString()]
+  //   const resourceTypeName = toMatchingSchemaName(schema)
+  //   if (!resourceTypeName) {
+  //     return
+  //   }
+  //   const dependencies = graph.getReverse(nodeId)
+  //   dependencies.forEach(dep => {
+  //     // update sub resource defeinitions
+  //     const dependencyTypeName = toMatchingSchemaName(endpointsBySchema[dep])
+  //     if (!dependencyTypeName) {
+  //       return
+  //     }
+  //     if (updatedDefs[dependencyTypeName] === undefined) {
+  //       Object.assign(updatedDefs, { [dependencyTypeName]: { resource: { directFetch: false } } })
+  //     }
+  //     updatedDefs[dependencyTypeName].resource = { directFetch: false, ...updatedDefs[dependencyTypeName].resource }
+  //     const lastEndpointParam = extractLastArg(dep.toString())
+  //     if (lastEndpointParam !== undefined) {
+  //       // update the parent resource definition
+  //       const recurseIntoDef = {
+  //         [dependencyTypeName]: {
+  //           typeName: dependencyTypeName,
+  //           context: { args: { [lastEndpointParam]: { fromField: 'id' } } },
+  //         },
+  //       }
+  //       // TODO add to resourceDef.resource.recurseInto the new recurseIntoDef
+  //       const nodeResouceDef = updatedDefs[resourceTypeName].resource
+  //       if (nodeResouceDef !== undefined) {
+  //         Object.assign(nodeResouceDef, {
+  //           ...nodeResouceDef,
+  //           recurseInto: { ...nodeResouceDef.recurseInto, ...recurseIntoDef },
+  //         })
+  //       }
+  //     }
+  //   })
+  // })
+  // log.debug('creating subresource fetch request definitions for types %o', dependentEndpoints)
   return updatedDefs
 }

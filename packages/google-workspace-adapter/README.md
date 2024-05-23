@@ -39,5 +39,3 @@ The adapter also supports OAuth authentication. To authenticate using OAuth, use
       7. Under 'Access to Google Data' check the 'Trusted' checkbox and continue.
       8. View your configuration and click 'Finish'.
 5. Run the `salto account add ...` command and follow the instructions to authenticate using OAuth. You will need to provide the `clientId` and `clientSecret`, which you can obtain from the same page you create the Oauth and set the `redirectUri`, you can go to your google [console](https://console.cloud.google.com/) => `APIs & Services` => `Credentials` .
-
-Please notice - in order to log in with oauth to google workspace, we are using the refresh token. The refresh token only returns in the first request, so if you are already connected to your google workspace in your browser, you can open a guest tab and repeat the login.

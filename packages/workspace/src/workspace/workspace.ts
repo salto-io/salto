@@ -483,7 +483,7 @@ export const listElementsDependenciesInWorkspace = async ({
     return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
   }, 'List dependencies in workspace')
 
-type GetCustomReferencesFunc = (
+export type WorkspaceGetCustomReferencesFunc = (
   elements: Element[],
   accountToServiceName: Record<string, string>,
   adaptersConfig: AdaptersConfigSource,
@@ -498,7 +498,7 @@ export const loadWorkspace = async (
   ignoreFileChanges = false,
   persistent = true,
   mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
-  getCustomReferences: GetCustomReferencesFunc = async () => [],
+  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -1334,7 +1334,7 @@ export const loadWorkspace = async (
       const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
       return _.uniqBy(filteredReferences, ref => ref.id.getFullName()).map(outgoingReference => ({
         ...outgoingReference,
-        sourceScope: DEFAULT_SOURCE_SCOPE,
+        sourceScope: outgoingReference.sourceScope ?? DEFAULT_SOURCE_SCOPE,
       }))
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
@@ -1350,7 +1350,7 @@ export const loadWorkspace = async (
         throw new Error(`getElementIncomingReferenceInfos only support base ids, received ${id.getFullName()}`)
       }
       const entries = (await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())) ?? []
-      return entries.map(entry => ({ ...entry, sourceScope: 'baseId' }))
+      return entries.map(entry => ({ ...entry, sourceScope: entry.sourceScope ?? DEFAULT_SOURCE_SCOPE }))
     },
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
@@ -1657,7 +1657,7 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
-  getCustomReferences: GetCustomReferencesFunc = async () => [],
+  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({

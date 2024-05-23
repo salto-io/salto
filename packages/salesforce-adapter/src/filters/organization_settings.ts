@@ -32,6 +32,7 @@ import {
 } from '../transformers/transformer'
 import {
   API_NAME,
+  ORGANIZATION_API_VERSION,
   ORGANIZATION_SETTINGS,
   RECORDS_PATH,
   SALESFORCE,
@@ -165,9 +166,36 @@ const createOrganizationInstance = (
     ],
   )
 
+const createOrganizationApiVersionElements = (): [
+  ObjectType,
+  InstanceElement,
+] => {
+  const objectType = new ObjectType({
+    elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION),
+    fields: {
+      [LATEST_SUPPORTED_API_VERSION_FIELD]: {
+        refType: BuiltinTypes.NUMBER,
+      },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.DELETABLE]: false,
+    },
+    isSettings: true,
+    path: getTypePath(ORGANIZATION_API_VERSION),
+  })
+
+  const instance = new InstanceElement(ElemID.CONFIG_NAME, objectType)
+
+  return [objectType, instance]
+}
+
 const addLatestSupportedAPIVersion = async (
   client: SalesforceClient,
-  instance: InstanceElement,
+  instances: InstanceElement[],
 ): Promise<void> => {
   const versions = await client.request('/services/data/')
   if (!Array.isArray(versions)) {
@@ -188,7 +216,9 @@ const addLatestSupportedAPIVersion = async (
     return
   }
 
-  instance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
+  instances.forEach((instance) => {
+    instance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
+  })
 }
 
 const FILTER_NAME = 'organizationSettings'
@@ -231,11 +261,22 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         queryResult[0],
       )
 
-      if (config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')) {
-        await addLatestSupportedAPIVersion(client, organizationInstance)
-      }
+      // TODO (SALTO-5978): Remove once we enable the optional feature.
+      const [apiVersionType, apiVersionInstance] =
+        createOrganizationApiVersionElements()
 
-      elements.push(objectType, organizationInstance)
+      const versionInstances = [apiVersionInstance]
+      if (config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')) {
+        versionInstances.push(organizationInstance)
+      }
+      await addLatestSupportedAPIVersion(client, versionInstances)
+
+      elements.push(
+        objectType,
+        organizationInstance,
+        apiVersionType,
+        apiVersionInstance,
+      )
     },
   }),
 })

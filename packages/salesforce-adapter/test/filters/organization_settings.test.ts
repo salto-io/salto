@@ -20,6 +20,7 @@ import * as filterUtilsModule from '../../src/filters/utils'
 import {
   API_NAME,
   CUSTOM_OBJECT_ID_FIELD,
+  ORGANIZATION_API_VERSION,
   ORGANIZATION_SETTINGS,
   SALESFORCE,
 } from '../../src/constants'
@@ -161,6 +162,7 @@ describe('organization-wide defaults filter', () => {
             [CORE_ANNOTATIONS.UPDATABLE]: false,
             [API_NAME]: ORGANIZATION_SETTINGS,
           },
+          isSettings: true,
         },
         {
           elemID: new ElemID(
@@ -177,6 +179,28 @@ describe('organization-wide defaults filter', () => {
             DefaultContactAccess: 'ControlledByParent',
             DefaultLeadAccess: 'ReadEditTransfer',
             DefaultOpportunityAccess: 'None',
+            LatestSupportedApiVersion: 60,
+          },
+        },
+        {
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION),
+          annotations: {
+            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            [CORE_ANNOTATIONS.UPDATABLE]: false,
+            [CORE_ANNOTATIONS.CREATABLE]: false,
+            [CORE_ANNOTATIONS.DELETABLE]: false,
+          },
+          isSettings: true,
+        },
+        {
+          elemID: new ElemID(
+            SALESFORCE,
+            ORGANIZATION_API_VERSION,
+            'instance',
+            '_config',
+          ),
+          value: {
             LatestSupportedApiVersion: 60,
           },
         },
@@ -202,6 +226,7 @@ describe('organization-wide defaults filter', () => {
             [CORE_ANNOTATIONS.UPDATABLE]: false,
             [API_NAME]: ORGANIZATION_SETTINGS,
           },
+          isSettings: true,
         },
         {
           elemID: new ElemID(
@@ -218,6 +243,28 @@ describe('organization-wide defaults filter', () => {
             DefaultContactAccess: 'ControlledByParent',
             DefaultLeadAccess: 'ReadEditTransfer',
             DefaultOpportunityAccess: 'None',
+          },
+        },
+        {
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION),
+          annotations: {
+            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            [CORE_ANNOTATIONS.UPDATABLE]: false,
+            [CORE_ANNOTATIONS.CREATABLE]: false,
+            [CORE_ANNOTATIONS.DELETABLE]: false,
+          },
+          isSettings: true,
+        },
+        {
+          elemID: new ElemID(
+            SALESFORCE,
+            ORGANIZATION_API_VERSION,
+            'instance',
+            '_config',
+          ),
+          value: {
+            LatestSupportedApiVersion: 60,
           },
         },
       ])

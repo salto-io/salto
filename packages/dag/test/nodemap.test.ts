@@ -645,29 +645,46 @@ describe('NodeMap', () => {
       })
 
       describe('when the handler throws a FatalError', () => {
+        const handlerMock = jest.fn()
         let error: Error
         beforeEach(() => {
+          subject.addNode(5, [1])
           try {
             subject.walkSync((id: NodeId) => {
+              handlerMock(id)
+
               if (id === 2) {
                 throw new FatalError('My error message')
               }
-              return undefined
             })
           } catch (e) {
             error = e
           }
         })
 
-        it('should throw before all nodes are visited, and set NodeSkippedError for the rest', () => {
+        it('should not call the handler for nodes that have not started yet', () => {
+          expect(handlerMock).not.toHaveBeenCalledWith(3)
+          expect(handlerMock).not.toHaveBeenCalledWith(4)
+          expect(handlerMock).not.toHaveBeenCalledWith(5)
+        })
+
+        it('should set NodeSkippedError on all the nodes that are skipped due to the error', () => {
           expect(error).toBeDefined()
           expect(error).toBeInstanceOf(WalkError)
 
           const errors = (error as WalkError).handlerErrors
-          expect(errors.size).toBe(3)
+          expect(errors.size).toBe(4)
           expect(errors.get(2)).toBeInstanceOf(FatalError)
           expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
           expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(5)).toBeInstanceOf(NodeSkippedError)
+        })
+
+        it('should set the `causingNode` id to the node that caused the fatal error', () => {
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.get(3) as NodeSkippedError).toHaveProperty('causingNode', 2)
+          expect(errors.get(4) as NodeSkippedError).toHaveProperty('causingNode', 2)
+          expect(errors.get(5) as NodeSkippedError).toHaveProperty('causingNode', 2)
         })
       })
 
@@ -914,6 +931,7 @@ describe('NodeMap', () => {
       })
 
       describe('when the handler throws a FatalError', () => {
+        const handlerMock = jest.fn()
         let error: Error
         let resolve: (value: void | PromiseLike<void>) => void
         beforeEach(async () => {
@@ -928,24 +946,34 @@ describe('NodeMap', () => {
                   resolve = r
                 })
               }
-              return undefined
+              return handlerMock(id)
             })
             .catch(e => {
               error = e
             })
         })
 
-        it('should throw before all promises are resolved and add NodeSkippedError for remaining nodes', () => {
+        afterEach(() => {
+          resolve()
+        })
+
+        it('should throw before all promises are resolved', async () => {
           expect(error).toBeDefined()
           expect(error).toBeInstanceOf(WalkError)
+          expect((error as WalkError).handlerErrors.get(3)).toBeInstanceOf(FatalError)
+          expect(handlerMock).not.toHaveBeenCalledWith(4)
+        })
 
+        it('should set NodeSkippedError on all the nodes that are skipped due to the error', () => {
           const errors = (error as WalkError).handlerErrors
-          expect(errors.size).toBe(3)
-          expect(errors.get(3)).toBeInstanceOf(FatalError)
           expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
           expect(errors.get(6)).toBeInstanceOf(NodeSkippedError)
+        })
 
-          resolve()
+        it('should set the `causingNode` id to the node that caused the fatal error', () => {
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.get(4) as NodeSkippedError).toHaveProperty('causingNode', 3)
+          expect(errors.get(6) as NodeSkippedError).toHaveProperty('causingNode', 3)
         })
       })
 

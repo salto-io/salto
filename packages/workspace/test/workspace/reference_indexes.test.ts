@@ -539,7 +539,20 @@ describe('updateReferenceIndexes', () => {
           mapVersions,
           elementsSource,
           true,
-          async () => [],
+          async () => [
+            // Make sure we set sourceScope correctly in the indexes
+            {
+              source: ElemID.fromFullName('test.object.instance.instance.withoutSourceScope'),
+              target: ElemID.fromFullName('test.type.instance.testSourceScope.without'),
+              type: 'weak',
+            },
+            {
+              source: ElemID.fromFullName('test.object.instance.instance.withSourceScope'),
+              target: ElemID.fromFullName('test.type.instance.testSourceScope.with'),
+              type: 'weak',
+              sourceScope: 'value',
+            },
+          ],
         )
       })
       it('should update referenceTargets index using the element source', () => {
@@ -558,6 +571,20 @@ describe('updateReferenceIndexes', () => {
                 [
                   { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
                   { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
+                ],
+              ],
+              [
+                'withoutSourceScope',
+                [{ id: new ElemID('test', 'type', 'instance', 'testSourceScope', 'without'), type: 'weak' }],
+              ],
+              [
+                'withSourceScope',
+                [
+                  {
+                    id: new ElemID('test', 'type', 'instance', 'testSourceScope', 'with'),
+                    type: 'weak',
+                    sourceScope: 'value',
+                  },
                 ],
               ],
               [
@@ -590,6 +617,17 @@ describe('updateReferenceIndexes', () => {
           {
             key: 'test.target2.field.anotherTemplateField',
             value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
+          },
+          {
+            key: 'test.type.instance.testSourceScope',
+            value: [
+              { id: ElemID.fromFullName('test.object.instance.instance.withoutSourceScope'), type: 'weak' },
+              {
+                id: ElemID.fromFullName('test.object.instance.instance.withSourceScope'),
+                type: 'weak',
+                sourceScope: 'value',
+              },
+            ],
           },
           {
             key: 'test.article.instance.article',

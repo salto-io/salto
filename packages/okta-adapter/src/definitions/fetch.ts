@@ -360,16 +360,23 @@ const createCustomizations = ({
       {
         endpoint: { path: 'api/v1/apps/{appId}/groups' },
         transformation: {
-          // assign app id from context to value to be used as service id
           adjust: ({ value, context }) => ({
-            value: { ...(_.isObject(value) ? { ...value, appId: context.appId } : {}) },
+            value: {
+               ...(_.isObject(value) 
+               ? { ...value,
+                // assign app id from context to value to be used as service id
+                appId: context.appId,
+                // duplicate id to additonal field to be used as service id, because currently references can't be used as service id
+                groupId: _.get(value, 'id') 
+              }
+               : {}) },
           }),
         },
       },
     ],
     resource: {
       directFetch: false,
-      serviceIDFields: ['id', 'appId'],
+      serviceIDFields: ['groupId', 'appId'],
     },
     element: {
       topLevel: {
@@ -378,6 +385,7 @@ const createCustomizations = ({
         serviceUrl: { path: '/admin/app/{_parent.0.name}/instance/{_parent.0.id}/#tab-assignments' },
       },
       fieldCustomizations: {
+        groupId: { fieldType: 'string', hide: true },
         appId: { fieldType: 'string', hide: true },
         _links: { omit: true },
         profile: { fieldType: 'map<unknown>' },

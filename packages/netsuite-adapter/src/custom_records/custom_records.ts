@@ -17,16 +17,9 @@ import Ajv from 'ajv'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import {
-  InstanceElement,
-  ObjectType,
-  ElemIdGetter,
-  OBJECT_SERVICE_ID,
-  toServiceIdsString,
-  OBJECT_NAME,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { CUSTOM_RECORDS_PATH, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
+import { CUSTOM_RECORDS_PATH, INTERNAL_ID, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
 import { NetsuiteQuery } from '../config/query'
 import NetsuiteClient from '../client/client'
 import { RecordValue } from '../client/suiteapp_client/soap_client/types'
@@ -77,11 +70,11 @@ const createInstances = async (
     : {}
 
   return records
-    .map(record => ({
-      [SCRIPT_ID]: record[SOAP_SCRIPT_ID]
-        ? String(record[SOAP_SCRIPT_ID]).toLowerCase()
+    .map(({ [SOAP_SCRIPT_ID]: scriptId, ...record }) => ({
+      ...record,
+      [SCRIPT_ID]: scriptId
+        ? String(scriptId).toLowerCase()
         : idToSuiteQLRecord[record.attributes.internalId]?.scriptid.toLowerCase(),
-      ..._.omit(record, SOAP_SCRIPT_ID),
     }))
     .filter(record => {
       if (!record[SCRIPT_ID]) {
@@ -95,9 +88,9 @@ const createInstances = async (
         elemIdGetter?.(
           NETSUITE,
           {
-            [SCRIPT_ID]: record[SCRIPT_ID],
+            [INTERNAL_ID]: record.attributes.internalId,
             [OBJECT_SERVICE_ID]: toServiceIdsString({
-              [OBJECT_NAME]: type.elemID.getFullName(),
+              [SCRIPT_ID]: type.annotations[SCRIPT_ID],
             }),
           },
           naclCase(record[SCRIPT_ID]),

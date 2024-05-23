@@ -25,8 +25,7 @@ export const addIdentifierToType = (type: ObjectType): void => {
   if (!(type.elemID.name in TYPE_TO_ID_FIELD_PATHS) && type.fields.parent === undefined) {
     return
   }
-
-  type.fields[IDENTIFIER_FIELD] = new Field(type, IDENTIFIER_FIELD, BuiltinTypes.SERVICE_ID)
+  type.fields[IDENTIFIER_FIELD] = new Field(type, IDENTIFIER_FIELD, BuiltinTypes.STRING)
 }
 
 const getIdentifierWithoutParent = (values: Values, type: ObjectType): string => {

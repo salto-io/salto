@@ -292,9 +292,9 @@ export const createInstances = (
     { [CORE_ANNOTATIONS.PARENT]: [objectSchemaRef] },
   )
   const objectSchemaGlobalStatus = new InstanceElement(
-    `globalStatus${randomString}`,
+    `OSGS${randomString}`,
     findType(OBJECT_SCHEMA_GLOBAL_STATUS_TYPE, fetchedElements),
-    createObjectSchemaGlobalStatusValues(`globalStatus${randomString}`),
+    createObjectSchemaGlobalStatusValues(`OSGS${randomString}`),
   )
 
   const objectType = new InstanceElement(

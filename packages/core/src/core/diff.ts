@@ -15,7 +15,7 @@
  */
 import { logger } from '@salto-io/logging'
 import { DetailedChange, DetailedChangeWithBaseChange, ElemID, isRemovalChange } from '@salto-io/adapter-api'
-import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap } from '@salto-io/workspace'
+import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap, ReferenceIndexEntry } from '@salto-io/workspace'
 import wu from 'wu'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -28,7 +28,7 @@ const { awu } = collections.asynciterable
 const getFilteredIds = (
   selectors: ElementSelector[],
   source: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
 ): Promise<ElemID[]> =>
   log.timeDebug(
     async () =>
@@ -45,7 +45,7 @@ const getFilteredIds = (
 const createMatchers = async (
   beforeElementsSrc: elementSource.ElementsSource,
   afterElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors: ElementSelector[],
 ): Promise<{
   isChangeMatchSelectors: (change: DetailedChange) => boolean
@@ -112,7 +112,7 @@ const createMatchers = async (
 export function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]> | undefined,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]> | undefined,
   elementSelectors: ElementSelector[] | undefined,
   topLevelFilters: IDFilter[] | undefined,
   resultType: 'changes',
@@ -120,7 +120,7 @@ export function createDiffChanges(
 export function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors?: ElementSelector[],
   topLevelFilters?: IDFilter[],
   resultType?: 'detailedChanges',
@@ -128,7 +128,7 @@ export function createDiffChanges(
 export async function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]> = new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]> = new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = [],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges',

@@ -49,6 +49,7 @@ import {
 import { createMockRemoteMap, mockStaticFilesSource } from '../../utils'
 import { MissingStaticFile } from '../../../src/workspace/static_files'
 import { NaclFilesSource, ChangeSet } from '../../../src/workspace/nacl_files'
+import { ReferenceIndexEntry } from '../../../src/workspace/reference_indexes'
 
 const { awu } = collections.asynciterable
 jest.mock('@salto-io/adapter-utils', () => ({
@@ -226,10 +227,10 @@ const mockRemoteMaps = (): MockRemoteMapCreator => {
 }
 
 describe('multi env source', () => {
-  let referencedByIndex: RemoteMap<ElemID[]>
+  let referencedByIndex: RemoteMap<ReferenceIndexEntry[]>
   beforeAll(async () => {
     await source.load({})
-    referencedByIndex = createMockRemoteMap<ElemID[]>()
+    referencedByIndex = createMockRemoteMap<ReferenceIndexEntry[]>()
   })
   describe('load', () => {
     let remoteMaps: MockRemoteMapCreator

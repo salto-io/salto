@@ -48,6 +48,7 @@ import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
 import { MissingStaticFile } from '../../static_files'
+import { ReferenceIndexEntry } from '../../reference_indexes'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -131,7 +132,7 @@ export type MultiEnvSource = {
   getElementIdsBySelectors: (
     env: string,
     selectors: ElementSelector[],
-    referencedByIndex: RemoteMap<ElemID[]>,
+    referencedByIndex: RemoteMap<ReferenceIndexEntry[]>,
     fromSource?: FromSource,
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
@@ -377,11 +378,11 @@ const buildMultiEnvSource = (
     }
   }
 
-  const getElementIdsBySelectors = async (
-    env: string,
-    selectors: ElementSelector[],
-    referenceSourcesIndex: RemoteMap<ElemID[]>,
-    fromSource: FromSource = 'env',
+  const getElementIdsBySelectors: MultiEnvSource['getElementIdsBySelectors'] = async (
+    env,
+    selectors,
+    referenceSourcesIndex,
+    fromSource = 'env',
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource: ElementsSource = await determineSource(env, fromSource)

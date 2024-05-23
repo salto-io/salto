@@ -38,6 +38,7 @@ import {
   isObjectType,
   isModificationChange,
   TypeReference,
+  DEFAULT_SOURCE_SCOPE,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -95,7 +96,12 @@ import {
   deserializeValidationErrors,
 } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
-import { ReferenceTargetIndexValue, updateReferenceIndexes } from './reference_indexes'
+import {
+  isSerliazedReferenceIndexEntry,
+  ReferenceIndexEntry,
+  ReferenceTargetIndexValue,
+  updateReferenceIndexes,
+} from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
@@ -180,6 +186,10 @@ export type FromSourceWithEnv = {
   envName?: string
 }
 
+type IncomingReferenceInfo = {
+  id: ReferenceInfo['source']
+} & Required<Pick<ReferenceInfo, 'type' | 'sourceScope'>>
+
 const isFromSourceWithEnv = (value: { source: FromSource } | FromSourceWithEnv): value is FromSourceWithEnv =>
   value.source === 'env'
 
@@ -239,13 +249,14 @@ export type Workspace = {
   getSourceMap: (filename: string) => Promise<parser.SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
-  getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
+  getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ReferenceIndexEntry[]>>
   getElementOutgoingReferences: (
     id: ElemID,
     envName?: string,
     includeWeakReferences?: boolean,
-  ) => Promise<{ id: ElemID; type: ReferenceType }[]>
+  ) => Promise<Required<ReferenceIndexEntry>[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
+  getElementIncomingReferenceInfos: (id: ElemID, envName?: string) => Promise<IncomingReferenceInfo[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
   getElementsAuthorsById: (envName?: string) => Promise<Record<string, AuthorInformation>>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
@@ -330,7 +341,7 @@ type SingleState = {
   authorInformation: RemoteMap<AuthorInformation>
   alias: RemoteMap<string>
   referencedStaticFiles: RemoteMap<string[]>
-  referenceSources: RemoteMap<ElemID[]>
+  referenceSources: RemoteMap<ReferenceIndexEntry[]>
   referenceTargets: RemoteMap<ReferenceTargetIndexValue>
   mapVersions: RemoteMap<number>
 }
@@ -352,6 +363,25 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
     }
   })
   return ret
+}
+
+export const serializeReferenceSourcesEntries = async (entries: ReferenceIndexEntry[]): Promise<string> =>
+  safeJsonStringify(entries.map(entry => ({ ...entry, id: entry.id.getFullName() })))
+
+export const deserializeReferenceSourcesEntries = async (data: string): Promise<ReferenceIndexEntry[]> => {
+  const parsedEntries = (await JSON.parse(data)) as unknown
+  if (!Array.isArray(parsedEntries)) {
+    throw new Error('Failed to deserialize reference sources entries')
+  }
+  // Handle old format
+  if (parsedEntries.some(_.isString)) {
+    log.debug('Deserializing old reference sources entries format')
+    return parsedEntries.map(id => ({ id: ElemID.fromFullName(id), type: 'strong' }))
+  }
+  if (parsedEntries.some(isSerliazedReferenceIndexEntry)) {
+    return parsedEntries.map(entry => ({ ...entry, id: ElemID.fromFullName(entry.id) }))
+  }
+  throw new Error('Failed to deserialize reference sources entries')
 }
 
 /**
@@ -577,10 +607,10 @@ export const loadWorkspace = async (
                 deserialize: data => JSON.parse(data),
                 persistent,
               }),
-              referenceSources: await remoteMapCreator<ElemID[]>({
+              referenceSources: await remoteMapCreator<ReferenceIndexEntry[]>({
                 namespace: getRemoteMapNamespace('referenceSources', envName),
-                serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
-                deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+                serialize: serializeReferenceSourcesEntries,
+                deserialize: deserializeReferenceSourcesEntries,
                 persistent,
               }),
               referenceTargets: await remoteMapCreator<ReferenceTargetIndexValue>({
@@ -1302,13 +1332,25 @@ export const loadWorkspace = async (
       ).flat()
 
       const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
-      return _.uniqBy(filteredReferences, ref => ref.id.getFullName())
+      return _.uniqBy(filteredReferences, ref => ref.id.getFullName()).map(outgoingReference => ({
+        ...outgoingReference,
+        sourceScope: DEFAULT_SOURCE_SCOPE,
+      }))
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
       }
-      return (await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())) ?? []
+      return makeArray(await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())).map(
+        entry => entry.id,
+      )
+    },
+    getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
+      if (!id.isBaseID()) {
+        throw new Error(`getElementIncomingReferenceInfos only support base ids, received ${id.getFullName()}`)
+      }
+      const entries = (await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())) ?? []
+      return entries.map(entry => ({ ...entry, sourceScope: 'baseId' }))
     },
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {

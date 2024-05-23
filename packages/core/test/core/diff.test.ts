@@ -28,7 +28,7 @@ import {
   getChangeData,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { merger, createElementSelector, elementSource, createElementSelectors, remoteMap } from '@salto-io/workspace'
+import { merger, createElementSelector, elementSource, createElementSelectors, remoteMap, ReferenceIndexEntry } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockWorkspace } from '../common/workspace'
 import { createDiffChanges, getEnvsDeletionsDiff } from '../../src/core/diff'
@@ -179,7 +179,7 @@ describe('diff', () => {
         const changes = await createDiffChanges(
           createElementSource(allElement),
           createElementSource(allElement),
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
         )
         expect(changes).toHaveLength(0)
       })
@@ -189,7 +189,7 @@ describe('diff', () => {
         const changes = await createDiffChanges(
           createElementSource(allElement),
           createElementSource(allElement),
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
           undefined,
           undefined,
           'changes',
@@ -216,7 +216,7 @@ describe('diff', () => {
           changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
           )
         })
         it('should create all changes', () => {
@@ -270,7 +270,7 @@ describe('diff', () => {
           changes = await createDiffChanges(
             createElementSource(beforeElements.concat(beforeInstance)),
             createElementSource(afterElements.concat(afterInstance, addedInstance)),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             selectors,
           )
         })
@@ -295,7 +295,7 @@ describe('diff', () => {
           const changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             selectors,
           )
           expect(changes).toHaveLength(0)
@@ -308,7 +308,7 @@ describe('diff', () => {
             createDiffChanges(
               createElementSource(beforeElements),
               createElementSource(afterElements),
-              new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+              new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
               selectors,
             ),
           ).rejects.toThrow()
@@ -323,7 +323,7 @@ describe('diff', () => {
           const changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(newAfterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             selectors,
           )
           expect(changes).toHaveLength(2)
@@ -337,7 +337,7 @@ describe('diff', () => {
           const changes = await createDiffChanges(
             createInMemoryElementSource([newSinglePathObjMerged]),
             createInMemoryElementSource([singlePathObjMerged]),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             selectors,
           )
           expect(changes.map(change => change.id.getFullName())).toEqual([
@@ -362,7 +362,7 @@ describe('diff', () => {
           changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             undefined,
             undefined,
             'changes',
@@ -429,7 +429,7 @@ describe('diff', () => {
           changes = await createDiffChanges(
             createElementSource(beforeElements.concat(beforeInstance)),
             createElementSource(afterElements.concat(afterInstance, addedInstance)),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             selectors,
             undefined,
             'changes',
@@ -472,7 +472,7 @@ describe('diff', () => {
           const changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             selectors,
             undefined,
             'changes',
@@ -487,7 +487,7 @@ describe('diff', () => {
             createDiffChanges(
               createElementSource(beforeElements),
               createElementSource(afterElements),
-              new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+              new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
               selectors,
               undefined,
               'changes',
@@ -504,7 +504,7 @@ describe('diff', () => {
           const changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(newAfterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             selectors,
             undefined,
             'changes',
@@ -526,7 +526,7 @@ describe('diff', () => {
           const changes = await createDiffChanges(
             createInMemoryElementSource([newSinglePathObjMerged]),
             createInMemoryElementSource([singlePathObjMerged]),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             selectors,
             undefined,
             'changes',

@@ -30,6 +30,7 @@ import {
   REFERENCE_INDEXES_VERSION,
   ReferenceTargetIndexValue,
   updateReferenceIndexes,
+  ReferenceIndexEntry,
 } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
@@ -37,16 +38,21 @@ import { createMockRemoteMap } from '../utils'
 
 describe('updateReferenceIndexes', () => {
   let referenceTargetsIndex: MockInterface<RemoteMap<ReferenceTargetIndexValue>>
-  let referenceSourcesIndex: MockInterface<RemoteMap<ElemID[]>>
+  let referenceSourcesIndex: MockInterface<RemoteMap<ReferenceIndexEntry[]>>
   let mapVersions: MockInterface<RemoteMap<number>>
   let elementsSource: ElementsSource
   let object: ObjectType
   let instance: InstanceElement
 
+  const toReferenceIndexEntry = (elemID: ElemID): ReferenceIndexEntry => ({
+    id: elemID,
+    type: 'strong',
+  })
+
   beforeEach(() => {
     referenceTargetsIndex = createMockRemoteMap<ReferenceTargetIndexValue>()
 
-    referenceSourcesIndex = createMockRemoteMap<ElemID[]>()
+    referenceSourcesIndex = createMockRemoteMap<ReferenceIndexEntry[]>()
     referenceSourcesIndex.getMany.mockResolvedValue([])
 
     mapVersions = createMockRemoteMap<number>()
@@ -194,34 +200,38 @@ describe('updateReferenceIndexes', () => {
       expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
         {
           key: 'test.target2.field.someField',
-          value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry),
         },
         {
           key: 'test.target2.instance.someInstance',
-          value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')].map(toReferenceIndexEntry),
         },
         {
           key: 'test.target2.field.someTemplateField',
-          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
         },
         {
           key: 'test.target2.field.anotherTemplateField',
-          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
         },
         {
           key: 'test.article.instance.article',
-          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+            toReferenceIndexEntry,
+          ),
         },
         {
           key: 'test.macro.instance.macro1',
-          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+            toReferenceIndexEntry,
+          ),
         },
         {
           key: 'test.target1',
           value: [
             new ElemID('test', 'object', 'attr', 'typeRef'),
             new ElemID('test', 'object', 'attr', 'inner', 'innerTypeRef'),
-          ],
+          ].map(toReferenceIndexEntry),
         },
         {
           key: 'test.target2',
@@ -231,11 +241,11 @@ describe('updateReferenceIndexes', () => {
             new ElemID('test', 'object', 'field', 'anotherTemplateField', 'fieldRef'),
             new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
             new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-          ],
+          ].map(toReferenceIndexEntry),
         },
         {
           key: 'test.object',
-          value: [new ElemID('test', 'object', 'field', 'fieldWithRefToType', 'fieldRef')],
+          value: [new ElemID('test', 'object', 'field', 'fieldWithRefToType', 'fieldRef')].map(toReferenceIndexEntry),
         },
       ])
     })
@@ -256,17 +266,17 @@ describe('updateReferenceIndexes', () => {
       referenceSourcesIndex.getMany.mockImplementation(async ids =>
         ids.map(id => {
           if (id === 'test.target2.field.someField') {
-            return [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')]
+            return [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry)
           }
 
           if (id === 'test.target2.instance.someInstance') {
-            return [new ElemID('test', 'object', 'instance', 'instance', 'someValue')]
+            return [new ElemID('test', 'object', 'instance', 'instance', 'someValue')].map(toReferenceIndexEntry)
           }
           if (id === 'test.target2.field.someTemplateField') {
-            return [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')]
+            return [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry)
           }
           if (id === 'test.target2.field.anotherTemplateField') {
-            return [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')]
+            return [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry)
           }
           return undefined
         }),
@@ -304,7 +314,7 @@ describe('updateReferenceIndexes', () => {
           value: [
             new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation2'),
             new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
-          ],
+          ].map(toReferenceIndexEntry),
         },
       ])
     })
@@ -333,7 +343,7 @@ describe('updateReferenceIndexes', () => {
       referenceSourcesIndex.getMany.mockImplementation(async ids =>
         ids.map(id => {
           if (id === 'test.target2') {
-            return [new ElemID('test', 'object', 'field', 'someField', 'fieldRef')]
+            return [new ElemID('test', 'object', 'field', 'someField', 'fieldRef')].map(toReferenceIndexEntry)
           }
 
           return undefined
@@ -386,11 +396,11 @@ describe('updateReferenceIndexes', () => {
       referenceSourcesIndex.getMany.mockImplementation(async ids =>
         ids.map(id => {
           if (id === 'test.target2.field.someField') {
-            return [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')]
+            return [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry)
           }
 
           if (id === 'test.target2.instance.someInstance') {
-            return [new ElemID('test', 'object', 'instance', 'instance', 'someValue')]
+            return [new ElemID('test', 'object', 'instance', 'instance', 'someValue')].map(toReferenceIndexEntry)
           }
           return undefined
         }),
@@ -481,34 +491,38 @@ describe('updateReferenceIndexes', () => {
         expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
           {
             key: 'test.target2.field.someField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.target2.instance.someInstance',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.target2.field.someTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.target2.field.anotherTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.article.instance.article',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+              toReferenceIndexEntry,
+            ),
           },
           {
             key: 'test.macro.instance.macro1',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+              toReferenceIndexEntry,
+            ),
           },
           {
             key: 'test.target2',
             value: [
               new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
               new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-            ],
+            ].map(toReferenceIndexEntry),
           },
         ])
       })
@@ -563,34 +577,38 @@ describe('updateReferenceIndexes', () => {
         expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
           {
             key: 'test.target2.field.someField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.target2.instance.someInstance',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.target2.field.someTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.target2.field.anotherTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.article.instance.article',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+              toReferenceIndexEntry,
+            ),
           },
           {
             key: 'test.macro.instance.macro1',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+              toReferenceIndexEntry,
+            ),
           },
           {
             key: 'test.target2',
             value: [
               new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
               new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-            ],
+            ].map(toReferenceIndexEntry),
           },
         ])
       })

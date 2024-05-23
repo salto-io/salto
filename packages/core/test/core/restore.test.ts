@@ -26,7 +26,7 @@ import {
   isModificationChange,
   getChangeData,
 } from '@salto-io/adapter-api'
-import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
+import { merger, pathIndex, remoteMap, ReferenceIndexEntry } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { createRestoreChanges, createRestorePathChanges } from '../../src/core/restore'
 import { createElementSource } from '../common/helpers'
@@ -175,7 +175,7 @@ describe('restore', () => {
           createElementSource(allElement),
           createElementSource(allElement),
           index,
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
         )
         expect(changes).toHaveLength(0)
       })
@@ -186,7 +186,7 @@ describe('restore', () => {
           createElementSource(allElement),
           createElementSource(allElement),
           index,
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
           undefined,
           undefined,
           'changes',
@@ -215,7 +215,7 @@ describe('restore', () => {
             createElementSource([...wsElements, nestedType]),
             createElementSource([...stateElements, nestedType]),
             index,
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
           )
         })
         it('should create all changes', () => {
@@ -259,7 +259,7 @@ describe('restore', () => {
             createElementSource([...wsElements, nestedType]),
             createElementSource([...stateElements, nestedType]),
             index,
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
             undefined,
             undefined,
             'changes',
@@ -313,7 +313,7 @@ describe('restore', () => {
           createElementSource([multiPathObjMerged]),
           createElementSource([]),
           index,
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
         )
       })
       it('should return only on change (avoid spliting by path hint)', () => {
@@ -327,7 +327,7 @@ describe('restore', () => {
           createElementSource([multiPathObjMerged]),
           createElementSource([]),
           index,
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
           undefined,
           undefined,
           'changes',

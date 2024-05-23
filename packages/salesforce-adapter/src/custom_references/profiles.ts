@@ -286,6 +286,7 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
       ),
       target,
       type: 'weak',
+      sourceScope: 'value',
     }),
   )
 

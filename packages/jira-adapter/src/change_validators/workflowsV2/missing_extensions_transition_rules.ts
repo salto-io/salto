@@ -27,105 +27,42 @@ import JiraClient, { ExtensionType } from '../../client/client'
 import {
   isWorkflowV2Instance,
   WorkflowV2ConditionGroup,
-  WorkflowV2TransitionRuleParameters,
   WorkflowV2TransitionRule,
   WorkflowV2Instance,
 } from '../../filters/workflowV2/types'
 
 const { awu } = collections.asynciterable
 
-enum ExtensionRuleType {
+enum RuleType {
   Connect = 'connect',
   Forge = 'forge',
-}
-enum SystemRuleType {
   System = 'system',
 }
 
-type RuleType = ExtensionRuleType | SystemRuleType
+type TransitionRuleWithElemIDType = WorkflowV2TransitionRule & { elemID: ElemID }
 
-type TransitionRuleType = {
-  elemID: ElemID
-  category: string
-  ruleType: RuleType
-  ruleKey: string
-  extensionKey?: string
-}
-
-type ExtensionTransitionRuleType = Required<Omit<TransitionRuleType, 'ruleType'> & { ruleType: ExtensionRuleType }>
-
-const getKeyFromParameters = (parameters?: WorkflowV2TransitionRuleParameters): string | undefined => {
-  if (parameters === undefined) {
-    return undefined
-  }
-  if ('appKey' in parameters) {
-    return parameters.appKey
-  }
-  if ('key' in parameters) {
-    return parameters.key
-  }
-  return undefined
-}
-
-const isRuleType = (value: any): value is RuleType =>
-  Object.values(ExtensionRuleType).includes(value) || Object.values(SystemRuleType).includes(value)
+const isRuleType = (value: any): value is RuleType => Object.values(RuleType).includes(value)
 
 const getRuleTypeFromRuleKey: (ruleKey: string) => RuleType = ruleKey => {
   const ruleType = ruleKey.split(':')[0]
   if (!isRuleType(ruleType)) {
-    throw Error(
-      `Unexpected rule type ${ruleType}, expected of one of ${[...Object.values(ExtensionRuleType), ...Object.values(SystemRuleType)]}`,
-    )
+    throw Error(`Unexpected rule type ${ruleType}, expected of one of ${Object.values(RuleType)}`)
   }
 
   return ruleType
 }
 
-const getRuleMaker =
-  (elemID: ElemID, category: string) =>
-  (rule: WorkflowV2TransitionRule, index: number): TransitionRuleType => {
-    const { ruleKey } = rule
-    const extensionType = getRuleTypeFromRuleKey(ruleKey)
-    return {
-      category: category,
-      ruleType: extensionType,
-      ruleKey,
-      extensionKey: extensionType === 'system' ? undefined : getKeyFromParameters(rule.parameters),
-      elemID: elemID.createNestedID(index.toString()),
-    }
-  }
-
-const getActionRules: (elemID: ElemID, actions?: WorkflowV2TransitionRule[]) => TransitionRuleType[] = (
-  elemID,
-  actions,
-) => {
-  if (actions === undefined) {
-    return []
-  }
-  return actions.map(getRuleMaker(elemID, 'actions'))
-}
-
-const getValidatorRules: (elemID: ElemID, validators?: WorkflowV2TransitionRule[]) => TransitionRuleType[] = (
-  elemID,
-  validators,
-) => {
-  if (validators === undefined) {
-    return []
-  }
-  return validators.map(getRuleMaker(elemID, 'validators'))
-}
-
-const getConditionRules: (elemID: ElemID, conditionGroup?: WorkflowV2ConditionGroup) => TransitionRuleType[] = (
-  elemID,
-  conditionGroup,
-) => {
+const getConditionRules: (
+  elemID: ElemID,
+  conditionGroup?: WorkflowV2ConditionGroup,
+) => TransitionRuleWithElemIDType[] = (elemID, conditionGroup) => {
   if (conditionGroup === undefined) {
     return []
   }
-  let conditionRules: TransitionRuleType[] = []
-  let conditionGroupsRules: TransitionRuleType[] = []
+  let conditionRules: TransitionRuleWithElemIDType[] = []
+  let conditionGroupsRules: TransitionRuleWithElemIDType[] = []
   if (conditionGroup.conditions !== undefined) {
-    conditionRules = conditionGroup.conditions.map(getRuleMaker(elemID.createNestedID('conditions'), 'conditions'))
+    conditionRules = tagTransitionRulesWithIndexElemID(elemID.createNestedID('conditions'), conditionGroup.conditions)
   }
   if (conditionGroup.conditionGroups !== undefined) {
     conditionGroupsRules = conditionGroup.conditionGroups.flatMap((cg: WorkflowV2ConditionGroup, index: number) =>
@@ -136,6 +73,69 @@ const getConditionRules: (elemID: ElemID, conditionGroup?: WorkflowV2ConditionGr
   return [...conditionRules, ...conditionGroupsRules]
 }
 
+const tagTransitionRulesWithIndexElemID = (
+  elemID: ElemID,
+  transitionRules?: WorkflowV2TransitionRule[],
+): TransitionRuleWithElemIDType[] => {
+  if (transitionRules === undefined) {
+    return []
+  }
+
+  return transitionRules.map((rule, index) => ({ elemID: elemID.createNestedID(index.toString()), ...rule }))
+}
+
+const getTransitionRulesWithElemID: (workflow: WorkflowV2Instance) => TransitionRuleWithElemIDType[] = workflow => {
+  return Object.entries(workflow.value.transitions).flatMap(([transitionName, transition]) => {
+    const transitionID = workflow.elemID.createNestedID('transitions', transitionName)
+
+    const validatorRules = tagTransitionRulesWithIndexElemID(
+      transitionID.createNestedID('validators'),
+      transition.validators,
+    )
+    const actionRules = tagTransitionRulesWithIndexElemID(transitionID.createNestedID('actions'), transition.actions)
+    const conditionRules = getConditionRules(transitionID.createNestedID('conditions'), transition.conditions)
+    return [...validatorRules, ...actionRules, ...conditionRules]
+  })
+}
+
+export const getRuleTypeFromWorkflowTransitionRule = (transitionRule: WorkflowV2TransitionRule) => {
+  return getRuleTypeFromRuleKey(transitionRule.ruleKey)
+}
+
+export const getExtensionKeyFromWorkflowTransitionRule = (transitionRule: WorkflowV2TransitionRule) => {
+  const ruleType = getRuleTypeFromWorkflowTransitionRule(transitionRule)
+
+  switch (ruleType) {
+    case RuleType.Connect:
+      return _.get(transitionRule, 'parameters.appKey', undefined)
+    case RuleType.Forge:
+      return _.get(transitionRule, 'parameters.key', undefined)
+    default:
+      return undefined
+  }
+}
+
+export const getExtensionIdFromWorkflowTransitionRule = (transitionRule: WorkflowV2TransitionRule) => {
+  const ruleType = getRuleTypeFromWorkflowTransitionRule(transitionRule)
+  const extensionKey = getExtensionKeyFromWorkflowTransitionRule(transitionRule)
+  if (extensionKey === undefined) {
+    return undefined
+  }
+
+  switch (ruleType) {
+    case RuleType.Connect:
+      return extensionKey.split('__')[0]
+    case RuleType.Forge:
+      return extensionKey.split('/')[1]
+    default:
+      return undefined
+  }
+}
+
+export const isValidExtensionTransitionRule = (transitionRule: WorkflowV2TransitionRule): boolean =>
+  getRuleTypeFromWorkflowTransitionRule(transitionRule) !== RuleType.System &&
+  getExtensionKeyFromWorkflowTransitionRule(transitionRule) !== undefined
+
 export const getInstalledExtensionsMap = async (client: JiraClient): Promise<Record<string, ExtensionType>> =>
   await awu(await client.getInstalledExtensions()).reduce(
     (acc, app) => {
@@ -145,29 +145,6 @@ export const getInstalledExtensionsMap = async (client: JiraClient): Promise<Rec
     {} as Record<string, ExtensionType>,
   )
 
-const isExtensionTransitionRuleType = (
-  transitionRule: TransitionRuleType,
-): transitionRule is ExtensionTransitionRuleType =>
-  transitionRule.ruleType !== SystemRuleType.System && transitionRule.extensionKey !== undefined
-
-const getTransitionRules: (workflow: WorkflowV2Instance) => TransitionRuleType[] = workflow => {
-  return Object.entries(workflow.value.transitions).flatMap(([transitionName, transition]) => {
-    const transitionID = workflow.elemID.createNestedID('transitions', transitionName)
-    const validatorRules = getValidatorRules(transitionID.createNestedID('validators'), transition.validators)
-    const actionRules = getActionRules(transitionID.createNestedID('actions'), transition.actions)
-    const conditionRules = getConditionRules(transitionID.createNestedID('conditions'), transition.conditions)
-    return [...validatorRules, ...actionRules, ...conditionRules]
-  })
-}
-
-export const getExtensionTransitionRules: (workflow: WorkflowV2Instance) => ExtensionTransitionRuleType[] = workflow =>
-  getTransitionRules(workflow).filter(isExtensionTransitionRuleType)
-
-export const getExtensionIdFromTransitionRule = (transitionRule: ExtensionTransitionRuleType): string =>
-  transitionRule.ruleType === ExtensionRuleType.Connect
-    ? transitionRule.extensionKey.split('__')[0]
-    : transitionRule.extensionKey.split('/')[1]
-
 export const missingExtensionsTransitionRulesChangeValidator = (client: JiraClient): ChangeValidator => {
   return async changes => {
     const installedExtensionsMap = await getInstalledExtensionsMap(client)
@@ -176,13 +153,14 @@ export const missingExtensionsTransitionRulesChangeValidator = (client: JiraClie
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(isWorkflowV2Instance)
-      .flatMap(getExtensionTransitionRules)
-      .filter(transitionRule => !(getExtensionIdFromTransitionRule(transitionRule) in installedExtensionsMap))
+      .flatMap(getTransitionRulesWithElemID)
+      .filter(isValidExtensionTransitionRule)
+      .filter(transitionRule => !(getExtensionIdFromWorkflowTransitionRule(transitionRule) in installedExtensionsMap))
       .map(transitionRule => ({
         elemID: transitionRule.elemID,
         severity: 'Error' as SeverityLevel,
         message: 'Attempted to deploy a transition rule of a missing Jira app',
-        detailedMessage: `Can't deploy a transition rule from missing Jira app: ${getExtensionIdFromTransitionRule(transitionRule)}.`,
+        detailedMessage: `Can't deploy a transition rule from missing Jira app: ${getExtensionIdFromWorkflowTransitionRule(transitionRule)}.`,
       }))
       .toArray()
   }

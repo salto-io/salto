@@ -15,7 +15,7 @@
  */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { ValueGeneratedItem } from '@salto-io/adapter-components/src/fetch/types'
+import { ValueGeneratedItem } from '@salto-io/adapter-components/src/fetch'
 import { ZendeskConfig, FETCH_CONFIG, OMIT_INACTIVE_DEFAULT } from './config'
 import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
 

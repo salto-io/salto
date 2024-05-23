@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
-import * as transforms from './transforms'
 import { EVERYONE_USER_TYPE } from '../../constants'
 
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
@@ -144,6 +143,7 @@ const createCustomizations = (): Record<
     },
   },
 
+  // placeholder for order nacls
   view_order: {},
 
   trigger: {
@@ -231,6 +231,7 @@ const createCustomizations = (): Record<
     },
   },
 
+  // placeholder for order nacls
   trigger_order: {},
 
   automation: {
@@ -256,6 +257,7 @@ const createCustomizations = (): Record<
     },
   },
 
+  // placeholder for order nacls
   automation_order: {},
 
   target: {
@@ -324,6 +326,7 @@ const createCustomizations = (): Record<
     },
   },
 
+  // placeholder for order nacls
   sla_policy_order: {},
 
   macro: {
@@ -405,6 +408,7 @@ const createCustomizations = (): Record<
     },
   },
 
+  // placeholder for order nacls
   ticket_form_order: {},
 
   custom_status: {
@@ -559,6 +563,7 @@ const createCustomizations = (): Record<
     },
   },
 
+  // placeholder for order nacls
   user_field_order: {},
 
   organization_field: {
@@ -616,6 +621,7 @@ const createCustomizations = (): Record<
     },
   },
 
+  // placeholder for order nacls
   organization_field_order: {},
 
   brand: {
@@ -1139,7 +1145,9 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
       },
-      fieldCustomizations: { id: { hide: true } },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+      },
     },
   },
 
@@ -1234,10 +1242,9 @@ const createCustomizations = (): Record<
     element: { fieldCustomizations: { id: { fieldType: 'unknown' } } },
   },
 
-  workspace__apps: {
-    element: {},
-  },
+  workspace__apps: {},
 
+  // placeholder for order nacls
   workspace_order: {},
 
   permission_group: {
@@ -1328,7 +1335,7 @@ const createCustomizations = (): Record<
     requests: [
       {
         endpoint: { path: '/api/v2/business_hours/schedules/{parent_id}/holidays' },
-        transformation: { root: 'holidays', adjust: transforms.transformHoliday },
+        transformation: { root: 'holidays' },
       },
     ],
     element: {

@@ -15,15 +15,10 @@
  */
 import _ from 'lodash'
 import { FieldDefinition, ObjectType, ElemID, CORE_ANNOTATIONS, InstanceElement, Values } from '@salto-io/adapter-api'
-import { createMatchingObjectType, safeJsonStringify } from '@salto-io/adapter-utils'
-import { objects } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { createClientConfigType, ClientBaseConfig, ClientRateLimitConfig, validateClientConfig } from './client_config'
-import { DefaultFetchCriteria, ElemIDCustomization, UserFetchConfig, createUserFetchConfigType } from './fetch_config'
+import { DefaultFetchCriteria, UserFetchConfig, createUserFetchConfigType } from './fetch_config'
 import { UserDeployConfig, createChangeValidatorConfigType, createUserDeployConfigType } from './deploy_config'
-import { AdapterApiConfig, dereferenceFieldName, isReferencedIdField } from '../../config_deprecated'
-
-const log = logger(module)
 
 export type UserConfig<
   TCustomNameMappingOptions extends string = never,
@@ -128,98 +123,4 @@ export const adapterConfigFromConfig = <
   }
 
   return adapterConfig as Co & UserConfig<TCustomNameMappingOptions>
-}
-
-/**
- * Convert elemID definitions from deprecated apiDefinitions to the new format
- * Note: 
- * 1. config is changed in place
- * 2. only elemID related definitions are converted
- */
-const updateElemIDDefinitions = <TCustomNameMappingOptions extends string>(
-  apiDefinitions: AdapterApiConfig,
-): Record<string, ElemIDCustomization<TCustomNameMappingOptions>> => {
-  const { types } = apiDefinitions
-  if (_.isEmpty(types)) {
-    return {}
-  }
-
-  const convertedIds = _.mapValues(types, (defs, typeName) => {
-    const transformationConfig = defs.transformation
-    if (!transformationConfig) {
-      return undefined
-    }
-    const updatedElemIDConfig: ElemIDCustomization<TCustomNameMappingOptions> = {}
-    const { idFields, extendsParentId, nameMapping } = transformationConfig
-    if (extendsParentId !== undefined) {
-      updatedElemIDConfig.extendsParent = extendsParentId
-      delete transformationConfig.extendsParentId
-    }
-    if (idFields !== undefined) {
-      const updatedIdFields = idFields.map(fieldName =>
-        isReferencedIdField(fieldName)
-          ? { fieldName: dereferenceFieldName(fieldName), isReference: true }
-          : { fieldName },
-      )
-      updatedElemIDConfig.parts = updatedIdFields
-      delete transformationConfig.idFields
-    }
-    if (nameMapping !== undefined) {
-      if (updatedElemIDConfig.parts) {
-        updatedElemIDConfig.parts.forEach(part => _.set(part, 'mapping', nameMapping))
-        delete transformationConfig.nameMapping
-      } else {
-        // handaling the case of when mappings exists but idFields are missing is not trivial, because we don't know which parts should be updated
-        log.warn('found nameMapping without idFields for type %s', typeName)
-      }
-    }
-
-    log.debug(
-      'converted elemIDs definitions for type %s from %o to %o',
-      typeName,
-      _.pick(transformationConfig, ['idFields', 'extendsParentId', 'nameMapping']),
-      updatedElemIDConfig,
-    )
-    return updatedElemIDConfig
-  })
-
-  const typesWithIds = _.omitBy(convertedIds, _.isEmpty)
-
-  return _.isEmpty(typesWithIds) ? {} : { elemID: typesWithIds }
-}
-
-export const updateDeprecatedConfig = (
-  config: InstanceElement,
-): { config: InstanceElement; message: string } | undefined => {
-  const apiDefs = config.value?.fetch?.apiDefinitions
-  if (!apiDefs) {
-    return undefined
-  }
-
-  log.warn('adapter config contains deprecated api definitions: %s', safeJsonStringify(apiDefs))
-  const updatedConfig = config.clone()
-  const updatedElemIDs = updateElemIDDefinitions(updatedConfig.value.fetch.apiDefinitions)
-  if (_.isEmpty(updatedElemIDs)) {
-    log.debug('found no elemID definitions to update in config')
-    return undefined
-  }
-  
-  const cleanedApiDefs = objects.cleanEmptyObjects(updatedConfig.value?.fetch?.apiDefinitions)
-  updatedConfig.value = {
-    ...updatedConfig.value,
-    fetch: {
-      ...updatedConfig.value.fetch,
-      ...updatedElemIDs,
-      apiDefinitions: cleanedApiDefs ? { ...cleanedApiDefs } : undefined,
-    },
-  }
-
-  if (updatedConfig.value.fetch.apiDefinitions) {
-    log.error('some deprecated apiDefinitions remained in config: %s', safeJsonStringify(updatedConfig.value.fetch.apiDefinitions))
-  }
-  return {
-    config: updatedConfig,
-    message:
-      'The configuration options "apiDefinitions" is deprecated. The following changes will update the deprecated options to the "fetch" configuration option.',
-  }
 }

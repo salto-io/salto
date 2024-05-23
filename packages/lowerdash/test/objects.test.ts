@@ -44,6 +44,9 @@ describe('concatObjects', () => {
 })
 
 describe('cleanEmptyObjects', () => {
+  it('should not return undefined for empty arrays', () => {
+    expect(cleanEmptyObjects({ a: [] })).toEqual({ a: [] })
+  })
   it('should return undefined for empty object', () => {
     const obj = { a: {} }
     expect(cleanEmptyObjects(obj)).toBeUndefined()
@@ -56,6 +59,7 @@ describe('cleanEmptyObjects', () => {
         d: 'd',
         e: {
           f: {},
+          g: { h: undefined },
         },
       },
     }
@@ -66,17 +70,21 @@ describe('cleanEmptyObjects', () => {
       },
     })
   })
-  it('should remove empty array parts', () => {
+  it('should not clean arrays or objects inside arrays', () => {
     const obj = {
       a: 'a',
       b: {
-        arr: []
+        c: {},
+        arr: [],
       },
-      anotherArr: [{}, { a: 'b'}],
+      anotherArr: [{}, { a: 'b' }],
     }
     expect(cleanEmptyObjects(obj)).toEqual({
       a: 'a',
-      anotherArr: [{ a: 'b'}],
+      b: {
+        arr: [],
+      },
+      anotherArr: [{}, { a: 'b' }],
     })
   })
 })

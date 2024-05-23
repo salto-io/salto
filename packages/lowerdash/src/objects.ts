@@ -28,20 +28,23 @@ export const concatObjects = <T extends Record<string, ReadonlyArray<unknown> | 
         .flat(),
   ) as T
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const cleanEmptyObjects = (object: any): any | undefined => {
+/*
+ * Cleans empty objects recursively
+ * Notice: arrays are ignored and treated like primitives
+ */
+export const cleanEmptyObjects = (object: Record<string, unknown>): Record<string, unknown> | undefined => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cleanObject = (obj: any): any => {
-    if (Array.isArray(obj)) {
-      return obj.filter(item => !_.isEmpty(item)).map(item => cleanObject(item))
-    }
     if (_.isPlainObject(obj)) {
-      const mapped = _.mapValues(obj, val => _.isEmpty(val) ? undefined : cleanObject(val))
-      return _.omitBy(mapped, _.isEmpty)
+      const mapped = _.mapValues(obj, val => {
+        const cleanedVal = cleanObject(val)
+        return _.isPlainObject(val) && _.isEmpty(cleanedVal) ? undefined : cleanedVal
+      })
+      return _.omitBy(mapped, _.isUndefined)
     }
     return obj
   }
 
   const cleanedRoot = cleanObject(object)
-  return _.isEmpty(cleanedRoot) ? undefined : cleanedRoot
+  return _.isPlainObject(cleanedRoot) && _.isEmpty(cleanedRoot) ? undefined : cleanedRoot
 }

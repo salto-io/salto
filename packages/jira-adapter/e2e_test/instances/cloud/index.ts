@@ -294,7 +294,7 @@ export const createInstances = (
   const objectSchemaGlobalStatus = new InstanceElement(
     `globalStatus${randomString}`,
     findType(OBJECT_SCHEMA_GLOBAL_STATUS_TYPE, fetchedElements),
-    createObjectSchemaGlobalStatusValues(randomString),
+    createObjectSchemaGlobalStatusValues(`globalStatus${randomString}`),
   )
 
   const objectType = new InstanceElement(

@@ -38,10 +38,7 @@ describe('emailDomainAddition', () => {
       const brandAfter = brandBefore.clone()
       brandAfter.value.emailDomainId = emailDomainRef
 
-      const changes = [
-        toChange({ after: emailDomain }),
-        toChange({ before: brandBefore, after: brandAfter })
-      ]
+      const changes = [toChange({ after: emailDomain }), toChange({ before: brandBefore, after: brandAfter })]
       const elementsSource = buildElementsSourceFromElements([emailDomain, brandAfter])
       await emailDomainAdditionFilter({ elementsSource })?.preDeploy(changes)
 
@@ -52,11 +49,7 @@ describe('emailDomainAddition', () => {
       const brand1 = new InstanceElement('mybrand1', brandType, { id: 'myBrandId1', emailDomainId: emailDomainRef })
       const brand2 = new InstanceElement('mybrand2', brandType, { id: 'myBrandId2', emailDomainId: emailDomainRef })
 
-      const changes = [
-        toChange({ after: emailDomain }),
-        toChange({ after: brand1 }),
-        toChange({ after: brand2 }),
-      ]
+      const changes = [toChange({ after: emailDomain }), toChange({ after: brand1 }), toChange({ after: brand2 })]
 
       const elementsSource = buildElementsSourceFromElements([emailDomain, brand1, brand2])
       await emailDomainAdditionFilter({ elementsSource })?.preDeploy(changes)
@@ -65,11 +58,11 @@ describe('emailDomainAddition', () => {
     })
 
     it('should throw if no rand uses the new email domain', async () => {
-      const changes = [
-        toChange({ after: emailDomain }),
-      ]
+      const changes = [toChange({ after: emailDomain })]
       const elementsSource = buildElementsSourceFromElements([emailDomain])
-      await expect(async () => {await emailDomainAdditionFilter({ elementsSource })?.preDeploy(changes)}).rejects.toThrow()
+      await expect(async () => {
+        await emailDomainAdditionFilter({ elementsSource })?.preDeploy(changes)
+      }).rejects.toThrow()
     })
   })
 })

@@ -645,9 +645,10 @@ describe('NodeMap', () => {
       })
 
       describe('when the handler throws a FatalError', () => {
-        const handlerMock = jest.fn()
+        let handlerMock: jest.Mock<void>
         let error: Error
         beforeEach(() => {
+          handlerMock = jest.fn()
           subject.addNode(5, [1])
           try {
             subject.walkSync((id: NodeId) => {
@@ -931,10 +932,11 @@ describe('NodeMap', () => {
       })
 
       describe('when the handler throws a FatalError', () => {
-        const handlerMock = jest.fn()
+        let handlerMock: jest.Mock<void>
         let error: Error
         let resolve: (value: void | PromiseLike<void>) => void
         beforeEach(async () => {
+          handlerMock = jest.fn()
           subject.addNode(6, [3])
           await subject
             .walkAsync(async (id: NodeId) => {

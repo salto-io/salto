@@ -1342,20 +1342,61 @@ const createCustomizations = (): Record<
       },
     },
   },
+
+  category: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/help_center/categories' },
+        transformation: { root: 'categories' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'brand', isReference: true }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }, { fieldName: 'brand', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        position: { hide: true },
+        sections: { fieldType: 'list<section>' },
+        translations: { fieldType: 'list<category_translation>' },
+        html_url: { omit: true },
+      },
+    },
+  },
 })
 
 export const createFetchDefinitions = (
   _fetchConfig: ZendeskConfig,
-  typesToOmit: string[],
-): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => ({
-  instances: {
-    default: {
-      resource: { serviceIDFields: ['id'] },
-      element: {
-        topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },
-        fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
+  typesToOmit?: string[],
+  typesToPick?: string[],
+): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
+  let customizations = createCustomizations()
+  // eslint-disable-next-line no-console
+  // console.log('boop', typesToOmit, typesToPick, customizations.category)
+  if (typesToOmit !== undefined) {
+    customizations = _.omit(customizations, typesToOmit)
+  }
+  if (typesToPick !== undefined) {
+    customizations = _.pick(customizations, typesToPick)
+  }
+  // eslint-disable-next-line no-console
+  // console.log('gloop', customizations.category)
+  return {
+    instances: {
+      default: {
+        resource: { serviceIDFields: ['id'] },
+        element: {
+          topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },
+          fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
+        },
       },
+      customizations,
     },
-    customizations: _.omit(createCustomizations(), typesToOmit),
-  },
-})
+  }
+}

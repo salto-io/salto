@@ -117,6 +117,7 @@ const instanceServiceIdConditions = async <
 ): Promise<string[]> => {
   const { after } = change.data
   return awu(Object.values((await after.getType()).fields))
+    .filter(field => field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] !== true)
     .filter(async field => isServiceId(await field.getType()))
     .filter(field => condition(change, field.name))
     .map(field => field.elemID.getFullName())

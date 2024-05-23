@@ -23,8 +23,8 @@ const filter: FilterCreator = ({ client, config, fetchQuery, adapterContext }) =
   name: 'asyncAPICalls',
   onFetch: async elements => {
     adapterContext.layoutsPromise = getLayoutRequestsAsync(client, config, fetchQuery, elements)
-    adapterContext.dashboardLayoutPromise = getDashboardLayoutsAsync(client, elements)
-    adapterContext.dashboardLayoutPromise = getDashboardPropertiesAsync(client, elements)
+    adapterContext.dashboardLayoutPromise = getDashboardLayoutsAsync(client, config, elements)
+    adapterContext.dashboardPropertiesPromise = getDashboardPropertiesAsync(client, elements)
   },
 })
 

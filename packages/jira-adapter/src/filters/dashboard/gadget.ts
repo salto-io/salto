@@ -44,6 +44,13 @@ import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
 
+export type promiseInstantToPropertiesResponse = Promise<(InstanceElement | Promise<unknown[][]>)[]>[]
+
+export type dashboardPropertiesResponse = {
+  propertiesValuesPromise: Promise<unknown[][][]>
+  instantToPropertiesResponse: [InstanceElement, Promise<unknown[][]>][]
+}
+
 const getSubTypes = (): {
   configType: ObjectType
   propertiesType: ObjectType
@@ -129,27 +136,41 @@ const getPropertyValue = async (instance: InstanceElement, key: string, client: 
     return undefined
   }
 }
-export const getDashboardPropertiesAsync = async (client: JiraClient, elements: Element[]): Promise<void> => {
-  await Promise.all(
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
-      .map(async instance => {
-        const keys = await getPropertiesKeys(instance, client)
-        instance.value.properties = _.pickBy(
-          Object.fromEntries(
-            await Promise.all(keys.map(async key => [key, await getPropertyValue(instance, key, client)])),
-          ),
-          values.isDefined,
-        )
-      }),
-  )
+export const getDashboardPropertiesAsync = async (
+  client: JiraClient,
+  elements: Element[],
+): Promise<promiseInstantToPropertiesResponse> => {
+  const dashboardPropertiesResponse: dashboardPropertiesResponse = {
+    propertiesValuesPromise: Promise.resolve([]),
+    instantToPropertiesResponse: [],
+  }
+  return elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
+    .map(async instance => {
+      const keys = await getPropertiesKeys(instance, client)
+      const propertyValuesPromise = Promise.all(
+        keys.map(async key => [key, await getPropertyValue(instance, key, client)]),
+      )
+      dashboardPropertiesResponse.instantToPropertiesResponse.push([instance, propertyValuesPromise])
+      return [instance, propertyValuesPromise]
+    })
 }
 
 const filter: FilterCreator = ({ client, config, adapterContext }) => ({
   name: 'gadgetFilter',
   onFetch: async elements => {
-    await adapterContext.getDashboardPropertiesAsync
+    const promiseInstantToPropertiesResponse: promiseInstantToPropertiesResponse =
+      await adapterContext.dashboardPropertiesPromise
+
+    const instantToPropertiesResponse = await Promise.all(promiseInstantToPropertiesResponse)
+
+    await Promise.all(
+      instantToPropertiesResponse.map(async ([instance, promisePropertyValue]) => {
+        const properties = Object.fromEntries(await (promisePropertyValue as Promise<unknown[][]>))
+        ;(instance as InstanceElement).value.properties = _.pickBy(properties, values.isDefined)
+      }),
+    )
 
     const gadgetType = findObject(elements, DASHBOARD_GADGET_TYPE)
     if (gadgetType === undefined) {

@@ -58,7 +58,11 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/api/v1/org').replyOnce(200, { id: 'accountId' }).onGet('/api/v1/org').replyOnce(200, { id: 'accountId' })
+    mockAxiosAdapter
+      .onGet('/api/v1/org')
+      .replyOnce(200, { id: 'accountId' })
+      .onGet('/api/v1/org')
+      .replyOnce(200, { id: 'accountId' })
     ;([...fetchMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
@@ -75,17 +79,21 @@ describe('adapter', () => {
     describe('full fetch with default config', () => {
       let elements: Element[]
       beforeEach(async () => {
-        mockAxiosAdapter.onGet('/.well-known/okta-organization').replyOnce(200, { id: '00o1lvvlyBZMbsvu6696', pipeline: 'idx' })
-        elements = (await adapter
-        .operations({
-          credentials: new InstanceElement('config', accessTokenCredentialsType, {
-            baseUrl: 'https://test.okta.com',
-            token: 't',
-          }),
-          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-        .fetch({ progressReporter: { reportProgress: () => null } })).elements
+        mockAxiosAdapter
+          .onGet('/.well-known/okta-organization')
+          .replyOnce(200, { id: '00o1lvvlyBZMbsvu6696', pipeline: 'idx' })
+        elements = (
+          await adapter
+            .operations({
+              credentials: new InstanceElement('config', accessTokenCredentialsType, {
+                baseUrl: 'https://test.okta.com',
+                token: 't',
+              }),
+              config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+            .fetch({ progressReporter: { reportProgress: () => null } })
+        ).elements
       })
       it('should generate the right types on fetch', async () => {
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
@@ -303,7 +311,9 @@ describe('adapter', () => {
         ])
       })
       it('should convert userIds to usernames when convertUserIds flag is enabled', async () => {
-        const instanceWithUser = elements.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'EndUserSupport')
+        const instanceWithUser = elements
+          .filter(isInstanceElement)
+          .find(inst => inst.elemID.typeName === 'EndUserSupport')
         expect(instanceWithUser?.value).toEqual({
           technicalContactEmail: 'myMail@salto.nacl',
           technicalContactId: 'myMail@salto.nacl',
@@ -313,19 +323,16 @@ describe('adapter', () => {
     })
     describe('with different config options', () => {
       it('should not convertUserIds when convertUserIds flag is disabled', async () => {
-        const config = new InstanceElement(
-          'config',
-          adapter.configType as ObjectType,
-          { 
-            ...DEFAULT_CONFIG,
-            fetch: {
-              convertUserIds: false,
-              include: [
-                { type: 'EndUserSupport' }, // limiting to one type to avoid getting a timeout
-              ]
-            }},
-        )
-          const { elements } = await adapter
+        const config = new InstanceElement('config', adapter.configType as ObjectType, {
+          ...DEFAULT_CONFIG,
+          fetch: {
+            convertUserIds: false,
+            include: [
+              { type: 'EndUserSupport' }, // limiting to one type to avoid getting a timeout
+            ],
+          },
+        })
+        const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', accessTokenCredentialsType, {
               baseUrl: 'https://test.okta.com',
@@ -335,7 +342,9 @@ describe('adapter', () => {
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
-        const instanceWithUser = elements.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'EndUserSupport')
+        const instanceWithUser = elements
+          .filter(isInstanceElement)
+          .find(inst => inst.elemID.typeName === 'EndUserSupport')
         expect(instanceWithUser?.value).toEqual({
           technicalContactEmail: 'myMail@salto.nacl',
           technicalContactId: 'myMail@salto.nacl',
@@ -347,18 +356,18 @@ describe('adapter', () => {
       let fetchRes: FetchResult
       beforeEach(async () => {
         fetchRes = await adapter
-        .operations({
-          credentials: new InstanceElement('config', accessTokenCredentialsType, {
-            authType: 'oauth',
-            baseUrl: 'https://test.okta.com',
-            clientId: '123',
-            clientSecret: 'secret',
-            refreshToken: 'refresh',
-          }),
-          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-        .fetch({ progressReporter: { reportProgress: () => null } })
+          .operations({
+            credentials: new InstanceElement('config', accessTokenCredentialsType, {
+              authType: 'oauth',
+              baseUrl: 'https://test.okta.com',
+              clientId: '123',
+              clientSecret: 'secret',
+              refreshToken: 'refresh',
+            }),
+            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
       })
       it('should not fetch any privateApi types', () => {
         const instances = fetchRes.elements.filter(isInstanceElement)
@@ -367,44 +376,48 @@ describe('adapter', () => {
         const endUserSupport = instances.filter(inst => inst.elemID.typeName === 'EndUserSupport')
         expect(endUserSupport).toHaveLength(0)
       })
-     it('should includes config suggestion and fetch warning to indicate usage of private api is disabled', () => {
-      expect(fetchRes.errors).toHaveLength(1)
-      expect(fetchRes.errors).toEqual([
-        {
-          message:
-            'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
-          severity: 'Warning',
-        },
-      ])
-      expect(fetchRes.updatedConfig?.message).toEqual('    * Private APIs can not be accessed when using OAuth login')
-       expect(fetchRes.updatedConfig?.config[0]?.value?.client).toEqual({
-        usePrivateAPI: false,
-       })
-     })
+      it('should includes config suggestion and fetch warning to indicate usage of private api is disabled', () => {
+        expect(fetchRes.errors).toHaveLength(1)
+        expect(fetchRes.errors).toEqual([
+          {
+            message:
+              'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
+            severity: 'Warning',
+          },
+        ])
+        expect(fetchRes.updatedConfig?.message).toEqual('    * Private APIs can not be accessed when using OAuth login')
+        expect(fetchRes.updatedConfig?.config[0]?.value?.client).toEqual({
+          usePrivateAPI: false,
+        })
+      })
     })
     describe('when connecting a classic engine org', () => {
       let fetchRes: FetchResult
       beforeEach(async () => {
         // override the call to /.well-known/okta-organization to return a classic org
         // mockAxiosAdapter.restore('/.well-known/okta-organization')
-        mockAxiosAdapter.onGet('/.well-known/okta-organization').replyOnce(200, { id: '00o1lvvlyBZMbsvu6696', pipeline: 'v1' })
+        mockAxiosAdapter
+          .onGet('/.well-known/okta-organization')
+          .replyOnce(200, { id: '00o1lvvlyBZMbsvu6696', pipeline: 'v1' })
         fetchRes = await adapter
-        .operations({
-          credentials: new InstanceElement('config', accessTokenCredentialsType, {
-            baseUrl: 'https://test.okta.com',
-            token: 't',
-          }),
-          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-        .fetch({ progressReporter: { reportProgress: () => null } })
+          .operations({
+            credentials: new InstanceElement('config', accessTokenCredentialsType, {
+              baseUrl: 'https://test.okta.com',
+              token: 't',
+            }),
+            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
       })
       it('should create config suggestion to set isClassicOrg to true', () => {
         expect(fetchRes.updatedConfig?.config[0].value.fetch).toEqual({
           ...DEFAULT_CONFIG.fetch,
           isClassicOrg: true,
         })
-        expect(fetchRes.updatedConfig?.message).toEqual('    * We detected that your Okta organization is using the Classic Engine, therefore, certain types of data that are only compatible with newer versions were not fetched.')
+        expect(fetchRes.updatedConfig?.message).toEqual(
+          '    * We detected that your Okta organization is using the Classic Engine, therefore, certain types of data that are only compatible with newer versions were not fetched.',
+        )
       })
     })
   })

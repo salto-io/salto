@@ -463,11 +463,15 @@ const deployCleanup = async (adapterAttr: Reals, types: ObjectType[], elements: 
   log.debug('Environment cleanup successful')
 }
 
-const getHiddenFieldsToOmit = (fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaFetchOptions>, typeName: string): string[] => {
-  const customizations = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)?.element?.fieldCustomizations
+const getHiddenFieldsToOmit = (
+  fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaFetchOptions>,
+  typeName: string,
+): string[] => {
+  const customizations = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)
+    ?.element?.fieldCustomizations
   return Object.entries(customizations ?? {})
     .filter(([, customization]) => customization.hide === true)
-    .map(([fieldName, ]) => fieldName)
+    .map(([fieldName]) => fieldName)
     .filter(fieldName => fieldName !== 'id')
 }
 

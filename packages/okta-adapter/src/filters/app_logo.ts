@@ -26,7 +26,11 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
-import { client as clientUtils, definitions as definitionsUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  definitions as definitionsUtils,
+  fetch as fetchUtils,
+} from '@salto-io/adapter-components'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
 import { createFileType, deployLogo, getLogo } from '../logo'
@@ -128,14 +132,20 @@ const appLogoFilter: FilterCreator = ({ definitions, getElemIdFunc }) => ({
     const appLogoType = createFileType(APP_LOGO_TYPE_NAME)
     elements.push(appLogoType)
 
-    const elemIDDef = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {}).query(APPLICATION_TYPE_NAME)?.element
-  ?.topLevel?.elemID
+    const elemIDDef = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {}).query(APPLICATION_TYPE_NAME)
+      ?.element?.topLevel?.elemID
     if (elemIDDef === undefined) {
       log.error('Could not find elemID definition for %s, skipping appLogoFilter', APPLICATION_TYPE_NAME)
       return undefined
     }
-    const elemIDFunc = fetchUtils.element.createElemIDFunc<never>({ elemIDDef, typeID: new ElemID('okta', APPLICATION_TYPE_NAME), getElemIdFunc })
-    const allInstances = await Promise.all(appsWithLogo.map(async app => getAppLogo({ client, app, appLogoType, elemIDFunc })))
+    const elemIDFunc = fetchUtils.element.createElemIDFunc<never>({
+      elemIDDef,
+      typeID: new ElemID('okta', APPLICATION_TYPE_NAME),
+      getElemIdFunc,
+    })
+    const allInstances = await Promise.all(
+      appsWithLogo.map(async app => getAppLogo({ client, app, appLogoType, elemIDFunc })),
+    )
 
     const [errors, appLogoInstances] = _.partition(allInstances, _.isError)
     appLogoInstances.forEach(logo => elements.push(logo))

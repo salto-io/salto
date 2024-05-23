@@ -327,17 +327,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   Group: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'roles', fieldType: 'list<RoleAssignment>' },
-        { fieldName: 'source', fieldType: 'Group__source' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'source', fieldType: 'Group__source' }],
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([{ fieldName: 'lastMembershipUpdated' }, { fieldName: '_links' }]),
       idFields: ['profile.name'],
       serviceIdField: 'id',
       serviceUrl: '/admin/group/{id}',
-      standaloneFields: [{ fieldName: 'roles' }],
-      nestStandaloneInstances: false,
     },
     deployRequests: {
       add: {
@@ -359,12 +354,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         },
         omitRequestBody: true,
       },
-    },
-  },
-  // group-roles are not fetched by default
-  'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu': {
-    request: {
-      url: '/api/v1/groups/{groupId}/roles',
     },
   },
   Role: {
@@ -865,6 +854,27 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/domains',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/domains/{domainId}',
+        method: 'put',
+        urlParamsToFields: {
+          domainId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/domains/{domainId}',
+        method: 'delete',
+        urlParamsToFields: {
+          domainId: 'id',
+        },
+        omitRequestBody: true,
+      },
     },
   },
   'api__v1__email_domains@uuuub': {
@@ -1471,37 +1481,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: 'name', fieldType: 'UserSchemaAttribute' }],
     },
   },
-  RoleAssignment: {
-    transformation: {
-      idFields: ['label'],
-      serviceIdField: 'id',
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-      fieldsToHide: [{ fieldName: 'id' }],
-      fieldTypeOverrides: [
-        { fieldName: 'resource-set', fieldType: 'string' },
-        { fieldName: 'role', fieldType: 'string' },
-      ],
-      extendsParentId: true,
-    },
-    deployRequests: {
-      add: {
-        url: '/api/v1/groups/{groupId}/roles',
-        method: 'post',
-        urlParamsToFields: {
-          groupId: '_parent.0.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/groups/{groupId}/roles/{roleId}',
-        method: 'delete',
-        urlParamsToFields: {
-          groupId: '_parent.0.id',
-          roleId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
   ResourceSets: {
     request: {
       url: '/api/v1/iam/resource-sets',
@@ -1618,7 +1597,6 @@ export const SUPPORTED_TYPES = {
   EventHook: ['api__v1__eventHooks'],
   Feature: ['api__v1__features'],
   Group: ['api__v1__groups'],
-  RoleAssignment: ['api__v1__groups___groupId___roles@uuuuuu_00123_00125uu'],
   GroupRule: ['api__v1__groups__rules'],
   IdentityProvider: ['api__v1__idps'],
   InlineHook: ['api__v1__inlineHooks'],
@@ -1920,14 +1898,12 @@ export type ChangeValidatorName =
   | 'groupRuleStatus'
   | 'groupRuleActions'
   | 'defaultPolicies'
-  | 'groupRuleAdministrator'
   | 'customApplicationStatus'
   | 'userTypeAndSchema'
   | 'appIntegrationSetup'
   | 'assignedAccessPolicies'
   | 'groupSchemaModifyBase'
   | 'enabledAuthenticators'
-  | 'roleAssignment'
   | 'users'
   | 'appUserSchemaWithInactiveApp'
   | 'appWithGroupPush'
@@ -1939,6 +1915,8 @@ export type ChangeValidatorName =
   | 'dynamicOSVersion'
   | 'brandThemeRemoval'
   | 'appUserSchemaRemoval'
+  | 'domainAddition'
+  | 'domainModification'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1951,14 +1929,12 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     groupRuleStatus: { refType: BuiltinTypes.BOOLEAN },
     groupRuleActions: { refType: BuiltinTypes.BOOLEAN },
     defaultPolicies: { refType: BuiltinTypes.BOOLEAN },
-    groupRuleAdministrator: { refType: BuiltinTypes.BOOLEAN },
     customApplicationStatus: { refType: BuiltinTypes.BOOLEAN },
     userTypeAndSchema: { refType: BuiltinTypes.BOOLEAN },
     appIntegrationSetup: { refType: BuiltinTypes.BOOLEAN },
     assignedAccessPolicies: { refType: BuiltinTypes.BOOLEAN },
     groupSchemaModifyBase: { refType: BuiltinTypes.BOOLEAN },
     enabledAuthenticators: { refType: BuiltinTypes.BOOLEAN },
-    roleAssignment: { refType: BuiltinTypes.BOOLEAN },
     users: { refType: BuiltinTypes.BOOLEAN },
     appUserSchemaWithInactiveApp: { refType: BuiltinTypes.BOOLEAN },
     appWithGroupPush: { refType: BuiltinTypes.BOOLEAN },
@@ -1970,6 +1946,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     dynamicOSVersion: { refType: BuiltinTypes.BOOLEAN },
     brandThemeRemoval: { refType: BuiltinTypes.BOOLEAN },
     appUserSchemaRemoval: { refType: BuiltinTypes.BOOLEAN },
+    domainAddition: { refType: BuiltinTypes.BOOLEAN },
+    domainModification: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

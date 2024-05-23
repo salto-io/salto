@@ -30,6 +30,7 @@ import changeValidator from '../../src/change_validators/unknown_users'
 import {
   createInstanceElement,
   createMetadataObjectType,
+  Types,
 } from '../../src/transformers/transformer'
 import {
   CUSTOM_OBJECT,
@@ -40,7 +41,7 @@ import {
 } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
-import { createCustomObjectType } from '../utils'
+import { createCustomObjectType, createField } from '../utils'
 import * as filterUtilsModule from '../../src/filters/utils'
 
 jest.mock('../../src/filters/utils', () => ({
@@ -98,7 +99,7 @@ describe('unknown user change validator', () => {
     })
   })
   describe('when a username exists in Salesforce', () => {
-    let change: Change
+    let changes: Change[]
     beforeEach(() => {
       const beforeRecord = createInstanceElement(
         { fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME },
@@ -106,13 +107,29 @@ describe('unknown user change validator', () => {
       )
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = TEST_USERNAME
-      change = toChange({ before: beforeRecord, after: afterRecord })
+
+      const typeForCustomField = mockTypes.Account.clone()
+      const fieldBefore = createField(
+        typeForCustomField,
+        Types.primitiveDataTypes.Text,
+        'SomeField',
+        {
+          businessOwnerUser: IRRELEVANT_USERNAME,
+        },
+      )
+      const fieldAfter = fieldBefore.clone()
+      fieldAfter.annotations.businessOwnerUser = TEST_USERNAME
+
+      changes = [
+        toChange({ before: beforeRecord, after: afterRecord }),
+        toChange({ before: fieldBefore, after: fieldAfter }),
+      ]
 
       setupClientMock([TEST_USERNAME])
     })
 
     it('should pass validation', async () => {
-      const changeErrors = await validator([change])
+      const changeErrors = await validator(changes)
       expect(changeErrors).toBeEmpty()
     })
   })
@@ -557,6 +574,31 @@ describe('unknown user change validator', () => {
         'elemID',
         instanceElemId.createNestedID('assignmentRule', '1', 'ruleEntry', '0'),
       )
+    })
+  })
+  describe('when the user information is in a CustomField businessOwnerUser annotation', () => {
+    let changes: Change[]
+    beforeEach(() => {
+      const typeForCustomField = mockTypes.Account.clone()
+      const fieldAfter = createField(
+        typeForCustomField,
+        Types.primitiveDataTypes.Text,
+        'SomeField',
+        {
+          businessOwnerUser: TEST_USERNAME,
+        },
+      )
+      changes = [toChange({ after: fieldAfter })]
+
+      setupClientMock([IRRELEVANT_USERNAME])
+    })
+    it('should return a change error', async () => {
+      const changeErrors = await validator(changes)
+      expect(changeErrors).toEqual([
+        expect.objectContaining({
+          elemID: getChangeData(changes[0]).elemID,
+        }),
+      ])
     })
   })
 })

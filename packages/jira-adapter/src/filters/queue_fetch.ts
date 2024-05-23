@@ -56,6 +56,7 @@ const QUEUES_CATAGORIES_RESPONSE_SCHEME = Joi.object({
           .required(),
       }).unknown(true),
     )
+    .min(1) // Ensure that the array has at least one item
     .required(),
 })
   .unknown(true)

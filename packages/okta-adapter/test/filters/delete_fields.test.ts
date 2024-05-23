@@ -16,13 +16,12 @@
 
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
+import { ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, OKTA } from '../../src/constants'
 import deleteRecurseIntoFilter from '../../src/filters/delete_fields'
 import { getFilterParams } from '../utils'
 
 describe('deleteFieldsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
-  const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
   const applicationType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const accessType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME) })
 
@@ -32,11 +31,6 @@ describe('deleteFieldsFilter', () => {
 
   describe('onFetch', () => {
     it('should replace create new fields from urls with ids', async () => {
-      const groupInstance = new InstanceElement('group', groupType, {
-        id: 'AAA',
-        profile: { name: 'everyone' },
-        roles: ['123', '1234'],
-      })
       const applicationInstance = new InstanceElement('application', applicationType, {
         label: 'app',
         AppUserSchema: { id: '123' },
@@ -45,24 +39,17 @@ describe('deleteFieldsFilter', () => {
         id: 'BBB',
         policyRules: { someProp: 'something' },
       })
-      await filter.onFetch?.([groupType, groupInstance, applicationInstance, accessPolicy, accessType])
-      expect(groupInstance.value.roles).toEqual(undefined)
-      expect(groupInstance.value).toEqual({ id: 'AAA', profile: { name: 'everyone' } })
+      await filter.onFetch?.([applicationInstance, accessPolicy, accessType])
       expect(applicationInstance.value.AppUserSchema).toEqual(undefined)
       expect(applicationInstance.value).toEqual({ label: 'app' })
       expect(accessPolicy.value).toEqual({ id: 'BBB' })
     })
     it('should do nothing if field is missing', async () => {
-      const groupInstance = new InstanceElement('group', groupType, {
-        id: 'BBB',
-        profile: { name: 'nobody', description: 'hi' },
-      })
       const applicationInstance = new InstanceElement('application', applicationType, {
         label: 'app',
         status: 'ACTIVE',
       })
-      await filter.onFetch?.([groupInstance, groupType, applicationInstance])
-      expect(groupInstance.value).toEqual({ id: 'BBB', profile: { name: 'nobody', description: 'hi' } })
+      await filter.onFetch?.([applicationInstance])
       expect(applicationInstance.value).toEqual({ label: 'app', status: 'ACTIVE' })
     })
   })

@@ -55,6 +55,11 @@ export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestPara
   const url = oAuth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: REQUIRED_OAUTH_SCOPES,
+    // A refresh token is only returned the first time the user consents to providing access.
+    // Setting the prompt to 'consent' will force this consent every time, forcing a refresh_token to be returned.
+    // We should also set the prompt to 'select_account' to ensure that the user is prompted to select an account,
+    // and is not blocked to using the current account that is logged in.
+    prompt: 'consent select_account',
   })
 
   return {

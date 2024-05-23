@@ -50,6 +50,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   importantValues: true,
   hideTypesFolder: false,
   omitStandardFieldsNonDeployableValues: true,
+  latestSupportedApiVersion: false,
 }
 
 type BuildFetchProfileParams = {

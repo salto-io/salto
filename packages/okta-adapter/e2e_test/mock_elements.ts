@@ -27,6 +27,7 @@ import {
   USER_SCHEMA_TYPE_NAME,
   BRAND_TYPE_NAME,
   BRAND_THEME_TYPE_NAME,
+  DOMAIN_TYPE_NAME,
 } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
@@ -212,5 +213,9 @@ export const mockDefaultValues: Record<string, Values> = {
     errorPageTouchPointVariant: 'OKTA_DEFAULT',
     emailTemplateTouchPointVariant: 'OKTA_DEFAULT',
     loadingPageTouchPointVariant: 'OKTA_DEFAULT',
+  },
+  [DOMAIN_TYPE_NAME]: {
+    certificateSourceType: 'OKTA_MANAGED',
+    validationStatus: 'NOT_STARTED',
   },
 }

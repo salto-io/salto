@@ -15,9 +15,11 @@
  */
 import _ from 'lodash'
 import path from 'path'
+import { logger } from '@salto-io/logging'
 import {
   getChangeData,
   isElement,
+  isField,
   ObjectType,
   ElemID,
   Element,
@@ -29,21 +31,77 @@ import {
   isStaticFile,
   TypeReference,
   isTypeReference,
+  AdditionChange,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
-import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { inspectValue, getPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { collections, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
+
+const log = logger(module)
 
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
 
-export type DetailedChangeWithSource = DetailedChange & { location: parser.SourceRange }
+export type Location = parser.SourceRange & { indexInParent?: number }
+
+export type DetailedChangeWithSource = DetailedChange & {
+  location: Location
+  requiresIndent?: boolean
+}
 
 const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string =>
   `${path.join(...(pathParts ?? ['unsorted']))}${FILE_EXTENSION}`
+
+type PositionInParent = {
+  followingElementIDs: ElemID[]
+  indexInParent?: number
+}
+
+const getPositionInParent = <T>(change: DetailedChange<T> & AdditionChange<T>): PositionInParent => {
+  if (change.baseChange === undefined) {
+    log.warn('No base change: %s', inspectValue(change))
+    return { followingElementIDs: [] }
+  }
+
+  const changeData = getChangeData(change)
+  const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
+  const pathInParent = getPath(parent, change.id)
+  if (pathInParent === undefined) {
+    log.warn('Could not get path for %s in parent: %s', change.id.getFullName(), inspectValue(parent))
+    return { followingElementIDs: [] }
+  }
+  if (pathInParent.length === 0) {
+    // This is a top level element
+    return { followingElementIDs: [] }
+  }
+
+  const container = _.get(parent, pathInParent.slice(0, -1))
+  if (!_.isObjectLike(container)) {
+    log.warn(
+      'Got non object container at path %s: %s',
+      change.id.createParentID().getFullName(),
+      inspectValue(container),
+    )
+    return { followingElementIDs: [] }
+  }
+
+  const elementName = change.id.name
+  const containerKeys = Object.keys(container)
+  const index = containerKeys.indexOf(elementName)
+  if (index === -1) {
+    log.warn('Element %s not found in container: %s', elementName, inspectValue(container))
+    return { followingElementIDs: [] }
+  }
+
+  return {
+    followingElementIDs: containerKeys.slice(index + 1).map(k => change.id.createSiblingID(k)),
+    indexInParent: index,
+  }
+}
 
 export const getChangeLocations = (
   change: DetailedChange,
@@ -64,41 +122,71 @@ export const getChangeLocations = (
     }
   }
 
-  const findLocations = (): parser.SourceRange[] => {
+  const findLocations = (): { location: Location; requiresIndent?: boolean }[] => {
     if (change.action !== 'add') {
       // We want to get the location of the existing element
-      const possibleLocations = sourceMap.get(change.id.getFullName()) || []
+      const possibleLocations = sourceMap.get(change.id.getFullName()) ?? []
       if (change.action === 'remove') {
-        return possibleLocations
+        return possibleLocations.map(location => ({
+          location,
+        }))
       }
       if (possibleLocations.length > 0) {
         // TODO: figure out how to choose the correct location if there is more than one option
-        return [possibleLocations[0]]
+        return [{ location: possibleLocations[0] }]
       }
     } else if (!change.id.isTopLevel()) {
-      // We add new values / elements as the last part of a parent scope unless the parent scope
-      // is a config element
-      const parentID = change.id.createParentID()
-      const possibleLocations = sourceMap.get(parentID.getFullName()) || []
-      if (possibleLocations.length > 0) {
-        const foundInPath = possibleLocations.find(sr => sr.filename === createFileNameFromPath(change.path))
-        // TODO: figure out how to choose the correct location if there is more than one option
-        return [lastNestedLocation(foundInPath || possibleLocations[0])]
+      const fileName = createFileNameFromPath(change.path)
+      const { followingElementIDs, indexInParent } = getPositionInParent(change)
+      const possibleFollowingElementsRange = followingElementIDs
+        .flatMap(elemID => sourceMap.get(elemID.getFullName()))
+        .filter(isDefined)
+        .find(sr => sr.filename === fileName)
+      if (possibleFollowingElementsRange !== undefined) {
+        // Returning the start location of the first element following the one we are adding in the same file
+        return [
+          {
+            location: {
+              filename: fileName,
+              start: possibleFollowingElementsRange.start,
+              end: possibleFollowingElementsRange.start,
+              indexInParent,
+            },
+          },
+        ]
       }
+
+      // If we can't find an element after this one in the parent we put it at the end
+      const parentID = change.id.createParentID()
+      const possibleLocations = sourceMap.get(parentID.getFullName()) ?? []
+      if (possibleLocations.length > 0) {
+        const foundInPath = possibleLocations.find(sr => sr.filename === fileName)
+        // When adding a nested change we need to increase one level of indentation because
+        // we get the placement of the closing brace of the next line. The closing brace will
+        // be indented one line less then wanted change.
+        // TODO: figure out how to choose the correct location if there is more than one option
+        return [{ location: lastNestedLocation(foundInPath ?? possibleLocations[0]), requiresIndent: true }]
+      }
+      log.error('No possible locations found for %s.', parentID.getFullName())
     }
     // Fallback to using the path from the element itself
     const naclFilePath = change.path ?? getChangeData(change).path
     const endOfFileLocation = { col: 1, line: Infinity, byte: Infinity }
     return [
       {
-        filename: createFileNameFromPath(naclFilePath),
-        start: endOfFileLocation,
-        end: endOfFileLocation,
+        location: {
+          filename: createFileNameFromPath(naclFilePath),
+          start: endOfFileLocation,
+          end: endOfFileLocation,
+        },
       },
     ]
   }
 
-  return findLocations().map(location => ({ ...change, location }))
+  return findLocations().map(location => ({
+    ...change,
+    ...location,
+  }))
 }
 
 const fixEdgeIndentation = (data: string, action: ActionName, initialIndentationLevel: number): string => {
@@ -107,26 +195,22 @@ const fixEdgeIndentation = (data: string, action: ActionName, initialIndentation
   const [firstLine] = lines
   const lastLine = lines.pop()
   if (lastLine !== undefined && lastLine !== '') {
-    /* This currently never happens. The last line that is returned from hclDump is empty.
-     */
+    // This currently never happens. The last line that is returned from hclDump is empty.
     lines.push(lastLine)
   }
   if (action === 'add') {
-    /* When adding the placement we are given is right before the closing bracket.
-     * The string that dump gave us has an empty last line, meaning we have to recreate the
-     * indentation that was there previously. We also have to slice from the beginning of the first
-     * line the initial indentation that was there in the beginning.
-     */
+    // When adding the placement we are given is right before following member or the closing bracket of the parent.
+    // The string that dump gave us has an empty last line, meaning we have to recreate the
+    // indentation that was there previously. We also have to slice from the beginning of the first
+    // line the initial indentation that was there in the beginning.
     return [
       firstLine.slice(initialIndentationLevel),
       ...lines.slice(1),
       firstLine.slice(0, initialIndentationLevel),
     ].join('\n')
   }
-  /*
-   * If we reached here we are handling modify.
-   * The first line is already indented. We need to remove the excess indentation in the first line.
-   */
+  // If we reached here we are handling modify.
+  // The first line is already indented. We need to remove the excess indentation in the first line.
   return [firstLine.trimLeft(), ...lines.slice(1)].join('\n')
 }
 
@@ -191,6 +275,7 @@ export const updateNaclFileData = async (
     newData: string
     start: number
     end: number
+    indexInParent?: number
     action?: DetailedChange['action']
   }
 
@@ -198,11 +283,7 @@ export const updateNaclFileData = async (
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
     let indentationLevel = (change.location.start.col - 1) / 2
-    /* When adding a nested change we need to increase one level of indentation because
-     * we get the placement of the closing brace of the next line. The closing brace will
-     * be indented one line less then wanted change.
-     */
-    if (change.action === 'add' && !change.id.isTopLevel()) {
+    if (change.requiresIndent) {
       indentationLevel += 1
     }
     if (elem !== undefined) {
@@ -232,12 +313,18 @@ export const updateNaclFileData = async (
       // This is a removal, we want to replace the original content with an empty string
       newData = ''
     }
-    return { newData, start: change.location.start.byte, end: change.location.end.byte, action: change.action }
+    return {
+      newData,
+      start: change.location.start.byte,
+      end: change.location.end.byte,
+      indexInParent: change.location.indexInParent,
+      action: change.action,
+    }
   }
 
   const bufferChanges = await awu(changes).map(toBufferChange).toArray()
 
-  const sortedChanges = _.sortBy(bufferChanges, change => change.start)
+  const sortedChanges = _.sortBy(bufferChanges, ['start', 'indexInParent'])
   const allBufferParts = sortedChanges
     // Add empty change at the end of the file to make sure we keep the current content
     // that appears after the last change

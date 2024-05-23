@@ -118,10 +118,14 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
 
   // eslint-disable-next-line class-methods-use-this
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+    const rateLimitHeaders = _.pickBy(headers, (_val, key) => key.toLowerCase().startsWith(RATE_LIMIT_HEADER_PREFIX))
+    if (rateLimitHeaders !== undefined && rateLimitHeaders['x-ratelimit-nearlimit']) {
+      log.trace('temp performance log, rate limit near limit reached')
+    }
     return headers !== undefined
       ? {
           ...super.extractHeaders(headers),
-          ..._.pickBy(headers, (_val, key) => key.toLowerCase().startsWith(RATE_LIMIT_HEADER_PREFIX)),
+          ...rateLimitHeaders,
         }
       : undefined
   }

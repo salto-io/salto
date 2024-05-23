@@ -107,10 +107,6 @@ okta {
           newName = "BrandTheme"
         },
         {
-          originalName = "Role"
-          newName = "RoleAssignment"
-        },
-        {
           originalName = "IamRole"
           newName = "Role"
         },
@@ -148,10 +144,6 @@ okta {
         transformation = {
           fieldTypeOverrides = [
             {
-              fieldName = "roles"
-              fieldType = "list<RoleAssignment>"
-            },
-            {
               fieldName = "source"
               fieldType = "Group__source"
             },
@@ -186,11 +178,6 @@ okta {
           ]
           serviceIdField = "id"
           serviceUrl = "/admin/group/{id}"
-          standaloneFields = [
-            {
-              fieldName = "roles"
-            },
-          ]
           nestStandaloneInstances = false
         }
         deployRequests = {
@@ -213,11 +200,6 @@ okta {
             }
             omitRequestBody = true
           }
-        }
-      }
-      api__v1__groups___groupId___roles@uuuuuu_00123_00125uu = {
-        request = {
-          url = "/api/v1/groups/{groupId}/roles"
         }
       }
       Role = {
@@ -3418,65 +3400,6 @@ okta {
           ]
         }
       }
-      RoleAssignment = {
-        transformation = {
-          idFields = [
-            "label",
-          ]
-          serviceIdField = "id"
-          fieldsToOmit = [
-            {
-              fieldName = "created"
-            },
-            {
-              fieldName = "lastUpdated"
-            },
-            {
-              fieldName = "createdBy"
-            },
-            {
-              fieldName = "lastUpdatedBy"
-            },
-            {
-              fieldName = "_links"
-            },
-          ]
-          fieldsToHide = [
-            {
-              fieldName = "id"
-            },
-          ]
-          fieldTypeOverrides = [
-            {
-              fieldName = "resource-set"
-              fieldType = "string"
-            },
-            {
-              fieldName = "role"
-              fieldType = "string"
-            },
-          ]
-          extendsParentId = true
-        }
-        deployRequests = {
-          add = {
-            url = "/api/v1/groups/{groupId}/roles"
-            method = "post"
-            urlParamsToFields = {
-              groupId = "_parent.0.id"
-            }
-          }
-          remove = {
-            url = "/api/v1/groups/{groupId}/roles/{roleId}"
-            method = "delete"
-            urlParamsToFields = {
-              groupId = "_parent.0.id"
-              roleId = "id"
-            }
-            omitRequestBody = true
-          }
-        }
-      }
       ResourceSets = {
         request = {
           url = "/api/v1/iam/resource-sets"
@@ -3643,9 +3566,6 @@ okta {
       ]
       Group = [
         "api__v1__groups",
-      ]
-      RoleAssignment = [
-        "api__v1__groups___groupId___roles@uuuuuu_00123_00125uu",
       ]
       GroupRule = [
         "api__v1__groups__rules",

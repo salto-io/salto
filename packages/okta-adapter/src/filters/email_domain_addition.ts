@@ -24,7 +24,18 @@ import { BRAND_TYPE_NAME, EMAIL_DOMAIN_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
-
+/**
+  * This filter adds a brand ID when creating an email domain, as required by the API.
+  *
+  * In Okta, each Brand may have an optional single email domain, and email domains may have one or more brands.
+  * Therefore, each Brand has an optional reference to its email domain, but the email domain does not have
+  * references to its list of brands (and the way to add more brands to the same email domain is to modify brands
+  * to reference the email domain).
+  *
+  * However, the Okta email domain creation API requires a (single) brand ID to be provided. This filter finds all the
+  * brands associated with each added email domain and temporarily sets the brand ID in the email domain instance for
+  * the deploy action. A separate change validator ensures that at least one brand uses the new email domain.
+ */
 const filterCreator: FilterCreator = ({ elementsSource }) => ({
   name: 'emailDomainAdditionFilter',
   preDeploy: async changes => {

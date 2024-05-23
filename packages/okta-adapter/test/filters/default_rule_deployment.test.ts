@@ -15,7 +15,15 @@
  */
 
 import { MockInterface } from '@salto-io/test-utils'
-import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+  getChangeData,
+  CORE_ANNOTATIONS,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
@@ -29,58 +37,59 @@ describe('defaultPolicyRuleDeployment', () => {
   let filter: FilterType
   const accessRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
   const enrollmentRuleType = new ObjectType({ elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_RULE_TYPE_NAME) })
-  const accessRuleInstance = new InstanceElement(
-    'accessPolicyRule',
-    accessRuleType,
-    {
-      name: 'access',
-      system: true,
-      actions: {
-        appSignOn: {
-          access: 'ALLOW',
-          verificationMethod: { factorMode: '1FA', type: 'ASSURANCE', reauthenticateIn: 'PT12H' },
-        },
-      },
-      type: 'ACCESS_POLICY',
-    },
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: [
-        {
-          id: '111',
-        },
-      ],
-    },
-  )
-  const enrollmentRuleInstance = new InstanceElement(
-    'profileEnrollmentRule',
-    enrollmentRuleType,
-    {
-      name: 'profile enrollment',
-      system: true,
-      actions: {
-        profileEnrollment: {
-          access: 'ALLOW',
-          targetGroupIds: ['123'],
-        },
-      },
-    },
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: [
-        {
-          id: '222',
-        },
-      ],
-    },
-  )
-
+  let accessRuleInstance: InstanceElement
+  let enrollmentRuleInstance: InstanceElement
   beforeEach(() => {
     jest.clearAllMocks()
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
     filter = defaultPolicyRuleDeployment(getFilterParams({ client })) as typeof filter
+    accessRuleInstance = new InstanceElement(
+      'accessPolicyRule',
+      accessRuleType,
+      {
+        name: 'access',
+        system: true,
+        actions: {
+          appSignOn: {
+            access: 'ALLOW',
+            verificationMethod: { factorMode: '1FA', type: 'ASSURANCE', reauthenticateIn: 'PT12H' },
+          },
+        },
+        type: 'ACCESS_POLICY',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [
+          {
+            id: '111',
+          },
+        ],
+      },
+    )
+    enrollmentRuleInstance = new InstanceElement(
+      'profileEnrollmentRule',
+      enrollmentRuleType,
+      {
+        name: 'profile enrollment',
+        system: true,
+        actions: {
+          profileEnrollment: {
+            access: 'ALLOW',
+            targetGroupIds: ['123'],
+          },
+        },
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [
+          {
+            id: '222',
+          },
+        ],
+      },
+    )
   })
 
   describe('deploy', () => {
@@ -176,10 +185,7 @@ describe('defaultPolicyRuleDeployment', () => {
   })
   describe('preDeploy', () => {
     it('should assign priority field to addition changes of type ProfileEnrollmentPolicyRule or AccessPolicyRule', async () => {
-      const changes = [
-        toChange({ after: accessRuleInstance }),
-        toChange({ after: enrollmentRuleInstance }),
-      ]
+      const changes = [toChange({ after: accessRuleInstance }), toChange({ after: enrollmentRuleInstance })]
       await filter.preDeploy(changes)
       const instances = changes.map(getChangeData).filter(isInstanceElement)
       expect(instances[0].value.priority).toEqual(99)

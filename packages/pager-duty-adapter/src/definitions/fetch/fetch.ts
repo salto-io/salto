@@ -71,7 +71,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  businessServices: {
+  businessService: {
     requests: [
       {
         endpoint: {

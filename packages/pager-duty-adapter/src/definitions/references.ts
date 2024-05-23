@@ -43,7 +43,7 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       parentTypes: [
         'service__teams',
         'team__parent',
-        'businessServices__team',
+        'businessService__team',
         'escalationPolicy__teams',
         'schedule__teams',
       ],

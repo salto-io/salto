@@ -17,12 +17,13 @@ export {
   cursorPagination,
   cursorHeaderPagination,
   itemOffsetPagination,
-  offsetAndLimitPagination,
+  offsetAndValuesPagination,
   pageOffsetAndLastPagination,
   pageOffsetPagination,
   noPagination,
   defaultPathChecker,
   PathCheckerFunc,
   tokenPagination,
+  offsetAndLimitPagination,
 } from './pagination_functions'
 export { traversePages } from './pagination'

@@ -16,13 +16,12 @@
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ClientOptions, PaginationOptions } from '../types'
 
-const { cursorPagination } = fetchUtils.request.pagination
+const { offsetAndLimitPagination } = fetchUtils.request.pagination
 
 // TODO adjust - replace with the correct pagination function(s), remove unneeded ones
 
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   cursor: {
-    funcCreator: () =>
-      cursorPagination({ pathChecker: fetchUtils.request.pagination.defaultPathChecker, paginationField: 'next' }),
+    funcCreator: () => offsetAndLimitPagination(),
   },
 }

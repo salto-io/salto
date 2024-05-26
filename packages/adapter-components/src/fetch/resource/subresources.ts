@@ -20,6 +20,7 @@ import { FetchResourceDefinition } from '../../definitions/system/fetch/resource
 import { TypeFetcherCreator, ValueGeneratedItem } from '../types'
 import { createValueTransformer } from '../utils'
 import { RecurseIntoDefinition } from '../../definitions/system/fetch/dependencies'
+import { ElementGenerator } from '../element/element'
 
 const log = logger(module)
 
@@ -73,10 +74,12 @@ export const recurseIntoSubresources =
   ({
     def,
     typeFetcherCreator,
+    handleError,
     contextResources,
   }: {
     def: FetchResourceDefinition
     typeFetcherCreator: TypeFetcherCreator
+    handleError: ElementGenerator['handleError']
     contextResources: Record<string, ValueGeneratedItem[] | undefined>
   }): NestedResourceFetcher =>
   async item =>
@@ -87,7 +90,6 @@ export const recurseIntoSubresources =
             .filter(([_fieldName, { conditions }]) => shouldRecurseIntoEntry(item.value, item.context, conditions))
             .map(async ([fieldName, recurseDef]) => {
               const nestedRequestContext = extractRecurseIntoContext(item, recurseDef)
-              // TODO avoid crashing if fails on sub-element (SALTO-5427)
               const typeFetcher = typeFetcherCreator({
                 typeName: recurseDef.typeName,
                 context: { ...item.context, ...nestedRequestContext },
@@ -98,7 +100,7 @@ export const recurseIntoSubresources =
               }
               const recurseRes = await typeFetcher.fetch({ contextResources, typeFetcherCreator })
               if (!recurseRes.success) {
-                // TODO throw (SALTO-5427)
+                handleError({ typeName: recurseDef.typeName, error: recurseRes.error })
                 return []
               }
               const items = typeFetcher.getItems()

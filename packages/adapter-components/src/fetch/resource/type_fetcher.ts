@@ -96,6 +96,9 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
   initialRequestContext?: Record<string, unknown>
   customItemFilter?: (item: ValueGeneratedItem) => boolean
 }): TypeResourceFetcher | undefined => {
+  // eslint-disable-next-line no-console
+  console.log('hi2', initialRequestContext)
+
   if (!query.isTypeMatch(typeName)) {
     log.info('[%s] type %s does not match query, skipping it and all its dependencies', adapterName, typeName)
     return undefined
@@ -133,6 +136,9 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
       initialRequestContext,
       contextResources,
     })
+    // eslint-disable-next-line no-console
+    console.log('hi3', def.context, contextResources)
+
     try {
       const itemsWithContext = await requester.requestAllForResource({
         callerIdentifier: { typeName },

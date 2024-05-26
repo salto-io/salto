@@ -205,6 +205,9 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
               ? mergedDef.context.custom(mergedDef.context)
               : (v: ContextParams) => v
           const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots).map(contextFunc)
+          // eslint-disable-next-line no-console
+          console.log('hi4', contextPossibleArgs, contexts)
+
           return request({
             contexts,
             requestDef,

@@ -413,6 +413,7 @@ const getGuideElements = async ({
       return fetchUtils.getElements({
         adapterName: ZENDESK,
         fetchQuery,
+        additionalRequestContext: { brand: brandInstance },
         getElemIdFunc,
         definitions: brandFetchDefinitions,
       })

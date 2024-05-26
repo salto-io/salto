@@ -1346,8 +1346,9 @@ const createCustomizations = (): Record<
   category: {
     requests: [
       {
+        context: { brand: {} },
         endpoint: { path: '/api/v2/help_center/categories' },
-        transformation: { root: 'categories' },
+        transformation: { root: 'categories', adjust: transforms.transformGuideItem },
       },
     ],
     resource: {

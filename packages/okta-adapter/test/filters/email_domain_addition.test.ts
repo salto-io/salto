@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  toChange,
-  getChangeData,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { OKTA, EMAIL_DOMAIN_TYPE_NAME, BRAND_TYPE_NAME } from '../../src/constants'
 import emailDomainAdditionFilter from '../../src/filters/email_domain_addition'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { getFilterParams } from '../utils'
 
 describe('emailDomainAddition', () => {
   const emailDomainType = new ObjectType({ elemID: new ElemID(OKTA, EMAIL_DOMAIN_TYPE_NAME) })
   const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
   const emailDomain = new InstanceElement('mydomain', emailDomainType, { name: 'mail.example.com' })
   const emailDomainRef = new ReferenceExpression(emailDomain.elemID, emailDomain)
+  type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
 
   describe('deploy', () => {
     it('should successfully deploy addition email domain with a modified brand that uses it', async () => {
@@ -40,8 +36,9 @@ describe('emailDomainAddition', () => {
 
       const changes = [toChange({ after: emailDomain }), toChange({ before: brandBefore, after: brandAfter })]
       const elementsSource = buildElementsSourceFromElements([emailDomain, brandAfter])
-      await emailDomainAdditionFilter({ elementsSource })?.preDeploy(changes)
+      const filter: FilterType = emailDomainAdditionFilter(getFilterParams({ elementsSource })) as FilterType
 
+      await filter.preDeploy(changes)
       expect(emailDomain.value.brandId).toEqual('myBrandId123')
     })
 
@@ -50,18 +47,20 @@ describe('emailDomainAddition', () => {
       const brand2 = new InstanceElement('mybrand2', brandType, { id: 'myBrandId2', emailDomainId: emailDomainRef })
 
       const changes = [toChange({ after: emailDomain }), toChange({ after: brand1 }), toChange({ after: brand2 })]
-
       const elementsSource = buildElementsSourceFromElements([emailDomain, brand1, brand2])
-      await emailDomainAdditionFilter({ elementsSource })?.preDeploy(changes)
+      const filter: FilterType = emailDomainAdditionFilter(getFilterParams({ elementsSource })) as FilterType
 
+      await filter.preDeploy(changes)
       expect(emailDomain.value.brandId).toEqual('myBrandId1')
     })
 
     it('should throw if no rand uses the new email domain', async () => {
-      const changes = [toChange({ after: emailDomain })]
-      const elementsSource = buildElementsSourceFromElements([emailDomain])
       await expect(async () => {
-        await emailDomainAdditionFilter({ elementsSource })?.preDeploy(changes)
+        const changes = [toChange({ after: emailDomain })]
+        const elementsSource = buildElementsSourceFromElements([emailDomain])
+        const filter: FilterType = emailDomainAdditionFilter(getFilterParams({ elementsSource })) as FilterType
+
+        await filter.preDeploy(changes)
       }).rejects.toThrow()
     })
   })

@@ -16,15 +16,12 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
+import { InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-// TODO update mock file -
-// for fetch: run fetch with trace-level logs:
-//  > SALTO_LOG_FILE=log.txt SALTO_LOG_LEVEL=trace salto fetch
-// then run
-//  > python3 <path-to-repo>/packages/adapter-components/scripts/client/mock_replies.py <log file> fetch_mock_replies.json
-// for deploy: same as above, replace fetch with deploy
-// make sure to minimize and sanitize the mocks - they may contain sensitive information!
+import { credentialsType } from '../src/client/oauth'
+import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
 
 type MockReply = {
@@ -34,37 +31,18 @@ type MockReply = {
   response: unknown
 }
 
-const getMockFunction = (method: definitions.HTTPMethod, mockAxiosAdapter: MockAdapter): MockAdapter['onAny'] => {
-  switch (method.toLowerCase()) {
-    case 'get':
-      return mockAxiosAdapter.onGet
-    case 'put':
-      return mockAxiosAdapter.onPut
-    case 'post':
-      return mockAxiosAdapter.onPost
-    case 'patch':
-      return mockAxiosAdapter.onPatch
-    case 'delete':
-      return mockAxiosAdapter.onDelete
-    case 'head':
-      return mockAxiosAdapter.onHead
-    case 'options':
-      return mockAxiosAdapter.onOptions
-    default:
-      return mockAxiosAdapter.onGet
-  }
-}
-
-describe('adapter', () => {
+describe('Microsoft Entra adapter', () => {
   jest.setTimeout(10 * 1000)
   let mockAxiosAdapter: MockAdapter
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    // TODO replace with endpoint used in validateCredentials
-    mockAxiosAdapter.onGet('/api/v2/account').reply(200)
-    ;([...fetchMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
-      const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
+    mockAxiosAdapter.onGet('/v1.0/me').reply(200, { app: { id_code: '123' } })
+    mockAxiosAdapter.onPost('https://login.microsoftonline.com/testTenantId/oauth2/v2.0/token').reply(200, {
+      access_token: 'testAccessToken',
+    })
+    ;([...fetchMockReplies] as MockReply[]).forEach(({ url, params, response }) => {
+      const mock = mockAxiosAdapter.onGet.bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
       handler.replyOnce(200, response)
     })
@@ -79,7 +57,35 @@ describe('adapter', () => {
     describe('full', () => {
       it('should generate the right elements on fetch', async () => {
         expect(adapter.configType).toBeDefined()
-        // TODO: implement fetch UTs
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', credentialsType, {
+              tenantId: 'testTenantId',
+              clientId: 'testClientId',
+              clientSecret: 'testClient',
+              refreshToken: 'testRefreshToken',
+            }),
+            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
+
+        expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
+          'application',
+          'authenticationMethodPolicy',
+          'authenticationMethodPolicy__authenticationMethodConfigurations',
+          'authenticationStrengthPolicy',
+          'conditionalAccessPolicy',
+          'crossTenantAccessPolicy',
+          'domain',
+          'group',
+          'groupLifeCyclePolicy',
+          'group__appRoleAssignments',
+          'permissionGrantPolicy',
+          'roleDefinition',
+          'servicePrincipal',
+        ])
+        // TODO: Validate sub-types and structure of the elements
       })
     })
   })

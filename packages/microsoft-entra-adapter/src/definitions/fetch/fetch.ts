@@ -592,7 +592,6 @@ const graphV1Customizations: FetchCustomizations = {
         endpoint: {
           path: '/policies/crossTenantAccessPolicy',
         },
-        transformation: DEFAULT_TRANSFORMATION,
       },
     ],
     resource: {
@@ -601,6 +600,13 @@ const graphV1Customizations: FetchCustomizations = {
     element: {
       topLevel: {
         isTopLevel: true,
+        singleton: true,
+        elemID: {
+          parts: [{ fieldName: 'id' }],
+        },
+      },
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
       },
     },
   },

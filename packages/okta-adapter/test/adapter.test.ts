@@ -420,5 +420,49 @@ describe('adapter', () => {
         )
       })
     })
+
+    describe('with deprecated user config', () => {
+      it('should return updated config after migation', async () => {
+        const deprecatedConfig = new InstanceElement('config', adapter.configType as ObjectType, {
+          ...DEFAULT_CONFIG,
+          fetch: {
+            ...DEFAULT_CONFIG.fetch,
+            include: [{ type: 'Application' }],
+          },
+          apiDefinitions: {
+            types: {
+              Application: {
+                transformation: { idFields: ['label', 'status'] },
+              },
+            },
+          },
+        })
+        const { updatedConfig } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', accessTokenCredentialsType, {
+              baseUrl: 'https://test.okta.com',
+              token: 't',
+            }),
+            config: deprecatedConfig,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
+        expect(updatedConfig?.config[0].value).toEqual({
+          ...DEFAULT_CONFIG,
+          fetch: {
+            ...DEFAULT_CONFIG.fetch,
+            include: [{ type: 'Application' }],
+            elemID: {
+              Application: {
+                parts: [{ fieldName: 'label' }, { fieldName: 'status' }],
+              },
+            },
+          },
+        })
+        expect(updatedConfig?.message).toEqual(
+          'Elem ID customizations are now under `fetch.elemID`. The following changes will upgrade the deprecated definitions from `apiDefinitions` to the new location.',
+        )
+      })
+    })
   })
 })

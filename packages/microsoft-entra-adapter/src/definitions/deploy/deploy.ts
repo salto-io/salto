@@ -232,6 +232,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                   return {
                     value: {
                       ...item.value,
+                      // TODO: Add validation. Maybe a CV or check the id exists.
                       principalId: getParent(item.context.change.data.after).value.id,
                     },
                   }

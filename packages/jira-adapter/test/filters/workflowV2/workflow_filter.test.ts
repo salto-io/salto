@@ -1692,6 +1692,48 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           expect(connection.get).toHaveBeenCalledTimes(3)
           expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
         })
+        describe('retry on failed to acquire lock', () => {
+          describe('success', () => {
+            beforeEach(() => {
+              deployChangeMock.mockRejectedValueOnce(
+                new clientUtils.HTTPError('message', {
+                  status: 409,
+                  data: {
+                    errorMessages: ['Failed to acquire lock'],
+                  },
+                }),
+              )
+            })
+            it('should retry the deployment when failed to acquire lock', async () => {
+              const result = await filter.deploy([
+                toChange({ before: workflowInstanceBefore, after: workflowInstance }),
+              ])
+              expect(result.deployResult.errors).toHaveLength(0)
+              expect(deployChangeMock).toHaveBeenCalledTimes(2)
+            })
+          })
+          describe('failure', () => {
+            beforeEach(() => {
+              deployChangeMock.mockRejectedValue(
+                new clientUtils.HTTPError('message', {
+                  status: 409,
+                  data: {
+                    errorMessages: ['Failed to acquire lock'],
+                  },
+                }),
+              )
+            })
+            it('should fail the deployment when failed to acquire lock 3 times', async () => {
+              const result = await filter.deploy([
+                toChange({ before: workflowInstanceBefore, after: workflowInstance }),
+              ])
+              expect(result.deployResult.errors).toHaveLength(1)
+              expect(result.deployResult.errors[0].message).toEqual('Error: message')
+              expect(result.deployResult.errors[0].severity).toEqual('Error')
+              expect(deployChangeMock).toHaveBeenCalledTimes(3)
+            })
+          })
+        })
       })
     })
     describe('onDeploy', () => {

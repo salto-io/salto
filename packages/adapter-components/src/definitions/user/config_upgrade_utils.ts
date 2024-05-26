@@ -102,7 +102,10 @@ export const updateDeprecatedConfig = (
     return undefined
   }
   if (updatedConfig.value.fetch?.elemID !== undefined) {
-    log.error('found existing elemID definitions in config: %s, merging with new definitions', safeJsonStringify(updatedConfig.value.fetch.elemID))
+    log.error(
+      'found existing elemID definitions in config: %s, merging with new definitions',
+      safeJsonStringify(updatedConfig.value.fetch.elemID),
+    )
   }
   const mergedElemIDConfig = _.merge(_.pick(updatedConfig.value.fetch, 'elemID'), updatedElemIDs)
 

@@ -213,7 +213,7 @@ describe('config upgrade utils', () => {
               foo: {
                 parts: [{ fieldName: 'name' }],
               },
-            }
+            },
           },
           apiDefinitions: {
             types: {

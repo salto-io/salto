@@ -32,7 +32,7 @@ export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): P
     token ? `Unknown primitive type ${token}.` : 'Expected a primitive type definition.',
   )
 
-export const invalidPrimitiveTypeDef = (range: SourceRange, token: string): ParseError =>
+export const invalidTypeDefOperator = (range: SourceRange, token: string): ParseError =>
   createError(range, 'invalid type definition', `Expected inheritance operator 'is' found ${token} instead`)
 
 export const invalidFieldsInPrimitiveType = (range: SourceRange): ParseError =>

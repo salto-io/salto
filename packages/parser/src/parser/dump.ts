@@ -40,21 +40,13 @@ import { addValuePromiseWatcher, replaceValuePromises } from './internal/native/
  * @param primitiveType Primitive type identifier
  * @returns Type name in HCL syntax
  */
-const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
-  if (primitiveType === PrimitiveTypes.STRING) {
-    return Keywords.TYPE_STRING
-  }
-  if (primitiveType === PrimitiveTypes.NUMBER) {
-    return Keywords.TYPE_NUMBER
-  }
-  if (primitiveType === PrimitiveTypes.BOOLEAN) {
-    return Keywords.TYPE_BOOL
-  }
-  if (primitiveType === PrimitiveTypes.UNKNOWN) {
-    return Keywords.TYPE_UNKNOWN
-  }
-  return Keywords.TYPE_OBJECT
-}
+const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string =>
+  ({
+    [PrimitiveTypes.STRING]: Keywords.TYPE_STRING,
+    [PrimitiveTypes.NUMBER]: Keywords.TYPE_NUMBER,
+    [PrimitiveTypes.BOOLEAN]: Keywords.TYPE_BOOL,
+    [PrimitiveTypes.UNKNOWN]: Keywords.TYPE_UNKNOWN,
+  })[primitiveType] || Keywords.TYPE_OBJECT
 
 export const dumpElemID = (id: ElemID): string => {
   if (id.isConfigType()) {

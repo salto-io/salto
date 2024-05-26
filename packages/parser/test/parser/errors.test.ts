@@ -153,7 +153,7 @@ describe('parsing errors', () => {
             end: { byte: 39, col: 39, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[1].message).toBe('Expected a primitive type definition.')
+          expect(res.errors[1].message).toBe('Unknown primitive type tanananana.')
           expect(res.errors[1].summary).toBe('unknown primitive type')
           expect(await awu(res.elements).toArray()).toHaveLength(1)
         })

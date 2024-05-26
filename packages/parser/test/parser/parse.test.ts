@@ -62,7 +62,7 @@ describe('Salto parser', () => {
       type salesforce.boolean is boolean {
       }
       // comment between top level blocks
-      type salesforce.obj {
+      type salesforce.obj is object {
         // comments inside a block with invalid ending characters ?
         salesforce.number num {}
       }
@@ -126,7 +126,7 @@ describe('Salto parser', () => {
         }
       }
 
-      type salesforce.field is number {
+      type salesforce.field number {
         annotations {
           number scale {
           }

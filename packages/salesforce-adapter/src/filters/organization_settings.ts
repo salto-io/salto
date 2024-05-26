@@ -193,10 +193,16 @@ const createOrganizationApiVersionElements = (): [
   return [objectType, instance]
 }
 
-const addLatestSupportedAPIVersion = async (
-  client: SalesforceClient,
-  instances: InstanceElement[],
-): Promise<void> => {
+type AddLatestSupportedAPIVersionParams = {
+  client: SalesforceClient
+  apiVersionInstance: InstanceElement
+  organizationInstance?: InstanceElement
+}
+const addLatestSupportedAPIVersion = async ({
+  client,
+  apiVersionInstance,
+  organizationInstance,
+}: AddLatestSupportedAPIVersionParams): Promise<void> => {
   const versions = await client.request('/services/data/')
   if (!Array.isArray(versions)) {
     log.error(
@@ -216,9 +222,11 @@ const addLatestSupportedAPIVersion = async (
     return
   }
 
-  instances.forEach((instance) => {
-    instance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
-  })
+  apiVersionInstance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
+  if (organizationInstance !== undefined) {
+    organizationInstance.value[LATEST_SUPPORTED_API_VERSION_FIELD] =
+      latestVersion
+  }
 }
 
 const FILTER_NAME = 'organizationSettings'
@@ -265,11 +273,16 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       const [apiVersionType, apiVersionInstance] =
         createOrganizationApiVersionElements()
 
-      const versionInstances = [apiVersionInstance]
+      const addLatestSupportedAPIVersionParams: AddLatestSupportedAPIVersionParams =
+        {
+          client,
+          apiVersionInstance,
+        }
       if (config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')) {
-        versionInstances.push(organizationInstance)
+        addLatestSupportedAPIVersionParams.organizationInstance =
+          organizationInstance
       }
-      await addLatestSupportedAPIVersion(client, versionInstances)
+      await addLatestSupportedAPIVersion(addLatestSupportedAPIVersionParams)
 
       elements.push(
         objectType,

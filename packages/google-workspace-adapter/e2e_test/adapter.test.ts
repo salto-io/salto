@@ -201,11 +201,8 @@ describe('Google Workspace adapter E2E', () => {
       })
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
       await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
-      console.log('tamir0')
       const changesToDeploy = createChangesForDeploy(types, testSuffix)
-      console.log('tamir1')
       await deployAndFetch(changesToDeploy)
-      console.log('tamir2')
     })
 
     afterAll(async () => {
@@ -253,7 +250,6 @@ describe('Google Workspace adapter E2E', () => {
       let createdInstances: InstanceElement[]
 
       beforeAll(async () => {
-        console.log('tamir3')
         createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
         createdInstances = elements.filter(isInstanceElement)
       })

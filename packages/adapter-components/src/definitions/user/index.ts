@@ -15,7 +15,15 @@
  */
 
 // eslint-disable-next-line import/no-cycle
-export { UserConfig, createUserConfigType, ConfigTypeCreator, mergeWithDefaultConfig } from './user_config'
+export {
+  UserConfig,
+  createUserConfigType,
+  ConfigTypeCreator,
+  mergeWithDefaultConfig,
+  adapterConfigFromConfig,
+} from './user_config'
+// eslint-disable-next-line import/no-cycle
+export { updateDeprecatedConfig } from './config_upgrade_utils'
 // eslint-disable-next-line import/no-cycle
 export {
   UserFetchConfig,

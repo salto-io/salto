@@ -54,6 +54,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
 import {
+  acquireLockRetry,
   addAnnotationRecursively,
   convertPropertiesToList,
   convertPropertiesToMap,
@@ -559,13 +560,15 @@ const deployWorkflow = async ({
     }
     return false
   }
-  const response = await defaultDeployChange({
-    change,
-    client,
-    apiDefinitions: config.apiDefinitions,
-    elementsSource,
-    fieldsToIgnore: fieldsToIgnoreFunc,
-  })
+  const response = await acquireLockRetry(() =>
+    defaultDeployChange({
+      change,
+      client,
+      apiDefinitions: config.apiDefinitions,
+      elementsSource,
+      fieldsToIgnore: fieldsToIgnoreFunc,
+    }),
+  )
   if (!isWorkflowResponse(response)) {
     log.warn('Received unexpected workflow response from service')
     return

@@ -31,15 +31,13 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import Joi from 'joi'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { deployChanges } from '../../deployment/standard_deployment'
-import { findObject, setFieldDeploymentAnnotations } from '../../utils'
+import { acquireLockRetry, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { STATUS_TYPE_NAME } from '../../constants'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
-const MAX_RETRIES = 3
 const STATUS_CATEGORY_NAME_TO_ID: Record<string, number> = {
   TODO: 2,
   DONE: 3,
@@ -77,30 +75,11 @@ const createDeployableStatusValues = (statusChange: Change<InstanceElement>): Va
   return deployableValue
 }
 
-const retry = async <T>(fn: () => Promise<T>, retries: number = MAX_RETRIES): Promise<T> => {
-  try {
-    return await fn()
-  } catch (error) {
-    if (
-      error instanceof clientUtils.HTTPError &&
-      Array.isArray(error.response.data.errorMessages) &&
-      error.response?.data?.errorMessages?.some((message: string) => message.includes('Failed to acquire lock'))
-    ) {
-      if (retries === 1) {
-        throw error
-      }
-      log.debug(`Request to update statuses failed, retrying ${retries} more times.`)
-      return retry(fn, retries - 1)
-    }
-    throw error
-  }
-}
-
 const modifyStatus = async (
   modificationChange: ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  await retry(async () =>
+  await acquireLockRetry(async () =>
     client.put({
       url: '/rest/api/3/statuses',
       data: {
@@ -111,7 +90,7 @@ const modifyStatus = async (
 }
 
 const addStatus = async (additionChange: AdditionChange<InstanceElement>, client: JiraClient): Promise<void> => {
-  const response = await retry(async () =>
+  const response = await acquireLockRetry(async () =>
     client.post({
       url: '/rest/api/3/statuses',
       data: {

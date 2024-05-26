@@ -26,7 +26,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { fetch as fetchUtils } from '@salto-io/adapter-components'
+import { fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
@@ -41,6 +41,7 @@ type appInfo = {
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const MAX_RETRIES = 3
 
 export const setFieldDeploymentAnnotations = (type: ObjectType, fieldName: string): void => {
   if (type.fields[fieldName] !== undefined) {
@@ -207,4 +208,25 @@ export const convertPropertiesToMap = (fields: Values[]): void => {
       field.properties = Object.fromEntries(field.properties.map(({ key, value }: Values) => [key, value]))
     }
   })
+}
+
+// Some requests should be performed in batches and are executed in parallel.
+// This may result in a "Failed to acquire lock" error, so we want to retry in such cases.
+export const acquireLockRetry = async <T>(fn: () => Promise<T>, retries: number = MAX_RETRIES): Promise<T> => {
+  try {
+    return await fn()
+  } catch (error) {
+    if (
+      error instanceof clientUtils.HTTPError &&
+      Array.isArray(error.response.data.errorMessages) &&
+      error.response?.data?.errorMessages?.some((message: string) => message.includes('Failed to acquire lock'))
+    ) {
+      if (retries === 1) {
+        throw error
+      }
+      log.debug(`Request failed due to 'Failed to acquire lock', retrying ${retries - 1} more times.`)
+      return acquireLockRetry(fn, retries - 1)
+    }
+    throw error
+  }
 }

@@ -170,8 +170,7 @@ const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): P
 }
 
 describe('Google Workspace adapter E2E', () => {
-  // eslint-disable-next-line jest/no-disabled-tests
-  describe.skip('fetch and deploy', () => {
+  describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
     let adapterAttr: Reals
     let elements: Element[] = []

@@ -38,6 +38,7 @@ import { brandRemovalValidator } from './brand_removal'
 import { appUserSchemaRemovalValidator } from './app_user_schema_removal'
 import { domainAdditionValidator } from './domain_addition'
 import { domainModificationValidator } from './domain_modification'
+import { emailDomainAdditionValidator } from './email_domain_addition'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -82,6 +83,7 @@ export default ({ client, config }: { client: OktaClient; config: OktaConfig }):
     appUserSchemaRemoval: appUserSchemaRemovalValidator,
     domainAddition: domainAdditionValidator,
     domainModification: domainModificationValidator,
+    emailDomainAddition: emailDomainAdditionValidator,
   }
 
   return createChangeValidator({

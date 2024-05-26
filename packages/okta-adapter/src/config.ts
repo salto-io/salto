@@ -891,6 +891,27 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/email-domains',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/email-domains/{domainId}',
+        method: 'put',
+        urlParamsToFields: {
+          domainId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/email-domains/{domainId}',
+        method: 'delete',
+        urlParamsToFields: {
+          domainId: 'id',
+        },
+        omitRequestBody: true,
+      },
+    },
   },
   OrgSetting: {
     request: {
@@ -1917,6 +1938,7 @@ export type ChangeValidatorName =
   | 'appUserSchemaRemoval'
   | 'domainAddition'
   | 'domainModification'
+  | 'emailDomainAddition'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1948,6 +1970,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     appUserSchemaRemoval: { refType: BuiltinTypes.BOOLEAN },
     domainAddition: { refType: BuiltinTypes.BOOLEAN },
     domainModification: { refType: BuiltinTypes.BOOLEAN },
+    emailDomainAddition: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

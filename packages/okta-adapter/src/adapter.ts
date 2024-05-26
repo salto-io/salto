@@ -96,6 +96,7 @@ import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
 import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
 import appUserSchemaRemovalFilter from './filters/app_user_schema_removal'
+import emailDomainAdditionFilter from './filters/email_domain_addition'
 import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
@@ -143,6 +144,7 @@ const DEFAULT_FILTERS = [
   brandThemeAdditionFilter,
   brandThemeRemovalFilter,
   brandThemeFilesFilter,
+  emailDomainAdditionFilter,
   fieldReferencesFilter,
   // should run after fieldReferencesFilter
   policyPrioritiesFilter,

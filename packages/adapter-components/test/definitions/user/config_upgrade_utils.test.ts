@@ -200,6 +200,47 @@ describe('config upgrade utils', () => {
         const res = updateDeprecatedConfig(config)
         expect(res).toBeUndefined()
       })
+      it('should merge any existing elemID config if exists', () => {
+        const config = new InstanceElement('config', configType, {
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [{ type: 'typeB' }],
+            customFlag: false,
+            elemID: {
+              test: {
+                parts: [{ fieldName: 'name' }],
+              },
+              foo: {
+                parts: [{ fieldName: 'name' }],
+              },
+            }
+          },
+          apiDefinitions: {
+            types: {
+              foo: {
+                transformation: { idFields: ['name', 'status'] },
+              },
+            },
+          },
+        })
+
+        const res = updateDeprecatedConfig(config)
+        expect(res?.config?.value).toEqual({
+          fetch: {
+            include: [{ type: '.*' }],
+            exclude: [{ type: 'typeB' }],
+            customFlag: false,
+            elemID: {
+              test: {
+                parts: [{ fieldName: 'name' }],
+              },
+              foo: {
+                parts: [{ fieldName: 'name' }, { fieldName: 'status' }],
+              },
+            },
+          },
+        })
+      })
     })
   })
 })

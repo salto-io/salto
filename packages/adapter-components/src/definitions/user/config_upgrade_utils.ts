@@ -101,13 +101,17 @@ export const updateDeprecatedConfig = (
     log.debug('found no elemID definitions to update in config')
     return undefined
   }
+  if (updatedConfig.value.fetch?.elemID !== undefined) {
+    log.error('found existing elemID definitions in config: %s, merging with new definitions', safeJsonStringify(updatedConfig.value.fetch.elemID))
+  }
+  const mergedElemIDConfig = _.merge(_.pick(updatedConfig.value.fetch, 'elemID'), updatedElemIDs)
 
   const cleanedApiDefs = objects.cleanEmptyObjects(updatedConfig.value?.apiDefinitions)
   updatedConfig.value = {
     ...updatedConfig.value,
     fetch: {
       ...updatedConfig.value.fetch,
-      ...updatedElemIDs,
+      ...mergedElemIDConfig,
     },
     apiDefinitions: cleanedApiDefs,
   }

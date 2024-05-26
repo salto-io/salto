@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { isDefined } from './values'
+import { isDefined, isPlainRecord } from './values'
 
 export const concatObjects = <T extends Record<string, ReadonlyArray<unknown> | unknown[] | undefined>>(
   objects: T[],
@@ -32,19 +32,18 @@ export const concatObjects = <T extends Record<string, ReadonlyArray<unknown> | 
  * Cleans empty objects recursively
  * Notice: arrays are ignored and treated like primitives
  */
-export const cleanEmptyObjects = (object: Record<string, unknown>): Record<string, unknown> | undefined => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cleanObject = (obj: any): any => {
-    if (_.isPlainObject(obj)) {
+export const cleanEmptyObjects = (object: Record<string, unknown>): unknown => {
+  const cleanObject = (obj: unknown): unknown => {
+    if (isPlainRecord(obj)) {
       const mapped = _.mapValues(obj, val => {
         const cleanedVal = cleanObject(val)
-        return _.isPlainObject(val) && _.isEmpty(cleanedVal) ? undefined : cleanedVal
+        return isPlainRecord(val) && _.isEmpty(cleanedVal) ? undefined : cleanedVal
       })
-      return _.omitBy(mapped, _.isUndefined)
+      return _.pickBy(mapped, isDefined)
     }
     return obj
   }
 
   const cleanedRoot = cleanObject(object)
-  return _.isPlainObject(cleanedRoot) && _.isEmpty(cleanedRoot) ? undefined : cleanedRoot
+  return isPlainRecord(cleanedRoot) && _.isEmpty(cleanedRoot) ? undefined : cleanedRoot
 }

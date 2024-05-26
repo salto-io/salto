@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import {
-  isInstanceElement,
-} from '@salto-io/adapter-api'
+import { isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { EMAIL_DOMAIN_TYPE_NAME } from '../constants'
@@ -29,11 +27,17 @@ const log = logger(module)
  */
 const filterCreator: FilterCreator = () => ({
   name: 'omitDeletedEmailDomain',
-  onFetch: async (elements) => {
-    const deleted = _.remove(elements, elem =>
-      isInstanceElement(elem) && elem.elemID.typeName === EMAIL_DOMAIN_TYPE_NAME && elem.value.validationStatus === 'DELETED',
+  onFetch: async elements => {
+    const deleted = _.remove(
+      elements,
+      elem =>
+        isInstanceElement(elem) &&
+        elem.elemID.typeName === EMAIL_DOMAIN_TYPE_NAME &&
+        elem.value.validationStatus === 'DELETED',
     )
-    log.trace(`The following EmailDomain instances were omitted: ${deleted.map(e => e.elemID.getFullName()).join(', ')}`)
+    log.trace(
+      `The following EmailDomain instances were omitted: ${deleted.map(e => e.elemID.getFullName()).join(', ')}`,
+    )
   },
 })
 

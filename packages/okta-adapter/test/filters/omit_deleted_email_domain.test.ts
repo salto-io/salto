@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ObjectType, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { OKTA, EMAIL_DOMAIN_TYPE_NAME } from '../../src/constants'
 import omitDeletedEmailDomain from '../../src/filters/omit_deleted_email_domain'

@@ -23,6 +23,7 @@ import {
   DataNodeMap,
   DAG,
   AbstractNodeMap,
+  FatalError,
 } from '../src/nodemap'
 
 class MaxCounter {
@@ -643,6 +644,51 @@ describe('NodeMap', () => {
         })
       })
 
+      describe('when the handler throws a FatalError', () => {
+        let handlerMock: jest.Mock<void>
+        let error: Error
+        beforeEach(() => {
+          handlerMock = jest.fn()
+          subject.addNode(5, [1])
+          try {
+            subject.walkSync((id: NodeId) => {
+              handlerMock(id)
+
+              if (id === 2) {
+                throw new FatalError('My error message')
+              }
+            })
+          } catch (e) {
+            error = e
+          }
+        })
+
+        it('should not call the handler for nodes that have not started yet', () => {
+          expect(handlerMock).not.toHaveBeenCalledWith(3)
+          expect(handlerMock).not.toHaveBeenCalledWith(4)
+          expect(handlerMock).not.toHaveBeenCalledWith(5)
+        })
+
+        it('should set NodeSkippedError on all the nodes that are skipped due to the error', () => {
+          expect(error).toBeDefined()
+          expect(error).toBeInstanceOf(WalkError)
+
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.size).toBe(4)
+          expect(errors.get(2)).toBeInstanceOf(FatalError)
+          expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(5)).toBeInstanceOf(NodeSkippedError)
+        })
+
+        it('should set the `causingNode` id to the node that caused the fatal error', () => {
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.get(3) as NodeSkippedError).toHaveProperty('causingNode', 2)
+          expect(errors.get(4) as NodeSkippedError).toHaveProperty('causingNode', 2)
+          expect(errors.get(5) as NodeSkippedError).toHaveProperty('causingNode', 2)
+        })
+      })
+
       describe('when there is a circular dependency AND the handler throws an error', () => {
         class MyError extends Error {}
 
@@ -882,6 +928,54 @@ describe('NodeMap', () => {
             expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
             expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
           })
+        })
+      })
+
+      describe('when the handler throws a FatalError', () => {
+        let handlerMock: jest.Mock<void>
+        let error: Error
+        let resolve: (value: void | PromiseLike<void>) => void
+        beforeEach(async () => {
+          handlerMock = jest.fn()
+          subject.addNode(6, [3])
+          await subject
+            .walkAsync(async (id: NodeId) => {
+              if (id === 3) {
+                throw new FatalError('My error message')
+              }
+              if (id === 4) {
+                return new Promise(r => {
+                  resolve = r
+                })
+              }
+              return handlerMock(id)
+            })
+            .catch(e => {
+              error = e
+            })
+        })
+
+        afterEach(() => {
+          resolve()
+        })
+
+        it('should throw before all promises are resolved', async () => {
+          expect(error).toBeDefined()
+          expect(error).toBeInstanceOf(WalkError)
+          expect((error as WalkError).handlerErrors.get(3)).toBeInstanceOf(FatalError)
+          expect(handlerMock).not.toHaveBeenCalledWith(4)
+        })
+
+        it('should set NodeSkippedError on all the nodes that are skipped due to the error', () => {
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(6)).toBeInstanceOf(NodeSkippedError)
+        })
+
+        it('should set the `causingNode` id to the node that caused the fatal error', () => {
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.get(4) as NodeSkippedError).toHaveProperty('causingNode', 3)
+          expect(errors.get(6) as NodeSkippedError).toHaveProperty('causingNode', 3)
         })
       })
 

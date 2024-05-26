@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { ElemIdGetter, Element, ObjectType, SeverityLevel, Values } from '@salto-io/adapter-api'
+import { ElemIdGetter, Element, ObjectType, SaltoError, SeverityLevel, Values } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
@@ -23,8 +23,9 @@ import { generateInstancesWithInitialTypes } from './instance_element'
 import { InvalidSingletonType, getReachableTypes, hideAndOmitFields, overrideFieldTypes } from './type_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
-import { NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
+import { ConfigChangeSuggestion, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 import { omitInstanceValues } from './instance_utils'
+import { AbortFetchOnFailure } from '../errors'
 
 const log = logger(module)
 
@@ -35,6 +36,9 @@ export type ElementGenerator = {
    * the generator runs basic validations and adds the entries to the queue.
    */
   pushEntries: (args: { typeName: string; entries: unknown[] }) => void
+
+  // handle an error that occurred while fetching a specific type using the 'resource.onError' definition
+  handleError: (args: { typeName: string; error: Error }) => void
 
   // produce all types and instances based on all entries processed until now
   generate: () => FetchElements
@@ -54,6 +58,8 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
   getElemIdFunc?: ElemIdGetter
 }): ElementGenerator => {
   const valuesByType: Record<string, Values[]> = {}
+  const customSaltoErrors: SaltoError[] = []
+  const configSuggestions: ConfigChangeSuggestion[] = []
 
   const pushEntries: ElementGenerator['pushEntries'] = ({ typeName, entries }) => {
     const { element: elementDef } = defQuery.query(typeName) ?? {}
@@ -76,6 +82,38 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     valuesByType[typeName].push(...validEntries)
   }
 
+  const handleError: ElementGenerator['handleError'] = ({ typeName, error }) => {
+    // This can happen if the error was thrown inside a sub-type that has failEntireFetch set to true.
+    // In this case we should not call the parent's onError function.
+    if (error instanceof AbortFetchOnFailure) {
+      throw error
+    }
+
+    const { resource: resourceDef } = defQuery.query(typeName) ?? {}
+    const onError = resourceDef?.onError
+
+    const onErrorResult = onError?.custom?.(onError)(error) ?? onError
+    switch (onErrorResult?.action) {
+      case 'customSaltoError':
+        log.warn('failed to fetch type %s:%s, generating custom Salto error', adapterName, typeName)
+        customSaltoErrors.push(onErrorResult.value)
+        break
+      case 'configSuggestion':
+        log.warn('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
+        configSuggestions.push(onErrorResult.value)
+        break
+      case 'failEntireFetch': {
+        if (onErrorResult.value) {
+          throw new AbortFetchOnFailure({ adapterName, typeName, message: error.message })
+        }
+      }
+      // eslint-disable-next-line no-fallthrough
+      case undefined:
+      default:
+        log.warn('failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
+    }
+  }
+
   const generate: ElementGenerator['generate'] = () => {
     const allResults = Object.entries(valuesByType).flatMap(([typeName, values]) => {
       try {
@@ -89,7 +127,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
           customNameMappingFunctions,
         })
       } catch (e) {
-        // TODO decide how to handle error based on args (SALTO-5427)
+        // TODO decide how to handle error based on args (SALTO-5842)
         if (e instanceof InvalidSingletonType) {
           return { instances: [], types: [], errors: [{ message: e.message, severity: 'Warning' as SeverityLevel }] }
         }
@@ -121,11 +159,13 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     const filteredTypes = getReachableTypes({ instances, types: Object.values(definedTypes), defQuery })
     return {
       elements: (instances as Element[]).concat(filteredTypes),
-      errors: allResults.flatMap(t => t.errors ?? []),
+      errors: customSaltoErrors.concat(allResults.flatMap(t => t.errors ?? [])),
+      configChanges: configSuggestions,
     }
   }
   return {
     pushEntries,
+    handleError,
     generate,
   }
 }

@@ -36,8 +36,6 @@ import { FetchRequestDefinition } from '../../definitions/system/fetch'
 const log = logger(module)
 
 export type Requester<ClientOptions extends string> = {
-  // TODO improve both functions to allow returning partial errors as the return value (SALTO-5427)
-
   request: (args: {
     requestDef: FetchRequestDefinition<ClientOptions>
     contexts: ContextParams[]

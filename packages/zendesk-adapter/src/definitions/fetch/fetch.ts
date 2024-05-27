@@ -1343,11 +1343,12 @@ const createCustomizations = (): Record<
     },
   },
 
+  category_order: {},
+
   category: {
     requests: [
       {
-        context: { brand: {} },
-        endpoint: { path: '/api/v2/help_center/categories' },
+        endpoint: { path: '/api/v2/help_center/categories', queryArgs: { include: 'translations' } },
         transformation: { root: 'categories', adjust: transforms.transformGuideItem },
       },
     ],
@@ -1365,8 +1366,124 @@ const createCustomizations = (): Record<
         id: { hide: true, fieldType: 'number' },
         position: { hide: true },
         sections: { fieldType: 'list<section>' },
-        translations: { fieldType: 'list<category_translation>' },
         html_url: { omit: true },
+        // translations: {
+        //   // extract each item in the holidays field to its own instance
+        //   standalone: {
+        //     typeName: 'category_translation',
+        //     addParentAnnotation: true,
+        //     referenceFromParent: false,
+        //     nestPathUnderParent: true,
+        //   },
+        // },
+      },
+    },
+  },
+
+  // category_translation: {
+  //   resource: {
+  //     directFetch: true,
+  //   },
+  //   element: {
+  //     topLevel: {
+  //       isTopLevel: true,
+  //       elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+  //       path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
+  //       // serviceUrl is created in help_center_service_url filter
+  //     },
+  //     fieldCustomizations: {
+  //       id: { fieldType: 'number', hide: true },
+  //       brand: { fieldType: 'number' },
+  //       created_by_id: { fieldType: 'unknown' },
+  //       updated_by_id: { fieldType: 'unknown' },
+  //       html_url: { omit: true },
+  //       source_id: { omit: true },
+  //       source_type: { omit: true },
+  //     },
+  //   },
+  // },
+
+  guide_language_settings: {
+    requests: [
+      {
+        endpoint: { path: '/hc/api/internal/help_center_translations' },
+        transformation: { root: '.', adjust: transforms.transformGuideItem },
+      },
+    ],
+    resource: {
+      serviceIDFields: [],
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'locale' }] },
+        path: {
+          pathParts: [
+            { parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'locale' }, { fieldName: 'locale' }] },
+          ],
+        },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        default_locale: { fieldType: 'string' },
+      },
+    },
+  },
+
+  guide_settings: {
+    requests: [
+      {
+        endpoint: { path: '/hc/api/internal/general_settings' },
+        transformation: { root: '.', adjust: transforms.transformGuideItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'brand', isReference: true }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'brand', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        default_locale: { fieldType: 'string' },
+      },
+    },
+  },
+
+  guide_settings__help_center: {
+    element: {
+      fieldCustomizations: {
+        feature_restrictions: { omit: true }, // omitted as it does not appear in the http request
+      },
+    },
+  },
+
+  guide_settings__help_center__settings: {
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
+        account_id: { omit: true },
+        help_center_id: { omit: true },
+        created_at: { omit: true },
+        updated_at: { omit: true },
+        draft: { omit: true },
+        kind: { omit: true },
+      },
+    },
+  },
+
+  guide_settings__help_center__text_filter: {
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
+        account_id: { omit: true },
+        help_center_id: { omit: true },
+        created_at: { omit: true },
+        updated_at: { omit: true },
       },
     },
   },

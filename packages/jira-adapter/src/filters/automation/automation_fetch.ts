@@ -63,7 +63,9 @@ const ASSET_COMPONENT_SCHEME = Joi.object({
     schemaId: Joi.string().required(),
     schemaLabel: Joi.string(),
     objectTypeLabel: Joi.string(),
-  }).unknown(true),
+  })
+    .unknown(true)
+    .required(),
 }).unknown(true)
 
 export const isAssetComponent = createSchemeGuard<AssetComponent>(ASSET_COMPONENT_SCHEME)
@@ -195,10 +197,12 @@ const processComponents = (component: Component): void => {
 /* Since the children and conditions of the components can also be of the AssetComponent type,
  * we need to handle them the same way as we handle the top-level component value. */
 const modifyAssetsComponents = (instance: InstanceElement): void => {
-  if (!instance.value.components) {
-    return
+  if (instance.value.components) {
+    instance.value.components.forEach(processComponents)
   }
-  instance.value.components.forEach(processComponents)
+  if (instance.value.trigger) {
+    processComponents(instance.value.trigger)
+  }
 }
 
 export const getAutomations = async (client: JiraClient, config: JiraConfig): Promise<Values[]> =>

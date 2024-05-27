@@ -832,6 +832,16 @@ describe('automationDeploymentFilter', () => {
             name: 'someName',
             state: 'ENABLED',
             projects: [],
+            trigger: {
+              component: 'ACTION',
+              schemaVersion: 1,
+              value: {
+                objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+              },
+              children: [],
+              conditions: [],
+            },
             components: [
               {
                 component: 'ACTION',
@@ -886,6 +896,19 @@ describe('automationDeploymentFilter', () => {
                 conditions: [],
               },
             ],
+            conditions: [],
+          })
+          expect(automationInstance.value.trigger).toEqual({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+              schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+              schemaLabel: 'schemaName',
+              objectTypeLabel: 'objectTypeName',
+              workspaceId: 'w11',
+            },
+            children: [],
             conditions: [],
           })
         })
@@ -1098,6 +1121,19 @@ describe('automationDeploymentFilter', () => {
             name: 'someName',
             state: 'ENABLED',
             projects: [],
+            trigger: {
+              component: 'ACTION',
+              schemaVersion: 1,
+              value: {
+                objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                workspaceId: 'w11',
+                schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+                schemaLabel: 'schemaName',
+                objectTypeLabel: 'objectTypeName',
+              },
+              children: [],
+              conditions: [],
+            },
             components: [
               {
                 component: 'ACTION',
@@ -1152,6 +1188,16 @@ describe('automationDeploymentFilter', () => {
                 conditions: [],
               },
             ],
+            conditions: [],
+          })
+          expect(automationInstance.value.trigger).toEqual({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+              schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+            },
+            children: [],
             conditions: [],
           })
         })

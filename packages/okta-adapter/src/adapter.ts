@@ -82,7 +82,6 @@ import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping
 import policyPrioritiesFilter from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
-import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
 import appUserSchemaRemovalFilter from './filters/app_user_schema_removal'
 import {
   APP_LOGO_TYPE_NAME,
@@ -109,7 +108,6 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 const DEFAULT_FILTERS = [
-  renameDefaultAccessPolicy, // TODO SALTO-5607 - move to infra
   standardRolesFilter, // TODO SALTO-5607 - move to infra
   userTypeFilter,
   userSchemaFilter,

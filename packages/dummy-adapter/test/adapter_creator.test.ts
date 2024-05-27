@@ -29,6 +29,7 @@ describe('adapter creator', () => {
       'generateEnvName',
       'fieldsToOmitOnDeploy',
       'elementsToExclude',
+      'updatedConfig',
     ])
   })
   it('should return an empty creds type', () => {

@@ -194,9 +194,10 @@ export type GeneratorParams = {
   fieldsToOmitOnDeploy?: string[]
   elementsToExclude?: string[]
   importantValuesFreq?: number
+  updatedConfig?: Record<string, unknown>
 }
 
-export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
+export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths' | 'updatedConfig'> = {
   seed: 123456,
   numOfRecords: 522,
   numOfPrimitiveTypes: 44,

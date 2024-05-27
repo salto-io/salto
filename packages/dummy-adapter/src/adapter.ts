@@ -23,13 +23,17 @@ import {
   getChangeData,
   isInstanceElement,
   FixElementsFunc,
+  InstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { generateElements, GeneratorParams } from './generator'
 import { changeValidator } from './change_validator'
 
 export default class DummyAdapter implements AdapterOperations {
-  public constructor(private genParams: GeneratorParams) {}
+  public constructor(
+    private genParams: GeneratorParams,
+    private updatedConfig: InstanceElement | undefined,
+  ) {}
 
   /**
    * Fetch configuration elements: objects, types and instances for the given HubSpot account.
@@ -38,6 +42,7 @@ export default class DummyAdapter implements AdapterOperations {
   public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     return {
       elements: await generateElements(this.genParams, progressReporter),
+      updatedConfig: this.updatedConfig ? { config: [this.updatedConfig], message: 'Fetched config' } : undefined,
     }
   }
 

@@ -19,6 +19,7 @@ import {
   InstanceElement,
   ObjectType,
   ReferenceExpression,
+  ReferenceInfo,
   TemplateExpression,
   toChange,
 } from '@salto-io/adapter-api'
@@ -282,6 +283,15 @@ describe('updateReferenceIndexes', () => {
         }),
       )
 
+      const customReferences: ReferenceInfo[] = [
+        // Make sure we update existing reference that was previously strong
+        {
+          source: new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
+          target: ElemID.fromFullName('test.target2.instance.someInstance'),
+          type: 'weak',
+          sourceScope: 'value',
+        },
+      ]
       await updateReferenceIndexes(
         changes,
         referenceTargetsIndex,
@@ -289,7 +299,7 @@ describe('updateReferenceIndexes', () => {
         mapVersions,
         elementsSource,
         true,
-        async () => [],
+        async () => customReferences,
       )
     })
     it('old values should be removed and new values should be added from referenceTargets index', () => {
@@ -301,7 +311,10 @@ describe('updateReferenceIndexes', () => {
               'someAnnotation2',
               [{ id: new ElemID('test', 'target2', 'instance', 'someInstance', 'value'), type: 'strong' }],
             ],
-            ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
+            [
+              'someValue',
+              [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'weak', sourceScope: 'value' }],
+            ],
           ]),
         },
       ])
@@ -312,9 +325,13 @@ describe('updateReferenceIndexes', () => {
         {
           key: 'test.target2.instance.someInstance',
           value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation2'),
-            new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
-          ].map(toReferenceIndexEntry),
+            { id: new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation2'), type: 'strong' },
+            {
+              id: new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
+              type: 'weak',
+              sourceScope: 'value',
+            },
+          ],
         },
       ])
     })

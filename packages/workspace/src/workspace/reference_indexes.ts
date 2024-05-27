@@ -28,6 +28,10 @@ import {
   TemplateExpression,
   StaticFile,
   isStaticFile,
+  ReferenceType,
+  REFERENCE_TYPES,
+  REFERENCE_SOURCE_SCOPES,
+  ReferenceSourceScope,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -57,10 +61,10 @@ export type SerializedReferenceIndexEntry = {
   id: string
 } & Pick<ReferenceInfo, 'type' | 'sourceScope'>
 
-const isValidReferenceSourceScope = (value: unknown): value is ReferenceInfo['sourceScope'] =>
-  value === undefined || value === 'baseId' || value === 'value'
-
-const isValidReferenceType = (value: unknown): value is ReferenceInfo['type'] => value === 'strong' || value === 'weak'
+const isValidReferenceSourceScope = (value: unknown): value is ReferenceSourceScope =>
+  _.isString(value) && (REFERENCE_SOURCE_SCOPES as ReadonlyArray<string>).includes(value)
+const isValidReferenceType = (value: unknown): value is ReferenceType =>
+  _.isString(value) && (REFERENCE_TYPES as ReadonlyArray<string>).includes(value)
 
 export const isSerliazedReferenceIndexEntry = (value: unknown): value is SerializedReferenceIndexEntry =>
   _.isString(_.get(value, 'id')) &&

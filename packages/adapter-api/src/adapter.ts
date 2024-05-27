@@ -199,9 +199,12 @@ export type ReferenceMapping = {
  */
 export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<ReferenceMapping[]>
 
-export type ReferenceType = 'strong' | 'weak'
 
-export type ReferenceSourceScope = 'baseId' | 'value'
+export const REFERENCE_TYPES = ['strong', 'weak'] as const
+export type ReferenceType = typeof REFERENCE_TYPES[number]
+
+export const REFERENCE_SOURCE_SCOPES = ['baseId', 'value'] as const
+export type ReferenceSourceScope = typeof REFERENCE_SOURCE_SCOPES[number]
 export const DEFAULT_SOURCE_SCOPE: ReferenceSourceScope = 'baseId'
 
 /**

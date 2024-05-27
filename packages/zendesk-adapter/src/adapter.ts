@@ -392,8 +392,6 @@ const getGuideElements = async ({
       const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
       log.debug(`Fetching elements for brand ${brandInstance.elemID.name}`)
       if (useNewInfra !== true) {
-        // eslint-disable-next-line no-console
-        console.log('here?')
         return getAllElements({
           adapterName: ZENDESK,
           types: typesConfigWithNoStandaloneFields,
@@ -409,7 +407,7 @@ const getGuideElements = async ({
         })
       }
       const brandFetchDefinitions = brandToFetchDefinitions[brandInstance.elemID.name]
-      // TODO: Add brandinstance as "initialcontext" and then write an adjuster for guide elements
+
       return fetchUtils.getElements({
         adapterName: ZENDESK,
         fetchQuery,
@@ -684,7 +682,15 @@ export default class ZendeskAdapter implements AdapterOperations {
             pagination: PAGINATION,
             fetch: definitions.mergeWithUserElemIDDefinitions({
               userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
-              fetchConfig: createFetchDefinitions(this.userConfig, undefined, Object.keys(GUIDE_BRAND_SPECIFIC_TYPES)),
+              fetchConfig: createFetchDefinitions(
+                this.userConfig,
+                undefined,
+                GUIDE_TYPES_TO_HANDLE_BY_BRAND.concat([
+                  'guide_settings__help_center',
+                  'guide_settings__help_center__settings',
+                  'guide_settings__help_center__text_filter',
+                ]),
+              ),
             }),
           },
         ]),

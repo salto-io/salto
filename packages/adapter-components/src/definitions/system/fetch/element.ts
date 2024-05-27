@@ -141,7 +141,7 @@ export type ElementFetchDefinitionOptions = {
 type ResolveValueType<Options extends Pick<ElementFetchDefinitionOptions, 'valueType'>> =
   Options['valueType'] extends Values ? Options['valueType'] : Values
 
-type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
+export type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
   isTopLevel: true
 
   custom?: (
@@ -159,7 +159,7 @@ type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOption
     {
       entry: Values
       defaultName: string
-      parentName?: string
+      parent?: InstanceElement
     },
     ElemIDCreatorArgs<ResolveCustomNameMappingOptionsType<Options>>
   >

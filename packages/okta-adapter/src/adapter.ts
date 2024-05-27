@@ -96,7 +96,7 @@ import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
 import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
 import appUserSchemaRemovalFilter from './filters/app_user_schema_removal'
-import discardDeletedEmailDomainFilter from './filters/omit_deleted_email_domain'
+import omitDeletedEmailDomainFilter from './filters/omit_deleted_email_domain'
 import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
@@ -120,7 +120,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 const DEFAULT_FILTERS = [
-  discardDeletedEmailDomainFilter,
+  omitDeletedEmailDomainFilter,
   renameDefaultAccessPolicy,
   standardRolesFilter,
   deleteFieldsFilter,

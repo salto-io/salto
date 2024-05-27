@@ -37,9 +37,9 @@ type ConfigSuggestion = {
   value: ConfigChangeSuggestion
 }
 
-type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion
+export type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion
 
-type OnErrorHandler = ArgsWithCustomizer<OnErrorHandlerAction, OnErrorHandlerAction, Error>
+type OnErrorHandler = ArgsWithCustomizer<OnErrorHandlerAction, OnErrorHandlerAction, { error: Error; typeName: string }>
 
 export type FetchResourceDefinition = {
   // set to true if the resource should be fetched on its own. set to false for types only fetched via recurseInto

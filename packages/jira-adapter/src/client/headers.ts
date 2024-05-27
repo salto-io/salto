@@ -19,7 +19,7 @@ export const FORCE_ACCEPT_LANGUAGE_HEADERS = {
 }
 
 export const EXPERIMENTAL_API_HEADERS = {
-  'X-ExperimentalApi': 'opt-in,AppTags',
+  'X-ExperimentalApi': 'opt-in',
 }
 
 export const PRIVATE_API_HEADERS = {

@@ -26,12 +26,12 @@ import JiraClient, { ExtensionType, EXTENSION_ID_ARI_PREFIX, EXTENSION_ID_LENGTH
 import { WorkflowV2TransitionRule } from '../../../src/filters/workflowV2/types'
 
 const createConnectTransitionRule = (extensionId: string): WorkflowV2TransitionRule => ({
-  ruleKey: `connect:some-rule`,
+  ruleKey: 'connect:some-rule',
   parameters: { appKey: `${extensionId}` },
 })
 
 const createForgeTransitionRule = (extensionId: string): WorkflowV2TransitionRule => ({
-  ruleKey: `forge:some-rule`,
+  ruleKey: 'forge:some-rule',
   parameters: { key: `${EXTENSION_ID_ARI_PREFIX}${extensionId}/some-suffix` },
 })
 
@@ -86,5 +86,26 @@ describe('missingAppsTransitionRulesReferencedWorkflowDeletionChangeValidator', 
       toChange({ before: workflowInstance, after: afterInstance }),
     ])
     expect(result).toBeArrayOfSize(8) // We added 2 missing extension transition rules every time we pushed transitionRules (4 times)
+  })
+  it('Should raise Warning SeverityLevel when a transition rule is from an unknown', async () => {
+    const transitionRules = [
+      {
+        ruleKey: 'unknown:some-rule',
+      },
+    ]
+
+    const afterInstance = workflowInstance.clone()
+    afterInstance.value.transitions.transition1.validators.push(...transitionRules)
+    const result = await missingExtensionsTransitionRulesChangeValidator(CLIENT)([
+      toChange({ before: workflowInstance, after: afterInstance }),
+    ])
+    expect(result).toEqual([
+      {
+        elemID: afterInstance.elemID.createNestedID('transitions', 'transition1', 'validators', '0'),
+        severity: 'Warning',
+        message: 'Attempted to deploy a transition rule of unknown type',
+        detailedMessage: `Unrecognized type of ruleKey: ${transitionRules[0].ruleKey}.`,
+      },
+    ])
   })
 })

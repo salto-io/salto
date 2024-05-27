@@ -23,7 +23,7 @@ import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
 import { getProductSettings } from '../product_settings'
-import { JSP_API_HEADERS, PRIVATE_API_HEADERS, EXPERIMENTAL_API_HEADERS } from './headers'
+import { JSP_API_HEADERS, PRIVATE_API_HEADERS } from './headers'
 import { QUERY_INSTALLED_APPS } from './queries'
 
 const log = logger(module)
@@ -49,12 +49,6 @@ export const GQL_BASE_URL_GATEWAY = '/gateway/api/graphql'
 export type ExtensionType = {
   name: string
   id: string
-}
-type UPMExtensionType = {
-  name: string
-  key: string
-  enabled: boolean
-  userInstalled: boolean
 }
 
 export const EXTENSION_ID_LENGTH = 36
@@ -90,6 +84,76 @@ const GRAPHQL_RESPONSE_SCHEME = Joi.object({
 const isGraphQLResponse = createSchemeGuard<graphQLResponseType>(
   GRAPHQL_RESPONSE_SCHEME,
   'Failed to get graphql response',
+)
+
+type UPMInstalledAppsResponseType = {
+  data: {
+    plugins: {
+      name: string
+      key: string
+      enabled: boolean
+      userInstalled: boolean
+    }[]
+  }
+}
+
+const UPM_INSTALLED_APPS_RESPONSE_SCHEME = Joi.object({
+  data: Joi.object({
+    plugins: Joi.array()
+      .items({
+        name: Joi.string().required(),
+        key: Joi.string().required(),
+        enabled: Joi.bool().required(),
+        userInstalled: Joi.bool().required(),
+      })
+      .required(),
+  }).required(),
+})
+  .unknown(true)
+  .required()
+
+const isUPMInstalledAppsResponse = createSchemeGuard<UPMInstalledAppsResponseType>(
+  UPM_INSTALLED_APPS_RESPONSE_SCHEME,
+  'Failed to get UPM Installed Apps response',
+)
+
+type GQLGatewayInstalledAppsResponseType = {
+  data: {
+    ecosystem: {
+      appInstallationsByContext: {
+        nodes: {
+          app: {
+            id: string
+            name: string
+          }
+        }[]
+      }
+    }
+  }
+}
+
+const GQL_GATEWAY_INSTALLED_APPS_RESPONSE_SCHEME = Joi.object({
+  data: Joi.object({
+    ecosystem: Joi.object({
+      appInstallationsByContext: Joi.object({
+        nodes: Joi.array()
+          .items({
+            app: Joi.object({
+              id: Joi.string().required(),
+              name: Joi.string().required(),
+            }).required(),
+          })
+          .required(),
+      }).required(),
+    }).required(),
+  }).required(),
+})
+  .unknown(true)
+  .required()
+
+const isGQLGatewayInstalledAppsResponse = createSchemeGuard<GQLGatewayInstalledAppsResponseType>(
+  GQL_GATEWAY_INSTALLED_APPS_RESPONSE_SCHEME,
+  'Failed to get GQL Gateway Installed Apps response',
 )
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<Credentials, definitions.ClientRateLimitConfig> {
@@ -200,19 +264,14 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     url: string
     query: string
     variables?: Record<string, unknown>
-    headers?: Record<string, string>
   }): Promise<graphQLResponseType> {
-    let headers = args.headers
-    if (headers === undefined) {
-      headers = args.url === GQL_BASE_URL_GATEWAY ? EXPERIMENTAL_API_HEADERS : PRIVATE_API_HEADERS
-    }
     const response = await this.sendRequest('post', {
       url: args.url,
       data: {
         query: args.query,
         variables: args.variables,
       },
-      headers,
+      headers: PRIVATE_API_HEADERS,
     })
     if (isGraphQLResponse(response.data)) {
       if (response.data.errors !== undefined && response.data.errors.length > 0) {
@@ -302,7 +361,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     return this.cloudId
   }
 
-  public setCloudId(cloudId?: string) {
+  public setCloudId(cloudId?: string): void {
     this.cloudId = cloudId
   }
 
@@ -310,14 +369,12 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     const upmResponse = await this.get({
       url: '/rest/plugins/1.0/',
     })
-    return _.get(upmResponse, 'data.plugins', [])
-      .filter((plugin: UPMExtensionType) => plugin.enabled && plugin.userInstalled)
-      .map(
-        (plugin: UPMExtensionType): ExtensionType => ({
-          name: _.get(plugin, 'name'),
-          id: _.get(plugin, 'key'),
-        }),
-      )
+    if (isUPMInstalledAppsResponse(upmResponse)) {
+      return upmResponse.data.plugins
+        .filter(plugin => plugin.enabled && plugin.userInstalled)
+        .map(plugin => ({ name: plugin.name, id: plugin.key }))
+    }
+    throw new Error('Failed to get UPM Installed Apps response')
   }
 
   private async getInstalledExtensionsGQL(): Promise<ExtensionType[]> {
@@ -328,16 +385,16 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       query: QUERY_INSTALLED_APPS,
       variables: { cloudId: `ari:cloud:jira::site/${cloudId}` },
     })
+    if (isGQLGatewayInstalledAppsResponse(gqlResponse)) {
+      return gqlResponse.data.ecosystem.appInstallationsByContext.nodes.map(node => {
+        // app.id is of the format: <prefix>/<app-id>
+        const id = node.app.id.split('/')[1]
+        const { name } = node.app
+        return { id, name }
+      })
+    }
 
-    return _.get(gqlResponse, 'data.ecosystem.appInstallationsByContext.nodes', []).map(
-      (node: { app: { id: string; name: string } }) => ({
-        id: _.get(node, 'app.id').substring(
-          EXTENSION_ID_ARI_PREFIX.length,
-          EXTENSION_ID_ARI_PREFIX.length + EXTENSION_ID_LENGTH,
-        ),
-        name: _.get(node, 'app.name'),
-      }),
-    )
+    throw new Error('Failed to get GQL Gateway Installed Apps response')
   }
 
   public async getInstalledExtensions(): Promise<ExtensionType[]> {

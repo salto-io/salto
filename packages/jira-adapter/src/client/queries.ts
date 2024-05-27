@@ -23,7 +23,6 @@ export const QUERY_INSTALLED_APPS = `query jira_manageApps_getEcosystemInstalled
             nodes {
                 app {
                     id
-                    tags
                     name
                 }
             }

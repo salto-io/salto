@@ -15,7 +15,14 @@
  */
 import { logger } from '@salto-io/logging'
 import { DetailedChange, DetailedChangeWithBaseChange, ElemID, isRemovalChange } from '@salto-io/adapter-api'
-import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap, ReferenceIndexEntry } from '@salto-io/workspace'
+import {
+  ElementSelector,
+  selectElementIdsByTraversal,
+  elementSource,
+  Workspace,
+  remoteMap,
+  ReferenceIndexEntry,
+} from '@salto-io/workspace'
 import wu from 'wu'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -128,7 +135,9 @@ export function createDiffChanges(
 export async function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]> = new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]> = new remoteMap.InMemoryRemoteMap<
+    ReferenceIndexEntry[]
+  >(),
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = [],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges',

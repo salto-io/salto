@@ -28,7 +28,14 @@ import {
   getChangeData,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { merger, createElementSelector, elementSource, createElementSelectors, remoteMap, ReferenceIndexEntry } from '@salto-io/workspace'
+import {
+  merger,
+  createElementSelector,
+  elementSource,
+  createElementSelectors,
+  remoteMap,
+  ReferenceIndexEntry,
+} from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockWorkspace } from '../common/workspace'
 import { createDiffChanges, getEnvsDeletionsDiff } from '../../src/core/diff'

@@ -17,7 +17,14 @@ import _ from 'lodash'
 import { ElemID, isRemovalChange, toChange, Element, DetailedChangeWithBaseChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap, ReferenceIndexEntry } from '@salto-io/workspace'
+import {
+  pathIndex,
+  filterByPathHint,
+  ElementSelector,
+  elementSource,
+  remoteMap,
+  ReferenceIndexEntry,
+} from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 import { ChangeWithDetails } from './plan/plan_item'
 

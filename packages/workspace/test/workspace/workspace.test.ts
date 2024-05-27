@@ -47,6 +47,7 @@ import {
   TemplateExpression,
   ReferenceInfo,
 } from '@salto-io/adapter-api'
+import { ReferenceIndexEntry } from 'index'
 import { findElement, applyDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
@@ -101,7 +102,6 @@ import {
   mockCredentialsSource,
 } from '../common/workspace'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
-import { ReferenceIndexEntry } from 'index'
 
 const { awu } = collections.asynciterable
 

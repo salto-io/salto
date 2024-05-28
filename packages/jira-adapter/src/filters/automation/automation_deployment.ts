@@ -392,10 +392,10 @@ const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig
   if (!config.fetch.enableJSM) {
     return
   }
-  if (instance.value.components) {
+  if (instance.value.components !== undefined) {
     instance.value.components.forEach((component: Component) => proccessComponentPreDeploy(component, config))
   }
-  if (instance.value.trigger) {
+  if (instance.value.trigger !== undefined) {
     proccessComponentPreDeploy(instance.value.trigger, config)
   }
 }
@@ -421,10 +421,10 @@ const modifyComponentsPostDeploy = (instance: InstanceElement, config: JiraConfi
   if (!config.fetch.enableJSM) {
     return
   }
-  if (instance.value.components) {
+  if (instance.value.components !== undefined) {
     instance.value.components.forEach((component: Component) => proccessComponentPostDeploy(component, config))
   }
-  if (instance.value.trigger) {
+  if (instance.value.trigger !== undefined) {
     proccessComponentPostDeploy(instance.value.trigger, config)
   }
 }

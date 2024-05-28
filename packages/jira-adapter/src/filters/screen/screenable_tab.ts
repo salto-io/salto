@@ -42,8 +42,6 @@ import { JiraConfig } from '../../config/config'
 import { getLookUpName } from '../../reference_mapping'
 import { getDiffIds } from '../../diff'
 
-// const { sleep } = promises.timeout
-
 const { awu } = collections.asynciterable
 
 const log = logger(module)

@@ -18,7 +18,7 @@
 export { ContextCombinationDefinition } from './dependencies'
 export { FetchApiDefinitions, InstanceFetchApiDefinitions, FetchApiDefinitionsOptions } from './fetch'
 export { FetchRequestDefinition } from './request'
-export { ResourceTransformFunc, OnErrorHandlerAction } from './resource'
+export { ResourceTransformFunc, FetchResourceDefinition } from './resource'
 export {
   ElementFieldCustomization,
   FieldIDPart,

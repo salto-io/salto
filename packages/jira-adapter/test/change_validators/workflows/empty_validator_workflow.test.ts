@@ -128,17 +128,20 @@ describe('emptyValidatorWorkflow', () => {
             type: 'DIRECTED',
             validators: [
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'fieldHasSingleValue',
                   fieldKey: 'fieldKey',
                 },
               },
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'anotherType',
                 },
               },
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'fieldHasSingleValue',
                 },
@@ -162,6 +165,7 @@ describe('emptyValidatorWorkflow', () => {
     })
     it('should return an plural error if there are multiple invalid validators', async () => {
       workflowV2Instance.value.transitions.tran1.validators.push({
+        ruleKey: 'ruleKey',
         parameters: {
           ruleType: 'fieldChanged',
         },
@@ -178,6 +182,7 @@ describe('emptyValidatorWorkflow', () => {
     })
     it('should return a singular error if there are multiple invalid validators but only from one type', async () => {
       workflowV2Instance.value.transitions.tran1.validators.push({
+        ruleKey: 'ruleKey',
         parameters: {
           ruleType: 'fieldHasSingleValue',
         },

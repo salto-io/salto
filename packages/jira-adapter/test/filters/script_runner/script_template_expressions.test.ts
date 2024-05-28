@@ -279,6 +279,7 @@ describe('workflow_script_references', () => {
               type: 'DIRECTED',
               actions: [
                 {
+                  ruleKey: 'ruleKey',
                   parameters: {
                     appKey: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
                     scriptRunner: {
@@ -294,6 +295,7 @@ describe('workflow_script_references', () => {
               ],
               validators: [
                 {
+                  ruleKey: 'ruleKey',
                   parameters: {
                     appKey: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
                     scriptRunner: {
@@ -306,6 +308,7 @@ describe('workflow_script_references', () => {
                 operation: 'AND',
                 conditions: [
                   {
+                    ruleKey: 'ruleKey',
                     parameters: {
                       appKey: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions',
                       scriptRunner: {
@@ -314,6 +317,7 @@ describe('workflow_script_references', () => {
                     },
                   },
                   {
+                    ruleKey: 'ruleKey',
                     parameters: {
                       appKey: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions',
                       scriptRunner: {

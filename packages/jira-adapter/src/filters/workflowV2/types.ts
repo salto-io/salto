@@ -141,9 +141,20 @@ export type WorkflowV2Instance = InstanceElement & {
     Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowV2Transition> }
 }
 
+const TRANSITION_RULE_SCHEME = Joi.object({
+  ruleKey: Joi.string().required(),
+  parameters: Joi.object({ appKey: Joi.string().optional(), key: Joi.string().optional() }).unknown(true).optional(),
+}).unknown(true)
+
+const TRANSITION_CONDITION_GROUP_SCHEME = Joi.object({
+  operation: Joi.string().required(),
+  conditions: Joi.array().items(TRANSITION_RULE_SCHEME).required(),
+  conditionGroups: Joi.array().items(Joi.link('#conditionGroup')).optional(),
+}).id('conditionGroup')
+
 const TRANSITION_SCHEME = Joi.object({
   id: Joi.string(),
-  actions: Joi.array().items(Joi.object()),
+  actions: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
   type: Joi.string().required(),
   name: Joi.string().required(),
   from: Joi.array().items(
@@ -156,8 +167,8 @@ const TRANSITION_SCHEME = Joi.object({
     statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
     port: Joi.number(),
   }),
-  conditions: Joi.object(),
-  validators: Joi.array().items(Joi.object()),
+  conditions: TRANSITION_CONDITION_GROUP_SCHEME.optional(),
+  validators: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
 })
   .unknown(true)
   .required()

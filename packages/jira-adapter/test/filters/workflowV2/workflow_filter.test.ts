@@ -505,6 +505,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     },
                     type: 'INITIAL',
                     conditions: {
+                      operation: 'ALL',
                       conditionGroups: [
                         {
                           operation: 'ALL',
@@ -513,6 +514,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                               operation: 'ALL',
                               conditions: [
                                 {
+                                  ruleKey: 'ruleKey',
                                   parameters: {
                                     groupIds: '1,2',
                                   },
@@ -522,11 +524,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                           ],
                           conditions: [
                             {
+                              ruleKey: 'ruleKey',
                               parameters: {
                                 groupIds: '1,2',
                               },
                             },
                             {
+                              ruleKey: 'ruleKey',
                               parameters: {
                                 fromStatusId: '1',
                               },
@@ -536,6 +540,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                               ruleKey: 'ruleKey',
                             },
                             {
+                              ruleKey: 'ruleKey',
                               parameters: {
                                 accountIds: 'quack quack',
                                 groupIds: '',
@@ -546,11 +551,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                       ],
                       conditions: [
                         {
+                          ruleKey: 'ruleKey',
                           parameters: {
                             groupIds: '1,2',
                           },
                         },
                         {
+                          ruleKey: 'ruleKey',
                           parameters: {
                             fromStatusId: '1',
                           },
@@ -560,6 +567,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                           ruleKey: 'ruleKey',
                         },
                         {
+                          ruleKey: 'ruleKey',
                           parameters: {
                             accountIds: 'quack quack',
                             groupIds: '',
@@ -569,11 +577,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     },
                     validators: [
                       {
+                        ruleKey: 'ruleKey',
                         parameters: {
                           statusIds: '1,2',
                         },
                       },
                       {
+                        ruleKey: 'ruleKey',
                         parameters: {
                           fieldKey: 'fieldKey',
                         },
@@ -583,6 +593,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                         ruleKey: 'ruleKey',
                       },
                       {
+                        ruleKey: 'ruleKey',
                         parameters: {
                           fieldsRequired: '',
                           accountIds: 'quack quack',
@@ -745,6 +756,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               conditions: {
                 operation: 'ALL',
                 conditionGroups: [],
+                conditions: [],
               },
               properties: {
                 'jira.issue.editable': 'true',
@@ -766,10 +778,12 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               type: 'DIRECTED',
               conditions: {
                 operation: 'ALL',
+                conditions: [],
                 conditionGroups: [
                   {
                     operation: 'ALL',
                     conditionGroups: [],
+                    conditions: [],
                   },
                 ],
               },
@@ -993,6 +1007,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             },
             conditions: {
               operation: 'ALL',
+              conditions: [],
             },
             properties: [
               {
@@ -1020,8 +1035,10 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               conditionGroups: [
                 {
                   operation: 'ALL',
+                  conditions: [],
                 },
               ],
+              conditions: [],
             },
           },
         },
@@ -1092,6 +1109,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 conditions: {
                   operation: 'ALL',
                   conditionGroups: [],
+                  conditions: [],
                 },
                 properties: [
                   {
@@ -1116,9 +1134,11 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 type: 'DIRECTED',
                 conditions: {
                   operation: 'ALL',
+                  conditions: [],
                   conditionGroups: [
                     {
                       operation: 'ALL',
+                      conditions: [],
                     },
                   ],
                 },

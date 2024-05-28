@@ -192,7 +192,7 @@ describe('defaultPolicyRuleDeployment', () => {
       expect(instances[0].value.priority).toEqual(99)
       expect(instances[1].value.priority).toEqual(99)
     })
-    it('should not add priority field for modifications', async () => {
+    it('should add priority field for modifications', async () => {
       const accessRuleInstanceAfter = accessRuleInstance.clone()
       accessRuleInstanceAfter.value.actions.appSignOn.access = 'DENY'
       const enrollmentRuleInstanceAfter = enrollmentRuleInstance.clone()
@@ -203,8 +203,8 @@ describe('defaultPolicyRuleDeployment', () => {
       ]
       await filter.preDeploy(changes)
       const instances = changes.map(getChangeData).filter(isInstanceElement)
-      expect(instances[0].value.priority).toBeUndefined()
-      expect(instances[1].value.priority).toBeUndefined()
+      expect(instances[0].value.priority).toEqual(99)
+      expect(instances[1].value.priority).toEqual(99)
     })
   })
   describe('onDeploy', () => {

@@ -429,6 +429,7 @@ export const mockWorkspace = ({
     getStaticFilePathsByElemIds: mockFunction<Workspace['getStaticFilePathsByElemIds']>(),
     isChangedAtIndexEmpty: mockFunction<Workspace['isChangedAtIndexEmpty']>(),
     getElemIdsByStaticFilePaths: mockFunction<Workspace['getElemIdsByStaticFilePaths']>(),
+    getElemIdsByStaticFilePathsNew: mockFunction<Workspace['getElemIdsByStaticFilePathsNew']>(),
   }
 }
 

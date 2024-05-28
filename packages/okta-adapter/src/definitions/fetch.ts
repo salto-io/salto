@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
-import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
+import { definitions, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { POLICY_TYPE_NAME_TO_PARAMS } from '../config'
 import { OktaFetchOptions } from './types'
 import { OktaUserConfig } from '../user_config'
@@ -1119,6 +1119,27 @@ export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
 ]
 
+const getInsufficientPermissionsError: definitions.fetch.FetchResourceDefinition['onError'] = {
+  custom:
+    () =>
+    ({ error, typeName }) => {
+      if (error instanceof clientUtils.HTTPError && error.response.status === 403) {
+        return {
+          action: 'customSaltoError',
+          value: {
+            message: `Salto could not access the ${typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
+            severity: 'Info',
+          },
+        }
+      }
+      return { action: 'failEntireFetch', value: false }
+    },
+  // TODO SALTO-6004 remove
+  // this is a workaround to overcome types checker, the "custom" function is applied any other values are ignored
+  action: 'failEntireFetch',
+  value: false,
+}
+
 export const createFetchDefinitions = (
   userConfig: OktaUserConfig,
   usePrivateAPI: boolean,
@@ -1132,6 +1153,7 @@ export const createFetchDefinitions = (
       default: {
         resource: {
           serviceIDFields: ['id'],
+          onError: getInsufficientPermissionsError,
         },
         element: {
           topLevel: {

@@ -46,10 +46,22 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
         'businessService__team',
         'escalationPolicy__teams',
         'schedule__teams',
+        'eventOrchestration__team',
       ],
     },
     serializationStrategy: 'id',
     target: { type: 'team' },
+  },
+  {
+    src: {
+      field: 'route_to',
+      parentTypes: [
+        'eventOrchestration__eventOrchestrationsRouter__catch_all__actions',
+        'eventOrchestration__eventOrchestrationsRouter__sets__rules__actions',
+      ],
+    },
+    serializationStrategy: 'id',
+    target: { type: 'service' },
   },
 ]
 

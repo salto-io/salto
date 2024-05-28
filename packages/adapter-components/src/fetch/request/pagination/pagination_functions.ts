@@ -170,7 +170,7 @@ export const offsetAndValuesPagination = ({ paginationField }: { paginationField
 
 export const offsetAndLimitPagination = (): PaginationFunction => {
   const getNextPage: PaginationFunction = ({ responseData, currentParams }) => {
-    if (_.get(responseData, 'more') === false) {
+    if (_.get(responseData, 'more') !== true) {
       return []
     }
     const currentPageStart = Number(_.get(responseData, 'offset'))

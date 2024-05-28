@@ -20,17 +20,7 @@ import { Credentials } from '../../auth'
 
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
 // when in doubt, it's best to hide fields only for relevant types, or to omit them.
-const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
-  created_at: {
-    hide: true,
-  },
-  updated_at: {
-    hide: true,
-  },
-  // type: {
-  //   hide: true,
-  // },
-}
+const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {}
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
   self: {
     omit: true,
@@ -40,6 +30,18 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
   },
   summary: {
     omit: true,
+  },
+  created_at: {
+    hide: true,
+  },
+  updated_at: {
+    hide: true,
+  },
+  created_by: {
+    hide: true,
+  },
+  updated_by: {
+    hide: true,
   },
 }
 
@@ -66,11 +68,54 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     ],
     resource: {
       directFetch: true,
+      recurseInto: {
+        serviceOrchestration: {
+          typeName: 'service__serviceOrchestration',
+          single: true,
+          context: {
+            args: {
+              service: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
     },
     element: {
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/services/{id}' },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+      },
+    },
+  },
+  service__serviceOrchestration: {
+    requests: [
+      {
+        endpoint: {
+          path: '/event_orchestrations/services/{service}',
+        },
+        transformation: {
+          root: 'orchestration_path',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
+        parent: {
+          omit: true,
+        },
       },
     },
   },
@@ -93,6 +138,11 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         serviceUrl: { path: '/business_services/{id}' },
       },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+      },
     },
   },
   team: {
@@ -113,6 +163,11 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/teams/{id}' },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
       },
     },
   },
@@ -138,6 +193,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       fieldCustomizations: {
         services: {
           omit: true,
+        },
+        id: {
+          hide: true,
         },
       },
     },
@@ -166,6 +224,76 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
       fieldCustomizations: {
         escalation_policies: {
+          omit: true,
+        },
+        id: {
+          hide: true,
+        },
+      },
+    },
+  },
+  eventOrchestration: {
+    requests: [
+      {
+        endpoint: {
+          path: '/event_orchestrations',
+        },
+        transformation: {
+          root: 'orchestrations',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        eventOrchestrationsRouter: {
+          typeName: 'eventOrchestration__eventOrchestrationsRouter',
+          single: true,
+          context: {
+            args: {
+              eventOrchestration: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/event_orchestrations/{id}' },
+      },
+      fieldCustomizations: {
+        routes: {
+          omit: true,
+        },
+        id: {
+          hide: true,
+        },
+      },
+    },
+  },
+  eventOrchestration__eventOrchestrationsRouter: {
+    requests: [
+      {
+        endpoint: {
+          path: '/event_orchestrations/{eventOrchestration}/router',
+        },
+        transformation: {
+          root: 'orchestration_path',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
+        parent: {
           omit: true,
         },
       },

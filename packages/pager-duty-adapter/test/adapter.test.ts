@@ -33,14 +33,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { credentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/config'
-import { ADAPTER_NAME } from '../src/constants'
-// TODO update mock file -
-// for fetch: run fetch with trace-level logs:
-//  > SALTO_LOG_FILE=log.txt SALTO_LOG_LEVEL=trace salto fetch
-// then run
-//  > python3 <path-to-repo>/packages/adapter-components/scripts/client/mock_replies.py <log file> fetch_mock_replies.json
-// for deploy: same as above, replace fetch with deploy
-// make sure to minimize and sanitize the mocks - they may contain sensitive information!
+import { ADAPTER_NAME, ESCLAATION_POLICY_TYPE_NAME, SERVICE_TYPE_NAME, TEAM_TYPE_NAME } from '../src/constants'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 
@@ -82,12 +75,10 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    // TODO replace with endpoint used in validateCredentials
-    mockAxiosAdapter.onGet('/api/v2/account').reply(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
-      handler.replyOnce(200, response)
+      handler.reply(200, response)
     })
   })
 
@@ -103,10 +94,8 @@ describe('adapter', () => {
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', credentialsType, {
-              // TODO adjust
-              username: 'user',
-              password: 'pass',
-              subdomain: 'SOME_SUBDOMAIN',
+              accessToken: 'pass',
+              subdomain: 'https://api.pagerduty.com',
             }),
             config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
             elementsSource: buildElementsSourceFromElements([]),
@@ -114,135 +103,138 @@ describe('adapter', () => {
           .fetch({ progressReporter: { reportProgress: () => null } })
 
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
-          'business_hours_schedule',
-          'business_hours_schedule_holiday',
-          'group',
-          'made_up_type_a',
-          'made_up_type_b',
+          'businessService',
+          'escalationPolicy',
+          'eventOrchestration',
+          'schedule',
+          'service',
+          'team',
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'serviceplaceholder.business_hours_schedule',
-          'serviceplaceholder.business_hours_schedule.instance.Some_schedule@s',
-          'serviceplaceholder.business_hours_schedule__intervals',
-          'serviceplaceholder.business_hours_schedule_holiday',
-          'serviceplaceholder.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
-          'serviceplaceholder.group',
-          'serviceplaceholder.group.instance.group_1@s',
-          'serviceplaceholder.group.instance.group_2@s',
-          'serviceplaceholder.made_up_type_a',
-          'serviceplaceholder.made_up_type_a.instance.made_up_1@s',
-          'serviceplaceholder.made_up_type_a.instance.made_up_2@s',
-          'serviceplaceholder.made_up_type_a.instance.made_up_3@s',
-          'serviceplaceholder.made_up_type_b',
-          'serviceplaceholder.made_up_type_b.instance.made_up_1@s',
+          'pager_duty.businessService',
+          'pager_duty.businessService.instance.Sales',
+          'pager_duty.businessService__team',
+          'pager_duty.escalationPolicy',
+          'pager_duty.escalationPolicy.instance.IT_Web_Policy@s',
+          'pager_duty.escalationPolicy__escalation_rules',
+          'pager_duty.escalationPolicy__escalation_rules__targets',
+          'pager_duty.eventOrchestration',
+          'pager_duty.eventOrchestration.instance.first_event_orch@s',
+          'pager_duty.eventOrchestration__created_by',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter__catch_all',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter__catch_all__actions',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter__created_by',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter__sets',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter__sets__rules',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter__sets__rules__actions',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter__sets__rules__conditions',
+          'pager_duty.eventOrchestration__eventOrchestrationsRouter__updated_by',
+          'pager_duty.eventOrchestration__team',
+          'pager_duty.eventOrchestration__updated_by',
+          'pager_duty.schedule',
+          'pager_duty.schedule.instance.Bibi_is_Always_on_Call@s',
+          'pager_duty.schedule__schedule_layers',
+          'pager_duty.schedule__schedule_layers__users',
+          'pager_duty.schedule__schedule_layers__users__user',
+          'pager_duty.schedule__teams',
+          'pager_duty.schedule__users',
+          'pager_duty.service',
+          'pager_duty.service.instance.acme_test@v',
+          'pager_duty.service__alert_grouping_parameters',
+          'pager_duty.service__escalation_policy',
+          'pager_duty.service__incident_urgency_rule',
+          'pager_duty.service__serviceOrchestration',
+          'pager_duty.service__serviceOrchestration__catch_all',
+          'pager_duty.service__serviceOrchestration__catch_all__actions',
+          'pager_duty.service__serviceOrchestration__sets',
+          'pager_duty.service__teams',
+          'pager_duty.team',
+          'pager_duty.team.instance.the_IT_of_ACME_inc@s',
         ])
         expect(
           elements
             .filter(isInstanceElement)
-            .find(
-              e =>
-                e.elemID.getFullName() ===
-                'serviceplaceholder.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
-            )?.value,
+            .find(e => e.elemID.getFullName() === 'pager_duty.team.instance.the_IT_of_ACME_inc@s')?.value,
         ).toEqual({
-          end_date: '2024-02-21',
-          end_year: '2024',
-          id: 4442618333587,
-          name: 'New holiday1',
-          start_date: '2024-02-20',
-          start_year: '2024',
+          name: 'the IT of ACME inc',
+          description: 'IT - stands for I tried to make it work',
+          id: 'PRDWWGZ',
+          type: 'team',
+          default_role: 'manager',
         })
-        const madeUp2Values = elements
+        const service = elements
           .filter(isInstanceElement)
-          .find(e => e.elemID.getFullName() === 'serviceplaceholder.made_up_type_a.instance.made_up_2@s')?.value
-        expect(madeUp2Values?.parent_id?.elemID?.fullName).toEqual(
-          'serviceplaceholder.made_up_type_a.instance.made_up_1@s',
-        )
-        expect(madeUp2Values?.other_b?.elemID?.fullName).toEqual(
-          'serviceplaceholder.made_up_type_b.instance.made_up_1@s',
-        )
-        const madeUp3Values = elements
-          .filter(isInstanceElement)
-          .find(e => e.elemID.getFullName() === 'serviceplaceholder.made_up_type_a.instance.made_up_3@s')?.value
-        expect(madeUp3Values?.parent_id?.elemID?.fullName).toEqual(
-          'serviceplaceholder.made_up_type_b.instance.made_up_1@s',
+          .find(e => e.elemID.getFullName() === 'pager_duty.service.instance.acme_test@v')?.value
+        expect(service?.teams[0].id.elemID.getFullName()).toEqual('pager_duty.team.instance.the_IT_of_ACME_inc@s')
+        expect(service?.escalation_policy.id.elemID.getFullName()).toEqual(
+          'pager_duty.escalationPolicy.instance.IT_Web_Policy@s',
         )
       })
     })
   })
   describe('deploy', () => {
     let operations: AdapterOperations
-    let groupType: ObjectType
-    let businessHoursScheduleType: ObjectType
-    let group1: InstanceElement
-    let schedule1: InstanceElement
+    let teamType: ObjectType
+    let team1: InstanceElement
+    let serviceType: ObjectType
+    let service1: InstanceElement
+    let escalationPolicyType: ObjectType
+    let escalationPolicy1: InstanceElement
 
     beforeEach(() => {
-      // TODO update to relevant changes
-      groupType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'group') })
-      businessHoursScheduleType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'business_hours_schedule') })
-      group1 = new InstanceElement('group1', groupType, { name: 'group1', is_public: 'false', id: 1234 })
-      schedule1 = new InstanceElement('My_Schedule@s', businessHoursScheduleType, {
-        name: 'My Schedule',
-        time_zone: 'Pacific Time (US & Canada)',
-        intervals: [
+      teamType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, TEAM_TYPE_NAME) })
+      serviceType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SERVICE_TYPE_NAME) })
+      escalationPolicyType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, ESCLAATION_POLICY_TYPE_NAME) })
+      team1 = new InstanceElement('team1', teamType, {
+        name: 'the IT of ACME inc',
+        description: 'IT - stands for I tried to make it work',
+        id: 'P465B8V',
+        type: 'team',
+        default_role: 'manager',
+      })
+      service1 = new InstanceElement('service1', serviceType, {
+        id: 'PCR3A79',
+        name: 'Core IT Services',
+        description: 'new desc',
+      })
+      escalationPolicy1 = new InstanceElement('escalationPolicy1', escalationPolicyType, {
+        name: 'IT Mainframe Policy2',
+        description: 'new desc',
+        escalation_rules: [
           {
-            start_time: 1980,
-            end_time: 2460,
-          },
-          {
-            start_time: 3420,
-            end_time: 3900,
-          },
-          {
-            start_time: 4860,
-            end_time: 5340,
-          },
-          {
-            start_time: 6300,
-            end_time: 6780,
-          },
-          {
-            start_time: 7740,
-            end_time: 8220,
+            id: 'PR123456',
+            escalation_delay_in_minutes: 30,
+            targets: [
+              {
+                id: 'P123456',
+                type: 'user',
+              },
+            ],
           },
         ],
       })
 
       operations = adapter.operations({
         credentials: new InstanceElement('config', credentialsType, {
-          username: 'user123',
-          password: 'pwd456',
-          subdomain: 'myBrand',
+          accessToken: 'pass',
+          subdomain: 'https://api.pagerduty.com',
         }),
         config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-        elementsSource: buildElementsSourceFromElements([groupType, businessHoursScheduleType, group1, schedule1]),
+        elementsSource: buildElementsSourceFromElements([escalationPolicyType, teamType, serviceType, team1, service1]),
       })
     })
 
     it('should return the applied changes', async () => {
       const results: DeployResult[] = []
+
+      const oldService = service1.clone()
+      oldService.value.description = 'Managed by us, but not really'
       results.push(
         await operations.deploy({
           changeGroup: {
-            groupID: 'group',
-            changes: [toChange({ after: new InstanceElement('new_group@s', groupType, { name: 'new group' }) })],
-          },
-          progressReporter: nullProgressReporter,
-        }),
-      )
-      const updatedGroup1 = group1.clone()
-      updatedGroup1.value.name = 'new name'
-      results.push(
-        await operations.deploy({
-          changeGroup: {
-            groupID: 'group',
-            changes: [
-              toChange({
-                before: group1,
-                after: updatedGroup1,
-              }),
-            ],
+            groupID: 'service1',
+            changes: [toChange({ before: oldService, after: service1 })],
           },
           progressReporter: nullProgressReporter,
         }),
@@ -251,25 +243,18 @@ describe('adapter', () => {
       results.push(
         await operations.deploy({
           changeGroup: {
-            groupID: 'group',
-            changes: [
-              toChange({
-                after: new InstanceElement('schedule2', businessHoursScheduleType, {
-                  name: 'schedule2',
-                  time_zone: 'Pacific Time (US & Canada)',
-                  intervals: [
-                    {
-                      start_time: 1980,
-                      end_time: 2460,
-                    },
-                    {
-                      start_time: 3420,
-                      end_time: 3900,
-                    },
-                  ],
-                }),
-              }),
-            ],
+            groupID: 'escalationPolicy',
+            changes: [toChange({ after: escalationPolicy1 })],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
+
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'team',
+            changes: [toChange({ before: team1 })],
           },
           progressReporter: nullProgressReporter,
         }),
@@ -277,8 +262,10 @@ describe('adapter', () => {
 
       expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
       expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
-      const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
-      expect(getChangeData(addRes).value.id).toEqual(12345)
+      const modify = results[0].appliedChanges[0] as Change<InstanceElement>
+      expect(getChangeData(modify).value.description).toEqual('new desc')
+      const add = results[1].appliedChanges[0] as Change<InstanceElement>
+      expect(getChangeData(add).value.name).toEqual('IT Mainframe Policy2')
     })
   })
 })

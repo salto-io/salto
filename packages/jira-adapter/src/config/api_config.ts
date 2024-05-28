@@ -1883,6 +1883,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   RequestType: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype',
+      paginationField: 'start',
       recurseInto: [
         {
           type: 'RequestType__workflowStatuses',
@@ -1944,6 +1945,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   Queue: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/queue',
+      paginationField: 'start',
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -2165,6 +2167,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   ObjectSchemas: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list',
+      paginationField: 'startAt',
       recurseInto: [
         {
           type: 'ObjectSchemaStatuses',

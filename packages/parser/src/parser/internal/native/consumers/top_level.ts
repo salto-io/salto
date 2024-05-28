@@ -37,6 +37,7 @@ import {
   missingLabelsError,
   missingBlockOpen,
   ambiguousBlock,
+  missingTypeName,
 } from '../errors'
 import {
   primitiveType,
@@ -55,80 +56,62 @@ const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 const getElementIfValid = <T extends Element>(element: T, typeID?: ElemID): T | undefined =>
   (typeID ?? element.elemID).isEqual(INVALID_ELEM_ID) ? undefined : element
 
-const consumeObjectType = (
-  context: ParseContext,
-  typeName: string,
-  range: SourceRange,
-  isSettings: boolean,
-): ConsumerReturnType<ObjectType | undefined> => {
-  const elemID = parseTopLevelID(context, typeName, range)
-  const consumedBlock = consumeBlockBody(context, elemID)
-  return {
-    value: getElementIfValid(
-      new ObjectType({
-        elemID,
-        fields: consumedBlock.value.fields,
-        annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
-        annotations: consumedBlock.value.attrs,
-        isSettings,
-      }),
-    ),
-    range: consumedBlock.range,
-  }
-}
-
 const consumeType = (
   context: ParseContext,
   labels: ConsumerReturnType<string[]>,
+  isSettings: boolean,
 ): ConsumerReturnType<PrimitiveType | ObjectType | undefined> => {
-  // Note - this method is called *only* if labels has 4 tokens (the first of which
-  // is 'type' which we can ignore
-  const [typeName, kw] = labels.value.slice(1)
-  let baseType = labels.value[3]
+  // Note - this method is called when the first label is 'type' or 'settings'.
+  let [typeName, kw, baseType] = labels.value.slice(1)
   const range = { ...labels.range, filename: context.filename }
+
+  // If there is no type name we just generate one.
+  if (typeName === undefined) {
+    typeName = _.uniqueId('UnnamedType')
+    context.errors.push(missingTypeName(range, typeName))
+  }
+
+  // If there is only a type name, we treat it is if it's followed by 'is object'.
+  if (kw === undefined) {
+    kw = Keywords.TYPE_INHERITANCE_SEPARATOR
+    baseType = Keywords.TYPE_OBJECT
+  }
 
   // We create an error if some other token is used instead of the 'is' keyword.
   // We don't need to recover. We'll just pretend the wrong word is 'is'
   // and parse as usual.
   // If this leaves us with no baseName, we assume the 'is' was dropped.
   if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
-    context.errors.push(
-      invalidTypeDefOperator(
-        {
-          ...labels.range,
-          filename: context.filename,
-        },
-        kw,
-      ),
-    )
+    context.errors.push(invalidTypeDefOperator(range, kw))
     baseType = baseType ?? kw
   }
 
-  if (baseType === Keywords.TYPE_OBJECT) {
-    return consumeObjectType(context, typeName, range, false)
-  }
-
   const elemID = parseTopLevelID(context, typeName, range)
+  const consumedBlock = consumeBlockBody(context, elemID)
+  if (baseType === Keywords.TYPE_OBJECT) {
+    return {
+      value: getElementIfValid(
+        new ObjectType({
+          elemID,
+          fields: consumedBlock.value.fields,
+          annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
+          annotations: consumedBlock.value.attrs,
+          isSettings,
+        }),
+      ),
+      range: consumedBlock.range,
+    }
+  }
 
   let primitive = primitiveType(baseType)
 
-  // If the base type token can not be resolved to a specific primitive type, we will
+  // If the base type token can't be resolved to a specific primitive type, we will
   // just treat the type as unknown and add an error. Again - no need to recover since
   // structure is unharmed.
   if (primitive === undefined) {
-    context.errors.push(
-      unknownPrimitiveTypeError(
-        {
-          ...labels.range,
-          filename: context.filename,
-        },
-        baseType,
-      ),
-    )
+    context.errors.push(unknownPrimitiveTypeError(range, baseType))
     primitive = PrimitiveTypes.UNKNOWN
   }
-
-  const consumedBlock = consumeBlockBody(context, elemID)
 
   // You can't define fields on a primitive type. But no need to recover
   // we just ignore the fields.
@@ -231,15 +214,6 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
   }
 }
 
-// We consider a block def with 2 labels to be a specified type def with the 'is'
-// keyword missing, since in all other block types there is only 1 legal label.
-// the specified type consumer handles the missing 'is'.
-const isSpecifiedTypeDef = (elementType: string, elementLabels: string[]): boolean =>
-  elementType === Keywords.TYPE_DEFINITION && elementLabels.length >= 2 && elementLabels.length < 4
-
-const isObjectTypeDef = (elementType: string, elementLabels: string[], isSettings: boolean): boolean =>
-  (elementType === Keywords.TYPE_DEFINITION || isSettings) && elementLabels.length === 1
-
 // No labels is allowed to support config instances
 const isInstanceTypeDef = (elementType: string, elementLabels: string[]): boolean =>
   elementType !== undefined && elementLabels.length <= 1
@@ -272,17 +246,8 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
   const [elementType, ...elementLabels] = consumedLabels.value
   let consumedElement: ConsumerReturnType<Element | undefined>
   const isSettings = elementType === Keywords.SETTINGS_DEFINITION
-  // Specified type def actually needs 3 labels, but we assume that 2 labels
-  // is a specified type def with no inheritance operator
-  if (isSpecifiedTypeDef(elementType, elementLabels)) {
-    consumedElement = consumeType(context, consumedLabels)
-  } else if (isObjectTypeDef(elementType, elementLabels, isSettings)) {
-    consumedElement = consumeObjectType(
-      context,
-      elementLabels[0],
-      { ...consumedLabels.range, filename: context.filename },
-      isSettings,
-    )
+  if (elementType === Keywords.TYPE_DEFINITION || isSettings) {
+    consumedElement = consumeType(context, consumedLabels, isSettings)
   } else if (isInstanceTypeDef(elementType, elementLabels)) {
     consumedElement = consumeInstanceElement(
       context,

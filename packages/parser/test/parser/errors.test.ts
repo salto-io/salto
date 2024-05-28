@@ -100,7 +100,7 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].message).toBe('Unknown primitive type amazing.')
-          expect(res.errors[0].summary).toBe('unknown primitive type')
+          expect(res.errors[0].summary).toBe('Unknown primitive type')
         })
         it('should use unknown type as the primitive type primitive', async () => {
           expect(await awu(res.elements).toArray()).toHaveLength(1)
@@ -119,8 +119,8 @@ describe('parsing errors', () => {
         })
         it('should create an error', async () => {
           expect(res.errors).toHaveLength(1)
-          expect(res.errors[0].message).toBe('Expected a primitive type definition.')
-          expect(res.errors[0].summary).toBe('unknown primitive type')
+          expect(res.errors[0].message).toBe('Expected a primitive type definition, using unknown.')
+          expect(res.errors[0].summary).toBe('Unknown primitive type')
           expect(await awu(res.elements).toArray()).toHaveLength(1)
         })
         it('should use unknown as the primitive type primitive', async () => {
@@ -146,15 +146,15 @@ describe('parsing errors', () => {
             end: { byte: 39, col: 39, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message).toBe("Expected inheritance operator 'is' found tanananana instead")
-          expect(res.errors[0].summary).toBe('invalid type definition')
+          expect(res.errors[0].message).toBe("Expected inheritance operator 'is' found tanananana instead.")
+          expect(res.errors[0].summary).toBe('Invalid type definition')
           expect(res.errors[1].subject).toEqual({
             start: { byte: 9, col: 9, line: 2 },
             end: { byte: 39, col: 39, line: 2 },
             filename: 'file.nacl',
           })
           expect(res.errors[1].message).toBe('Unknown primitive type tanananana.')
-          expect(res.errors[1].summary).toBe('unknown primitive type')
+          expect(res.errors[1].summary).toBe('Unknown primitive type')
           expect(await awu(res.elements).toArray()).toHaveLength(1)
         })
         it('should use unknown as the primitive type', async () => {
@@ -178,8 +178,8 @@ describe('parsing errors', () => {
             end: { byte: 48, col: 48, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message).toBe("Expected inheritance operator 'is' found tanananana instead")
-          expect(res.errors[0].summary).toBe('invalid type definition')
+          expect(res.errors[0].message).toBe("Expected inheritance operator 'is' found tanananana instead.")
+          expect(res.errors[0].summary).toBe('Invalid type definition')
         })
         it('should still create the element', async () => {
           const element = (await awu(res.elements).toArray())[0] as PrimitiveType
@@ -208,7 +208,7 @@ describe('parsing errors', () => {
             filename: 'file.nacl',
           })
           expect(res.errors[0].message).toBe('Unexpected field definition(s) in a primitive type. Expected no fields.')
-          expect(res.errors[0].summary).toBe('invalid fields in primitive type')
+          expect(res.errors[0].summary).toBe('Invalid fields in primitive type')
         })
         it('should create the element without the fields', async () => {
           const element = (await awu(res.elements).toArray())[0] as PrimitiveType
@@ -242,7 +242,7 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe(
           'Unexpected field or annotation type definition(s) in a primitive type. Expected only values.',
         )
-        expect(res.errors[0].summary).toBe('invalid blocks in an instance')
+        expect(res.errors[0].summary).toBe('Invalid blocks in an instance')
       })
       it('should parse the rest of the instance correctly', async () => {
         expect(await awu(res.elements).toArray()).toHaveLength(1)

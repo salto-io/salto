@@ -27,7 +27,7 @@ import isPromise from 'is-promise'
 import { LexerToken, WILDCARD } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
 import { ParseContext, ValuePromiseWatcher } from './types'
-import { Keywords } from '../../language'
+import { Keywords, keywordToPrimitiveType } from '../../language'
 import { invalidElemIDType } from './errors'
 
 export const INVALID_ELEM_ID = new ElemID(WILDCARD)
@@ -121,10 +121,4 @@ export const createFieldRefType = (context: ParseContext, blockType: string, ran
   return new TypeReference(parseTopLevelID(context, blockType, range))
 }
 
-export const primitiveType = (typeName: string): PrimitiveTypes | undefined =>
-  ({
-    [Keywords.TYPE_STRING]: PrimitiveTypes.STRING,
-    [Keywords.TYPE_NUMBER]: PrimitiveTypes.NUMBER,
-    [Keywords.TYPE_BOOL]: PrimitiveTypes.BOOLEAN,
-    [Keywords.TYPE_UNKNOWN]: PrimitiveTypes.UNKNOWN,
-  })[typeName]
+export const primitiveType = (typeName: string): PrimitiveTypes | undefined => keywordToPrimitiveType[typeName]

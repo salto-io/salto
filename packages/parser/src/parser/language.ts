@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { LIST_ID_PREFIX, MAP_ID_PREFIX, GENERIC_ID_SUFFIX, GENERIC_ID_PREFIX } from '@salto-io/adapter-api'
+import {
+  LIST_ID_PREFIX,
+  MAP_ID_PREFIX,
+  GENERIC_ID_SUFFIX,
+  GENERIC_ID_PREFIX,
+  PrimitiveTypes,
+} from '@salto-io/adapter-api'
 
 export const Keywords = {
   TYPE_DEFINITION: 'type',
@@ -35,3 +41,12 @@ export const Keywords = {
   LIST_PREFIX: `${LIST_ID_PREFIX}${GENERIC_ID_PREFIX}`,
   MAP_PREFIX: `${MAP_ID_PREFIX}${GENERIC_ID_PREFIX}`,
 }
+
+export const keywordToPrimitiveType: Record<string, PrimitiveTypes> = {
+  [Keywords.TYPE_STRING]: PrimitiveTypes.STRING,
+  [Keywords.TYPE_NUMBER]: PrimitiveTypes.NUMBER,
+  [Keywords.TYPE_BOOL]: PrimitiveTypes.BOOLEAN,
+  [Keywords.TYPE_UNKNOWN]: PrimitiveTypes.UNKNOWN,
+}
+
+export const primitiveTypeToKeyword = Object.fromEntries(Object.entries(keywordToPrimitiveType).map(([k, v]) => [v, k]))

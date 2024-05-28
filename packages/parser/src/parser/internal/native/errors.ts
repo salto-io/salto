@@ -25,27 +25,30 @@ const createError = (range: SourceRange, summary: string, message?: string): Par
   message: message || summary,
 })
 
+export const missingTypeName = (range: SourceRange, tmpName: string): ParseError =>
+  createError(range, 'Missing type name', `Expected type name, using ${tmpName} instead.`)
+
 export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): ParseError =>
   createError(
     range,
-    'unknown primitive type',
-    token ? `Unknown primitive type ${token}.` : 'Expected a primitive type definition.',
+    'Unknown primitive type',
+    token ? `Unknown primitive type ${token}.` : 'Expected a primitive type definition, using unknown.',
   )
 
 export const invalidTypeDefOperator = (range: SourceRange, token: string): ParseError =>
-  createError(range, 'invalid type definition', `Expected inheritance operator 'is' found ${token} instead`)
+  createError(range, 'Invalid type definition', `Expected inheritance operator 'is' found ${token} instead.`)
 
 export const invalidFieldsInPrimitiveType = (range: SourceRange): ParseError =>
   createError(
     range,
-    'invalid fields in primitive type',
+    'Invalid fields in primitive type',
     'Unexpected field definition(s) in a primitive type. Expected no fields.',
   )
 
 export const invalidBlocksInInstance = (range: SourceRange): ParseError =>
   createError(
     range,
-    'invalid blocks in an instance',
+    'Invalid blocks in an instance',
     'Unexpected field or annotation type definition(s) in a primitive type. Expected only values.',
   )
 

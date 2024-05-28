@@ -28,7 +28,6 @@ export const createClientDefinitions = (
         default: {
           get: {
             pagination: 'cursorHeader',
-            queryArgs: { limit: '200' },
             // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
             readonly: true,
           },
@@ -40,6 +39,26 @@ export const createClientDefinitions = (
           Group: {
             get: {
               queryArgs: { limit: '10000' }, // maximum page size allowed
+            },
+          },
+          Application: {
+            get: {
+              queryArgs: { limit: '200' }, // maximum page size allowed
+            },
+          },
+          GroupRule: {
+            get: {
+              queryArgs: { limit: '200' }, // maximum page size allowed
+            },
+          },
+          ApplicationGroupAssignment: {
+            get: {
+              queryArgs: { limit: '200' }, // maximum page size allowed
+            },
+          },
+          ProfileMapping: {
+            get: {
+              queryArgs: { limit: '200' }, // maximum page size allowed
             },
           },
         },

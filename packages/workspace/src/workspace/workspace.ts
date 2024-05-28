@@ -1193,11 +1193,15 @@ export const loadWorkspace = async (
       .flatMap(({ key: id, value: fileNames }) =>
         fileNames
           .filter(filename => filePaths === undefined || filePaths.has(filename))
-          .map(filename => ({ filename, id } )),
-      ).groupBy(({ filename }) => filename)
+          .map(filename => ({ filename, id })),
+      )
+      .groupBy(({ filename }) => filename)
     return _.mapValues(idsAndFileByFileName, idAndFiles => idAndFiles.map(({ id }) => id))
   }
-  const getElemIdsByStaticFilePaths = async (filePaths: Set<string>, envName?: string): Promise<Record<string, string>> => {
+  const getElemIdsByStaticFilePaths = async (
+    filePaths: Set<string>,
+    envName?: string,
+  ): Promise<Record<string, string>> => {
     const res = await getElemIdsByStaticFilePathsNew(filePaths, envName)
     return _.mapValues(res, ids => ids[0])
   }

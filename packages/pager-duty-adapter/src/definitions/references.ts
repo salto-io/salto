@@ -67,10 +67,10 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
-  // TODO remove if not needed
   contextStrategyLookup: {
     parentType: ({ instance }) => _.get(instance.value, 'parent_type'),
   },
+  // I did not use it in the end but the reference type must have serializationStrategyLookup defined
   serializationStrategyLookup: {
     escalationPolicy: {
       serialize: ({ ref }) => ({ id: ref.value.value.id, summary: ref.value.value.summary }) as Value,

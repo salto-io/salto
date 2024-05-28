@@ -18,8 +18,6 @@ import { ClientOptions, PaginationOptions } from '../types'
 
 const { offsetAndLimitPagination } = fetchUtils.request.pagination
 
-// TODO adjust - replace with the correct pagination function(s), remove unneeded ones
-
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   cursor: {
     funcCreator: () => offsetAndLimitPagination(),

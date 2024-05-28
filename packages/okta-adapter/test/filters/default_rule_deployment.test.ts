@@ -25,7 +25,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import defaultPolicyRuleDeployment from '../../src/filters/default_rule_deployment'
 import { ACCESS_POLICY_RULE_TYPE_NAME, OKTA, PROFILE_ENROLLMENT_RULE_TYPE_NAME } from '../../src/constants'
@@ -44,7 +44,8 @@ describe('defaultPolicyRuleDeployment', () => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
-    filter = defaultPolicyRuleDeployment(getFilterParams({ client })) as typeof filter
+    const definitions = createDefinitions({ client })
+    filter = defaultPolicyRuleDeployment(getFilterParams({ definitions })) as typeof filter
     accessRuleInstance = new InstanceElement(
       'accessPolicyRule',
       accessRuleType,

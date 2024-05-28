@@ -14,20 +14,30 @@
  * limitations under the License.
  */
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  elements as elementUtils,
+  definitions as definitionsUtils,
+} from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { DEFAULT_CONFIG, OktaConfig } from '../src/config'
 import { adapter } from '../src/adapter_creator'
 import OktaClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 import { FilterCreator } from '../src/filter'
 import { Credentials } from '../src/auth'
+import { DEFAULT_CONFIG, OktaUserConfig } from '../src/user_config'
+import { OLD_API_DEFINITIONS_CONFIG } from '../src/config'
+import { OktaFetchOptions } from '../src/definitions/types'
+import { createClientDefinitions } from '../src/definitions/requests/clients'
+import { PAGINATION } from '../src/definitions/requests/pagination'
+import { createFetchDefinitions } from '../src/definitions/fetch'
+import { getAdminUrl } from '../src/client/admin'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
 
-export const createConfigInstance = (config: OktaConfig): InstanceElement =>
+export const createConfigInstance = (config: OktaUserConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)
 
 const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
@@ -65,11 +75,30 @@ export const mockClient = (): ClientWithMockConnection => {
   return { client, paginator, connection }
 }
 
+export const createDefinitions = ({
+  client,
+  usePrivateAPI = true,
+}: {
+  client?: OktaClient
+  usePrivateAPI?: boolean
+}): definitionsUtils.RequiredDefinitions<OktaFetchOptions> => {
+  const cli = client ?? mockClient().client
+  return {
+    clients: createClientDefinitions({ main: cli, private: cli }),
+    pagination: PAGINATION,
+    fetch: createFetchDefinitions(DEFAULT_CONFIG, usePrivateAPI, getAdminUrl(cli.baseUrl)),
+  }
+}
+
 export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>): Parameters<FilterCreator>[0] => ({
-  ...mockClient(),
+  paginator: mockClient().paginator,
+  definitions: createDefinitions({}),
   config: DEFAULT_CONFIG,
-  elementsSource: buildElementsSourceFromElements([]),
+  elementSource: buildElementsSourceFromElements([]),
   fetchQuery: elementUtils.query.createMockQuery(),
-  adapterContext: {},
+  oldApiDefinitions: OLD_API_DEFINITIONS_CONFIG,
+  baseUrl: 'https://dev-00000000.okta.com',
+  isOAuthLogin: false,
+  sharedContext: {},
   ...(params ?? {}),
 })

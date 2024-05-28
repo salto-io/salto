@@ -19,9 +19,9 @@ import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import OktaClient from '../src/client/client'
 import OktaAdapter, { OktaAdapterParams } from '../src/adapter'
 import { Credentials } from '../src/auth'
-import { DEFAULT_CONFIG, OktaConfig } from '../src/config'
 import { credsSpec } from './jest_environment'
 import { getAdminUrl } from '../src/client/admin'
+import { OktaUserConfig, DEFAULT_CONFIG } from '../src/user_config'
 
 const log = logger(module)
 
@@ -36,14 +36,14 @@ export type Opts = {
   elementsSource: ReadOnlyElementsSource
 }
 
-export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts, config?: OktaConfig): Reals => {
+export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts, config?: OktaUserConfig): Reals => {
   const client = (adapterParams && adapterParams.client) || new OktaClient({ credentials })
   const adminUrl = getAdminUrl(credentials.baseUrl)
   const adminClient =
     adminUrl !== undefined ? new OktaClient({ credentials: { ...credentials, baseUrl: adminUrl } }) : undefined
   const adapter = new OktaAdapter({
     client,
-    config: config ?? DEFAULT_CONFIG,
+    userConfig: config ?? DEFAULT_CONFIG,
     elementsSource,
     adminClient,
     isOAuthLogin: false,

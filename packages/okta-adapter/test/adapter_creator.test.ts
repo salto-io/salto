@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-import { OktaConfig, DEFAULT_CONFIG } from '../src/config'
+import { OktaUserConfig, DEFAULT_CONFIG } from '../src/user_config'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
 describe('adapter creator', () => {
@@ -43,13 +43,7 @@ describe('adapter creator', () => {
 
   it('should have all config sections', () => {
     expect(adapter.configType).toBeInstanceOf(ObjectType)
-    expect(Object.keys(adapter.configType?.fields ?? {})).toEqual([
-      'client',
-      'fetch',
-      'deploy',
-      'apiDefinitions',
-      'privateApiDefinitions',
-    ])
+    expect(Object.keys(adapter.configType?.fields ?? {})).toEqual(['client', 'fetch', 'deploy'])
   })
 
   it('should support basic auth', () => {
@@ -145,63 +139,6 @@ describe('adapter creator', () => {
       })
     })
 
-    describe('with an invalid api config', () => {
-      it('should fail to create operations with invalid apiDefinitions', () => {
-        expect(() =>
-          adapter.operations({
-            elementsSource,
-            credentials: credentialsInstance,
-            config: createConfigInstance({
-              ...DEFAULT_CONFIG,
-              apiDefinitions: { typeDefaults: 2 },
-            } as unknown as OktaConfig),
-          }),
-        ).toThrow()
-      })
-
-      it('should fail to create operations with invalid privateApiDefinitions', () => {
-        expect(() =>
-          adapter.operations({
-            elementsSource,
-            credentials: credentialsInstance,
-            config: createConfigInstance({
-              ...DEFAULT_CONFIG,
-              privateApiDefinitions: { typeDefaults: 2 },
-            } as unknown as OktaConfig),
-          }),
-        ).toThrow()
-      })
-    })
-
-    describe('with invalid fetch config', () => {
-      it('should fail if excluded type name does not part of the apiDefinitions', () => {
-        expect(() =>
-          adapter.operations({
-            elementsSource,
-            credentials: credentialsInstance,
-            config: createConfigInstance({
-              ...DEFAULT_CONFIG,
-              fetch: { exclude: [{ type: 'Bla' }] },
-            } as unknown as OktaConfig),
-          }),
-        ).toThrow()
-      })
-
-      it('should fail if excluded type name is part of private api defs but usePrivateAPI is disabled', () => {
-        expect(() =>
-          adapter.operations({
-            elementsSource,
-            credentials: credentialsInstance,
-            config: createConfigInstance({
-              ...DEFAULT_CONFIG,
-              client: { usePrivateAPI: false },
-              fetch: { exclude: [{ type: 'ThirdPartyAdmin' }] },
-            } as unknown as OktaConfig),
-          }),
-        ).toThrow()
-      })
-    })
-
     describe('with valid fetch config', () => {
       it('should not fail if excluded type name is part of private api defs', () => {
         expect(() =>
@@ -211,7 +148,7 @@ describe('adapter creator', () => {
             config: createConfigInstance({
               ...DEFAULT_CONFIG,
               fetch: { exclude: [{ type: 'ThirdPartyAdmin' }] },
-            } as unknown as OktaConfig),
+            } as unknown as OktaUserConfig),
           }),
         ).not.toThrow()
       })

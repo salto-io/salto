@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import {
+  filterUtils,
+  elements as elementUtils,
+  client as clientUtils,
+  definitions as definitionsUtils,
+} from '@salto-io/adapter-components'
 import {
   CORE_ANNOTATIONS,
   ElemID,
@@ -30,9 +35,10 @@ import policyPrioritiesFilter, {
   ALL_SUPPORTED_POLICY_RULE_NAMES,
 } from '../../src/filters/policy_priority'
 import { OKTA, SIGN_ON_RULE_TYPE_NAME } from '../../src/constants'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
-import { DEFAULT_CONFIG, OktaConfig } from '../../src/config'
+import { OldOktaDefinitionsConfig } from '../../src/config'
+import { OktaFetchOptions } from '../../src/definitions/types'
 
 describe('policyPrioritiesFilter', () => {
   const createInstance = (id: number, isSystem: boolean, type: ObjectType, parent?: InstanceElement): InstanceElement =>
@@ -68,7 +74,7 @@ describe('policyPrioritiesFilter', () => {
     it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
       'should add rule%sPriority instance and type to the elements',
       async (policyRuleName: string) => {
-        filter = policyPrioritiesFilter(getFilterParams({ client })) as typeof filter
+        filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
         const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
         const policyInstance = new InstanceElement(
@@ -115,7 +121,7 @@ describe('policyPrioritiesFilter', () => {
     it.each(ALL_SUPPORTED_POLICY_NAMES)(
       'should add %sPriority instance and type to the elements',
       async (policyName: string) => {
-        filter = policyPrioritiesFilter(getFilterParams({ client })) as typeof filter
+        filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
         const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
         const policyInstanceOne = createInstance(1, false, policyType)
         const policyInstanceTwo = createInstance(2, false, policyType)
@@ -141,7 +147,7 @@ describe('policyPrioritiesFilter', () => {
     it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
       'should add rule%sPriority instance and type to the elements when it does not have default rule',
       async (policyRuleName: string) => {
-        filter = policyPrioritiesFilter(getFilterParams({ client })) as typeof filter
+        filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
         const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
         const policyInstance = new InstanceElement(
@@ -180,7 +186,7 @@ describe('policyPrioritiesFilter', () => {
     it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
       'should add rule%sPriority instance and type to the elements when policy has no path',
       async (policyRuleName: string) => {
-        filter = policyPrioritiesFilter(getFilterParams({ client })) as typeof filter
+        filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
         const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
         const policyInstance = new InstanceElement(`${policyRuleName}Instance`, policyType, {
@@ -208,7 +214,7 @@ describe('policyPrioritiesFilter', () => {
     it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
       'should not add rule%sPriority instance if there is no parent policy',
       async (policyRuleName: string) => {
-        filter = policyPrioritiesFilter(getFilterParams({ client })) as typeof filter
+        filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
         const policyRuleInstanceOne = createInstance(1, false, policyRuleType)
         const policyRuleInstanceTwo = createInstance(2, false, policyRuleType)
@@ -224,11 +230,13 @@ describe('policyPrioritiesFilter', () => {
   })
   describe('deploy', () => {
     let connection: MockInterface<clientUtils.APIConnection>
+    let definitions: definitionsUtils.RequiredDefinitions<OktaFetchOptions>
     beforeEach(() => {
       const { client: cli, connection: conn } = mockClient()
       client = cli
       connection = conn
-      filter = policyPrioritiesFilter(getFilterParams({ client })) as typeof filter
+      definitions = createDefinitions({ client })
+      filter = policyPrioritiesFilter(getFilterParams({ definitions })) as typeof filter
       connection.put.mockResolvedValue({ status: 200, data: {} })
     })
     it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
@@ -444,8 +452,7 @@ describe('policyPrioritiesFilter', () => {
     it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
       'should throw when deployUrl is not defined for rule%sPriority instance',
       async (policyRuleName: string) => {
-        const config = {
-          ...DEFAULT_CONFIG,
+        const oldApiDefinitions = {
           apiDefinitions: {
             types: {
               [policyRuleName]: {
@@ -457,8 +464,8 @@ describe('policyPrioritiesFilter', () => {
               },
             },
           },
-        } as unknown as OktaConfig
-        filter = policyPrioritiesFilter(getFilterParams({ client, config })) as typeof filter
+        } as unknown as OldOktaDefinitionsConfig
+        filter = policyPrioritiesFilter(getFilterParams({ definitions, oldApiDefinitions })) as typeof filter
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
         const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
         const policyInstance = new InstanceElement(
@@ -509,8 +516,7 @@ describe('policyPrioritiesFilter', () => {
     it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
       'should throw when deployRequests is not defined for rule%sPriority instance',
       async (policyRuleName: string) => {
-        const config = {
-          ...DEFAULT_CONFIG,
+        const oldApiDefinitions = {
           apiDefinitions: {
             types: {
               [policyRuleName]: {
@@ -518,8 +524,8 @@ describe('policyPrioritiesFilter', () => {
               },
             },
           },
-        } as unknown as OktaConfig
-        filter = policyPrioritiesFilter(getFilterParams({ client, config })) as typeof filter
+        } as unknown as OldOktaDefinitionsConfig
+        filter = policyPrioritiesFilter(getFilterParams({ definitions, oldApiDefinitions })) as typeof filter
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
         const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
         const policyInstance = new InstanceElement(

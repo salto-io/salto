@@ -17,7 +17,7 @@
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import profileMappingRemovalFilter from '../../src/filters/profile_mapping_removal'
 import { OKTA, PROFILE_MAPPING_TYPE_NAME } from '../../src/constants'
 import OktaClient from '../../src/client/client'
@@ -40,7 +40,8 @@ describe('profileMappingRemovalFilter', () => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
-    filter = profileMappingRemovalFilter(getFilterParams({ client })) as typeof filter
+    const definitions = createDefinitions({ client })
+    filter = profileMappingRemovalFilter(getFilterParams({ definitions })) as typeof filter
   })
 
   describe('deploy', () => {

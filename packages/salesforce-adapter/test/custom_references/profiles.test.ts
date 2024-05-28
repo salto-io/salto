@@ -85,6 +85,7 @@ describe('profiles', () => {
               source: profileInstance.elemID.createNestedID(...expectedSource),
               target: expectedTarget,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -142,6 +143,7 @@ describe('profiles', () => {
               ),
               target: customApp.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -171,6 +173,7 @@ describe('profiles', () => {
               ),
               target: customApp.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -250,6 +253,7 @@ describe('profiles', () => {
               ),
               target: apexClass.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -326,6 +330,7 @@ describe('profiles', () => {
               ),
               target: flow.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -387,6 +392,7 @@ describe('profiles', () => {
               ),
               target: layout.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -429,6 +435,7 @@ describe('profiles', () => {
               ),
               target: layout.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
             {
               source: profileInstance.elemID.createNestedID(
@@ -437,6 +444,7 @@ describe('profiles', () => {
               ),
               target: recordTypes[0].elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
             {
               source: profileInstance.elemID.createNestedID(
@@ -445,6 +453,7 @@ describe('profiles', () => {
               ),
               target: recordTypes[1].elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -523,6 +532,7 @@ describe('profiles', () => {
                 ),
                 target: layout.elemID,
                 type: 'weak',
+                sourceScope: 'value',
               },
             ])
           })
@@ -585,6 +595,7 @@ describe('profiles', () => {
               ),
               target: customObject.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -662,6 +673,7 @@ describe('profiles', () => {
               ),
               target: apexPage.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -747,6 +759,7 @@ describe('profiles', () => {
               ),
               target: recordType.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -778,6 +791,7 @@ describe('profiles', () => {
               ),
               target: recordType.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })

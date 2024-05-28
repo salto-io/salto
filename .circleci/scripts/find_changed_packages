@@ -69,6 +69,7 @@ function hasE2eTests(packageName) {
 
 function findChangedPackages(branchLocation) {
   const changedFiles = getChangedFiles(branchLocation)
+  console.log('Changed files:', changedFiles)
   const changedPackages = new Set()
 
   for (const file of changedFiles) {

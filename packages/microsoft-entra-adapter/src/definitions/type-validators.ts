@@ -13,11 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { builtInInstancesValidator, readOnlyFieldsValidator, requiredFieldsValidator } from './change_validators'
+import { Values } from '@salto-io/adapter-api'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 
-export default (): Record<string, ChangeValidator> => ({
-  builtInInstances: builtInInstancesValidator,
-  requiredFields: requiredFieldsValidator,
-  readOnlyFields: readOnlyFieldsValidator,
-})
+const { isPlainObject } = lowerDashValues
+
+export function validatePlainObject(obj: unknown, fieldName: string): asserts obj is Values {
+  if (!isPlainObject(obj)) {
+    throw new Error(`Expected ${fieldName} to be a plain object, but got ${obj}`)
+  }
+}
+
+export function validateArray(obj: unknown, fieldName: string): asserts obj is unknown[] {
+  if (!Array.isArray(obj)) {
+    throw new Error(`Expected ${fieldName} to be an array, but got ${obj}`)
+  }
+}

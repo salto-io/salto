@@ -27,12 +27,14 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from '../constants'
 
 export const OAUTH_REQUIRED_SCOPES = [
+  'AdministrativeUnit.ReadWrite.All',
   'Application.ReadWrite.All',
   'CustomSecAttributeDefinition.ReadWrite.All',
   'Directory.ReadWrite.All',
+  'Domain.ReadWrite.All',
   'Group.ReadWrite.All',
-  'Policy.ReadWrite.AuthenticationMethod',
   'Policy.Read.All',
+  'Policy.ReadWrite.AuthenticationMethod',
   'Policy.ReadWrite.ConditionalAccess',
   'Policy.ReadWrite.CrossTenantAccess',
   'Policy.ReadWrite.PermissionGrant',

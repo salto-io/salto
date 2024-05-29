@@ -14,19 +14,13 @@
  * limitations under the License.
  */
 import { definitions } from '@salto-io/adapter-components'
+import { AdditionalAction, ClientOptions } from '../types'
 
-export type AdditionalAction = never
-export type ClientOptions = 'main'
-export type PaginationOptions = 'cursor'
-export type ReferenceContextStrategies = 'ODataType'
-export type CustomReferenceSerializationStrategyName = 'appId'
-export type CustomIndexField = CustomReferenceSerializationStrategyName
-
-export type Options = definitions.APIDefinitionsOptions & {
-  clientOptions: ClientOptions
-  paginationOptions: PaginationOptions
-  additionalAction: AdditionalAction
-  referenceContextStrategies: ReferenceContextStrategies
-  referenceSerializationStrategies: CustomReferenceSerializationStrategyName
-  referenceIndexNames: CustomIndexField
-}
+export type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<
+  AdditionalAction,
+  ClientOptions
+>
+export type DeployCustomDefinitions = Record<string, InstanceDeployApiDefinitions>
+export type DeployRequestDefinition = definitions.deploy.DeployRequestDefinition<ClientOptions>
+export type AdjustFunction = definitions.AdjustFunction<definitions.deploy.ChangeAndContext>
+export type EndpointPath = definitions.EndpointPath

@@ -13,11 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { builtInInstancesValidator, readOnlyFieldsValidator, requiredFieldsValidator } from './change_validators'
-
-export default (): Record<string, ChangeValidator> => ({
-  builtInInstances: builtInInstancesValidator,
-  requiredFields: requiredFieldsValidator,
-  readOnlyFields: readOnlyFieldsValidator,
-})
+export { builtInInstancesValidator } from './built_in_instances_validator'
+export { requiredFieldsValidator } from './required_fields_validator'
+export { readOnlyFieldsValidator, TYPE_NAME_TO_READ_ONLY_FIELDS } from './read_only_fields_validator'

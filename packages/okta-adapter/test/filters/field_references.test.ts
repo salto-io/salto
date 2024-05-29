@@ -35,8 +35,7 @@ import {
   USERTYPE_TYPE_NAME,
 } from '../../src/constants'
 import { getFilterParams } from '../utils'
-import { FETCH_CONFIG } from '../../src/config'
-import { DEFAULT_CONFIG } from '../../src/user_config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 describe('fieldReferencesFilter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>

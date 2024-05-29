@@ -33,7 +33,7 @@ import {
   OKTA,
 } from '../../src/constants'
 import OktaClient from '../../src/client/client'
-import { createDefinitions, getFilterParams, mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
 import brandThemeFilesFilter from '../../src/filters/brand_theme_files'
 import { FilterResult } from '../../src/filter'
 
@@ -68,8 +68,7 @@ describe('brand files filter', () => {
     jest.clearAllMocks()
     const mockCli = mockClient()
     client = mockCli.client
-    const definitions = createDefinitions({ client })
-    filter = brandThemeFilesFilter(getFilterParams({ definitions })) as typeof filter
+    filter = brandThemeFilesFilter(getFilterParams({ client })) as typeof filter
   })
   describe('onFetch', () => {
     beforeEach(async () => {

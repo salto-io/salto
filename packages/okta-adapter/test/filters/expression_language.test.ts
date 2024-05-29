@@ -25,8 +25,7 @@ import {
   getChangeData,
 } from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
-import { FETCH_CONFIG } from '../../src/config'
-import { DEFAULT_CONFIG } from '../../src/user_config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { getFilterParams } from '../utils'
 import oktaExpressionLanguageFilter, {
   getUserSchemaReference,

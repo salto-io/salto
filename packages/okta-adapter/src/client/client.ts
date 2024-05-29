@@ -24,7 +24,7 @@ import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
 import { LINK_HEADER_NAME } from './pagination'
-import { OktaClientRateLimitConfig } from '../user_config'
+import { OktaClientRateLimitConfig } from '../config'
 
 const { sleep } = promises.timeout
 const {

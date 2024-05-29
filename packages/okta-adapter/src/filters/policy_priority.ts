@@ -31,7 +31,7 @@ import {
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getParents, invertNaclCase, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { fetch, elements as adapterElements, client as clientUtils } from '@salto-io/adapter-components'
+import { fetch, elements as adapterElements } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
@@ -58,7 +58,8 @@ import {
   SIGN_ON_RULE_TYPE_NAME,
 } from '../constants'
 import { deployChanges } from '../deployment'
-import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
+import OktaClient from '../client/client'
+import { OktaConfig } from '../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -164,13 +165,13 @@ const deployPriorityChange = async ({
   client,
   priority,
   instance,
-  apiDefinitions,
+  config,
   additionalUrlVars,
 }: {
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface
+  client: OktaClient
   priority: number
   instance: InstanceElement
-  apiDefinitions: OktaSwaggerApiConfig
+  config: OktaConfig
   additionalUrlVars: Record<string, string>
 }): Promise<void> => {
   const { type } = instance.value
@@ -179,7 +180,7 @@ const deployPriorityChange = async ({
   // For sign on rules, we need to include the actions in the data
   const data =
     instance.elemID.typeName === SIGN_ON_RULE_TYPE_NAME ? { ...baseData, actions: instance.value.actions } : baseData
-  const typeDefinition = apiDefinitions.types[instance.elemID.typeName]
+  const typeDefinition = config.apiDefinitions.types[instance.elemID.typeName]
   const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests.modify : undefined
   const deployUrl = deployRequest?.url
   if (deployUrl === undefined) {
@@ -201,7 +202,7 @@ const getAdditionalUrlVars = (instance: InstanceElement): Record<string, string>
  * priority, including the default instance. The default instance is always set to be
  * last. In deployment, we deploy the priorities, not the instances themselves.
  */
-const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
+const filter: FilterCreator = ({ config, client }) => ({
   name: 'policyPrioritiesFilter',
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
@@ -278,10 +279,10 @@ const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
           .filter(isReferenceExpression)
           .forEach(async (ref, priority) => {
             await deployPriorityChange({
-              client: definitions.clients.options.main.httpClient,
+              client,
               priority,
               instance: ref.value,
-              apiDefinitions: oldApiDefinitions[API_DEFINITIONS_CONFIG],
+              config,
               additionalUrlVars: getAdditionalUrlVars(ref.value),
             })
           })
@@ -293,10 +294,10 @@ const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
           .forEach(async (ref, priority) => {
             if (positionsBefore[priority]?.elemID.getFullName() !== ref.elemID.getFullName()) {
               await deployPriorityChange({
-                client: definitions.clients.options.main.httpClient,
+                client,
                 priority,
                 instance: ref.value,
-                apiDefinitions: oldApiDefinitions[API_DEFINITIONS_CONFIG],
+                config,
                 additionalUrlVars: getAdditionalUrlVars(ref.value),
               })
             }

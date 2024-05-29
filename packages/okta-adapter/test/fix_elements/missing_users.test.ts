@@ -18,9 +18,8 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import OktaClient from '../../src/client/client'
 import * as userUtilsModule from '../../src/user_utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
-import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { DEPLOY_CONFIG, FETCH_CONFIG, OktaConfig } from '../../src/config'
 import { omitMissingUsersHandler } from '../../src/fix_elements/missing_users'
-import { OktaUserConfig } from '../../src/user_config'
 
 const createUsersValue = (includeUsers: string[] | undefined, excludeUsers: string[] | undefined): Values => ({
   conditions: {
@@ -75,7 +74,7 @@ describe('missing_users', () => {
     const mockConfig = {
       [DEPLOY_CONFIG]: {},
       [FETCH_CONFIG]: {},
-    } as OktaUserConfig
+    } as OktaConfig
     it('should return empty fixElements list and empty errors list', async () => {
       const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
         missingUsersHandlerInput,
@@ -91,7 +90,7 @@ describe('missing_users', () => {
         omitMissingUsers: false,
       },
       [FETCH_CONFIG]: {},
-    } as OktaUserConfig
+    } as OktaConfig
     it('should return empty fixElements list and empty errors list', async () => {
       const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
         missingUsersHandlerInput,
@@ -107,7 +106,7 @@ describe('missing_users', () => {
         omitMissingUsers: true,
       },
       [FETCH_CONFIG]: {},
-    } as OktaUserConfig
+    } as OktaConfig
     it('should return fixElements list and errors list correctly', async () => {
       const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
         missingUsersHandlerInput,
@@ -148,7 +147,7 @@ If you continue, they will be omitted. Learn more: ${userUtilsModule.OMIT_MISSIN
             [FETCH_CONFIG]: {
               convertUsersIds: false,
             },
-          } as OktaUserConfig,
+          } as OktaConfig,
           client: mockClient,
           elementsSource,
         })(missingUsersHandlerInput)

@@ -15,11 +15,11 @@
  */
 import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import OktaClient from '../client/client'
-import { OktaUserConfig } from '../user_config'
+import { OktaConfig } from '../config'
 
 export type FixElementsArgs = {
   client: OktaClient
-  config: OktaUserConfig
+  config: OktaConfig
   elementsSource: ReadOnlyElementsSource
 }
 

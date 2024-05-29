@@ -141,6 +141,15 @@ const accessPolicyRuleCustomizer: definitions.fetch.FetchTopLevelElementDefiniti
 
 const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => {
   const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
+<<<<<<< HEAD
+=======
+  const policiesToOmitPriorities = [
+    ACCESS_POLICY_TYPE_NAME,
+    PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+    IDP_POLICY_TYPE_NAME,
+    PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+  ]
+>>>>>>> 1a135094e (prettier)
   const rulesWithFieldsCustomizations = [MFA_RULE_TYPE_NAME, IDP_RULE_TYPE_NAME]
   const defs = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => ({
     [typeName]: {

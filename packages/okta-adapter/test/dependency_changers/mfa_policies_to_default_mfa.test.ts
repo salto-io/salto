@@ -22,26 +22,44 @@ import { defaultMultifactorEnrollmentPolicyDependency } from '../../src/dependen
 describe('changeDependenciesFromMfaPoliciesToDefaultMfa', () => {
   let dependencyChanges: DependencyChange[]
   const multifactorEnrollmentPolicyPolicyType = new ObjectType({ elemID: new ElemID(OKTA, MFA_POLICY_TYPE_NAME) })
-  const multifactorEnrollmentPolicyInstnace = new InstanceElement('mfaInstance', multifactorEnrollmentPolicyPolicyType, {
-    id: '1',
-    name: 'mfaInstance',
-    system: false,
-  })
-  const multifactorEnrollmentPolicyInstanceTwo = new InstanceElement('mfaInstanceTwo', multifactorEnrollmentPolicyPolicyType, {
-    id: '2',
-    name: 'mfaInstanceTwo',
-    system: false,
-  })
-  const defaultMultifactorEnrollmentPolicyInstance = new InstanceElement('defaultMfaInstance', multifactorEnrollmentPolicyPolicyType, {
-    id: '3',
-    name: 'defaultMfaInstance',
-    system: true,
-  })
+  const multifactorEnrollmentPolicyInstnace = new InstanceElement(
+    'mfaInstance',
+    multifactorEnrollmentPolicyPolicyType,
+    {
+      id: '1',
+      name: 'mfaInstance',
+      system: false,
+    },
+  )
+  const multifactorEnrollmentPolicyInstanceTwo = new InstanceElement(
+    'mfaInstanceTwo',
+    multifactorEnrollmentPolicyPolicyType,
+    {
+      id: '2',
+      name: 'mfaInstanceTwo',
+      system: false,
+    },
+  )
+  const defaultMultifactorEnrollmentPolicyInstance = new InstanceElement(
+    'defaultMfaInstance',
+    multifactorEnrollmentPolicyPolicyType,
+    {
+      id: '3',
+      name: 'defaultMfaInstance',
+      system: true,
+    },
+  )
   it('should add dependencies from multifactorEnrollmentPolicy to Default multifactorEnrollmentPolicy', async () => {
     const defaultMultifactorEnrollmentPolicyInstanceAfter = defaultMultifactorEnrollmentPolicyInstance.clone()
     defaultMultifactorEnrollmentPolicyInstanceAfter.value.name = 'afterMfaInstance'
     const inputChanges = new Map([
-      [0, toChange({ before: defaultMultifactorEnrollmentPolicyInstance, after: defaultMultifactorEnrollmentPolicyInstanceAfter })],
+      [
+        0,
+        toChange({
+          before: defaultMultifactorEnrollmentPolicyInstance,
+          after: defaultMultifactorEnrollmentPolicyInstanceAfter,
+        }),
+      ],
       [1, toChange({ after: multifactorEnrollmentPolicyInstnace })],
       [2, toChange({ before: multifactorEnrollmentPolicyInstanceTwo })],
     ])

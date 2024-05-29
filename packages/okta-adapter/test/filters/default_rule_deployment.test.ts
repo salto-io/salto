@@ -28,7 +28,12 @@ import { filterUtils, client as clientUtils } from '@salto-io/adapter-components
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import defaultPolicyRuleDeployment from '../../src/filters/default_rule_deployment'
-import { ACCESS_POLICY_RULE_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PROFILE_ENROLLMENT_RULE_TYPE_NAME } from '../../src/constants'
+import {
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  MFA_POLICY_TYPE_NAME,
+  OKTA,
+  PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+} from '../../src/constants'
 
 describe('defaultPolicyRuleDeployment', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
@@ -213,11 +218,15 @@ describe('defaultPolicyRuleDeployment', () => {
         name: 'mfaInstance',
         system: false,
       })
-      const defaultMultifactorEnrollmentPolicyInstance = new InstanceElement('defaultMfaInstance', MultifactorEnrollmentPolicyType, {
-        id: '3',
-        name: 'defaultMfaInstance',
-        system: true,
-      })
+      const defaultMultifactorEnrollmentPolicyInstance = new InstanceElement(
+        'defaultMfaInstance',
+        MultifactorEnrollmentPolicyType,
+        {
+          id: '3',
+          name: 'defaultMfaInstance',
+          system: true,
+        },
+      )
       beforeEach(() => {
         mockConnection.get.mockResolvedValueOnce({
           status: 200,
@@ -229,7 +238,12 @@ describe('defaultPolicyRuleDeployment', () => {
       it('should assign priority field to modification changes of type MultifactorEnrollmentPolicy', async () => {
         const defaultMultifactorEnrollmentPolicyInstanceAfter = defaultMultifactorEnrollmentPolicyInstance.clone()
         defaultMultifactorEnrollmentPolicyInstanceAfter.value.name = 'defaultMfaInstanceAfter'
-        const changes = [toChange({ before: defaultMultifactorEnrollmentPolicyInstance, after: defaultMultifactorEnrollmentPolicyInstanceAfter.clone() })]
+        const changes = [
+          toChange({
+            before: defaultMultifactorEnrollmentPolicyInstance,
+            after: defaultMultifactorEnrollmentPolicyInstanceAfter.clone(),
+          }),
+        ]
         await filter.preDeploy(changes)
         const instances = changes.map(getChangeData).filter(isInstanceElement)
         expect(instances[0].value.priority).toEqual(1)
@@ -243,7 +257,12 @@ describe('defaultPolicyRuleDeployment', () => {
       it('should not assign priority field to modification changes of type MultifactorEnrollmentPolicy if system is false', async () => {
         const defaultMultifactorEnrollmentPolicyInstanceAfter = defaultMultifactorEnrollmentPolicyInstance.clone()
         defaultMultifactorEnrollmentPolicyInstanceAfter.value.system = false
-        const changes = [toChange({ before: defaultMultifactorEnrollmentPolicyInstance, after: defaultMultifactorEnrollmentPolicyInstanceAfter.clone() })]
+        const changes = [
+          toChange({
+            before: defaultMultifactorEnrollmentPolicyInstance,
+            after: defaultMultifactorEnrollmentPolicyInstanceAfter.clone(),
+          }),
+        ]
         await filter.preDeploy(changes)
         const instances = changes.map(getChangeData).filter(isInstanceElement)
         expect(instances[0].value.priority).toBeUndefined()

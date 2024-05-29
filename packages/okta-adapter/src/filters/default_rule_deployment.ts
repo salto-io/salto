@@ -143,22 +143,28 @@ const deployDefaultPolicy = async (
  */
 const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'defaultPolicyRuleDeployment',
-  preDeploy: async changes => {   
+  preDeploy: async changes => {
     // Get the priority of the default MultifactorEnrollmentPolicy
-    await awu(changes).filter(isInstanceChange).filter(isModificationChange).filter(
-      change => getChangeData(change).elemID.typeName === MFA_POLICY_TYPE_NAME &&
-      getChangeData(change).value.system === true
-    ).map(change => getChangeData(change))
-    .forEach(async instance => {
-      const response = await definitions.clients.options.main.httpClient.get({
-        url: `/api/v1/policies/${instance.value.id}`,
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isModificationChange)
+      .filter(
+        change =>
+          getChangeData(change).elemID.typeName === MFA_POLICY_TYPE_NAME && getChangeData(change).value.system === true,
+      )
+      .map(change => getChangeData(change))
+      .forEach(async instance => {
+        const response = await definitions.clients.options.main.httpClient.get({
+          url: `/api/v1/policies/${instance.value.id}`,
+        })
+        if (isPolicyResponse(response)) {
+          instance.value.priority = response.data?.priority
+        }
       })
-      if (isPolicyResponse(response)) {
-        instance.value.priority = response.data?.priority
-      }
-    })
 
-    changes.filter(isInstanceChange).filter(isAdditionOrModificationChange)
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
       .filter(
         change =>
           SUPPORTED_RULE_TYPES.concat(SUPPORT_POLICY_TYPES).includes(getChangeData(change).elemID.typeName) &&

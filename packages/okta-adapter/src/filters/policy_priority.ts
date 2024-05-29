@@ -69,7 +69,7 @@ export const POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE = [
   MFA_RULE_TYPE_NAME,
   SIGN_ON_RULE_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
-  AUTHORIZATION_POLICY_RULE
+  AUTHORIZATION_POLICY_RULE,
 ]
 export const ALL_SUPPORTED_POLICY_NAMES = [SIGN_ON_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, PASSWORD_POLICY_TYPE_NAME]
 // Automation and PofileEnrollmentPolicyRule is not included in the list of supported policy rules because it is not supported
@@ -267,11 +267,9 @@ const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
       elements.push(priorityInstance)
     })
     // Remove priority field from the instances
-    policiesRules
-      .concat(Object.values(policyTypeNameToPolicies).flat())
-      .forEach(rule => {
-        delete rule.value.priority
-      })
+    policiesRules.concat(Object.values(policyTypeNameToPolicies).flat()).forEach(rule => {
+      delete rule.value.priority
+    })
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(changes, change =>

@@ -48,5 +48,7 @@ export const defaultMultifactorEnrollmentPolicyDependency: DependencyChanger = a
     return []
   }
   const defaultPolicy = defaultMfaPolicy[0]
-  return multifactorEnrollmentPolicyPolicies.flatMap(multifactorEnrollmentPolicyPolicy => dependencyChange('add', defaultPolicy.key, multifactorEnrollmentPolicyPolicy.key))
+  return multifactorEnrollmentPolicyPolicies.flatMap(multifactorEnrollmentPolicyPolicy =>
+    dependencyChange('add', defaultPolicy.key, multifactorEnrollmentPolicyPolicy.key),
+  )
 }

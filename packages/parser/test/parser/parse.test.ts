@@ -263,7 +263,8 @@ describe('Salto parser', () => {
 
       describe('invalid name', () => {
         const body = `
-          type salesforce.someType.a {}
+          type salesforce.someType.a {
+          }
         `
 
         beforeEach(async () => {
@@ -277,12 +278,31 @@ describe('Salto parser', () => {
         })
       })
 
+      describe('extra labels', () => {
+        const body = `
+          type salesforce.object is object and also additional labels {
+          }
+        `
+
+        beforeEach(async () => {
+          await parseBody(body)
+        })
+
+        it('should have an error', () => {
+          expect(errors).toHaveLength(1)
+          expect(errors[0].summary).toEqual('Ambiguous block definition')
+          expect(elements).toHaveLength(0)
+        })
+      })
+
       describe('invalid name followed by a valid type', () => {
         const body = `
           type salesforce.someType.a {
-            salesforce.otherType.b bField {}
+            salesforce.otherType.b bField {
+            }
           }
-          type salesforce.anotherType { }
+          type salesforce.anotherType {
+          }
         `
 
         beforeEach(async () => {

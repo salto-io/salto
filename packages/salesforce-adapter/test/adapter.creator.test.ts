@@ -93,7 +93,7 @@ describe('SalesforceAdapter creator', () => {
   const mockFetchOpts: MockInterface<FetchOptions> = {
     progressReporter: {
       reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
-    },
+    } ,
   }
 
   afterEach(() => {

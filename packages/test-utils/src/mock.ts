@@ -15,7 +15,7 @@
  */
 type IsObject<T> = T extends { [key: string]: undefined } ? T : never
 
-export type MockInterface<T extends {}> = {
+export type MockInterface<T extends object | never> = {
   [k in keyof T]: T[k] extends (...args: never[]) => unknown
     ? jest.MockedFunction<T[k]>
     : T[k] extends object

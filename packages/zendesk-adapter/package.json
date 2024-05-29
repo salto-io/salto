@@ -7,6 +7,9 @@
     "type": "git",
     "url": "https://github.com/salto-io/salto"
   },
+  "installConfig": {
+    "hoistingLimits": "dependencies"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -68,7 +71,6 @@
     "axios-mock-adapter": "^1.19.0",
     "axios-retry": "^4.0.0",
     "eslint": "^7.3.2",
-    "eslint-config-airbnb": "18.0.1",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-header": "^3.0.0",
     "eslint-plugin-import": "^2.18.2",

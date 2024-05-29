@@ -13,8 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+type IsObject<T> = T extends { [key: string]: undefined } ? T : never
+
 export type MockInterface<T extends {}> = {
-  [k in keyof T]: T[k] extends (...args: never[]) => unknown ? jest.MockedFunction<T[k]> : MockInterface<T[k]>
+  [k in keyof T]: T[k] extends (...args: never[]) => unknown
+    ? jest.MockedFunction<T[k]>
+    : T[k] extends object
+      ? MockInterface<IsObject<T[k]>>
+      : T[k]
 }
 
 export const mockFunction = <T extends (...args: never[]) => unknown>(): jest.MockedFunction<T> =>

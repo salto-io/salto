@@ -43,16 +43,16 @@ import {
   AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME,
   IDP_POLICY_TYPE_NAME,
   IDP_RULE_PRIORITY_TYPE_NAME,
+  IDP_RULE_TYPE_NAME,
   MFA_POLICY_TYPE_NAME,
   MFA_RULE_PRIORITY_TYPE_NAME,
+  MFA_RULE_TYPE_NAME,
   OKTA,
   PASSWORD_POLICY_TYPE_NAME,
   PASSWORD_RULE_PRIORITY_TYPE_NAME,
+  PASSWORD_RULE_TYPE_NAME,
   POLICY_PRIORITY_TYPE_NAMES,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
-  POLICY_RULE_TYPE_NAMES,
-  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
-  PROFILE_ENROLLMENT_RULE_PRIORITY_TYPE_NAME,
   SIGN_ON_POLICY_TYPE_NAME,
   SIGN_ON_RULE_PRIORITY_TYPE_NAME,
   SIGN_ON_RULE_TYPE_NAME,
@@ -63,16 +63,22 @@ import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { createUrl } = fetch.resource
-export const ALL_SUPPORTED_POLICY_RULE_NAMES = POLICY_RULE_TYPE_NAMES.concat([AUTHORIZATION_POLICY_RULE])
+export const POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE = [
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  IDP_RULE_TYPE_NAME,
+  MFA_RULE_TYPE_NAME,
+  SIGN_ON_RULE_TYPE_NAME,
+  PASSWORD_RULE_TYPE_NAME,
+  AUTHORIZATION_POLICY_RULE,
+]
 export const ALL_SUPPORTED_POLICY_NAMES = [SIGN_ON_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, PASSWORD_POLICY_TYPE_NAME]
-// Automation is not included in the list of supported policy rules because it is not supported
+// Automation and PofileEnrollmentPolicyRule is not included in the list of supported policy rules because it is not supported
 const POLICY_NAME_TO_RULE_PRIORITY_NAME: Record<string, string> = {
   [ACCESS_POLICY_TYPE_NAME]: ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME,
   [IDP_POLICY_TYPE_NAME]: IDP_RULE_PRIORITY_TYPE_NAME,
   [MFA_POLICY_TYPE_NAME]: MFA_RULE_PRIORITY_TYPE_NAME,
   [SIGN_ON_POLICY_TYPE_NAME]: SIGN_ON_RULE_PRIORITY_TYPE_NAME,
   [PASSWORD_POLICY_TYPE_NAME]: PASSWORD_RULE_PRIORITY_TYPE_NAME,
-  [PROFILE_ENROLLMENT_POLICY_TYPE_NAME]: PROFILE_ENROLLMENT_RULE_PRIORITY_TYPE_NAME,
   [AUTHORIZATION_POLICY]: AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME,
 }
 
@@ -191,7 +197,7 @@ const deployPriorityChange = async ({
 }
 
 const getAdditionalUrlVars = (instance: InstanceElement): Record<string, string> =>
-  ALL_SUPPORTED_POLICY_RULE_NAMES.includes(instance.elemID.typeName)
+  POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE.includes(instance.elemID.typeName)
     ? { ruleId: instance.value.id, policyId: getParentPolicy(instance)?.value.id }
     : { policyId: instance.value.id }
 
@@ -206,7 +212,7 @@ const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
     const policiesRules = instances.filter(instance =>
-      ALL_SUPPORTED_POLICY_RULE_NAMES.includes(instance.elemID.typeName),
+      POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE.includes(instance.elemID.typeName),
     )
     const priorityTypes = POLICY_RULE_PRIORITY_TYPE_NAMES.map(name => createPriorityType(name, 'defaultRule')).concat(
       POLICY_PRIORITY_TYPE_NAMES.map(name => createPriorityType(name, 'defaultPolicy')),

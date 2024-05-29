@@ -29,6 +29,7 @@ import {
   IDP_RULE_TYPE_NAME,
   DEVICE_ASSURANCE,
   AUTHENTICATOR_TYPE_NAME,
+  PROFILE_ENROLLMENT_RULE_TYPE_NAME,
 } from '../constants'
 import { isGroupPushEntry } from '../filters/group_push'
 import { extractSchemaIdFromUserType } from './transforms/user_type'
@@ -140,7 +141,12 @@ const accessPolicyRuleCustomizer: definitions.fetch.FetchTopLevelElementDefiniti
 }
 
 const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => {
-  const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
+  const policiesToOmitPriorities = [
+    ACCESS_POLICY_TYPE_NAME,
+    PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+    IDP_POLICY_TYPE_NAME,
+    PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+  ]
   const rulesWithFieldsCustomizations = [MFA_RULE_TYPE_NAME, IDP_RULE_TYPE_NAME]
   const defs = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => ({
     [typeName]: {

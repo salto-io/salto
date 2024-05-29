@@ -22,24 +22,48 @@ import {
   getChangeData,
   isAdditionChange,
   toChange,
+  isAdditionOrModificationChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { getParents } from '@salto-io/adapter-utils'
-import { ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME } from '../constants'
+import { createSchemeGuard, getParents } from '@salto-io/adapter-utils'
+import {
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  MFA_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+} from '../constants'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployWithStatus } from '../deployment'
 import { OktaFetchOptions } from '../definitions/types'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 type PolicyRule = {
   id: string
   system: boolean
 }
+type PolicyResponse = {
+  data: {
+    priority: number
+  }
+}
+const POLICY_RESPONSE_SCHEMA = Joi.object({
+  data: Joi.object({
+    priority: Joi.number().required(),
+  })
+    .required()
+    .unknown(true),
+}).unknown(true)
 
-const SUPPORTED_TYPES = [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME]
+const isPolicyResponse = createSchemeGuard<PolicyResponse>(POLICY_RESPONSE_SCHEMA)
+
+const SUPPORTED_RULE_TYPES = [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME]
+const SUPPORT_POLICY_TYPES = [ACCESS_POLICY_TYPE_NAME]
 
 const EXPECTED_POLICY_RULE_SCHEMA = Joi.object({
   id: Joi.string().required(),
@@ -126,17 +150,39 @@ const deployDefaultPolicy = async (
 const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'defaultPolicyRuleDeployment',
   preDeploy: async changes => {
-    changes
+    // Get the priority of the default MultifactorEnrollmentPolicy
+    await awu(changes)
       .filter(isInstanceChange)
-      .filter(isAdditionChange)
+      .filter(isModificationChange)
       .filter(
         change =>
-          SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName) &&
+          getChangeData(change).elemID.typeName === MFA_POLICY_TYPE_NAME && getChangeData(change).value.system === true,
+      )
+      .map(change => getChangeData(change))
+      .forEach(async instance => {
+        const response = await definitions.clients.options.main.httpClient.get({
+          url: `/api/v1/policies/${instance.value.id}`,
+        })
+        if (isPolicyResponse(response)) {
+          instance.value.priority = response.data?.priority
+        }
+      })
+
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .filter(
+        change =>
+          SUPPORTED_RULE_TYPES.concat(SUPPORT_POLICY_TYPES).includes(getChangeData(change).elemID.typeName) &&
           getChangeData(change).value.system === true,
       )
       .map(change => getChangeData(change))
       .forEach(instance => {
-        instance.value.priority = 99
+        if (instance.elemID.typeName === ACCESS_POLICY_TYPE_NAME) {
+          instance.value.priority = 1
+        } else {
+          instance.value.priority = 99
+        }
       })
   },
   deploy: async changes => {
@@ -147,7 +193,7 @@ const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
       change =>
         isInstanceChange(change) &&
         isAdditionChange(change) &&
-        SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName) &&
+        SUPPORTED_RULE_TYPES.includes(getChangeData(change).elemID.typeName) &&
         getChangeData(change).value.system === true,
     )
 
@@ -163,10 +209,10 @@ const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   onDeploy: async changes => {
     changes
       .filter(isInstanceChange)
-      .filter(isAdditionChange)
+      .filter(isAdditionOrModificationChange)
       .filter(
         change =>
-          SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName) &&
+          SUPPORTED_RULE_TYPES.concat(SUPPORT_POLICY_TYPES).includes(getChangeData(change).elemID.typeName) &&
           getChangeData(change).value.system === true,
       )
       .map(change => getChangeData(change))

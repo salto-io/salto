@@ -526,9 +526,9 @@ describe('Salto parser', () => {
     describe('labels', () => {
       describe('full definition', () => {
         const body = `
-        settings salesforce.global {
-        }
-      `
+          settings salesforce.global {
+          }
+        `
 
         beforeEach(async () => {
           await parseBody(body)
@@ -547,11 +547,67 @@ describe('Salto parser', () => {
         it('should have no errors', checkNoErrors)
       })
 
+      describe("with 'is' keyword", () => {
+        const body = `
+          settings salesforce.global is {
+          }
+        `
+
+        beforeEach(async () => {
+          await parseBody(body)
+        })
+
+        it('should parse settings', () => {
+          expect(elements).toHaveLength(1)
+          const settings = elements[0] as ObjectType
+          expect(isObjectType(settings)).toBe(true)
+          expect(settings.isSettings).toBe(true)
+          expect(settings.elemID).toEqual(new ElemID('salesforce', 'global'))
+        })
+
+        it('should contain all elements in source map', validateSourceMap)
+
+        it('should have an error', () => {
+          expect(errors).toHaveLength(1)
+          const error = errors[0]
+          expect(error.summary).toEqual('Invalid settings definition')
+          expect(error.message).toMatch("Inheritance operator not supported for settings but 'is' was used, ignoring.")
+        })
+      })
+
+      describe('with primitive type', () => {
+        const body = `
+          settings salesforce.global is string {
+          }
+        `
+
+        beforeEach(async () => {
+          await parseBody(body)
+        })
+
+        it('should parse settings', () => {
+          expect(elements).toHaveLength(1)
+          const settings = elements[0] as ObjectType
+          expect(isObjectType(settings)).toBe(true)
+          expect(settings.isSettings).toBe(true)
+          expect(settings.elemID).toEqual(new ElemID('salesforce', 'global'))
+        })
+
+        it('should contain all elements in source map', validateSourceMap)
+
+        it('should have an error', () => {
+          expect(errors).toHaveLength(1)
+          const error = errors[0]
+          expect(error.summary).toEqual('Invalid settings definition')
+          expect(error.message).toMatch("Inheritance operator not supported for settings but 'is' was used, ignoring.")
+        })
+      })
+
       describe('missing name', () => {
         const body = `
-        settings {
-        }
-      `
+          settings {
+          }
+        `
 
         beforeEach(async () => {
           await parseBody(body)

@@ -38,6 +38,7 @@ import {
   missingBlockOpen,
   ambiguousBlock,
   missingTypeName,
+  invalidSettingsDefinition,
 } from '../errors'
 import {
   primitiveType,
@@ -71,8 +72,14 @@ const consumeType = (
     context.errors.push(missingTypeName(range, typeName))
   }
 
-  // If there is only a type name, we treat it is if it's followed by 'is object'.
-  if (kw === undefined) {
+  // Settings do not support using the 'is' keyword.
+  // We always treat them as objects.
+  if (isSettings && kw !== undefined) {
+    context.errors.push(invalidSettingsDefinition(range, kw))
+  }
+
+  // If there is only a type name, we treat it as if it's followed by 'is object'.
+  if (kw === undefined || isSettings) {
     kw = Keywords.TYPE_INHERITANCE_SEPARATOR
     baseType = Keywords.TYPE_OBJECT
   }

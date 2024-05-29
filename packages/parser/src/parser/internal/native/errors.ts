@@ -38,6 +38,13 @@ export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): P
 export const invalidTypeDefOperator = (range: SourceRange, token: string): ParseError =>
   createError(range, 'Invalid type definition', `Expected inheritance operator 'is' found ${token} instead.`)
 
+export const invalidSettingsDefinition = (range: SourceRange, token: string): ParseError =>
+  createError(
+    range,
+    'Invalid settings definition',
+    `Inheritance operator not supported for settings but '${token}' was used, ignoring.`,
+  )
+
 export const invalidFieldsInPrimitiveType = (range: SourceRange): ParseError =>
   createError(
     range,

@@ -47,20 +47,24 @@ let functions: Functions
 
 describe('Salto parser', () => {
   let elements: Element[]
-  let sourceMap: SourceMap | undefined
+  let sourceMap: SourceMap
   let errors: ParseError[]
 
-  const parseBody = async (body: string, calcSourceMap = true): Promise<void> => {
-    const parsed = await parse(Buffer.from(body), 'none', functions, calcSourceMap)
-    elements = await awu(parsed.elements).toArray()
-    sourceMap = parsed.sourceMap
-    errors = parsed.errors
+  const parseBody = async (
+    body: string,
+  ): Promise<{ elements: Element[]; sourceMap: SourceMap; errors: ParseError[] }> => {
+    const parsed = await parse(Buffer.from(body), 'none', functions, true)
+    return {
+      elements: await awu(parsed.elements).toArray(),
+      sourceMap: parsed.sourceMap,
+      errors: parsed.errors,
+    }
   }
 
   const validateSourceMap = (): void => {
     elements
       .filter(elem => !(isType(elem) && isContainerType(elem)))
-      .forEach(elem => expect(sourceMap?.get(elem.elemID.getFullName())).not.toHaveLength(0))
+      .forEach(elem => expect(sourceMap.get(elem.elemID.getFullName())).not.toHaveLength(0))
   }
 
   const checkNoErrors = (): void => {
@@ -79,7 +83,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse type', () => {
@@ -101,7 +105,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse type', () => {
@@ -123,7 +127,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse type', () => {
@@ -145,7 +149,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse type', () => {
@@ -167,7 +171,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse type', () => {
@@ -194,7 +198,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should have an error', () => {
@@ -215,7 +219,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should parse type', () => {
@@ -237,7 +241,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should parse type', () => {
@@ -259,7 +263,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should have an error', () => {
@@ -277,7 +281,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should have an error', () => {
@@ -294,7 +298,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should have an error', () => {
@@ -315,7 +319,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should have errors', () => {
@@ -370,7 +374,7 @@ describe('Salto parser', () => {
       let model: ObjectType
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
         model = elements[0] as ObjectType
       })
 
@@ -483,7 +487,7 @@ describe('Salto parser', () => {
 
       describe('source map', () => {
         it('should have correct start and end positions', () => {
-          const modelSource = sourceMap?.get(model.elemID.getFullName()) as SourceRange[]
+          const modelSource = sourceMap.get(model.elemID.getFullName()) as SourceRange[]
           expect(modelSource).toBeDefined()
           expect(modelSource).toHaveLength(1)
           expect(modelSource[0].start.line).toBe(2)
@@ -492,7 +496,7 @@ describe('Salto parser', () => {
 
         it('should contain fields', () => {
           Object.values(model.fields).forEach(field =>
-            expect(sourceMap?.get(field.elemID.getFullName())).not.toHaveLength(0),
+            expect(sourceMap.get(field.elemID.getFullName())).not.toHaveLength(0),
           )
         })
 
@@ -503,19 +507,19 @@ describe('Salto parser', () => {
             .createNestedID('account')
             .createNestedID('0')
             .createNestedID('input')
-          const nestedAttrSource = sourceMap?.get(nestedAttrId.getFullName())
+          const nestedAttrSource = sourceMap.get(nestedAttrId.getFullName())
           expect(nestedAttrSource).toHaveLength(1)
         })
 
         it('should contain annotation types', () => {
           const annotationTypesId = model.elemID.createNestedID('annotation')
-          const annotationTypesSource = sourceMap?.get(annotationTypesId.getFullName())
+          const annotationTypesSource = sourceMap.get(annotationTypesId.getFullName())
           expect(annotationTypesSource).toHaveLength(1)
         })
 
         it('should contain a single annotation type', () => {
           const annotationTypeId = model.elemID.createNestedID('annotation').createNestedID('convertSettings')
-          const annotationTypeSource = sourceMap?.get(annotationTypeId.getFullName())
+          const annotationTypeSource = sourceMap.get(annotationTypeId.getFullName())
           expect(annotationTypeSource).toHaveLength(1)
         })
       })
@@ -531,7 +535,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should parse settings', () => {
@@ -554,7 +558,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should have an error', () => {
@@ -572,7 +576,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should have an error', () => {
@@ -599,7 +603,7 @@ describe('Salto parser', () => {
       let settings: ObjectType
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
         settings = elements[0] as ObjectType
       })
 
@@ -654,7 +658,7 @@ describe('Salto parser', () => {
       let instance: InstanceElement
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
         instance = elements[0] as InstanceElement
       })
 
@@ -693,7 +697,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should parse', () => {
@@ -712,7 +716,7 @@ describe('Salto parser', () => {
         `
 
         beforeEach(async () => {
-          await parseBody(body)
+          ;({ elements, sourceMap, errors } = await parseBody(body))
         })
 
         it('should have an error', () => {
@@ -734,7 +738,7 @@ describe('Salto parser', () => {
     let config: InstanceElement
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
       config = elements[0] as InstanceElement
     })
 
@@ -769,7 +773,7 @@ describe('Salto parser', () => {
     let settingsInstance: InstanceElement
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
       settingsInstance = elements[0] as InstanceElement
     })
 
@@ -813,7 +817,7 @@ describe('Salto parser', () => {
     let update: ObjectType
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
       original = elements[0] as ObjectType
       update = elements[1] as ObjectType
     })
@@ -825,7 +829,7 @@ describe('Salto parser', () => {
 
     it('should have all source map definitions for a fields', () => {
       const updatedField = Object.values(update.fields)[0]
-      const fieldSource = sourceMap?.get(updatedField.elemID.getFullName())
+      const fieldSource = sourceMap.get(updatedField.elemID.getFullName())
       expect(fieldSource).toHaveLength(2)
     })
 
@@ -862,7 +866,7 @@ describe('Salto parser', () => {
     let instanceWithFunctions: InstanceElement
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
       instanceWithFunctions = elements[0] as InstanceElement
     })
 
@@ -935,7 +939,7 @@ describe('Salto parser', () => {
     `
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
     })
 
     it('should have the correct values', () => {
@@ -984,7 +988,7 @@ describe('Salto parser', () => {
       let multilineObject: ObjectType
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
         multilineObject = elements[0] as ObjectType
       })
 
@@ -1023,7 +1027,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse', () => {
@@ -1043,7 +1047,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse', () => {
@@ -1063,7 +1067,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse', () => {
@@ -1083,7 +1087,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse', () => {
@@ -1104,7 +1108,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse', () => {
@@ -1131,7 +1135,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse', () => {
@@ -1152,7 +1156,7 @@ describe('Salto parser', () => {
     `
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
     })
 
     it('should parse', () => {
@@ -1177,7 +1181,7 @@ describe('Salto parser', () => {
     let refObj: ObjectType
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
       refObj = elements[0] as ObjectType
     })
 
@@ -1205,7 +1209,7 @@ describe('Salto parser', () => {
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse references to template as TemplateExpression', () => {
@@ -1242,7 +1246,7 @@ multiline
       let multilineRefObj: ObjectType
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
         multilineRefObj = elements[0] as ObjectType
       })
 
@@ -1293,7 +1297,7 @@ multiline
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should parse references to template as TemplateExpression', () => {
@@ -1350,7 +1354,7 @@ multiline
     `
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
     })
 
     it('should parse all elements', () => {
@@ -1367,13 +1371,17 @@ multiline
         type salesforce.string is string {
         }
     `
+    let maybeSourceMap: SourceMap | undefined
 
     beforeEach(async () => {
-      await parseBody(body, false)
+      const parsed = await parse(Buffer.from(body), 'none', functions, false)
+      elements = await awu(parsed.elements).toArray()
+      maybeSourceMap = parsed.sourceMap
+      errors = parsed.errors
     })
 
     it('should not return a source map', () => {
-      expect(sourceMap).toBeUndefined()
+      expect(maybeSourceMap).toBeUndefined()
     })
 
     it('should have no errors', checkNoErrors)
@@ -1383,7 +1391,7 @@ multiline
     const body = 'bla'
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
     })
 
     it('should have an error', () => {
@@ -1406,7 +1414,7 @@ multiline
     let element: InstanceElement
 
     beforeEach(async () => {
-      await parseBody(body)
+      ;({ elements, sourceMap, errors } = await parseBody(body))
       element = elements[0] as InstanceElement
     })
 
@@ -1444,7 +1452,7 @@ multiline
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should have an error', () => {
@@ -1467,7 +1475,7 @@ multiline
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should have errors', () => {
@@ -1487,7 +1495,7 @@ multiline
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should have errors', () => {
@@ -1548,7 +1556,7 @@ multiline
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should have errors', () => {
@@ -1565,7 +1573,7 @@ multiline
       `
 
       beforeEach(async () => {
-        await parseBody(body)
+        ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
       it('should have errors', () => {

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { FileProperties } from '@salto-io/jsforce-types'
+  // eslint-disable-next-line import/named
+  import { FileProperties } from '@salto-io/jsforce-types'
 import {
   Element,
   ObjectType,

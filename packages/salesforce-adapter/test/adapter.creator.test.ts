@@ -93,7 +93,7 @@ describe('SalesforceAdapter creator', () => {
   const mockFetchOpts: MockInterface<FetchOptions> = {
     progressReporter: {
       reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
-    } ,
+    } as never,
   }
 
   afterEach(() => {
@@ -213,7 +213,7 @@ describe('SalesforceAdapter creator', () => {
           config,
           elementsSource: buildElementsSourceFromElements([]),
         })
-        .fetch(mockFetchOpts)
+        .fetch(mockFetchOpts as FetchOptions)
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           fetch: {
@@ -710,7 +710,7 @@ describe('SalesforceAdapter creator', () => {
       elementsSource: buildElementsSourceFromElements([]),
     })
     it('pass to the adapter operation configuration without deprecated fields', async () => {
-      await operations.fetch(mockFetchOpts)
+      await operations.fetch(mockFetchOpts as FetchOptions)
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           fetch: {
@@ -740,7 +740,7 @@ describe('SalesforceAdapter creator', () => {
 
     it('return update from fetch', async () => {
       expect(
-        (await operations.fetch(mockFetchOpts)).updatedConfig,
+        (await operations.fetch(mockFetchOpts as FetchOptions)).updatedConfig,
       ).toBeDefined()
     })
   })

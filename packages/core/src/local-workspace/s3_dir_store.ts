@@ -20,6 +20,7 @@ import { createS3Client } from '@salto-io/aws-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { dirStore, staticFiles } from '@salto-io/workspace'
 import Bottleneck from 'bottleneck'
+// eslint-disable-next-line import/default
 import getStream from 'get-stream'
 import { Readable } from 'stream'
 import { values } from '@salto-io/lowerdash'

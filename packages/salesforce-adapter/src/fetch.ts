@@ -16,8 +16,11 @@
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import {
+  // eslint-disable-next-line import/named
   FileProperties,
+  // eslint-disable-next-line import/named
   MetadataInfo,
+  // eslint-disable-next-line import/named
   MetadataObject,
 } from '@salto-io/jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'

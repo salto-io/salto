@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { FileProperties } from '@salto-io/jsforce'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -153,7 +156,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         }),
       ],
     }
-    connection.metadata.list.mockImplementation(async (queries) =>
+    connection.metadata.list.mockImplementation(async (queries: any) =>
       makeArray(queries).flatMap(({ type }) => {
         listedTypes.push(type)
         return filePropByRelatedType[type] ?? []

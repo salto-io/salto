@@ -35,8 +35,6 @@ export const buildElementsSourceFromElements = (
     log.warn(`duplicate ElemIDs of elementSource found. the duplicates are ${duplicateNames}`)
   }
 
-  let self: ReadOnlyElementsSource
-
   async function* getIds(): AsyncIterable<ElemID> {
     for (const element of elements) {
       yield element.elemID
@@ -89,7 +87,7 @@ export const buildElementsSourceFromElements = (
   const has = async (id: ElemID): Promise<boolean> =>
     elementsMap[id.getFullName()] !== undefined || awu(fallbackSources).some(async source => source.has(id))
 
-  self = {
+  const self: ReadOnlyElementsSource = {
     getAll: async () => getElements(),
     get,
     list: async () => getIds(),

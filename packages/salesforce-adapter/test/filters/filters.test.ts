@@ -64,7 +64,7 @@ describe('SalesforceAdapter filters', () => {
     })
 
     it('should call inner aspects upon fetch', async () => {
-      await adapter.fetch(mockFetchOpts)
+      await adapter.fetch(mockFetchOpts as FetchOptions)
       expect(filter.onFetch).toHaveBeenCalledTimes(1)
     })
 

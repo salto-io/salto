@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { Readable } from 'stream'
+// eslint-disable-next-line import/default
 import getStream from 'get-stream'
 import { collections } from '@salto-io/lowerdash'
 import { setupTmpDir } from '@salto-io/test-utils'

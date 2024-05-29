@@ -31,6 +31,7 @@ export type Opts = {
 }
 
 const mockAdapter = ({ adapterParams }: Opts = {}): Mocks => {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const { connection, client } = createClient(adapterParams?.config?.client)
   const adapter = new SalesforceAdapter({
     client,

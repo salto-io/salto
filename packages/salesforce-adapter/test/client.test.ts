@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import _ from 'lodash'
 import nock from 'nock'
 import {
   Bulk,
+  // eslint-disable-next-line import/named
   FileProperties,
   Metadata,
+  // eslint-disable-next-line import/named
   RetrieveResult,
 } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
@@ -61,6 +67,20 @@ import {
   MAX_CONCURRENT_REQUESTS_MESSAGE,
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
 } from '../src/client/user_facing_errors'
+
+// type IsObject<T> = T extends { [key: string]: undefined } ? T : any
+
+// export type MockInterface<T extends object > = {
+//   [k in keyof T]: T[k] extends (...args: any[]) => unknown
+//     ? jest.MockedFunction<T[k]>
+//     : T[k] extends object
+//       ? MockInterface<IsObject<T[k]>>
+//       : T[k]
+// }
+
+// export const mockFunction = <T extends (...args: any[]) => unknown>(): jest.MockedFunction<T> =>
+//   jest.fn() as unknown as jest.MockedFunction<T>
+
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -654,7 +674,7 @@ describe('salesforce client', () => {
     it('should return empty orgId', async () => {
       const { orgId, remainingDailyRequests } = await getConnectionDetails(
         credentials,
-        connection,
+        connection as unknown as Connection,
       )
       expect(orgId).toEqual('')
       expect(remainingDailyRequests).toEqual(10000)
@@ -664,11 +684,11 @@ describe('salesforce client', () => {
   describe('validateCredentials', () => {
     it('should throw ApiLimitsTooLowError exception', async () => {
       await expect(
-        validateCredentials(credentials, 100000, connection),
+        validateCredentials(credentials, 100000, connection as unknown as Connection),
       ).rejects.toThrow(ApiLimitsTooLowError)
     })
     it('should return empty string as accountId and no values for accountType and isProduction', async () => {
-      expect(await validateCredentials(credentials, 3, connection)).toEqual({
+      expect(await validateCredentials(credentials, 3, connection as unknown as Connection)).toEqual({
         accountId: '',
         isProduction: undefined,
         accountType: undefined,
@@ -704,7 +724,7 @@ describe('salesforce client', () => {
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(
-              await validateCredentials(sandboxCredentials, 3, connection),
+              await validateCredentials(sandboxCredentials, 3, connection as unknown as Connection),
             ).toEqual({
               accountId: 'https://url.com/',
               isProduction: false,
@@ -722,7 +742,7 @@ describe('salesforce client', () => {
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(
-              await validateCredentials(sandboxCredentials, 3, connection),
+              await validateCredentials(sandboxCredentials, 3, connection as unknown as Connection),
             ).toEqual({
               accountId: 'https://url.com/',
               isProduction: false,
@@ -734,7 +754,7 @@ describe('salesforce client', () => {
             const mockConnection = mockClient().connection
             _.set(mockConnection, 'instanceUrl', undefined)
             await expect(
-              validateCredentials(sandboxCredentials, 3, mockConnection),
+              validateCredentials(sandboxCredentials, 3, mockConnection as unknown as Connection),
             ).rejects.toThrow(
               'Expected Salesforce organization URL to exist in the connection',
             )
@@ -751,7 +771,7 @@ describe('salesforce client', () => {
           })
           it('should return isProduction true and correct accountType', async () => {
             expect(
-              await validateCredentials(credentials, 3, connection),
+              await validateCredentials(credentials, 3, connection as unknown as Connection),
             ).toEqual({
               accountId: '',
               isProduction: true,
@@ -769,7 +789,7 @@ describe('salesforce client', () => {
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(
-              await validateCredentials(credentials, 3, connection),
+              await validateCredentials(credentials, 3, connection as unknown as Connection),
             ).toEqual({
               accountId: '',
               isProduction: false,
@@ -1028,7 +1048,7 @@ describe('salesforce client', () => {
     it('should return empty orgId for oauth credentials', async () => {
       const { orgId, remainingDailyRequests } = await getConnectionDetails(
         oauthCredentials,
-        connection,
+        connection as unknown as Connection,
       )
       expect(orgId).toEqual('')
       expect(remainingDailyRequests).toEqual(10000)
@@ -1062,7 +1082,7 @@ describe('salesforce client', () => {
 
     describe('polling config', () => {
       beforeEach(() => {
-        testConnection = mockClient().connection
+        testConnection = mockClient().connection as unknown as Connection
         testClient = new SalesforceClient({
           credentials: new UsernamePasswordCredentials({
             username: '',
@@ -1093,7 +1113,7 @@ describe('salesforce client', () => {
       let bulkPollTimeoutHistory: Array<number>
 
       beforeEach(async () => {
-        testConnection = mockClient().connection
+        testConnection = mockClient().connection as unknown as Connection
         testClient = new SalesforceClient({
           credentials: new UsernamePasswordCredentials({
             username: '',
@@ -1204,7 +1224,7 @@ describe('salesforce client', () => {
 
       describe('with total and individual limits', () => {
         beforeAll(async () => {
-          testConnection = mockClient().connection
+          testConnection = mockClient().connection as unknown as Connection
           testClient = new SalesforceClient({
             credentials: new UsernamePasswordCredentials({
               username: '',
@@ -1294,7 +1314,7 @@ describe('salesforce client', () => {
 
       describe('with no limits', () => {
         beforeAll(async () => {
-          testConnection = mockClient().connection
+          testConnection = mockClient().connection as unknown as Connection
           testClient = new SalesforceClient({
             credentials: new UsernamePasswordCredentials({
               username: '',
@@ -1367,7 +1387,7 @@ describe('salesforce client', () => {
 
       describe('with no config', () => {
         beforeAll(async () => {
-          testConnection = mockClient().connection
+          testConnection = mockClient().connection as unknown as Connection
           testClient = new SalesforceClient({
             credentials: new UsernamePasswordCredentials({
               username: '',

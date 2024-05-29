@@ -666,7 +666,7 @@ describe('Netsuite adapter E2E with real account', () => {
           progressReporter: { reportProgress: jest.fn() },
         }
         logMessage('running fetch')
-        fetchResult = await adapter.fetch(mockFetchOpts)
+        fetchResult = await adapter.fetch(mockFetchOpts as FetchOptions)
         fetchedElements = fetchResult.elements
       })
 

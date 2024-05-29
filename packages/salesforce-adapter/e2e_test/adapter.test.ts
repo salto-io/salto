@@ -160,7 +160,7 @@ describe('Salesforce adapter E2E with real account', () => {
       progressReporter: { reportProgress: mockReportProgress },
     }
     await verifyElementsExist(client)
-    result = (await adapter.fetch(mockFetchOpts)).elements
+    result = (await adapter.fetch(mockFetchOpts as FetchOptions)).elements
   })
 
   afterAll(async () => {

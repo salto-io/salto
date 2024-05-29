@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
@@ -225,7 +227,7 @@ describe('Custom Objects from describe filter', () => {
         ].map((xmlName) => ({ xmlName })),
         organizationNamespace: '',
       })
-      connection.metadata.list.mockImplementation(async (query) => {
+      connection.metadata.list.mockImplementation(async (query: any) => {
         const { type } = collections.array.makeArray(query)[0]
         return type === CUSTOM_OBJECT && isInCustomObjectList
           ? [mockFileProperties({ fullName: properties.name, type })]

@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import _ from 'lodash'
 import {
   BuiltinTypes,
@@ -35,6 +38,7 @@ import {
 import { MetadataInfo } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
+// eslint-disable-next-line import/named
 import { FileProperties } from '@salto-io/jsforce-types'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
@@ -100,6 +104,7 @@ import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
 import { mockInstances, mockTypes } from './mock_elements'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { FetchOptions } from '../../adapter-api/src/adapter';
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -234,7 +239,7 @@ describe('SalesforceAdapter fetch', () => {
             mockFileProperties({ type: typeDef.xmlName, ...inst.props }),
           ),
         )
-        connection.metadata.read.mockImplementation(async (type, fullNames) =>
+        connection.metadata.read.mockImplementation(async (type: string, fullNames: any) =>
           type === typeDef.xmlName
             ? makeArray(fullNames)
                 .map((name) =>
@@ -271,13 +276,13 @@ describe('SalesforceAdapter fetch', () => {
       connection.metadata.describeValueType.mockResolvedValue(
         mockDescribeValueResult(valueDef),
       )
-      connection.metadata.list.mockImplementation(async (queries) => {
+      connection.metadata.list.mockImplementation(async (queries: any) => {
         const { type } = makeArray(queries)[0]
         return instancesByType[type]?.map((inst) =>
           mockFileProperties({ type, ...inst.props }),
         )
       })
-      connection.metadata.read.mockImplementation(async (type) =>
+      connection.metadata.read.mockImplementation(async (type: string | number) =>
         instancesByType[type].map((inst) => inst.values),
       )
       const zipFiles = _.flatten(Object.values(instancesByType))
@@ -351,7 +356,7 @@ describe('SalesforceAdapter fetch', () => {
             { xmlName: constants.CUSTOM_METADATA, metaFile: false },
           ]),
         )
-        connection.metadata.list.mockImplementation(async (queries) =>
+        connection.metadata.list.mockImplementation(async (queries: any) =>
           makeArray(queries).flatMap((query) => {
             if (query.type === PROFILE_METADATA_TYPE) {
               return [
@@ -400,9 +405,9 @@ describe('SalesforceAdapter fetch', () => {
             return []
           }),
         )
-        connection.metadata.retrieve.mockImplementation((request) => {
+        connection.metadata.retrieve.mockImplementation((request: { unpackaged: { types: any[] } }) => {
           const fullNamesByType = Object.fromEntries(
-            request.unpackaged?.types.map((entry) => [
+            request.unpackaged?.types.map((entry: { name: any; members: any }) => [
               entry.name,
               entry.members,
             ]) ?? [],
@@ -537,7 +542,7 @@ describe('SalesforceAdapter fetch', () => {
         })
         it('should only fetch the updated profile instance', async () => {
           const fetchRes = await adapter.fetch({
-            ...mockFetchOpts,
+            ...mockFetchOpts as FetchOptions,
             withChangesDetection: true,
           })
           const fetchedInstances = fetchRes.elements.filter(isInstanceElement)
@@ -566,7 +571,7 @@ describe('SalesforceAdapter fetch', () => {
         })
         it('should fetch the correct instances', async () => {
           const fetchRes = await adapter.fetch({
-            ...mockFetchOpts,
+            ...mockFetchOpts as FetchOptions,
             withChangesDetection: true,
           })
           const fetchedInstances = fetchRes.elements.filter(isInstanceElement)
@@ -651,7 +656,7 @@ describe('SalesforceAdapter fetch', () => {
               { xmlName: 'ApexClass' },
             ]),
           )
-          testConnection.metadata.list.mockImplementation(async (queries) =>
+          testConnection.metadata.list.mockImplementation(async (queries: any) =>
             makeArray(queries).flatMap((query) => {
               if (query.type === 'Layout') {
                 return [
@@ -684,7 +689,7 @@ describe('SalesforceAdapter fetch', () => {
 
         it('should return correct deleted elemIDs', async () => {
           const fetchResult = await testAdapter.fetch({
-            ...mockFetchOpts,
+            ...mockFetchOpts as FetchOptions,
             withChangesDetection: true,
           })
           expect(
@@ -901,9 +906,9 @@ describe('SalesforceAdapter fetch', () => {
       })
       describe('listMetadataObjects', () => {
         it('should cache listMetadataObjects calls that are not on Folders', async () => {
-          await adapter.fetch(mockFetchOpts)
+          await adapter.fetch(mockFetchOpts  as FetchOptions)
           const listedQueries = connection.metadata.list.mock.calls.flatMap(
-            (args) => args[0],
+            (args: any[]) => args[0],
           )
           const queriesByType = _.groupBy(listedQueries, (query) => query.type)
           const typesQueriedMoreThanOnce = Object.entries(queriesByType).reduce<
@@ -949,7 +954,7 @@ describe('SalesforceAdapter fetch', () => {
           ],
         },
       )
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
 
       const describeMock = connection.metadata
         .describeValueType as jest.Mock<unknown>
@@ -1000,7 +1005,7 @@ describe('SalesforceAdapter fetch', () => {
           ],
         },
       )
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
 
       const describeMock = connection.metadata
         .describeValueType as jest.Mock<unknown>
@@ -1063,7 +1068,7 @@ describe('SalesforceAdapter fetch', () => {
         },
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
 
       const elementNames = result.map((x) => x.elemID.getFullName())
       expect(elementNames).toHaveLength(
@@ -1184,7 +1189,7 @@ describe('SalesforceAdapter fetch', () => {
 
       it('should fetch metadata instance', async () => {
         mockFlowType()
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
         const flow = findElements(
           result,
           'Flow',
@@ -1200,7 +1205,7 @@ describe('SalesforceAdapter fetch', () => {
 
       it('should add author annotations to metadata instance', async () => {
         mockFlowType()
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch(mockFetchOpts  as FetchOptions)
         const flow = findElements(
           result,
           'Flow',
@@ -1221,7 +1226,7 @@ describe('SalesforceAdapter fetch', () => {
 
       it('should not have id field if id is empty string in fileProps', async () => {
         mockFlowType()
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
         const flow = findElements(
           result,
           'Flow',
@@ -1252,7 +1257,7 @@ describe('SalesforceAdapter fetch', () => {
         connection = connectionMock
         mockFlowType()
         const spyReadMetadata = jest.spyOn(clientMock, 'readMetadata')
-        await adapterMock.fetch(mockFetchOpts)
+        await adapterMock.fetch(mockFetchOpts as FetchOptions)
         expect(spyReadMetadata).not.toHaveBeenCalledWith(
           expect.any(String),
           expect.arrayContaining(['IgnoredNamespace__FlowInstance']),
@@ -1277,7 +1282,7 @@ describe('SalesforceAdapter fetch', () => {
           },
           instances,
         )
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(fetchMetadataInstancesSpy).not.toHaveBeenCalledWith(
           expect.objectContaining({
             metadataType: expect.objectContaining({
@@ -1308,7 +1313,7 @@ describe('SalesforceAdapter fetch', () => {
 
         mockFlowType()
 
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
         const flow = findElements(
           result,
           'Flow',
@@ -1340,7 +1345,7 @@ describe('SalesforceAdapter fetch', () => {
           },
           instances,
         )
-        const res = await adapter.fetch(mockFetchOpts)
+        const res = await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(res).toBeDefined()
         expect(connection.metadata.read).toHaveBeenNthCalledWith(
           1,
@@ -1371,7 +1376,7 @@ describe('SalesforceAdapter fetch', () => {
           },
           instances,
         )
-        const res = await adapter.fetch(mockFetchOpts)
+        const res = await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(res).toBeDefined()
         expect(connection.metadata.read).toHaveBeenNthCalledWith(
           1,
@@ -1551,7 +1556,7 @@ describe('SalesforceAdapter fetch', () => {
       })
 
       it('should fetch complicated metadata instance', async () => {
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
         const layout = findElements(
           result,
           'Layout',
@@ -1661,7 +1666,7 @@ describe('SalesforceAdapter fetch', () => {
         ],
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
       const flow = findElements(
         result,
         'Flow',
@@ -1699,7 +1704,7 @@ describe('SalesforceAdapter fetch', () => {
         },
       ])
 
-      await adapter.fetch(mockFetchOpts)
+      await adapter.fetch(mockFetchOpts as FetchOptions)
 
       expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', [
         'Quote',
@@ -1711,7 +1716,7 @@ describe('SalesforceAdapter fetch', () => {
         { xmlName: 'Base', childXmlNames: ['Child'] },
         { valueTypeFields: [] },
       )
-      await adapter.fetch(mockFetchOpts)
+      await adapter.fetch(mockFetchOpts as FetchOptions)
 
       const describeMock = connection.metadata
         .describeValueType as jest.Mock<unknown>
@@ -1766,7 +1771,7 @@ public class MyClass${index} {
           ],
         })),
       )
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(2)
       const [first] = findElements(
         result,
@@ -1839,7 +1844,7 @@ public class MyClass${index} {
           ],
         },
       )
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(1)
       const [instance] = findElements(
         result,
@@ -1889,7 +1894,7 @@ public class MyClass${index} {
         ],
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
       const [testElem] = findElements(result, 'EmailFolder', 'MyFolder')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
@@ -1941,7 +1946,7 @@ public class MyClass${index} {
         ],
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts as FetchOptions)
       const [testInst] = findElements(
         result,
         'ApexPage',
@@ -1967,7 +1972,7 @@ public class MyClass${index} {
         },
       ])
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts  as FetchOptions)
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path).toEqual([
@@ -1992,7 +1997,7 @@ public class MyClass${index} {
         },
       ])
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch(mockFetchOpts  as FetchOptions)
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path).toEqual([
@@ -2024,7 +2029,7 @@ public class MyClass${index} {
             values: { fullName: 'Test' },
           },
         ])
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch(mockFetchOpts  as FetchOptions)
         const testInstances = findElements(result, 'Test2', 'Test')
         expect(connection.metadata.read).toHaveBeenCalled()
         expect(testInstances).toEqual([
@@ -2046,7 +2051,7 @@ public class MyClass${index} {
             values: { fullName: 'Account' },
           },
         ])
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch(mockFetchOpts  as FetchOptions)
         const [testObject] = findElements(result, 'Account', 'Account') as [
           InstanceElement,
         ]
@@ -2110,7 +2115,7 @@ public class LargeClass} {
       )
 
       const { elements: result, updatedConfig: config } =
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch(mockFetchOpts  as FetchOptions)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(1)
       expect(findElements(result, 'ApexClass', 'LargeClass')).toBeEmpty()
       expect(config?.config[0]?.value.fetch.metadata.exclude).toEqual(
@@ -2176,7 +2181,7 @@ public class LargeClass${index} {
       )
 
       const { elements: result, updatedConfig: config } =
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch(mockFetchOpts  as FetchOptions)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(3)
       const [first] = findElements(
         result,
@@ -2236,7 +2241,7 @@ public class LargeClass${index} {
             return mockDescribeValueResult({ valueTypeFields: [] })
           },
         )
-        connection.metadata.list.mockImplementation(async (inQuery) => {
+        connection.metadata.list.mockImplementation(async (inQuery: any) => {
           const query = collections.array.makeArray(inQuery)[0]
           if (_.isEqual(query, { type: 'Report', folder: 'skip' })) {
             throw new Error('fake error')
@@ -2255,7 +2260,7 @@ public class LargeClass${index} {
           },
         )
 
-        result = await adapter.fetch(mockFetchOpts)
+        result = await adapter.fetch(mockFetchOpts  as FetchOptions)
         elements = result.elements
       })
 
@@ -2304,7 +2309,7 @@ public class LargeClass${index} {
           ],
         )
 
-        result = (await adapter.fetch(mockFetchOpts)).elements
+        result = (await adapter.fetch(mockFetchOpts  as FetchOptions)).elements
       })
 
       it('should skip SkippedList retrieve instances', () => {
@@ -2351,7 +2356,7 @@ public class LargeClass${index} {
             return mockDescribeValueResult({ valueTypeFields: [] })
           },
         )
-        connectionMock.metadata.list.mockImplementation(async (inQuery) => {
+        connectionMock.metadata.list.mockImplementation(async (inQuery: any) => {
           const query = collections.array.makeArray(inQuery)[0]
           const { type } = query
           if (type === 'MetadataTest2') {
@@ -2388,7 +2393,7 @@ public class LargeClass${index} {
 
       it('should return correct config when orig config has values', async () => {
         mockFailures(connection)
-        result = await adapter.fetch(mockFetchOpts)
+        result = await adapter.fetch(mockFetchOpts  as FetchOptions)
         config = result?.updatedConfig?.config[0] as InstanceElement
         expect(config).toBeDefined()
         expect(config.value).toEqual({
@@ -2421,7 +2426,7 @@ public class LargeClass${index} {
           })
         mockFailures(connectionMock)
 
-        result = await adapterMock.fetch(mockFetchOpts)
+        result = await adapterMock.fetch(mockFetchOpts  as FetchOptions)
         config = result?.updatedConfig?.config[0] as InstanceElement
         expect(config.value).toEqual({
           fetch: {
@@ -2606,7 +2611,7 @@ public class LargeClass${index} {
             ],
           },
         )
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch(mockFetchOpts  as FetchOptions)
       })
       it('should fetch instances of both the FolderMetadataType and InFolderMetadataType', () => {
         expect(toRetrieveRequestSpy).toHaveBeenCalledWith(
@@ -2701,7 +2706,7 @@ public class LargeClass${index} {
             ],
           },
         )
-        result = await adapter.fetch(mockFetchOpts)
+        result = await adapter.fetch(mockFetchOpts  as FetchOptions)
       })
       it('should fetch sub instances of Workflow', () => {
         expect(
@@ -2780,7 +2785,7 @@ public class LargeClass${index} {
       ])('when client throws %p', (thrownError) => {
         beforeEach(() => {
           connection.metadata.read.mockImplementation(
-            async (_typeName, fullNames) => {
+            async (_typeName: any, fullNames: any) => {
               const names = makeArray(fullNames)
               const [instanceName] = names
               if (names.length > 1) {
@@ -2796,7 +2801,7 @@ public class LargeClass${index} {
           )
         })
         it('should create config suggestions for instances that failed', async () => {
-          const fetchResult = await adapter.fetch(mockFetchOpts)
+          const fetchResult = await adapter.fetch(mockFetchOpts  as FetchOptions)
           const expectedMetadataExcludes = FAILING_ROLE_INSTANCE_NAMES.map(
             (instanceName) =>
               expect.objectContaining({
@@ -2882,7 +2887,7 @@ public class LargeClass${index} {
         )
       })
       it('should modify only the file properties of instances from installed package', async () => {
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch(mockFetchOpts  as FetchOptions)
         expect(fromRetrieveResultSpy).toHaveBeenCalledTimes(1)
         expect(fromRetrieveResultSpy).toHaveBeenCalledWith(
           expect.anything(),
@@ -2979,7 +2984,7 @@ describe('Fetch via retrieve API', () => {
   const setupMocks = async (mockDefs: MockInstanceDef[]): Promise<void> => {
     const successfulMockDefs = mockDefs.filter((def) => !def.failRetrieve)
     const { fileProps, zipFiles } = generateMockData(successfulMockDefs)
-    connection.metadata.list.mockImplementation(async (inputQueries) => {
+    connection.metadata.list.mockImplementation(async (inputQueries: any) => {
       const queries = Array.isArray(inputQueries)
         ? inputQueries
         : [inputQueries]

@@ -1548,7 +1548,7 @@ describe('transformer', () => {
       const clientAndConn = mockClient()
       connection = clientAndConn.connection
       connection.metadata.describeValueType.mockImplementation(
-        async (typeName) =>
+        async (typeName: string) =>
           typeName.endsWith('ComplexType')
             ? mockDescribeValueResult({
                 valueTypeFields: [

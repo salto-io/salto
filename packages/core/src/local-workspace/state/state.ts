@@ -19,6 +19,7 @@ import path from 'path'
 import { Readable } from 'stream'
 import { chain } from 'stream-chain'
 import { parser } from 'stream-json/jsonl/Parser'
+// eslint-disable-next-line import/default
 import getStream from 'get-stream'
 import { createGunzip } from 'zlib'
 import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'

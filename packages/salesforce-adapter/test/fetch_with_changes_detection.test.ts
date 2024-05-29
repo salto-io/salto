@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, InstanceElement, FetchOptions } from '@salto-io/adapter-api';
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceAdapter from '../index'
@@ -218,12 +219,12 @@ describe('Salesforce Fetch With Changes Detection', () => {
       connection.metadata.describe.mockResolvedValue(
         mockDescribeResult(RELATED_TYPES.map((type) => ({ xmlName: type }))),
       )
-      connection.metadata.list.mockImplementation(async (queries) =>
+      connection.metadata.list.mockImplementation(async (queries: any) =>
         makeArray(queries).flatMap(
           ({ type }) => filePropByRelatedType[type as RelatedType] ?? [],
         ),
       )
-      connection.metadata.retrieve.mockImplementation((request) => {
+      connection.metadata.retrieve.mockImplementation((request: RetrieveRequest) => {
         retrieveRequest = request
         return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
       })
@@ -235,7 +236,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
       }
     })
     it('should fetch only the updated CustomObject instances', async () => {
-      await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+      await adapter.fetch({ ...mockFetchOpts as FetchOptions, withChangesDetection: true })
       expect(retrieveRequest.unpackaged?.types).toIncludeSameMembers([
         {
           name: CUSTOM_OBJECT,

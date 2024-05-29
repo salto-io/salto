@@ -463,7 +463,7 @@ export const buildFilterContext = ({
 export const defaultFilterContext: FilterContext = buildFilterContext({})
 
 export const mockFetchOpts: MockInterface<FetchOptions> = {
-  progressReporter: { reportProgress: jest.fn() },
+  progressReporter: { reportProgress: jest.fn() } as never,
 }
 
 export const emptyLastChangeDateOfTypesWithNestedInstances =

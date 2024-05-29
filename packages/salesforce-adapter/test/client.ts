@@ -26,7 +26,7 @@ import {
 const mockClient = (
   values?: Values,
 ): { connection: MockInterface<Connection>; client: SalesforceClient } => {
-  const connection = mockJsforce()
+  const connection = mockJsforce() as unknown as Connection
   const client = new SalesforceClient({
     credentials: {
       username: 'mockUser',
@@ -54,7 +54,7 @@ const mockClient = (
     },
   })
 
-  return { connection, client }
+  return { connection:mockJsforce() , client }
 }
 
 export default mockClient

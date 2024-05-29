@@ -24,6 +24,7 @@ import {
   findElement,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+// eslint-disable-next-line import/named
 import { MetadataInfo } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'

@@ -21,7 +21,8 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { FileProperties } from '@salto-io/jsforce-types'
+  // eslint-disable-next-line import/named
+  import { FileProperties } from '@salto-io/jsforce-types'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { isInstanceOfType, listMetadataObjects } from './utils'
 import {

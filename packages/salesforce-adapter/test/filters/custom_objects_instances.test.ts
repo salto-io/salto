@@ -259,11 +259,12 @@ describe('Custom Object Instances filter', () => {
   }
 
   beforeEach(async () => {
-    ;({ connection, client } = mockAdapter({
+    ;({ connection , client } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },
-    }))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any)
     jest.spyOn(client, 'countInstances')
     setMockQueryResults(TestCustomRecords, false)
   })

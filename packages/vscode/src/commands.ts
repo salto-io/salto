@@ -15,14 +15,17 @@
  */
 import * as vscode from 'vscode'
 import _ from 'lodash'
+// eslint-disable-next-line import/default
 import open from 'open'
 
+// eslint-disable-next-line import/default
 import clipboard from 'clipboardy'
 import { context, serviceUrl, workspace as ws } from '@salto-io/lang-server'
 import { collections } from '@salto-io/lowerdash'
 import { vsPosToSaltoPos } from './adapters'
 
 const { awu } = collections.asynciterable
+// eslint-disable-next-line import/no-named-as-default-member
 const copyToClipboard = clipboard.writeSync
 
 export const createCopyReferenceCommand =

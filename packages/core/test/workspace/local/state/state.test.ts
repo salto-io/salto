@@ -17,6 +17,7 @@ import path from 'path'
 import _ from 'lodash'
 import { Readable } from 'stream'
 import { createGzip } from 'zlib'
+// eslint-disable-next-line import/default
 import getStream from 'get-stream'
 import { chain } from 'stream-chain'
 import { ObjectType, ElemID, isObjectType, Element, toChange, InstanceElement, StaticFile } from '@salto-io/adapter-api'

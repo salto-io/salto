@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { BulkLoadOperation } from '@salto-io/jsforce-types'
+  // eslint-disable-next-line import/named
+  import { BulkLoadOperation } from '@salto-io/jsforce-types'
 import { SalesforceRecord } from '../src/client/types'
 import {
   CrudFn,

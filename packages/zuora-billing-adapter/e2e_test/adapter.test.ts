@@ -49,7 +49,7 @@ describe('Zuora adapter E2E with real swagger and mock replies', () => {
         const mockFetchOpts: MockInterface<FetchOptions> = {
           progressReporter: { reportProgress: jest.fn() },
         }
-        const { elements } = await adapter.fetch(mockFetchOpts)
+        const { elements } = await adapter.fetch(mockFetchOpts as FetchOptions)
 
         expect(elements.every(isObjectType)).toBeTruthy()
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual(

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+// eslint-disable-next-line import/default
 import open from 'open'
 import http from 'http'
 import express, { Request, Response } from 'express'
@@ -28,7 +29,7 @@ export const createServer = (
   resolve: (value: OauthAccessTokenResponse | PromiseLike<OauthAccessTokenResponse>) => void,
   reject: (reason?: Error) => void,
 ): http.Server => {
-  let server: http.Server
+  // let server: http.Server
   const app = express()
   app.get('/', (_req: Request, res: Response) => {
     res.send(
@@ -54,7 +55,7 @@ export const createServer = (
       server.close()
     }
   })
-  server = app.listen(port)
+  const server: http.Server = app.listen(port)
   return server
 }
 

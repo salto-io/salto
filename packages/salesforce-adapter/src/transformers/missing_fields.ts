@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ValueTypeField } from '@salto-io/jsforce-types'
+  // eslint-disable-next-line import/named
+  import { ValueTypeField } from '@salto-io/jsforce-types'
 import missingFieldsData from './missing_fields.json'
 
 // The following types describe the data in missing_fields.json

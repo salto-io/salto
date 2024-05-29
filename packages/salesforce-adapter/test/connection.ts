@@ -25,14 +25,21 @@ import {
   DescribeSObjectResult,
 } from '@salto-io/jsforce'
 import {
+  // eslint-disable-next-line import/named
   MetadataObject,
+  // eslint-disable-next-line import/named
   DescribeMetadataResult,
+  // eslint-disable-next-line import/named
   ValueTypeField,
+  // eslint-disable-next-line import/named
   DescribeValueTypeResult,
+  // eslint-disable-next-line import/named
   FileProperties,
+  // eslint-disable-next-line import/named
   RetrieveResult,
   RetrieveResultLocator,
   DeployResultLocator,
+  // eslint-disable-next-line import/named
   DeployResult,
   QueryResult,
 } from '@salto-io/jsforce-types'
@@ -552,12 +559,12 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     deployRecentValidation: mockFunction<
       Metadata['deployRecentValidation']
     >().mockReturnValue(mockDeployResult({})),
-  },
+  } as never,
   soap: {
     describeSObjects: mockFunction<
       Soap['describeSObjects']
     >().mockResolvedValue([]),
-  },
+  } as never,
   describeGlobal: mockFunction<
     Connection['describeGlobal']
   >().mockResolvedValue({ sobjects: [] }),
@@ -571,7 +578,7 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     pollInterval: 1000,
     pollTimeout: 10000,
     load: mockFunction<Bulk['load']>().mockResolvedValue([]),
-  },
+  } as never,
   limits: mockFunction<Connection['limits']>().mockResolvedValue({
     DailyApiRequests: { Remaining: 10000 },
   }),
@@ -582,7 +589,7 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     queryMore: mockFunction<Tooling['queryMore']>().mockResolvedValue(
       mockQueryResult({}),
     ),
-  },
+  } as never,
   identity: mockFunction<Connection['identity']>().mockImplementation(
     async () => mockIdentity(''),
   ),

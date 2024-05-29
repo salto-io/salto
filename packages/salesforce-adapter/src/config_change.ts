@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+// eslint-disable-next-line import/named
 import { ListMetadataQuery, RetrieveResult } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'

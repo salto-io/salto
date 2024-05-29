@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import {
@@ -132,17 +136,17 @@ describe('SalesforceAdapter CRUD', () => {
       },
     }))
 
-    connection.metadata.upsert.mockImplementation(async (_type, objects) =>
+    connection.metadata.upsert.mockImplementation(async (_type: any, objects: any) =>
       makeArray(objects).map(({ fullName }) => ({
         fullName,
         created: true,
         success: true,
       })),
     )
-    connection.metadata.delete.mockImplementation(async (_type, fullNames) =>
+    connection.metadata.delete.mockImplementation(async (_type: any, fullNames: any) =>
       makeArray(fullNames).map((fullName) => ({ fullName, success: true })),
     )
-    connection.metadata.update.mockImplementation(async (_type, objects) =>
+    connection.metadata.update.mockImplementation(async (_type: any, objects: any) =>
       makeArray(objects).map(({ fullName }) => ({ fullName, success: true })),
     )
 

@@ -53,7 +53,8 @@ import {
   getParents,
   setAdditionalPropertiesAnnotation,
 } from '@salto-io/adapter-utils'
-import { FileProperties } from '@salto-io/jsforce-types'
+  // eslint-disable-next-line import/named
+  import { FileProperties } from '@salto-io/jsforce-types'
 import {
   chunks,
   collections,

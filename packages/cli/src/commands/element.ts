@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+// eslint-disable-next-line import/default
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
 import {

@@ -18,6 +18,7 @@ import tmp from 'tmp-promise'
 import { gzip as zlibGzip } from 'zlib'
 import { promisify } from 'util'
 import { Readable } from 'stream'
+// eslint-disable-next-line import/default
 import getStream from 'get-stream'
 import * as file from '../src/file'
 import * as gzip from '../src/gzip'

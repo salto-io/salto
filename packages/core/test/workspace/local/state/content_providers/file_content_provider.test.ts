@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import path from 'path'
+// eslint-disable-next-line import/default
 import getStream from 'get-stream'
 import { collections } from '@salto-io/lowerdash'
 import { setupTmpDir } from '@salto-io/test-utils'

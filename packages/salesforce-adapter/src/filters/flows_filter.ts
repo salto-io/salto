@@ -15,7 +15,8 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FileProperties } from '@salto-io/jsforce-types'
+  // eslint-disable-next-line import/named
+  import { FileProperties } from '@salto-io/jsforce-types'
 import {
   Change,
   CORE_ANNOTATIONS,

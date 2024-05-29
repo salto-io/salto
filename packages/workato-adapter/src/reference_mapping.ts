@@ -28,8 +28,6 @@ type WorkatoFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
 
 const { toNestedTypeName } = fetchUtils.element
 
-let localWorkatoLookUpName: GetLookupNameFunc
-
 const WorkatoReferenceSerializationStrategyLookup: Record<
   WorkatoReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
@@ -119,7 +117,7 @@ export const deployResolveRules: WorkatoFieldReferenceDefinition[] = [
   ...fieldNameToTypeMappingDefs,
 ]
 
-localWorkatoLookUpName = async args => {
+const localWorkatoLookUpName: GetLookupNameFunc = async args => {
   if (args.ref.elemID.adapter === WORKATO) {
     // The second param is needed to resolve references by WorkatoSerializationStrategy
     return referenceUtils.generateLookupFunc(deployResolveRules, defs => new WorkatoFieldReferenceResolver(defs))(args)

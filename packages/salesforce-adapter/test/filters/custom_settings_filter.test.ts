@@ -22,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { createCustomSettingsObject, defaultFilterContext } from '../utils'
-import SalesforceClient from '../../src/client/client'
+import SalesforceClient from '../../src/client/client';
 import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_settings_filter'
 import mockAdapter from '../adapter'
@@ -85,7 +85,8 @@ describe('Custom settings filter', () => {
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },
-    }))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any)
     basicQueryImplementation = jest.fn().mockImplementation(async () => ({
       totalSize: 2,
       done: true,

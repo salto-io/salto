@@ -17,6 +17,7 @@ import path from 'path'
 import origGlob from 'glob'
 import { promisify } from 'util'
 import { createHash } from 'crypto'
+// eslint-disable-next-line import/default
 import getStream from 'get-stream'
 
 import { collections } from '@salto-io/lowerdash'

@@ -27,7 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../../src/constants'
 import OktaClient from '../../src/client/client'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import appLogoFilter from '../../src/filters/app_logo'
 import { FilterResult } from '../../src/filter'
 
@@ -56,7 +56,8 @@ describe('app logo filter', () => {
   beforeEach(async () => {
     const mockCli = mockClient()
     client = mockCli.client
-    filter = appLogoFilter(getFilterParams({ client })) as typeof filter
+    const definitions = createDefinitions({ client })
+    filter = appLogoFilter(getFilterParams({ definitions })) as typeof filter
   })
   describe('onFetch', () => {
     beforeEach(async () => {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import _ from 'lodash'
 import {
   Change,
   InstanceElement,
@@ -23,7 +23,7 @@ import {
   SaltoError,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import _ from 'lodash'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 import { LOGO_TYPES_TO_VALUES, createFileType, deployLogo, getLogo } from '../logo'
@@ -33,7 +33,7 @@ import { deployChanges } from '../deployment'
 const logoTypeNames = [BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME]
 
 const getBrandThemeFile = async (
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
   brandTheme: InstanceElement,
   logoType: ObjectType,
 ): Promise<InstanceElement | Error> => {
@@ -42,7 +42,7 @@ const getBrandThemeFile = async (
   const { fileType, urlSuffix } = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName]
   const link = brandTheme.value?.[urlSuffix]
   return getLogo({
-    client,
+    client: client as OktaClient,
     parents: instances,
     logoType,
     contentType: fileType,
@@ -60,9 +60,10 @@ const toSaltoError = (err: Error): SaltoError => ({
 /**
  * Fetches and deploys brand theme fiels as static file.
  */
-const brandThemeFilesFilter: FilterCreator = ({ client }) => ({
+const brandThemeFilesFilter: FilterCreator = ({ definitions }) => ({
   name: 'brandThemeFilesFilter',
   onFetch: async elements => {
+    const client = definitions.clients.options.main.httpClient
     const brandThemes = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BRAND_THEME_TYPE_NAME)
@@ -84,11 +85,12 @@ const brandThemeFilesFilter: FilterCreator = ({ client }) => ({
     return { errors: err }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
+    const client = definitions.clients.options.main.httpClient
     const [brandLogoChanges, leftoverChanges] = _.partition(changes, change =>
       logoTypeNames.includes(getChangeData(change).elemID.typeName),
     )
 
-    const deployResult = await deployChanges(brandLogoChanges, async change => deployLogo(change, client))
+    const deployResult = await deployChanges(brandLogoChanges, async change => deployLogo(change, client as OktaClient))
 
     return {
       leftoverChanges,

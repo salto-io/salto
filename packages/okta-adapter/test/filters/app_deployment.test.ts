@@ -31,7 +31,7 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import appDeploymentFilter, { isInactiveCustomAppChange } from '../../src/filters/app_deployment'
 import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME } from '../../src/constants'
@@ -44,6 +44,7 @@ describe('appDeploymentFilter', () => {
   const appType = new ObjectType({
     elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
     fields: {
+      id: { refType: BuiltinTypes.SERVICE_ID },
       features: { refType: new ListType(BuiltinTypes.STRING) },
     },
   })
@@ -72,8 +73,9 @@ describe('appDeploymentFilter', () => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
+    const definitions = createDefinitions({ client })
     filter = appDeploymentFilter(
-      getFilterParams({ client, elementsSource: buildElementsSourceFromElements([orgSettingInstance]) }),
+      getFilterParams({ definitions, elementSource: buildElementsSourceFromElements([orgSettingInstance]) }),
     ) as typeof filter
   })
 

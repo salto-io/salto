@@ -33,7 +33,7 @@ import {
   isObjectType,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { config as configUtils, deployment } from '@salto-io/adapter-components'
+import { config as configUtils, deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import {
@@ -45,7 +45,6 @@ import {
   ACTIVE_STATUS,
   SAML_2_0_APP,
 } from '../constants'
-import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import {
@@ -61,6 +60,7 @@ import {
 const log = logger(module)
 
 const AUTO_LOGIN_APP = 'AUTO_LOGIN'
+const APPLICATION_FIELDS_TO_IGNORE = ['id', '_links', CUSTOM_NAME_FIELD]
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
   profileEnrollment: {
     add: {
@@ -131,16 +131,11 @@ export const isInactiveCustomAppChange = (change: ModificationChange<InstanceEle
 
 const deployApp = async (
   change: Change<InstanceElement>,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
   apiDefinitions: OktaSwaggerApiConfig,
   subdomain?: string,
 ): Promise<void> => {
-  const { fieldsToHide } = configUtils.getTypeTransformationConfig(
-    APPLICATION_TYPE_NAME,
-    apiDefinitions.types,
-    apiDefinitions.typeDefaults,
-  )
-  const fieldsToIgnore = [...Object.keys(APP_ASSIGNMENT_FIELDS), ...(fieldsToHide ?? []).map(f => f.fieldName)]
+  const fieldsToIgnore = [...Object.keys(APP_ASSIGNMENT_FIELDS), ...APPLICATION_FIELDS_TO_IGNORE]
 
   try {
     if (
@@ -189,7 +184,7 @@ const deployApp = async (
 /**
  * Application type is deployed separately to update application's configuration, status and application's policies
  */
-const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
+const filterCreator: FilterCreator = ({ elementSource, definitions, oldApiDefinitions }) => ({
   name: 'appDeploymentFilter',
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
@@ -231,13 +226,14 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
       })
   },
   deploy: async changes => {
+    const client = definitions.clients.options.main.httpClient
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME,
     )
-    const subdomain = await getSubdomainFromElementsSource(elementsSource)
+    const subdomain = await getSubdomainFromElementsSource(elementSource)
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployApp(change, client, config[API_DEFINITIONS_CONFIG], subdomain),
+      deployApp(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG], subdomain),
     )
 
     return {

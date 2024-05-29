@@ -25,8 +25,6 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { OKTA, ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME, ACCESS_POLICY_RULE_TYPE_NAME } from '../../src/constants'
 import { policyPrioritiesHandler } from '../../src/weak_references/policy_priorities'
-import { createConfigInstance } from '../utils'
-import { DEFAULT_CONFIG } from '../../src/config'
 
 describe('policyRulePrioritiesHandler', () => {
   const ruleType = new ObjectType({
@@ -47,7 +45,6 @@ describe('policyRulePrioritiesHandler', () => {
   })
   let policyRulePriorityInstance: InstanceElement
   let elementsSource: ReadOnlyElementsSource
-  const adapterConfig = createConfigInstance(DEFAULT_CONFIG)
 
   beforeEach(() => {
     ruleInstance = new InstanceElement('rule1', ruleType, { id: 'ruleId', name: 'rule1' })
@@ -63,7 +60,7 @@ describe('policyRulePrioritiesHandler', () => {
   })
   describe('findWeakReferences', () => {
     it('should return weak references rules', async () => {
-      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance], adapterConfig)
+      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance])
 
       expect(references).toEqual([
         {
@@ -81,14 +78,14 @@ describe('policyRulePrioritiesHandler', () => {
 
     it('should do nothing if received invalid policyRulePriorityInstance', async () => {
       policyRulePriorityInstance.value.priorities = 'invalid'
-      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance], adapterConfig)
+      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance])
 
       expect(references).toEqual([])
     })
 
     it('should do nothing if there are no priorities', async () => {
       delete policyRulePriorityInstance.value.priorities
-      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance], adapterConfig)
+      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance])
 
       expect(references).toEqual([])
     })

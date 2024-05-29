@@ -13,14 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { generateTypes, ParsedTypes } from './type_elements/element_generator'
-export {
-  ADDITIONAL_PROPERTIES_FIELD,
-  SchemaObject,
-  SchemasAndRefs,
-  SchemaOrReference,
-  swaggerTypeToPrimitiveType,
-} from './type_elements/swagger_parser'
-export { loadSwagger, LoadedSwagger } from './load'
-export { addDeploymentAnnotations } from './deployment_annotations'
-export { generateOpenApiTypes } from './type_elements/type_elements'
+
+export type AdditionalAction = never
+export type ClientOptions = 'main' | 'private'
+export type PaginationOptions = 'cursorHeader' | 'cursor'
+export type OktaFetchOptions = { clientOptions: ClientOptions; paginationOptions: PaginationOptions }

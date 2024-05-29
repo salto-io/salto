@@ -19,9 +19,11 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
-import OktaClient from '../client/client'
 
-const verifyProfileMappingIsDeleted = async (profileMappingId: string, client: OktaClient): Promise<boolean> => {
+const verifyProfileMappingIsDeleted = async (
+  profileMappingId: string,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<boolean> => {
   try {
     return (
       (
@@ -46,9 +48,10 @@ const verifyProfileMappingIsDeleted = async (profileMappingId: string, client: O
  * Separate change validator and dependency changer ensure that this is only executed if one of the mapping side was
  * removed in the same deploy action.
  */
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ definitions }) => ({
   name: 'profileMappingRemovalFilter',
   deploy: async changes => {
+    const client = definitions.clients.options.main.httpClient
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>

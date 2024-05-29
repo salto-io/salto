@@ -24,7 +24,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import brandThemeAdditionFilter from '../../src/filters/brand_theme_addition'
 import { OKTA, BRAND_THEME_TYPE_NAME } from '../../src/constants'
@@ -50,7 +50,8 @@ describe('brandThemeAdditionFilter', () => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
-    filter = brandThemeAdditionFilter(getFilterParams({ client })) as typeof filter
+    const definitions = createDefinitions({ client })
+    filter = brandThemeAdditionFilter(getFilterParams({ definitions })) as typeof filter
   })
 
   describe('deploy', () => {

@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { generateTypes, ParsedTypes } from './type_elements/element_generator'
-export {
-  ADDITIONAL_PROPERTIES_FIELD,
-  SchemaObject,
-  SchemasAndRefs,
-  SchemaOrReference,
-  swaggerTypeToPrimitiveType,
-} from './type_elements/swagger_parser'
-export { loadSwagger, LoadedSwagger } from './load'
-export { addDeploymentAnnotations } from './deployment_annotations'
-export { generateOpenApiTypes } from './type_elements/type_elements'
+import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
+import { ClientOptions, PaginationOptions } from '../types'
+
+const { cursorPagination, defaultPathChecker, cursorHeaderPagination } = fetchUtils.request.pagination
+
+export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
+  cursorHeader: {
+    funcCreator: () => cursorHeaderPagination({ pathChecker: defaultPathChecker }),
+  },
+  cursor: {
+    funcCreator: () => cursorPagination({ paginationField: 'nextMappingsPageUrl', pathChecker: defaultPathChecker }),
+  },
+}

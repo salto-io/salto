@@ -21,7 +21,7 @@ import { FilterCreator } from '../filter'
  */
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
-  referencedInstanceNames: filters.referencedInstanceNamesFilterCreatorDeprecated(),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
   query: filters.queryFilterCreator({}),
 }
 

@@ -100,14 +100,18 @@ type UPMInstalledAppsResponseType = {
 const UPM_INSTALLED_APPS_RESPONSE_SCHEME = Joi.object({
   data: Joi.object({
     plugins: Joi.array()
-      .items({
-        name: Joi.string().required(),
-        key: Joi.string().required(),
-        enabled: Joi.bool().required(),
-        userInstalled: Joi.bool().required(),
-      })
+      .items(
+        Joi.object({
+          name: Joi.string().required(),
+          key: Joi.string().required(),
+          enabled: Joi.bool().required(),
+          userInstalled: Joi.bool().required(),
+        }).unknown(true),
+      )
       .required(),
-  }).required(),
+  })
+    .required()
+    .unknown(true),
 })
   .unknown(true)
   .required()
@@ -374,6 +378,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
         .filter(plugin => plugin.enabled && plugin.userInstalled)
         .map(plugin => ({ name: plugin.name, id: plugin.key }))
     }
+    console.log(upmResponse)
     throw new Error('Failed to get UPM Installed Apps response')
   }
 

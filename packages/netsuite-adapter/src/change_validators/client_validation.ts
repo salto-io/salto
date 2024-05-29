@@ -81,56 +81,55 @@ export type ClientChangeValidator = (
   filtersRunner: (groupID: string) => Required<Filter>,
 ) => Promise<ReadonlyArray<ChangeError>>
 
-const changeValidator: ClientChangeValidator = async (changes, client, additionalDependencies, filtersRunner) =>
-  log.timeDebug(async () => {
-    const changesMap = new Map(changes.map(change => [changeId(change), change]))
-    // SALTO-3016 we can validate only SDF elements because
-    // we need FileCabinet references to be included in the SDF project
-    const { changeGroupIdMap } = await getChangeGroupIdsFunc(false)(changesMap)
-    const changesByGroupId = _(changes)
-      .filter(change => changeGroupIdMap.has(changeId(change)))
-      .groupBy(change => changeGroupIdMap.get(changeId(change)))
-      .entries()
-      .value()
+const changeValidator: ClientChangeValidator = async (changes, client, additionalDependencies, filtersRunner) => {
+  const changesMap = new Map(changes.map(change => [changeId(change), change]))
+  // SALTO-3016 we can validate only SDF elements because
+  // we need FileCabinet references to be included in the SDF project
+  const { changeGroupIdMap } = await getChangeGroupIdsFunc(false)(changesMap)
+  const changesByGroupId = _(changes)
+    .filter(change => changeGroupIdMap.has(changeId(change)))
+    .groupBy(change => changeGroupIdMap.get(changeId(change)))
+    .entries()
+    .value()
 
-    const { changeGroupIdMap: realChangesGroupIdMap } = await getChangeGroupIdsFunc(client.isSuiteAppConfigured())(
-      changesMap,
-    )
+  const { changeGroupIdMap: realChangesGroupIdMap } = await getChangeGroupIdsFunc(client.isSuiteAppConfigured())(
+    changesMap,
+  )
 
-    return awu(changesByGroupId)
-      .flatMap(async ([groupId, groupChanges]) => {
-        // SALTO-3016 if the real change group of all changes is different than the one used for validation
-        // (e.g. only FileCabinet instances) we should skip the validation.
-        if (groupChanges.every(change => realChangesGroupIdMap.get(changeId(change)) !== groupId)) {
-          return []
+  return awu(changesByGroupId)
+    .flatMap(async ([groupId, groupChanges]) => {
+      // SALTO-3016 if the real change group of all changes is different than the one used for validation
+      // (e.g. only FileCabinet instances) we should skip the validation.
+      if (groupChanges.every(change => realChangesGroupIdMap.get(changeId(change)) !== groupId)) {
+        return []
+      }
+
+      const clonedChanges = groupChanges.map(cloneChange)
+      await filtersRunner(groupId).preDeploy(clonedChanges)
+      const errors = await client.validate(clonedChanges, groupId, additionalDependencies)
+      const originalChangesElemIds = new Set(groupChanges.map(change => getChangeData(change).elemID.getFullName()))
+
+      const [saltoElementErrors, saltoErrors] = _.partition(errors, isSaltoElementError)
+
+      const originalChangesErrors = saltoElementErrors.filter(error => {
+        if (!originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName())) {
+          log.warn('ignoring error on element that is not in the original changes list: %o', error)
+          return false
         }
-
-        const clonedChanges = groupChanges.map(cloneChange)
-        await filtersRunner(groupId).preDeploy(clonedChanges)
-        const errors = await client.validate(clonedChanges, groupId, additionalDependencies)
-        const originalChangesElemIds = new Set(groupChanges.map(change => getChangeData(change).elemID.getFullName()))
-
-        const [saltoElementErrors, saltoErrors] = _.partition(errors, isSaltoElementError)
-
-        const originalChangesErrors = saltoElementErrors.filter(error => {
-          if (!originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName())) {
-            log.warn('ignoring error on element that is not in the original changes list: %o', error)
-            return false
-          }
-          return true
-        })
-
-        const errorsOnAllChanges = saltoErrors.flatMap(error =>
-          groupChanges.map(change => ({
-            elemID: getChangeData(change).elemID,
-            message: error.message,
-            severity: error.severity,
-          })),
-        )
-
-        return toChangeErrors(originalChangesErrors.concat(errorsOnAllChanges))
+        return true
       })
-      .toArray()
-  }, 'client validation')
+
+      const errorsOnAllChanges = saltoErrors.flatMap(error =>
+        groupChanges.map(change => ({
+          elemID: getChangeData(change).elemID,
+          message: error.message,
+          severity: error.severity,
+        })),
+      )
+
+      return toChangeErrors(originalChangesErrors.concat(errorsOnAllChanges))
+    })
+    .toArray()
+}
 
 export default changeValidator

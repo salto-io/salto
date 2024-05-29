@@ -30,27 +30,27 @@ import {
 } from '@salto-io/adapter-api'
 import { WeakReferencesHandler } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
-import { TransformFunc, WALK_NEXT_STEP, transformElement, walkOnValue } from '@salto-io/adapter-utils'
+import {
+  TransformFunc,
+  WALK_NEXT_STEP,
+  transformElement,
+  walkOnValue,
+  isDetailedDependency,
+  DetailedDependency,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { ADDRESS_FORM, ENTRY_FORM, INDEX, TRANSACTION_FORM } from '../../constants'
+import { ADDRESS_FORM, ENTRY_FORM, ID_FIELD, INDEX, TRANSACTION_FORM } from '../../constants'
 import { captureServiceIdInfo } from '../../service_id_info'
 import { getScriptIdList } from '../../scriptid_list'
 
 const { awu } = collections.asynciterable
 
-type GeneratedDependency = {
-  reference: ReferenceExpression
-}
-
 type MappedList = Record<string, { index: number; [key: string]: Value }>
 
 const formTypeNames = new Set([ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM])
 
-export const isFormInstanceElement = (element: Value): element is InstanceElement =>
+const isFormInstanceElement = (element: Value): element is InstanceElement =>
   isInstanceElement(element) && formTypeNames.has(element.elemID.typeName)
-
-export const isGeneratedDependency = (val: unknown): val is GeneratedDependency =>
-  values.isPlainRecord(val) && isReferenceExpression(val.reference)
 
 const getIdReferencesRecord = (formInstance: InstanceElement): Record<string, ReferenceExpression> => {
   const referencesRecord: Record<string, ReferenceExpression> = {}
@@ -76,7 +76,7 @@ const getGeneratedDependenciesReferencesRecord = (
   const referencesRecord: Record<string, ReferenceExpression> = {}
   const generatedDependencies = formInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
   if (Array.isArray(generatedDependencies)) {
-    generatedDependencies.filter(isGeneratedDependency).forEach((dep, index) => {
+    generatedDependencies.filter(isDetailedDependency).forEach((dep, index) => {
       referencesRecord[
         formInstance.elemID.createNestedID(CORE_ANNOTATIONS.GENERATED_DEPENDENCIES, index.toString()).getFullName()
       ] = dep.reference
@@ -117,8 +117,10 @@ const isUnresolvedNetsuiteReference = (
   generatedDependencies: Set<string>,
   envScriptIds: Set<string>,
 ): boolean => {
-  const capture = captureServiceIdInfo(value)[0]?.serviceId
-  return capture !== undefined && !generatedDependencies.has(capture) && !envScriptIds.has(capture)
+  const capture = captureServiceIdInfo(value)
+  return capture
+    .map(serviceIdInfo => serviceIdInfo.serviceId)
+    .some(serviceId => !generatedDependencies.has(serviceId) && !envScriptIds.has(serviceId))
 }
 
 const getPathsToRemove = async (
@@ -133,7 +135,7 @@ const getPathsToRemove = async (
     if (!values.isPlainRecord(value) || !path) {
       return value
     }
-    const { id } = value
+    const id = value[ID_FIELD]
     if (id === undefined) {
       return value
     }
@@ -158,13 +160,13 @@ const getPathsToRemove = async (
 const getResolvedGeneratedDependencies = async (
   form: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
-): Promise<GeneratedDependency[]> => {
+): Promise<DetailedDependency[]> => {
   if (!form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]) {
     return []
   }
   const generatedDependencies = collections.array
     .makeArray(form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
-    .filter(isGeneratedDependency)
+    .filter(isDetailedDependency)
 
   return awu(generatedDependencies)
     .filter(async dep => isResolvedReference(dep.reference, elementsSource))

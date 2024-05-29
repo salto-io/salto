@@ -259,7 +259,7 @@ describe('Custom Object Instances filter', () => {
   }
 
   beforeEach(async () => {
-    ;({ connection , client } = mockAdapter({
+    ;({ connection, client } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },

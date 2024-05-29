@@ -16,8 +16,7 @@ jobs:
     - name: setup nodejs and required npm packages
       uses: actions/setup-node@v1
       with:
-        node-version: 14.15
-
+        node-version: 18.9
     - run: |
         npm i -g synp yarn@1.22.0
         yarn || yarn || yarn

@@ -68,20 +68,6 @@ import {
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
 } from '../src/client/user_facing_errors'
 
-// type IsObject<T> = T extends { [key: string]: undefined } ? T : any
-
-// export type MockInterface<T extends object > = {
-//   [k in keyof T]: T[k] extends (...args: any[]) => unknown
-//     ? jest.MockedFunction<T[k]>
-//     : T[k] extends object
-//       ? MockInterface<IsObject<T[k]>>
-//       : T[k]
-// }
-
-// export const mockFunction = <T extends (...args: any[]) => unknown>(): jest.MockedFunction<T> =>
-//   jest.fn() as unknown as jest.MockedFunction<T>
-
-
 const { array, asynciterable } = collections
 const { makeArray } = array
 const { mapAsync, toArrayAsync } = asynciterable

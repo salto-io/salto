@@ -29,17 +29,7 @@ export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): P
   createError(
     range,
     'Unknown primitive type',
-    token ? `Unknown primitive type ${token}.` : 'Expected a primitive type definition, using unknown.',
-  )
-
-export const invalidTypeDefOperator = (range: SourceRange, token: string): ParseError =>
-  createError(range, 'Invalid type definition', `Expected inheritance operator 'is' found ${token} instead.`)
-
-export const invalidSettingsDefinition = (range: SourceRange, token: string): ParseError =>
-  createError(
-    range,
-    'Invalid settings definition',
-    `Inheritance operator not supported for settings but '${token}' was used, ignoring.`,
+    token ? `Unknown primitive type '${token}'.` : 'Expected a primitive type definition, using unknown.',
   )
 
 export const invalidFieldsInPrimitiveType = (range: SourceRange): ParseError =>

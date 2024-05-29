@@ -29,7 +29,6 @@ import { Keywords } from '../../../language'
 import { ParseContext, ConsumerReturnType } from '../types'
 import { SourceRange } from '../../types'
 import {
-  invalidTypeDefOperator,
   unknownPrimitiveTypeError,
   invalidFieldsInPrimitiveType,
   invalidBlocksInInstance,
@@ -37,7 +36,6 @@ import {
   missingLabelsError,
   missingBlockOpen,
   ambiguousBlock,
-  invalidSettingsDefinition,
 } from '../errors'
 import {
   primitiveType,
@@ -60,32 +58,14 @@ const consumeType = (
   context: ParseContext,
   labels: ConsumerReturnType<string[]>,
 ): ConsumerReturnType<PrimitiveType | ObjectType | undefined> => {
-  // Note - this method is called when the first label is 'type' or 'settings'.
+  // We know the labels are in one of the following formats:
+  // * type <name>
+  // * settings <name>
+  // * type <name> is <meta type>
   const isSettings = labels.value[0] === Keywords.SETTINGS_DEFINITION
   const typeName = labels.value[1]
-  let [kw, baseType] = labels.value.slice(2)
+  const baseType = labels.value[3] ?? Keywords.TYPE_OBJECT
   const range = { ...labels.range, filename: context.filename }
-
-  // Settings do not support using the 'is' keyword.
-  // We always treat them as objects.
-  if (isSettings && kw !== undefined) {
-    context.errors.push(invalidSettingsDefinition(range, kw))
-  }
-
-  // If there is only a type name, we treat it as if it's followed by 'is object'.
-  if (kw === undefined || isSettings) {
-    kw = Keywords.TYPE_INHERITANCE_SEPARATOR
-    baseType = Keywords.TYPE_OBJECT
-  }
-
-  // We create an error if some other token is used instead of the 'is' keyword.
-  // We don't need to recover. We'll just pretend the wrong word is 'is'
-  // and parse as usual.
-  // If this leaves us with no baseType, we assume the 'is' was dropped.
-  if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
-    context.errors.push(invalidTypeDefOperator(range, kw))
-    baseType = baseType ?? kw
-  }
 
   const elemID = parseTopLevelID(context, typeName, range)
   const consumedBlock = consumeBlockBody(context, elemID)
@@ -107,8 +87,8 @@ const consumeType = (
   let primitive = primitiveType(baseType)
 
   // If the base type token can't be resolved to a specific primitive type, we will
-  // just treat the type as unknown and add an error. Again - no need to recover since
-  // structure is unharmed.
+  // just treat the type as unknown and add an error.
+  // No need to recover since structure is unharmed.
   if (primitive === undefined) {
     context.errors.push(unknownPrimitiveTypeError(range, baseType))
     primitive = PrimitiveTypes.UNKNOWN
@@ -215,11 +195,14 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
   }
 }
 
-// Type or settings
+// Type or settings.
+// Settings can only have a name, types can also be of the form "type <name> is <meta type>".
 const isTypeDef = (elementType: string, elementLabels: string[]): boolean =>
-  (elementType === Keywords.TYPE_DEFINITION || elementType === Keywords.SETTINGS_DEFINITION) &&
-  elementLabels.length >= 1 &&
-  elementLabels.length <= 3
+  ((elementType === Keywords.TYPE_DEFINITION || elementType === Keywords.SETTINGS_DEFINITION) &&
+    elementLabels.length === 1) ||
+  (elementType === Keywords.TYPE_DEFINITION &&
+    elementLabels.length === 3 &&
+    elementLabels[1] === Keywords.TYPE_INHERITANCE_SEPARATOR)
 
 // No labels is allowed to support config instances
 const isInstanceTypeDef = (elementType: string, elementLabels: string[]): boolean =>

@@ -160,9 +160,9 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('missing', () => {
+    describe('invalid', () => {
       const body = `
-        type salesforce.unknown is {
+        type salesforce.unknown is invalid {
         }
       `
 
@@ -179,11 +179,29 @@ describe('Salto parser', () => {
 
       it('should contain all elements in source map', validateSourceMap)
 
-      it('should have an error', () => {
+      it('should have no errors', () => {
         expect(errors).toHaveLength(1)
         const error = errors[0]
         expect(error.summary).toEqual('Unknown primitive type')
-        expect(error.message).toEqual('Expected a primitive type definition, using unknown.')
+        expect(error.message).toEqual("Unknown primitive type 'invalid'.")
+      })
+    })
+
+    describe('missing', () => {
+      const body = `
+        type salesforce.unknown is {
+        }
+      `
+
+      beforeEach(async () => {
+        await parseBody(body)
+      })
+
+      it('should have an error', () => {
+        expect(errors).toHaveLength(1)
+        const error = errors[0]
+        expect(error.summary).toEqual('Ambiguous block definition')
+        expect(elements).toHaveLength(0)
       })
     })
   })
@@ -244,20 +262,11 @@ describe('Salto parser', () => {
           await parseBody(body)
         })
 
-        it('should parse type', () => {
-          expect(elements).toHaveLength(1)
-          const objectType = elements[0] as ObjectType
-          expect(isObjectType(objectType)).toBe(true)
-          expect(objectType.elemID).toEqual(new ElemID('salesforce', 'object'))
-        })
-
-        it('should contain all elements in source map', validateSourceMap)
-
         it('should have an error', () => {
           expect(errors).toHaveLength(1)
           const error = errors[0]
-          expect(error.summary).toEqual('Invalid type definition')
-          expect(error.message).toEqual("Expected inheritance operator 'is' found object instead.")
+          expect(error.summary).toEqual('Ambiguous block definition')
+          expect(elements).toHaveLength(0)
         })
       })
 
@@ -548,21 +557,11 @@ describe('Salto parser', () => {
           await parseBody(body)
         })
 
-        it('should parse settings', () => {
-          expect(elements).toHaveLength(1)
-          const settings = elements[0] as ObjectType
-          expect(isObjectType(settings)).toBe(true)
-          expect(settings.isSettings).toBe(true)
-          expect(settings.elemID).toEqual(new ElemID('salesforce', 'global'))
-        })
-
-        it('should contain all elements in source map', validateSourceMap)
-
         it('should have an error', () => {
           expect(errors).toHaveLength(1)
           const error = errors[0]
-          expect(error.summary).toEqual('Invalid settings definition')
-          expect(error.message).toMatch("Inheritance operator not supported for settings but 'is' was used, ignoring.")
+          expect(error.summary).toEqual('Ambiguous block definition')
+          expect(elements).toHaveLength(0)
         })
       })
 
@@ -576,21 +575,11 @@ describe('Salto parser', () => {
           await parseBody(body)
         })
 
-        it('should parse settings', () => {
-          expect(elements).toHaveLength(1)
-          const settings = elements[0] as ObjectType
-          expect(isObjectType(settings)).toBe(true)
-          expect(settings.isSettings).toBe(true)
-          expect(settings.elemID).toEqual(new ElemID('salesforce', 'global'))
-        })
-
-        it('should contain all elements in source map', validateSourceMap)
-
         it('should have an error', () => {
           expect(errors).toHaveLength(1)
           const error = errors[0]
-          expect(error.summary).toEqual('Invalid settings definition')
-          expect(error.message).toMatch("Inheritance operator not supported for settings but 'is' was used, ignoring.")
+          expect(error.summary).toEqual('Ambiguous block definition')
+          expect(elements).toHaveLength(0)
         })
       })
     })

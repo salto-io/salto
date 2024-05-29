@@ -26,7 +26,6 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
-import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { OBJECT_TYPE_ICON_TYPE } from '../../constants'
@@ -37,7 +36,6 @@ import { getWorkspaceId, getWorkspaceIdMissingErrors } from '../../workspace_id'
 import { createLogoConnection } from '../../client/connection'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 const { createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
 type AuthorizationToken = {
   data: {
@@ -130,14 +128,17 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
       }
     }
     const errors: SaltoError[] = []
-    await awu(objectTypeIcons).forEach(async objectTypeIcon => {
-      try {
-        const link = `/gateway/api/jsm/insight/workspace/${workspaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
-        await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
-      } catch (e) {
-        errors.push({ message: e.message, severity: 'Error' })
-      }
-    })
+    await Promise.all(
+      objectTypeIcons.map(async objectTypeIcon => {
+        try {
+          const link = `/gateway/api/jsm/insight/workspace/${workspaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
+          return await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
+        } catch (e) {
+          errors.push({ message: e.message, severity: 'Error' })
+          return undefined
+        }
+      }),
+    )
     return { errors }
   },
   /* Only deploys addition of object type icons. The deployment of modifications and deletion of object type icons

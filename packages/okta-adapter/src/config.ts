@@ -238,7 +238,51 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+  Role: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'targetGroups', fieldType: 'list<Group>' }],
+      idFields: ['label'],
+      serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
+  api__v1__apps: {
+    request: {
+      url: '/api/v1/apps',
+      recurseInto: [
+        {
+          type: 'api__v1__apps___appId___groups@uuuuuu_00123_00125uu',
+          toField: 'Groups',
+          context: [{ name: 'appId', fromField: 'id' }],
+        },
+        {
+          type: 'AppUserSchema',
+          toField: 'AppUserSchema',
+          context: [{ name: 'appId', fromField: 'id' }],
+        },
+      ],
+    },
+  },
   Application: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: CUSTOM_NAME_FIELD, fieldType: 'string' },
+        { fieldName: 'credentials', fieldType: 'ApplicationCredentials' },
+        { fieldName: 'settings', fieldType: 'unknown' },
+        { fieldName: 'Groups', fieldType: 'list<ApplicationGroupAssignment>' },
+        { fieldName: 'profileEnrollment', fieldType: 'string' },
+        { fieldName: 'accessPolicy', fieldType: 'string' },
+        { fieldName: 'AppUserSchema', fieldType: 'list<AppUserSchema>' },
+      ],
+      idFields: ['label'],
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: CUSTOM_NAME_FIELD }, { fieldName: 'id' }, { fieldName: '_links' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
+      serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
+      standaloneFields: [{ fieldName: 'AppUserSchema' }, { fieldName: 'Groups' }],
+    },
     deployRequests: {
       add: {
         url: '/api/v1/apps',

@@ -7,7 +7,7 @@
     "declarationMap": true,
     "allowJs": true
   },
-  "include": ["src/**/*", "test/**/*", "e2e_test/**/*", "index.ts"],
+  "include": ["src/**/*", "e2e_test/**/*", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-utils" },

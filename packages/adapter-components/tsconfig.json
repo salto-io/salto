@@ -6,7 +6,7 @@
     "declaration": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "test/**/*", "index.ts", "test/**/*.json"],
+  "include": ["src/**/*", "index.ts"],
   "references": [
     { "path": "../dag" },
     { "path": "../lowerdash" },

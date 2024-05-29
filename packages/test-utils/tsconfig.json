@@ -5,5 +5,5 @@
     "baseUrl": ".",
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "test/**/*", "index.ts"]
+  "include": ["src/**/*", "index.ts"]
 }

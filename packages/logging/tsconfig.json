@@ -5,6 +5,6 @@
     "baseUrl": ".",
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "src/**/*.json", "test/**/*", "index.ts"],
+  "include": ["src/**/*", "src/**/*.json", "index.ts"],
   "references": [{ "path": "../lowerdash" }]
 }

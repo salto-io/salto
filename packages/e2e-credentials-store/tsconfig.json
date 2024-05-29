@@ -8,6 +8,6 @@
       "jsforce": ["../../node_modules/@salto-io/jsforce-types"]
     }
   },
-  "include": ["src/**/*", "test/**/*", "index.ts"],
+  "include": ["src/**/*", "index.ts"],
   "references": [{ "path": "../logging" }, { "path": "../lowerdash" }, { "path": "../persistent-pool" }]
 }

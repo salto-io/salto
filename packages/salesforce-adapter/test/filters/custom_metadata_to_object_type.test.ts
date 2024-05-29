@@ -27,6 +27,7 @@ import {
   getChangeData,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import filterCreator from '../../src/filters/custom_metadata_to_object_type'
 import { defaultFilterContext } from '../utils'
@@ -43,7 +44,7 @@ import {
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { apiName, Types } from '../../src/transformers/transformer'
-import { isInstanceOfTypeChange } from '../../src/filters/utils'
+import { apiNameSync, isInstanceOfTypeChange } from '../../src/filters/utils'
 import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
@@ -55,19 +56,24 @@ describe('customMetadataToObjectTypeFilter', () => {
   const CUSTOM_METADATA_RECORD_TYPE_NAME = 'MDType__mdt'
   const CHECKBOX_FIELD_NAME = 'checkBox__c'
   const PICKLIST_FIELD_NAME = 'picklist__c'
-  const filter = filterCreator({
-    config: {
-      ...defaultFilterContext,
-      fetchProfile: buildFetchProfile({
-        fetchParams: { optionalFeatures: { skipAliases: false } },
-      }),
-    },
-  }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+
+  let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
   describe('onFetch', () => {
     let customMetadataRecordType: ObjectType
     let afterOnFetchElements: Element[]
     let customMetadataInstance: InstanceElement
+
+    beforeEach(() => {
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { skipAliases: false } },
+          }),
+        },
+      }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    })
 
     beforeEach(async () => {
       const checkboxField = {
@@ -149,6 +155,58 @@ describe('customMetadataToObjectTypeFilter', () => {
       expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(
         (e) => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
       )
+    })
+
+    describe('Partial Fetch Support - CustomMetadata type does not exist in fetch elements', () => {
+      beforeEach(async () => {
+        const elements: Element[] = [customMetadataInstance]
+        const partialFetchFilter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            elementsSource: buildElementsSourceFromElements([
+              mockTypes.CustomMetadata,
+            ]),
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                optionalFeatures: { skipAliases: false },
+                target: ['CustomObject'],
+              },
+            }),
+          },
+        }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+        await partialFetchFilter.onFetch(elements)
+        customMetadataRecordType = elements
+          .filter(isObjectType)
+          .find(
+            (element) =>
+              apiNameSync(element) === CUSTOM_METADATA_RECORD_TYPE_NAME,
+          ) as ObjectType
+        expect(customMetadataRecordType).toBeDefined()
+      })
+
+      it('should create type with correct annotations', () => {
+        expect(customMetadataRecordType.annotations).toEqual({
+          [METADATA_TYPE]: CUSTOM_METADATA,
+          [API_NAME]: CUSTOM_METADATA_RECORD_TYPE_NAME,
+          [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
+          [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
+          [CORE_ANNOTATIONS.ALIAS]: CUSTOM_METADATA_RECORD_LABEL,
+        })
+      })
+      it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {
+        expect(Object.keys(customMetadataRecordType.fields)).toContainAllValues(
+          [
+            CHECKBOX_FIELD_NAME,
+            PICKLIST_FIELD_NAME,
+            ...Object.keys(mockTypes.CustomMetadata.fields),
+          ],
+        )
+      })
+      it('should remove the original CustomObject instance', () => {
+        expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(
+          (e) => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
+        )
+      })
     })
   })
   describe('preDeploy and onDeploy', () => {

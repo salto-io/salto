@@ -15,9 +15,9 @@
  */
 
 import {
+  Change,
   DependencyChanger,
   InstanceElement,
-  ModificationChange,
   dependencyChange,
   getChangeData,
   isInstanceChange,
@@ -29,24 +29,24 @@ import { MFA_POLICY_TYPE_NAME } from '../constants'
 /*
  * This dependency changer is used to add a dependency from custom MFA policies to the default MFA policy
  * This dependency is necessary to obtain the default MFA priority before deployment,
- * preventing race conditions.
+ * preventing race conditions. The default MFA policy will be deployed last.
  */
-export const changeDependenciesFromMfaPoliciesToDefaultMfa: DependencyChanger = async changes => {
+export const defaultMultifactorEnrollmentPolicyDependency: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
-    .filter((change): change is deployment.dependency.ChangeWithKey<ModificationChange<InstanceElement>> =>
+    .filter((change): change is deployment.dependency.ChangeWithKey<Change<InstanceElement>> =>
       isInstanceChange(change.change),
     )
-  const mfaInstanceChanges = instanceChanges.filter(
+  const multifactorEnrollmentPolicyInstanceChanges = instanceChanges.filter(
     change => getChangeData(change.change).elemID.typeName === MFA_POLICY_TYPE_NAME,
   )
-  const [mfaPolicies, defaultMfaPolicy] = _.partition(
-    mfaInstanceChanges,
+  const [multifactorEnrollmentPolicyPolicies, defaultMfaPolicy] = _.partition(
+    multifactorEnrollmentPolicyInstanceChanges,
     change => getChangeData(change.change).value.system === false,
   )
-  if (_.isEmpty(mfaPolicies) || defaultMfaPolicy.length !== 1) {
+  if (_.isEmpty(multifactorEnrollmentPolicyPolicies) || defaultMfaPolicy.length !== 1) {
     return []
   }
   const defaultPolicy = defaultMfaPolicy[0]
-  return mfaPolicies.flatMap(mfaPolicy => dependencyChange('add', defaultPolicy.key, mfaPolicy.key))
+  return multifactorEnrollmentPolicyPolicies.flatMap(multifactorEnrollmentPolicyPolicy => dependencyChange('add', defaultPolicy.key, multifactorEnrollmentPolicyPolicy.key))
 }

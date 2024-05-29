@@ -17,36 +17,36 @@
 import { InstanceElement, toChange, DependencyChange, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MFA_POLICY_TYPE_NAME, OKTA } from '../../src/constants'
-import { changeDependenciesFromMfaPoliciesToDefaultMfa } from '../../src/dependency_changers/mfa_policies_to_default_mfa'
+import { defaultMultifactorEnrollmentPolicyDependency } from '../../src/dependency_changers/mfa_policies_to_default_mfa'
 
 describe('changeDependenciesFromMfaPoliciesToDefaultMfa', () => {
   let dependencyChanges: DependencyChange[]
-  const MfaPolicyType = new ObjectType({ elemID: new ElemID(OKTA, MFA_POLICY_TYPE_NAME) })
-  const mfaInstnace = new InstanceElement('mfaInstance', MfaPolicyType, {
+  const multifactorEnrollmentPolicyPolicyType = new ObjectType({ elemID: new ElemID(OKTA, MFA_POLICY_TYPE_NAME) })
+  const multifactorEnrollmentPolicyInstnace = new InstanceElement('mfaInstance', multifactorEnrollmentPolicyPolicyType, {
     id: '1',
     name: 'mfaInstance',
     system: false,
   })
-  const mfaInstanceTwo = new InstanceElement('mfaInstanceTwo', MfaPolicyType, {
+  const multifactorEnrollmentPolicyInstanceTwo = new InstanceElement('mfaInstanceTwo', multifactorEnrollmentPolicyPolicyType, {
     id: '2',
     name: 'mfaInstanceTwo',
     system: false,
   })
-  const defaultMfaInstance = new InstanceElement('defaultMfaInstance', MfaPolicyType, {
+  const defaultMultifactorEnrollmentPolicyInstance = new InstanceElement('defaultMfaInstance', multifactorEnrollmentPolicyPolicyType, {
     id: '3',
     name: 'defaultMfaInstance',
     system: true,
   })
-  it('should add dependencies from MfaPolicy to DefaultMfa', async () => {
-    const defaultMfaInstanceAfter = defaultMfaInstance.clone()
-    defaultMfaInstanceAfter.value.name = 'afterMfaInstance'
+  it('should add dependencies from multifactorEnrollmentPolicy to Default multifactorEnrollmentPolicy', async () => {
+    const defaultMultifactorEnrollmentPolicyInstanceAfter = defaultMultifactorEnrollmentPolicyInstance.clone()
+    defaultMultifactorEnrollmentPolicyInstanceAfter.value.name = 'afterMfaInstance'
     const inputChanges = new Map([
-      [0, toChange({ before: defaultMfaInstance, after: defaultMfaInstanceAfter })],
-      [1, toChange({ after: mfaInstnace })],
-      [2, toChange({ after: mfaInstanceTwo })],
+      [0, toChange({ before: defaultMultifactorEnrollmentPolicyInstance, after: defaultMultifactorEnrollmentPolicyInstanceAfter })],
+      [1, toChange({ after: multifactorEnrollmentPolicyInstnace })],
+      [2, toChange({ before: multifactorEnrollmentPolicyInstanceTwo })],
     ])
     const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
-    dependencyChanges = [...(await changeDependenciesFromMfaPoliciesToDefaultMfa(inputChanges, inputDeps))]
+    dependencyChanges = [...(await defaultMultifactorEnrollmentPolicyDependency(inputChanges, inputDeps))]
     expect(dependencyChanges).toHaveLength(2)
     expect(dependencyChanges[0].action).toEqual('add')
     expect(dependencyChanges[0].dependency.source).toEqual(0)
@@ -54,5 +54,14 @@ describe('changeDependenciesFromMfaPoliciesToDefaultMfa', () => {
     expect(dependencyChanges[1].action).toEqual('add')
     expect(dependencyChanges[1].dependency.source).toEqual(0)
     expect(dependencyChanges[1].dependency.target).toEqual(2)
+  })
+  it('should not add dependencies if there is no default multifactorEnrollmentPolicy', async () => {
+    const inputChanges = new Map([
+      [0, toChange({ after: multifactorEnrollmentPolicyInstnace })],
+      [1, toChange({ before: multifactorEnrollmentPolicyInstanceTwo })],
+    ])
+    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
+    dependencyChanges = [...(await defaultMultifactorEnrollmentPolicyDependency(inputChanges, inputDeps))]
+    expect(dependencyChanges).toHaveLength(0)
   })
 })

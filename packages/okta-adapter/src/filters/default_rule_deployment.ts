@@ -23,6 +23,7 @@ import {
   isAdditionChange,
   toChange,
   isAdditionOrModificationChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -45,7 +46,7 @@ type PolicyResponse = {
     priority: number
   }
 }
-const POLICY_RESPISE_SCHEMA = Joi.object({
+const POLICY_RESPONSE_SCHEMA = Joi.object({
   data: Joi.object({
     priority: Joi.number().required(),
   })
@@ -53,10 +54,10 @@ const POLICY_RESPISE_SCHEMA = Joi.object({
     .unknown(true),
 }).unknown(true)
 
-const isPolicyResponse = createSchemeGuard<PolicyResponse>(POLICY_RESPISE_SCHEMA)
+const isPolicyResponse = createSchemeGuard<PolicyResponse>(POLICY_RESPONSE_SCHEMA)
 
 const SUPPORTED_RULE_TYPES = [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME]
-const SUPPORT_POLICY_TYPES = [ACCESS_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME]
+const SUPPORT_POLICY_TYPES = [ACCESS_POLICY_TYPE_NAME]
 
 const EXPECTED_POLICY_RULE_SCHEMA = Joi.object({
   id: Joi.string().required(),
@@ -142,36 +143,36 @@ const deployDefaultPolicy = async (
  */
 const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'defaultPolicyRuleDeployment',
-  preDeploy: async changes => {
-    await awu(changes)
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
+  preDeploy: async changes => {   
+    // Get the priority of the default MultifactorEnrollmentPolicy
+    await awu(changes).filter(isInstanceChange).filter(isModificationChange).filter(
+      change => getChangeData(change).elemID.typeName === MFA_POLICY_TYPE_NAME &&
+      getChangeData(change).value.system === true
+    ).map(change => getChangeData(change))
+    .forEach(async instance => {
+      const response = await definitions.clients.options.main.httpClient.get({
+        url: `/api/v1/policies/${instance.value.id}`,
+      })
+      if (isPolicyResponse(response)) {
+        instance.value.priority = response.data?.priority
+      }
+    })
+
+    changes.filter(isInstanceChange).filter(isAdditionOrModificationChange)
       .filter(
         change =>
           SUPPORTED_RULE_TYPES.concat(SUPPORT_POLICY_TYPES).includes(getChangeData(change).elemID.typeName) &&
           getChangeData(change).value.system === true,
       )
       .map(change => getChangeData(change))
-      .forEach(async instance => {
+      .forEach(instance => {
         if (instance.elemID.typeName === ACCESS_POLICY_TYPE_NAME) {
           instance.value.priority = 1
-        } else if (instance.elemID.typeName === MFA_POLICY_TYPE_NAME) {
-          // get the priority from the service
-          const response = await definitions.clients.options.main.httpClient.get({
-            url: `/api/v1/policies/${instance.value.id}`,
-          })
-          if (isPolicyResponse(response)) {
-            instance.value.priority = response.data?.priority
-          }
         } else {
           instance.value.priority = 99
         }
       })
   },
-  /**
-   * Deploy addition changes of default rules for AccessPolicy and ProfileEnrollmentPolicy
-   * by changing them to modification changes, because default rules automatically created by the service
-   */
   deploy: async changes => {
     const client = definitions.clients.options.main.httpClient
     const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})

@@ -20,7 +20,7 @@ import { changeDependenciesFromAppUserSchemaToApp } from './replace_app_user_sch
 import { addAppGroupToAppDependency } from './app_group_assignment_to_app'
 import { removeProfileMappingAfterDeps } from './remove_profile_mapping_after_deps'
 import { changeDependenciesFromPoliciesAndRulesToPriority } from './policy_and_rules_to_priority'
-import { changeDependenciesFromMfaPoliciesToDefaultMfa } from './mfa_policies_to_default_mfa'
+import { defaultMultifactorEnrollmentPolicyDependency } from './mfa_policies_to_default_mfa'
 
 const { awu } = collections.asynciterable
 
@@ -30,7 +30,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   addAppGroupToAppDependency,
   removeProfileMappingAfterDeps,
   changeDependenciesFromPoliciesAndRulesToPriority,
-  changeDependenciesFromMfaPoliciesToDefaultMfa,
+  defaultMultifactorEnrollmentPolicyDependency,
 ]
 
 export const dependencyChanger: DependencyChanger = async (changes, deps) =>

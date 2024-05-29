@@ -63,8 +63,15 @@ export type SerializedReferenceIndexEntry = {
 
 const isValidReferenceSourceScope = (value: unknown): value is ReferenceSourceScope =>
   _.isString(value) && (REFERENCE_SOURCE_SCOPES as ReadonlyArray<string>).includes(value)
+
 const isValidReferenceType = (value: unknown): value is ReferenceType =>
   _.isString(value) && (REFERENCE_TYPES as ReadonlyArray<string>).includes(value)
+
+const toReferenceIndexEntry = (referenceInfo: ReferenceInfo): ReferenceIndexEntry => (
+  referenceInfo.sourceScope
+    ? { id: referenceInfo.source, type: referenceInfo.type, sourceScope: referenceInfo.sourceScope }
+    : { id: referenceInfo.source, type: referenceInfo.type }
+)
 
 export const isSerliazedReferenceIndexEntry = (value: unknown): value is SerializedReferenceIndexEntry =>
   _.isString(_.get(value, 'id')) &&
@@ -154,11 +161,7 @@ const createReferenceTree = (references: ReferenceInfo[], rootFields = false): R
           : ref.source.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
       return [
         key,
-        [
-          ref.sourceScope
-            ? { id: ref.target, type: ref.type, sourceScope: ref.sourceScope }
-            : { id: ref.target, type: ref.type },
-        ],
+        [toReferenceIndexEntry(ref)],
       ]
     }),
     ElemID.NAMESPACE_SEPARATOR,
@@ -232,11 +235,7 @@ const getReferenceSourcesMap = (references: ReferenceInfo[]): Record<string, Ref
   const referenceSourcesChanges: Record<string, ReferenceIndexEntry[]> = _(references)
     .groupBy(({ target }) => target.createBaseID().parent.getFullName())
     .mapValues(refs =>
-      refs.map(ref =>
-        ref.sourceScope
-          ? { id: ref.source, type: ref.type, sourceScope: ref.sourceScope }
-          : { id: ref.source, type: ref.type },
-      ),
+      refs.map(toReferenceIndexEntry),
     )
     .value()
 

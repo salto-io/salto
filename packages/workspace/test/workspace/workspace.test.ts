@@ -3425,7 +3425,7 @@ describe('workspace', () => {
       )
     })
 
-    it('should return correct incoming reference infos', async () => {
+    it('should return reference infos for both baseIds and nested Ids', async () => {
       const incomingReferenceInfos = await workspace.getElementIncomingReferenceInfos(targetElementId)
       expect(incomingReferenceInfos).toIncludeSameMembers([
         { id: anotherSourceInstance.elemID, type: 'weak', sourceScope: 'value' },

@@ -369,8 +369,9 @@ export const serializeReferenceSourcesEntries = async (entries: ReferenceIndexEn
   safeJsonStringify(entries.map(entry => ({ ...entry, id: entry.id.getFullName() })))
 
 export const deserializeReferenceSourcesEntries = async (data: string): Promise<ReferenceIndexEntry[]> => {
-  const parsedEntries = (await JSON.parse(data)) as unknown
+  const parsedEntries:unknown = JSON.parse(data)
   if (!Array.isArray(parsedEntries)) {
+    log.warn('failed to deserizlize reference sources entries. Parsed Entries: %s', inspectValue(parsedEntries))
     throw new Error('Failed to deserialize reference sources entries')
   }
   // Handle old format
@@ -381,6 +382,7 @@ export const deserializeReferenceSourcesEntries = async (data: string): Promise<
   if (parsedEntries.some(isSerliazedReferenceIndexEntry)) {
     return parsedEntries.map(entry => ({ ...entry, id: ElemID.fromFullName(entry.id) }))
   }
+  log.warn('failed to deserizlize reference sources entries. Parsed Entries: %s', inspectValue(parsedEntries))
   throw new Error('Failed to deserialize reference sources entries')
 }
 
@@ -488,6 +490,11 @@ export type WorkspaceGetCustomReferencesFunc = (
   accountToServiceName: Record<string, string>,
   adaptersConfig: AdaptersConfigSource,
 ) => Promise<ReferenceInfo[]>
+
+const toReferenceIndexEntryWithDefaults = (referenceIndexEntry: ReferenceIndexEntry): Required<ReferenceIndexEntry> => ({
+  ...referenceIndexEntry,
+  sourceScope: referenceIndexEntry.sourceScope ?? DEFAULT_SOURCE_SCOPE,
+})
 
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
@@ -1332,25 +1339,21 @@ export const loadWorkspace = async (
       ).flat()
 
       const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
-      return _.uniqBy(filteredReferences, ref => ref.id.getFullName()).map(outgoingReference => ({
-        ...outgoingReference,
-        sourceScope: outgoingReference.sourceScope ?? DEFAULT_SOURCE_SCOPE,
-      }))
+      return _.uniqBy(filteredReferences, ref => ref.id.getFullName()).map(toReferenceIndexEntryWithDefaults)
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
       }
-      return makeArray(await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())).map(
-        entry => entry.id,
-      )
+      const entries = makeArray(await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName()))
+      return entries.map(entry => entry.id)
     },
     getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementIncomingReferenceInfos only support base ids, received ${id.getFullName()}`)
       }
-      const entries = (await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())) ?? []
-      return entries.map(entry => ({ ...entry, sourceScope: entry.sourceScope ?? DEFAULT_SOURCE_SCOPE }))
+      const entries = makeArray((await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())))
+      return entries.map(toReferenceIndexEntryWithDefaults)
     },
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {

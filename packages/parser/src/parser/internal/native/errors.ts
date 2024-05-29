@@ -25,9 +25,6 @@ const createError = (range: SourceRange, summary: string, message?: string): Par
   message: message || summary,
 })
 
-export const missingTypeName = (range: SourceRange, tmpName: string): ParseError =>
-  createError(range, 'Missing type name', `Expected type name, using ${tmpName} instead.`)
-
 export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): ParseError =>
   createError(
     range,

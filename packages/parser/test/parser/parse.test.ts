@@ -261,35 +261,6 @@ describe('Salto parser', () => {
         })
       })
 
-      describe('missing name', () => {
-        const body = `
-          type {
-          }
-        `
-
-        beforeEach(async () => {
-          await parseBody(body)
-        })
-
-        it('should parse type', () => {
-          expect(elements).toHaveLength(1)
-          const objectType = elements[0] as ObjectType
-          expect(isObjectType(objectType)).toBe(true)
-          expect(objectType.elemID).toMatchObject({
-            name: expect.stringMatching(/UnnamedType.*/),
-          })
-        })
-
-        it('should contain all elements in source map', validateSourceMap)
-
-        it('should have an error', () => {
-          expect(errors).toHaveLength(1)
-          const error = errors[0]
-          expect(error.summary).toEqual('Missing type name')
-          expect(error.message).toMatch(/Expected type name, using UnnamedType.* instead./)
-        })
-      })
-
       describe('invalid name', () => {
         const body = `
           type salesforce.someType.a {}
@@ -600,36 +571,6 @@ describe('Salto parser', () => {
           const error = errors[0]
           expect(error.summary).toEqual('Invalid settings definition')
           expect(error.message).toMatch("Inheritance operator not supported for settings but 'is' was used, ignoring.")
-        })
-      })
-
-      describe('missing name', () => {
-        const body = `
-          settings {
-          }
-        `
-
-        beforeEach(async () => {
-          await parseBody(body)
-        })
-
-        it('should parse type', () => {
-          expect(elements).toHaveLength(1)
-          const settings = elements[0] as ObjectType
-          expect(isObjectType(settings)).toBe(true)
-          expect(settings.isSettings).toBe(true)
-          expect(settings.elemID).toMatchObject({
-            name: expect.stringMatching(/UnnamedType.*/),
-          })
-        })
-
-        it('should contain all elements in source map', validateSourceMap)
-
-        it('should have an error', () => {
-          expect(errors).toHaveLength(1)
-          const error = errors[0]
-          expect(error.summary).toEqual('Missing type name')
-          expect(error.message).toMatch(/Expected type name, using UnnamedType.* instead./)
         })
       })
     })

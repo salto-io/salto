@@ -37,7 +37,6 @@ import {
   missingLabelsError,
   missingBlockOpen,
   ambiguousBlock,
-  missingTypeName,
   invalidSettingsDefinition,
 } from '../errors'
 import {
@@ -60,17 +59,12 @@ const getElementIfValid = <T extends Element>(element: T, typeID?: ElemID): T | 
 const consumeType = (
   context: ParseContext,
   labels: ConsumerReturnType<string[]>,
-  isSettings: boolean,
 ): ConsumerReturnType<PrimitiveType | ObjectType | undefined> => {
   // Note - this method is called when the first label is 'type' or 'settings'.
-  let [typeName, kw, baseType] = labels.value.slice(1)
+  const isSettings = labels.value[0] === Keywords.SETTINGS_DEFINITION
+  const typeName = labels.value[1]
+  let [kw, baseType] = labels.value.slice(2)
   const range = { ...labels.range, filename: context.filename }
-
-  // If there is no type name we just generate one.
-  if (typeName === undefined) {
-    typeName = _.uniqueId('UnnamedType')
-    context.errors.push(missingTypeName(range, typeName))
-  }
 
   // Settings do not support using the 'is' keyword.
   // We always treat them as objects.
@@ -87,7 +81,7 @@ const consumeType = (
   // We create an error if some other token is used instead of the 'is' keyword.
   // We don't need to recover. We'll just pretend the wrong word is 'is'
   // and parse as usual.
-  // If this leaves us with no baseName, we assume the 'is' was dropped.
+  // If this leaves us with no baseType, we assume the 'is' was dropped.
   if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
     context.errors.push(invalidTypeDefOperator(range, kw))
     baseType = baseType ?? kw
@@ -221,6 +215,12 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
   }
 }
 
+// Type or settings
+const isTypeDef = (elementType: string, elementLabels: string[]): boolean =>
+  (elementType === Keywords.TYPE_DEFINITION || elementType === Keywords.SETTINGS_DEFINITION) &&
+  elementLabels.length >= 1 &&
+  elementLabels.length <= 3
+
 // No labels is allowed to support config instances
 const isInstanceTypeDef = (elementType: string, elementLabels: string[]): boolean =>
   elementType !== undefined && elementLabels.length <= 1
@@ -252,9 +252,8 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
   }
   const [elementType, ...elementLabels] = consumedLabels.value
   let consumedElement: ConsumerReturnType<Element | undefined>
-  const isSettings = elementType === Keywords.SETTINGS_DEFINITION
-  if (elementType === Keywords.TYPE_DEFINITION || isSettings) {
-    consumedElement = consumeType(context, consumedLabels, isSettings)
+  if (isTypeDef(elementType, elementLabels)) {
+    consumedElement = consumeType(context, consumedLabels)
   } else if (isInstanceTypeDef(elementType, elementLabels)) {
     consumedElement = consumeInstanceElement(
       context,

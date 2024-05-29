@@ -16,19 +16,16 @@
 import _ from 'lodash'
 import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import { getParents, inspectValue } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
+import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange } from '../deployment'
 
 const log = logger(module)
 
-const getThemeIdByBrand = async (
-  brandId: string,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-): Promise<string> => {
+const getThemeIdByBrand = async (brandId: string, client: OktaClient): Promise<string> => {
   const themeEntries = (
     await client.get({
       url: `/api/v1/brands/${brandId}/themes`,
@@ -43,7 +40,7 @@ const getThemeIdByBrand = async (
 
 const deployBrandThemeAddition = async (
   change: Change<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  client: OktaClient,
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const instance = getChangeData(change)
@@ -62,7 +59,7 @@ const deployBrandThemeAddition = async (
 /**
  * Deploy addition changes of BrandTheme instances, by finding the ID of the existing theme and updating it.
  */
-const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'brandThemeAdditionFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -74,11 +71,7 @@ const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployBrandThemeAddition(
-        change,
-        definitions.clients.options.main.httpClient,
-        oldApiDefinitions[API_DEFINITIONS_CONFIG],
-      ),
+      deployBrandThemeAddition(change, client, config[API_DEFINITIONS_CONFIG]),
     )
 
     return {

@@ -23,4 +23,3 @@ export {
 } from './type_elements/swagger_parser'
 export { loadSwagger, LoadedSwagger } from './load'
 export { addDeploymentAnnotations } from './deployment_annotations'
-export { generateOpenApiTypes } from './type_elements/type_elements'

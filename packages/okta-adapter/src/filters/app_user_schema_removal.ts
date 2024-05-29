@@ -20,11 +20,9 @@ import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
+import OktaClient from '../client/client'
 
-const verifyApplicationIsDeleted = async (
-  applicationId: string,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-): Promise<boolean> => {
+const verifyApplicationIsDeleted = async (applicationId: string, client: OktaClient): Promise<boolean> => {
   try {
     return (
       (
@@ -49,7 +47,7 @@ const verifyApplicationIsDeleted = async (
  * Separate change validator ensures that this is only executed if the application was
  * removed in the same deploy action.
  */
-const filterCreator: FilterCreator = ({ definitions }) => ({
+const filterCreator: FilterCreator = ({ client }) => ({
   name: 'appUserSchemaRemovalFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -63,10 +61,7 @@ const filterCreator: FilterCreator = ({ definitions }) => ({
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
       const appUserSchemaInstance = getChangeData(change)
       const parentApplicationId = getParents(appUserSchemaInstance)[0]?.id
-      if (
-        !_.isString(parentApplicationId) ||
-        !(await verifyApplicationIsDeleted(parentApplicationId, definitions.clients.options.main.httpClient))
-      ) {
+      if (!_.isString(parentApplicationId) || !(await verifyApplicationIsDeleted(parentApplicationId, client))) {
         throw new Error('Expected the parent Application to be deleted')
       }
     })

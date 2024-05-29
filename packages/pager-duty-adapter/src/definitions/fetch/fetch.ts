@@ -18,8 +18,6 @@ import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
 import { Credentials } from '../../auth'
 
-// Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
-// when in doubt, it's best to hide fields only for relevant types, or to omit them.
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {}
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
   self: {
@@ -32,16 +30,16 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
     omit: true,
   },
   created_at: {
-    hide: true,
+    omit: true,
   },
   updated_at: {
-    hide: true,
+    omit: true,
   },
   created_by: {
-    hide: true,
+    omit: true,
   },
   updated_by: {
-    hide: true,
+    omit: true,
   },
 }
 

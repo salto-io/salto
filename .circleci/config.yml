@@ -81,7 +81,7 @@ commands:
 jobs:
   build:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -107,13 +107,17 @@ jobs:
           name: verify that the license header is prepended to the non eslint'd source files
           command: build_utils/verify_license_header.sh
 
+      - run: yarn set version 3.1.0
+
       - run: yarn config set ignore-engines true
 
       - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
 
-        # Yarn has some random race-condition failures, trying multiple times seems to help
+      - run: yarn 
+
+        # Old Yarn had some random race-condition failures, trying multiple times seems to help
         # when the source of the problem is yarn itself and not the packages
-      - run: yarn || yarn || yarn
+        # - run: yarn || yarn || yarn
 
       - run:
           # As a workaround to the --frozen-lockfile flag not working with workspaces
@@ -148,7 +152,7 @@ jobs:
 
   unit_test:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -172,7 +176,7 @@ jobs:
 
   prettier:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -184,7 +188,7 @@ jobs:
 
   publish_on_version_change:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -212,7 +216,7 @@ jobs:
       should_install_java:
         type: boolean
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
     resource_class: large
     working_directory: /mnt/ramdisk/project
     steps:
@@ -224,7 +228,7 @@ jobs:
 
   package_cli:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -267,7 +271,7 @@ jobs:
 
   test_cli_linux:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - set_s3_pkg_urls
@@ -315,7 +319,7 @@ jobs:
 
   package_vscode_extension:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -352,7 +356,7 @@ jobs:
 
   publish_canary:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:

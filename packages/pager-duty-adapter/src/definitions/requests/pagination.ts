@@ -19,7 +19,7 @@ import { ClientOptions, PaginationOptions } from '../types'
 const { offsetAndLimitPagination } = fetchUtils.request.pagination
 
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
-  cursor: {
+  offset: {
     funcCreator: () => offsetAndLimitPagination(),
   },
 }

@@ -17,6 +17,14 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
 import { Credentials } from '../../auth'
+import {
+  BUSINESS_SERVICE_TYPE_NAME,
+  ESCALATION_POLICY_TYPE_NAME,
+  EVENT_ORCHESTRATION_TYPE_NAME,
+  SCHEDULE_TYPE_NAME,
+  SERVICE_TYPE_NAME,
+  TEAM_TYPE_NAME,
+} from '../../constants'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {}
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
@@ -53,7 +61,7 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
 )
 
 const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
-  service: {
+  [SERVICE_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -72,7 +80,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           single: true,
           context: {
             args: {
-              service: {
+              serviceId: {
                 root: 'id',
               },
             },
@@ -96,7 +104,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/event_orchestrations/services/{service}',
+          path: '/event_orchestrations/services/{serviceId}',
         },
         transformation: {
           root: 'orchestration_path',
@@ -117,7 +125,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  businessService: {
+  [BUSINESS_SERVICE_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -143,7 +151,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  team: {
+  [TEAM_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -169,7 +177,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  escalationPolicy: {
+  [ESCALATION_POLICY_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -198,7 +206,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  schedule: {
+  [SCHEDULE_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -230,7 +238,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  eventOrchestration: {
+  [EVENT_ORCHESTRATION_TYPE_NAME]: {
     requests: [
       {
         endpoint: {

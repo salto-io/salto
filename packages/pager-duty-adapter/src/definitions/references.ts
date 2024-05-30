@@ -13,30 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
-import { Value } from '@salto-io/adapter-api'
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
-import { ReferenceContextStrategies, Options, CustomReferenceSerializationStrategyName } from './types'
+import { Options } from './types'
+import { ESCALATION_POLICY_TYPE_NAME, SCHEDULE_TYPE_NAME, SERVICE_TYPE_NAME, TEAM_TYPE_NAME } from '../constants'
 
-const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
-  ReferenceContextStrategies,
-  CustomReferenceSerializationStrategyName
->[] = [
+const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
     src: { field: 'id', parentTypes: ['service__escalation_policy'] },
     serializationStrategy: 'id',
-    target: { type: 'escalationPolicy' },
+    target: { type: ESCALATION_POLICY_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['escalationPolicy__escalation_rules__targets'] },
     serializationStrategy: 'id',
-    target: { type: 'schedule' },
+    target: { type: SCHEDULE_TYPE_NAME },
   },
-  // {
-  //   src: { field: 'escalation_policy', parentTypes: ['service'] },
-  //   serializationStrategy: 'escalationPolicy',
-  //   target: { type: 'escalationPolicy' },
-  // },
   {
     src: {
       field: 'id',
@@ -50,7 +41,7 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       ],
     },
     serializationStrategy: 'id',
-    target: { type: 'team' },
+    target: { type: TEAM_TYPE_NAME },
   },
   {
     src: {
@@ -61,22 +52,10 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       ],
     },
     serializationStrategy: 'id',
-    target: { type: 'service' },
+    target: { type: SERVICE_TYPE_NAME },
   },
 ]
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
-  contextStrategyLookup: {
-    parentType: ({ instance }) => _.get(instance.value, 'parent_type'),
-  },
-  // I did not use it in the end but the reference type must have serializationStrategyLookup defined
-  serializationStrategyLookup: {
-    escalationPolicy: {
-      serialize: ({ ref }) => ({ id: ref.value.value.id, summary: ref.value.value.summary }) as Value,
-      lookup: val => val.id,
-      lookupIndexName: 'escalationPolicy',
-    },
-  },
-  fieldsToGroupBy: ['id', 'name'],
 }

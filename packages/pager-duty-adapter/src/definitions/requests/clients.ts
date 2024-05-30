@@ -26,7 +26,7 @@ export const createClientDefinitions = (
       endpoints: {
         default: {
           get: {
-            pagination: 'cursor',
+            pagination: 'offset',
             readonly: true,
           },
           delete: {

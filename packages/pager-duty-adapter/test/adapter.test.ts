@@ -33,7 +33,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { credentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/config'
-import { ADAPTER_NAME, ESCLAATION_POLICY_TYPE_NAME, SERVICE_TYPE_NAME, TEAM_TYPE_NAME } from '../src/constants'
+import { ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME, SERVICE_TYPE_NAME, TEAM_TYPE_NAME } from '../src/constants'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 
@@ -181,7 +181,7 @@ describe('adapter', () => {
     beforeEach(() => {
       teamType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, TEAM_TYPE_NAME) })
       serviceType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SERVICE_TYPE_NAME) })
-      escalationPolicyType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, ESCLAATION_POLICY_TYPE_NAME) })
+      escalationPolicyType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME) })
       team1 = new InstanceElement('team1', teamType, {
         name: 'the IT of ACME inc',
         description: 'IT - stands for I tried to make it work',

@@ -16,6 +16,14 @@
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from '../types'
+import {
+  BUSINESS_SERVICE_TYPE_NAME,
+  ESCALATION_POLICY_TYPE_NAME,
+  EVENT_ORCHESTRATION_TYPE_NAME,
+  SCHEDULE_TYPE_NAME,
+  SERVICE_TYPE_NAME,
+  TEAM_TYPE_NAME,
+} from '../../constants'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
@@ -24,14 +32,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     AdditionalAction,
     ClientOptions
   >({
-    businessService: { bulkPath: '/business_services', nestUnderField: 'business_service' },
-    escalationPolicy: { bulkPath: '/escalation_policies', nestUnderField: 'escalation_policy' },
-    schedule: { bulkPath: '/schedules', nestUnderField: 'schedule' },
-    team: { bulkPath: '/teams', nestUnderField: 'team' },
+    [BUSINESS_SERVICE_TYPE_NAME]: { bulkPath: '/business_services', nestUnderField: 'business_service' },
+    [ESCALATION_POLICY_TYPE_NAME]: { bulkPath: '/escalation_policies', nestUnderField: 'escalation_policy' },
+    [SCHEDULE_TYPE_NAME]: { bulkPath: '/schedules', nestUnderField: 'schedule' },
+    [TEAM_TYPE_NAME]: { bulkPath: '/teams', nestUnderField: 'team' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
-    service: {
+    [SERVICE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [
@@ -119,7 +127,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    eventOrchestration: {
+    [EVENT_ORCHESTRATION_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [

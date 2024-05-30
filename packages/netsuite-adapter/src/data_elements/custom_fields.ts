@@ -20,7 +20,7 @@ import { SOAP_FIELDS_TYPES } from '../client/suiteapp_client/soap_client/types'
 import { INTERNAL_ID_TO_TYPES } from './types'
 import { EMPLOYEE, OTHER_CUSTOM_FIELD } from '../constants'
 
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?([+-]\d{2}:\d{2})?$/
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
 
 const CUSTOM_FIELD_TO_TYPE: Record<string, Record<string, string[]>> = {
   entitycustomfield: {

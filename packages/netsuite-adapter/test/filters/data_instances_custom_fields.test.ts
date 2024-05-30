@@ -72,6 +72,7 @@ describe('data_instances_custom_fields', () => {
         custom_e: {},
         custom_f: 1,
         custom_g: [{}],
+        custom_h: '2020-05-02T13:44:31.000Z',
       })
     })
     it('should convert all custom fields to customFieldList on instance addition', async () => {
@@ -127,6 +128,13 @@ describe('data_instances_custom_fields', () => {
                 'xsi:type': SOAP_FIELDS_TYPES.MULTISELECT,
               },
               'platformCore:value': [{}],
+            },
+            {
+              attributes: {
+                scriptId: 'h',
+                'xsi:type': SOAP_FIELDS_TYPES.DATE,
+              },
+              'platformCore:value': '2020-05-02T13:44:31.000Z',
             },
           ],
         },

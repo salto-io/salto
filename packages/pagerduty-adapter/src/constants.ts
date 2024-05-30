@@ -1,5 +1,5 @@
 /*
- *                      Copyright 2020 Salto Labs Ltd.
+ *                      Copyright 2024 Salto Labs Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
@@ -13,20 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const deepMerge = require('../../build_utils/deep_merge')
-
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'pager-duty-adapter',
-  displayName: 'pager-duty-adapter',
-  rootDir: `${__dirname}`,
-  collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
-  coverageThreshold: {
-    global: {
-      branches: 90,
-      functions: 70,
-      lines: 90,
-      statements: 90,
-    },
-  },
-})
+export const ADAPTER_NAME = 'pagerduty'
+export const SERVICE_TYPE_NAME = 'service'
+export const TEAM_TYPE_NAME = 'team'
+export const ESCALATION_POLICY_TYPE_NAME = 'escalationPolicy'
+export const SCHEDULE_TYPE_NAME = 'schedule'
+export const BUSINESS_SERVICE_TYPE_NAME = 'businessService'
+export const EVENT_ORCHESTRATION_TYPE_NAME = 'eventOrchestration'

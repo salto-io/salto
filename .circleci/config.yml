@@ -30,6 +30,7 @@ commands:
             yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
+            PATH: ./node_modules/.bin:$PATH
             SALTO_LOG_LEVEL: 'info'
             # enable telemetry for end2end so we can count more events
             # webpack configuration is irrelevant in this case and therefore
@@ -81,16 +82,15 @@ commands:
 jobs:
   build:
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
 
     resource_class: xlarge
-    working_directory: /mnt/ramdisk/project
+    working_directory: ~/project
 
     steps:
       - restore_cache:
           keys:
             - v1-project-{{ .Branch }}
-            - v1-project-main
 
       - checkout
 
@@ -107,11 +107,12 @@ jobs:
           name: verify that the license header is prepended to the non eslint'd source files
           command: build_utils/verify_license_header.sh
 
-      - run: yarn set version 3.1.0
-
-      - run: yarn config set ignore-engines true
-
-      - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
+      - run:
+          name: set up yarn
+          command: |
+            yarn set version 3.1.0
+            yarn config set cacheFolder $(pwd)/.yarn/cache
+            yarn config set nodeLinker node-modules
 
       - run: yarn 
 
@@ -152,10 +153,10 @@ jobs:
 
   unit_test:
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
 
     resource_class: xlarge
-    working_directory: /mnt/ramdisk/project
+    working_directory: ~/project
 
     steps:
       - attach_workspace:
@@ -168,6 +169,7 @@ jobs:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
             # https://github.com/pinojs/koa-pino-logger/issues/16
             FORCE_COLOR: 1
+            PATH: ./node_modules/.bin:$PATH
 
       - store_test_results:
           path: reports
@@ -176,7 +178,7 @@ jobs:
 
   prettier:
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -188,7 +190,7 @@ jobs:
 
   publish_on_version_change:
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -216,9 +218,9 @@ jobs:
       should_install_java:
         type: boolean
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
     resource_class: large
-    working_directory: /mnt/ramdisk/project
+    working_directory: ~/project
     steps:
       - attach_workspace:
           at: .
@@ -228,7 +230,7 @@ jobs:
 
   package_cli:
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -271,7 +273,7 @@ jobs:
 
   test_cli_linux:
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
 
     steps:
       - set_s3_pkg_urls
@@ -319,7 +321,7 @@ jobs:
 
   package_vscode_extension:
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -356,7 +358,7 @@ jobs:
 
   publish_canary:
     docker:
-      - image: cimg/node:18.9
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:

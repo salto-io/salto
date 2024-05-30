@@ -39,7 +39,7 @@ docker run salto-cli
 
 ### Building from source
 
-  1. Install Node.js 18.9.0. You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
+  1. Install Node.js 18.12.0. You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
   2. Install [yarn 1](https://yarnpkg.com/en/docs/install).
   3. Fetch dependencies and build:
 

@@ -1,4 +1,4 @@
-FROM node:18.9.0-buster-slim
+FROM node:18.12.0-buster-slim
 WORKDIR /app
 
 RUN apt update && apt install -y openssl build-essential libgssapi-krb5-2 git ccache

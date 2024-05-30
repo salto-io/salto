@@ -2,11 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": ".",
-    "declaration": true,
-    "resolveJsonModule": true
+    "baseUrl": "."
   },
-  "include": ["src/**/*", "src/**/*.json", "test/**/*", "test/**/*.json", "e2e_test/**/*", "index.ts"],
+  "include": ["src/**/*", "src/**/*.json", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },

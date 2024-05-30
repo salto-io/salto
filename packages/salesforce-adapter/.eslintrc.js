@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const path = require('path')
 const deepMerge = require('../../build_utils/deep_merge')
+
+const configs = [
+  './tsconfig.json',
+  './test/tsconfig.json',
+  './e2e_test/tsconfig.json',
+]
 
 module.exports = deepMerge(
   require('../../eslintrc.js'),
@@ -21,6 +28,7 @@ module.exports = deepMerge(
   {
     parserOptions: {
       tsconfigRootDir: __dirname,
+      project: configs.map((config) => path.resolve(__dirname, config)),
     },
   },
 )

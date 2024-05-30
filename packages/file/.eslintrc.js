@@ -16,9 +16,11 @@
 const path = require('path')
 const deepMerge = require('../../build_utils/deep_merge')
 
+const configs = ['./tsconfig.json', './test/tsconfig.json']
+
 module.exports = deepMerge(require('../../eslintrc.js'), {
   parserOptions: {
     tsconfigRootDir: __dirname,
-    project: path.resolve(__dirname, './tsconfig.json'),
+    project: configs.map(config => path.resolve(__dirname, config)),
   },
 })

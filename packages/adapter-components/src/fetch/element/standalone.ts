@@ -133,7 +133,6 @@ const extractStandaloneInstancesFromField =
         parent: standaloneDef.addParentAnnotation !== false ? parent : undefined,
       }),
     )
-
     newInstances.forEach(inst => instanceOutput.push(inst))
 
     if (standaloneDef.referenceFromParent === false) {

@@ -9,5 +9,5 @@ Supprted parameters are:
 ### Example
 
 ```
-salto account add pager_duty --login-parameters accessToken=SomeAccessToken
+salto account add pagerduty --login-parameters accessToken=SomeAccessToken
 ```

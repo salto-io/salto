@@ -111,47 +111,47 @@ describe('adapter', () => {
           'team',
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'pager_duty.businessService',
-          'pager_duty.businessService.instance.Sales',
-          'pager_duty.businessService__team',
-          'pager_duty.escalationPolicy',
-          'pager_duty.escalationPolicy.instance.IT_Web_Policy@s',
-          'pager_duty.escalationPolicy__escalation_rules',
-          'pager_duty.escalationPolicy__escalation_rules__targets',
-          'pager_duty.eventOrchestration',
-          'pager_duty.eventOrchestration.instance.first_event_orch@s',
-          'pager_duty.eventOrchestration__eventOrchestrationsRouter',
-          'pager_duty.eventOrchestration__eventOrchestrationsRouter__catch_all',
-          'pager_duty.eventOrchestration__eventOrchestrationsRouter__catch_all__actions',
-          'pager_duty.eventOrchestration__eventOrchestrationsRouter__sets',
-          'pager_duty.eventOrchestration__eventOrchestrationsRouter__sets__rules',
-          'pager_duty.eventOrchestration__eventOrchestrationsRouter__sets__rules__actions',
-          'pager_duty.eventOrchestration__eventOrchestrationsRouter__sets__rules__conditions',
-          'pager_duty.eventOrchestration__team',
-          'pager_duty.schedule',
-          'pager_duty.schedule.instance.Bibi_is_Always_on_Call@s',
-          'pager_duty.schedule__schedule_layers',
-          'pager_duty.schedule__schedule_layers__users',
-          'pager_duty.schedule__schedule_layers__users__user',
-          'pager_duty.schedule__teams',
-          'pager_duty.schedule__users',
-          'pager_duty.service',
-          'pager_duty.service.instance.acme_test@v',
-          'pager_duty.service__alert_grouping_parameters',
-          'pager_duty.service__escalation_policy',
-          'pager_duty.service__incident_urgency_rule',
-          'pager_duty.service__serviceOrchestration',
-          'pager_duty.service__serviceOrchestration__catch_all',
-          'pager_duty.service__serviceOrchestration__catch_all__actions',
-          'pager_duty.service__serviceOrchestration__sets',
-          'pager_duty.service__teams',
-          'pager_duty.team',
-          'pager_duty.team.instance.the_IT_of_ACME_inc@s',
+          'pagerduty.businessService',
+          'pagerduty.businessService.instance.Sales',
+          'pagerduty.businessService__team',
+          'pagerduty.escalationPolicy',
+          'pagerduty.escalationPolicy.instance.IT_Web_Policy@s',
+          'pagerduty.escalationPolicy__escalation_rules',
+          'pagerduty.escalationPolicy__escalation_rules__targets',
+          'pagerduty.eventOrchestration',
+          'pagerduty.eventOrchestration.instance.first_event_orch@s',
+          'pagerduty.eventOrchestration__eventOrchestrationsRouter',
+          'pagerduty.eventOrchestration__eventOrchestrationsRouter__catch_all',
+          'pagerduty.eventOrchestration__eventOrchestrationsRouter__catch_all__actions',
+          'pagerduty.eventOrchestration__eventOrchestrationsRouter__sets',
+          'pagerduty.eventOrchestration__eventOrchestrationsRouter__sets__rules',
+          'pagerduty.eventOrchestration__eventOrchestrationsRouter__sets__rules__actions',
+          'pagerduty.eventOrchestration__eventOrchestrationsRouter__sets__rules__conditions',
+          'pagerduty.eventOrchestration__team',
+          'pagerduty.schedule',
+          'pagerduty.schedule.instance.Bibi_is_Always_on_Call@s',
+          'pagerduty.schedule__schedule_layers',
+          'pagerduty.schedule__schedule_layers__users',
+          'pagerduty.schedule__schedule_layers__users__user',
+          'pagerduty.schedule__teams',
+          'pagerduty.schedule__users',
+          'pagerduty.service',
+          'pagerduty.service.instance.acme_test@v',
+          'pagerduty.service__alert_grouping_parameters',
+          'pagerduty.service__escalation_policy',
+          'pagerduty.service__incident_urgency_rule',
+          'pagerduty.service__serviceOrchestration',
+          'pagerduty.service__serviceOrchestration__catch_all',
+          'pagerduty.service__serviceOrchestration__catch_all__actions',
+          'pagerduty.service__serviceOrchestration__sets',
+          'pagerduty.service__teams',
+          'pagerduty.team',
+          'pagerduty.team.instance.the_IT_of_ACME_inc@s',
         ])
         expect(
           elements
             .filter(isInstanceElement)
-            .find(e => e.elemID.getFullName() === 'pager_duty.team.instance.the_IT_of_ACME_inc@s')?.value,
+            .find(e => e.elemID.getFullName() === 'pagerduty.team.instance.the_IT_of_ACME_inc@s')?.value,
         ).toEqual({
           name: 'the IT of ACME inc',
           description: 'IT - stands for I tried to make it work',
@@ -161,10 +161,10 @@ describe('adapter', () => {
         })
         const service = elements
           .filter(isInstanceElement)
-          .find(e => e.elemID.getFullName() === 'pager_duty.service.instance.acme_test@v')?.value
-        expect(service?.teams[0].id.elemID.getFullName()).toEqual('pager_duty.team.instance.the_IT_of_ACME_inc@s')
+          .find(e => e.elemID.getFullName() === 'pagerduty.service.instance.acme_test@v')?.value
+        expect(service?.teams[0].id.elemID.getFullName()).toEqual('pagerduty.team.instance.the_IT_of_ACME_inc@s')
         expect(service?.escalation_policy.id.elemID.getFullName()).toEqual(
-          'pager_duty.escalationPolicy.instance.IT_Web_Policy@s',
+          'pagerduty.escalationPolicy.instance.IT_Web_Policy@s',
         )
       })
     })

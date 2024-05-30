@@ -9,7 +9,7 @@ PagerDuty adapter for salto.io
 Basic authentication is supported via using [access token](https://support.pagerduty.com/docs/api-access-keys#section-generate-a-general-access-rest-api-key)
 
 ```bash
-salto account add pager_duty
+salto account add pagerduty
 
-salto account login page
+salto account login pagerduty
 ```

@@ -1,8 +1,8 @@
 {
-  "name": "@salto-io/pager-duty-adapter",
+  "name": "@salto-io/pagerduty-adapter",
   "version": "0.3.58",
   "license": "Apache-2.0",
-  "description": "Salto pager-duty adapter",
+  "description": "Salto pagerduty adapter",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto"

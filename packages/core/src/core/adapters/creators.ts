@@ -29,7 +29,7 @@ import { adapter as serviceplaceholderAdapter } from '@salto-io/serviceplacehold
 import { adapter as googleWorkspaceAdapter } from '@salto-io/google-workspace-adapter'
 import { adapter as confluenceAdapter } from '@salto-io/confluence-adapter'
 import { adapter as microsoftEntra } from '@salto-io/microsoft-entra-adapter'
-import { adapter as pagerDutyAdapter } from '@salto-io/pager-duty-adapter'
+import { adapter as pagerDutyAdapter } from '@salto-io/pagerduty-adapter'
 
 const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
@@ -47,7 +47,7 @@ const adapterCreators: Record<string, Adapter> = {
   confluence: confluenceAdapter,
   intercom: intercomAdapter,
   microsoft_entra: microsoftEntra,
-  pager_duty: pagerDutyAdapter,
+  pagerduty: pagerDutyAdapter,
 }
 
 export default adapterCreators

@@ -876,43 +876,43 @@ describe('Salto parser', () => {
       expect(errors).toHaveLength(0)
     })
 
-    describe('parameters', () => {
-      it('number', () => {
+    describe('when parameter', () => {
+      it('is a number', () => {
         expect(instanceWithFunctions.value.contentWithNumber).toHaveProperty('funcName', funcName)
         expect(instanceWithFunctions.value.contentWithNumber).toHaveProperty('parameters', [1])
       })
 
-      it('string', () => {
+      it('is a string', () => {
         expect(instanceWithFunctions.value.content).toHaveProperty('funcName', funcName)
         expect(instanceWithFunctions.value.content).toHaveProperty('parameters', ['some.png'])
       })
 
-      it('boolean', () => {
+      it('is a boolean', () => {
         expect(instanceWithFunctions.value.contentWithBoolean).toHaveProperty('funcName', funcName)
         expect(instanceWithFunctions.value.contentWithBoolean).toHaveProperty('parameters', [true])
       })
 
-      it('list', () => {
+      it('is a list', () => {
         expect(instanceWithFunctions.value.contentWithList).toHaveProperty('funcName', funcName)
         expect(instanceWithFunctions.value.contentWithList).toHaveProperty('parameters', [['yes', 'dad', true]])
       })
 
-      it('several parameters', () => {
+      it('is a several parameters', () => {
         expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('funcName', funcName)
         expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('parameters', [false, 3, 'WAT'])
       })
 
-      it('mixed', () => {
+      it('is mixed', () => {
         expect(instanceWithFunctions.value.contentWithMixed).toHaveProperty('funcName', funcName)
         expect(instanceWithFunctions.value.contentWithMixed.parameters).toEqual([false, [3, 3], 'WAT'])
       })
 
-      it('nested', () => {
+      it('is nested', () => {
         expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('funcName', funcName)
         expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('parameters', [false, [3, [1, 2]], 'WAT'])
       })
 
-      it('multiline', () => {
+      it('is multiline', () => {
         expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty('funcName', funcName)
         expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty('parameters', [
           'regular',
@@ -920,8 +920,10 @@ describe('Salto parser', () => {
           321,
         ])
       })
+    })
 
-      it('nested in object', () => {
+    describe('when the call is nested in an object', () => {
+      it('should receive the parameters', () => {
         expect(instanceWithFunctions.value.contentWithNestedFunction).toHaveProperty('nested')
         const func = instanceWithFunctions.value.contentWithNestedFunction.nested
         expect(func).toHaveProperty('parameters')

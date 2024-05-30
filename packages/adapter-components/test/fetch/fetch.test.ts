@@ -78,6 +78,15 @@ describe('fetch', () => {
             statusText: 'OK',
           }
         }
+        if (url === '/api/v1/fields/group1/depending_options') {
+          return {
+            data: {
+              depending_options: [{ name: 'deps1' }],
+            },
+            status: 200,
+            statusText: 'OK',
+          }
+        }
         if (url === '/api/v1/fields/789/default_option') {
           throw new Error('error fetching default option')
         }
@@ -126,6 +135,36 @@ describe('fetch', () => {
                 },
               },
               customizations: {
+                depending_option: {
+                  requests: [
+                    {
+                      endpoint: {
+                        path: '/api/v1/fields/{parent_id}/depending_options',
+                      },
+                      transformation: {
+                        root: 'depending_options',
+                      },
+                    },
+                  ],
+                  resource: {
+                    directFetch: true,
+                    context: {
+                      dependsOn: {
+                        parent_id: {
+                          parentTypeName: 'group',
+                          transformation: {
+                            root: 'name',
+                          },
+                        },
+                      },
+                    },
+                  },
+                  element: {
+                    topLevel: {
+                      isTopLevel: true,
+                    },
+                  },
+                },
                 group: {
                   requests: [
                     {
@@ -262,6 +301,8 @@ describe('fetch', () => {
         reason: 'error fetching options',
       })
       expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'myAdapter.depending_option',
+        'myAdapter.depending_option.instance.deps1Custom',
         'myAdapter.field',
         'myAdapter.field.instance.field1Custom',
         'myAdapter.field.instance.field2Custom',

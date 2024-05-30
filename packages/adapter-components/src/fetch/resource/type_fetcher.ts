@@ -54,25 +54,26 @@ const calculateContextArgs = ({
   const { dependsOn } = contextDef ?? {}
   const predefinedArgs = _.mapValues(initialRequestContext, collections.array.makeArray)
   const remainingDependsOnArgs: Record<string, DependsOnDefinition> = _.omit(dependsOn, Object.keys(predefinedArgs))
+  const dependsOnArgs = _(remainingDependsOnArgs)
+    .mapValues(arg =>
+      contextResources[arg.parentTypeName]
+        ?.flatMap(item =>
+          createValueTransformer<{}, Values>(arg.transformation)({
+            typeName: arg.parentTypeName,
+            value: { ...item.value, ...item.context },
+            context: item.context,
+          }),
+        )
+        .filter(lowerdashValues.isDefined),
+    )
+    .pickBy(lowerdashValues.isDefined)
+    .mapValues(values => _.uniqBy(values, objectHash))
+    .value()
 
   return _.defaults(
     {},
     predefinedArgs,
-    _(remainingDependsOnArgs)
-      .mapValues(arg =>
-        contextResources[arg.parentTypeName]
-          ?.flatMap(item =>
-            createValueTransformer<{}, Values>(arg.transformation)({
-              typeName: arg.parentTypeName,
-              value: { ...item.value, ...item.context },
-              context: item.context,
-            }),
-          )
-          .filter(lowerdashValues.isDefined),
-      )
-      .pickBy(lowerdashValues.isDefined)
-      .mapValues(values => _.uniqBy(values, objectHash))
-      .value(),
+    _.mapValues(dependsOnArgs, array => _.map(array, 'value')),
   )
 }
 

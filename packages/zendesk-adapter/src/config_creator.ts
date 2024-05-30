@@ -26,11 +26,13 @@ const optionsElemId = new ElemID(constants.ZENDESK, 'configOptionsType')
 
 type ConfigOptionsType = {
   enableGuide?: boolean
+  enableGuideThemes?: boolean
 }
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
     enableGuide: { refType: BuiltinTypes.BOOLEAN },
+    enableGuideThemes: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 const isOptionsTypeInstance = (
@@ -45,14 +47,30 @@ const isOptionsTypeInstance = (
   return false
 }
 
+export const DEFAULT_GUIDE_THEME_CONFIG = {
+  themes: {
+    brands: ['.*'],
+    enableReferenceLookup: true,
+    javascriptReferenceLookupStrategy: {
+      strategy: 'varNamePrefix',
+      prefix: 'SALTO_REFERENCE',
+    },
+  },
+}
+
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
   if (options === undefined || !isOptionsTypeInstance(options)) {
     return defaultConf
   }
-  if (options.value.enableGuide === true) {
+  if (options.value.enableGuide === true || options.value.enableGuideThemes === true) {
     const configWithGuide = defaultConf.clone()
-    configWithGuide.value.fetch = { ...configWithGuide.value.fetch, guide: { brands: ['.*'] } }
+    const guideOverride = options.value.enableGuide === true ? { brands: ['.*'] } : {}
+    const guideThemesOverride = options.value.enableGuideThemes === true ? DEFAULT_GUIDE_THEME_CONFIG : {}
+    configWithGuide.value.fetch = {
+      ...configWithGuide.value.fetch,
+      guide: { ...guideOverride, ...guideThemesOverride },
+    }
     return configWithGuide
   }
   return defaultConf

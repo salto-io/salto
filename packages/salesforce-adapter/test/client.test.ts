@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import _ from 'lodash'
@@ -670,11 +669,21 @@ describe('salesforce client', () => {
   describe('validateCredentials', () => {
     it('should throw ApiLimitsTooLowError exception', async () => {
       await expect(
-        validateCredentials(credentials, 100000, connection as unknown as Connection),
+        validateCredentials(
+          credentials,
+          100000,
+          connection as unknown as Connection,
+        ),
       ).rejects.toThrow(ApiLimitsTooLowError)
     })
     it('should return empty string as accountId and no values for accountType and isProduction', async () => {
-      expect(await validateCredentials(credentials, 3, connection as unknown as Connection)).toEqual({
+      expect(
+        await validateCredentials(
+          credentials,
+          3,
+          connection as unknown as Connection,
+        ),
+      ).toEqual({
         accountId: '',
         isProduction: undefined,
         accountType: undefined,
@@ -710,7 +719,11 @@ describe('salesforce client', () => {
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(
-              await validateCredentials(sandboxCredentials, 3, connection as unknown as Connection),
+              await validateCredentials(
+                sandboxCredentials,
+                3,
+                connection as unknown as Connection,
+              ),
             ).toEqual({
               accountId: 'https://url.com/',
               isProduction: false,
@@ -728,7 +741,11 @@ describe('salesforce client', () => {
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(
-              await validateCredentials(sandboxCredentials, 3, connection as unknown as Connection),
+              await validateCredentials(
+                sandboxCredentials,
+                3,
+                connection as unknown as Connection,
+              ),
             ).toEqual({
               accountId: 'https://url.com/',
               isProduction: false,
@@ -740,7 +757,11 @@ describe('salesforce client', () => {
             const mockConnection = mockClient().connection
             _.set(mockConnection, 'instanceUrl', undefined)
             await expect(
-              validateCredentials(sandboxCredentials, 3, mockConnection as unknown as Connection),
+              validateCredentials(
+                sandboxCredentials,
+                3,
+                mockConnection as unknown as Connection,
+              ),
             ).rejects.toThrow(
               'Expected Salesforce organization URL to exist in the connection',
             )
@@ -757,7 +778,11 @@ describe('salesforce client', () => {
           })
           it('should return isProduction true and correct accountType', async () => {
             expect(
-              await validateCredentials(credentials, 3, connection as unknown as Connection),
+              await validateCredentials(
+                credentials,
+                3,
+                connection as unknown as Connection,
+              ),
             ).toEqual({
               accountId: '',
               isProduction: true,
@@ -775,7 +800,11 @@ describe('salesforce client', () => {
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(
-              await validateCredentials(credentials, 3, connection as unknown as Connection),
+              await validateCredentials(
+                credentials,
+                3,
+                connection as unknown as Connection,
+              ),
             ).toEqual({
               accountId: '',
               isProduction: false,

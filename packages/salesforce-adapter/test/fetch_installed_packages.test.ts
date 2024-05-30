@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ObjectType,
@@ -45,8 +44,9 @@ describe('Test fetching installed package metadata', () => {
     addNamespacePrefixToFullName = true,
   }: MockFetchArgs): Promise<InstanceElement | undefined> => {
     const { client, connection } = mockClient()
-    connection.metadata.read.mockImplementation(async (_type: any, fullNames: any) =>
-      makeArray(fullNames).map((fullName) => ({ fullName })),
+    connection.metadata.read.mockImplementation(
+      async (_type: any, fullNames: any) =>
+        makeArray(fullNames).map((fullName) => ({ fullName })),
     )
 
     const metadataQuery = buildMetadataQuery({

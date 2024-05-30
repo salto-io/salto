@@ -18,8 +18,8 @@ import {
   Element,
   InstanceElement,
 } from '@salto-io/adapter-api'
-  // eslint-disable-next-line import/named
-  import { FileProperties } from '@salto-io/jsforce-types'
+// eslint-disable-next-line import/named
+import { FileProperties } from '@salto-io/jsforce-types'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import filterCreator from '../../src/filters/create_missing_installed_packages_instances'

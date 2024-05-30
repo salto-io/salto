@@ -26,11 +26,11 @@ commands:
       - run:
           name: Run E2E tests for package << parameters.package_name >>
           command: |
+            export PATH="./node_modules/.bin:$PATH"
             pushd packages/<< parameters.package_name >>
             yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
-            PATH: ./node_modules/.bin:$PATH
             SALTO_LOG_LEVEL: 'info'
             # enable telemetry for end2end so we can count more events
             # webpack configuration is irrelevant in this case and therefore
@@ -164,12 +164,13 @@ jobs:
 
       - run:
           name: Run unit tests
-          command: yarn test -w 4 --reporters=default --reporters=jest-junit
+          command: |
+            export PATH="./node_modules/.bin:$PATH"
+            yarn test -w 4 --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
             # https://github.com/pinojs/koa-pino-logger/issues/16
             FORCE_COLOR: 1
-            PATH: ./node_modules/.bin:$PATH
 
       - store_test_results:
           path: reports

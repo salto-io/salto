@@ -54,7 +54,7 @@ const mockClient = (
     },
   })
 
-  return { connection:mockJsforce() , client }
+  return { connection: mockJsforce(), client }
 }
 
 export default mockClient

@@ -361,7 +361,7 @@ describe('Adapter', () => {
       })
 
       it('isPartial should be true', async () => {
-        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts as FetchOptions, withChangesDetection })
+        const { partialFetchData } = await adapter.fetch({ ...(mockFetchOpts as FetchOptions), withChangesDetection })
         expect(partialFetchData?.isPartial).toBeTruthy()
       })
     })
@@ -395,7 +395,7 @@ describe('Adapter', () => {
         })
 
         it('should throw an error when defining fetchTarget for the first fetch', async () => {
-          await expect(() => adapter.fetch(mockFetchOpts  as FetchOptions)).rejects.toThrow(
+          await expect(() => adapter.fetch(mockFetchOpts as FetchOptions)).rejects.toThrow(
             "Can't define fetchTarget for the first fetch. Remove fetchTarget from adapter config file",
           )
         })
@@ -412,12 +412,12 @@ describe('Adapter', () => {
         })
 
         it('isPartial should be true', async () => {
-          const { partialFetchData } = await adapter.fetch(mockFetchOpts  as FetchOptions)
+          const { partialFetchData } = await adapter.fetch(mockFetchOpts as FetchOptions)
           expect(partialFetchData?.isPartial).toBeTruthy()
         })
 
         it('should match the types that match fetchTarget and exclude', async () => {
-          await adapter.fetch(mockFetchOpts  as FetchOptions)
+          await adapter.fetch(mockFetchOpts as FetchOptions)
 
           const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
           expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
@@ -430,7 +430,7 @@ describe('Adapter', () => {
         })
 
         it('should match the files that match fetchTarget and not in filePathRegexSkipList', async () => {
-          await adapter.fetch(mockFetchOpts  as FetchOptions)
+          await adapter.fetch(mockFetchOpts as FetchOptions)
 
           const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
           expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
@@ -446,7 +446,7 @@ describe('Adapter', () => {
         failedPaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
       })
 
-      await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
@@ -468,7 +468,7 @@ describe('Adapter', () => {
       })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
-      await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
@@ -485,14 +485,14 @@ describe('Adapter', () => {
       client.getCustomObjects = jest.fn().mockImplementation(async () => {
         throw new Error('Dummy error')
       })
-      await expect(netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)).rejects.toThrow()
+      await expect(netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)).rejects.toThrow()
     })
 
     it('should fail when importFileCabinetContent fails', async () => {
       client.importFileCabinetContent = jest.fn().mockImplementation(async () => {
         throw new Error('Dummy error')
       })
-      await expect(netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)).rejects.toThrow()
+      await expect(netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)).rejects.toThrow()
     })
 
     it('should ignore instances of unknown type', async () => {
@@ -509,19 +509,27 @@ describe('Adapter', () => {
         failedToFetchAllAtOnce: false,
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
       })
+<<<<<<< HEAD
       const { elements } = await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
       // metadataTypes + scriptIdListInstance + scriptIdListType + objectIdType
       expect(elements).toHaveLength(metadataTypes.length + 3)
+||||||| parent of 90465e10d (yarn format)
+      const { elements } = await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      expect(elements).toHaveLength(metadataTypes.length)
+=======
+      const { elements } = await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
+      expect(elements).toHaveLength(metadataTypes.length)
+>>>>>>> 90465e10d (yarn format)
     })
 
     it('should call filters by their order', async () => {
-      await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
       expect(onFetchMock).toHaveBeenNthCalledWith(1, 1)
       expect(onFetchMock).toHaveBeenNthCalledWith(2, 2)
     })
 
     it('should call getCustomObjects with query that matches types that match the types in fetch config', async () => {
-      await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
       const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
       expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
@@ -530,7 +538,7 @@ describe('Adapter', () => {
     it('should return only the elements when having no config changes', async () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
-      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
@@ -552,7 +560,7 @@ describe('Adapter', () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
-      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
@@ -577,7 +585,7 @@ describe('Adapter', () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
-      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: false,
@@ -601,7 +609,7 @@ describe('Adapter', () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
-      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts  as FetchOptions)
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts as FetchOptions)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         {
           failedToFetchAllAtOnce: true,
@@ -1408,19 +1416,19 @@ describe('Adapter', () => {
     })
 
     it('should use suiteapp_file_cabinet importFileCabinet', async () => {
-      await adapter.fetch(mockFetchOpts  as FetchOptions)
+      await adapter.fetch(mockFetchOpts as FetchOptions)
       expect(suiteAppImportFileCabinetMock).toHaveBeenCalled()
     })
 
     it('should not create serverTime elements when getSystemInformation returns undefined', async () => {
       getSystemInformationMock.mockResolvedValue(undefined)
 
-      const { elements } = await adapter.fetch(mockFetchOpts  as FetchOptions)
+      const { elements } = await adapter.fetch(mockFetchOpts as FetchOptions)
       expect(elements.filter(e => e.elemID.getFullName().includes(SERVER_TIME_TYPE_NAME))).toHaveLength(0)
     })
 
     it('should create the serverTime elements when getSystemInformation returns the time', async () => {
-      const { elements } = await adapter.fetch(mockFetchOpts  as FetchOptions)
+      const { elements } = await adapter.fetch(mockFetchOpts as FetchOptions)
       expect(elements.filter(e => e.elemID.getFullName().includes(SERVER_TIME_TYPE_NAME))).toHaveLength(2)
 
       const serverTimeInstance = elements.find(e =>
@@ -1476,7 +1484,7 @@ describe('Adapter', () => {
         })
       })
       it('should call getChangedObjects with the right date range', async () => {
-        await adapter.fetch(mockFetchOpts  as FetchOptions)
+        await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(getElementMock).toHaveBeenCalledWith(
           new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
         )
@@ -1499,13 +1507,13 @@ describe('Adapter', () => {
             data: { fields: { DATEFORMAT: undefined, TIMEFORMAT: 'hh:m a' } },
           },
         ])
-        await adapter.fetch(mockFetchOpts  as FetchOptions)
+        await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(getChangedObjectsMock).toHaveBeenCalledTimes(0)
       })
 
       it('should pass the received query to the client', async () => {
         const getCustomObjectsMock = jest.spyOn(client, 'getCustomObjects')
-        await adapter.fetch(mockFetchOpts  as FetchOptions)
+        await adapter.fetch(mockFetchOpts as FetchOptions)
 
         const passedQuery = getCustomObjectsMock.mock.calls[0][1].updatedFetchQuery
         expect(passedQuery.isObjectMatch({ instanceId: 'aaaa', type: 'workflow' })).toBeTruthy()
@@ -1520,7 +1528,7 @@ describe('Adapter', () => {
             {},
           ),
         )
-        await adapter.fetch(mockFetchOpts  as FetchOptions)
+        await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(getElementMock).toHaveBeenCalledWith(
           new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
         )
@@ -1545,7 +1553,7 @@ describe('Adapter', () => {
           getElemIdFunc: mockGetElemIdFunc,
         })
 
-        await adapter.fetch(mockFetchOpts  as FetchOptions)
+        await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(getChangedObjectsMock).not.toHaveBeenCalled()
       })
 
@@ -1561,7 +1569,7 @@ describe('Adapter', () => {
           getElemIdFunc: mockGetElemIdFunc,
         })
 
-        await adapter.fetch(mockFetchOpts  as FetchOptions)
+        await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(getChangedObjectsMock).toHaveBeenCalled()
       })
     })
@@ -1581,7 +1589,7 @@ describe('Adapter', () => {
       })
 
       it('should filter from data elements and custom records', async () => {
-        await adapter.fetch(mockFetchOpts  as FetchOptions)
+        await adapter.fetch(mockFetchOpts as FetchOptions)
         expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
           {
             failedToFetchAllAtOnce: false,
@@ -1609,7 +1617,10 @@ describe('Adapter', () => {
       })
 
       it('check call getDeletedElements and verify return value', async () => {
-        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts as FetchOptions, withChangesDetection: true })
+        const { partialFetchData } = await adapter.fetch({
+          ...(mockFetchOpts as FetchOptions),
+          withChangesDetection: true,
+        })
         expect(getDeletedElementsMock).toHaveBeenCalled()
         expect(partialFetchData?.deletedElements).toEqual([elemId])
         expect(spy).toHaveBeenCalledWith(expect.anything(), true, [elemId])
@@ -1626,7 +1637,7 @@ describe('Adapter', () => {
       })
 
       it('check call getDeletedElements and verify return value', async () => {
-        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts as FetchOptions })
+        const { partialFetchData } = await adapter.fetch({ ...(mockFetchOpts as FetchOptions) })
         expect(getDeletedElementsMock).not.toHaveBeenCalled()
         expect(partialFetchData?.deletedElements).toEqual(undefined)
         expect(spy).toHaveBeenCalledWith(expect.anything(), false, [])

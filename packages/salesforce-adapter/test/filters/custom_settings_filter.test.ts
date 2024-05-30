@@ -85,7 +85,7 @@ describe('Custom settings filter', () => {
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any)
     basicQueryImplementation = jest.fn().mockImplementation(async () => ({
       totalSize: 2,

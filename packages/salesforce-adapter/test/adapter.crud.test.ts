@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import _ from 'lodash'
@@ -136,18 +135,21 @@ describe('SalesforceAdapter CRUD', () => {
       },
     }))
 
-    connection.metadata.upsert.mockImplementation(async (_type: any, objects: any) =>
-      makeArray(objects).map(({ fullName }) => ({
-        fullName,
-        created: true,
-        success: true,
-      })),
+    connection.metadata.upsert.mockImplementation(
+      async (_type: any, objects: any) =>
+        makeArray(objects).map(({ fullName }) => ({
+          fullName,
+          created: true,
+          success: true,
+        })),
     )
-    connection.metadata.delete.mockImplementation(async (_type: any, fullNames: any) =>
-      makeArray(fullNames).map((fullName) => ({ fullName, success: true })),
+    connection.metadata.delete.mockImplementation(
+      async (_type: any, fullNames: any) =>
+        makeArray(fullNames).map((fullName) => ({ fullName, success: true })),
     )
-    connection.metadata.update.mockImplementation(async (_type: any, objects: any) =>
-      makeArray(objects).map(({ fullName }) => ({ fullName, success: true })),
+    connection.metadata.update.mockImplementation(
+      async (_type: any, objects: any) =>
+        makeArray(objects).map(({ fullName }) => ({ fullName, success: true })),
     )
 
     connection.metadata.deploy.mockReturnValue(mockDeployResult({}))

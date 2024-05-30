@@ -19,8 +19,8 @@ import {
   InstanceElement,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-  // eslint-disable-next-line import/named
-  import { FileProperties } from '@salto-io/jsforce-types'
+// eslint-disable-next-line import/named
+import { FileProperties } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'

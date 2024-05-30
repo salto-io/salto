@@ -18,7 +18,11 @@
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, InstanceElement, FetchOptions } from '@salto-io/adapter-api';
+import {
+  BuiltinTypes,
+  InstanceElement,
+  FetchOptions,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceAdapter from '../index'
@@ -224,10 +228,12 @@ describe('Salesforce Fetch With Changes Detection', () => {
           ({ type }) => filePropByRelatedType[type as RelatedType] ?? [],
         ),
       )
-      connection.metadata.retrieve.mockImplementation((request: RetrieveRequest) => {
-        retrieveRequest = request
-        return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
-      })
+      connection.metadata.retrieve.mockImplementation(
+        (request: RetrieveRequest) => {
+          retrieveRequest = request
+          return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
+        },
+      )
 
       changedAtSingleton.value[CUSTOM_OBJECT] = {
         [UPDATED_OBJECT_NAME]: '2023-11-06T00:00:00.000Z',
@@ -236,7 +242,10 @@ describe('Salesforce Fetch With Changes Detection', () => {
       }
     })
     it('should fetch only the updated CustomObject instances', async () => {
-      await adapter.fetch({ ...mockFetchOpts as FetchOptions, withChangesDetection: true })
+      await adapter.fetch({
+        ...(mockFetchOpts as FetchOptions),
+        withChangesDetection: true,
+      })
       expect(retrieveRequest.unpackaged?.types).toIncludeSameMembers([
         {
           name: CUSTOM_OBJECT,

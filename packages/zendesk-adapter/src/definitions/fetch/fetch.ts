@@ -1372,7 +1372,7 @@ const createCustomizations = (): Record<
         //   standalone: {
         //     typeName: 'category_translation',
         //     addParentAnnotation: true,
-        //     referenceFromParent: false,
+        //     referenceFromParent: true,
         //     nestPathUnderParent: true,
         //   },
         // },
@@ -1402,6 +1402,152 @@ const createCustomizations = (): Record<
   //     },
   //   },
   // },
+
+  section_order: {},
+
+  section: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/help_center/sections', queryArgs: { include: 'translations' } },
+        transformation: { root: 'sections', adjust: transforms.transformGuideItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'direct_parent_id', isReference: true }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }, { fieldName: 'direct_parent_id', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        // directParent and parentType are created to avoid collisions
+        direct_parent_id: { hide: true },
+        direct_parent_type: { hide: true, fieldType: 'string' },
+        position: { hide: true },
+        parent_section_id: { fieldType: 'number' },
+        sections: { fieldType: 'list<section>' },
+        articles: { fieldType: 'list<article>' },
+        translations: { fieldType: 'list<section_translation>' },
+        html_url: { omit: true },
+        // translations: {
+        //   // extract each item in the holidays field to its own instance
+        //   standalone: {
+        //     typeName: 'category_translation',
+        //     addParentAnnotation: true,
+        //     referenceFromParent: false,
+        //     nestPathUnderParent: true,
+        //   },
+        // },
+      },
+    },
+  },
+
+  article_order: {},
+
+  article: {
+    requests: [
+      {
+        // we are doing this for better parallelization of requests on large accounts
+        // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
+        endpoint: {
+          path: '/api/v2/help_center/categories/{category_id}/articles',
+          queryArgs: { include: 'translations', sort_by: 'updated_at' },
+        },
+        transformation: { root: 'articles', adjust: transforms.transformGuideItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      context: {
+        dependsOn: {
+          category_id: { parentTypeName: 'category', transformation: { root: 'id' } },
+        },
+      },
+      recurseInto: {
+        value: {
+          typeName: 'article_attachment',
+          context: { args: { article_id: { root: 'id' } } },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }, { fieldName: 'id' }],
+        },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        position: { hide: true, fieldType: 'number' },
+        author_id: { fieldType: 'unknown' },
+        translations: { fieldType: 'list<article_translation>' },
+        vote_sum: { omit: true },
+        vote_count: { omit: true },
+        edited_at: { omit: true },
+        name: { omit: true },
+        html_url: { omit: true },
+        attachments: {
+          standalone: {
+            typeName: 'article_attachment',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+
+  // currently articles do not share attachments, if this changes the attachment code should be reviewed!
+  article_attachment: {
+    requests: [
+      {
+        // we are doing this for better parallelization of requests on large accounts
+        // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
+        endpoint: {
+          path: '/api/v2/help_center/articles/{article_id}/attachments',
+        },
+        transformation: { root: 'article_attachments', adjust: transforms.transformGuideItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [
+            { fieldName: 'file_name' },
+            { fieldName: 'inline' },
+            { fieldName: 'id' },
+            { fieldName: 'content_type' },
+            { fieldName: 'size' },
+          ],
+          extendsParent: true,
+        },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        content_url: { hide: true, fieldType: 'string' },
+        size: { hide: true, fieldType: 'number' },
+        relative_path: { hide: true, fieldType: 'string' },
+        article_attachments: { fieldType: 'List<article_attachment>' },
+        content: { fieldType: 'string' },
+        hash: { hide: true, fieldType: 'string' },
+        display_file_name: { omit: true },
+        article_id: { omit: true },
+      },
+    },
+  },
 
   guide_language_settings: {
     requests: [
@@ -1495,16 +1641,12 @@ export const createFetchDefinitions = (
   typesToPick?: string[],
 ): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
   let customizations = createCustomizations()
-  // eslint-disable-next-line no-console
-  // console.log('boop', typesToOmit, typesToPick, customizations.category)
   if (typesToOmit !== undefined) {
     customizations = _.omit(customizations, typesToOmit)
   }
   if (typesToPick !== undefined) {
     customizations = _.pick(customizations, typesToPick)
   }
-  // eslint-disable-next-line no-console
-  // console.log('gloop', customizations.category)
   return {
     instances: {
       default: {

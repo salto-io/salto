@@ -62,6 +62,8 @@ export const createClientDefinitions = (
           '/hc/api/internal/general_settings': { get: { pagination: 'links' } },
           '/hc/api/internal/help_center_translations': { get: { pagination: 'links' } },
           '/api/v2/help_center/categories': { get: { pagination: 'links' } },
+          '/api/v2/help_center/sections': { get: { pagination: 'links' } },
+          '/api/v2/help_center/articles/{article_id}/attachments': { get: { pagination: 'links' } },
         },
       },
     },

@@ -31,10 +31,7 @@ export const transform: definitions.AdjustFunction = ({ value, context, typeName
   // need to add direct parent to a section as it is possible to have a section inside
   // a section and therefore the elemeID will change accordingly.
   if (typeName === SECTION_TYPE_NAME) {
-    if (
-      _.get(value, 'parent_section_id').parent_section_id === undefined ||
-      _.get(value, 'parent_section_id') === null
-    ) {
+    if (_.get(value, 'parent_section_id') === undefined || _.get(value, 'parent_section_id') === null) {
       retVal.direct_parent_id = _.get(value, 'category_id')
       retVal.direct_parent_type = CATEGORY_TYPE_NAME
     } else {

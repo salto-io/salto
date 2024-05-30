@@ -391,6 +391,7 @@ const getGuideElements = async ({
     brandsList.map(async brandInstance => {
       const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
       log.debug(`Fetching elements for brand ${brandInstance.elemID.name}`)
+
       if (useNewInfra !== true) {
         return getAllElements({
           adapterName: ZENDESK,
@@ -418,6 +419,7 @@ const getGuideElements = async ({
     }),
   )
 
+  // const flattenedInstances = fetchResultWithDuplicateTypes.flatMap(result => result.elements)
   const typeNameToGuideInstances = _.groupBy(
     fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
     instance => instance.elemID.typeName,
@@ -434,7 +436,8 @@ const getGuideElements = async ({
     })
     return _.concat(guideElements.instances as Element[], guideElements.nestedTypes, guideElements.type)
   })
-
+  // eslint-disable-next-line no-console
+  console.log('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
   // Create instances from standalone fields that were not created in previous steps
   await elementUtils.ducktype.extractStandaloneFields({
     adapterName: ZENDESK,
@@ -443,13 +446,15 @@ const getGuideElements = async ({
     transformationDefaultConfig,
     getElemIdFunc,
   })
+  // eslint-disable-next-line no-console
+  console.log('cccccccccccccccccccccccccccccccccccccccccc')
 
   const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(
     fetchResult => fetchResult.configChanges ?? [],
   )
   const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
-    elements: zendeskGuideElements,
+    elements: useNewInfra ? zendeskGuideElements : zendeskGuideElements,
     configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
     errors: guideErrors,
   }
@@ -696,6 +701,8 @@ export default class ZendeskAdapter implements AdapterOperations {
           },
         ]),
       )
+      // eslint-disable-next-line no-console
+      console.log(Object.keys(Object.values(brandToFetchDefinitions)[0].fetch.instances.customizations || []))
 
       const zendeskGuideElements = await getGuideElements({
         brandsList,
@@ -711,6 +718,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       combinedRes.elements = combinedRes.elements.concat(zendeskGuideElements.elements)
       combinedRes.errors = combinedRes.errors.concat(zendeskGuideElements.errors ?? [])
     }
+    // eslint-disable-next-line no-console
+    console.log('dddddddddddddddddddddddddddddd')
 
     // Remaining types should be added once to avoid overlaps between the generated elements,
     // so we add them once after all elements are generated
@@ -721,6 +730,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       supportedTypes: _.merge(supportedTypes, GUIDE_BRAND_SPECIFIC_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
+    // eslint-disable-next-line no-console
+    console.log('eeeeeeeeeeeeeeeeeeeeeeeeeeeeee')
 
     return combinedRes
   }
@@ -791,6 +802,8 @@ export default class ZendeskAdapter implements AdapterOperations {
         this.createClientBySubdomain(brandInstance.value.subdomain),
       ]),
     )
+    // eslint-disable-next-line no-console
+    console.log('ffffffffffffffffffffffffffffffffffffffff')
     // This exposes different subdomain clients for Guide related types filters
     const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
     const updatedConfig =
@@ -806,6 +819,9 @@ export default class ZendeskAdapter implements AdapterOperations {
     if (this.logIdsFunc !== undefined) {
       this.logIdsFunc()
     }
+    // eslint-disable-next-line no-console
+    console.log('gggggggggggggggggggggggggggggg')
+
     return { elements, errors: fetchErrors, updatedConfig }
   }
 

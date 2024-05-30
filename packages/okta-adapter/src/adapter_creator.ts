@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
   combineCustomReferenceGetters,
-  definitions as definitionsUtils,
+  config as configUtils,
+  definitions,
 } from '@salto-io/adapter-components'
-import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import {
@@ -29,16 +30,30 @@ import {
   OAuthAccessTokenCredentials,
   isOAuthAccessTokenCredentials,
 } from './auth'
-import { CLIENT_CONFIG } from './config'
+import {
+  configType,
+  OktaConfig,
+  API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG,
+  DEFAULT_CONFIG,
+  CLIENT_CONFIG,
+  OktaClientConfig,
+  OktaSwaggerApiConfig,
+  PRIVATE_API_DEFINITIONS_CONFIG,
+  OktaDuckTypeApiConfig,
+  validateOktaFetchConfig,
+  DEPLOY_CONFIG,
+  OktaDeployConfig,
+} from './config'
 import { createConnection } from './client/connection'
 import { validateOktaBaseUrl } from './utils'
 import { getAdminUrl } from './client/admin'
 import { weakReferenceHandlers } from './weak_references'
-import { DEFAULT_CONFIG, OktaUserConfig, configType } from './user_config'
-import { shouldAccessPrivateAPIs } from './definitions/requests/clients'
 
+const log = logger(module)
 const { validateCredentials } = clientUtils
-const { adapterConfigFromConfig, updateDeprecatedConfig } = definitionsUtils
+const { validateClientConfig, mergeWithDefaultConfig } = definitions
+const { validateSwaggerApiDefinitionConfig, validateDuckTypeApiDefinitionConfig } = configUtils
 
 const isOAuthConfigCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
   configValue.authType === 'oauth' &&
@@ -60,32 +75,64 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
     : { baseUrl, token: config.value.token }
 }
 
-const createAdminClient = (
-  credentials: Credentials,
-  config: OktaUserConfig,
-  isOAuthLogin: boolean,
-): OktaClient | undefined => {
-  // we use admin client for private api calls only
-  if (!shouldAccessPrivateAPIs(isOAuthLogin, config)) {
+const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): OktaConfig => {
+  const apiDefinitions = mergeWithDefaultConfig(
+    DEFAULT_CONFIG.apiDefinitions,
+    config?.value.apiDefinitions,
+  ) as OktaSwaggerApiConfig
+
+  const privateApiDefinitions = mergeWithDefaultConfig(
+    DEFAULT_CONFIG[PRIVATE_API_DEFINITIONS_CONFIG],
+    config?.value.privateApiDefinitions,
+  ) as OktaDuckTypeApiConfig
+
+  const fetch = _.defaults({}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG])
+
+  const client = mergeWithDefaultConfig(DEFAULT_CONFIG[CLIENT_CONFIG] ?? {}, config?.value?.client) as OktaClientConfig
+
+  const deploy = mergeWithDefaultConfig(DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {}, config?.value?.deploy) as OktaDeployConfig
+
+  validateClientConfig(CLIENT_CONFIG, client)
+  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  validateOktaFetchConfig({
+    fetchConfig: fetch,
+    clientConfig: client,
+    apiDefinitions,
+    privateApiDefinitions,
+  })
+  validateDuckTypeApiDefinitionConfig(PRIVATE_API_DEFINITIONS_CONFIG, privateApiDefinitions)
+
+  const adapterConfig: { [K in keyof Required<OktaConfig>]: OktaConfig[K] } = {
+    client,
+    fetch,
+    apiDefinitions,
+    privateApiDefinitions,
+    deploy,
+  }
+  Object.keys(config?.value ?? {})
+    .filter(k => !Object.keys(adapterConfig).includes(k))
+    .forEach(k => log.debug('Unknown config property was found: %s', k))
+  return adapterConfig
+}
+
+const createAdminClient = (credentials: Credentials, config: OktaConfig): OktaClient | undefined => {
+  const clientConfig = config[CLIENT_CONFIG]
+  if (clientConfig?.usePrivateAPI !== true) {
+    // we use admin client for private api calls only
     return undefined
   }
   const adminUrl = getAdminUrl(credentials.baseUrl)
   return adminUrl !== undefined
     ? new OktaClient({
         credentials: { ...credentials, baseUrl: adminUrl },
-        config: config[CLIENT_CONFIG],
+        config: clientConfig,
       })
     : undefined
 }
 
 export const adapter: Adapter = {
   operations: context => {
-    // TODO SALTO-5991 remove config migration after all envs were upgraded
-    const updatedConfig = context.config && updateDeprecatedConfig(context.config)
-    const config = adapterConfigFromConfig<never, OktaUserConfig>(
-      updatedConfig?.config ?? context.config,
-      DEFAULT_CONFIG,
-    )
+    const config = adapterConfigFromConfig(context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const isOAuthLogin = isOAuthAccessTokenCredentials(credentials)
     const adapterOperations = new OktaAdapter({
@@ -93,28 +140,17 @@ export const adapter: Adapter = {
         credentials,
         config: config.client,
       }),
-      userConfig: config,
-      configInstance: updatedConfig?.config ?? context.config,
+      config,
+      configInstance: context.config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
       isOAuthLogin,
-      adminClient: createAdminClient(credentials, config, isOAuthLogin),
+      adminClient: !isOAuthLogin ? createAdminClient(credentials, config) : undefined,
     })
 
     return {
       deploy: adapterOperations.deploy.bind(adapterOperations),
-      fetch: async args => {
-        const fetchResults = await adapterOperations.fetch(args)
-        if (updatedConfig) {
-          fetchResults.updatedConfig = fetchResults.updatedConfig
-            ? {
-                config: fetchResults.updatedConfig.config,
-                message: formatConfigSuggestionsReasons([fetchResults.updatedConfig.message, updatedConfig.message]),
-              }
-            : { config: [updatedConfig.config], message: updatedConfig.message }
-        }
-        return fetchResults
-      },
+      fetch: async args => adapterOperations.fetch(args),
       deployModifiers: adapterOperations.deployModifiers,
       fixElements: adapterOperations.fixElements.bind(adapterOperations),
     }

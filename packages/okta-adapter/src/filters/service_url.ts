@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 import { filters } from '@salto-io/adapter-components'
-import { FilterAdditionalParams, FilterCreator, FilterResult } from '../filter'
-import { OktaFetchOptions } from '../definitions/types'
-import { OktaUserConfig } from '../user_config'
+import { FilterContext, PRIVATE_API_DEFINITIONS_CONFIG } from '../config'
+import { FilterCreator, FilterResult } from '../filter'
+import OktaClient from '../client/client'
+import { getAdminUrl } from '../client/admin'
 
 const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<OktaUserConfig, FilterResult, FilterAdditionalParams, OktaFetchOptions>()(params)
+  filters.serviceUrlFilterCreatorDeprecated<OktaClient, FilterContext, FilterResult>(
+    getAdminUrl(params.client.baseUrl) ?? params.client.baseUrl,
+    params.config[PRIVATE_API_DEFINITIONS_CONFIG],
+  )(params)
 
 export default filter

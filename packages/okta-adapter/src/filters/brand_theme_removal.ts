@@ -21,13 +21,14 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
+import OktaClient from '../client/client'
 
 const log = logger(module)
 
 const verifyBrandThemeIsDeleted = async (
   brandId: string,
   brandThemeId: string,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  client: OktaClient,
 ): Promise<boolean> => {
   try {
     return (
@@ -53,7 +54,7 @@ const verifyBrandThemeIsDeleted = async (
  *
  * A separate change validator ensures that this is only executed if the Brand was removed in the same deploy action.
  */
-const filterCreator: FilterCreator = ({ definitions }) => ({
+const filterCreator: FilterCreator = ({ client }) => ({
   name: 'brandThemeRemovalFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -67,7 +68,7 @@ const filterCreator: FilterCreator = ({ definitions }) => ({
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
       const brandId = getParents(getChangeData(change))[0]?.id
       const brandThemeId = getChangeData(change).value.id
-      if (!(await verifyBrandThemeIsDeleted(brandId, brandThemeId, definitions.clients.options.main.httpClient))) {
+      if (!(await verifyBrandThemeIsDeleted(brandId, brandThemeId, client))) {
         throw new Error('Expected BrandTheme to be deleted')
       }
     })

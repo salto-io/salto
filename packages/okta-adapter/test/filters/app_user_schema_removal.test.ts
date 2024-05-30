@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { createDefinitions, getFilterParams, mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
 import appUserSchemaRemovalFilter from '../../src/filters/app_user_schema_removal'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, OKTA } from '../../src/constants'
 import OktaClient from '../../src/client/client'
@@ -64,8 +64,7 @@ describe('appUserSchemaRemovalFilter', () => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
-    const definitions = createDefinitions({ client })
-    filter = appUserSchemaRemovalFilter(getFilterParams({ definitions })) as typeof filter
+    filter = appUserSchemaRemovalFilter(getFilterParams({ client })) as typeof filter
     appUserSchemaInstance = appUserSchema.clone()
   })
 

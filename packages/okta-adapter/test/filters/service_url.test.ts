@@ -24,7 +24,7 @@ import {
   getChangeData,
   toChange,
 } from '@salto-io/adapter-api'
-import { createDefinitions, getFilterParams, mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import { getAdminUrl } from '../../src/client/admin'
 import serviceUrlFilter from '../../src/filters/service_url'
@@ -39,8 +39,7 @@ describe('serviceUrlFilter', () => {
     jest.clearAllMocks()
     const mockCli = mockClient()
     client = mockCli.client
-    const definitions = createDefinitions({ client })
-    filter = serviceUrlFilter(getFilterParams({ definitions })) as typeof filter
+    filter = serviceUrlFilter(getFilterParams({ client })) as typeof filter
   })
 
   const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })

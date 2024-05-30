@@ -14,18 +14,40 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import Joi from 'joi'
 import { InstanceElement, isInstanceChange, isAdditionChange, getChangeData, Change } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
-import { isUserType } from '../definitions/transforms/user_type'
+import { applyFunctionToChangeData, createSchemeGuard } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { USERTYPE_TYPE_NAME, LINKS_FIELD } from '../constants'
+import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { defaultDeployChange, deployChanges } from '../deployment'
 
+type UserType = {
+  _links: {
+    schema: {
+      href: string
+    }
+  }
+}
+
+const USER_TYPE_SCHEMA = Joi.object({
+  _links: Joi.object({
+    schema: Joi.object({
+      href: Joi.string().required(),
+    })
+      .required()
+      .unknown(true),
+  })
+    .required()
+    .unknown(true),
+}).unknown(true)
+
+export const isUserType = createSchemeGuard<UserType>(USER_TYPE_SCHEMA, 'Received invalid UserType object')
+
 const deployUserType = async (
   change: Change<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  client: OktaClient,
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const response = await defaultDeployChange(change, client, apiDefinitions)
@@ -42,10 +64,9 @@ const deployUserType = async (
  * Deploy additions of UserType changes,
  * and set '_links' object to the added instance which is later used to deploy UserSchema changes
  */
-const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
+const filter: FilterCreator = ({ client, config }) => ({
   name: 'userTypeFilter',
   deploy: async changes => {
-    const client = definitions.clients.options.main.httpClient
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
@@ -55,7 +76,7 @@ const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployUserType(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG]),
+      deployUserType(change, client, config[API_DEFINITIONS_CONFIG]),
     )
 
     return { leftoverChanges, deployResult }

@@ -38,36 +38,25 @@ import { brandRemovalValidator } from './brand_removal'
 import { appUserSchemaRemovalValidator } from './app_user_schema_removal'
 import { domainAdditionValidator } from './domain_addition'
 import { domainModificationValidator } from './domain_modification'
-import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
-import { brandThemeRemovalValidator } from './brand_theme_removal'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
+  ChangeValidatorName,
   DEPLOY_CONFIG,
-  OldOktaDefinitionsConfig,
+  OktaConfig,
   PRIVATE_API_DEFINITIONS_CONFIG,
 } from '../config'
-import { OktaUserConfig, ChangeValidatorName } from '../user_config'
+import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
+import { brandThemeRemovalValidator } from './brand_theme_removal'
 
 const { createCheckDeploymentBasedOnConfigValidator, getDefaultChangeValidators, createChangeValidator } =
   deployment.changeValidators
 
-export default ({
-  client,
-  userConfig,
-  oldApiDefsConfig,
-}: {
-  client: OktaClient
-  userConfig: OktaUserConfig
-  oldApiDefsConfig: OldOktaDefinitionsConfig
-}): ChangeValidator => {
+export default ({ client, config }: { client: OktaClient; config: OktaConfig }): ChangeValidator => {
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
-      typesConfig: _.merge(
-        oldApiDefsConfig[API_DEFINITIONS_CONFIG].types,
-        oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types,
-      ),
+      typesConfig: _.merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),
     }),
     application: applicationValidator,
     appGroup: appGroupValidator,
@@ -80,7 +69,7 @@ export default ({
     assignedAccessPolicies: assignedAccessPoliciesValidator,
     groupSchemaModifyBase: groupSchemaModifyBaseValidator,
     enabledAuthenticators: enabledAuthenticatorsValidator,
-    users: usersValidator(client, userConfig),
+    users: usersValidator(client, config),
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
     appWithGroupPush: appWithGroupPushValidator,
     groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
@@ -97,6 +86,6 @@ export default ({
 
   return createChangeValidator({
     validators,
-    validatorsActivationConfig: userConfig[DEPLOY_CONFIG]?.changeValidators,
+    validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
   })
 }

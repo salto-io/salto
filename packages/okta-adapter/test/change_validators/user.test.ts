@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { DEFAULT_CONFIG } from '../../src/user_config'
+import { DEFAULT_CONFIG } from '../../src/config'
 import { usersValidator } from '../../src/change_validators/user'
 import { OKTA, GROUP_RULE_TYPE_NAME, ACCESS_POLICY_RULE_TYPE_NAME } from '../../src/constants'
 import OktaClient from '../../src/client/client'

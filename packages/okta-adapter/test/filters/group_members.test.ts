@@ -27,11 +27,10 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { FETCH_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { GROUP_MEMBERSHIP_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
 import groupMembersFilter from '../../src/filters/group_members'
-import { createDefinitions, getFilterParams, mockClient } from '../utils'
-import { DEFAULT_CONFIG } from '../../src/user_config'
+import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 
 describe('groupMembersFilter', () => {
@@ -145,10 +144,7 @@ describe('groupMembersFilter', () => {
       client = cli
       const includeGroupMembershipsEnabled = { ...DEFAULT_CONFIG }
       includeGroupMembershipsEnabled[FETCH_CONFIG].includeGroupMemberships = true
-      const definitions = createDefinitions({ client })
-      filter = groupMembersFilter(
-        getFilterParams({ definitions, config: includeGroupMembershipsEnabled }),
-      ) as typeof filter
+      filter = groupMembersFilter(getFilterParams({ client, config: includeGroupMembershipsEnabled })) as typeof filter
     })
     it('should return error when includeGroupMemberships config flag is disabled', async () => {
       const includeGroupMembershipsDisabled = _.cloneDeep(DEFAULT_CONFIG)

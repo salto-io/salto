@@ -22,22 +22,22 @@ import {
   InstanceElement,
   isAdditionChange,
   isInstanceChange,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
+import { CLIENT_CONFIG } from '../config'
 import { assignServiceIdToAdditionChange, deployChanges } from '../deployment'
-import { shouldAccessPrivateAPIs } from '../definitions/requests/clients'
 
 const log = logger(module)
 
 /**
  * Deploys changes of types defined with ducktype api definitions
  */
-const filterCreator: FilterCreator = ({ definitions, config, oldApiDefinitions, isOAuthLogin }) => ({
+const filterCreator: FilterCreator = ({ adminClient, config }) => ({
   name: 'privateAPIDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const { privateApiDefinitions } = oldApiDefinitions
-    const adminClient = definitions.clients.options.private.httpClient
+    const { privateApiDefinitions } = config
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
@@ -49,12 +49,11 @@ const filterCreator: FilterCreator = ({ definitions, config, oldApiDefinitions, 
         deployResult: { errors: [], appliedChanges: [] },
       }
     }
-    // TODO SALTO-5692 - replace this with checking whether deploy definitions for type exists
-    if (!shouldAccessPrivateAPIs(isOAuthLogin, config)) {
-      log.debug('Skip deployment of private API types because private API cannot be accessed')
+    if (config[CLIENT_CONFIG]?.usePrivateAPI !== true) {
+      log.debug('Skip deployment of private API types because private API is not enabled')
       const errors = relevantChanges.map(change =>
         createSaltoElementError({
-          message: 'private API is not enabled in this environment',
+          message: 'usePrivateApi config option must be enabled in order to deploy this change',
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         }),
@@ -64,7 +63,17 @@ const filterCreator: FilterCreator = ({ definitions, config, oldApiDefinitions, 
         deployResult: { appliedChanges: [], errors },
       }
     }
-
+    if (adminClient === undefined) {
+      log.error('Skip deployment of private API types because adminClient does not exist')
+      const error: SaltoError = {
+        message: `The following changes were not deployed, due to error with the private API client: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
+        severity: 'Error',
+      }
+      return {
+        leftoverChanges,
+        deployResult: { appliedChanges: [], errors: [error] },
+      }
+    }
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
       const response = await deployment.deployChange({
         change,
@@ -72,7 +81,7 @@ const filterCreator: FilterCreator = ({ definitions, config, oldApiDefinitions, 
         endpointDetails: privateApiDefinitions.types[getChangeData(change).elemID.typeName]?.deployRequests,
       })
       if (isAdditionChange(change)) {
-        await assignServiceIdToAdditionChange(response, change)
+        assignServiceIdToAdditionChange(response, change, privateApiDefinitions)
       }
     })
     return { deployResult, leftoverChanges }

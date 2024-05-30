@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { Keywords } from '../../language'
 import { ParseError } from '../../types'
 import { SourceRange } from '../types'
 
@@ -45,6 +46,34 @@ export const invalidBlocksInInstance = (range: SourceRange): ParseError =>
     'Invalid blocks in an instance',
     'Unexpected field or annotation type definition(s) in a primitive type. Expected only values.',
   )
+
+export const invalidDefinition = (range: SourceRange, labels: string[]): ParseError => {
+  if (labels.length === 0) {
+    return createError(range, 'Missing block definition')
+  }
+
+  if (labels[0] === Keywords.TYPE_DEFINITION) {
+    return createError(
+      range,
+      'Invalid type definition',
+      "Type definition must be of the form 'type <name>' or 'type <name> is <category>'.",
+    )
+  }
+
+  if (labels[0] === Keywords.SETTINGS_DEFINITION) {
+    return createError(
+      range,
+      'Invalid settings type definition',
+      "Settings type definition must be of the form 'settings <name>'.",
+    )
+  }
+
+  return createError(
+    range,
+    'Invalid instance definition',
+    "Instance definition must be of the form '<type> name' or '<settings type>'.",
+  )
+}
 
 export const ambiguousBlock = (range: SourceRange): ParseError => createError(range, 'Ambiguous block definition')
 

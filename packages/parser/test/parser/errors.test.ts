@@ -47,7 +47,7 @@ describe('parsing errors', () => {
         })
         expect(res.errors[0].summary).toBe('Expected block labels')
         expect(res.errors[0].message).toBe('Expected block labels, found { instead.')
-        expect(res.errors[1].summary).toBe('Ambiguous block definition')
+        expect(res.errors[1].summary).toBe('Missing block definition')
       })
 
       it('should continue parsing other blocks and ignore the unlabeled block', async () => {
@@ -97,10 +97,10 @@ describe('parsing errors', () => {
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { byte: 9, col: 9, line: 2 },
-            end: { byte: 51, col: 10, line: 3 },
+            end: { byte: 39, col: 39, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].summary).toBe('Ambiguous block definition')
+          expect(res.errors[0].summary).toBe('Invalid type definition')
           expect(await awu(res.elements).toArray()).toHaveLength(0)
         })
       })
@@ -117,10 +117,10 @@ describe('parsing errors', () => {
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { byte: 11, col: 11, line: 2 },
-            end: { byte: 60, col: 10, line: 3 },
+            end: { byte: 48, col: 48, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].summary).toBe('Ambiguous block definition')
+          expect(res.errors[0].summary).toBe('Invalid type definition')
           expect(await awu(res.elements).toArray()).toHaveLength(0)
         })
       })

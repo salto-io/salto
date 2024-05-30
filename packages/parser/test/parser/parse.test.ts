@@ -75,8 +75,8 @@ describe('Salto parser', () => {
     functions = registerTestFunction(funcName)
   })
 
-  describe('primitives', () => {
-    describe('string', () => {
+  describe('with primitive definitions', () => {
+    describe('when type is string', () => {
       const body = `
         type salesforce.string is string {
         }
@@ -86,7 +86,7 @@ describe('Salto parser', () => {
         ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
-      it('should parse type', () => {
+      it('should have the correct type and ID', () => {
         expect(elements).toHaveLength(1)
         const stringType = elements[0] as PrimitiveType
         expect(stringType.primitive).toBe(PrimitiveTypes.STRING)
@@ -98,7 +98,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('number', () => {
+    describe('when type is number', () => {
       const body = `
         type salesforce.number is number {
         }
@@ -108,7 +108,7 @@ describe('Salto parser', () => {
         ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
-      it('should parse type', () => {
+      it('should have the correct type and ID', () => {
         expect(elements).toHaveLength(1)
         const numberType = elements[0] as PrimitiveType
         expect(numberType.primitive).toBe(PrimitiveTypes.NUMBER)
@@ -120,7 +120,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('boolean', () => {
+    describe('when type is boolean', () => {
       const body = `
         type salesforce.boolean is boolean {
         }
@@ -130,7 +130,7 @@ describe('Salto parser', () => {
         ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
-      it('should parse type', () => {
+      it('should have the correct type and ID', () => {
         expect(elements).toHaveLength(1)
         const booleanType = elements[0] as PrimitiveType
         expect(booleanType.primitive).toBe(PrimitiveTypes.BOOLEAN)
@@ -142,7 +142,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('unknown', () => {
+    describe('when type is unknown', () => {
       const body = `
         type salesforce.unknown is unknown {
         }
@@ -152,7 +152,7 @@ describe('Salto parser', () => {
         ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
-      it('should parse type', () => {
+      it('should have the correct type and ID', () => {
         expect(elements).toHaveLength(1)
         const unknownType = elements[0] as PrimitiveType
         expect(unknownType.primitive).toBe(PrimitiveTypes.UNKNOWN)
@@ -164,9 +164,9 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('invalid', () => {
+    describe('when type is invalid', () => {
       const body = `
-        type salesforce.unknown is invalid {
+        type salesforce.invalid is invalid {
         }
       `
 
@@ -174,16 +174,16 @@ describe('Salto parser', () => {
         ;({ elements, sourceMap, errors } = await parseBody(body))
       })
 
-      it('should parse type', () => {
+      it('should parse type as unknown primitive with the correct ID', () => {
         expect(elements).toHaveLength(1)
         const unknownType = elements[0] as PrimitiveType
         expect(unknownType.primitive).toBe(PrimitiveTypes.UNKNOWN)
-        expect(unknownType.elemID).toEqual(new ElemID('salesforce', 'unknown'))
+        expect(unknownType.elemID).toEqual(new ElemID('salesforce', 'invalid'))
       })
 
       it('should contain all elements in source map', validateSourceMap)
 
-      it('should have no errors', () => {
+      it('should have an error', () => {
         expect(errors).toHaveLength(1)
         const error = errors[0]
         expect(error.summary).toEqual('Unknown primitive type')
@@ -191,7 +191,7 @@ describe('Salto parser', () => {
       })
     })
 
-    describe('missing', () => {
+    describe('when type is missing', () => {
       const body = `
         type salesforce.unknown is {
         }
@@ -204,15 +204,15 @@ describe('Salto parser', () => {
       it('should have an error', () => {
         expect(errors).toHaveLength(1)
         const error = errors[0]
-        expect(error.summary).toEqual('Ambiguous block definition')
+        expect(error.summary).toEqual('Invalid type definition')
         expect(elements).toHaveLength(0)
       })
     })
   })
 
-  describe('object type', () => {
+  describe('with an object type definition', () => {
     describe('labels', () => {
-      describe('full definition', () => {
+      describe("with explicit 'is object'", () => {
         const body = `
           type salesforce.object is object {
           }
@@ -234,7 +234,7 @@ describe('Salto parser', () => {
         it('should have no errors', checkNoErrors)
       })
 
-      describe('implicit definition', () => {
+      describe('with implicit definition', () => {
         const body = `
           type salesforce.object {
           }
@@ -256,7 +256,7 @@ describe('Salto parser', () => {
         it('should have no errors', checkNoErrors)
       })
 
-      describe("dropped 'is' keyword", () => {
+      describe("when 'is' keyword is dropped", () => {
         const body = `
           type salesforce.object object {
           }
@@ -269,12 +269,12 @@ describe('Salto parser', () => {
         it('should have an error', () => {
           expect(errors).toHaveLength(1)
           const error = errors[0]
-          expect(error.summary).toEqual('Ambiguous block definition')
+          expect(error.summary).toEqual('Invalid type definition')
           expect(elements).toHaveLength(0)
         })
       })
 
-      describe('invalid name', () => {
+      describe('with invalid name', () => {
         const body = `
           type salesforce.someType.a {
           }
@@ -291,7 +291,7 @@ describe('Salto parser', () => {
         })
       })
 
-      describe('extra labels', () => {
+      describe('with extra labels', () => {
         const body = `
           type salesforce.object is object and also additional labels {
           }
@@ -303,7 +303,7 @@ describe('Salto parser', () => {
 
         it('should have an error', () => {
           expect(errors).toHaveLength(1)
-          expect(errors[0].summary).toEqual('Ambiguous block definition')
+          expect(errors[0].summary).toEqual('Invalid type definition')
           expect(elements).toHaveLength(0)
         })
       })
@@ -324,7 +324,7 @@ describe('Salto parser', () => {
 
         it('should have errors', () => {
           expect(errors).toHaveLength(2)
-          expect(errors[0].summary).toEqual('Invalid type name')
+          errors.forEach(error => expect(error.summary).toEqual('Invalid type name'))
         })
 
         it('should parse valid element', () => {
@@ -334,7 +334,7 @@ describe('Salto parser', () => {
       })
     })
 
-    describe('model', () => {
+    describe('with fields and annotation values', () => {
       const body = `
         type salesforce.test {
           salesforce.string name {
@@ -371,15 +371,15 @@ describe('Salto parser', () => {
           }
         }
       `
-      let model: ObjectType
+      let object: ObjectType
 
       beforeEach(async () => {
         ;({ elements, sourceMap, errors } = await parseBody(body))
-        model = elements[0] as ObjectType
+        object = elements[0] as ObjectType
       })
 
       it('should parse object type', () => {
-        expect(isObjectType(model)).toBe(true)
+        expect(isObjectType(object)).toBe(true)
       })
 
       it('should contain all elements in source map', validateSourceMap)
@@ -387,31 +387,31 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
 
       describe('fields', () => {
-        describe('new', () => {
+        describe('when the type is new', () => {
           it('should exist', () => {
-            expect(model.fields).toHaveProperty('name')
+            expect(object.fields).toHaveProperty('name')
           })
 
           it('should have the correct type', () => {
-            expect(model.fields.name.refType.elemID).toEqual(new ElemID('salesforce', 'string'))
+            expect(object.fields.name.refType.elemID).toEqual(new ElemID('salesforce', 'string'))
           })
 
           it('should have annotation values', () => {
-            expect(model.fields.name.annotations).toHaveProperty('label')
-            expect(model.fields.name.annotations.label).toEqual('Name')
-            expect(model.fields.name.annotations).toHaveProperty('_required')
+            expect(object.fields.name.annotations).toHaveProperty('label')
+            expect(object.fields.name.annotations.label).toEqual('Name')
+            expect(object.fields.name.annotations).toHaveProperty('_required')
             // eslint-disable-next-line no-underscore-dangle
-            expect(model.fields.name.annotations._required).toBe(true)
+            expect(object.fields.name.annotations._required).toBe(true)
           })
         })
 
-        describe('list', () => {
+        describe('when the type is a list', () => {
           it('should exist', () => {
-            expect(model.fields).toHaveProperty('nicknames')
+            expect(object.fields).toHaveProperty('nicknames')
           })
 
           it('should have the correct type', () => {
-            expect(model.fields.nicknames.refType.elemID).toEqual(new ElemID('', 'List<salesforce.string>'))
+            expect(object.fields.nicknames.refType.elemID).toEqual(new ElemID('', 'List<salesforce.string>'))
           })
 
           it('should create a list element', () => {
@@ -421,13 +421,13 @@ describe('Salto parser', () => {
           })
         })
 
-        describe('map', () => {
+        describe('when the type is a map', () => {
           it('should exist', () => {
-            expect(model.fields).toHaveProperty('numChildren')
+            expect(object.fields).toHaveProperty('numChildren')
           })
 
           it('should have the correct type', () => {
-            expect(model.fields.numChildren.refType.elemID).toEqual(new ElemID('', 'Map<salesforce.number>'))
+            expect(object.fields.numChildren.refType.elemID).toEqual(new ElemID('', 'Map<salesforce.number>'))
           })
 
           it('should create a map element', () => {
@@ -440,11 +440,11 @@ describe('Salto parser', () => {
 
       describe('field annotations', () => {
         it('should exist', () => {
-          expect(model.fields).toHaveProperty('fax')
+          expect(object.fields).toHaveProperty('fax')
         })
 
         it('should have the correct value', () => {
-          expect(model.fields.fax.annotations).toEqual({
+          expect(object.fields.fax.annotations).toEqual({
             fieldLevelSecurity: {
               // eslint-disable-next-line camelcase
               all_profiles: {
@@ -459,11 +459,11 @@ describe('Salto parser', () => {
 
       describe('annotations', () => {
         it('should exist', () => {
-          expect(model.annotations).toHaveProperty('LeadConvertSettings')
+          expect(object.annotations).toHaveProperty('LeadConvertSettings')
         })
 
         it('should have the correct value', () => {
-          expect(model.annotations.LeadConvertSettings).toEqual({
+          expect(object.annotations.LeadConvertSettings).toEqual({
             account: [
               {
                 input: 'bla',
@@ -476,18 +476,18 @@ describe('Salto parser', () => {
 
       describe('annotation types', () => {
         it('should exist', () => {
-          expect(model.annotationRefTypes).toHaveProperty('convertSettings')
+          expect(object.annotationRefTypes).toHaveProperty('convertSettings')
         })
 
         it('should have the correct type', () => {
-          expect(model.annotationRefTypes.convertSettings.elemID.adapter).toEqual('salesforce')
-          expect(model.annotationRefTypes.convertSettings.elemID.name).toEqual('LeadConvertSettings')
+          expect(object.annotationRefTypes.convertSettings.elemID.adapter).toEqual('salesforce')
+          expect(object.annotationRefTypes.convertSettings.elemID.name).toEqual('LeadConvertSettings')
         })
       })
 
       describe('source map', () => {
         it('should have correct start and end positions', () => {
-          const modelSource = sourceMap.get(model.elemID.getFullName()) as SourceRange[]
+          const modelSource = sourceMap.get(object.elemID.getFullName()) as SourceRange[]
           expect(modelSource).toBeDefined()
           expect(modelSource).toHaveLength(1)
           expect(modelSource[0].start.line).toBe(2)
@@ -495,13 +495,13 @@ describe('Salto parser', () => {
         })
 
         it('should contain fields', () => {
-          Object.values(model.fields).forEach(field =>
+          Object.values(object.fields).forEach(field =>
             expect(sourceMap.get(field.elemID.getFullName())).not.toHaveLength(0),
           )
         })
 
         it('should contain nested attribute values', () => {
-          const nestedAttrId = model.elemID
+          const nestedAttrId = object.elemID
             .createNestedID('attr')
             .createNestedID('LeadConvertSettings')
             .createNestedID('account')
@@ -512,13 +512,13 @@ describe('Salto parser', () => {
         })
 
         it('should contain annotation types', () => {
-          const annotationTypesId = model.elemID.createNestedID('annotation')
+          const annotationTypesId = object.elemID.createNestedID('annotation')
           const annotationTypesSource = sourceMap.get(annotationTypesId.getFullName())
           expect(annotationTypesSource).toHaveLength(1)
         })
 
         it('should contain a single annotation type', () => {
-          const annotationTypeId = model.elemID.createNestedID('annotation').createNestedID('convertSettings')
+          const annotationTypeId = object.elemID.createNestedID('annotation').createNestedID('convertSettings')
           const annotationTypeSource = sourceMap.get(annotationTypeId.getFullName())
           expect(annotationTypeSource).toHaveLength(1)
         })
@@ -526,9 +526,9 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('settings', () => {
+  describe('with a settings definition', () => {
     describe('labels', () => {
-      describe('full definition', () => {
+      describe('when the definition is valid', () => {
         const body = `
           settings salesforce.global {
           }
@@ -564,7 +564,7 @@ describe('Salto parser', () => {
         it('should have an error', () => {
           expect(errors).toHaveLength(1)
           const error = errors[0]
-          expect(error.summary).toEqual('Ambiguous block definition')
+          expect(error.summary).toEqual('Invalid settings type definition')
           expect(elements).toHaveLength(0)
         })
       })
@@ -582,13 +582,13 @@ describe('Salto parser', () => {
         it('should have an error', () => {
           expect(errors).toHaveLength(1)
           const error = errors[0]
-          expect(error.summary).toEqual('Ambiguous block definition')
+          expect(error.summary).toEqual('Invalid settings type definition')
           expect(elements).toHaveLength(0)
         })
       })
     })
 
-    describe('model', () => {
+    describe('with fields and annotation values', () => {
       const body = `
         settings salesforce.path_assistant_settings {
           metadataType = "PathAssistantSettings"
@@ -647,8 +647,8 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('instance', () => {
-    describe('simple', () => {
+  describe('with an instance', () => {
+    describe('with simple definition', () => {
       const body = `
       salesforce.test inst {
         _depends_on = "fake1"
@@ -691,7 +691,7 @@ describe('Salto parser', () => {
     })
 
     describe('labels', () => {
-      describe('name that starts with boolean', () => {
+      describe('with a name that starts with boolean', () => {
         const body = `
           salesforce.someType false_string {}
         `
@@ -710,7 +710,7 @@ describe('Salto parser', () => {
         it('should have no errors', checkNoErrors)
       })
 
-      describe('invalid ID type', () => {
+      describe('with an invalid ID type', () => {
         const body = `
           salesforce.someType.a false_string {}
         `
@@ -728,7 +728,7 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('config', () => {
+  describe('with a config instance', () => {
     const body = `
       salesforce {
         username = "foo"
@@ -762,7 +762,7 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('settings instance', () => {
+  describe('with a settings instance', () => {
     const body = `
       salesforce.path_assistant_settings {
         full_name              = "PathAssistant"
@@ -800,7 +800,7 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('updates', () => {
+  describe('with element updates', () => {
     const body = `
       type salesforce.type {
         salesforce.number num {}
@@ -840,7 +840,7 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('functions', () => {
+  describe('with function calls', () => {
     const body = `
       adapter_id.some_asset {
         content                                 = myFunc("some.png")
@@ -930,7 +930,7 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('variables', () => {
+  describe('with variables', () => {
     const body = `
       vars {
         name = 7
@@ -962,8 +962,8 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('special string values', () => {
-    describe('multiline', () => {
+  describe('with special string values', () => {
+    describe('with multiline values', () => {
       const body = `
         type salesforce.type {
           data = '''
@@ -1019,7 +1019,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('empty', () => {
+    describe('with an empty string', () => {
       const body = `
         type salesforce.emptyString {
           str = ""
@@ -1039,7 +1039,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('escaped quotes', () => {
+    describe('with escaped quotes', () => {
       const body = `
         type salesforce.escapedQuotes {
           str = "Is this \\"escaped\\"?"
@@ -1059,7 +1059,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('double escaped quotes', () => {
+    describe('with double escaped quotes', () => {
       const body = `
         type salesforce.escapedDashBeforeQuote {
           str = "you can't run away \\\\"
@@ -1079,7 +1079,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('unicode', () => {
+    describe('with a unicode string', () => {
       const body = `
         type salesforce.unicode {
           unicodeStr = "this is \\u0061 basic thing"
@@ -1099,7 +1099,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('long', () => {
+    describe('with a long string', () => {
       const stringLength = 8498737
       const body = `
         type salesforce.longString {
@@ -1120,7 +1120,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('multiline string with a U+200D unicode before a \\n', () => {
+    describe('with a multiline string with a U+200D unicode before a \\n', () => {
       // we have this test as this unicode character joins characters together. in our case, the problem is when this
       // joiner is the last character in the string - because we add a \n before the closing ''', parsing that unicode
       // character “correctly” means joining the \n with whatever came before the \u+200D, which makes it not a \n anymore
@@ -1148,7 +1148,7 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('string attribute keys', () => {
+  describe('with string attribute keys', () => {
     const body = `
       type salesforce.stringAttr {
         "#strAttr" = "attr"
@@ -1171,7 +1171,7 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('references', () => {
+  describe('with references', () => {
     const body = `
       type salesforce.references {
         toVar = var.name3
@@ -1200,8 +1200,8 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('templates', () => {
-    describe('simple', () => {
+  describe('with templates', () => {
+    describe('with a simple value', () => {
       const body = `
         type salesforce.templates {
           tmpl = "hello {{$\{temp.la@te.instance.stuff@us}}}"
@@ -1229,7 +1229,7 @@ describe('Salto parser', () => {
       it('should have no errors', checkNoErrors)
     })
 
-    describe('multiline', () => {
+    describe('with a multiline template value', () => {
       const body = `
         type salesforce.multiline_templates {
           tmpl = '''
@@ -1289,7 +1289,7 @@ multiline
       it('should have no errors', checkNoErrors)
     })
 
-    describe('escaped', () => {
+    describe('with an escaped template value', () => {
       const body = `
         type salesforce.escaped_templates {
           tmpl = ">>>\\\${a.b}<<<"
@@ -1312,7 +1312,7 @@ multiline
     })
   })
 
-  describe('comments', () => {
+  describe('with comments', () => {
     const body = `
       // Comment at top of file.
       type salesforce.boolean is boolean {
@@ -1443,8 +1443,8 @@ multiline
     })
   })
 
-  describe('syntax errors', () => {
-    describe('invalid syntax', () => {
+  describe('with syntax errors', () => {
+    describe('with invalid syntax', () => {
       const body = `
         salto {
           test: "Test"
@@ -1461,7 +1461,7 @@ multiline
       })
     })
 
-    describe('missing list open in object', () => {
+    describe('with a missing list opening bracket in an object', () => {
       const body = `
         salto {
             {
@@ -1484,7 +1484,7 @@ multiline
       })
     })
 
-    describe('missing list open in object item', () => {
+    describe('with a missing list opening bracket in an object item', () => {
       const body = `
         salto {
           a = {
@@ -1505,7 +1505,7 @@ multiline
       })
     })
 
-    describe('unexpected parsing failures', () => {
+    describe('with unexpected parsing failures', () => {
       const body = `
         adapter_id.some_asset {
           content = myFunc("some.png")
@@ -1548,7 +1548,7 @@ multiline
       })
     })
 
-    describe('invalid object item with unexpected EOF', () => {
+    describe('with an object item with an unexpected EOF', () => {
       const body = `
         salto {
           a = {
@@ -1565,7 +1565,7 @@ multiline
       })
     })
 
-    describe('invalid character', () => {
+    describe('with an invalid character', () => {
       const body = `
         salesforce.Type inst {
           val = 'aaa"

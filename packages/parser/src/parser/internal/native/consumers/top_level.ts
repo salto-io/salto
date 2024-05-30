@@ -35,7 +35,7 @@ import {
   invalidVarDefinition,
   missingLabelsError,
   missingBlockOpen,
-  ambiguousBlock,
+  invalidDefinition,
 } from '../errors'
 import {
   primitiveType,
@@ -61,7 +61,7 @@ const consumeType = (
   // We know the labels are in one of the following formats:
   // * type <name>
   // * settings <name>
-  // * type <name> is <meta type>
+  // * type <name> is <type category>
   const isSettings = labels.value[0] === Keywords.SETTINGS_DEFINITION
   const typeName = labels.value[1]
   const baseType = labels.value[3] ?? Keywords.TYPE_OBJECT
@@ -198,8 +198,8 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
 // Type or settings.
 // Settings can only have a name, types can also be of the form "type <name> is <meta type>".
 const isTypeDef = (elementType: string, elementLabels: string[]): boolean =>
-  ((elementType === Keywords.TYPE_DEFINITION || elementType === Keywords.SETTINGS_DEFINITION) &&
-    elementLabels.length === 1) ||
+  (elementType === Keywords.SETTINGS_DEFINITION && elementLabels.length === 1) ||
+  (elementType === Keywords.TYPE_DEFINITION && elementLabels.length === 1) ||
   (elementType === Keywords.TYPE_DEFINITION &&
     elementLabels.length === 3 &&
     elementLabels[1] === Keywords.TYPE_INHERITANCE_SEPARATOR)
@@ -245,16 +245,19 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
       elementLabels[0],
     )
   } else {
-    // If we don't know which type of block is defined here, we need to ignore
-    // the block. So we consume it in order to continue on the next block. If
-    // this is not a block (we expect it to be a block since we only support blocks
-    // as top level element), the consumeBlockBody method will generate the proper errors
+    context.errors.push(
+      invalidDefinition({ ...consumedLabels.range, filename: context.filename }, consumedLabels.value),
+    )
+
+    // When the definition is invalid we want to ignore the block, so we consume it in order
+    // to continue on the next block.
+    // If this is not a block (we expect it to be a block since we only support blocks
+    // as top level element), the consumeBlockBody method will generate the proper errors.
     const blockToIgnore = consumeBlockBody(context, INVALID_ELEM_ID)
     const range = {
       start: consumedLabels.range.start,
       end: blockToIgnore.range.end,
     }
-    context.errors.push(ambiguousBlock({ ...range, filename: context.filename }))
     consumedElement = {
       range,
       value: undefined,

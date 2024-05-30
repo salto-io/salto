@@ -17,9 +17,9 @@
 import { InstanceElement, toChange, DependencyChange, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MFA_POLICY_TYPE_NAME, OKTA } from '../../src/constants'
-import { defaultMultifactorEnrollmentPolicyDependency } from '../../src/dependency_changers/mfa_policies_to_default_mfa'
+import { defaultMultifactorEnrollmentPolicyDependency } from '../../src/dependency_changers/default_multi_factor_enrollment_policy'
 
-describe('changeDependenciesFromMfaPoliciesToDefaultMfa', () => {
+describe('defaultMultifactorEnrollmentPolicyDependency', () => {
   let dependencyChanges: DependencyChange[]
   const multifactorEnrollmentPolicyPolicyType = new ObjectType({ elemID: new ElemID(OKTA, MFA_POLICY_TYPE_NAME) })
   const multifactorEnrollmentPolicyInstnace = new InstanceElement(

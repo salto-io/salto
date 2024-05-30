@@ -146,13 +146,13 @@ const deployDefaultPolicy = async (
 /**
  * Deploy addition changes of default rules for AccessPolicy and ProfileEnrollmentPolicy
  * by changing them to modification changes, because default rules automatically created by the service
+ * Also, set the priority of the default rules before deployment
  */
 const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'defaultPolicyRuleDeployment',
   preDeploy: async changes => {
-    // Get the priority of the default MultifactorEnrollmentPolicy
-    await awu(changes)
-      .filter(isInstanceChange)
+    const instanceChanges = changes.filter(isInstanceChange)
+    await awu(instanceChanges)
       .filter(isModificationChange)
       .filter(
         change =>
@@ -164,12 +164,11 @@ const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
           url: `/api/v1/policies/${instance.value.id}`,
         })
         if (isPolicyResponse(response)) {
-          instance.value.priority = response.data?.priority
+          instance.value.priority = response.data.priority
         }
       })
 
-    changes
-      .filter(isInstanceChange)
+    instanceChanges
       .filter(isAdditionOrModificationChange)
       .filter(
         change =>
@@ -179,8 +178,10 @@ const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
       .map(change => getChangeData(change))
       .forEach(instance => {
         if (instance.elemID.typeName === ACCESS_POLICY_TYPE_NAME) {
+          // service default priority for AccessPolicy is 1
           instance.value.priority = 1
         } else {
+          // service default priority for AccessPolicyRule and ProfileEnrollmentRule is 99
           instance.value.priority = 99
         }
       })

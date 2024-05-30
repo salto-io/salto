@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export {
-  cursorPagination,
-  cursorHeaderPagination,
-  itemOffsetPagination,
-  offsetAndValuesPagination,
-  pageOffsetAndLastPagination,
-  pageOffsetPagination,
-  noPagination,
-  defaultPathChecker,
-  PathCheckerFunc,
-  tokenPagination,
-  offsetAndLimitPagination,
-} from './pagination_functions'
-export { traversePages } from './pagination'
+import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import * as constants from './constants'
+
+export type Credentials = {
+  accessToken: string
+  subdomain: string
+}
+
+export const credentialsType = createMatchingObjectType<Credentials>({
+  elemID: new ElemID(constants.ADAPTER_NAME),
+  fields: {
+    subdomain: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    accessToken: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+  },
+})

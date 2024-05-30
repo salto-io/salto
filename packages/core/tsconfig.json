@@ -32,6 +32,7 @@
     { "path": "../workato-adapter" },
     { "path": "../workspace" },
     { "path": "../zendesk-adapter" },
-    { "path": "../zuora-billing-adapter" }
+    { "path": "../zuora-billing-adapter" },
+    { "path": "../pager-duty-adapter" }
   ]
 }

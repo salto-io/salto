@@ -134,7 +134,7 @@ export const pageOffsetAndLastPagination = ({
   return nextPageFullPages
 }
 
-export const offsetAndLimitPagination = ({ paginationField }: { paginationField: string }): PaginationFunction => {
+export const offsetAndValuesPagination = ({ paginationField }: { paginationField: string }): PaginationFunction => {
   // TODO allow customizing the field values (`isLastValues`)
   type PageResponse = {
     isLast: boolean
@@ -160,6 +160,26 @@ export const offsetAndLimitPagination = ({ paginationField }: { paginationField:
       _.merge({}, currentParams, {
         queryParams: {
           [paginationField]: nextPageStart.toString(),
+        },
+      }),
+    ]
+  }
+
+  return getNextPage
+}
+
+export const offsetAndLimitPagination = (): PaginationFunction => {
+  const getNextPage: PaginationFunction = ({ responseData, currentParams }) => {
+    if (_.get(responseData, 'more') !== true) {
+      return []
+    }
+    const currentPageStart = Number(_.get(responseData, 'offset'))
+    const currentLimit = Number(_.get(responseData, 'limit'))
+    const nextPageStart = currentPageStart + currentLimit
+    return [
+      _.merge({}, currentParams, {
+        queryParams: {
+          offset: nextPageStart.toString(),
         },
       }),
     ]

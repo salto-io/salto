@@ -18,9 +18,10 @@ import {
   noPagination,
   itemOffsetPagination,
   cursorPagination,
-  offsetAndLimitPagination,
+  offsetAndValuesPagination,
   cursorHeaderPagination,
   tokenPagination,
+  offsetAndLimitPagination,
 } from '../../../../src/fetch/request/pagination/pagination_functions'
 
 describe('pagination functions', () => {
@@ -78,9 +79,9 @@ describe('pagination functions', () => {
     })
   })
 
-  describe('offsetAndLimitPagination', () => {
+  describe('offsetAndValuesPagination', () => {
     it('should calculate next pages', async () => {
-      const paginate = offsetAndLimitPagination({ paginationField: 'startAt' })
+      const paginate = offsetAndValuesPagination({ paginationField: 'startAt' })
       expect(
         paginate({
           endpointIdentifier: { path: '/ep' },
@@ -95,6 +96,26 @@ describe('pagination functions', () => {
           responseData: { isLast: false, startAt: 2, values: [3] },
         }),
       ).toEqual([{ queryParams: { startAt: '3' } }])
+    })
+  })
+
+  describe('offsetAndLimitPagination', () => {
+    it('should calculate next pages', async () => {
+      const paginate = offsetAndLimitPagination()
+      expect(
+        paginate({
+          endpointIdentifier: { path: '/ep' },
+          currentParams: {},
+          responseData: { more: true, offset: 0, limit: 3, values: [1, 2, 3] },
+        }),
+      ).toEqual([{ queryParams: { offset: '3' } }])
+      expect(
+        paginate({
+          endpointIdentifier: { path: '/ep' },
+          currentParams: {},
+          responseData: { more: false, startAt: 3, values: [4] },
+        }),
+      ).toEqual([])
     })
   })
 

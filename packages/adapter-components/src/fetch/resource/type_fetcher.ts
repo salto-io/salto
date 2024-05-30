@@ -145,21 +145,21 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         contextResources,
       })
 
+      const maybeFilterItemWithCustomFilter =
+        customItemFilter === undefined ? () => true : (item: ValueGeneratedItem) => customItemFilter(item)
+
       const allFragments = await Promise.all(
-        itemsWithContext
-          .filter(item => (customItemFilter === undefined ? true : customItemFilter(item)))
-          .map(async item => {
-            const nestedResources = await recurseIntoFetcher(item)
-            const fieldValues = Object.entries(nestedResources).map(([fieldName, fieldItems]) => ({
-              [fieldName]: Array.isArray(fieldItems) ? fieldItems.map(({ value }) => value) : fieldItems.value,
-            }))
-            const a = _.defaults({}, item.value, ...fieldValues)
-            return {
-              ...item,
-              value: a,
-              context: item.context,
-            }
-          }),
+        itemsWithContext.filter(maybeFilterItemWithCustomFilter).map(async item => {
+          const nestedResources = await recurseIntoFetcher(item)
+          const fieldValues = Object.entries(nestedResources).map(([fieldName, fieldItems]) => ({
+            [fieldName]: Array.isArray(fieldItems) ? fieldItems.map(({ value }) => value) : fieldItems.value,
+          }))
+          return {
+            ...item,
+            value: _.defaults({}, item.value, ...fieldValues),
+            context: item.context,
+          }
+        }),
       )
       const toServiceID = serviceIDKeyCreator({
         serviceIDFields: def.serviceIDFields ?? [],

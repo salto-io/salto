@@ -134,15 +134,14 @@ const extractStandaloneInstancesFromField =
       }),
     )
 
-    // reversing here to preserve the order of the subtypes inside the element list
-    newInstances.reverse().forEach(inst => instanceOutput.push(inst))
+    newInstances.forEach(inst => instanceOutput.push(inst))
 
     if (standaloneDef.referenceFromParent === false) {
       return undefined
     }
     const refs = newInstances.map(inst => new ReferenceExpression(inst.elemID, inst))
     if (Array.isArray(value)) {
-      return refs.reverse()
+      return refs
     }
     return refs[0]
   }

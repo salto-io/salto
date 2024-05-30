@@ -168,7 +168,7 @@ import { ZendeskFetchOptions } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
-import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
+import { filterOutInactiveInstancesForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -507,17 +507,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       })
     }
 
-    const otherDefinitions = {
+    this.adapterDefinitions = {
       clients: createClientDefinitions({ main: this.client }),
       pagination: PAGINATION,
-      fetch: createFetchDefinitions(this.userConfig, this.nonSupportedTypesToOmit()),
-    }
-
-    this.adapterDefinitions = {
-      ...otherDefinitions,
       fetch: definitions.mergeWithUserElemIDDefinitions({
         userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
-        fetchConfig: otherDefinitions.fetch,
+        fetchConfig: createFetchDefinitions(this.userConfig, this.getNonSupportedTypesToOmit()),
       }),
     }
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
@@ -562,7 +557,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     )
   }
 
-  private nonSupportedTypesToOmit(): string[] {
+  private getNonSupportedTypesToOmit(): string[] {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideThemesEnabledInConfig = isGuideThemesEnabled(this.userConfig[FETCH_CONFIG])
     const keysToOmit = isGuideEnabledInConfig
@@ -575,7 +570,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   }
 
   private filterSupportedTypes(): Record<string, string[]> {
-    const keysToOmit = this.nonSupportedTypesToOmit()
+    const keysToOmit = this.getNonSupportedTypesToOmit()
     const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
     return _.omit(allSupportedTypes, ...keysToOmit)
   }
@@ -612,7 +607,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
         definitions: this.adapterDefinitions,
-        customItemFilter: filterOutInactiveItemForType(this.userConfig),
       })
       if (!isGuideInFetch) {
         addRemainingTypes({

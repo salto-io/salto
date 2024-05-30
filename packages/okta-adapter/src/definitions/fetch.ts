@@ -389,7 +389,7 @@ const createCustomizations = ({
   ApplicationGroupAssignment: {
     requests: [
       {
-        endpoint: { path: 'api/v1/apps/{appId}/groups' },
+        endpoint: { path: '/api/v1/apps/{appId}/groups' },
         transformation: {
           adjust: ({ value, context }) => ({
             value: {
@@ -765,7 +765,7 @@ const createCustomizations = ({
     },
   },
   SmsTemplate: {
-    requests: [{ endpoint: { path: 'api/v1/templates/sms' } }],
+    requests: [{ endpoint: { path: '/api/v1/templates/sms' } }],
     resource: { directFetch: true },
     element: {
       topLevel: {

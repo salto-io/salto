@@ -25,7 +25,7 @@ import {
   SaltoElementError,
 } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import appUserSchemaDeployment from '../../src/filters/app_user_schema_deployment'
 import { APP_USER_SCHEMA_TYPE_NAME, OKTA } from '../../src/constants'
@@ -121,7 +121,8 @@ describe('appUserSchemaDeployment', () => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
-    filter = appUserSchemaDeployment(getFilterParams({ client })) as typeof filter
+    const definitions = createDefinitions({ client })
+    filter = appUserSchemaDeployment(getFilterParams({ definitions })) as typeof filter
     appUserSchemaInstance = appUserSchema.clone()
   })
 

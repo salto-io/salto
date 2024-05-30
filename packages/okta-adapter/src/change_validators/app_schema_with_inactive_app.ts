@@ -17,12 +17,12 @@ import {
   ChangeValidator,
   getChangeData,
   isInstanceChange,
-  isModificationChange,
   InstanceElement,
   ModificationChange,
   isInstanceElement,
   isAdditionOrModificationChange,
   AdditionChange,
+  isAdditionChange,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -39,12 +39,11 @@ const isWithInactiveApp = (
     return app.value?.status === INACTIVE_STATUS
   }
   const afterAppStatus = appChange.data.after.value?.status
-  if (isModificationChange(appChange)) {
-    // TODO: why did Ido checked both before and after?
-    const beforeAppStatus = appChange.data.before.value?.status
-    return beforeAppStatus === INACTIVE_STATUS && afterAppStatus === INACTIVE_STATUS
+  if (isAdditionChange(appChange)) {
+    return afterAppStatus === INACTIVE_STATUS
   }
-  return afterAppStatus === INACTIVE_STATUS
+  const beforeAppStatus = appChange.data.before.value?.status
+  return beforeAppStatus === INACTIVE_STATUS && afterAppStatus === INACTIVE_STATUS
 }
 
 export const getParentApp = (

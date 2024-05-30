@@ -68,6 +68,7 @@ const changeValidatorNames = [
   'appUserSchemaRemoval',
   'domainAddition',
   'domainModification',
+  'appUserSchemaBaseChanges',
 ] as const
 
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]

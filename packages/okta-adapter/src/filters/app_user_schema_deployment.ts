@@ -53,6 +53,9 @@ const isAppUserSchema = (values: unknown): values is AppUserSchema => {
   return _.isUndefined(error)
 }
 
+const isAppUserSchemaChange = (change: Change): change is Change<InstanceElement> =>
+  isInstanceChange(change) && getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME
+
 const getAutoCreatedAppUserSchema = async (applicationId: string, client: OktaClient): Promise<AppUserSchema> => {
   const url = `/api/v1/meta/schemas/apps/${applicationId}/default`
   const autoCreatedAppUserSchema = (await client.get({ url })).data
@@ -170,6 +173,7 @@ const deployChange = async (
   }
   return deployRemovalChange(change, client)
 }
+
 /**
  * Deploy changes of appUserSchema.
  * additions - changing them to modification changes,
@@ -177,16 +181,14 @@ const deployChange = async (
  * modifications - changing the base field to the original value because Okta's API doesn't support changing it
  * removals - verifying the parent application is deleted. appUserSchema is deleted if and only if the parent application is deleted
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'appUserSchemaDeployment',
   deploy: async changes => {
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME,
-    )
+    const client = definitions.clients.options.main.httpClient as OktaClient
+    const [relevantChanges, leftoverChanges] = _.partition(changes, isAppUserSchemaChange)
 
-    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployChange(change, client, config[API_DEFINITIONS_CONFIG]),
+    const deployResult = await deployChanges(relevantChanges, async change =>
+      deployChange(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG]),
     )
 
     return {

@@ -30,9 +30,10 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
-import { naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
-import { resolveChangeElement } from '@salto-io/adapter-components'
+import { createSchemeGuard, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { resolveChangeElement, client as clientUtils } from '@salto-io/adapter-components'
 
 import { logger } from '@salto-io/logging'
 import { defaultDeployChange } from '../../deployment/standard_deployment'
@@ -47,6 +48,24 @@ const log = logger(module)
 
 export const SCREEN_TAB_TYPE_NAME = 'ScreenableTab'
 export const SCREEN_TAB_FIELD_TYPE_NAME = 'ScreenableField'
+
+type ScreenTabError = {
+  data: {
+    errors?: { [key: string]: string }
+  }
+}
+
+const ScreenTabErrorScheme = Joi.object({
+  data: Joi.object({
+    errors: Joi.object(),
+  })
+    .required()
+    .unknown(true),
+})
+  .required()
+  .unknown(true)
+
+const isScreenTabError = createSchemeGuard<ScreenTabError>(ScreenTabErrorScheme)
 
 const deployTabFieldsRemoval = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
@@ -83,14 +102,30 @@ const deployTabFieldsAdditionsAndOrder = async (
   const tabId = getChangeData(resolvedChange).value.id
 
   // Running this in parallel might cause a bug later when reoordering the fields. See SALTO-3357
-  await awu(addedIds).forEach(id =>
-    client.post({
-      url: `/rest/api/3/screens/${parentScreenId}/tabs/${tabId}/fields`,
-      data: {
-        fieldId: id,
-      },
-    }),
-  )
+  await awu(addedIds).forEach(async id => {
+    try {
+      await client.post({
+        url: `/rest/api/3/screens/${parentScreenId}/tabs/${tabId}/fields`,
+        data: {
+          fieldId: id,
+        },
+      })
+    } catch (error) {
+      // If a field is added to a requestType and the field has a context that includes the relevant issueType that is being
+      // used by the requestType, the project screens that are attached to the issueType will be updated with the new field.
+      // The above may lead to a failure in this call, we want to suppress those errors
+      if (
+        error instanceof clientUtils.HTTPError &&
+        error.response?.status === 400 &&
+        isScreenTabError(error.response) &&
+        error.response.data.errors?.fieldId.includes('already exists on the screen')
+      ) {
+        log.error(`The field with id ${id} already exists on the screen ${parentScreenId} tab ${tabId}`)
+      } else {
+        throw error
+      }
+    }
+  })
 
   if (!_.isEqual(fieldsBefore, fieldsAfter) && fieldsAfter.length > 1) {
     await client.post({

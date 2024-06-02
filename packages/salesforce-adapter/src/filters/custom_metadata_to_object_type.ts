@@ -16,6 +16,7 @@
 import {
   Change,
   Element,
+  ElemID,
   Field,
   getChangeData,
   InstanceElement,
@@ -34,13 +35,18 @@ import {
   CUSTOM_METADATA,
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
+  SALESFORCE,
 } from '../constants'
 import {
   createCustomObjectChange,
   createCustomTypeFromCustomObjectInstance,
 } from './custom_objects_to_object_type'
 import { apiName } from '../transformers/transformer'
-import { isCustomMetadataRecordType, isInstanceOfTypeChange } from './utils'
+import {
+  buildElementsSourceForFetch,
+  isCustomMetadataRecordType,
+  isInstanceOfTypeChange,
+} from './utils'
 
 const log = logger(module)
 
@@ -91,10 +97,11 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
   return {
     name: 'customMetadataToObjectTypeFilter',
     onFetch: async (elements) => {
-      const customMetadataType = await awu(elements)
-        .filter(isObjectType)
-        .find(async (e) => (await apiName(e)) === CUSTOM_METADATA)
-      if (_.isUndefined(customMetadataType)) {
+      const customMetadataType: unknown = await buildElementsSourceForFetch(
+        elements,
+        config,
+      ).get(new ElemID(SALESFORCE, CUSTOM_METADATA))
+      if (!isObjectType(customMetadataType)) {
         log.warn('Could not find CustomMetadata ObjectType. Skipping filter.')
         return
       }

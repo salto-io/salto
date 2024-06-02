@@ -53,6 +53,8 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       // deploySpaceAndPermissionsFilterCreator should run before default deploy filter
       deploySpaceAndPermissionsFilterCreator: deploySpaceAndPermissionsFilterCreator(args),
       ...filters.createCommonFilters<Options, UserConfig>(args),
+      // TODO https://salto-io.atlassian.net/browse/SALTO-5869
+      serviceUrl: () => ({ name: 'serviceUrl' }),
       // transform template body must run after references are created (fieldReferencesFilter)
       transformTemplateBodyToTemplateExpressionFilterCreator,
       // customPathsFilterCreator must run after fieldReferencesFilter

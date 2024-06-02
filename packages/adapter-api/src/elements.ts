@@ -30,16 +30,30 @@ const { mapValuesAsync } = promises.object
 
 const log = logger(module)
 
-export const BuiltinTypesRefByFullName: Record<string, TypeReference> = {}
+export const BuiltinTypesRefByFullName: Record<string, TypeReference<PrimitiveType>> = {}
 
-export const createRefToElmWithValue = (element: TypeElement): TypeReference =>
+type CreateRefToElmWithValueFunc = {
+  (element: PrimitiveType): TypeReference<PrimitiveType>
+  <T extends TypeElement>(element: T): TypeReference<T>
+}
+export const createRefToElmWithValue: CreateRefToElmWithValueFunc = <T extends TypeElement>(
+  element: T,
+): TypeReference<T | PrimitiveType> =>
   // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
   BuiltinTypesRefByFullName[element.elemID.getFullName()] ?? new TypeReference(element.elemID, element)
 
+type GetRefTypeFunc = {
+  (typeOrRef: TypeOrRef<PrimitiveType>): TypeReference<PrimitiveType>
+  <T extends TypeElement>(typeOrRef: TypeOrRef<T>): TypeReference<T>
+}
 // This is used to allow constructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
-const getRefType = (typeOrRef: TypeOrRef): TypeReference =>
-  isTypeReference(typeOrRef) ? typeOrRef : createRefToElmWithValue(typeOrRef)
+const getRefType: GetRefTypeFunc = <T extends TypeElement>(
+  typeOrRef: TypeOrRef<T>,
+): TypeReference<T | PrimitiveType> =>
+  ((value: TypeOrRef<T>): value is TypeReference<T> => isTypeReference(value))(typeOrRef)
+    ? typeOrRef
+    : createRefToElmWithValue(typeOrRef)
 
 /**
  * An abstract class that represent the base element.
@@ -136,7 +150,7 @@ export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TopLevelElement = TypeElement | InstanceElement
 export type TypeMap = Record<string, TypeElement>
-type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference
+type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference<T>
 export type TypeRefMap = Record<string, TypeOrRef>
 export type ReferenceMap = Record<string, TypeReference>
 
@@ -355,6 +369,7 @@ export type FieldDefinition = {
   refType: TypeOrRef
   annotations?: Values
 }
+
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
@@ -454,10 +469,10 @@ const validateType = (type: TypeElement | undefined, elemID: ElemID): TypeElemen
   return type
 }
 export class InstanceElement extends Element {
-  public refType: TypeReference
+  public refType: TypeReference<ObjectType>
   constructor(
     name: string,
-    typeOrRefType: ObjectType | TypeReference,
+    typeOrRefType: TypeOrRef<ObjectType>,
     public value: Values = {},
     path?: ReadonlyArray<string>,
     annotations?: Values,

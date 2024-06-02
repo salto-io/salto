@@ -85,6 +85,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
   requester,
   initialRequestContext,
   handleError,
+  customItemFilter,
 }: {
   adapterName: string
   typeName: string
@@ -93,6 +94,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
   requester: Requester<ClientOptions>
   handleError: ElementGenerator['handleError']
   initialRequestContext?: Record<string, unknown>
+  customItemFilter?: (item: ValueGeneratedItem) => boolean
 }): TypeResourceFetcher | undefined => {
   if (!query.isTypeMatch(typeName)) {
     log.info('[%s] type %s does not match query, skipping it and all its dependencies', adapterName, typeName)
@@ -144,8 +146,11 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         contextResources,
       })
 
+      const maybeFilterItemWithCustomFilter =
+        customItemFilter === undefined ? () => true : (item: ValueGeneratedItem) => customItemFilter(item)
+
       const allFragments = await Promise.all(
-        itemsWithContext.map(async item => {
+        itemsWithContext.filter(maybeFilterItemWithCustomFilter).map(async item => {
           const nestedResources = await recurseIntoFetcher(item)
           const fieldValues = Object.entries(nestedResources).map(([fieldName, fieldItems]) => ({
             [fieldName]: Array.isArray(fieldItems) ? fieldItems.map(({ value }) => value) : fieldItems.value,

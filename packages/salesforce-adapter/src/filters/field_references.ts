@@ -22,7 +22,7 @@ import {
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, multiIndex } from '@salto-io/lowerdash'
+import { collections, multiIndex, promises } from '@salto-io/lowerdash'
 import { apiName, metadataType } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 import {
@@ -51,10 +51,12 @@ import {
   hasApiName,
 } from './utils'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 const { flatMapAsync } = collections.asynciterable
+const { withLimitedConcurrency } = promises.array
 const { neighborContextGetter, replaceReferenceValues } = referenceUtils
+
+const maxConcurrency = 20
 
 const workflowActionMapper: referenceUtils.ContextValueMapperFunc = (
   val: string,
@@ -187,17 +189,19 @@ export const addReferences = async (
   })
 
   const fieldsWithResolvedReferences = new Set<string>()
-  const instances = elements.filter(isInstanceElement)
-  await awu(instances).forEach(async (instance) => {
-    instance.value = await replaceReferenceValues({
-      instance,
-      resolverFinder,
-      elemIDLookupMaps: { elemIDLookup },
-      fieldsWithResolvedReferences,
-      elementsSource: referenceElements,
-      contextStrategyLookup,
-    })
-  })
+  await withLimitedConcurrency(
+    elements.filter(isInstanceElement).map((instance) => async () => {
+      instance.value = await replaceReferenceValues({
+        instance,
+        resolverFinder,
+        elemIDLookupMaps: { elemIDLookup },
+        fieldsWithResolvedReferences,
+        elementsSource: referenceElements,
+        contextStrategyLookup,
+      })
+    }),
+    maxConcurrency,
+  )
   log.debug('added references in the following fields: %s', [
     ...fieldsWithResolvedReferences,
   ])

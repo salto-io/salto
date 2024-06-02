@@ -275,22 +275,25 @@ export const addReferences = async <
 
   const indexer = multiIndex.buildMultiIndex<Element>()
 
-  fieldsToGroupBy.forEach(fieldName =>
-    indexer.addIndex({
-      name: fieldName,
-      filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
-      key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
-      map: inst => inst.elemID,
-    }),
-  )
-  const fieldLookups = await indexer.process(awu(contextElements))
+  let fieldLookups: Record<string, multiIndex.Index<[string, string], ElemID>> = {}
+  if (fieldsToGroupBy.length > 0) {
+    fieldsToGroupBy.forEach(fieldName =>
+      indexer.addIndex({
+        name: fieldName,
+        filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
+        key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
+        map: inst => inst.elemID,
+      }),
+    )
+    fieldLookups = await indexer.process(awu(contextElements))
+  }
 
   const fieldsWithResolvedReferences = new Set<string>()
   await awu(instances).forEach(async instance => {
     instance.value = await replaceReferenceValues({
       instance,
       resolverFinder,
-      elemIDLookupMaps: fieldLookups as Record<string, multiIndex.Index<[string, string], ElemID>>,
+      elemIDLookupMaps: fieldLookups,
       fieldsWithResolvedReferences,
       elementsSource: buildElementsSourceFromElements(contextElements),
       contextStrategyLookup,

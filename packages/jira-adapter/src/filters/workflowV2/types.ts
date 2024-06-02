@@ -93,9 +93,9 @@ export type WorkflowV2TransitionRule = {
   parameters?: WorkflowV2TransitionRuleParameters
 }
 
-export type WorkflowV2ConditionGroup = {
+export type WorkflowV2TransitionConditionGroup = {
   operation: string
-  conditionGroups?: WorkflowV2ConditionGroup[]
+  conditionGroups?: WorkflowV2TransitionConditionGroup[]
   conditions: WorkflowV2TransitionRule[]
 }
 
@@ -106,7 +106,7 @@ export type WorkflowV2Transition = {
   from?: WorkflowStatusAndPort[]
   to?: WorkflowStatusAndPort
   actions?: WorkflowV2TransitionRule[]
-  conditions?: WorkflowV2ConditionGroup
+  conditions?: WorkflowV2TransitionConditionGroup
   validators?: WorkflowV2TransitionRule[]
 }
 

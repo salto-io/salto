@@ -26,7 +26,7 @@ import { paginate } from '../src/client/pagination'
 import { GetUserMapFunc, getUserMapFuncCreator } from '../src/users'
 import { JIRA, WORKFLOW_CONFIGURATION_TYPE } from '../src/constants'
 import ScriptRunnerClient from '../src/client/script_runner_client'
-import { WorkflowV2ConditionGroup, WorkflowV2Transition } from '../src/filters/workflowV2/types'
+import { WorkflowV2TransitionConditionGroup, WorkflowV2Transition } from '../src/filters/workflowV2/types'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
@@ -128,7 +128,7 @@ export const createEmptyType = (type: string): ObjectType =>
     elemID: new ElemID(JIRA, type),
   })
 
-export const createSkeletonWorkflowV2TransitionConditionGroup = (): WorkflowV2ConditionGroup => ({
+export const createSkeletonWorkflowV2TransitionConditionGroup = (): WorkflowV2TransitionConditionGroup => ({
   operation: 'ALL',
   conditions: [],
   conditionGroups: [],

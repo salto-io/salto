@@ -64,7 +64,20 @@ describe('missingAppsTransitionRulesReferencedWorkflowDeletionChangeValidator', 
   beforeEach(() => {
     workflowInstance = createSkeletonWorkflowV2Instance('workflowInstance')
   })
+  it('Should not raise anything for valid rules', async () => {
+    const validTransitionRules = [
+      createSystemTransitionRule(),
+      createConnectTransitionRule(CONNECT_EXTENSION.id),
+      createForgeTransitionRule(FORGE_EXTENSION.id),
+    ]
 
+    const afterInstance = workflowInstance.clone()
+    afterInstance.value.transitions.transition1.validators.push(...validTransitionRules)
+    const result = await missingExtensionsTransitionRulesChangeValidator(CLIENT)([
+      toChange({ before: workflowInstance, after: afterInstance }),
+    ])
+    expect(result).toEqual([])
+  })
   it('Should raise Error SeverityLevel when a transition rule is from a missing extension', async () => {
     const transitionRules = [
       createSystemTransitionRule(),

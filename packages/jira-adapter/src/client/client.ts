@@ -378,7 +378,6 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
         .filter(plugin => plugin.enabled && plugin.userInstalled)
         .map(plugin => ({ name: plugin.name, id: plugin.key }))
     }
-    console.log(upmResponse)
     throw new Error('Failed to get UPM Installed Apps response')
   }
 

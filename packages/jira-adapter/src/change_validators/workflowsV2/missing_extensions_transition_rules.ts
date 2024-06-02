@@ -23,15 +23,17 @@ import {
   isAdditionOrModificationChange,
   ElemID,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import JiraClient, { ExtensionType } from '../../client/client'
 import {
   isWorkflowV2Instance,
-  WorkflowV2ConditionGroup,
+  WorkflowV2TransitionConditionGroup,
   WorkflowV2TransitionRule,
   WorkflowV2Instance,
 } from '../../filters/workflowV2/types'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 enum RuleType {
   Connect = 'connect',
@@ -47,16 +49,6 @@ const isValidRuleType = (value: any): value is RuleType =>
     .filter(ruleType => ruleType !== RuleType.Invalid)
     .includes(value)
 
-const getRuleTypeFromRuleKey: (ruleKey: string) => RuleType = ruleKey => {
-  // ruleKey is of the format "<type>:<some-string>"
-  const ruleType = ruleKey.split(':')[0]
-  if (!isValidRuleType(ruleType)) {
-    return RuleType.Invalid
-  }
-
-  return ruleType
-}
-
 const tagTransitionRulesWithIndexElemID = (
   elemID: ElemID,
   transitionRules?: WorkflowV2TransitionRule[],
@@ -70,23 +62,20 @@ const tagTransitionRulesWithIndexElemID = (
 
 const getConditionRules: (
   elemID: ElemID,
-  conditionGroup?: WorkflowV2ConditionGroup,
+  conditionGroup?: WorkflowV2TransitionConditionGroup,
 ) => TransitionRuleWithElemIDType[] = (elemID, conditionGroup) => {
   if (conditionGroup === undefined) {
     return []
   }
-  const conditionRules: TransitionRuleWithElemIDType[] = []
-  const conditionGroupsRules: TransitionRuleWithElemIDType[] = []
+  let conditionRules: TransitionRuleWithElemIDType[] = []
+  let conditionGroupsRules: TransitionRuleWithElemIDType[] = []
   if (conditionGroup.conditions !== undefined) {
-    conditionRules.push(
-      ...tagTransitionRulesWithIndexElemID(elemID.createNestedID('conditions'), conditionGroup.conditions),
-    )
+    conditionRules = tagTransitionRulesWithIndexElemID(elemID.createNestedID('conditions'), conditionGroup.conditions)
   }
   if (conditionGroup.conditionGroups !== undefined) {
-    conditionGroupsRules.push(
-      ...conditionGroup.conditionGroups.flatMap((cg: WorkflowV2ConditionGroup, index: number) =>
+    conditionGroupsRules = conditionGroup.conditionGroups.flatMap(
+      (cg: WorkflowV2TransitionConditionGroup, index: number) =>
         getConditionRules(elemID.createNestedID('conditionGroups', index.toString()), cg),
-      ),
     )
   }
 
@@ -109,17 +98,24 @@ const getTransitionRulesWithElemID: (workflow: WorkflowV2Instance) => Transition
     return [...validatorRules, ...actionRules, ...conditionRules]
   })
 
-export const getRuleTypeFromWorkflowTransitionRule = (transitionRule: WorkflowV2TransitionRule): RuleType =>
-  getRuleTypeFromRuleKey(transitionRule.ruleKey)
+const getRuleTypeFromWorkflowTransitionRule = (transitionRule: WorkflowV2TransitionRule): RuleType => {
+  // ruleKey is of the format "<type>:<some-string>"
+  const ruleType = transitionRule.ruleKey.split(':')[0]
+  if (!isValidRuleType(ruleType)) {
+    return RuleType.Invalid
+  }
+
+  return ruleType
+}
 
 const getExtensionKeyFromWorkflowTransitionRule = (transitionRule: WorkflowV2TransitionRule): string | undefined => {
   const ruleType = getRuleTypeFromWorkflowTransitionRule(transitionRule)
 
   switch (ruleType) {
     case RuleType.Connect:
-      return _.get(transitionRule, 'parameters.appKey', undefined)
+      return transitionRule.parameters?.appKey
     case RuleType.Forge:
-      return _.get(transitionRule, 'parameters.key', undefined)
+      return transitionRule.parameters?.key
     default:
       return undefined
   }
@@ -149,13 +145,10 @@ export const getExtensionIdFromWorkflowTransitionRule = (
 }
 
 export const getInstalledExtensionsMap = async (client: JiraClient): Promise<Record<string, ExtensionType>> =>
-  awu(await client.getInstalledExtensions()).reduce(
-    (acc, app) => {
-      acc[app.id] = app
-      return acc
-    },
-    {} as Record<string, ExtensionType>,
-  )
+  awu(await client.getInstalledExtensions()).reduce<Record<string, ExtensionType>>((acc, app) => {
+    acc[app.id] = app
+    return acc
+  }, {})
 
 export const missingExtensionsTransitionRulesChangeValidator =
   (client: JiraClient): ChangeValidator =>
@@ -173,7 +166,15 @@ export const missingExtensionsTransitionRulesChangeValidator =
     if (_.isEmpty(relevantRules)) {
       return []
     }
-    const installedExtensionsMap = await getInstalledExtensionsMap(client)
+
+    let installedExtensionsMap: Record<string, ExtensionType>
+    try {
+      installedExtensionsMap = await getInstalledExtensionsMap(client)
+    } catch (error) {
+      log.error("Couldn't fetch Jira cloud id.")
+      return []
+    }
+
     return relevantRules
       .filter(transitionRule => {
         const extensionId = getExtensionIdFromWorkflowTransitionRule(transitionRule)
@@ -191,7 +192,7 @@ export const missingExtensionsTransitionRulesChangeValidator =
               elemID: transitionRule.elemID,
               severity: 'Error' as SeverityLevel,
               message: 'Attempted to deploy a transition rule of a missing Jira app',
-              detailedMessage: `Can't deploy a transition rule from missing Jira app: ${getExtensionIdFromWorkflowTransitionRule(transitionRule)}.`,
+              detailedMessage: `Can't deploy a transition rule from missing Jira app: ${getExtensionIdFromWorkflowTransitionRule(transitionRule)}. Make sure to install the missing application and try again.`,
             },
       )
   }

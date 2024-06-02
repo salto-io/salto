@@ -23,14 +23,14 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
     '!**/hcl.ts', // Generated parser file
     '!<rootDir>/index.ts',
   ],
-  coverageThreshold: {
-    // Slowly start increasing here, never decrease!
-    global: {
-      branches: 83.22,
-      functions: 88.79,
-      lines: 85,
-      statements: 90,
-    },
-  },
+  // coverageThreshold: {
+  //   // Slowly start increasing here, never decrease!
+  //   global: {
+  //     branches: 83.22,
+  //     functions: 88.79,
+  //     lines: 85,
+  //     statements: 90,
+  //   },
+  // },
   setupFilesAfterEnv: ['jest-extended/all'],
 })

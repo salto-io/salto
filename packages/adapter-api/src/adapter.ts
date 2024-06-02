@@ -207,7 +207,14 @@ export type ReferenceInfo = {
   type: ReferenceType
 }
 
+export type Insight = {
+  path: ElemID
+  message: string
+}
+
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>
+
+export type GetInsightsFunc = (elements: Element[]) => Insight[]
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
@@ -219,6 +226,7 @@ export type Adapter = {
   loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
   getAdditionalReferences?: GetAdditionalReferencesFunc
   getCustomReferences?: GetCustomReferencesFunc
+  getInsights?: GetInsightsFunc
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

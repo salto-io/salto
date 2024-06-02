@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { Keywords } from '../../language'
 import { ParseError } from '../../types'
 import { SourceRange } from '../types'
 
@@ -28,26 +29,51 @@ const createError = (range: SourceRange, summary: string, message?: string): Par
 export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): ParseError =>
   createError(
     range,
-    'unknown primitive type',
-    token ? `Unknown primitive type ${token}.` : 'Expected a primitive type definition.',
+    'Unknown primitive type',
+    token ? `Unknown primitive type '${token}'.` : 'Expected a primitive type definition, using unknown.',
   )
-
-export const invalidPrimitiveTypeDef = (range: SourceRange, token: string): ParseError =>
-  createError(range, 'invalid type definition', `Expected inheritance operator 'is' found ${token} instead`)
 
 export const invalidFieldsInPrimitiveType = (range: SourceRange): ParseError =>
   createError(
     range,
-    'invalid fields in primitive type',
+    'Invalid fields in primitive type',
     'Unexpected field definition(s) in a primitive type. Expected no fields.',
   )
 
 export const invalidBlocksInInstance = (range: SourceRange): ParseError =>
   createError(
     range,
-    'invalid blocks in an instance',
+    'Invalid blocks in an instance',
     'Unexpected field or annotation type definition(s) in a primitive type. Expected only values.',
   )
+
+export const invalidDefinition = (range: SourceRange, labels: string[]): ParseError => {
+  if (labels.length === 0) {
+    return createError(range, 'Missing block definition')
+  }
+
+  if (labels[0] === Keywords.TYPE_DEFINITION) {
+    return createError(
+      range,
+      'Invalid type definition',
+      "Type definition must be of the form 'type <name>' or 'type <name> is <category>'.",
+    )
+  }
+
+  if (labels[0] === Keywords.SETTINGS_DEFINITION) {
+    return createError(
+      range,
+      'Invalid settings type definition',
+      "Settings type definition must be of the form 'settings <name>'.",
+    )
+  }
+
+  return createError(
+    range,
+    'Invalid instance definition',
+    "Instance definition must be of the form '<type> name' or '<settings type>'.",
+  )
+}
 
 export const ambiguousBlock = (range: SourceRange): ParseError => createError(range, 'Ambiguous block definition')
 

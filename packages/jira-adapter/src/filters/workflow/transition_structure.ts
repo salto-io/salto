@@ -164,7 +164,7 @@ export const walkOverTransitionIdsV2 = (transition: WorkflowV2Transition, func: 
   transition.actions
     ?.filter(
       action =>
-        _.get(action, 'parameters.appKey') === SCRIPT_RUNNER_POST_FUNCTION_TYPE &&
+        action.parameters?.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE &&
         !_.isEmpty(_.get(action, 'parameters.scriptRunner.transitionId')),
     )
     .forEach(action => {

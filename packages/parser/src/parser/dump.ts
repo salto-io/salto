@@ -31,7 +31,7 @@ import {
 } from '@salto-io/adapter-api'
 import { dump as hclDump, dumpValue } from './internal/dump'
 import { DumpedHclBlock } from './internal/types'
-import { Keywords } from './language'
+import { Keywords, primitiveTypeToKeyword } from './language'
 import { getFunctionExpression, Functions, FunctionExpression } from './functions'
 import { ValuePromiseWatcher } from './internal/native/types'
 import { addValuePromiseWatcher, replaceValuePromises } from './internal/native/helpers'
@@ -40,21 +40,8 @@ import { addValuePromiseWatcher, replaceValuePromises } from './internal/native/
  * @param primitiveType Primitive type identifier
  * @returns Type name in HCL syntax
  */
-const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
-  if (primitiveType === PrimitiveTypes.STRING) {
-    return Keywords.TYPE_STRING
-  }
-  if (primitiveType === PrimitiveTypes.NUMBER) {
-    return Keywords.TYPE_NUMBER
-  }
-  if (primitiveType === PrimitiveTypes.BOOLEAN) {
-    return Keywords.TYPE_BOOL
-  }
-  if (primitiveType === PrimitiveTypes.UNKNOWN) {
-    return Keywords.TYPE_UNKNOWN
-  }
-  return Keywords.TYPE_OBJECT
-}
+const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string =>
+  primitiveTypeToKeyword[primitiveType] || Keywords.TYPE_OBJECT
 
 export const dumpElemID = (id: ElemID): string => {
   if (id.isConfigType()) {

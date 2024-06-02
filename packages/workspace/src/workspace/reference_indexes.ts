@@ -61,8 +61,8 @@ export type SerializedReferenceIndexEntry = {
   id: string
 } & Pick<ReferenceInfo, 'type' | 'sourceScope'>
 
-const isValidReferenceSourceScope = (value: unknown): value is ReferenceSourceScope =>
-  _.isString(value) && (REFERENCE_SOURCE_SCOPES as ReadonlyArray<string>).includes(value)
+const isValidReferenceSourceScope = (value: unknown): value is ReferenceSourceScope | undefined =>
+  value === undefined || (_.isString(value) && (REFERENCE_SOURCE_SCOPES as ReadonlyArray<string>).includes(value))
 
 const isValidReferenceType = (value: unknown): value is ReferenceType =>
   _.isString(value) && (REFERENCE_TYPES as ReadonlyArray<string>).includes(value)

@@ -17,7 +17,7 @@
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, createMatchingObjectType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { configType } from './config'
+import { configType, Themes } from './config'
 import * as constants from './constants'
 
 const log = logger(module)
@@ -47,13 +47,15 @@ const isOptionsTypeInstance = (
   return false
 }
 
-export const DEFAULT_GUIDE_THEME_CONFIG = {
+export const DEFAULT_GUIDE_THEME_CONFIG: { themes: Themes } = {
   themes: {
     brands: ['.*'],
-    enableReferenceLookup: true,
-    javascriptReferenceLookupStrategy: {
-      strategy: 'varNamePrefix',
-      prefix: 'SALTO_REFERENCE',
+    referenceOptions: {
+      enableReferenceLookup: true,
+      javascriptReferenceLookupStrategy: {
+        strategy: 'varNamePrefix',
+        prefix: 'SALTO_REFERENCE',
+      },
     },
   },
 }

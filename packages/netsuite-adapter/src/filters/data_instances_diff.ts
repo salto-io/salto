@@ -26,6 +26,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getElementValueOrAnnotations, isDataObjectType } from '../types'
 import { LocalFilterCreator } from '../filter'
+import { ATTRIBUTES } from '../client/suiteapp_client/constants'
 
 const { awu } = collections.asynciterable
 
@@ -38,7 +39,7 @@ export const getDifferentKeys = (change: ModificationChange<Element>): Set<strin
 export const removeIdenticalValues = (change: ModificationChange<InstanceElement>): void => {
   const differentKeys = getDifferentKeys(change)
   Object.values(change.data).forEach(element => {
-    element.value = _.pickBy(element.value, (_value, key) => differentKeys.has(key) || key === 'attributes')
+    element.value = _.pickBy(element.value, (_value, key) => differentKeys.has(key) || key === ATTRIBUTES)
   })
 }
 

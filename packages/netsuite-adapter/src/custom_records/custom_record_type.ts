@@ -97,11 +97,11 @@ export const createCustomRecordTypes = (
           elemID: new ElemID(NETSUITE, instance.value[SCRIPT_ID]),
           fields: {
             [SCRIPT_ID]: {
-              refType: BuiltinTypes.SERVICE_ID,
+              refType: BuiltinTypes.STRING,
               annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
             },
             [INTERNAL_ID]: {
-              refType: BuiltinTypes.STRING,
+              refType: BuiltinTypes.SERVICE_ID,
               annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
             },
             [TRANSLATION_LIST]: {

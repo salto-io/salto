@@ -24,7 +24,7 @@ import { Requester } from '../request/requester'
 import { DefQuery } from '../../definitions'
 import { createTypeResourceFetcher } from './type_fetcher'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
-import { TypeFetcherCreator } from '../types'
+import { TypeFetcherCreator, ValueGeneratedItem } from '../types'
 import { AbortFetchOnFailure } from '../errors'
 
 const log = logger(module)
@@ -58,12 +58,14 @@ export const createResourceManager = <ClientOptions extends string>({
   requester,
   elementGenerator,
   initialRequestContext,
+  customItemFilter,
 }: {
   adapterName: string
   resourceDefQuery: DefQuery<FetchResourceDefinition>
   requester: Requester<ClientOptions>
   elementGenerator: ElementGenerator
   initialRequestContext?: Record<string, unknown>
+  customItemFilter?: (item: ValueGeneratedItem) => boolean
 }): ResourceManager => ({
   fetch: log.timeDebug(
     () => async query => {
@@ -76,6 +78,7 @@ export const createResourceManager = <ClientOptions extends string>({
           requester,
           handleError: elementGenerator.handleError,
           initialRequestContext: _.defaults({}, initialRequestContext, context),
+          customItemFilter,
         })
       const directFetchResourceDefs = _.pickBy(resourceDefQuery.getAll(), def => def.directFetch)
       const resourceFetchers = _.pickBy(

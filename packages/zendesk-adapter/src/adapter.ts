@@ -168,7 +168,7 @@ import { ZendeskFetchOptions } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
-import { filterOutInactiveInstancesForType } from './inactive'
+import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -607,6 +607,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
         definitions: this.adapterDefinitions,
+        customItemFilter: filterOutInactiveItemForType(this.userConfig),
       })
       if (!isGuideInFetch) {
         addRemainingTypes({

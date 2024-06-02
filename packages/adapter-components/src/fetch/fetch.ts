@@ -28,7 +28,7 @@ import {
 import { getRequester } from './request/requester'
 import { createResourceManager } from './resource/resource_manager'
 import { getElementGenerator } from './element/element'
-import { FetchElements } from './types'
+import { FetchElements, ValueGeneratedItem } from './types'
 import { RequiredDefinitions } from '../definitions/system/types'
 
 const log = logger(module)
@@ -53,6 +53,7 @@ export const getElements = async <Options extends APIDefinitionsOptions>({
   predefinedTypes,
   getElemIdFunc,
   additionalRequestContext,
+  customItemFilter,
 }: {
   adapterName: string
   fetchQuery: ElementQuery
@@ -60,6 +61,7 @@ export const getElements = async <Options extends APIDefinitionsOptions>({
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
   additionalRequestContext?: Record<string, unknown>
+  customItemFilter?: (item: ValueGeneratedItem) => boolean
 }): Promise<FetchElements> => {
   const { clients, fetch, pagination } = definitions
 
@@ -109,6 +111,7 @@ export const getElements = async <Options extends APIDefinitionsOptions>({
     requester,
     elementGenerator,
     initialRequestContext: additionalRequestContext,
+    customItemFilter,
   })
 
   await resourceManager.fetch(fetchQuery)

@@ -725,6 +725,23 @@ describe('Salto parser', () => {
           expect(elements).toHaveLength(0)
         })
       })
+
+      describe('with extra labels', () => {
+        const body = `
+          salesforce.test inst with extra labels {
+          }
+        `
+
+        beforeEach(async () => {
+          ;({ elements, sourceMap, errors } = await parseBody(body))
+        })
+
+        it('should have an error', () => {
+          expect(errors).toHaveLength(1)
+          expect(errors[0].summary).toEqual('Invalid instance definition')
+          expect(elements).toHaveLength(0)
+        })
+      })
     })
   })
 

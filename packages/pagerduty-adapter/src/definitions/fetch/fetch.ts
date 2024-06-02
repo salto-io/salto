@@ -316,7 +316,7 @@ export const createFetchDefinitions = (credentials: Credentials): definitions.fe
       element: {
         topLevel: {
           elemID: { parts: DEFAULT_ID_PARTS },
-          serviceUrl: { baseUrl: credentials.subdomain },
+          serviceUrl: { baseUrl: `https://${credentials.subdomain}.pagerduty.com` },
         },
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },

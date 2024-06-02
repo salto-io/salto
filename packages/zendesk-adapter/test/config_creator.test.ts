@@ -15,7 +15,7 @@
  */
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { configType } from '../src/config'
-import { optionsType, getConfig } from '../src/config_creator'
+import { optionsType, getConfig, DEFAULT_GUIDE_THEME_CONFIG } from '../src/config_creator'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType, {})
 const mockCreateDefaultInstanceFromType = jest.fn().mockResolvedValue(mockDefaultInstanceFromTypeResult)
@@ -81,6 +81,42 @@ describe('config_creator', () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
       expect(resultConfig.value?.fetch?.guide).toBeUndefined()
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains enableGuideThemes equal true', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ enableGuideThemes: true })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toEqual(DEFAULT_GUIDE_THEME_CONFIG)
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains enableGuideThemes equal false', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ enableGuideThemes: false })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toBeUndefined()
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains enableGuide and enableGuideThemes equal true', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ enableGuide: true, enableGuideThemes: true })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide and guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toEqual({
+        ...DEFAULT_GUIDE_THEME_CONFIG,
+        brands: ['.*'],
+      })
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })

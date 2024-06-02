@@ -178,17 +178,16 @@ export const getWithPageOffsetAndLastPagination = (firstPage: number): Paginatio
   return nextPageFullPages
 }
 
-export const getWithOffsetAndLimit = (): PaginationFunc => {
-  // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows
+export const getWithOffsetAndLimit = (isLastPageField: string): PaginationFunc => {
+  // Hard coded "values" in order to fit the configuration scheme which only allows
   // "paginationField" to be configured
   type PageResponse = {
-    isLast: boolean
     values: unknown[]
     [k: string]: unknown
   }
   const isPageResponse = (responseData: unknown, paginationField: string): responseData is PageResponse =>
     _.isObject(responseData) &&
-    _.isBoolean(_.get(responseData, 'isLast')) &&
+    _.isBoolean(_.get(responseData, isLastPageField)) &&
     Array.isArray(_.get(responseData, 'values')) &&
     _.isNumber(_.get(responseData, paginationField))
 
@@ -202,7 +201,7 @@ export const getWithOffsetAndLimit = (): PaginationFunc => {
         `Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`,
       )
     }
-    if (responseData.isLast) {
+    if (_.get(responseData, isLastPageField)) {
       return []
     }
     const currentPageStart = _.get(responseData, paginationField) as number

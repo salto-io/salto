@@ -29,10 +29,11 @@ import { soap } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
 import { collections, strings } from '@salto-io/lowerdash'
-import { NETSUITE, RECORDS_PATH, SOAP } from '../constants'
+import { INTERNAL_ID, NETSUITE, RECORDS_PATH, SOAP } from '../constants'
 import { NetsuiteQuery } from '../config/query'
 import { getTypeIdentifier, SUPPORTED_TYPES } from './types'
 import NetsuiteClient from '../client/client'
+import { ATTRIBUTES } from '../client/suiteapp_client/constants'
 import { DataElementsResult } from '../client/types'
 import { castFieldValue } from './custom_fields'
 import { addIdentifierToValues, addIdentifierToType } from './multi_fields_identifiers'
@@ -40,11 +41,16 @@ import { addIdentifierToValues, addIdentifierToType } from './multi_fields_ident
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-export type DataTypeConfig = Record<string, string[]>
-
 const setTypeSourceAnnotation = (type: ObjectType): void => {
   type.annotationRefTypes.source = createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING)
   type.annotations.source = SOAP
+}
+
+const setServiceIdField = (type: ObjectType): void => {
+  if (type.fields[INTERNAL_ID] === undefined) {
+    return
+  }
+  type.fields[INTERNAL_ID].refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
 }
 
 export const getDataTypes = async (client: NetsuiteClient): Promise<ObjectType[]> => {
@@ -62,19 +68,9 @@ export const getDataTypes = async (client: NetsuiteClient): Promise<ObjectType[]
   types.forEach(type => {
     setTypeSourceAnnotation(type)
     addIdentifierToType(type)
+    setServiceIdField(type)
   })
 
-  types
-    .filter(type => getTypeIdentifier(type) !== undefined)
-    .forEach(type => {
-      const identifierField = getTypeIdentifier(type)
-      const field = type.fields[identifierField]
-      if (field !== undefined) {
-        field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
-      } else {
-        log.warn(`Identifier field ${identifierField} does not exists on type ${type.elemID.getFullName()}`)
-      }
-    })
   return types
 }
 
@@ -126,7 +122,7 @@ const createInstances = async (
         ? elemIdGetter(
             NETSUITE,
             {
-              [serviceIdFieldName]: identifierValue,
+              [INTERNAL_ID]: values[ATTRIBUTES][INTERNAL_ID],
               [OBJECT_SERVICE_ID]: toServiceIdsString({
                 [OBJECT_NAME]: type.elemID.getFullName(),
               }),

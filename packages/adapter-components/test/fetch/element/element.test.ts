@@ -315,7 +315,7 @@ describe('element', () => {
           }),
         })
         expect(() => generator.handleError({ typeName: 'myType', error: fetchError })).toThrow(AbortFetchOnFailure)
-        expect(customErrorHandler).toHaveBeenCalledWith(fetchError)
+        expect(customErrorHandler).toHaveBeenCalledWith({ error: fetchError, typeName: 'myType' })
       })
     })
   })

@@ -56,6 +56,7 @@ import removeUnsupportedTypes from './filters/remove_unsupported_types'
 import dataInstancesInternalId from './filters/data_instances_internal_id'
 import dataAccountSpecificValues from './filters/data_account_specific_values'
 import dataInstancesReferences from './filters/data_instances_references'
+import dataInstancesReferenceNames from './filters/data_instances_reference_names'
 import dataTypesCustomFields from './filters/data_types_custom_fields'
 import dataInstancesCustomFields from './filters/data_instances_custom_fields'
 import dataInstancesAttributes from './filters/data_instances_attributes'
@@ -179,6 +180,8 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: dataInstancesNullFields },
   { creator: removeUnsupportedTypes },
   { creator: dataInstancesReferences },
+  // dataInstancesReferenceNames must run after dataInstancesReferences and before dataAccountSpecificValues
+  { creator: dataInstancesReferenceNames, addsNewInformation: true },
   { creator: dataInstancesInternalId },
   { creator: dataAccountSpecificValues },
   { creator: suiteAppInternalIds },

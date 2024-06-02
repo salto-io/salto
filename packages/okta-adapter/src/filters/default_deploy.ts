@@ -20,11 +20,12 @@ import { defaultDeployWithStatus, deployChanges } from '../deployment'
 /**
  * Deploys all the changes that were not deployed by the previous filters
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'defaultDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
+    const client = definitions.clients.options.main.httpClient
     const deployResult = await deployChanges(changes.filter(isInstanceChange), async change => {
-      await defaultDeployWithStatus(change, client, config.apiDefinitions)
+      await defaultDeployWithStatus(change, client, oldApiDefinitions.apiDefinitions)
     })
     return { deployResult, leftoverChanges: [] }
   },

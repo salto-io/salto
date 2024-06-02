@@ -105,7 +105,7 @@ export type ElementFieldCustomization = types.XOR<
   },
   types.OneOf<{
     // omit the field
-    omit: true
+    omit: boolean
     // set the field to a map and determine its inner type dynamically.
     // the type is determined dynamically, since if the inner type is known, fieldType can be used instead.
     // note: will not work if a predefined type is provided
@@ -141,7 +141,7 @@ export type ElementFetchDefinitionOptions = {
 type ResolveValueType<Options extends Pick<ElementFetchDefinitionOptions, 'valueType'>> =
   Options['valueType'] extends Values ? Options['valueType'] : Values
 
-type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
+export type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
   isTopLevel: true
 
   custom?: (
@@ -159,7 +159,7 @@ type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOption
     {
       entry: Values
       defaultName: string
-      parentName?: string
+      parent?: InstanceElement
     },
     ElemIDCreatorArgs<ResolveCustomNameMappingOptionsType<Options>>
   >

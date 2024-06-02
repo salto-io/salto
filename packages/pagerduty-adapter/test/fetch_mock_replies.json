@@ -1,0 +1,325 @@
+[
+  {
+    "url": "/business_services",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "business_services": [
+        {
+          "description": "Systems that Impact Sales",
+          "html_url": null,
+          "id": "PKRCK6L",
+          "name": "Sales",
+          "point_of_contact": "the help desk of ACME inc",
+          "self": "https://api.pagerduty.com/business_services/PKRCK6L",
+          "summary": "Sales",
+          "team": { "id": "PRDWWGZ", "self": "https://api.pagerduty.com/teams/PRDWWGZ", "type": "team_reference" },
+          "type": "business_service"
+        }
+      ],
+      "limit": 100,
+      "more": false,
+      "offset": 0,
+      "total": null
+    },
+    "headers": {}
+  },
+  {
+    "url": "/event_orchestrations",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "limit": 25,
+      "more": false,
+      "offset": 0,
+      "orchestrations": [
+        {
+          "created_at": "2024-05-20T19:09:05Z",
+          "created_by": {
+            "id": "PN0LFDW",
+            "self": "https://api.pagerduty.com/users/PN0LFDW",
+            "type": "user_reference"
+          },
+          "description": "Some desc",
+          "id": "79c43619-283b-4f3d-b7e1-edfcb8fe743a",
+          "name": "first event orch",
+          "routes": 4,
+          "self": "https://api.pagerduty.com/event_orchestrations/79c43619-283b-4f3d-b7e1-edfcb8fe743a",
+          "team": {
+            "id": "P7UKVRJ",
+            "self": "https://api.pagerduty.com/teams/P7UKVRJ",
+            "summary": "Help Desk team B",
+            "type": "team_reference"
+          },
+          "updated_at": "2024-05-26T13:43:09Z",
+          "updated_by": { "id": "PN0LFDW", "self": "https://api.pagerduty.com/users/PN0LFDW", "type": "user_reference" }
+        }
+      ],
+      "total": 1
+    },
+    "headers": {}
+  },
+  {
+    "url": "/teams",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "teams": [
+        {
+          "id": "PRDWWGZ",
+          "name": "the IT of ACME inc",
+          "description": "IT - stands for I tried to make it work",
+          "type": "team",
+          "summary": "the IT of ACME inc",
+          "self": "https://api.pagerduty.com/teams/PRDWWGZ",
+          "html_url": "https://dev-salto-1.pagerduty.com/teams/PRDWWGZ",
+          "default_role": "manager",
+          "parent": null
+        }
+      ],
+      "limit": 25,
+      "offset": 0,
+      "total": null,
+      "more": false
+    },
+    "headers": {}
+  },
+  {
+    "url": "/escalation_policies",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "escalation_policies": [
+        {
+          "id": "P8DPMLQ",
+          "type": "escalation_policy",
+          "summary": "IT Web Policy",
+          "self": "https://api.pagerduty.com/escalation_policies/P8DPMLQ",
+          "html_url": "https://dev-salto-1.pagerduty.com/escalation_policies/P8DPMLQ",
+          "name": "IT Web Policy",
+          "escalation_rules": [
+            {
+              "id": "PIK4NMF",
+              "escalation_delay_in_minutes": 10,
+              "targets": [
+                {
+                  "id": "PV387W5",
+                  "type": "schedule_reference",
+                  "summary": "Bibi is Always on Call",
+                  "self": "https://api.pagerduty.com/schedules/PV387W5",
+                  "html_url": "https://dev-salto-1.pagerduty.com/schedules/PV387W5"
+                }
+              ]
+            }
+          ],
+          "services": [],
+          "num_loops": 1,
+          "teams": [],
+          "description": "Managed by Terraform",
+          "on_call_handoff_notifications": "if_has_services",
+          "privilege": null
+        }
+      ],
+      "limit": 25,
+      "offset": 0,
+      "more": false,
+      "total": null
+    },
+    "headers": {}
+  },
+  {
+    "url": "/services",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "services": [
+        {
+          "id": "PL7V756",
+          "name": "acme.test",
+          "description": "Managed by Terraform and me",
+          "created_at": "2024-05-20T21:55:44+03:00",
+          "updated_at": "2024-05-23T16:02:59+03:00",
+          "status": "active",
+          "teams": [
+            {
+              "id": "PRDWWGZ",
+              "type": "team_reference",
+              "summary": "the IT of ACME inc",
+              "self": "https://api.pagerduty.com/teams/PRDWWGZ",
+              "html_url": "https://dev-salto-1.pagerduty.com/teams/PRDWWGZ"
+            }
+          ],
+          "alert_creation": "create_alerts_and_incidents",
+          "addons": [],
+          "scheduled_actions": [],
+          "support_hours": null,
+          "last_incident_timestamp": null,
+          "escalation_policy": {
+            "id": "P8DPMLQ",
+            "type": "escalation_policy_reference",
+            "summary": "IT Web Policy",
+            "self": "https://api.pagerduty.com/escalation_policies/P8DPMLQ",
+            "html_url": "https://dev-salto-1.pagerduty.com/escalation_policies/P8DPMLQ"
+          },
+          "incident_urgency_rule": { "type": "constant", "urgency": "high" },
+          "acknowledgement_timeout": 600,
+          "auto_resolve_timeout": 14400,
+          "alert_grouping": null,
+          "alert_grouping_timeout": null,
+          "alert_grouping_parameters": { "type": null, "config": null },
+          "integrations": [],
+          "response_play": null,
+          "type": "service",
+          "summary": "acme.test",
+          "self": "https://api.pagerduty.com/services/PL7V756",
+          "html_url": "https://dev-salto-1.pagerduty.com/service-directory/PL7V756"
+        }
+      ],
+      "limit": 25,
+      "offset": 0,
+      "total": null,
+      "more": false
+    },
+    "headers": {}
+  },
+  {
+    "url": "/schedules",
+    "method": "GET",
+    "status": 200,
+    "queryParams": { "include[]": "schedule_layers" },
+    "response": {
+      "limit": 25,
+      "more": false,
+      "offset": 0,
+      "schedules": [
+        {
+          "description": "Managed by Terraform",
+          "escalation_policies": [
+            {
+              "html_url": "https://dev-salto-1.pagerduty.com/escalation_policies/P8DPMLQ",
+              "id": "P8DPMLQ",
+              "self": "https://api.pagerduty.com/escalation_policies/P8DPMLQ",
+              "summary": "IT Web Policy",
+              "type": "escalation_policy_reference"
+            }
+          ],
+          "html_url": "https://dev-salto-1.pagerduty.com/schedules/PV387W5",
+          "id": "PV387W5",
+          "name": "Bibi is Always on Call",
+          "schedule_layers": [
+            {
+              "end": null,
+              "id": "PJ7ND4M",
+              "name": "Weekly On-call",
+              "rendered_coverage_percentage": null,
+              "rendered_schedule_entries": [],
+              "restrictions": [],
+              "rotation_turn_length_seconds": 604800,
+              "rotation_virtual_start": "2015-11-07T03:00:00+02:00",
+              "start": "2024-05-20T22:01:24+03:00",
+              "users": [
+                {
+                  "user": {
+                    "html_url": "https://dev-salto-1.pagerduty.com/users/PS0G9MC",
+                    "id": "PS0G9MC",
+                    "self": "https://api.pagerduty.com/users/PS0G9MC",
+                    "summary": "Benjamin Netanyahu",
+                    "type": "user_reference"
+                  }
+                }
+              ]
+            }
+          ],
+          "self": "https://api.pagerduty.com/schedules/PV387W5",
+          "summary": "Bibi is Always on Call",
+          "teams": [
+            {
+              "html_url": "https://dev-salto-1.pagerduty.com/teams/PRDWWGZ",
+              "id": "PRDWWGZ",
+              "self": "https://api.pagerduty.com/teams/PRDWWGZ",
+              "summary": "the IT of ACME inc",
+              "type": "team_reference"
+            }
+          ],
+          "time_zone": "America/New_York",
+          "type": "schedule",
+          "users": [
+            {
+              "html_url": "https://dev-salto-1.pagerduty.com/users/PS0G9MC",
+              "id": "PS0G9MC",
+              "self": "https://api.pagerduty.com/users/PS0G9MC",
+              "summary": "Benjamin Netanyahu",
+              "type": "user_reference"
+            }
+          ]
+        }
+      ],
+      "total": null
+    },
+    "headers": {}
+  },
+  {
+    "url": "/event_orchestrations/79c43619-283b-4f3d-b7e1-edfcb8fe743a/router",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "orchestration_path": {
+        "catch_all": { "actions": { "route_to": "PL7V756" } },
+        "created_at": "2024-05-20T19:09:06Z",
+        "created_by": { "id": "PN0LFDW", "self": "https://api.pagerduty.com/users/PN0LFDW", "type": "user_reference" },
+        "parent": {
+          "id": "79c43619-283b-4f3d-b7e1-edfcb8fe743a",
+          "self": "https://api.pagerduty.com/event_orchestrations/79c43619-283b-4f3d-b7e1-edfcb8fe743a",
+          "type": "event_orchestration_reference"
+        },
+        "self": "https://api.pagerduty.com/event_orchestrations/79c43619-283b-4f3d-b7e1-edfcb8fe743a/router",
+        "sets": [
+          {
+            "id": "start",
+            "rules": [
+              {
+                "actions": { "route_to": "PL7V756" },
+                "conditions": [
+                  {
+                    "expression": "now > 2024-05-26 16:44:00 Asia/Jerusalem and now < 2024-05-26 17:44:00 Asia/Jerusalem and now == 2024-05-26 16:44:00 Asia/Jerusalem"
+                  }
+                ],
+                "id": "0d0e7405",
+                "label": null
+              }
+            ]
+          }
+        ],
+        "type": "router",
+        "updated_at": "2024-05-26T13:56:54Z",
+        "updated_by": { "id": "PN0LFDW", "self": "https://api.pagerduty.com/users/PN0LFDW", "type": "user_reference" },
+        "version": "gh1kT6Z0lhpu1lsDdCV6FAKBTnfwfx_G"
+      }
+    },
+    "headers": {}
+  },
+  {
+    "url": "/event_orchestrations/services/PL7V756",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "orchestration_path": {
+        "catch_all": { "actions": {} },
+        "created_at": "2024-05-28T08:31:01Z",
+        "created_by": null,
+        "parent": {
+          "id": "PL7V756",
+          "self": "https://api.pagerduty.com/services/PL7V756",
+          "type": "service_reference"
+        },
+        "self": "https://api.pagerduty.com/event_orchestrations/services/PL7V756",
+        "sets": [{ "id": "start", "rules": [] }],
+        "type": "service",
+        "updated_at": "2024-05-28T08:31:01Z",
+        "updated_by": null,
+        "version": null
+      }
+    },
+    "headers": {}
+  }
+]

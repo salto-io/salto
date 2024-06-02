@@ -20,6 +20,7 @@ import { LocalFilterOpts } from '../../src/filter'
 
 describe('replaceRecordRef', () => {
   let recordRefType: ObjectType
+  let recordRefListType: ObjectType
   let typeWithRecordRef: ObjectType
   let elements: TypeElement[]
   const departmentType = new ObjectType({ elemID: new ElemID(NETSUITE, 'department') })
@@ -27,16 +28,18 @@ describe('replaceRecordRef', () => {
 
   beforeEach(() => {
     recordRefType = new ObjectType({ elemID: new ElemID(NETSUITE, 'recordRef') })
+    recordRefListType = new ObjectType({ elemID: new ElemID(NETSUITE, 'recordRefList') })
     typeWithRecordRef = new ObjectType({
       elemID: new ElemID(NETSUITE, 'typeWithRecordRef'),
       fields: {
         department: { refType: recordRefType },
         parent: { refType: recordRefType },
-        subsidiaryList: { refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'recordRefList') }) },
+        subsidiaryList: { refType: recordRefListType },
         recordRef: { refType: recordRefType },
+        recordRefList: { refType: recordRefListType },
       },
     })
-    elements = [typeWithRecordRef, recordRefType, departmentType, subsidiaryType]
+    elements = [typeWithRecordRef, recordRefType, recordRefListType, departmentType, subsidiaryType]
   })
 
   it('should add field to record ref type', async () => {
@@ -52,5 +55,6 @@ describe('replaceRecordRef', () => {
     ).toBe('subsidiary')
     expect((await typeWithRecordRef.fields.parent.getType()).elemID.name).toBe('typeWithRecordRef')
     expect((await typeWithRecordRef.fields.recordRef.getType()).elemID.name).toBe('recordRef')
+    expect((await typeWithRecordRef.fields.recordRefList.getType()).elemID.name).toBe('List<netsuite.recordRef>')
   })
 })

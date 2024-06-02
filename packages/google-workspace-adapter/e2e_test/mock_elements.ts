@@ -18,7 +18,7 @@ import { GROUP_TYPE_NAME, ROLE_TYPE_NAME, SCHEMA_TYPE_NAME } from '../src/consta
 
 export const mockDefaultValues: Record<string, Values> = {
   [GROUP_TYPE_NAME]: {
-    email: 'testgroup@neta-test1.salto-internal-test.com',
+    email: 'testgroup@e2e.salto-internal-test.com',
     name: 'TestGroup',
     description: 'test test',
     groupSettings: {

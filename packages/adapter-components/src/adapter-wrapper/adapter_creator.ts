@@ -78,6 +78,7 @@ export const createAdapter = <
   definitionsCreator: (args: {
     clients: Record<string, HTTPReadClientInterface & HTTPWriteClientInterface>
     userConfig: Co
+    credentials: Credentials
   }) => RequiredDefinitions<Options>
   configTypeCreator?: ConfigTypeCreator<ResolveCustomNameMappingOptionsType<Options>>
   additionalConfigFields?: {
@@ -124,7 +125,7 @@ export const createAdapter = <
           clientDefaults,
         }),
       )
-      const definitions = definitionsCreator({ clients, userConfig: config })
+      const definitions = definitionsCreator({ clients, userConfig: config, credentials })
       const resolverCreator = getResolverCreator(definitions)
       const fixElements = customizeFixElements
         ? combineElementFixers(customizeFixElements({ config, elementsSource: context.elementsSource }))

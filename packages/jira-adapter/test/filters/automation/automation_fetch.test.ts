@@ -637,6 +637,27 @@ describe('automationFetchFilter', () => {
             ruleScope: {
               resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
             },
+            trigger: {
+              component: 'ACTION',
+              schemaVersion: 1,
+              type: 'cmdb.object.create',
+              value: {
+                objectTypeId: '35',
+                workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
+                schemaLabel: 'idoA Schema',
+                schemaId: '5',
+                objectTypeLabel: 'R&D',
+                attributes: [
+                  {
+                    name: 'Name',
+                    value: 'idoA automation',
+                    isLabel: true,
+                  },
+                ],
+              },
+              children: [],
+              conditions: [],
+            },
             components: [
               {
                 component: 'ACTION',
@@ -765,6 +786,27 @@ describe('automationFetchFilter', () => {
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },
+        trigger: {
+          component: 'ACTION',
+          schemaVersion: 1,
+          type: 'cmdb.object.create',
+          value: {
+            objectTypeId: '35',
+            workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
+            schemaLabel: 'idoA Schema',
+            schemaId: '5',
+            objectTypeLabel: 'R&D',
+            attributes: [
+              {
+                name: 'Name',
+                value: 'idoA automation',
+                isLabel: true,
+              },
+            ],
+          },
+          children: [],
+          conditions: [],
+        },
         components: [
           {
             component: 'ACTION',
@@ -846,6 +888,24 @@ describe('automationFetchFilter', () => {
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },
+        trigger: {
+          component: 'ACTION',
+          schemaVersion: 1,
+          type: 'cmdb.object.create',
+          value: {
+            objectTypeId: '35',
+            schemaId: '5',
+            attributes: [
+              {
+                name: 'Name',
+                value: 'idoA automation',
+                isLabel: true,
+              },
+            ],
+          },
+          children: [],
+          conditions: [],
+        },
         components: [
           {
             component: 'ACTION',
@@ -915,6 +975,26 @@ describe('automationFetchFilter', () => {
                   ruleScope: {
                     resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
                   },
+                  trigger: {
+                    component: 'ACTION',
+                    schemaVersion: 1,
+                    type: 'cmdb.object.create',
+                    value: {
+                      workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
+                      schemaLabel: 'idoA Schema',
+                      schemaId: '5',
+                      objectTypeLabel: 'R&D',
+                      attributes: [
+                        {
+                          name: 'Name',
+                          value: 'idoA automation',
+                          isLabel: true,
+                        },
+                      ],
+                    },
+                    children: [],
+                    conditions: [],
+                  },
                   components: [
                     {
                       component: 'ACTION',
@@ -975,6 +1055,23 @@ describe('automationFetchFilter', () => {
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },
+        trigger: {
+          component: 'ACTION',
+          schemaVersion: 1,
+          type: 'cmdb.object.create',
+          value: {
+            schemaId: '5',
+            attributes: [
+              {
+                name: 'Name',
+                value: 'idoA automation',
+                isLabel: true,
+              },
+            ],
+          },
+          children: [],
+          conditions: [],
+        },
         components: [
           {
             component: 'ACTION',
@@ -1024,6 +1121,7 @@ describe('automationFetchFilter', () => {
                   ruleScope: {
                     resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
                   },
+                  trigger: {},
                   components: [
                     {
                       component: 'ACTION',
@@ -1084,6 +1182,7 @@ describe('automationFetchFilter', () => {
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },
+        trigger: {},
         components: [
           {
             component: 'ACTION',

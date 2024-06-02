@@ -42,6 +42,7 @@ import {
   NAME_FIELD,
   NETSUITE,
   SUBTYPES_PATH,
+  TAX_SCHEDULE,
   TYPES_PATH,
 } from '../constants'
 import { TYPE_ID } from '../client/suiteapp_client/constants'
@@ -69,6 +70,10 @@ const SOAP_REFERENCE_FIELDS = new Set([NAME_FIELD, INTERNAL_ID, TYPE_ID])
 
 type ResolvedAccountSpecificValue = {
   [ID_FIELD]: string
+}
+
+const FIELD_NAME_TO_SUITEQL_TABLE: Record<string, string> = {
+  [TAX_SCHEDULE]: TAX_SCHEDULE,
 }
 
 const isNestedObject = (path: ElemID | undefined, value: Value): path is ElemID =>
@@ -229,6 +234,27 @@ const setOriginalFieldType = (field: Field): void => {
   }
 }
 
+const getSuiteQLTableInstance = (
+  field: Field | undefined,
+  typeId: string | undefined,
+  suiteQLTablesMap: Record<string, InstanceElement>,
+): InstanceElement | undefined => {
+  if (
+    field !== undefined &&
+    FIELD_NAME_TO_SUITEQL_TABLE[field.name] !== undefined &&
+    suiteQLTablesMap[FIELD_NAME_TO_SUITEQL_TABLE[field.name]] !== undefined
+  ) {
+    return suiteQLTablesMap[FIELD_NAME_TO_SUITEQL_TABLE[field.name]]
+  }
+  const fieldType = field?.getTypeSync()
+  if (fieldType !== undefined && suiteQLTablesMap[fieldType.elemID.name] !== undefined) {
+    return suiteQLTablesMap[fieldType.elemID.name]
+  }
+  return (typeId !== undefined ? INTERNAL_ID_TO_TYPES[typeId] ?? [] : [])
+    .map(typeName => suiteQLTablesMap[typeName])
+    .find(instance => instance !== undefined)
+}
+
 const setAccountSpecificValues = (
   dataInstance: InstanceElement,
   unknownTypeReferencesInstance: InstanceElement,
@@ -238,7 +264,7 @@ const setAccountSpecificValues = (
     if (!isNestedObject(path, value)) {
       return value
     }
-    const { [INTERNAL_ID]: internalId, [NAME_FIELD]: fallbackName } = value
+    const { [INTERNAL_ID]: internalId, [NAME_FIELD]: fallbackName, [TYPE_ID]: typeId } = value
     if (internalId === undefined) {
       return value
     }
@@ -253,14 +279,7 @@ const setAccountSpecificValues = (
       log.warn('value in %s is missing name field: %o', path.getFullName(), value)
     }
 
-    const fieldType = field?.getTypeSync()
-    const suiteQLTableInstance =
-      fieldType !== undefined && suiteQLTablesMap[fieldType.elemID.name] !== undefined
-        ? suiteQLTablesMap[fieldType.elemID.name]
-        : (INTERNAL_ID_TO_TYPES[value[TYPE_ID]] ?? [])
-            .map(typeName => suiteQLTablesMap[typeName])
-            .find(instance => instance !== undefined)
-
+    const suiteQLTableInstance = getSuiteQLTableInstance(field, typeId, suiteQLTablesMap)
     if (suiteQLTableInstance === undefined) {
       const name = getNameFromUnknownTypeReference(path, unknownTypeReferencesInstance, internalId, fallbackName)
       return toResolvedAccountSpecificValue({ type: UNKNOWN_TYPE, name })

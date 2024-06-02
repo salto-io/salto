@@ -422,7 +422,7 @@ describe('data_elements', () => {
           adapterName === NETSUITE &&
           name === 'name' &&
           _.isEqual(serviceIds, {
-            name: 'name',
+            internalId: '1',
             [OBJECT_SERVICE_ID]: toServiceIdsString({
               [OBJECT_NAME]: 'netsuite.subsidiary',
             }),

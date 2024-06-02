@@ -25,6 +25,10 @@
       "path": "packages/cli",
     },
     {
+      "name": "confluence-adapter",
+      "path": "packages/confluence-adapter",
+    },
+    {
       "name": "core",
       "path": "packages/core",
     },
@@ -41,8 +45,16 @@
       "path": "packages/e2e-credentials-store",
     },
     {
+      "name": "microsoft-entra-adapter",
+      "path": "packages/microsoft-entra-adapter",
+    },
+    {
       "name": "file",
       "path": "packages/file",
+    },
+    {
+      "name": "google-workspace-adapter",
+      "path": "packages/google-workspace-adapter",
     },
     {
       "name": "intercom-adapter",
@@ -89,6 +101,14 @@
       "path": "packages/sap-adapter",
     },
     {
+      "name": "serviceplaceholder-adapter",
+      "path": "packages/serviceplaceholder-adapter",
+    },
+    {
+      "name": "stripe-adapter",
+      "path": "packages/stripe-adapter",
+    },
+    {
       "name": "test-utils",
       "path": "packages/test-utils",
     },
@@ -111,22 +131,6 @@
     {
       "name": "zuora-billing-adapter",
       "path": "packages/zuora-billing-adapter",
-    },
-    {
-      "name": "stripe-adapter",
-      "path": "packages/stripe-adapter",
-    },
-    {
-      "name": "serviceplaceholder-adapter",
-      "path": "packages/serviceplaceholder-adapter",
-    },
-    {
-      "name": "google-workspace-adapter",
-      "path": "packages/google-workspace-adapter",
-    },
-    {
-      "name": "confluence-adapter",
-      "path": "packages/confluence-adapter",
     },
   ],
   "settings": {

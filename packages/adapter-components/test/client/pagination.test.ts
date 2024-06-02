@@ -1223,7 +1223,7 @@ describe('client_pagination', () => {
   describe('getWithOffsetAndLimit', () => {
     let paginate: PaginationFunc
     beforeEach(async () => {
-      paginate = getWithOffsetAndLimit()
+      paginate = getWithOffsetAndLimit('isLast')
     })
     describe('with paginationField', () => {
       describe('when response is a valid page', () => {
@@ -1258,6 +1258,27 @@ describe('client_pagination', () => {
             }),
           ).toEqual([])
         })
+        it('should work with different last page values', () => {
+          paginate = getWithOffsetAndLimit('isLastPage')
+          expect(
+            paginate({
+              pageSize: 2,
+              getParams: { url: '/ep', paginationField: 'startAt' },
+              currentParams: {},
+              responseData: { isLastPage: false, startAt: 0, values: [1, 2] },
+              page: [{ isLastPage: false, startAt: 0, values: [1, 2] }],
+            }),
+          ).toEqual([{ startAt: '2' }])
+          expect(
+            paginate({
+              pageSize: 2,
+              getParams: { url: '/ep', paginationField: 'startAt' },
+              currentParams: { startAt: '2' },
+              responseData: { isLastPage: true, startAt: 2, values: [3] },
+              page: [{ isLastPage: true, startAt: 2, values: [3] }],
+            }),
+          ).toEqual([])
+        })
       })
       describe('when response is not a valid page', () => {
         it('should throw error', async () => {
@@ -1270,6 +1291,19 @@ describe('client_pagination', () => {
               page: [{ isLast: false, startAt: 0, values: [1, 2] }],
             }),
           ).toThrow('Response from /ep expected page with pagination field wrong')
+        })
+        it('should throw error when isLastPage is not valid', async () => {
+          expect(() =>
+            paginate({
+              pageSize: 2,
+              getParams: { url: '/ep', paginationField: 'startAt' },
+              currentParams: {},
+              responseData: { isLastPage: false, startAt: 0, values: [1, 2] },
+              page: [{ isLastPage: false, startAt: 0, values: [1, 2] }],
+            }),
+          ).toThrow(
+            'Response from /ep expected page with pagination field startAt, got {"isLastPage":false,"startAt":0,"values":[1,2]}',
+          )
         })
       })
     })

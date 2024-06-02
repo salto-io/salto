@@ -25,6 +25,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
 import {
+  ATTRIBUTES,
   CONSUMER_KEY,
   CONSUMER_SECRET,
   ECONN_ERROR,
@@ -559,7 +560,7 @@ export default class SoapClient {
       },
       ...Object.fromEntries(
         await awu(Object.entries(values))
-          .filter(([key]) => key !== 'attributes')
+          .filter(([key]) => key !== ATTRIBUTES)
           .map(async ([key, value]) => {
             const updateKey = !key.includes(':') ? `${namespaceAlias}:${key}` : key
             const fieldType = await type.fields[key]?.getType()

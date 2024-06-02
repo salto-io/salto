@@ -79,6 +79,7 @@ import {
   OBJECT_SCHEMA_TYPE,
   OBJECT_TYPE_ICON_TYPE,
   OBJECT_SCHEMA_STATUS_TYPE,
+  OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
@@ -1364,6 +1365,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',
     target: { type: OBJECT_SCHEMA_STATUS_TYPE },
+  },
+  {
+    src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_SCHEMA_GLOBAL_STATUS_TYPE },
   },
   {
     src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },

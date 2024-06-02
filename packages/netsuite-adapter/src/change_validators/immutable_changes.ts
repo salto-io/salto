@@ -117,6 +117,7 @@ const instanceServiceIdConditions = async <
 ): Promise<string[]> => {
   const { after } = change.data
   return awu(Object.values((await after.getType()).fields))
+    .filter(field => field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] !== true)
     .filter(async field => isServiceId(await field.getType()))
     .filter(field => condition(change, field.name))
     .map(field => field.elemID.getFullName())
@@ -127,12 +128,17 @@ const toModificationInstanceErrors = async (change: ModificationChange<InstanceE
   const { before, after } = change.data
   const modifiedImmutableFields = await instanceServiceIdConditions(change, modificationServiceIdCondition)
 
-  if (isDataObjectType(await after.getType()) && isTypeWithMultiFieldsIdentifier(after.elemID.typeName)) {
+  const type = await after.getType()
+  if (isDataObjectType(type) && isTypeWithMultiFieldsIdentifier(after.elemID.typeName)) {
     modifiedImmutableFields.push(
       ...TYPE_TO_ID_FIELD_PATHS[after.elemID.typeName]
         .filter(path => _.get(before.value, path) !== _.get(after.value, path))
         .map(path => after.elemID.createNestedID(...path).getFullName()),
     )
+  }
+  // the scriptid cannot be modified in custom record instances
+  if (isCustomRecordType(type) && before.value[SCRIPT_ID] !== after.value[SCRIPT_ID]) {
+    modifiedImmutableFields.push(SCRIPT_ID)
   }
 
   // parent annotations in file cabinet instances

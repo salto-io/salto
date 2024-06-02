@@ -28,6 +28,8 @@ import { adapter as intercomAdapter } from '@salto-io/intercom-adapter'
 import { adapter as serviceplaceholderAdapter } from '@salto-io/serviceplaceholder-adapter'
 import { adapter as googleWorkspaceAdapter } from '@salto-io/google-workspace-adapter'
 import { adapter as confluenceAdapter } from '@salto-io/confluence-adapter'
+import { adapter as microsoftEntra } from '@salto-io/microsoft-entra-adapter'
+import { adapter as pagerDutyAdapter } from '@salto-io/pagerduty-adapter'
 
 const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
@@ -35,9 +37,7 @@ const adapterCreators: Record<string, Adapter> = {
   workato: workatoAdapter,
   sap: sapAdapter,
   stripe: stripeAdapter,
-  // eslint-disable-next-line camelcase
   zuora_billing: zuoraBillingAdapter,
-  // eslint-disable-next-line camelcase
   zendesk: zendeskAdapter,
   jira: jiraAdapter,
   okta: oktaAdapter,
@@ -46,6 +46,8 @@ const adapterCreators: Record<string, Adapter> = {
   google_workspace: googleWorkspaceAdapter,
   confluence: confluenceAdapter,
   intercom: intercomAdapter,
+  microsoft_entra: microsoftEntra,
+  pagerduty: pagerDutyAdapter,
 }
 
 export default adapterCreators

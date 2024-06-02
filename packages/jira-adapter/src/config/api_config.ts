@@ -1883,6 +1883,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   RequestType: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype',
+      paginationField: 'start',
       recurseInto: [
         {
           type: 'RequestType__workflowStatuses',
@@ -1944,6 +1945,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   Queue: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/queue',
+      paginationField: 'start',
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -2165,6 +2167,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   ObjectSchemas: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list',
+      paginationField: 'startAt',
       recurseInto: [
         {
           type: 'ObjectSchemaStatuses',
@@ -2417,6 +2420,32 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
+  ObjectSchemaGlobalStatus: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
+      fieldsToOmit: [{ fieldName: 'objectSchemaId' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
   ObjectTypeIcon: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/icon/global',
@@ -2453,6 +2482,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Form: [], // being fetched by a filter.
   ObjectSchema: [],
   ObjectSchemaDefaultReferenceType: [],
+  ObjectSchemaGlobalStatus: [],
   ObjectTypeIcon: [],
   ObjectSchemaStatus: [], // being fetched by recurseInto.
   ObjectType: [], // being fetched by recurseInto.
@@ -2462,6 +2492,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
   ObjectSchema: ['ObjectSchemas'],
   ObjectSchemaDefaultReferenceType: ['ObjectSchemaDefaultReferenceType'],
+  ObjectSchemaGlobalStatus: ['ObjectSchemaGlobalStatus'],
   ObjectTypeIcon: ['ObjectTypeIcon'],
 }
 

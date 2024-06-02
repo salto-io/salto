@@ -377,7 +377,9 @@ const proccessComponentPreDeploy = (component: Component, config: JiraConfig): v
   }
   if (isRequestTypeComponent(component)) {
     const requestType = component.value.requestType.value
-    component.value.serviceDesk = requestType.value.serviceDeskId
+    if (requestType?.value !== undefined) {
+      component.value.serviceDesk = requestType.value.serviceDeskId
+    }
   }
   if (component.children) {
     component.children.forEach(child => proccessComponentPreDeploy(child, config))
@@ -387,10 +389,15 @@ const proccessComponentPreDeploy = (component: Component, config: JiraConfig): v
   }
 }
 const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig): void => {
-  if (!instance.value.components || !config.fetch.enableJSM) {
+  if (!config.fetch.enableJSM) {
     return
   }
-  instance.value.components.forEach((component: Component) => proccessComponentPreDeploy(component, config))
+  if (instance.value.components !== undefined) {
+    instance.value.components.forEach((component: Component) => proccessComponentPreDeploy(component, config))
+  }
+  if (instance.value.trigger !== undefined) {
+    proccessComponentPreDeploy(instance.value.trigger, config)
+  }
 }
 
 const proccessComponentPostDeploy = (component: Component, config: JiraConfig): void => {
@@ -411,10 +418,15 @@ const proccessComponentPostDeploy = (component: Component, config: JiraConfig): 
 }
 
 const modifyComponentsPostDeploy = (instance: InstanceElement, config: JiraConfig): void => {
-  if (!instance.value.components || !config.fetch.enableJSM) {
+  if (!config.fetch.enableJSM) {
     return
   }
-  instance.value.components.forEach((component: Component) => proccessComponentPostDeploy(component, config))
+  if (instance.value.components !== undefined) {
+    instance.value.components.forEach((component: Component) => proccessComponentPostDeploy(component, config))
+  }
+  if (instance.value.trigger !== undefined) {
+    proccessComponentPostDeploy(instance.value.trigger, config)
+  }
 }
 
 const updateAutomation = async (

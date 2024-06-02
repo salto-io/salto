@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { isDefined } from './values'
+import { isDefined, isPlainRecord } from './values'
 
 export const concatObjects = <T extends Record<string, ReadonlyArray<unknown> | unknown[] | undefined>>(
   objects: T[],
@@ -27,3 +27,23 @@ export const concatObjects = <T extends Record<string, ReadonlyArray<unknown> | 
         .filter(isDefined)
         .flat(),
   ) as T
+
+/*
+ * Cleans empty objects recursively
+ * Notice: arrays are ignored and treated like primitives
+ */
+export const cleanEmptyObjects = (object: Record<string, unknown>): unknown => {
+  const cleanObject = (obj: unknown): unknown => {
+    if (isPlainRecord(obj)) {
+      const mapped = _.mapValues(obj, val => {
+        const cleanedVal = cleanObject(val)
+        return isPlainRecord(val) && _.isEmpty(cleanedVal) ? undefined : cleanedVal
+      })
+      return _.pickBy(mapped, isDefined)
+    }
+    return obj
+  }
+
+  const cleanedRoot = cleanObject(object)
+  return isPlainRecord(cleanedRoot) && _.isEmpty(cleanedRoot) ? undefined : cleanedRoot
+}

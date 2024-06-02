@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { queryWithDefault } from '../../../src/definitions'
 import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
 import {
@@ -27,6 +27,35 @@ import {
 describe('instance utils', () => {
   const type = new ObjectType({ elemID: new ElemID('myAdapter', 'myType') })
   describe('getInstanceCreationFunctions', () => {
+    describe('when provided with customizer', () => {
+      const customizations: Record<string, InstanceFetchApiDefinitions> = {
+        myType: {
+          element: {
+            topLevel: {
+              isTopLevel: true,
+              elemID: {
+                custom:
+                  () =>
+                  ({ entry, parent }) =>
+                    `${entry.name}~${parent?.value?.name}`,
+              },
+            },
+          },
+        },
+      }
+      it('it should use customizer to create elemID with provided', () => {
+        const { toElemName } = getInstanceCreationFunctions({
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({ customizations }),
+          type,
+        })
+        const createdName = toElemName({
+          entry: { name: 'test' },
+          defaultName: 'default',
+          parent: new InstanceElement('parent', type, { name: 'parent' }),
+        })
+        expect(createdName).toEqual('test~parent')
+      })
+    })
     describe('instance with standalone fields', () => {
       const customizations: Record<string, InstanceFetchApiDefinitions> = {
         myType: {

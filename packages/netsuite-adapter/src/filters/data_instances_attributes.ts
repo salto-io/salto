@@ -20,6 +20,7 @@ import _ from 'lodash'
 import { isDataObjectType } from '../types'
 import { LocalFilterCreator } from '../filter'
 import { XSI_TYPE } from '../client/constants'
+import { ATTRIBUTES } from '../client/suiteapp_client/constants'
 
 const { awu } = collections.asynciterable
 
@@ -36,7 +37,7 @@ const filterCreator: LocalFilterCreator = () => ({
             type: await e.getType(),
             strict: false,
             transformFunc: async ({ value }) => {
-              if (_.isPlainObject(value) && 'attributes' in value) {
+              if (_.isPlainObject(value) && ATTRIBUTES in value) {
                 _.assign(value, value.attributes)
                 delete value.attributes
                 delete value[XSI_TYPE]
@@ -61,7 +62,7 @@ const filterCreator: LocalFilterCreator = () => ({
             strict: false,
             pathID: element.elemID,
             transformFunc: async ({ value, field, path }) => {
-              if (!_.isPlainObject(value) || path?.name === 'attributes') {
+              if (!_.isPlainObject(value) || path?.name === ATTRIBUTES) {
                 return value
               }
 

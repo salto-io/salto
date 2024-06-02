@@ -30,7 +30,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { JIRA } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
-import { getDefaultConfig } from '../../../src/config/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { deployTabs } from '../../../src/filters/screen/screenable_tab'
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -187,8 +187,11 @@ describe('screenableTab', () => {
     })
 
     describe('deploying fields', () => {
+      let change: ModificationChange<InstanceElement>
+      let config: JiraConfig
       beforeEach(async () => {
-        const change = toChange({
+        config = getDefaultConfig({ isDataCenter: false })
+        change = toChange({
           before: new InstanceElement('instance1', screenType, {
             name: 'name2',
             id: 'screenId',
@@ -210,10 +213,9 @@ describe('screenableTab', () => {
             },
           }),
         }) as ModificationChange<InstanceElement>
-
-        await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
       })
       it('should call endpoints to add fields', async () => {
+        await deployTabs(change, client, config)
         expect(mockConnection.post).toHaveBeenCalledWith(
           '/rest/api/3/screens/screenId/tabs/tabId/fields',
           {
@@ -224,6 +226,7 @@ describe('screenableTab', () => {
       })
 
       it('should call endpoints to remove fields', async () => {
+        await deployTabs(change, client, config)
         expect(mockConnection.delete).toHaveBeenCalledWith(
           '/rest/api/3/screens/screenId/tabs/tabId/fields/id3',
           undefined,
@@ -231,6 +234,7 @@ describe('screenableTab', () => {
       })
 
       it('should call endpoints to re-order fields', async () => {
+        await deployTabs(change, client, config)
         expect(mockConnection.post).toHaveBeenCalledWith(
           '/rest/api/3/screens/screenId/tabs/tabId/fields/id2/move',
           {
@@ -246,6 +250,29 @@ describe('screenableTab', () => {
           },
           undefined,
         )
+      })
+      it('should not throw if the field is already in the screen', async () => {
+        mockConnection.post.mockRejectedValueOnce(
+          new clientUtils.HTTPError('message', {
+            status: 400,
+            data: {
+              errors: { fieldId: 'The field with id customfield_10834 already exists on the screen.' },
+            },
+          }),
+        )
+        await expect(deployTabs(change, client, config)).resolves.not.toThrow()
+      })
+
+      it('should throw if the error is not about the field already existing', async () => {
+        mockConnection.post.mockRejectedValueOnce(
+          new clientUtils.HTTPError('message', {
+            status: 400,
+            data: {
+              errors: { fieldId: 'Some other error' },
+            },
+          }),
+        )
+        await expect(deployTabs(change, client, config)).rejects.toThrow()
       })
     })
 

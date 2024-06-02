@@ -37,6 +37,7 @@ import {
   ISSUE_TYPE_SCHEMA_NAME,
   JIRA,
   NOTIFICATION_SCHEME_TYPE_NAME,
+  OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
   OBJECT_SCHEMA_STATUS_TYPE,
   OBJECT_SCHEMA_TYPE,
   OBJECT_TYPE_ATTRIBUTE_TYPE,
@@ -79,6 +80,7 @@ import { createrequestTypeValues } from './jsm/request_type'
 import { createFormValues } from './jsm/form'
 import { createObjectSchmaValues } from './jsm/objectSchema'
 import { createObjectSchemaStatusValues } from './jsm/objectSchemaStatus'
+import { createObjectSchemaGlobalStatusValues } from './jsm/objectSchemaGlobalStatus'
 import { createObjectTypeValues } from './jsm/objectType'
 import { createObjectTypeAttributeValues } from './jsm/objectTypeAttribute'
 
@@ -289,6 +291,11 @@ export const createInstances = (
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [objectSchemaRef] },
   )
+  const objectSchemaGlobalStatus = new InstanceElement(
+    `OSGS${randomString}`,
+    findType(OBJECT_SCHEMA_GLOBAL_STATUS_TYPE, fetchedElements),
+    createObjectSchemaGlobalStatusValues(`OSGS${randomString}`),
+  )
 
   const objectType = new InstanceElement(
     `testSchema_Hardware_Assets_us_${randomString}@uumu`,
@@ -334,6 +341,7 @@ export const createInstances = (
     [form],
     [objectSchema],
     [objectSchemaStatus],
+    [objectSchemaGlobalStatus],
     [objectType],
     [objectTypeAttribute],
   ]

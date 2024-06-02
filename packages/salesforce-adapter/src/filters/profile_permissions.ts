@@ -208,6 +208,10 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         })
     },
     onDeploy: async (changes) => {
+      if (Object.keys(originalProfileChangesByName).length === 0) {
+        return
+      }
+      log.debug('Running profilePermissionsFilter onDeploy')
       const appliedFLSProfileChanges = changes
         .filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE))
         .filter(isAdditionOrModificationChange)

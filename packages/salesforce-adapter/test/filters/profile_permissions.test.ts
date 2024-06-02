@@ -242,4 +242,57 @@ describe('Profile Permissions filter', () => {
       })
     })
   })
+
+  describe('with profile changes only', () => {
+    let changes: Change[]
+    const presetObjectPermission: ProfileInfo['objectPermissions'][0] = {
+      object: 'Test__c',
+      allowCreate: true,
+      allowDelete: false,
+      allowEdit: false,
+      allowRead: true,
+      modifyAllRecords: false,
+      viewAllRecords: true,
+    }
+    const presetFieldPermission: ProfileInfo['fieldPermissions'][0] = {
+      field: 'Test2__c.desc__c',
+      readable: true,
+      editable: false,
+    }
+    beforeEach(() => {
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          flsProfiles: [constants.ADMIN_PROFILE, TEST_PROFILE, REMOVED_PROFILE],
+        },
+      }) as typeof filter
+    })
+    describe('preDeploy & onDeploy', () => {
+      beforeEach(() => {
+        const updatedProfile = mockFLSProfile(
+          [presetObjectPermission],
+          [presetFieldPermission],
+        )
+        changes = [
+          toChange({ before: mockFLSProfile([], []), after: updatedProfile }),
+          toChange({ before: mockFLSProfile([], [], REMOVED_PROFILE) }),
+        ]
+      })
+      it('should have correct changes pre & on deploy', async () => {
+        await filter.preDeploy(changes)
+        expect(changes).toHaveLength(2)
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
+          constants.ADMIN_PROFILE,
+          REMOVED_PROFILE,
+        ])
+
+        // Make sure onDeploy does not remove Changes on FLS Profiles that were not handled in preDeploy
+        await filter.onDeploy(changes)
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
+          constants.ADMIN_PROFILE,
+          REMOVED_PROFILE,
+        ])
+      })
+    })
+  })
 })

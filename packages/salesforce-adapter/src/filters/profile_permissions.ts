@@ -146,6 +146,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
     string,
     AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
   > = {}
+  let shouldRunOnDeploy = false
   return {
     name: 'profilePermissionsFilter',
     preDeploy: async (changes) => {
@@ -166,7 +167,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       }
 
       const { flsProfiles } = config
-
+      shouldRunOnDeploy = true
       log.debug(
         'adding FLS permissions to the following Profiles: %s',
         safeJsonStringify(flsProfiles),
@@ -208,7 +209,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         })
     },
     onDeploy: async (changes) => {
-      if (Object.keys(originalProfileChangesByName).length === 0) {
+      if (!shouldRunOnDeploy) {
         return
       }
       log.debug('Running profilePermissionsFilter onDeploy')

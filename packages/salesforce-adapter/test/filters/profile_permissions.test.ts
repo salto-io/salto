@@ -109,7 +109,7 @@ describe('Profile Permissions filter', () => {
     beforeEach(() => {
       filter = filterCreator({ config: defaultFilterContext }) as typeof filter
     })
-    describe('preDeploy', () => {
+    describe('preDeploy & onDeploy', () => {
       beforeEach(async () => {
         const objWithNewField = mockObject('Test2__c')
         changes = [
@@ -118,8 +118,13 @@ describe('Profile Permissions filter', () => {
         ]
         await filter.preDeploy(changes)
       })
-      it('should create a change for the admin profile', () => {
+      it('should create a change for the admin profile and remove them on onDeploy', async () => {
         expect(changes).toHaveLength(3)
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
+          constants.ADMIN_PROFILE,
+        ])
+        await filter.onDeploy(changes)
+        expect(getChangeProfilesNames(changes)).toBeEmpty()
       })
       describe('admin profile change', () => {
         let adminProfile: InstanceElement
@@ -173,14 +178,6 @@ describe('Profile Permissions filter', () => {
             expect.objectContaining({ field: 'Test__c.standard' }),
           )
         })
-      })
-    })
-    describe('onDeploy', () => {
-      beforeEach(async () => {
-        await filter.onDeploy(changes)
-      })
-      it('should remove the admin profile change', () => {
-        expect(changes).toHaveLength(2)
       })
     })
   })

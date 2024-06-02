@@ -20,6 +20,7 @@ import { accountGroupDef, serviceGroupDef } from './account'
 import deployDef from './deploy'
 import initDef from './init'
 import restoreDef from './restore'
+import insightsDef from './insights'
 import elementGroupDef from './element'
 import workspaceGroupDef from './workspace'
 
@@ -33,6 +34,7 @@ export default [
   applyPatchDef,
   deployDef,
   restoreDef,
+  insightsDef,
   elementGroupDef,
   workspaceGroupDef,
 ]

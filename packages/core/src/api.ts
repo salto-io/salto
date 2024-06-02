@@ -27,6 +27,7 @@ import {
   Element,
   ElemID,
   getChangeData,
+  Insight,
   InstanceElement,
   isAdapterSuccessInstallResult,
   isAdditionChange,
@@ -513,6 +514,40 @@ export const calculatePatch = async ({
     success: true,
     updatedConfig: {},
   }
+}
+
+const resolveAllElements = async (elementsSource: elementSource.ElementsSource): Promise<Element[]> =>
+  expressions.resolve(await awu(await elementsSource.getAll()).toArray(), elementsSource)
+
+export const getInsights = async (workspace: Workspace): Promise<Insight[]> => {
+  const wsElementsSource = await workspace.elements()
+  let resolvedElementsPromise: Promise<Element[]>
+  const getResolvedElementsOfAdapter = async (adapter: string): Promise<Element[]> => {
+    if (resolvedElementsPromise === undefined) {
+      resolvedElementsPromise = resolveAllElements(wsElementsSource)
+    }
+    const resolvedElements = await resolvedElementsPromise
+    return resolvedElements.filter(element => element.elemID.adapter === adapter)
+  }
+
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
+  const insightsByAdapter = Object.entries(accountToServiceNameMap).map(async ([account, adapter]) => {
+    const { getInsights: getAdapterInsights } = adapterCreators[adapter]
+    if (getAdapterInsights === undefined) {
+      return []
+    }
+    if (account !== adapter) {
+      log.warn('Cannot get insights when account name is different from the adapter name', {
+        account,
+        adapter,
+        workspaceId: workspace.uid,
+      })
+      return []
+    }
+    return getAdapterInsights(await getResolvedElementsOfAdapter(adapter))
+  })
+
+  return Promise.all(insightsByAdapter).then(insights => insights.flat())
 }
 
 export type LocalChange = Omit<FetchChange, 'pendingChanges'>

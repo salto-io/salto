@@ -27,7 +27,7 @@ import isPromise from 'is-promise'
 import { LexerToken, WILDCARD } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
 import { ParseContext, ValuePromiseWatcher } from './types'
-import { Keywords } from '../../language'
+import { Keywords, keywordToPrimitiveType } from '../../language'
 import { invalidElemIDType } from './errors'
 
 export const INVALID_ELEM_ID = new ElemID(WILDCARD)
@@ -44,10 +44,10 @@ export const positionAtEnd = (token: LexerToken): SourcePos => ({
   col: token.lineBreaks > 0 ? token.text.slice(token.text.lastIndexOf('\n')).length : token.col + token.text.length,
 })
 
-export const parseTopLevelID = (context: ParseContext, fullname: string, range: SourceRange): ElemID => {
-  const parts = fullname.split(Keywords.NAMESPACE_SEPARATOR)
+export const parseTopLevelID = (context: ParseContext, fullName: string, range: SourceRange): ElemID => {
+  const parts = fullName.split(Keywords.NAMESPACE_SEPARATOR)
   if (parts.length > 2) {
-    context.errors.push(invalidElemIDType(fullname, range))
+    context.errors.push(invalidElemIDType(fullName, range))
     return INVALID_ELEM_ID
   }
   const adapter = parts.length > 1 ? parts[0] : ''
@@ -121,18 +121,4 @@ export const createFieldRefType = (context: ParseContext, blockType: string, ran
   return new TypeReference(parseTopLevelID(context, blockType, range))
 }
 
-export const primitiveType = (typeName: string): PrimitiveTypes | undefined => {
-  if (typeName === Keywords.TYPE_STRING) {
-    return PrimitiveTypes.STRING
-  }
-  if (typeName === Keywords.TYPE_NUMBER) {
-    return PrimitiveTypes.NUMBER
-  }
-  if (typeName === Keywords.TYPE_UNKNOWN) {
-    return PrimitiveTypes.UNKNOWN
-  }
-  if (typeName === Keywords.TYPE_BOOL) {
-    return PrimitiveTypes.BOOLEAN
-  }
-  return undefined
-}
+export const primitiveType = (typeName: string): PrimitiveTypes | undefined => keywordToPrimitiveType[typeName]

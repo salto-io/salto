@@ -2220,7 +2220,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'attributes' },
         { fieldName: 'referenceTypes' },
       ],
-      idFields: ['objectSchemaKey'],
       fieldTypeOverrides: [{ fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' }],
       serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },

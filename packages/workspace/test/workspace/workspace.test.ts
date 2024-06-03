@@ -2553,12 +2553,12 @@ describe('workspace', () => {
     `
     const secondInstance = `
       salesforce.lead someName2 {
-      salesforce.text = file("static2.nacl")
+      salesforce.text = file("static2")
       }
     `
     const thirdInstance = `
       salesforce.lead someName3 {
-      salesforce.text = file("static2.nacl")
+      salesforce.text = file("static2")
       }
     `
     const naclFileStore = mockDirStore(undefined, undefined, {
@@ -2575,7 +2575,7 @@ describe('workspace', () => {
       })
       const secondStaticFile = new StaticFile({
         content: Buffer.from('I am a little static file'),
-        filepath: 'static2.nacl',
+        filepath: 'static2',
         hash: 'FFFF',
       })
       workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
@@ -2600,11 +2600,11 @@ describe('workspace', () => {
           {
             id: new ElemID('salesforce', 'lead', 'instance', 'someName1', 'salesforce', 'text'),
             action: 'remove',
-            data: { before: 'file("static2.nacl")' },
+            data: { before: new ReferenceExpression(new ElemID('salesforce.lead.instance.someName1__static2_false')) },
           },
         ]
         await workspace.updateNaclFiles(changes)
-        expect(workspace.getStaticFile({ filepath: 'static2.nacl', encoding: 'ascii' })).toBeDefined()
+        expect(workspace.getStaticFile({ filepath: 'static2', encoding: 'ascii' })).toBeDefined()
       })
     })
 
@@ -2620,7 +2620,7 @@ describe('workspace', () => {
           ElemID.fromFullName('salesforce.lead.instance.someName1'),
           ElemID.fromFullName('salesforce.lead.instance.someName2'),
         ])
-        expect(result).toEqual(['static1.nacl', 'static2.nacl'])
+        expect(result).toEqual(['static1.nacl', 'static2'])
       })
       it('get no paths when providing a bad element id', async () => {
         const result = await workspace.getStaticFilePathsByElemIds([ElemID.fromFullName('salesforce.lead.type')])
@@ -2633,7 +2633,7 @@ describe('workspace', () => {
           const result = await workspace.getElemIdsByStaticFilePaths()
           expect(result).toEqual({
             'static1.nacl': 'salesforce.lead.instance.someName1',
-            'static2.nacl': 'salesforce.lead.instance.someName2',
+            static2: 'salesforce.lead.instance.someName2',
           })
         })
       })
@@ -2666,7 +2666,7 @@ describe('workspace', () => {
           const result = await workspace.getElemIdsByStaticFilePathsNew()
           expect(result).toEqual({
             'static1.nacl': ['salesforce.lead.instance.someName1'],
-            'static2.nacl': ['salesforce.lead.instance.someName2', 'salesforce.lead.instance.someName3'],
+            static2: ['salesforce.lead.instance.someName2', 'salesforce.lead.instance.someName3'],
           })
         })
       })

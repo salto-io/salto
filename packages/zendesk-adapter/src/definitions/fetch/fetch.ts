@@ -1468,9 +1468,15 @@ const createCustomizations = (): Record<
         },
       },
       recurseInto: {
-        value: {
+        attachments: {
           typeName: 'article_attachment',
           context: { args: { article_id: { root: 'id' } } },
+        },
+        translations: {
+          typeName: 'article_translation',
+          context: {
+            args: {},
+          },
         },
       },
     },
@@ -1487,7 +1493,6 @@ const createCustomizations = (): Record<
         id: { hide: true, fieldType: 'number' },
         position: { hide: true, fieldType: 'number' },
         author_id: { fieldType: 'unknown' },
-        translations: { fieldType: 'list<article_translation>' },
         vote_sum: { omit: true },
         vote_count: { omit: true },
         edited_at: { omit: true },
@@ -1496,6 +1501,14 @@ const createCustomizations = (): Record<
         attachments: {
           standalone: {
             typeName: 'article_attachment',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+        translations: {
+          standalone: {
+            typeName: 'article_translation',
             addParentAnnotation: true,
             referenceFromParent: true,
             nestPathUnderParent: true,
@@ -1545,6 +1558,29 @@ const createCustomizations = (): Record<
         hash: { hide: true, fieldType: 'string' },
         display_file_name: { omit: true },
         article_id: { omit: true },
+      },
+    },
+  },
+
+  article_translation: {
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        brand: { fieldType: 'number' },
+        created_by_id: { fieldType: 'unknown' },
+        updated_by_id: { fieldType: 'unknown' },
+        html_url: { omit: true },
+        source_id: { omit: true },
+        source_type: { omit: true },
       },
     },
   },

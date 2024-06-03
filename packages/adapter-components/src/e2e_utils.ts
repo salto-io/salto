@@ -1,4 +1,3 @@
-
 /*
  *                      Copyright 2024 Salto Labs Ltd.
  *
@@ -14,7 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AdapterOperations, Change, CORE_ANNOTATIONS, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, ObjectType, ProgressReporter, ReferenceExpression, toChange, Values } from '@salto-io/adapter-api'
+import {
+  AdapterOperations,
+  Change,
+  CORE_ANNOTATIONS,
+  DeployResult,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  ObjectType,
+  ProgressReporter,
+  ReferenceExpression,
+  toChange,
+  Values,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
@@ -23,7 +35,6 @@ import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import * as element from './fetch/element'
 import { APIDefinitionsOptions, queryWithDefault } from './definitions'
 import { FetchApiDefinitions } from './definitions/system/fetch'
-
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -136,7 +147,7 @@ export const deployCleanup = async (
 
   const getChangesForInitialCleanup = (instances: InstanceElement[]): Change<InstanceElement>[] =>
     instances.filter(checkUniqueNameField).map(instance => toChange({ before: instance }))
-  
+
   log.debug('Cleaning up the environment before starting e2e test')
   const cleanupChanges = getChangesForInitialCleanup(elements)
   await deployChangesForE2e(adapterAttr, cleanupChanges)

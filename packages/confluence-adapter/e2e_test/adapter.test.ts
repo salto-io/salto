@@ -30,10 +30,7 @@ import {
   toChange,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import {
-  buildElementsSourceFromElements,
-  inspectValue,
-} from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { e2eUtils } from '@salto-io/adapter-components'

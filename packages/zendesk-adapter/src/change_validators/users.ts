@@ -41,7 +41,7 @@ import { lookupFunc } from '../filters/field_references'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
-import { ZendeskFetchConfig } from '../config'
+import { ZendeskFetchConfig } from '../user_config'
 
 const { createPaginator } = clientUtils
 const { awu } = collections.asynciterable

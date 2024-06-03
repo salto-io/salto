@@ -34,7 +34,7 @@ import {
 } from '../filters/organizations'
 import ZendeskClient from '../client/client'
 import { paginate } from '../client/pagination'
-import { ZendeskDeployConfig, ZendeskFetchConfig } from '../config'
+import { ZendeskDeployConfig, ZendeskFetchConfig } from '../user_config'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues

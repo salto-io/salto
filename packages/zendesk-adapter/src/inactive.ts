@@ -15,6 +15,7 @@
  */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
+import { ValueGeneratedItem } from '@salto-io/adapter-components/src/fetch'
 import { ZendeskConfig, FETCH_CONFIG, OMIT_INACTIVE_DEFAULT } from './config'
 import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
 
@@ -45,5 +46,29 @@ export const filterOutInactiveInstancesForType = (
       return instances.filter(instance => instance.value.status !== 'inactive')
     }
     return instances.filter(instance => instance.value.active !== false)
+  }
+}
+
+/**
+ * Same as above, but for the new infra. The above function is removable after the migration to the new
+ * infra is complete (SALTO-5760)
+ */
+export const filterOutInactiveItemForType = (config: ZendeskConfig): ((item: ValueGeneratedItem) => boolean) => {
+  const omitInactiveConfig = config[FETCH_CONFIG]?.omitInactive
+  const omitInactiveQuery = omitInactiveConfig ? definitions.queryWithDefault(omitInactiveConfig) : undefined
+  return item => {
+    const { typeName } = item
+
+    // We can't omit inactive ticket_form instances because we need all the instance in order to reorder them
+    // if we decide to omit inactive ticket_form
+    // we will need to add warning in the ticket_field_deactivation change validator
+    const omitInactive = omitInactiveQuery ? omitInactiveQuery.query(typeName) : OMIT_INACTIVE_DEFAULT
+    if (typeName === TICKET_FORM_TYPE_NAME || !omitInactive) {
+      return true
+    }
+    if (typeName === WEBHOOK_TYPE_NAME) {
+      return item.value?.status !== 'inactive'
+    }
+    return item.value?.active !== false
   }
 }

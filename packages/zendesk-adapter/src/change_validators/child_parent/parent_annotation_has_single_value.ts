@@ -21,7 +21,7 @@ import {
   CORE_ANNOTATIONS,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../user_config'
 import { getChildAndParentTypeNames } from './utils'
 
 export const parentAnnotationToHaveSingleValueValidatorCreator =

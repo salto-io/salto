@@ -19,6 +19,7 @@
   "scripts": {
     "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
     "test": "jest",
+    "e2e-test": "RUN_E2E_TESTS=1 jest",
     "clean": "rm -rf ./dist .eslintcache",
     "clean-ts": "../../build_utils/clean-old-ts.sh",
     "clean-ts-test": "yarn clean-ts && yarn test",
@@ -39,9 +40,11 @@
     "axios": "^0.26.1",
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
-    "node-html-parser": "^6.1.5"
+    "node-html-parser": "^6.1.5",
+    "uuid": "^8.3.0"
   },
   "devDependencies": {
+    "@salto-io/e2e-credentials-store": "0.3.58",
     "@salto-io/test-utils": "0.3.58",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",

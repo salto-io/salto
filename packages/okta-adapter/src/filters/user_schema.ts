@@ -27,7 +27,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { USER_SCHEMA_TYPE_NAME, LINKS_FIELD } from '../constants'
 import { extractIdFromUrl } from '../utils'
-import { isUserType } from '../definitions/transforms/user_type'
+import { isUserType } from '../definitions/fetch/types/user_type'
 
 const log = logger(module)
 

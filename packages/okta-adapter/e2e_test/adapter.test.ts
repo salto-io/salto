@@ -71,7 +71,7 @@ import {
   USER_SCHEMA_TYPE_NAME,
   USERTYPE_TYPE_NAME,
 } from '../src/constants'
-import { createFetchDefinitions } from '../src/definitions/fetch'
+import { createFetchDefinitions } from '../src/definitions/fetch/fetch'
 import { DEFAULT_CONFIG } from '../src/user_config'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'

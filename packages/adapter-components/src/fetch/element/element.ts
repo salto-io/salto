@@ -67,7 +67,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     const [validEntries, invalidEntries] = _.partition(entries, valueGuard)
     if (invalidEntries.length > 0) {
       log.warn(
-        '[%s] omitted %d entries of type %s that did not match the value guard, first item:',
+        '[%s] omitted %d entries of type %s that did not match the value guard, first item: %s',
         adapterName,
         invalidEntries.length,
         typeName,

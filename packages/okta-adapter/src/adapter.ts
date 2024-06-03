@@ -78,7 +78,6 @@ import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
-import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
 import policyPrioritiesFilter from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
@@ -95,7 +94,7 @@ import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
 import { isClassicEngineOrg } from './utils'
 import { createFixElementFunctions } from './fix_elements'
-import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch'
+import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch/fetch'
 import { PAGINATION } from './definitions/requests/pagination'
 import { createClientDefinitions, shouldAccessPrivateAPIs } from './definitions/requests/clients'
 import { OktaFetchOptions } from './definitions/types'
@@ -111,7 +110,6 @@ const DEFAULT_FILTERS = [
   standardRolesFilter, // TODO SALTO-5607 - move to infra
   userTypeFilter,
   userSchemaFilter,
-  omitAuthenticatorMappingFilter, // TODO SALTO-5607 - move to infra
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter, // TODO SALTO-5607 - move to infra

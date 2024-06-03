@@ -76,18 +76,17 @@ export const buildElementsSourceFromElements = (
   }
 
   const get = async (id: ElemID): Promise<Value> => {
-    let element: Readonly<Element> | undefined = elementsMap[id.getFullName()]
-    if (element !== undefined) {
-      return element
+    if (id.getFullName() in elementsMap) {
+      return elementsMap[id.getFullName()]
     }
 
     if (!id.isTopLevel()) {
       const { parent } = id.createTopLevelParentID()
       const topLevel = elementsMap[parent.getFullName()]
       if (topLevel !== undefined) {
-        element = resolvePath(topLevel, id)
-        if (element !== undefined) {
-          return element
+        const value = resolvePath(topLevel, id)
+        if (value !== undefined) {
+          return value
         }
       }
     }

@@ -127,13 +127,15 @@ export const selectElementsBySelectorsWithoutReferences = ({
   elementIds,
   selectors,
   includeNested = false,
+  returnEmptyOnEmptySelectors = false,
 }: {
   elementIds: ElemID[]
   selectors: ElementSelector[]
   includeNested?: boolean
+  returnEmptyOnEmptySelectors?: boolean
 }): ElemID[] => {
   if (selectors.length === 0) {
-    return elementIds
+    return returnEmptyOnEmptySelectors ? [] : elementIds
   }
   return elementIds.filter(elementId => selectors.some(selector => match(elementId, selector, includeNested)))
 }

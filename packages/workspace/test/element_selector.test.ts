@@ -132,15 +132,18 @@ const selectElementsWitoutRef = ({
   elements,
   selectors,
   includeNested = false,
+  returnEmptyOnEmptySelectors = false,
 }: {
   elements: ElemID[]
   selectors: string[]
   includeNested?: boolean
+  returnEmptyOnEmptySelectors?: boolean
 }): ElemID[] =>
   selectElementsBySelectorsWithoutReferences({
     elementIds: elements,
     selectors: createElementSelectors(selectors).validSelectors,
     includeNested,
+    returnEmptyOnEmptySelectors,
   })
 
 describe('element selector', () => {
@@ -789,6 +792,10 @@ describe('element selector without ref by', () => {
   it('returns all elements with no selectors', () => {
     const elements = [new ElemID('salesforce', 'value'), new ElemID('netsuite', 'value'), new ElemID('jira', 'value')]
     expect(selectElementsWitoutRef({ elements, selectors: [] })).toEqual(elements)
+  })
+  it('should return no elements when returnEmptyOnEmptySelectors is true and no selectors are given', async () => {
+    const elements = [new ElemID('salesforce', 'value'), new ElemID('netsuite', 'value'), new ElemID('jira', 'value')]
+    expect(selectElementsWitoutRef({ elements, selectors: [], returnEmptyOnEmptySelectors: true })).toEqual([])
   })
   it('should use a wildcard and a specific element id and not throw error if the wildcard covers the element id', () => {
     const elements = [new ElemID('salesforce', 'value')]

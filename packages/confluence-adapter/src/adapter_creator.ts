@@ -27,6 +27,7 @@ import transformTemplateBodyToTemplateExpressionFilterCreator from './filters/tr
 import customPathsFilterCreator from './filters/custom_paths'
 import deploySpaceAndPermissionsFilterCreator from './filters/deploy_space_and_permissions'
 import createChangeValidator from './change_validator'
+import groupsAndUsersFilterCreator from './filters/groups_and_users_filter'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
 const { defaultCredentialsFromConfig } = credentials
@@ -50,6 +51,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     connectionCreatorFromConfig: () => createConnection,
     credentialsFromConfig: defaultCredentialsFromConfig,
     customizeFilterCreators: args => ({
+      groupsAndUsersFilterCreator,
       // deploySpaceAndPermissionsFilterCreator should run before default deploy filter
       deploySpaceAndPermissionsFilterCreator: deploySpaceAndPermissionsFilterCreator(args),
       ...filters.createCommonFilters<Options, UserConfig>(args),

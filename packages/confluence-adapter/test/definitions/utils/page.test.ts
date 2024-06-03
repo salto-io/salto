@@ -26,8 +26,10 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
 import {
   adjustPageOnModification,
-  homepageAdditionToModification,
   putHomepageIdInAdditionContext,
+  adjustUserReferencesOnPage,
+  adjustUserReferencesOnPageReverse,
+  homepageAdditionToModification,
 } from '../../../src/definitions/utils'
 
 describe('page definitions utils', () => {
@@ -123,6 +125,32 @@ describe('page definitions utils', () => {
           value: getChangeData(pageChange).value,
         }
         expect(adjustPageOnModification(args).value.id).toEqual('homepageId')
+      })
+    })
+    describe('adjustUserReferencesOnPageReverse', () => {
+      it('should adjust user references on page', () => {
+        const args = {
+          typeName: 'mockType',
+          context: {
+            elementSource: buildElementsSourceFromElements([]),
+            changeGroup: {
+              changes: [],
+              groupID: 'group-id',
+            },
+            sharedContext: {},
+            change: pageChange,
+          },
+          value: {
+            authorId: { accountId: 'authorId', displayName: 'authorId' },
+            ownerId: { accountId: 'ownerId', displayName: 'ownerId' },
+            notUser: 'not',
+          },
+        }
+        expect(adjustUserReferencesOnPageReverse(args).value).toEqual({
+          authorId: 'authorId',
+          ownerId: 'ownerId',
+          notUser: 'not',
+        })
       })
     })
   })
@@ -242,6 +270,20 @@ describe('page definitions utils', () => {
         },
       }
       expect(putHomepageIdInAdditionContext(args)).toEqual({ id: 'homepageId' })
+    })
+    describe('adjustUserReferencesOnPage', () => {
+      it('should adjust user references on page', () => {
+        const args = {
+          typeName: 'page',
+          context: {},
+          value: { authorId: 'authorId', ownerId: 'ownerId', notUser: 'not' },
+        }
+        expect(adjustUserReferencesOnPage(args).value).toEqual({
+          authorId: { accountId: 'authorId', displayName: 'authorId' },
+          ownerId: { accountId: 'ownerId', displayName: 'ownerId' },
+          notUser: 'not',
+        })
+      })
     })
   })
 })

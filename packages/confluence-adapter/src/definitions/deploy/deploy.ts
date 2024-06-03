@@ -20,6 +20,7 @@ import { AdditionalAction, ClientOptions } from '../types'
 import {
   addSpaceKey,
   adjustPageOnModification,
+  adjustUserReferencesOnPageReverse,
   homepageAdditionToModification,
   putHomepageIdInAdditionContext,
   shouldDeleteRestrictionOnPageModification,
@@ -89,6 +90,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['restriction', 'version'],
+                  adjust: adjustUserReferencesOnPageReverse,
                 },
               },
             },

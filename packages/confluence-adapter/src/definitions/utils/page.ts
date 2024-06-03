@@ -25,7 +25,8 @@ import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { SPACE_TYPE_NAME } from '../../constants'
+import { TYPE_NAME_TO_USER_FIELDS } from '../../filters/groups_and_users_filter'
+import { PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../constants'
 import { AdditionalAction } from '../types'
 import { validateValue } from './generic'
 
@@ -123,12 +124,42 @@ const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndC
 }
 
 /**
+ * AdjustFunction that runs upon fetch and change user references structure
+ * so object type will be aligned with the structure yield by "groups_and_users_filter".
+ */
+export const adjustUserReferencesOnPage: definitions.AdjustFunction = args => {
+  const value = validateValue(args.value)
+  const userFields = TYPE_NAME_TO_USER_FIELDS[PAGE_TYPE_NAME]
+  userFields.forEach(field => {
+    value[field] = {
+      accountId: value[field],
+      displayName: value[field],
+    }
+  })
+  return { ...args, value }
+}
+
+/**
+ * AdjustFunction that runs upon deploy and change user references structure to fit deploy api
+ */
+export const adjustUserReferencesOnPageReverse: definitions.AdjustFunction<
+  definitions.deploy.ChangeAndContext
+> = args => {
+  const value = validateValue(args.value)
+  const userFields = TYPE_NAME_TO_USER_FIELDS[PAGE_TYPE_NAME]
+  userFields.forEach(field => {
+    value[field] = _.get(value, `${field}.accountId`)
+  })
+  return { ...args, value }
+}
+
+/**
  * AdjustFunction that runs all page modification adjust functions.
  */
 export const adjustPageOnModification: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = args => {
   const value = validateValue(args.value)
   const argsWithValidatedValue = { ...args, value }
-  return [increasePageVersion, updateHomepageId].reduce(
+  return [increasePageVersion, updateHomepageId, adjustUserReferencesOnPageReverse].reduce(
     (input, func) => ({ ...argsWithValidatedValue, ...func(input) }),
     argsWithValidatedValue,
   )

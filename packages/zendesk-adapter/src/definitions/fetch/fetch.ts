@@ -18,6 +18,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { EVERYONE_USER_TYPE } from '../../constants'
+import { transformGuideItem } from './transforms'
 
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
 // when in doubt, it's best to hide fields only for relevant types, or to omit them.
@@ -1354,7 +1355,7 @@ const createCustomizations = (): Record<
     requests: [
       {
         endpoint: { path: '/api/v2/help_center/categories', queryArgs: { include: 'translations' } },
-        transformation: { root: 'categories', adjust: transforms.transformGuideItem },
+        transformation: { root: 'categories', adjust: transformGuideItem },
       },
     ],
     resource: {
@@ -1414,7 +1415,7 @@ const createCustomizations = (): Record<
     requests: [
       {
         endpoint: { path: '/api/v2/help_center/sections', queryArgs: { include: 'translations' } },
-        transformation: { root: 'sections', adjust: transforms.transformGuideItem },
+        transformation: { root: 'sections', adjust: transformGuideItem },
       },
     ],
     resource: {
@@ -1462,7 +1463,7 @@ const createCustomizations = (): Record<
           path: '/api/v2/help_center/categories/{category_id}/articles',
           queryArgs: { include: 'translations', sort_by: 'updated_at' },
         },
-        transformation: { root: 'articles', adjust: transforms.transformGuideItem },
+        transformation: { root: 'articles', adjust: transformGuideItem },
       },
     ],
     resource: {
@@ -1477,12 +1478,12 @@ const createCustomizations = (): Record<
           typeName: 'article_attachment',
           context: { args: { article_id: { root: 'id' } } },
         },
-        translations: {
-          typeName: 'article_translation',
-          context: {
-            args: {},
-          },
-        },
+        // translations: {
+        //   typeName: 'article_translation',
+        //   context: {
+        //     args: {},
+        //   },
+        // },
       },
     },
     element: {
@@ -1511,14 +1512,14 @@ const createCustomizations = (): Record<
             nestPathUnderParent: true,
           },
         },
-        translations: {
-          standalone: {
-            typeName: 'article_translation',
-            addParentAnnotation: true,
-            referenceFromParent: true,
-            nestPathUnderParent: true,
-          },
-        },
+        // translations: {
+        //   standalone: {
+        //     typeName: 'article_translation',
+        //     addParentAnnotation: true,
+        //     referenceFromParent: true,
+        //     nestPathUnderParent: true,
+        //   },
+        // },
       },
     },
   },
@@ -1532,7 +1533,7 @@ const createCustomizations = (): Record<
         endpoint: {
           path: '/api/v2/help_center/articles/{article_id}/attachments',
         },
-        transformation: { root: 'article_attachments', adjust: transforms.transformGuideItem },
+        transformation: { root: 'article_attachments', adjust: transformGuideItem },
       },
     ],
     resource: {
@@ -1567,34 +1568,34 @@ const createCustomizations = (): Record<
     },
   },
 
-  article_translation: {
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
-        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
-        // serviceUrl is created in help_center_service_url filter
-      },
-      fieldCustomizations: {
-        id: { hide: true, fieldType: 'number' },
-        brand: { fieldType: 'number' },
-        created_by_id: { fieldType: 'unknown' },
-        updated_by_id: { fieldType: 'unknown' },
-        html_url: { omit: true },
-        source_id: { omit: true },
-        source_type: { omit: true },
-      },
-    },
-  },
+  // article_translation: {
+  //   resource: {
+  //     directFetch: true,
+  //   },
+  //   element: {
+  //     topLevel: {
+  //       isTopLevel: true,
+  //       elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+  //       path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
+  //       // serviceUrl is created in help_center_service_url filter
+  //     },
+  //     fieldCustomizations: {
+  //       id: { hide: true, fieldType: 'number' },
+  //       brand: { fieldType: 'number' },
+  //       created_by_id: { fieldType: 'unknown' },
+  //       updated_by_id: { fieldType: 'unknown' },
+  //       html_url: { omit: true },
+  //       source_id: { omit: true },
+  //       source_type: { omit: true },
+  //     },
+  //   },
+  // },
 
   guide_language_settings: {
     requests: [
       {
         endpoint: { path: '/hc/api/internal/help_center_translations' },
-        transformation: { root: '.', adjust: transforms.transformGuideItem },
+        transformation: { root: '.', adjust: transformGuideItem },
       },
     ],
     resource: {
@@ -1622,7 +1623,7 @@ const createCustomizations = (): Record<
     requests: [
       {
         endpoint: { path: '/hc/api/internal/general_settings' },
-        transformation: { root: '.', adjust: transforms.transformGuideItem },
+        transformation: { root: '.', adjust: transformGuideItem },
       },
     ],
     resource: {

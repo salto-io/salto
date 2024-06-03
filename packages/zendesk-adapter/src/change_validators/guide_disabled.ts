@@ -27,8 +27,7 @@ import { logger } from '@salto-io/logging'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { getBrandsForGuide } from '../filters/utils'
 import { BRAND_TYPE_NAME } from '../constants'
-import { GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
-import { ZendeskFetchConfig } from '../user_config'
+import { GUIDE_TYPES_TO_HANDLE_BY_BRAND, ZendeskFetchConfig } from '../config'
 
 const log = logger(module)
 

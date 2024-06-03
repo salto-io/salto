@@ -40,8 +40,6 @@ export const mockDefaultValues: Record<string, Values> = {
   },
   [PAGE_TYPE_NAME]: {
     status: 'current',
-    authorId: '712020:bcde5b20-7e30-4987-8391-1108a772c143',
-    ownerId: '712020:bcde5b20-7e30-4987-8391-1108a772c143',
     parentType: 'page',
     restriction: [
       {

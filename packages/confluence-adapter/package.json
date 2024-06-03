@@ -40,8 +40,7 @@
     "axios": "^0.26.1",
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
-    "node-html-parser": "^6.1.5",
-    "uuid": "^8.3.0"
+    "node-html-parser": "^6.1.5"
   },
   "devDependencies": {
     "@salto-io/e2e-credentials-store": "0.3.58",

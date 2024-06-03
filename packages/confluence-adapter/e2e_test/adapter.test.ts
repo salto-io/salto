@@ -15,35 +15,28 @@
  */
 
 import _ from 'lodash'
-import { v4 as uuidv4 } from 'uuid'
 import {
   Change,
   DeployResult,
   Element,
   InstanceElement,
   ObjectType,
-  ProgressReporter,
   getChangeData,
   isAdditionChange,
-  isAdditionOrModificationChange,
   isEqualValues,
   isInstanceChange,
   isInstanceElement,
   isObjectType,
   toChange,
   ReferenceExpression,
-  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
-  applyDetailedChanges,
   buildElementsSourceFromElements,
-  detailedCompare,
   inspectValue,
 } from '@salto-io/adapter-utils'
-import { definitions as definitionsUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
-import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
+import { e2eUtils } from '@salto-io/adapter-components'
 import {
   SPACE_TYPE_NAME,
   PAGE_TYPE_NAME,
@@ -57,12 +50,9 @@ import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 jest.setTimeout(1000 * 60 * 10)
-
-const TEST_PREFIX = 'Test'
 
 const uniqueFieldsPerType: Record<string, string[]> = {
   [SPACE_TYPE_NAME]: ['key', 'name'],
@@ -72,131 +62,39 @@ const uniqueFieldsPerType: Record<string, string[]> = {
 
 const fieldsToOmitOnComparisonPerType: Record<string, string[]> = {
   [SPACE_TYPE_NAME]: ['permissionInternalIdMap', 'homepage', 'permissions'],
-  [PAGE_TYPE_NAME]: ['version', 'createdAt', 'parentId', 'spaceId'],
+  [PAGE_TYPE_NAME]: ['version', 'createdAt', 'parentId', 'spaceId', 'ownerId', 'authorId'],
   [TEMPLATE_TYPE_NAME]: [],
 }
 
-const createInstance = ({
-  typeName,
-  types,
-  testSuffix,
-  parentRef,
-  referenceFieldsMap = {},
-  fieldsToOverrideWithUniqueValue = uniqueFieldsPerType[typeName],
-}: {
-  typeName: string
-  types: ObjectType[]
-  testSuffix: string
-  parentRef?: ReferenceExpression
-  referenceFieldsMap?: Record<string, ReferenceExpression>
-  fieldsToOverrideWithUniqueValue?: string[]
-}): InstanceElement => {
-  const uniqueValue = `Test${typeName}${testSuffix}`
-  const fetchDefinitions = createFetchDefinitions()
-  const elemIDDef = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)?.element
-    ?.topLevel?.elemID
-  if (elemIDDef === undefined) {
-    log.warn(`Could not find type elemID definitions for type ${typeName}, error while creating instance`)
-    throw new Error(`Could not find type elemID definitions for type ${typeName}`)
-  }
-  const type = types.find(t => t.elemID.typeName === typeName)
-  if (type === undefined) {
-    log.warn(`Could not find type ${typeName}, error while creating instance`)
-    throw new Error(`Failed to find type ${typeName}`)
-  }
-  const instValues = mockDefaultValues[typeName]
-  fieldsToOverrideWithUniqueValue.forEach(fieldName => {
-    instValues[fieldName] = uniqueValue
-  })
-  Object.entries(referenceFieldsMap).forEach(([fieldName, ref]) => {
-    instValues[fieldName] = ref
-  })
-  const elemIDFunc = fetchUtils.element.createElemIDFunc<never>({ elemIDDef, typeID: type.elemID })
-  const elemID = elemIDFunc({
-    entry: instValues,
-    defaultName: 'unnamed_0',
-    parent: parentRef !== undefined ? parentRef.value : undefined,
-  })
-  return new InstanceElement(
-    elemID,
-    type,
-    instValues,
-    undefined,
-    parentRef ? { [CORE_ANNOTATIONS.PARENT]: [parentRef] } : undefined,
-  )
-}
+const fetchDefinitions = createFetchDefinitions()
 
 const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
-  const spaceInstance = createInstance({
+  const partialArgs = { types, testSuffix, fetchDefinitions }
+  const spaceInstance = e2eUtils.createInstance({
     typeName: SPACE_TYPE_NAME,
-    types,
-    testSuffix,
+    values: mockDefaultValues[SPACE_TYPE_NAME],
+    fieldsToOverrideWithUniqueValue: uniqueFieldsPerType[SPACE_TYPE_NAME],
+    ...partialArgs,
   })
 
   const spaceRef = new ReferenceExpression(spaceInstance.elemID, spaceInstance)
-  const pageInstance = createInstance({
+  const pageInstance = e2eUtils.createInstance({
     typeName: PAGE_TYPE_NAME,
-    types,
+    values: mockDefaultValues[PAGE_TYPE_NAME],
+    fieldsToOverrideWithUniqueValue: uniqueFieldsPerType[PAGE_TYPE_NAME],
     referenceFieldsMap: { spaceId: spaceRef },
-    testSuffix,
+    ...partialArgs,
   })
 
-  const templateInstance = createInstance({
+  const templateInstance = e2eUtils.createInstance({
     typeName: TEMPLATE_TYPE_NAME,
-    types,
     parentRef: spaceRef,
-    testSuffix,
+    values: mockDefaultValues[TEMPLATE_TYPE_NAME],
+    fieldsToOverrideWithUniqueValue: uniqueFieldsPerType[TEMPLATE_TYPE_NAME],
+    ...partialArgs,
   })
 
   return [toChange({ after: spaceInstance }), toChange({ after: pageInstance }), toChange({ after: templateInstance })]
-}
-
-const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => {},
-}
-
-const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<DeployResult[]> => {
-  const planElementById = _.keyBy(changes.map(getChangeData), inst => inst.elemID.getFullName())
-  return awu(changes)
-    .map(async change => {
-      const deployResult = await adapterAttr.adapter.deploy({
-        changeGroup: { groupID: getChangeData(change).elemID.getFullName(), changes: [change] },
-        progressReporter: nullProgressReporter,
-      })
-      expect(deployResult.errors).toHaveLength(0)
-      expect(deployResult.appliedChanges).not.toHaveLength(0)
-      deployResult.appliedChanges
-        .filter(isAdditionOrModificationChange)
-        .map(getChangeData)
-        .forEach(updatedElement => {
-          const planElement = planElementById[updatedElement.elemID.getFullName()]
-          if (planElement !== undefined) {
-            applyDetailedChanges(planElement, detailedCompare(planElement, updatedElement))
-          }
-        })
-      return deployResult
-    })
-    .toArray()
-}
-
-const checkUniqueNameField = (instance: InstanceElement): boolean => {
-  const { typeName } = instance.elemID
-  const uniqueFieldsName = uniqueFieldsPerType[typeName]
-  return uniqueFieldsName?.every(field => {
-    const value = instance.value[field]
-    return typeof value === 'string' && value.startsWith(TEST_PREFIX)
-  })
-}
-
-const getChangesForInitialCleanup = (elements: InstanceElement[]): Change<InstanceElement>[] =>
-  elements.filter(checkUniqueNameField).map(instance => toChange({ before: instance }))
-
-const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): Promise<void> => {
-  log.debug('Cleaning up the environment before starting e2e test')
-  const cleanupChanges = getChangesForInitialCleanup(elements)
-  await deployChanges(adapterAttr, cleanupChanges)
-  log.debug('Environment cleanup successful')
 }
 
 describe('Confluence adapter E2E', () => {
@@ -205,10 +103,10 @@ describe('Confluence adapter E2E', () => {
     let adapterAttr: Reals
     let elements: Element[] = []
     let deployResults: DeployResult[]
-    const testSuffix = uuidv4().slice(0, 8)
+    const testSuffix = e2eUtils.getTestSuffix()
 
     const deployAndFetch = async (changes: Change[]): Promise<void> => {
-      deployResults = await deployChanges(adapterAttr, changes)
+      deployResults = await e2eUtils.deployChangesForE2e(adapterAttr, changes)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
@@ -227,7 +125,11 @@ describe('Confluence adapter E2E', () => {
       })
 
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
-      await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
+      await e2eUtils.deployCleanup(
+        adapterAttr,
+        fetchBeforeCleanupResult.elements.filter(isInstanceElement),
+        uniqueFieldsPerType,
+      )
 
       const changesToDeploy = createChangesForDeploy(types, testSuffix)
       await deployAndFetch(changesToDeploy)
@@ -241,7 +143,7 @@ describe('Confluence adapter E2E', () => {
 
       const removalChanges = appliedChanges.map(change => toChange({ before: getChangeData(change) }))
 
-      await deployChanges(adapterAttr, removalChanges)
+      await e2eUtils.deployChangesForE2e(adapterAttr, removalChanges)
       if (credLease.return) {
         await credLease.return()
       }

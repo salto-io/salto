@@ -246,7 +246,12 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   getCycle(): Edge[] | undefined {
     const getCycleFrom = (id: NodeId, nodeColors: Map<NodeId, DFS_STATUS>, path: Edge[] = []): Edge[] | undefined => {
       if (nodeColors.has(id)) {
-        return nodeColors.get(id) === 'in_progress' ? path : undefined
+        if (nodeColors.get(id) === 'in_progress') {
+          // Found a cycle - the cycle is "closed" on this node.
+          // In order to return just the cycle, we need to remove any edges that lead up to this node
+          return path.slice(path.findIndex(edge => edge[0] === id))
+        }
+        return undefined
       }
       nodeColors.set(id, 'in_progress')
       const children = this.get(id).keys()

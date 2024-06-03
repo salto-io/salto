@@ -100,7 +100,7 @@ const DEFAULT_TRANSFORMATION = { root: 'value' }
 
 const createCustomizationsWithBasePath = (
   customizations: FetchCustomizations,
-  basePath: definitions.HTTPEndpointIdentifier<Options['clientOptions']>['path'],
+  basePath: definitions.EndpointPath,
 ): FetchCustomizations =>
   _.mapValues(customizations, customization => ({
     ...customization,
@@ -108,7 +108,7 @@ const createCustomizationsWithBasePath = (
       ...req,
       endpoint: {
         ...req.endpoint,
-        path: `${basePath}${req.endpoint.path}` as definitions.HTTPEndpointIdentifier<Options['clientOptions']>['path'],
+        path: `${basePath}${req.endpoint.path}` as definitions.EndpointPath,
       },
     })),
   }))

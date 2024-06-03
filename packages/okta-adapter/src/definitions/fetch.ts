@@ -53,7 +53,7 @@ const getPrivateAPICustomizations = ({
   endpoint,
   serviceUrl,
 }: {
-  endpoint: definitions.HTTPEndpointIdentifier<OktaFetchOptions['clientOptions']>['path']
+  endpoint: definitions.EndpointPath
   serviceUrl: string
 }): definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions> => ({
   requests: [{ endpoint: { path: endpoint, client: 'private' } }],

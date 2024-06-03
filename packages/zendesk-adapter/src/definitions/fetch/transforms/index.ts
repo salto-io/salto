@@ -14,5 +14,4 @@
  * limitations under the License.
  */
 
-export { transform as transformHoliday } from './business_hours_schedule'
 export { transform as transformGuideItem } from './guide_adjuster'

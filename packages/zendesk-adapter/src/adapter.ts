@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable no-console */
+
 import _, { isString } from 'lodash'
 import {
   AdapterOperations,
@@ -424,6 +426,7 @@ const getGuideElements = async ({
     fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
     instance => instance.elemID.typeName,
   )
+  console.log('1')
   // Create new types based on the created instances from all brands,
   // then create new instances with the corresponding type as refType
   const zendeskGuideElements = Object.entries(typeNameToGuideInstances).flatMap(([typeName, instances]) => {
@@ -436,6 +439,7 @@ const getGuideElements = async ({
     })
     return _.concat(guideElements.instances as Element[], guideElements.nestedTypes, guideElements.type)
   })
+  console.log('2')
   // Create instances from standalone fields that were not created in previous steps
   await elementUtils.ducktype.extractStandaloneFields({
     adapterName: ZENDESK,
@@ -444,7 +448,7 @@ const getGuideElements = async ({
     transformationDefaultConfig,
     getElemIdFunc,
   })
-
+  console.log('3')
   const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(
     fetchResult => fetchResult.configChanges ?? [],
   )
@@ -706,12 +710,12 @@ export default class ZendeskAdapter implements AdapterOperations {
         getElemIdFunc: this.getElemIdFunc,
         useNewInfra,
       })
-
+      console.log('5')
       combinedRes.configChanges = combinedRes.configChanges.concat(zendeskGuideElements.configChanges ?? [])
       combinedRes.elements = combinedRes.elements.concat(zendeskGuideElements.elements)
       combinedRes.errors = combinedRes.errors.concat(zendeskGuideElements.errors ?? [])
     }
-
+    console.log('6')
     // Remaining types should be added once to avoid overlaps between the generated elements,
     // so we add them once after all elements are generated
     addRemainingTypes({
@@ -721,7 +725,19 @@ export default class ZendeskAdapter implements AdapterOperations {
       supportedTypes: _.merge(supportedTypes, GUIDE_BRAND_SPECIFIC_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
+    const nonUniqueItems = combinedRes.elements.filter(item =>
+      item.elemID
+        .getFullName()
+        .includes(
+          'zendesk.article.instance.christmas__INCIDENT_11376_INCIDENT_11376_anotherBrand___Eden_test_sbss_buuuuum_buuuuuuuum@suuuuuuuuuuum',
+        ),
+    )
 
+    const nonUniqueItems2 = combinedRes.elements.filter(item => item.elemID.getFullName().includes('christmas'))
+
+    const nonUniqueItems3 = combinedRes.elements.filter(item => item.elemID.typeName === 'article')
+
+    console.log('7', nonUniqueItems, nonUniqueItems2, nonUniqueItems3)
     return combinedRes
   }
 

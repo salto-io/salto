@@ -76,7 +76,7 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/wiki/rest/api/space').replyOnce(200)
+    mockAxiosAdapter.onGet('/wiki/api/v2/spaces').replyOnce(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)

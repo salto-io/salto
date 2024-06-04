@@ -82,7 +82,7 @@ commands:
 jobs:
   build:
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
 
     resource_class: xlarge
     working_directory: ~/project
@@ -110,7 +110,7 @@ jobs:
       - run:
           name: set up yarn
           command: |
-            yarn set version 3.1.0
+            YARN_IGNORE_NODE=1 yarn set version 3.1.0
             yarn config set cacheFolder $(pwd)/.yarn/cache
             yarn config set nodeLinker node-modules
 
@@ -153,7 +153,7 @@ jobs:
 
   unit_test:
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
 
     resource_class: xlarge
     working_directory: ~/project
@@ -179,7 +179,7 @@ jobs:
 
   prettier:
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -191,7 +191,7 @@ jobs:
 
   publish_on_version_change:
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -219,7 +219,7 @@ jobs:
       should_install_java:
         type: boolean
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
     resource_class: large
     working_directory: ~/project
     steps:
@@ -231,7 +231,7 @@ jobs:
 
   package_cli:
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -274,7 +274,7 @@ jobs:
 
   test_cli_linux:
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
 
     steps:
       - set_s3_pkg_urls
@@ -322,7 +322,7 @@ jobs:
 
   package_vscode_extension:
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -359,7 +359,7 @@ jobs:
 
   publish_canary:
     docker:
-      - image: cimg/node:18.12
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:

@@ -36,7 +36,7 @@ const fontFiles = require('./dist/src/fonts').fontFiles
  * current one.
  *
  * Once you made these changes to the file, run 'yarn package'. This will build a nexe-patched version of Node.js.
- * Locate this Node.js binary at ~/.nexe/18.12.1/out/Release. Rename it as follows:
+ * Locate this Node.js binary at ~/.nexe/18.9.1/out/Release. Rename it as follows:
  *  - [linux/mac/windows]-[x64/arm64]-xx.yy.zz (where xx.yy.zz is the version of Node.js)
  * Upload the renamed binary to the S3 bucket referenced in PREBUILT_REMOTE_URL and make sure its ACL is public-read
  * Now repeat for all supported platforms
@@ -49,7 +49,7 @@ const BUILD_NODE_EXECUTABLE = false
 const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
 const TARGET_ARCH = BUILD_NODE_EXECUTABLE ? os.arch() : 'x64'
-const TARGET_NODE_VERSION = '18.12.0'
+const TARGET_NODE_VERSION = '18.9.0'
 const TARGET_PLATFORMS = {
   win: { ext: '.exe' },
   linux: {},

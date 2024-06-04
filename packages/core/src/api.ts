@@ -532,6 +532,9 @@ export const getInsights = async (workspace: Workspace): Promise<Insight[]> => {
 
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const insightsByAdapter = Object.entries(accountToServiceNameMap).map(async ([account, adapter]) => {
+    let startTime: Date
+    let finishTime: Date
+
     const { getInsights: getAdapterInsights } = adapterCreators[adapter]
     if (getAdapterInsights === undefined) {
       return []
@@ -544,7 +547,18 @@ export const getInsights = async (workspace: Workspace): Promise<Insight[]> => {
       })
       return []
     }
-    return getAdapterInsights(await getResolvedElementsOfAdapter(adapter))
+
+    startTime = new Date()
+    const resolvedElements = await getResolvedElementsOfAdapter(adapter)
+    finishTime = new Date()
+    log.info('load resolved elements of adapter %s took %s ms', adapter, finishTime.getTime() - startTime.getTime())
+
+    startTime = new Date()
+    const insights = getAdapterInsights(resolvedElements)
+    finishTime = new Date()
+    log.info('get insights of adapter %s took %s ms', adapter, finishTime.getTime() - startTime.getTime())
+
+    return insights
   })
 
   return Promise.all(insightsByAdapter).then(insights => insights.flat())

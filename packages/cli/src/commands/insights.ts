@@ -26,7 +26,7 @@ export const insightsAction: WorkspaceCommandAction<{}> = async ({ workspace }) 
     const insights = await getInsights(workspace)
     log.info('gathered %d insights', insights.length, { workspaceId: workspace.uid })
     insights.forEach(insight => {
-      log.debug(insight.message, {
+      log.info(insight.message, {
         isInsight: true,
         adapter: insight.path.adapter,
         path: insight.path.getFullName(),

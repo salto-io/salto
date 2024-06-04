@@ -20,7 +20,6 @@ import {
   combineCustomReferenceGetters,
   definitions as definitionsUtils,
 } from '@salto-io/adapter-components'
-import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import {
@@ -38,7 +37,7 @@ import { DEFAULT_CONFIG, OktaUserConfig, configType } from './user_config'
 import { shouldAccessPrivateAPIs } from './definitions/requests/clients'
 
 const { validateCredentials } = clientUtils
-const { adapterConfigFromConfig, updateDeprecatedConfig } = definitionsUtils
+const { adapterConfigFromConfig } = definitionsUtils
 
 const isOAuthConfigCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
   configValue.authType === 'oauth' &&
@@ -80,12 +79,7 @@ const createAdminClient = (
 
 export const adapter: Adapter = {
   operations: context => {
-    // TODO SALTO-5991 remove config migration after all envs were upgraded
-    const updatedConfig = context.config && updateDeprecatedConfig(context.config)
-    const config = adapterConfigFromConfig<never, OktaUserConfig>(
-      updatedConfig?.config ?? context.config,
-      DEFAULT_CONFIG,
-    )
+    const config = adapterConfigFromConfig<never, OktaUserConfig>(context.config, DEFAULT_CONFIG)
     const credentials = credentialsFromConfig(context.credentials)
     const isOAuthLogin = isOAuthAccessTokenCredentials(credentials)
     const adapterOperations = new OktaAdapter({
@@ -94,7 +88,7 @@ export const adapter: Adapter = {
         config: config.client,
       }),
       userConfig: config,
-      configInstance: updatedConfig?.config ?? context.config,
+      configInstance: context.config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
       isOAuthLogin,
@@ -103,18 +97,7 @@ export const adapter: Adapter = {
 
     return {
       deploy: adapterOperations.deploy.bind(adapterOperations),
-      fetch: async args => {
-        const fetchResults = await adapterOperations.fetch(args)
-        if (updatedConfig) {
-          fetchResults.updatedConfig = fetchResults.updatedConfig
-            ? {
-                config: fetchResults.updatedConfig.config,
-                message: formatConfigSuggestionsReasons([fetchResults.updatedConfig.message, updatedConfig.message]),
-              }
-            : { config: [updatedConfig.config], message: updatedConfig.message }
-        }
-        return fetchResults
-      },
+      fetch: async args => adapterOperations.fetch(args),
       deployModifiers: adapterOperations.deployModifiers,
       fixElements: adapterOperations.fixElements.bind(adapterOperations),
     }

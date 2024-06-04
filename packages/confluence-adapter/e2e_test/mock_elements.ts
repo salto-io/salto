@@ -26,25 +26,14 @@ export const uniqueFieldsPerType: Record<string, string[]> = {
 
 const mockDefaultValues: Record<string, Values> = {
   [SPACE_TYPE_NAME]: {
+    type: 'global',
+    status: 'current',
     description: {
       plain: {
         value: 'some description',
         representation: 'plain',
       },
-      view: {
-        representation: 'view',
-        value: 'some description',
-      },
     },
-    metadata: {
-      labels: {
-        start: 0,
-        limit: 200,
-        size: 0,
-      },
-    },
-    type: 'global',
-    status: 'current',
   },
   [PAGE_TYPE_NAME]: {
     status: 'current',

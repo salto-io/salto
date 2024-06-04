@@ -17,8 +17,9 @@
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, createMatchingObjectType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { configType, Themes } from './config'
+import { configType } from './config'
 import * as constants from './constants'
+import { Themes } from './user_config'
 
 const log = logger(module)
 

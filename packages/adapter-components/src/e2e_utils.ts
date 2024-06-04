@@ -78,23 +78,17 @@ export const deployChangesForE2e = async (adapterAttr: Reals, changes: Change[])
 export const createInstance = <T extends APIDefinitionsOptions>({
   typeName,
   types,
-  testSuffix,
   fetchDefinitions,
   values,
-  referenceFieldsMap = {},
-  fieldsToOverrideWithUniqueValue = [],
-  parentRef,
+  parent,
 }: {
   typeName: string
   types: ObjectType[]
-  testSuffix: string
   fetchDefinitions: FetchApiDefinitions<T>
   values: Values
-  referenceFieldsMap?: Record<string, ReferenceExpression>
-  fieldsToOverrideWithUniqueValue?: string[]
-  parentRef?: ReferenceExpression
+  parent?: InstanceElement
 }): InstanceElement => {
-  const uniqueValue = `${TEST_PREFIX}${typeName}${testSuffix}`
+  // const uniqueValue = `${TEST_PREFIX}${typeName}${testSuffix}`
   const elemIDDef = queryWithDefault(fetchDefinitions.instances).query(typeName)?.element?.topLevel?.elemID
   if (elemIDDef === undefined) {
     log.warn(`Could not find type elemID definitions for type ${typeName}, error while creating instance`)
@@ -105,29 +99,22 @@ export const createInstance = <T extends APIDefinitionsOptions>({
     log.warn(`Could not find type ${typeName}, error while creating instance`)
     throw new Error(`Failed to find type ${typeName}`)
   }
-  const instValues = values
-  fieldsToOverrideWithUniqueValue.forEach(fieldName => {
-    instValues[fieldName] = uniqueValue
-  })
-  Object.entries(referenceFieldsMap).forEach(([fieldName, ref]) => {
-    instValues[fieldName] = ref
-  })
 
   const elemIDFunc = element.createElemIDFunc({
     elemIDDef,
     typeID: type.elemID,
   })
   const elemID = elemIDFunc({
-    entry: instValues,
+    entry: values,
     defaultName: 'unnamed_0',
-    parent: parentRef !== undefined ? parentRef.value : undefined,
+    parent,
   })
   return new InstanceElement(
     elemID,
     type,
-    instValues,
+    values,
     undefined,
-    parentRef ? { [CORE_ANNOTATIONS.PARENT]: [parentRef] } : undefined,
+    parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] } : undefined,
   )
 }
 
@@ -148,8 +135,8 @@ export const deployCleanup = async (
   const getChangesForInitialCleanup = (instances: InstanceElement[]): Change<InstanceElement>[] =>
     instances.filter(checkUniqueNameField).map(instance => toChange({ before: instance }))
 
-  log.debug('Cleaning up the environment before starting e2e test')
+  log.info('Cleaning up the environment before starting e2e test')
   const cleanupChanges = getChangesForInitialCleanup(elements)
   await deployChangesForE2e(adapterAttr, cleanupChanges)
-  log.debug('Environment cleanup successful')
+  log.info('Environment cleanup successful')
 }

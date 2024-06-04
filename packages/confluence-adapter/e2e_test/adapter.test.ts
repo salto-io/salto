@@ -43,19 +43,13 @@ import {
   GLOBAL_TEMPLATE_TYPE_NAME,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
-import { credsLease, realAdapter, Reals } from './adapter'
-import { mockDefaultValues } from './mock_elements'
+import { credsLease, realAdapter } from './adapter'
+import { getMockValues, uniqueFieldsPerType } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
 
 const log = logger(module)
 
 jest.setTimeout(1000 * 60 * 10)
-
-const uniqueFieldsPerType: Record<string, string[]> = {
-  [SPACE_TYPE_NAME]: ['key', 'name'],
-  [PAGE_TYPE_NAME]: ['title'],
-  [TEMPLATE_TYPE_NAME]: ['name'],
-}
 
 const fieldsToOmitOnComparisonPerType: Record<string, string[]> = {
   [SPACE_TYPE_NAME]: ['permissionInternalIdMap', 'homepage', 'permissions'],
@@ -66,28 +60,25 @@ const fieldsToOmitOnComparisonPerType: Record<string, string[]> = {
 const fetchDefinitions = createFetchDefinitions()
 
 const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
-  const partialArgs = { types, testSuffix, fetchDefinitions }
+  const mockDefaultValues = getMockValues(testSuffix)
+  const partialArgs = { types, fetchDefinitions }
   const spaceInstance = e2eUtils.createInstance({
     typeName: SPACE_TYPE_NAME,
     values: mockDefaultValues[SPACE_TYPE_NAME],
-    fieldsToOverrideWithUniqueValue: uniqueFieldsPerType[SPACE_TYPE_NAME],
     ...partialArgs,
   })
 
   const spaceRef = new ReferenceExpression(spaceInstance.elemID, spaceInstance)
   const pageInstance = e2eUtils.createInstance({
     typeName: PAGE_TYPE_NAME,
-    values: mockDefaultValues[PAGE_TYPE_NAME],
-    fieldsToOverrideWithUniqueValue: uniqueFieldsPerType[PAGE_TYPE_NAME],
-    referenceFieldsMap: { spaceId: spaceRef },
+    values: { spaceId: spaceRef, ...mockDefaultValues[PAGE_TYPE_NAME] },
     ...partialArgs,
   })
 
   const templateInstance = e2eUtils.createInstance({
     typeName: TEMPLATE_TYPE_NAME,
-    parentRef: spaceRef,
+    parent: spaceInstance,
     values: mockDefaultValues[TEMPLATE_TYPE_NAME],
-    fieldsToOverrideWithUniqueValue: uniqueFieldsPerType[TEMPLATE_TYPE_NAME],
     ...partialArgs,
   })
 
@@ -97,7 +88,7 @@ const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change
 describe('Confluence adapter E2E', () => {
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
-    let adapterAttr: Reals
+    let adapterAttr: e2eUtils.Reals
     let elements: Element[] = []
     let deployResults: DeployResult[]
     const testSuffix = e2eUtils.getTestSuffix()

@@ -67,12 +67,13 @@ describe('E2E Tests Utility Functions', () => {
     const typeName = 'TestType'
     const testSuffix = getTestSuffix()
     const types: ObjectType[] = [new ObjectType({ elemID: new ElemID('adapter', typeName) })]
-    const parentInstance = new InstanceElement('parent', types[0])
+    const parent = new InstanceElement('parent', types[0])
     const anotherInstance = new InstanceElement('ref', types[0])
-    const parentRef = new ReferenceExpression(parentInstance.elemID, parentInstance)
     const anotherRef = new ReferenceExpression(anotherInstance.elemID, anotherInstance)
     const values = {
+      name: `${TEST_PREFIX}${typeName}${testSuffix}`,
       irrelevantField: 'hop hey',
+      refField: anotherRef,
     }
     const fetchDefinitions: FetchApiDefinitions<APIDefinitionsOptions> = {
       instances: {
@@ -91,19 +92,14 @@ describe('E2E Tests Utility Functions', () => {
         },
       },
     }
-    const referenceFieldsMap = { refField: anotherRef }
-    const fieldsToOverrideWithUniqueValue = ['name']
 
-    it('should create an instance with the correct values and references', () => {
+    it('should create an instance with the correct values and elementId', () => {
       const instance = createInstance({
         typeName,
         types,
-        testSuffix,
         fetchDefinitions,
         values,
-        referenceFieldsMap,
-        fieldsToOverrideWithUniqueValue,
-        parentRef,
+        parent,
       })
 
       expect(instance.value.name).toBe(`${TEST_PREFIX}${typeName}${testSuffix}`)
@@ -118,11 +114,8 @@ describe('E2E Tests Utility Functions', () => {
         createInstance({
           typeName,
           types,
-          testSuffix,
           fetchDefinitions: { instances: {} },
           values,
-          referenceFieldsMap,
-          fieldsToOverrideWithUniqueValue,
         }),
       ).toThrow(`Could not find type elemID definitions for type ${typeName}`)
     })
@@ -132,11 +125,8 @@ describe('E2E Tests Utility Functions', () => {
         createInstance({
           typeName: 'NonExistentType',
           types,
-          testSuffix,
           fetchDefinitions,
           values,
-          referenceFieldsMap,
-          fieldsToOverrideWithUniqueValue,
         }),
       ).toThrow('Could not find type elemID definitions for type NonExistentType')
     })

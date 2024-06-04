@@ -15,7 +15,8 @@
  */
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import { ReadOnlyElementsSource, AdapterOperations, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { e2eUtils } from '@salto-io/adapter-components'
 import { adapter as confluenceAdapter } from '../src/adapter_creator'
 import { Credentials, credentialsType } from '../src/auth'
 import { DEFAULT_CONFIG, UserConfig } from '../src/config'
@@ -23,16 +24,12 @@ import { credsSpec } from './jest_environment'
 
 const log = logger(module)
 
-export type Reals = {
-  adapter: AdapterOperations
-}
-
 export type Opts = {
   credentials: Credentials
   elementsSource: ReadOnlyElementsSource
 }
 
-export const realAdapter = ({ credentials, elementsSource }: Opts, config?: UserConfig): Reals => {
+export const realAdapter = ({ credentials, elementsSource }: Opts, config?: UserConfig): e2eUtils.Reals => {
   const adapter = confluenceAdapter
   const operations = adapter.operations({
     credentials: new InstanceElement('config', credentialsType, credentials),

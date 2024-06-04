@@ -6,7 +6,7 @@
     "declaration": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "src/**/*.json", "index.ts", "../adapter-components/src/definitions/system/helpers/utils.ts"],
+  "include": ["src/**/*", "src/**/*.json", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },

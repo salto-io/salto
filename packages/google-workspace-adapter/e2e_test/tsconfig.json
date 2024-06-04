@@ -3,6 +3,6 @@
   "compilerOptions": {
     "outDir": "dist/test"
   },
-  "include": ["**/*", "../../adapter-components/src/definitions/system/helpers/utils.ts"],
+  "include": ["**/*"],
   "references": [{ "path": ".." }]
 }

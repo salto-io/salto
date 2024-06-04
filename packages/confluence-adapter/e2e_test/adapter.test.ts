@@ -180,7 +180,7 @@ describe('Confluence adapter E2E', () => {
           log.error(
             'Received unexpected result when deploying instance: %s. Deployed value: %s , Received value after fetch: %s',
             deployedInstance.elemID.getFullName(),
-            inspectValue(deployedInstance.value, { depth: 7 }),
+            inspectValue(deployedValue, { depth: 7 }),
             inspectValue(originalValue, { depth: 7 }),
           )
         }

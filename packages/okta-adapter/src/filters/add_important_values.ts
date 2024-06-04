@@ -26,6 +26,8 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   POLICY_TYPE_NAMES,
   POLICY_RULE_TYPE_NAMES,
+  AUTOMATION_TYPE_NAME,
+  AUTOMATION_RULE_TYPE_NAME,
 } from '../constants'
 
 const importantValuesMap: Record<string, ImportantValues> = {
@@ -159,13 +161,15 @@ const importantValuesMap: Record<string, ImportantValues> = {
     },
   ],
   ...Object.fromEntries(
-    POLICY_TYPE_NAMES.concat(POLICY_RULE_TYPE_NAMES).map(policyName => [
-      policyName,
-      [
-        { value: 'name', highlighted: true, indexed: false },
-        { value: 'status', highlighted: true, indexed: true },
+    POLICY_TYPE_NAMES.concat(POLICY_RULE_TYPE_NAMES, AUTOMATION_TYPE_NAME, AUTOMATION_RULE_TYPE_NAME).map(
+      policyName => [
+        policyName,
+        [
+          { value: 'name', highlighted: true, indexed: false },
+          { value: 'status', highlighted: true, indexed: true },
+        ],
       ],
-    ]),
+    ),
   ),
 }
 

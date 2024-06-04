@@ -1,3 +1,4 @@
+
 version: 2.1
 
 orbs:
@@ -231,7 +232,7 @@ jobs:
           at: .
       - run_e2e_tests:
           package_name: <<parameters.package_name>>
-          should_install_java: <<parameters.should_install_java>>
+          should_install_java: <<parameters.should_install_java>>     
 
   package_cli:
     docker:
@@ -399,7 +400,7 @@ workflows:
           matrix:
             alias: e2e_tests_without_java
             parameters:
-              package_name:
+              package_name: 
                 - cli
                 - okta-adapter
                 - salesforce-adapter
@@ -407,7 +408,7 @@ workflows:
                 - zendesk-adapter
                 - zuora-billing-adapter
                 # - google-workspace-adapter
-              should_install_java:
+              should_install_java: 
                 - false
 
       - e2e_tests:
@@ -416,10 +417,10 @@ workflows:
           matrix:
             alias: e2e_tests_with_java
             parameters:
-              package_name:
+              package_name: 
                 - jira-adapter
-                # - netsuite-adapter
-              should_install_java:
+                - netsuite-adapter
+              should_install_java: 
                 - true
 
       - save_project_cache:

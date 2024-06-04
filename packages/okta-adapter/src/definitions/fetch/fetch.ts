@@ -34,6 +34,7 @@ import {
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
+import { assignPolicyIdsToApplication } from './types/application'
 
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created: { omit: true },
@@ -273,6 +274,9 @@ const createCustomizations = ({
       {
         endpoint: {
           path: '/api/v1/apps',
+        },
+        transformation: {
+          adjust: ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
         },
       },
     ],

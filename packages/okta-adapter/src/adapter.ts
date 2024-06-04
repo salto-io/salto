@@ -54,7 +54,6 @@ import { dependencyChanger } from './dependency_changers'
 import { FilterCreator, Filter, filterRunner } from './filter'
 import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
-import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
@@ -112,7 +111,6 @@ const DEFAULT_FILTERS = [
   userSchemaFilter,
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
-  urlReferencesFilter, // TODO SALTO-5607 - move to infra
   appUserSchemaRemovalFilter,
   userFilter,
   groupPushFilter,

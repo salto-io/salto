@@ -13,25 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { assignPolicyIdsToApplication } from '../../../../src/definitions/fetch/types/application'
 
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
-import { APPLICATION_TYPE_NAME, OKTA } from '../../src/constants'
-import urlReferencesFilter from '../../src/filters/url_references'
-import { getFilterParams } from '../utils'
-
-describe('urlReferencesFilter', () => {
-  let appType: ObjectType
-  let filter: filterUtils.FilterWith<'onFetch'>
-
-  beforeEach(() => {
-    filter = urlReferencesFilter(getFilterParams()) as typeof filter
-    appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
-  })
-
-  describe('OnFetch', () => {
-    it('should replace create new fields from urls with ids', async () => {
-      const appInstance = new InstanceElement('instance', appType, {
+describe('application', () => {
+   it('should replace create new fields from urls with ids', () => {
+      const appValue = {
         id: '0oa6987q6jWCCgCQC5d7',
         name: 'workday',
         status: 'ACTIVE',
@@ -57,13 +43,13 @@ describe('urlReferencesFilter', () => {
             href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/users',
           },
         },
-      })
-      await filter.onFetch?.([appType, appInstance])
-      expect(appInstance.value.profileEnrollment).toEqual('rst69dxiihma5xwSX5d7')
-      expect(appInstance.value.accessPolicy).toEqual('rst69c9wqljY2xknk5d7')
+      }
+      const res = assignPolicyIdsToApplication(appValue)
+      expect(res.profileEnrollment).toEqual('rst69dxiihma5xwSX5d7')
+      expect(res.accessPolicy).toEqual('rst69c9wqljY2xknk5d7')
     })
-    it('should do nothing if relevant fields are missing or in different structure', async () => {
-      const appInstance = new InstanceElement('instance', appType, {
+    it('should do nothing if relevant fields are missing or in different structure', () => {
+      const appValue = {
         id: '0oa6987q6jWCCgCQC5d7',
         name: 'workday',
         status: 'ACTIVE',
@@ -86,10 +72,9 @@ describe('urlReferencesFilter', () => {
             href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/users',
           },
         },
-      })
-      await filter.onFetch?.([appType, appInstance])
-      expect(appInstance.value.profileEnrollment).toBeUndefined()
-      expect(appInstance.value.accessPolicy).toBeUndefined()
+      }
+      const res = assignPolicyIdsToApplication(appValue)
+      expect(res.profileEnrollment).toBeUndefined()
+      expect(res.accessPolicy).toBeUndefined()
     })
-  })
 })

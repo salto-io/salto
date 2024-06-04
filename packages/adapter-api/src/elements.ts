@@ -32,28 +32,23 @@ const log = logger(module)
 
 export const BuiltinTypesRefByFullName: Record<string, TypeReference<PrimitiveType>> = {}
 
-type CreateRefToElmWithValueFunc = {
-  (element: PrimitiveType): TypeReference<PrimitiveType>
-  <T extends TypeElement>(element: T): TypeReference<T>
-}
-export const createRefToElmWithValue: CreateRefToElmWithValueFunc = <T extends TypeElement>(
-  element: T,
-): TypeReference<T | PrimitiveType> =>
+export const createRefToElmWithValue = <T extends TypeElement>(element: T): TypeReference<T> => {
   // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
-  BuiltinTypesRefByFullName[element.elemID.getFullName()] ?? new TypeReference(element.elemID, element)
+  if (isPrimitiveType(element)) {
+    // Technically, all TS knows here is that the type of `element` is `T & PrimitiveType`,
+    // but that doesn't necessarily mean that `T === PrimitiveType`.
+    // We know this is the case though because there are (and probably never will be)
+    // any types which extend `PrimitiveType`.
+    return BuiltinTypesRefByFullName[element.elemID.getFullName()] as TypeReference<T>
+  }
 
-type GetRefTypeFunc = {
-  (typeOrRef: TypeOrRef<PrimitiveType>): TypeReference<PrimitiveType>
-  <T extends TypeElement>(typeOrRef: TypeOrRef<T>): TypeReference<T>
+  return new TypeReference(element.elemID, element)
 }
+
 // This is used to allow constructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
-const getRefType: GetRefTypeFunc = <T extends TypeElement>(
-  typeOrRef: TypeOrRef<T>,
-): TypeReference<T | PrimitiveType> =>
-  ((value: TypeOrRef<T>): value is TypeReference<T> => isTypeReference(value))(typeOrRef)
-    ? typeOrRef
-    : createRefToElmWithValue(typeOrRef)
+const getRefType = <T extends TypeElement>(typeOrRef: TypeOrRef<T>): TypeReference<T> =>
+  isTypeReference(typeOrRef) ? typeOrRef : createRefToElmWithValue(typeOrRef)
 
 /**
  * An abstract class that represent the base element.

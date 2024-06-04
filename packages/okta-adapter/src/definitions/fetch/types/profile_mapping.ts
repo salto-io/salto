@@ -23,27 +23,29 @@ const PROFILE_MAPPING_SCHEMA = Joi.object({
   source: Joi.object({
     name: Joi.string().optional(),
     type: Joi.string().optional(),
-  }).optional().unknown(true),
+  })
+    .optional()
+    .unknown(true),
   target: Joi.object({
     name: Joi.string().optional(),
     type: Joi.string().optional(),
-  }).optional().unknown(true),
+  })
+    .optional()
+    .unknown(true),
 }).unknown(true)
 
 type ProfileMapping = {
   source?: {
     name?: string
     type?: string
-  };
+  }
   target?: {
     name?: string
     type?: string
   }
 }
 
-const isValidProfileMappingValues = createSchemeGuard<ProfileMapping>(
-  PROFILE_MAPPING_SCHEMA,
-)
+const isValidProfileMappingValues = createSchemeGuard<ProfileMapping>(PROFILE_MAPPING_SCHEMA)
 
 /**
  * Omit profile mapping instances that maps to Okta_Authenticator application,

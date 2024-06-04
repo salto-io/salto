@@ -56,6 +56,6 @@ describe('isNotMappingToAuthenticatorApp', () => {
   })
 
   it('should return true when value is a ProfileMapping to any other app', () => {
-   expect(isNotMappingToAuthenticatorApp(valueA)).toBeTruthy()
- })
+    expect(isNotMappingToAuthenticatorApp(valueA)).toBeTruthy()
+  })
 })

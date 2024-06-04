@@ -36,25 +36,29 @@ const LINK_PROPERTY_SCHEME = Joi.object({
 const isLinkProperty = createSchemeGuard<linkProperty>(LINK_PROPERTY_SCHEME, 'Received invalid link property')
 
 const extractIdsFromUrls = (value: Value, fieldName: string): string | undefined => {
-   const linksProp = _.get(value, [LINKS_FIELD, fieldName])
-   if (isLinkProperty(linksProp)) {
-      const id = extractIdFromUrl(linksProp.href)
-      if (_.isString(id)) {
-         return id
-      }
-   }
-   log.warn('Faild to extract id from url for field %s on application with values: %s', fieldName, safeJsonStringify(value))
-   return undefined
- }
+  const linksProp = _.get(value, [LINKS_FIELD, fieldName])
+  if (isLinkProperty(linksProp)) {
+    const id = extractIdFromUrl(linksProp.href)
+    if (_.isString(id)) {
+      return id
+    }
+  }
+  log.warn(
+    'Faild to extract id from url for field %s on application with values: %s',
+    fieldName,
+    safeJsonStringify(value),
+  )
+  return undefined
+}
 
 export const assignPolicyIdsToApplication = (value: unknown): Value => {
-   if (!_.isObject(value)) {
-     log.warn('Failed to assign policy ids to app due to invalid value')
-     return value
-   }
-   return { 
-      ...value,
-      profileEnrollment: extractIdsFromUrls(value, 'profileEnrollment'),
-      accessPolicy: extractIdsFromUrls(value, 'accessPolicy'),
-   }
+  if (!_.isObject(value)) {
+    log.warn('Failed to assign policy ids to app due to invalid value')
+    return value
+  }
+  return {
+    ...value,
+    profileEnrollment: extractIdsFromUrls(value, 'profileEnrollment'),
+    accessPolicy: extractIdsFromUrls(value, 'accessPolicy'),
+  }
 }

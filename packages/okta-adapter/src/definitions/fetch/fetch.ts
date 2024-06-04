@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
 import { definitions, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { POLICY_TYPE_NAME_TO_PARAMS } from '../config'
-import { OktaFetchOptions } from './types'
-import { OktaUserConfig } from '../user_config'
+import { POLICY_TYPE_NAME_TO_PARAMS } from '../../config'
+import { OktaFetchOptions } from '../types'
+import { OktaUserConfig } from '../../user_config'
 import {
   ACCESS_POLICY_TYPE_NAME,
   AUTOMATION_TYPE_NAME,
@@ -30,9 +30,11 @@ import {
   DEVICE_ASSURANCE,
   AUTHENTICATOR_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
-} from '../constants'
-import { isGroupPushEntry } from '../filters/group_push'
-import { extractSchemaIdFromUserType } from './transforms/user_type'
+} from '../../constants'
+import { isGroupPushEntry } from '../../filters/group_push'
+import { extractSchemaIdFromUserType } from './types/user_type'
+import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
+import { assignPolicyIdsToApplication } from './types/application'
 
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created: { omit: true },
@@ -272,6 +274,9 @@ const createCustomizations = ({
       {
         endpoint: {
           path: '/api/v1/apps',
+        },
+        transformation: {
+          adjust: ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
         },
       },
     ],
@@ -536,6 +541,7 @@ const createCustomizations = ({
             { fieldName: 'target.id', isReference: true },
           ],
         },
+        valueGuard: isNotMappingToAuthenticatorApp,
       },
       fieldCustomizations: {
         id: { hide: true },

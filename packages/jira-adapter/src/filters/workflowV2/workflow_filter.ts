@@ -577,9 +577,7 @@ const deployWorkflow = async ({
       error.response?.status === 409 &&
       error.message.includes('Workflow version and version token must match')
     ) {
-      throw new Error(
-        `The environment is not synced to the Jira Service for the workflow '${getChangeData(change).value.workflows[0].name}', please run fetch and try again`,
-      )
+      throw new Error('The workflow version does not match the version in Jira; please fetch and try again')
     }
     throw error
   }

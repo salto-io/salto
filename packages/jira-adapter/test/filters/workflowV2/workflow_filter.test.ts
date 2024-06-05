@@ -1617,7 +1617,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(1)
           expect(result.deployResult.errors[0].message).toEqual(
-            "Error: The environment is not synced to the Jira Service for the workflow 'workflow', please run fetch and try again",
+            'Error: The workflow version does not match the version in Jira; please fetch and try again',
           )
         })
 

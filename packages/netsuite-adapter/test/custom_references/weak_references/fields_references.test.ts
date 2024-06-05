@@ -25,7 +25,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { fieldsHandler } from '../../../src/custom_references/weak_references/fields_references'
 import { NETSUITE, SCRIPT_ID, TRANSACTION_FORM } from '../../../src/constants'
 import { transactionFormType } from '../../../src/autogen/types/standard_types/transactionForm'
-import { createScriptIdListElements } from '../../../src/scriptid_list'
+import { createObjectIdListElements } from '../../../src/scriptid_list'
 
 describe('fields references', () => {
   let instance1: InstanceElement
@@ -345,7 +345,7 @@ describe('fields references', () => {
     })
 
     it('should keep unresolved references if in the scriptid list', async () => {
-      const scriptIdList = createScriptIdListElements([
+      const objectIdListInstance = createObjectIdListElements([
         {
           type: 'someType',
           instanceId: 'generated_dependency_1',
@@ -356,7 +356,7 @@ describe('fields references', () => {
         },
       ])[1]
       const clonedForm2 = form2.clone()
-      const elementsSource = buildElementsSourceFromElements([instance1, generatedDependency1, scriptIdList])
+      const elementsSource = buildElementsSourceFromElements([instance1, generatedDependency1, objectIdListInstance])
       const fixes = await fieldsHandler.removeWeakReferences({ elementsSource })([form2])
       expect(clonedForm2).toEqual(form2)
 

@@ -31,66 +31,76 @@ import { ObjectID } from './config/types'
 
 const log = logger(module)
 
-export const SCRIPT_ID_LIST_TYPE_NAME = 'scriptid_list'
+export const OBJECT_ID_LIST_TYPE_NAME = 'objectid_list'
+export const OBJECT_ID_LIST_FIELD_NAME = 'objectid_list'
 
-const SCRIPT_ID_LIST_TYPE_ID = new ElemID(NETSUITE, SCRIPT_ID_LIST_TYPE_NAME)
-const SCRIPT_ID_LIST_INSTANCE_ID = new ElemID(NETSUITE, SCRIPT_ID_LIST_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
+const OBJECT_ID_LIST_TYPE_ID = new ElemID(NETSUITE, OBJECT_ID_LIST_TYPE_NAME)
+const OBJECT_ID_LIST_INSTANCE_ID = new ElemID(NETSUITE, OBJECT_ID_LIST_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
 
-const scriptIdListObjectType = new ObjectType({
-  elemID: SCRIPT_ID_LIST_TYPE_ID,
+const objectIdType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'objectid'),
   isSettings: true,
   fields: {
-    scriptid_list: { refType: new ListType(BuiltinTypes.STRING) },
+    instanceId: { refType: BuiltinTypes.STRING },
+    type: { refType: BuiltinTypes.STRING },
+  },
+})
+
+const objectIdListObjectType = new ObjectType({
+  elemID: OBJECT_ID_LIST_TYPE_ID,
+  isSettings: true,
+  fields: {
+    [OBJECT_ID_LIST_FIELD_NAME]: { refType: new ListType(objectIdType) },
   },
   annotations: {
     [CORE_ANNOTATIONS.HIDDEN]: true,
   },
 })
 
-export const createScriptIdListElements = (instancesIds: ObjectID[]): [ObjectType, InstanceElement] => {
-  log.debug('Creating script id list elements')
+export const createObjectIdListElements = (instancesIds: ObjectID[]): [ObjectType, InstanceElement] => {
+  log.debug('Creating object id list elements')
   const instance = new InstanceElement(
     ElemID.CONFIG_NAME,
-    scriptIdListObjectType,
-    { scriptid_list: instancesIds.map(id => id.instanceId) },
+    objectIdListObjectType,
+    { [OBJECT_ID_LIST_FIELD_NAME]: instancesIds },
     undefined,
     {
       [CORE_ANNOTATIONS.HIDDEN]: true,
     },
   )
 
-  return [scriptIdListObjectType, instance]
+  return [objectIdListObjectType, instance]
 }
 
-const getExistingScriptIdListElements = async (
+const getExistingObjectIdListElements = async (
   instancesIds: ObjectID[],
   elementsSource: ReadOnlyElementsSource,
 ): Promise<[ObjectType, InstanceElement]> => {
-  const instance = await elementsSource.get(SCRIPT_ID_LIST_INSTANCE_ID)
+  const instance = await elementsSource.get(OBJECT_ID_LIST_INSTANCE_ID)
   if (!isInstanceElement(instance)) {
-    log.warn('script id list instance not found in elements source')
-    return createScriptIdListElements(instancesIds)
+    log.warn('object id list instance not found in elements source')
+    return createObjectIdListElements(instancesIds)
   }
   // Resolve the type of the instance cause it's used inside the adapter that assumes resolved types
-  instance.refType = createRefToElmWithValue(scriptIdListObjectType)
+  instance.refType = createRefToElmWithValue(objectIdListObjectType)
 
-  return [scriptIdListObjectType, instance]
+  return [objectIdListObjectType, instance]
 }
 
-export const getOrCreateScriptIdListElements = async (
+export const getOrCreateObjectIdListElements = async (
   instancesIds: ObjectID[],
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
 ): Promise<[ObjectType, InstanceElement]> =>
-  isPartial ? getExistingScriptIdListElements(instancesIds, elementsSource) : createScriptIdListElements(instancesIds)
+  isPartial ? getExistingObjectIdListElements(instancesIds, elementsSource) : createObjectIdListElements(instancesIds)
 
-export const getScriptIdList = async (elementsSource: ReadOnlyElementsSource): Promise<string[]> => {
-  const scriptIdListElement = await elementsSource.get(SCRIPT_ID_LIST_INSTANCE_ID)
+export const getObjectIdList = async (elementsSource: ReadOnlyElementsSource): Promise<ObjectID[]> => {
+  const objectIdListElement = await elementsSource.get(OBJECT_ID_LIST_INSTANCE_ID)
 
-  if (!isInstanceElement(scriptIdListElement)) {
-    log.warn('scriptid list instance not found in elements source')
+  if (!isInstanceElement(objectIdListElement)) {
+    log.warn('object id list instance not found in elements source')
     return []
   }
 
-  return collections.array.makeArray(scriptIdListElement.value.scriptid_list)
+  return collections.array.makeArray(objectIdListElement.value[OBJECT_ID_LIST_FIELD_NAME])
 }

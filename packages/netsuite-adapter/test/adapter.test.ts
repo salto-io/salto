@@ -85,7 +85,7 @@ import { getDataElements } from '../src/data_elements/data_elements'
 import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
 import { fullQueryParams, fullFetchConfig } from '../src/config/config_creator'
 import { FetchByQueryFunc } from '../src/config/query'
-import { createScriptIdListElements, SCRIPT_ID_LIST_TYPE_NAME } from '../src/scriptid_list'
+import { createObjectIdListElements, OBJECT_ID_LIST_TYPE_NAME, OBJECT_ID_LIST_FIELD_NAME } from '../src/scriptid_list'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -617,7 +617,7 @@ describe('Adapter', () => {
       describe('full fetch', () => {
         it('should create scriptid list elements with an empty list', async () => {
           const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
-          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === SCRIPT_ID_LIST_TYPE_NAME)
+          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
           expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
           expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
@@ -637,15 +637,20 @@ describe('Adapter', () => {
             failedToFetchAllAtOnce: false,
           })
           const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
-          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === SCRIPT_ID_LIST_TYPE_NAME)
+          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
           expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
           expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
           const instance = scriptIdListElements.find(isInstanceElement) as InstanceElement
-          expect(collections.array.makeArray(instance.value.scriptid_list)).toEqual(['test'])
+          expect(collections.array.makeArray(instance.value[OBJECT_ID_LIST_FIELD_NAME])).toEqual([
+            {
+              instanceId: 'test',
+              type: 'someType',
+            },
+          ])
         })
         it('should update new scriptid list elements if they exist in the elementsSource', async () => {
-          const [scriptIdListType, scriptIdListInstance] = createScriptIdListElements([
+          const [scriptIdListType, scriptIdListInstance] = createObjectIdListElements([
             {
               type: 'someType',
               instanceId: 'before',
@@ -670,12 +675,17 @@ describe('Adapter', () => {
             failedToFetchAllAtOnce: false,
           })
           const { elements } = await adapter.fetch(mockFetchOpts)
-          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === SCRIPT_ID_LIST_TYPE_NAME)
+          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
           expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
           expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
           const instance = scriptIdListElements.find(isInstanceElement) as InstanceElement
-          expect(collections.array.makeArray(instance.value.scriptid_list)).toEqual(['after'])
+          expect(collections.array.makeArray(instance.value[OBJECT_ID_LIST_FIELD_NAME])).toEqual([
+            {
+              type: 'someType',
+              instanceId: 'after',
+            },
+          ])
         })
       })
       describe('partial fetch', () => {
@@ -693,16 +703,21 @@ describe('Adapter', () => {
             failedToFetchAllAtOnce: false,
           })
           const { elements } = await netsuiteAdapter.fetch({ ...mockFetchOpts, withChangesDetection })
-          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === SCRIPT_ID_LIST_TYPE_NAME)
+          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
           expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
           expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
           const instance = scriptIdListElements.find(isInstanceElement) as InstanceElement
-          expect(collections.array.makeArray(instance.value.scriptid_list)).toEqual(['test'])
+          expect(collections.array.makeArray(instance.value[OBJECT_ID_LIST_FIELD_NAME])).toEqual([
+            {
+              type: 'someType',
+              instanceId: 'test',
+            },
+          ])
         })
         it('should not create new scriptid list elements if they exist in the elementsSource', async () => {
           const withChangesDetection = true
-          const [scriptIdListType, scriptIdListInstance] = createScriptIdListElements([
+          const [scriptIdListType, scriptIdListInstance] = createObjectIdListElements([
             {
               type: 'someType',
               instanceId: 'before',
@@ -727,12 +742,17 @@ describe('Adapter', () => {
             failedToFetchAllAtOnce: false,
           })
           const { elements } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection })
-          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === SCRIPT_ID_LIST_TYPE_NAME)
+          const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
           expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
           expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
           const instance = scriptIdListElements.find(isInstanceElement) as InstanceElement
-          expect(collections.array.makeArray(instance.value.scriptid_list)).toEqual(['before'])
+          expect(collections.array.makeArray(instance.value[OBJECT_ID_LIST_FIELD_NAME])).toEqual([
+            {
+              type: 'someType',
+              instanceId: 'before',
+            },
+          ])
         })
       })
     })

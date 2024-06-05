@@ -37,11 +37,13 @@ import {
   walkOnValue,
   isDetailedDependency,
   DetailedDependency,
+  resolvePath,
+  setPath,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { ADDRESS_FORM, ENTRY_FORM, ID_FIELD, INDEX, TRANSACTION_FORM } from '../../constants'
+import { ADDRESS_FORM, ENTRY_FORM, ID_FIELD, INDEX, SCRIPT_ID, TRANSACTION_FORM } from '../../constants'
 import { captureServiceIdInfo } from '../../service_id_info'
-import { getScriptIdList } from '../../scriptid_list'
+import { getObjectIdList } from '../../scriptid_list'
 
 const { awu } = collections.asynciterable
 
@@ -102,15 +104,10 @@ const getFormReferences = (formInstance: InstanceElement): ReferenceInfo[] => {
 const getAllFormsReferences: GetCustomReferencesFunc = async elements =>
   elements.filter(isFormInstanceElement).flatMap(getFormReferences)
 
-const isUnresolvedReference = async (
+const isUnresolvedReferenceExpression = async (
   ref: ReferenceExpression,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<boolean> => (await elementsSource.get(ref.elemID.createTopLevelParentID().parent)) === undefined
-
-const isResolvedReference = async (
-  ref: ReferenceExpression,
-  elementsSource: ReadOnlyElementsSource,
-): Promise<boolean> => (await elementsSource.get(ref.elemID.createTopLevelParentID().parent)) !== undefined
 
 const isUnresolvedNetsuiteReference = (
   value: string,
@@ -139,7 +136,7 @@ const getPathsToRemove = async (
     if (id === undefined) {
       return value
     }
-    if (isReferenceExpression(id) && (await isUnresolvedReference(id, elementsSource))) {
+    if (isReferenceExpression(id) && (await isUnresolvedReferenceExpression(id, elementsSource))) {
       pathsToRemove.push(path)
     }
     if (_.isString(id) && isUnresolvedNetsuiteReference(id, generatedDependencies, envScriptIds)) {
@@ -157,20 +154,46 @@ const getPathsToRemove = async (
   return pathsToRemove
 }
 
+const getScriptIdFromReference = async (
+  ref: ReferenceExpression,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<string | undefined> => {
+  const element = await elementsSource.get(ref.elemID.createTopLevelParentID().parent)
+  return isInstanceElement(element) ? element.value[SCRIPT_ID] : undefined
+}
+
+const getGeneratedDependencyListAndScriptIdSet = async (
+  generatedDependencies: DetailedDependency[],
+  elementsSource: ReadOnlyElementsSource,
+): Promise<{ generatedDependencies: DetailedDependency[]; scriptIds: Set<string> }> => {
+  const filteredDependencies: DetailedDependency[] = []
+  const scriptIds: Set<string> = new Set()
+
+  await awu(generatedDependencies).forEach(async dep => {
+    const scriptId = await getScriptIdFromReference(dep.reference, elementsSource)
+    if (_.isString(scriptId)) {
+      filteredDependencies.push(dep)
+      scriptIds.add(scriptId)
+    }
+  })
+
+  return {
+    generatedDependencies: filteredDependencies,
+    scriptIds,
+  }
+}
+
 const getResolvedGeneratedDependencies = async (
   form: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
-): Promise<DetailedDependency[]> => {
+): Promise<{ generatedDependencies: DetailedDependency[]; scriptIds: Set<string> }> => {
   if (!form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]) {
-    return []
+    return { generatedDependencies: [], scriptIds: new Set<string>() }
   }
   const generatedDependencies = collections.array
     .makeArray(form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
     .filter(isDetailedDependency)
-
-  return awu(generatedDependencies)
-    .filter(async dep => isResolvedReference(dep.reference, elementsSource))
-    .toArray()
+  return getGeneratedDependencyListAndScriptIdSet(generatedDependencies, elementsSource)
 }
 
 const hasIndexAttribute = (val: unknown): boolean => values.isPlainRecord(val) && _.isNumber(val[INDEX])
@@ -185,13 +208,11 @@ const fixIndexInMappedList = (mappedList: MappedList): void =>
       mappedList[key][INDEX] = index
     })
 
-export const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
-  const pathsToFixIndex = new Set<string>(
-    pathsToRemove.map(path => form.elemID.getRelativePath(path.createParentID()).join('.')),
-  )
+const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
+  const pathsToFixIndex = new Set<ElemID>(pathsToRemove.map(path => path.createParentID()))
 
   pathsToFixIndex.forEach(path => {
-    const parent = _.get(form.value, path)
+    const parent = resolvePath(form, path)
     if (isMappedList(parent)) {
       fixIndexInMappedList(parent)
     }
@@ -202,29 +223,24 @@ const getFixedElementAndPaths = async (
   form: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
   envScriptIds: Set<string>,
-): Promise<{ instance: InstanceElement; paths: string[] } | undefined> => {
+): Promise<{ instance: InstanceElement; relatedPaths: string[] } | undefined> => {
   const fixedForm = form.clone()
 
-  const fixedGeneratedDependencies = await getResolvedGeneratedDependencies(fixedForm, elementsSource)
-  const generatedDependenciesScriptId = new Set<string>(
-    fixedGeneratedDependencies.map(dep => dep.reference.elemID.createTopLevelParentID().parent.name),
-  )
+  const { generatedDependencies, scriptIds } = await getResolvedGeneratedDependencies(fixedForm, elementsSource)
 
-  const pathsToRemove = await getPathsToRemove(fixedForm, generatedDependenciesScriptId, elementsSource, envScriptIds)
+  const pathsToRemove = await getPathsToRemove(fixedForm, scriptIds, elementsSource, envScriptIds)
 
   if (pathsToRemove.length === 0) {
     return undefined
   }
 
-  const stringPathsToRemove = pathsToRemove.map(path => form.elemID.getRelativePath(path).join('.'))
-
-  stringPathsToRemove.forEach(path => _.unset(fixedForm.value, path))
+  pathsToRemove.forEach(path => setPath(fixedForm, path, undefined))
 
   fixIndexes(fixedForm, pathsToRemove)
 
-  fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = fixedGeneratedDependencies
+  fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = generatedDependencies
 
-  return { instance: fixedForm, paths: stringPathsToRemove }
+  return { instance: fixedForm, relatedPaths: pathsToRemove.map(path => form.elemID.getRelativePath(path).join('.')) }
 }
 
 const removeUnresolvedFieldElements: WeakReferencesHandler<{
@@ -232,18 +248,18 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
 }>['removeWeakReferences'] =
   ({ elementsSource }): FixElementsFunc =>
   async elements => {
-    const envScriptIds = new Set<string>(await getScriptIdList(elementsSource))
+    const envScriptIds = new Set<string>((await getObjectIdList(elementsSource)).map(objectid => objectid.instanceId))
     const fixedFormsWithPaths = await awu(elements)
       .filter(isFormInstanceElement)
       .map(form => getFixedElementAndPaths(form, elementsSource, envScriptIds))
       .filter(values.isDefined)
       .toArray()
 
-    const formErrors: ChangeError[] = fixedFormsWithPaths.map(({ instance, paths }) => ({
+    const formErrors: ChangeError[] = fixedFormsWithPaths.map(({ instance, relatedPaths }) => ({
       elemID: instance.elemID,
       severity: 'Info',
       message: 'Deploying without all referenced fields',
-      detailedMessage: `This form references fields that do not exist in the target environment. As a result, this form will be deployed without these fields: ${paths.join(', ')}`,
+      detailedMessage: `This form references fields that do not exist in the target environment. As a result, this form will be deployed without these fields: ${relatedPaths.join(', ')}`,
     }))
 
     return {

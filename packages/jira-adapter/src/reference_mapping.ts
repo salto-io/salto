@@ -1306,24 +1306,24 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_TYPE_TYPE },
   },
-    // additionalValue in ObjectTypeAttribute can be of types ObjectSchemaReferenceType or ObjectSchemaDefaultReferenceType
+  // additionalValue in ObjectTypeAttribute can be of types ObjectSchemaReferenceType or ObjectSchemaDefaultReferenceType
   {
     src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',
-    target: { type: OBJECT_SCHMEA_REFERENCE_TYPE_TYPE}
+    target: { type: OBJECT_SCHMEA_REFERENCE_TYPE_TYPE },
   },
   {
     src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',
-    target: { type: OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE}
+    target: { type: OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE },
   },
-    // Hack to handle missing references when the type is unknown
-    {
-      src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
-      serializationStrategy: 'id',
-      missingRefStrategy: 'typeAndValue',
-      target: { type: 'UnknownType' },
-    },
+  // Hack to handle missing references when the type is unknown
+  {
+    src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: 'UnknownType' },
+  },
   {
     src: { field: 'objectTypeId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',

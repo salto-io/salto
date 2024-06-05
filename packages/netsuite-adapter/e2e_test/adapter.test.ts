@@ -110,8 +110,7 @@ const nullProgressReporter: ProgressReporter = {
   reportProgress: () => {},
 }
 
-// eslint-disable-next-line jest/no-disabled-tests
-describe.skip('Netsuite adapter E2E with real account', () => {
+describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
   let credentialsLease: CredsLease<Required<Credentials>>
   const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()

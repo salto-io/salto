@@ -29,7 +29,6 @@ import {
   isInstanceElement,
   isModificationChange,
   isObjectType,
-  isRemovalOrModificationChange,
   ObjectType,
   ProgressReporter,
   ReferenceExpression,

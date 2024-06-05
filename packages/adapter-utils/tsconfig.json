@@ -2,11 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": ".",
-    "declaration": true,
-    "resolveJsonModule": true
+    "baseUrl": "."
   },
-  "include": ["src/**/*", "test/**/*", "index.ts"],
+  "include": ["src/**/*", "index.ts"],
   "references": [
     { "path": "../dag" },
     { "path": "../lowerdash" },

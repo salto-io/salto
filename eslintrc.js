@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const isWindows = process.platform === 'win32'
-
 module.exports = {
   env: {
     es6: true,
@@ -45,8 +43,6 @@ module.exports = {
     ecmaVersion: 2019,
     sourceType: 'module',
     useJSXTextNode: true,
-    project: './tsconfig.json',
-    tsconfigRootDir: './',
   },
   plugins: ['react', 'import', 'jest', '@typescript-eslint', 'header'],
   rules: {

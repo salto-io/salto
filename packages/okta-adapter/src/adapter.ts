@@ -315,6 +315,7 @@ export default class OktaAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
+    progressReporter.reportProgress({ message: 'Fetching elements' })
     const { convertUsersIds, getUsersStrategy } = this.userConfig[FETCH_CONFIG]
     const classicOrgConfigSuggestion = await this.handleClassicEngineOrg()
     const { errors: oauthError, configChanges: oauthConfigChange } = this.handleOAuthLogin()

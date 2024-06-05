@@ -21,7 +21,7 @@ const path = require('path')
 const getChangedFiles = (userInputBaseCommit) => {
   const commitHashRegex = /\b[0-9a-f]{9}/g
   // If we didn't get a defined commit hash, take one commit back from the first commit in this PR
-  const baseCommit = userInputBaseCommit ?? `^${execSync('curl -s -H "Authorization: token ${GITHUB_AUTH_TOKEN}" https://api.github.com/repos/salto-io/salto/pulls/5931/commits | jq ".[0] | .sha"')}`
+  const baseCommit = userInputBaseCommit ?? `${execSync('curl -s -H "Authorization: token ${GITHUB_AUTH_TOKEN}" https://api.github.com/repos/salto-io/salto/pulls/5931/commits | jq -r ".[0] | .sha" | tr -d "\n"')}^`
   console.log('base commit:', baseCommit)
   const output = execSync(`git log --oneline --name-only ${baseCommit}..HEAD`).toString().split('\n').filter(line => !commitHashRegex.test(line))
   console.log('git log output:', output)
@@ -91,7 +91,6 @@ const getPackagesToTest = (userInputBaseCommit, workspaceInfo) => {
   console.log('Packages to test:', packagesToTest)
   return packagesToTest
 }
-
 
 const main = () => {
   const args = process.argv.slice(2)

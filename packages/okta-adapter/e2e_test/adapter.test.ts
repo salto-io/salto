@@ -438,27 +438,24 @@ const getChangesForInitialCleanup = async (
   types: ObjectType[],
   client: OktaClient,
 ): Promise<Change<InstanceElement>[]> => {
-const removalChanges = element.filter(....)
-const brandChanges = (await createBrandChangesForDeploy(types, client)).filter(...)
-const cleanupChanges = removalChanges.concat(brandChanges)
-  cleanupChanges = cleanupChanges.concat(
-    elements
-      .filter(isInstanceElement)
-      .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX) || inst.elemID.typeName === DOMAIN_TYPE_NAME)
-      .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
-      .map(instance => toChange({ before: instance })),
-  )
-  // Brand related instances don't have the test prefix, so we remove them explicitly.
-  cleanupChanges = cleanupChanges.concat(
-    (await createBrandChangesForDeploy(types, client))
-      .filter(isModificationChange) // We can't reverse "add" actions because we'd need the service ID.
-      .map(change =>
-        toChange({
-          before: change.data.after,
-          after: change.data.before,
-        }),
-      ),
-  )
+  const removalChanges: Change<InstanceElement>[] = elements
+    .filter(isInstanceElement)
+    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX) || inst.elemID.typeName === DOMAIN_TYPE_NAME)
+    .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
+    .map(instance => toChange({ before: instance }))
+
+  // Brand related instances don't have the test prefix, so we reverse them explicitly.
+  const reversedBrandChanges: Change<InstanceElement>[] = (await createBrandChangesForDeploy(types, client))
+    .filter(isModificationChange) // We can't reverse "add" actions because we'd need the service ID.
+    .map(change =>
+      toChange({
+        before: change.data.after,
+        after: change.data.before,
+      }),
+    )
+
+  const cleanupChanges = [...removalChanges, ...reversedBrandChanges]
+
   log.info(
     'Cleaning up the environment before starting e2e test: %s',
     cleanupChanges.map(change => getChangeData(change).elemID.getFullName()),

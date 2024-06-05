@@ -99,7 +99,7 @@ const main = () => {
   const workspaceInfo = getWorkspacesInfo()
   const allPackages = Object.keys(workspaceInfo).map(pkg => workspaceInfo[pkg].location.replace('packages/', '')).sort()
   // on main branch, we want to test all packages
-  const packagesToTest = process.env.CIRCLE_BRANCH !== 'main' ? allPackages : getPackagesToTest(baseCommit, workspaceInfo)
+  const packagesToTest = process.env.CIRCLE_BRANCH === 'main' ? allPackages : getPackagesToTest(baseCommit, workspaceInfo)
 
   const e2ePackagesToTest = packagesToTest.filter(hasE2eTests)
 

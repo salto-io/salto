@@ -40,7 +40,7 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
     target: { type: LABEL_TYPE_NAME },
   },
   {
-    src: { field: 'homepage', parentTypes: [SPACE_TYPE_NAME] },
+    src: { field: 'homepageId', parentTypes: [SPACE_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: PAGE_TYPE_NAME },
   },

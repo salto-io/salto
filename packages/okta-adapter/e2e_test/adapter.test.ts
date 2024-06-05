@@ -457,7 +457,7 @@ const getChangesForInitialCleanup = async (
         }),
       ),
   )
-  log.debug(
+  log.info(
     'Cleaning up the environment before starting e2e test: %s',
     cleanupChanges.map(change => getChangeData(change).elemID.getFullName()),
   )

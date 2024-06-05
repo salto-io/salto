@@ -4,6 +4,6 @@
     "outDir": "dist",
     "baseUrl": "."
   },
-  "include": ["src/**/*", "test/**/*", "index.ts", "../lowerdash/test/retry/wait_for.test.ts"],
+  "include": ["src/**/*", "test/**/*", "index.ts"],
   "references": [{ "path": "../logging" }, { "path": "../lowerdash" }, { "path": "../test-utils" }]
 }

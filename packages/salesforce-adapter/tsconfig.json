@@ -3,8 +3,6 @@
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
-    "declaration": true,
-    "resolveJsonModule": true,
     "paths": {
       "@salto-io/jsforce": ["../../node_modules/@salto-io/jsforce-types"]
     }
@@ -12,9 +10,8 @@
   "include": [
     "src/**/*",
     "src/**/*.json",
-    "test/**/*",
-    "e2e_test/**/*",
-    "index.ts"
+    "index.ts",
+    "e2e_test/jest_environment.ts"
   ],
   "exclude": ["test/sfdx_parser/test_sfdx_project/**"],
   "references": [

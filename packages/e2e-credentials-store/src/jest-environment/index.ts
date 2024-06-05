@@ -44,6 +44,14 @@ export class SaltoE2EJestEnvironment extends NodeEnvironment {
   }
 
   handleTestEvent(event: Event): void {
+    if (event.name === 'teardown') {
+      this.log.warn(
+        'Teardown event received, clearing running tasks. Had %d running tasks',
+        this.runningTasksPrinter.size(),
+      )
+      this.runningTasksPrinter.clear()
+      return
+    }
     const { id, type, status } = extractStatus(event) ?? {}
 
     if (!id) return

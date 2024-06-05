@@ -20,9 +20,6 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   displayName: 'zuora-billing-adapter',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: process.env.RUN_E2E_TESTS
-    ? '@salto-io/zuora-billing-adapter/dist/e2e_test/jest_environment'
-    : undefined,
   coverageThreshold: {
     global: {
       branches: 89,

@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  createEnvUtils,
-  CredsSpec,
-  JestEnvironmentConstructorArgs,
-  SaltoE2EJestEnvironment,
-} from '@salto-io/e2e-credentials-store'
-import { logger } from '@salto-io/logging'
+import { createEnvUtils, CredsSpec } from '@salto-io/e2e-credentials-store'
 import { Credentials } from '../src/auth'
-
-const log = logger(module)
 
 export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> => {
   const addEnvName = (varName: string): string => (envName === undefined ? varName : [varName, envName].join('_'))
@@ -42,11 +34,5 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
     },
     typeName: 'okta',
     globalProp: envName ? `okta_${envName}` : 'okta',
-  }
-}
-
-export default class OktaE2EJestEnvironment extends SaltoE2EJestEnvironment {
-  constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace }, ...args)
   }
 }

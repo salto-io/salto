@@ -20,7 +20,6 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   displayName: 'serviceplaceholder-adapter',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
   coverageThreshold: {
     // TODO update thresholds after adding tests
     global: {

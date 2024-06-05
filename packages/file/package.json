@@ -55,7 +55,6 @@
     "eslint-plugin-react-hooks": "^1.7.0",
     "get-stream": "^6.0.1",
     "jest": "^27.4.5",
-    "jest-circus": "^27.4.5",
     "jest-junit": "^12.0.0",
     "prettier": "3.2.5",
     "tmp-promise": "^2.0.2",

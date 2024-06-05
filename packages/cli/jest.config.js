@@ -25,7 +25,6 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
     '!<rootDir>/package_native.ts',
     '!<rootDir>/bundle.ts',
   ],
-  testEnvironment: process.env.RUN_E2E_TESTS ? '@salto-io/cli/dist/e2e_test/jest_environment' : undefined,
   coverageThreshold: {
     // Slowly start increasing here, never decrease!
     global: {

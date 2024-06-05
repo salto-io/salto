@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  createEnvUtils,
-  CredsSpec,
-  SaltoE2EJestEnvironment,
-  JestEnvironmentConstructorArgs,
-} from '@salto-io/e2e-credentials-store'
-import { logger } from '@salto-io/logging'
+import { createEnvUtils, CredsSpec } from '@salto-io/e2e-credentials-store'
 import { UsernamePasswordCredentials } from '../src/auth'
-
-const log = logger(module)
 
 export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentials> => {
   const addEnvName = (varName: string): string => (envName === undefined ? varName : [varName, envName].join('_'))
@@ -44,11 +36,5 @@ export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentia
     },
     typeName: 'zendesk',
     globalProp: envName ? `zendesk_${envName}` : 'zendesk',
-  }
-}
-
-export default class ZendeskE2EJestEnvironment extends SaltoE2EJestEnvironment {
-  constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace }, ...args)
   }
 }

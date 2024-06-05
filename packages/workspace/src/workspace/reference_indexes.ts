@@ -67,12 +67,6 @@ const isValidReferenceSourceScope = (value: unknown): value is ReferenceSourceSc
 const isValidReferenceType = (value: unknown): value is ReferenceType =>
   _.isString(value) && (REFERENCE_TYPES as ReadonlyArray<string>).includes(value)
 
-const toReferenceIndexEntry = (referenceInfo: ReferenceInfo): ReferenceIndexEntry => (
-  referenceInfo.sourceScope
-    ? { id: referenceInfo.source, type: referenceInfo.type, sourceScope: referenceInfo.sourceScope }
-    : { id: referenceInfo.source, type: referenceInfo.type }
-)
-
 export const isSerliazedReferenceIndexEntry = (value: unknown): value is SerializedReferenceIndexEntry =>
   _.isString(_.get(value, 'id')) &&
   isValidReferenceType(_.get(value, 'type')) &&
@@ -150,8 +144,12 @@ const getReferencesFromChange = async (
   }
 }
 
-const createReferenceTree = (references: ReferenceInfo[], rootFields = false): ReferenceTargetIndexValue =>
-  new collections.treeMap.TreeMap(
+const createReferenceTree = (references: ReferenceInfo[], rootFields = false): ReferenceTargetIndexValue => {
+  const toReferenceTargetIndexEntry = (referenceInfo: ReferenceInfo): ReferenceIndexEntry =>
+    referenceInfo.sourceScope
+      ? { id: referenceInfo.target, type: referenceInfo.type, sourceScope: referenceInfo.sourceScope }
+      : { id: referenceInfo.target, type: referenceInfo.type }
+  return new collections.treeMap.TreeMap(
     references.map(ref => {
       // In case we are creating a reference tree for a type object, the fields path is not relevant
       // This is because a request for the field's references will be to the field itself, and not through the object
@@ -159,13 +157,11 @@ const createReferenceTree = (references: ReferenceInfo[], rootFields = false): R
         rootFields && ref.source.idType === 'field'
           ? ''
           : ref.source.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-      return [
-        key,
-        [toReferenceIndexEntry(ref)],
-      ]
+      return [key, [toReferenceTargetIndexEntry(ref)]]
     }),
     ElemID.NAMESPACE_SEPARATOR,
   )
+}
 
 const getReferenceTargetIndexUpdates = (
   change: Change<Element>,
@@ -232,11 +228,13 @@ const updateIdOfReferenceSourcesIndex = (
 }
 
 const getReferenceSourcesMap = (references: ReferenceInfo[]): Record<string, ReferenceIndexEntry[]> => {
+  const toReferenceSourcesIndexEntry = (referenceInfo: ReferenceInfo): ReferenceIndexEntry =>
+    referenceInfo.sourceScope
+      ? { id: referenceInfo.source, type: referenceInfo.type, sourceScope: referenceInfo.sourceScope }
+      : { id: referenceInfo.source, type: referenceInfo.type }
   const referenceSourcesChanges: Record<string, ReferenceIndexEntry[]> = _(references)
     .groupBy(({ target }) => target.createBaseID().parent.getFullName())
-    .mapValues(refs =>
-      refs.map(toReferenceIndexEntry),
-    )
+    .mapValues(refs => refs.map(toReferenceSourcesIndexEntry))
     .value()
 
   // Add to a type its fields references

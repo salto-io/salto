@@ -560,15 +560,29 @@ const deployWorkflow = async ({
     }
     return false
   }
-  const response = await acquireLockRetry(() =>
-    defaultDeployChange({
-      change,
-      client,
-      apiDefinitions: config.apiDefinitions,
-      elementsSource,
-      fieldsToIgnore: fieldsToIgnoreFunc,
-    }),
-  )
+  let response: clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
+  try {
+    response = await acquireLockRetry(() =>
+      defaultDeployChange({
+        change,
+        client,
+        apiDefinitions: config.apiDefinitions,
+        elementsSource,
+        fieldsToIgnore: fieldsToIgnoreFunc,
+      }),
+    )
+  } catch (error) {
+    if (
+      error instanceof clientUtils.HTTPError &&
+      error.response?.status === 409 &&
+      error.message.includes('Workflow version and version token must match')
+    ) {
+      throw new Error(
+        `The environment is not synced to the Jira Service for the workflow '${getChangeData(change).value.workflows[0].name}', please run fetch and try again`,
+      )
+    }
+    throw error
+  }
   if (!isWorkflowResponse(response)) {
     log.warn('Received unexpected workflow response from service')
     return

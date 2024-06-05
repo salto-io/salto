@@ -438,7 +438,9 @@ const getChangesForInitialCleanup = async (
   types: ObjectType[],
   client: OktaClient,
 ): Promise<Change<InstanceElement>[]> => {
-  let cleanupChanges: Change<InstanceElement>[] = []
+const removalChanges = element.filter(....)
+const brandChanges = (await createBrandChangesForDeploy(types, client)).filter(...)
+const cleanupChanges = removalChanges.concat(brandChanges)
   cleanupChanges = cleanupChanges.concat(
     elements
       .filter(isInstanceElement)

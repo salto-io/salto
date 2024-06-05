@@ -111,15 +111,6 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   return _.capitalize(val)
 }
 
-const toReferenceTypeTypeName: referenceUtils.ContextValueMapperFunc = val => {
-  // 1,2,3,4,5,8 are the default values for the reference type field in jira.
-  const defaultVals = new Set(['1', '2', '3', '4', '5', '8'])
-  if (defaultVals.has(val)) {
-    return OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE
-  }
-  return OBJECT_SCHMEA_REFERENCE_TYPE_TYPE
-}
-
 export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'priority' || val === 'resolution') {
     return _.capitalize(val)
@@ -134,7 +125,6 @@ export type ReferenceContextStrategyName =
   | 'parentFieldId'
   | 'parentField'
   | 'gadgetPropertyValue'
-  | 'referenceTypeTypeName'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   parentSelectedFieldType: neighborContextFunc({
@@ -153,10 +143,6 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
     contextValueMapper: resolutionAndPriorityToTypeName,
   }),
   gadgetPropertyValue: gadgetValuesContextFunc,
-  referenceTypeTypeName: neighborContextFunc({
-    contextFieldName: 'additionalValue',
-    contextValueMapper: toReferenceTypeTypeName,
-  }),
 }
 
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
@@ -1320,12 +1306,24 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_TYPE_TYPE },
   },
+    // additionalValue in ObjectTypeAttribute can be of types ObjectSchemaReferenceType or ObjectSchemaDefaultReferenceType
   {
     src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',
-    missingRefStrategy: 'typeAndValue',
-    target: { typeContext: 'referenceTypeTypeName' },
+    target: { type: OBJECT_SCHMEA_REFERENCE_TYPE_TYPE}
   },
+  {
+    src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE}
+  },
+    // Hack to handle missing references when the type is unknown
+    {
+      src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+      serializationStrategy: 'id',
+      missingRefStrategy: 'typeAndValue',
+      target: { type: 'UnknownType' },
+    },
   {
     src: { field: 'objectTypeId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',

@@ -19,6 +19,7 @@ junit.xml
 
 # yarn
 yarn-error.log
+/.yarn/
 
 # salto logs
 logsalto.log

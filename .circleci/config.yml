@@ -26,7 +26,8 @@ commands:
       - run:
           name: Run E2E tests for package << parameters.package_name >>
           command: |
-            export PATH="./node_modules/.bin:$PATH"
+            yarn config set cacheFolder $(pwd)/.yarn/cache
+            yarn config set nodeLinker node-modules
             pushd packages/<< parameters.package_name >>
             yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
@@ -116,10 +117,6 @@ jobs:
 
       - run: yarn 
 
-        # Old Yarn had some random race-condition failures, trying multiple times seems to help
-        # when the source of the problem is yarn itself and not the packages
-        # - run: yarn || yarn || yarn
-
       - run:
           # As a workaround to the --frozen-lockfile flag not working with workspaces
           # (see: https://github.com/yarnpkg/yarn/issues/4098)
@@ -165,7 +162,8 @@ jobs:
       - run:
           name: Run unit tests
           command: |
-            export PATH="./node_modules/.bin:$PATH"
+            yarn config set cacheFolder $(pwd)/.yarn/cache
+            yarn config set nodeLinker node-modules
             yarn test -w 4 --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'

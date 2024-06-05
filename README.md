@@ -41,7 +41,10 @@ docker run salto-cli
 
   1. Install Node.js 18.9.0. You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
   2. Install [yarn 1](https://yarnpkg.com/en/docs/install).
-  3. Fetch dependencies and build:
+  3. Update Yarn to Berry 3.1.0 by running `YARN_IGNORE_NODE=1 yarn set version 3.1.0`
+  4. Set up Yarn to map node_modules by running `yarn config set nodeLinker node-modules`
+  5. Verify Yarn and Node.js versions using `node -v` (should be 18.9.x) and `yarn -v` (should be 3.1.0)
+  6. Fetch dependencies and build:
 
 ```bash
 $ yarn

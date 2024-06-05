@@ -137,6 +137,7 @@ import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 import { buildNetsuiteBundlesQuery } from './config/bundle_query'
 import { customReferenceHandlers } from './custom_references'
+import { SystemInformation } from './client/suiteapp_client/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -350,7 +351,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean,
   ): Promise<FetchByQueryReturnType> => {
-    const [configRecords, installedBundles] = await Promise.all([
+    const [sysInfo, configRecords, installedBundles] = await Promise.all([
+      this.client.getSystemInformation(),
       this.client.getConfigRecords(),
       this.client.getInstalledBundles(),
     ])
@@ -364,6 +366,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       fetchQueryWithBundles,
       useChangesDetection,
       timeZoneAndFormat,
+      sysInfo,
     )
     const updatedFetchQuery =
       changedObjectsQuery !== undefined ? andQuery(changedObjectsQuery, fetchQueryWithBundles) : fetchQueryWithBundles
@@ -558,11 +561,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
     timeZoneAndFormat: TimeZoneAndFormat,
+    sysInfo: SystemInformation | undefined,
   ): Promise<{
     changedObjectsQuery?: NetsuiteQuery
     serverTime?: Date
   }> {
-    const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
       log.debug('Did not get sysInfo, skipping SuiteApp operations')
       return {}

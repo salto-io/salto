@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { BRAND_TYPE_NAME } from '../constants'
 import ZendeskClient from '../client/client'
-import { ZendeskApiConfig } from '../config'
+import { ZendeskApiConfig } from '../user_config'
 import { isBrand, invalidBrandChange } from './guide_activation'
 
 export const invalidBrandAdditionChange = (

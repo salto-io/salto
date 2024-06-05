@@ -101,7 +101,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/wiki/rest/api/space',
+          path: '/wiki/api/v2/spaces',
           queryArgs: {
             expand: 'metadata,description,description.plain,metadata.labels,description.view,homepage',
           },
@@ -253,9 +253,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        serviceUrl: {
-          path: '/wiki/spaces/{spaceId.key}/pages/{id}',
-        },
         elemID: {
           // Confluence does not allow pages with the same title in the same space
           parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
@@ -361,7 +358,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     ],
     resource: {
-      directFetch: true,
+      directFetch: false,
       serviceIDFields: ['templateId'],
     },
     element: {

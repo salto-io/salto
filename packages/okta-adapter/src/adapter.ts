@@ -54,7 +54,6 @@ import { dependencyChanger } from './dependency_changers'
 import { FilterCreator, Filter, filterRunner } from './filter'
 import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
-import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
@@ -78,7 +77,6 @@ import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
-import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
 import policyPrioritiesFilter from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
@@ -111,10 +109,8 @@ const DEFAULT_FILTERS = [
   standardRolesFilter, // TODO SALTO-5607 - move to infra
   userTypeFilter,
   userSchemaFilter,
-  omitAuthenticatorMappingFilter, // TODO SALTO-5607 - move to infra
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
-  urlReferencesFilter, // TODO SALTO-5607 - move to infra
   appUserSchemaRemovalFilter,
   userFilter,
   groupPushFilter,
@@ -319,6 +315,7 @@ export default class OktaAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
+    progressReporter.reportProgress({ message: 'Fetching elements' })
     const { convertUsersIds, getUsersStrategy } = this.userConfig[FETCH_CONFIG]
     const classicOrgConfigSuggestion = await this.handleClassicEngineOrg()
     const { errors: oauthError, configChanges: oauthConfigChange } = this.handleOAuthLogin()

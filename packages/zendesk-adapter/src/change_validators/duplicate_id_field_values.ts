@@ -27,7 +27,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
-import { ZendeskApiConfig } from '../config'
+import { ZendeskApiConfig } from '../user_config'
 
 const { generateInstanceNameFromConfig } = elementUtils
 const { isDefined } = lowerDashValues

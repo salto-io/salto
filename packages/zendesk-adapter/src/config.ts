@@ -27,6 +27,16 @@ import {
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
+import {
+  Guide,
+  IdLocator,
+  OmitInactiveConfig,
+  Themes,
+  ZendeskApiConfig,
+  ZendeskClientConfig,
+  ZendeskDeployConfig,
+  ZendeskFetchConfig,
+} from './user_config'
 
 const { defaultMissingUserFallbackField } = configUtils
 const { createClientConfigType } = definitions
@@ -67,66 +77,7 @@ export const DEFAULT_TIMEOUT_OPTS = {
   maxDuration: DEFAULT_REQUEST_TIMEOUT,
 }
 
-export type IdLocator = {
-  fieldRegex: string
-  idRegex: string
-  type: string[]
-}
-
-export type Themes = {
-  brands?: string[]
-  referenceOptions: {
-    enableReferenceLookup: boolean
-    javascriptReferenceLookupStrategy?:
-      | {
-          strategy: 'numericValues'
-          minimumDigitAmount: number
-        }
-      | {
-          strategy: 'varNamePrefix'
-          prefix: string
-        }
-  }
-}
-
-export type Guide = {
-  brands: string[]
-  themes?: Themes
-  // Deprecated
-  themesForBrands?: string[]
-}
-
 export const OMIT_INACTIVE_DEFAULT = true
-export type OmitInactiveConfig = definitions.DefaultWithCustomizations<boolean>
-
-export type ZendeskClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig> & {
-  unassociatedAttachmentChunkSize: number
-}
-
-export type ZendeskFetchConfig = definitions.UserFetchConfig & {
-  enableMissingReferences?: boolean
-  includeAuditDetails?: boolean
-  addAlias?: boolean
-  handleIdenticalAttachmentConflicts?: boolean
-  greedyAppReferences?: boolean
-  appReferenceLocators?: IdLocator[]
-  guide?: Guide
-  resolveOrganizationIDs?: boolean
-  resolveUserIDs?: boolean
-  extractReferencesFromFreeText?: boolean
-  convertJsonIdsToReferences?: boolean
-  omitInactive?: OmitInactiveConfig
-  omitTicketStatusTicketField?: boolean
-}
-
-export type ZendeskDeployConfig = definitions.UserDeployConfig &
-  definitions.DefaultMissingUserFallbackConfig & {
-    createMissingOrganizations?: boolean
-  }
-export type ZendeskApiConfig = configUtils.AdapterApiConfig<
-  configUtils.DuckTypeTransformationConfig,
-  configUtils.TransformationDefaultConfig
->
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
@@ -2813,6 +2764,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
       default: OMIT_INACTIVE_DEFAULT,
     },
     omitTicketStatusTicketField: false,
+    useNewInfra: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
@@ -3143,6 +3095,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           convertJsonIdsToReferences: { refType: BuiltinTypes.BOOLEAN },
           omitInactive: { refType: OmitInactiveType },
           omitTicketStatusTicketField: { refType: BuiltinTypes.BOOLEAN },
+          useNewInfra: { refType: BuiltinTypes.BOOLEAN },
         },
         omitElemID: true,
       }),
@@ -3176,6 +3129,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.convertJsonIdsToReferences`,
       `${FETCH_CONFIG}.omitInactive.customizations`,
       `${FETCH_CONFIG}.omitTicketStatusTicketField`,
+      `${FETCH_CONFIG}.useNewInfra`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -25,7 +25,8 @@ import {
 import { extractTemplate, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { FETCH_CONFIG, IdLocator } from '../config'
+import { FETCH_CONFIG } from '../config'
+import { IdLocator } from '../user_config'
 import { APP_INSTALLATION_TYPE_NAME, TICKET_FIELD_TYPE_NAME } from '../constants'
 
 const DELIMITERS = /(\\n | ,)/g

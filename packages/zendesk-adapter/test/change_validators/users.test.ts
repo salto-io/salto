@@ -18,7 +18,7 @@ import { elementSource } from '@salto-io/workspace'
 import { ZENDESK, ARTICLE_TYPE_NAME } from '../../src/constants'
 import { usersValidator } from '../../src/change_validators'
 import ZendeskClient from '../../src/client/client'
-import { ZendeskFetchConfig } from '../../src/config'
+import { ZendeskFetchConfig } from '../../src/user_config'
 
 const { createInMemoryElementSource } = elementSource
 

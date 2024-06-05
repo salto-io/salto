@@ -32,7 +32,7 @@ import {
 import { MockInterface } from '@salto-io/test-utils'
 import policyPrioritiesFilter, {
   ALL_SUPPORTED_POLICY_NAMES,
-  ALL_SUPPORTED_POLICY_RULE_NAMES,
+  POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE,
 } from '../../src/filters/policy_priority'
 import { OKTA, SIGN_ON_RULE_TYPE_NAME } from '../../src/constants'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
@@ -71,7 +71,7 @@ describe('policyPrioritiesFilter', () => {
   let client: OktaClient
   let elements: InstanceElement[]
   describe('fetch', () => {
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should add rule%sPriority instance and type to the elements',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -144,7 +144,7 @@ describe('policyPrioritiesFilter', () => {
         )
       },
     )
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should add rule%sPriority instance and type to the elements when it does not have default rule',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -183,7 +183,7 @@ describe('policyPrioritiesFilter', () => {
         expect(priorityInstances[0].value.defaultRule).toBeUndefined()
       },
     )
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should add rule%sPriority instance and type to the elements when policy has no path',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -211,7 +211,7 @@ describe('policyPrioritiesFilter', () => {
         expect(priorityInstances[0].value.defaultRule).toBeUndefined()
       },
     )
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should not add rule%sPriority instance if there is no parent policy',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -239,7 +239,7 @@ describe('policyPrioritiesFilter', () => {
       filter = policyPrioritiesFilter(getFilterParams({ definitions })) as typeof filter
       connection.put.mockResolvedValue({ status: 200, data: {} })
     })
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should apply order when adding rule%sPriority instance',
       async (policyRuleName: string) => {
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
@@ -337,7 +337,7 @@ describe('policyPrioritiesFilter', () => {
         expect(connection.put).toHaveBeenCalledTimes(3)
       },
     )
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should call API only for changed positions when modifing rule%sPriority instance',
       async (policyRuleName: string) => {
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
@@ -392,7 +392,7 @@ describe('policyPrioritiesFilter', () => {
         expect(connection.put).toHaveBeenCalledTimes(2)
       },
     )
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should change order when adding another rule and change order for rule%sPriority instance',
       async (policyRuleName: string) => {
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
@@ -449,7 +449,7 @@ describe('policyPrioritiesFilter', () => {
         expect(connection.put).toHaveBeenCalledTimes(3)
       },
     )
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should throw when deployUrl is not defined for rule%sPriority instance',
       async (policyRuleName: string) => {
         const oldApiDefinitions = {
@@ -513,7 +513,7 @@ describe('policyPrioritiesFilter', () => {
         expect(connection.put).toHaveBeenCalledTimes(0)
       },
     )
-    it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should throw when deployRequests is not defined for rule%sPriority instance',
       async (policyRuleName: string) => {
         const oldApiDefinitions = {

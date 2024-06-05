@@ -22,7 +22,7 @@ import {
   isRemovalChange,
   ChangeError,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../user_config'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren, ChildParentRelationship } from './utils'
 import { FIELD_TYPE_NAMES } from '../../constants'
 

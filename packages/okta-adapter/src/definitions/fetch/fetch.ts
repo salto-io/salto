@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
 import { definitions, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { POLICY_TYPE_NAME_TO_PARAMS } from '../config'
-import { OktaFetchOptions } from './types'
-import { OktaUserConfig } from '../user_config'
+import { POLICY_TYPE_NAME_TO_PARAMS } from '../../config'
+import { OktaFetchOptions } from '../types'
+import { OktaUserConfig } from '../../user_config'
 import {
   ACCESS_POLICY_TYPE_NAME,
   AUTOMATION_TYPE_NAME,
@@ -29,9 +29,12 @@ import {
   IDP_RULE_TYPE_NAME,
   DEVICE_ASSURANCE,
   AUTHENTICATOR_TYPE_NAME,
-} from '../constants'
-import { isGroupPushEntry } from '../filters/group_push'
-import { extractSchemaIdFromUserType } from './transforms/user_type'
+  PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+} from '../../constants'
+import { isGroupPushEntry } from '../../filters/group_push'
+import { extractSchemaIdFromUserType } from './types/user_type'
+import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
+import { assignPolicyIdsToApplication } from './types/application'
 
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created: { omit: true },
@@ -52,7 +55,7 @@ const getPrivateAPICustomizations = ({
   endpoint,
   serviceUrl,
 }: {
-  endpoint: string
+  endpoint: definitions.EndpointPath
   serviceUrl: string
 }): definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions> => ({
   requests: [{ endpoint: { path: endpoint, client: 'private' } }],
@@ -141,6 +144,7 @@ const accessPolicyRuleCustomizer: definitions.fetch.FetchTopLevelElementDefiniti
 
 const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => {
   const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
+  const policyRulesToOmitPriorities = [PROFILE_ENROLLMENT_RULE_TYPE_NAME]
   const rulesWithFieldsCustomizations = [MFA_RULE_TYPE_NAME, IDP_RULE_TYPE_NAME]
   const defs = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => ({
     [typeName]: {
@@ -209,6 +213,7 @@ const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFet
           ...(rulesWithFieldsCustomizations.includes(details.ruleName)
             ? { actions: { fieldType: 'PolicyRuleActions' }, conditions: { fieldType: 'PolicyRuleConditions' } }
             : {}),
+          ...(policyRulesToOmitPriorities.includes(details.ruleName) ? { priority: { omit: true } } : {}),
         },
       },
     },
@@ -269,6 +274,9 @@ const createCustomizations = ({
       {
         endpoint: {
           path: '/api/v1/apps',
+        },
+        transformation: {
+          adjust: ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
         },
       },
     ],
@@ -533,6 +541,7 @@ const createCustomizations = ({
             { fieldName: 'target.id', isReference: true },
           ],
         },
+        valueGuard: isNotMappingToAuthenticatorApp,
       },
       fieldCustomizations: {
         id: { hide: true },

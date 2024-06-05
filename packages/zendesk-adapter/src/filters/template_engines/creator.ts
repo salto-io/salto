@@ -16,7 +16,7 @@
 
 import { InstanceElement, TemplateExpression } from '@salto-io/adapter-api'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
-import { Themes } from '../../config'
+import { Themes } from '../../user_config'
 import { parseHandlebarPotentialReferences } from './handlebar_parser'
 import { parseHtmlPotentialReferences } from './html_parser'
 import { extractDomainsAndFieldsFromScripts, extractNumericValueIdsFromScripts } from './javascript_extractor'

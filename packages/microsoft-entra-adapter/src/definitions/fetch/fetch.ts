@@ -98,14 +98,17 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
 
 const DEFAULT_TRANSFORMATION = { root: 'value' }
 
-const createCustomizationsWithBasePath = (customizations: FetchCustomizations, basePath: string): FetchCustomizations =>
+const createCustomizationsWithBasePath = (
+  customizations: FetchCustomizations,
+  basePath: definitions.EndpointPath,
+): FetchCustomizations =>
   _.mapValues(customizations, customization => ({
     ...customization,
     requests: customization.requests?.map(req => ({
       ...req,
       endpoint: {
         ...req.endpoint,
-        path: `${basePath}${req.endpoint.path}`,
+        path: `${basePath}${req.endpoint.path}` as definitions.EndpointPath,
       },
     })),
   }))

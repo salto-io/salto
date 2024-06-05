@@ -156,7 +156,6 @@ import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
-import { filterOutInactiveInstancesForType } from './inactive'
 import handleIdenticalAttachmentConflicts from './filters/handle_identical_attachment_conflicts'
 import addImportantValuesFilter from './filters/add_important_values'
 import customObjectFilter from './filters/custom_objects/custom_object'
@@ -165,6 +164,11 @@ import customObjectFieldsOrderFilter from './filters/custom_objects/custom_objec
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
+import { ZendeskFetchOptions } from './definitions/types'
+import { createClientDefinitions, createFetchDefinitions } from './definitions'
+import { PAGINATION } from './definitions/requests/pagination'
+import { ZendeskFetchConfig } from './user_config'
+import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -457,6 +461,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
+  private adapterDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -502,6 +507,14 @@ export default class ZendeskAdapter implements AdapterOperations {
       })
     }
 
+    this.adapterDefinitions = {
+      clients: createClientDefinitions({ main: this.client }),
+      pagination: PAGINATION,
+      fetch: definitions.mergeWithUserElemIDDefinitions({
+        userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
+        fetchConfig: createFetchDefinitions(this.userConfig, this.getNonSupportedTypesToOmit()),
+      }),
+    }
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
     this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       if (clientsBySubdomain[subdomain] === undefined) {
@@ -544,7 +557,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     )
   }
 
-  private filterSupportedTypes(): Record<string, string[]> {
+  private getNonSupportedTypesToOmit(): string[] {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideThemesEnabledInConfig = isGuideThemesEnabled(this.userConfig[FETCH_CONFIG])
     const keysToOmit = isGuideEnabledInConfig
@@ -553,6 +566,11 @@ export default class ZendeskAdapter implements AdapterOperations {
     if (!isGuideThemesEnabledInConfig) {
       keysToOmit.push(GUIDE_THEME_TYPE_NAME)
     }
+    return keysToOmit
+  }
+
+  private filterSupportedTypes(): Record<string, string[]> {
+    const keysToOmit = this.getNonSupportedTypesToOmit()
     const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
     return _.omit(allSupportedTypes, ...keysToOmit)
   }
@@ -562,21 +580,45 @@ export default class ZendeskAdapter implements AdapterOperations {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()
-    // Zendesk Support and (if enabled) global Zendesk Guide types
-    const defaultSubdomainResult = await getAllElements({
-      adapterName: ZENDESK,
-      types: this.userConfig.apiDefinitions.types,
-      shouldAddRemainingTypes: !isGuideInFetch,
-      // tags are "fetched" in a filter
-      supportedTypes: _.omit(supportedTypes, 'tag'),
-      fetchQuery: this.fetchQuery,
-      paginator: this.paginator,
-      nestedFieldFinder: findDataField,
-      computeGetArgs,
-      typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
-      getElemIdFunc: this.getElemIdFunc,
-      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
-    })
+
+    // Temporarily get fetch method from the config. This is used for testing purposes
+    // and should be removed once we are confident the new infra behaves nicely - SALTO-5761
+    const { useNewInfra } = this.userConfig[FETCH_CONFIG]
+    let defaultSubdomainResult
+    if (useNewInfra !== true) {
+      // Zendesk Support and (if enabled) global Zendesk Guide types
+      defaultSubdomainResult = await getAllElements({
+        adapterName: ZENDESK,
+        types: this.userConfig.apiDefinitions.types,
+        shouldAddRemainingTypes: !isGuideInFetch,
+        // tags are "fetched" in a filter
+        supportedTypes: _.omit(supportedTypes, 'tag'),
+        fetchQuery: this.fetchQuery,
+        paginator: this.paginator,
+        nestedFieldFinder: findDataField,
+        computeGetArgs,
+        typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
+        getElemIdFunc: this.getElemIdFunc,
+        customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
+      })
+    } else {
+      defaultSubdomainResult = await fetchUtils.getElements({
+        adapterName: ZENDESK,
+        fetchQuery: this.fetchQuery,
+        getElemIdFunc: this.getElemIdFunc,
+        definitions: this.adapterDefinitions,
+        customItemFilter: filterOutInactiveItemForType(this.userConfig),
+      })
+      if (!isGuideInFetch) {
+        addRemainingTypes({
+          adapterName: ZENDESK,
+          elements: defaultSubdomainResult.elements,
+          typesConfig: this.userConfig.apiDefinitions.types,
+          supportedTypes,
+          typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
+        })
+      }
+    }
 
     if (!isGuideInFetch) {
       return defaultSubdomainResult

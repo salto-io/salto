@@ -44,11 +44,11 @@ import {
   validateOmitInactiveConfig,
   API_DEFINITIONS_CONFIG,
   DEFAULT_CONFIG,
-  ZendeskFetchConfig,
   validateGuideTypesConfig,
   GUIDE_SUPPORTED_TYPES,
   DEPLOY_CONFIG,
 } from './config'
+import { ZendeskFetchConfig } from './user_config'
 import ZendeskClient from './client/client'
 import { createConnection, instanceUrl } from './client/connection'
 import { configCreator } from './config_creator'

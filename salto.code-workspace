@@ -85,6 +85,10 @@
       "path": "packages/okta-adapter",
     },
     {
+      "name": "pagerduty-adapter",
+      "path": "packages/pagerduty-adapter",
+    },
+    {
       "name": "parser",
       "path": "packages/parser",
     },

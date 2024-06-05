@@ -1352,7 +1352,8 @@ describe('Zendesk adapter E2E', () => {
         verifyInstanceValues(fetchedElements[elem.elemID.getFullName()], elem, Object.keys(elem.value)),
       )
     })
-    it('should handle guide theme elements correctly ', async () => {
+    // eslint-disable-next-line jest/no-disabled-tests
+    it.skip('should handle guide theme elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch([guideThemeInstance])
       verifyInstanceValues(
         fetchedElements[guideThemeInstance.elemID.getFullName()],

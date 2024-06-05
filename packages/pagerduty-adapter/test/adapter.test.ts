@@ -95,7 +95,7 @@ describe('adapter', () => {
           .operations({
             credentials: new InstanceElement('config', credentialsType, {
               accessToken: 'pass',
-              subdomain: 'https://api.pagerduty.com',
+              subdomain: 'salto',
             }),
             config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
             elementsSource: buildElementsSourceFromElements([]),
@@ -214,7 +214,7 @@ describe('adapter', () => {
       operations = adapter.operations({
         credentials: new InstanceElement('config', credentialsType, {
           accessToken: 'pass',
-          subdomain: 'https://api.pagerduty.com',
+          subdomain: 'salto',
         }),
         config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
         elementsSource: buildElementsSourceFromElements([escalationPolicyType, teamType, serviceType, team1, service1]),

@@ -88,7 +88,8 @@ import {
   viewCustomStatusConditionsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
+import { ChangeValidatorName, ZendeskConfig } from './config'
+import { ZendeskDeployConfig, ZendeskFetchConfig } from './user_config'
 
 const {
   deployTypesNotSupportedValidator,

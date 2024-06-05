@@ -29,7 +29,7 @@ export const validateCredentials = async ({
 }): Promise<AccountInfo> => {
   try {
     // https://salto-io.atlassian.net/browse/SALTO-5727
-    await connection.get('/wiki/rest/api/space')
+    await connection.get('/wiki/api/v2/spaces')
     return { accountId: credentials.baseUrl }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)

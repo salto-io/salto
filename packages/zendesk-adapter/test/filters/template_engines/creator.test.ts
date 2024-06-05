@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { Themes } from '../../../src/config'
+import { Themes } from '../../../src/user_config'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../../src/constants'
 import {
   createHandlebarTemplateExpression,

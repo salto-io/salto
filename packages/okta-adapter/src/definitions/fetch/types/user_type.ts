@@ -18,8 +18,8 @@ import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { definitions } from '@salto-io/adapter-components'
-import { LINKS_FIELD } from '../../constants'
-import { extractIdFromUrl } from '../../utils'
+import { LINKS_FIELD } from '../../../constants'
+import { extractIdFromUrl } from '../../../utils'
 
 const log = logger(module)
 

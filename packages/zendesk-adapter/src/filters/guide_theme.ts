@@ -46,8 +46,9 @@ import { collections, values as lowerdashValues, values } from '@salto-io/lowerd
 import { parserUtils } from '@salto-io/parser'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
+import { Themes } from '../user_config'
 import ZendeskClient from '../client/client'
-import { FETCH_CONFIG, isGuideThemesEnabled, Themes } from '../config'
+import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
   GUIDE_THEME_TYPE_NAME,
   THEME_FILE_TYPE_NAME,

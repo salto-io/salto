@@ -33,7 +33,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { references as referencesUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { lookupFunc } from './field_references'
-import { ZendeskFetchConfig } from '../config'
+import { ZendeskFetchConfig } from '../user_config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ATTACHMENTS_FIELD,

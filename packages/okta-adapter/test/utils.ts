@@ -31,7 +31,7 @@ import { OLD_API_DEFINITIONS_CONFIG } from '../src/config'
 import { OktaFetchOptions } from '../src/definitions/types'
 import { createClientDefinitions } from '../src/definitions/requests/clients'
 import { PAGINATION } from '../src/definitions/requests/pagination'
-import { createFetchDefinitions } from '../src/definitions/fetch'
+import { createFetchDefinitions } from '../src/definitions/fetch/fetch'
 import { getAdminUrl } from '../src/client/admin'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>

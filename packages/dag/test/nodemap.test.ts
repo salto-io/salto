@@ -471,21 +471,39 @@ describe('NodeMap', () => {
     })
 
     describe('for a graph with cycles', () => {
-      beforeEach(() => {
-        subject.addNode(1, [6])
-        subject.addNode(2, [3])
-        subject.addNode(3, [4])
-        subject.addNode(4, [2])
-        subject.addNode(5, [6])
-        subject.addNode(6, [])
-      })
+      describe('when the cycle is disconnected from the rest of the graph', () => {
+        beforeEach(() => {
+          subject.addNode(1, [6])
+          subject.addNode(2, [3])
+          subject.addNode(3, [4])
+          subject.addNode(4, [2])
+          subject.addNode(5, [6])
+          subject.addNode(6, [])
+        })
 
-      it('should return the cycles', () => {
-        expect(subject.getCycle()).toEqual([
-          [2, 3],
-          [3, 4],
-          [4, 2],
-        ])
+        it('should return the cycles', () => {
+          expect(subject.getCycle()).toEqual([
+            [2, 3],
+            [3, 4],
+            [4, 2],
+          ])
+        })
+      })
+      describe('when there are edges that lead to a cycle', () => {
+        beforeEach(() => {
+          subject.addNode(1, [2])
+          subject.addNode(2, [3])
+          subject.addNode(3, [4])
+          subject.addNode(4, [2])
+        })
+        it('should only return the cycle without the leading edges', () => {
+          // The 1->2 edge is not part of the cycle
+          expect(subject.getCycle()).toEqual([
+            [2, 3],
+            [3, 4],
+            [4, 2],
+          ])
+        })
       })
     })
   })

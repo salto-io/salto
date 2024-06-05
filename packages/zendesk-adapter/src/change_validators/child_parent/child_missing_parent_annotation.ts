@@ -30,7 +30,7 @@ import {
   isAdditionChange,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../user_config'
 import { getChildAndParentTypeNames } from './utils'
 
 const createChildReferencesError = (

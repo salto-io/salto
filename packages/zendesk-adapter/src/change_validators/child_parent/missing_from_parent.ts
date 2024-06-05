@@ -27,7 +27,7 @@ import {
   isAdditionChange,
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../user_config'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren } from './utils'
 
 export const createParentReferencesError = (

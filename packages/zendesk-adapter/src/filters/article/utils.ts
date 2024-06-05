@@ -47,7 +47,8 @@ import {
 import ZendeskClient from '../../client/client'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
-import { CLIENT_CONFIG, ZendeskApiConfig, ZendeskConfig } from '../../config'
+import { CLIENT_CONFIG, ZendeskConfig } from '../../config'
+import { ZendeskApiConfig } from '../../user_config'
 import { DOMAIN_REGEX, ELEMENTS_REGEXES, transformReferenceUrls } from '../utils'
 
 const { isDefined } = lowerDashValues

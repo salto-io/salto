@@ -18,7 +18,8 @@ import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import _ from 'lodash'
 import { ZENDESK } from '../../src/constants'
 import { duplicateIdFieldValuesValidator } from '../../src/change_validators'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskApiConfig } from '../../src/config'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { ZendeskApiConfig } from '../../src/user_config'
 import * as duplicateIdFieldValuesModule from '../../src/change_validators/duplicate_id_field_values'
 
 const { createInMemoryElementSource } = elementSourceUtils

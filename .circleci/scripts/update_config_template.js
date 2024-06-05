@@ -35,7 +35,7 @@ const main = () => {
             alias: e2e_tests_without_java
             parameters:
               package_name: 
-              - ${e2ePackages.join('\n                - ')}
+                - ${e2ePackages.join('\n                - ')}
               should_install_java: 
                 - false
 `

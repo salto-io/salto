@@ -1,48 +1,46 @@
+
 version: 2.1
 
 orbs:
   win: circleci/windows@2.2.0
   aws-s3: circleci/aws-s3@1.0.15
   aws-cli: circleci/aws-cli@2.0.3
-  coveralls: coveralls/coveralls@2.2.1
+  coveralls: coveralls/coveralls@1.0.6
   macos: circleci/macos@2.4.1
 
 commands:
-  test_e2e:
+  run_e2e_tests:
     parameters:
-        package_name:
-          type: string
+      should_install_java:
+        type: boolean
+        default: false
+      package_name:
+        type: string
     steps:
+      - when:
+          condition: << parameters.should_install_java >>
+          steps:
+            run:
+              name: Install Java
+              command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
       - run:
-          name: configure sources.list
-          command: |
-            if curl -sL https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/apt/sources.list -o /tmp/sources.list; then
-              echo "found sources.list file"
-              sudo mv /tmp/sources.list /etc/apt/sources.list
-              sudo apt update
-            else
-              echo "did not find sources.list file, using the default one"
-            fi
-            echo "using sources.list:"
-            cat /etc/apt/sources.list
-      - run:
-          name: Install Java
-          command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
-      - run:
-          name: Run e2e tests for package << parameters.package_name >>
+          name: Run E2E tests for package << parameters.package_name >>
           command: |
             pushd packages/<< parameters.package_name >>
-            yarn test --reporters=default --reporters=jest-junit --coverage=false --passWithNoTests
+            yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
-            RUN_E2E_TESTS: 1
             SALTO_LOG_LEVEL: 'info'
+            # enable telemetry for end2end so we can count more events
+            # webpack configuration is irrelevant in this case and therefore
+            # we explicitly configure it in here
             SALTO_TELEMETRY_DISABLE: '0'
             SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
             JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
+
       - store_test_results:
           path: reports
-  
+
   set_s3_pkg_urls:
     steps:
       - run:
@@ -135,56 +133,6 @@ jobs:
           paths:
             - '*'
 
-  prettier:
-    docker:
-      - image: cimg/node:14.15
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run:
-          name: Run prettier
-          command: yarn check-format --concurrency 2
-
-  test_e2e:
-    parameters:
-      package_name:
-        type: string
-
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: xlarge
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-      - test_e2e:
-          package_name: << parameters.package_name >>
-
-  unit_test:
-    docker:
-      - image: cimg/node:14.15
-    resource_class: xlarge
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-      - run:
-          name: Run unit tests
-          command: |
-            yarn test -w 4 --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
-            # Ensures colored output in logs
-            FORCE_COLOR: 1
-      - store_test_results:
-          path: reports
-      - coveralls/upload
-
   save_project_cache:
     docker:
       - image: cimg/base:2020.01
@@ -197,6 +145,42 @@ jobs:
           paths:
             - .
           key: v1-project-{{ .Branch }}-{{ epoch }}
+
+  unit_test:
+    docker:
+      - image: cimg/node:14.15
+
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run unit tests
+          command: yarn test -w 4 --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
+            # https://github.com/pinojs/koa-pino-logger/issues/16
+            FORCE_COLOR: 1
+
+      - store_test_results:
+          path: reports
+
+      - coveralls/upload
+
+  prettier:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run prettier
+          command: yarn check-format --concurrency 2
 
   publish_on_version_change:
     docker:
@@ -220,6 +204,23 @@ jobs:
       - run:
           name: Release version
           command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
+
+  e2e_tests:
+    parameters:
+      package_name:
+        type: string
+      should_install_java:
+        type: boolean
+    docker:
+      - image: cimg/node:14.15
+    resource_class: large
+    working_directory: /mnt/ramdisk/project
+    steps:
+      - attach_workspace:
+          at: .
+      - run_e2e_tests:
+          package_name: <<parameters.package_name>>
+          should_install_java: <<parameters.should_install_java>>     
 
   package_cli:
     docker:
@@ -376,28 +377,23 @@ jobs:
           name: Publish canary version
           command: .circleci/scripts/publish-canary.sh
 
-
 workflows:
   commit:
     jobs:
       - build
-      - prettier:
+      # <TEST_MATRIX_E2E>
+      # <TEST_MATRIX_E2E_JAVA>
+      - save_project_cache:
           requires:
             - build
 
       - unit_test:
           requires:
             - build
-      
-      - save_project_cache:
-          requires:
-            - build
-      # <TEST_MATRIX_E2E>
 
-      - package_cli:
+      - prettier:
           requires:
             - build
-            - unit_test
 
       - test_cli_mac:
           requires:
@@ -411,9 +407,15 @@ workflows:
           requires:
             - package_cli
 
+      - package_cli:
+          requires:
+            - build
+            - unit_test
+
       - package_vscode_extension:
           requires:
             - build
+            - unit_test
 
       - sync_s3_pkg_latest:
           requires:
@@ -427,9 +429,10 @@ workflows:
               only:
                 - main
           requires:
-              - build
-              - unit_test
-              # <NEEDS_E2E_TEST_REQUIREMENT>
+            - build
+            - unit_test
+            # <NEEDS_E2E_TEST_REQUIREMENT>
+            # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>
 
       - publish_on_version_change:
           context: salto
@@ -441,4 +444,4 @@ workflows:
             - build
             - unit_test
             # <NEEDS_E2E_TEST_REQUIREMENT>
-      
+            # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>

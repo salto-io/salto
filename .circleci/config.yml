@@ -20,13 +20,6 @@ jobs:
             find ./packages -mindepth 1 -maxdepth 1 -type d '!' -exec test -e "{}/package.json" ';' -print \
               | xargs --no-run-if-empty rm -r
 
-      - run:
-          # eslint will verify that the license header exists on the linted source files, this step is
-          # to verify that other non-linted files also contains the license header (and therefore this is
-          # in the 'build' job)
-          name: verify that the license header is prepended to the non eslint'd source files
-          command: build_utils/verify_license_header.sh
-
       - run: yarn config set ignore-engines true
 
       - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
@@ -38,8 +31,8 @@ jobs:
           name: Compile and Run Find Changed Packages Script
           command: |
             pushd .circleci/scripts
-            node find_changed_packages
-            node update_config_template
+            node find_changed_packages.js
+            node update_config_template.js
       - persist_to_workspace:
           root: .
           paths:

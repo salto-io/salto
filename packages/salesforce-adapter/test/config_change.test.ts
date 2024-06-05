@@ -28,6 +28,7 @@ describe('Config Changes', () => {
   const includedObjectName = '.*Object.*'
   const refToObjectName = '.*refTo.*'
   const currentConfig: SalesforceConfig = {
+    deploy: {},
     fetch: {
       metadata: {
         exclude: [{ metadataType: 'Type1' }],
@@ -75,6 +76,7 @@ describe('Config Changes', () => {
 
       it('should create an instance with values same as original config besides excludeObjects', () => {
         expect(newConfig).toBeDefined()
+        expect(newConfig?.config?.[0].value.deploy).toEqual({})
         expect(newConfig?.config?.[0].value.fetch.metadata).toEqual(
           currentConfig.fetch?.metadata,
         )

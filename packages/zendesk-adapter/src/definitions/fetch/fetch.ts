@@ -1508,7 +1508,7 @@ const createCustomizations = (): Record<
           standalone: {
             typeName: 'article_attachment',
             addParentAnnotation: true,
-            referenceFromParent: true,
+            referenceFromParent: false,
             nestPathUnderParent: true,
           },
         },
@@ -1537,23 +1537,18 @@ const createCustomizations = (): Record<
       },
     ],
     resource: {
-      directFetch: true,
+      directFetch: false,
     },
     element: {
       topLevel: {
         isTopLevel: true,
         elemID: {
-          parts: [
-            { fieldName: 'file_name' },
-            { fieldName: 'inline' },
-            { fieldName: 'id' },
-            { fieldName: 'content_type' },
-            { fieldName: 'size' },
-          ],
+          parts: [{ fieldName: 'file_name' }, { fieldName: 'inline' }],
           extendsParent: true,
         },
         // serviceUrl is created in help_center_service_url filter
       },
+      ignoreDefaultFieldCustomizations: true,
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
         content_url: { hide: true, fieldType: 'string' },

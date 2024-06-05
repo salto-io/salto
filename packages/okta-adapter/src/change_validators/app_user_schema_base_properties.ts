@@ -30,7 +30,7 @@ import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { APP_USER_SCHEMA_TYPE_NAME, BASE_FIELD, DEFINITIONS_FIELD } from '../constants'
 
-const getBasePath = (): string[] => [DEFINITIONS_FIELD, BASE_FIELD]
+export const BASE_PATH = [DEFINITIONS_FIELD, BASE_FIELD]
 
 export const getErrorWithSeverity = (elemID: ElemID, severity: SeverityLevel): ChangeError => ({
   elemID,
@@ -42,14 +42,14 @@ export const getErrorWithSeverity = (elemID: ElemID, severity: SeverityLevel): C
 
 const getModificationError = (change: ModificationChange<InstanceElement>): ChangeError | undefined => {
   const { before, after } = change.data
-  const beforeBase = _.get(before.value, getBasePath())
-  const afterBase = _.get(after.value, getBasePath())
+  const beforeBase = _.get(before.value, BASE_PATH)
+  const afterBase = _.get(after.value, BASE_PATH)
 
   if (_.isEqual(beforeBase, afterBase)) {
     return undefined
   }
-  const beforeWithoutBase = _.omit(before, ['value', ...getBasePath()].join('.'))
-  const afterWithoutBase = _.omit(after, ['value', ...getBasePath()].join('.'))
+  const beforeWithoutBase = _.omit(before, ['value', ...BASE_PATH].join('.'))
+  const afterWithoutBase = _.omit(after, ['value', ...BASE_PATH].join('.'))
 
   // If the base field is the only change, we will not deploy it
   if (_.isEqual(beforeWithoutBase, afterWithoutBase)) {

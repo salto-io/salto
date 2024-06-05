@@ -23,10 +23,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { OKTA, APP_USER_SCHEMA_TYPE_NAME, APPLICATION_TYPE_NAME } from '../../src/constants'
-import {
-  appUserSchemaBaseChangesValidator,
-  getErrorWithSeverity,
-} from '../../src/change_validators/app_user_schema_base_properties'
+import { appUserSchemaBaseChangesValidator } from '../../src/change_validators/app_user_schema_base_properties'
 
 describe('appUserSchemaBaseChangesValidator', () => {
   let appUserSchemaInstance: InstanceElement
@@ -71,7 +68,13 @@ describe('appUserSchemaBaseChangesValidator', () => {
       const changes = [toChange({ after: appUserSchemaInstance })]
       const changeErrors = await appUserSchemaBaseChangesValidator(changes)
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual(getErrorWithSeverity(appUserSchemaInstance.elemID, 'Info'))
+      expect(changeErrors[0]).toEqual({
+        elemID: appUserSchemaInstance.elemID,
+        severity: 'Info',
+        message: "Base attributes cannot be deployed via Okta's APIs",
+        detailedMessage:
+          'Salto cannot deploy changes to base attributes, as they are determined by the associated application.',
+      })
     })
   })
   describe('when only changing the base field', () => {
@@ -81,7 +84,13 @@ describe('appUserSchemaBaseChangesValidator', () => {
       const changes = [toChange({ before: appUserSchemaInstance, after: appUserSchemaAfter })]
       const changeErrors = await appUserSchemaBaseChangesValidator(changes)
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual(getErrorWithSeverity(appUserSchemaInstance.elemID, 'Error'))
+      expect(changeErrors[0]).toEqual({
+        elemID: appUserSchemaInstance.elemID,
+        severity: 'Error',
+        message: "Base attributes cannot be deployed via Okta's APIs",
+        detailedMessage:
+          'Salto cannot deploy changes to base attributes, as they are determined by the associated application.',
+      })
     })
     it('should return error when trying to remove property from base field', async () => {
       const appUserSchemaAfter = appUserSchemaInstance.clone()
@@ -89,7 +98,13 @@ describe('appUserSchemaBaseChangesValidator', () => {
       const changes = [toChange({ before: appUserSchemaInstance, after: appUserSchemaAfter })]
       const changeErrors = await appUserSchemaBaseChangesValidator(changes)
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual(getErrorWithSeverity(appUserSchemaInstance.elemID, 'Error'))
+      expect(changeErrors[0]).toEqual({
+        elemID: appUserSchemaInstance.elemID,
+        severity: 'Error',
+        message: "Base attributes cannot be deployed via Okta's APIs",
+        detailedMessage:
+          'Salto cannot deploy changes to base attributes, as they are determined by the associated application.',
+      })
     })
     it('should return error when trying to change property in base field', async () => {
       const appUserSchemaAfter = appUserSchemaInstance.clone()
@@ -97,7 +112,13 @@ describe('appUserSchemaBaseChangesValidator', () => {
       const changes = [toChange({ before: appUserSchemaInstance, after: appUserSchemaAfter })]
       const changeErrors = await appUserSchemaBaseChangesValidator(changes)
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual(getErrorWithSeverity(appUserSchemaInstance.elemID, 'Error'))
+      expect(changeErrors[0]).toEqual({
+        elemID: appUserSchemaInstance.elemID,
+        severity: 'Error',
+        message: "Base attributes cannot be deployed via Okta's APIs",
+        detailedMessage:
+          'Salto cannot deploy changes to base attributes, as they are determined by the associated application.',
+      })
     })
   })
   describe('when changing the custom field', () => {
@@ -108,7 +129,13 @@ describe('appUserSchemaBaseChangesValidator', () => {
       const changes = [toChange({ before: appUserSchemaInstance, after: appUserSchemaAfter })]
       const changeErrors = await appUserSchemaBaseChangesValidator(changes)
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual(getErrorWithSeverity(appUserSchemaInstance.elemID, 'Warning'))
+      expect(changeErrors[0]).toEqual({
+        elemID: appUserSchemaInstance.elemID,
+        severity: 'Warning',
+        message: "Base attributes cannot be deployed via Okta's APIs",
+        detailedMessage:
+          'Salto cannot deploy changes to base attributes, as they are determined by the associated application.',
+      })
     })
     it('should not return errors when trying to change only the custom field', async () => {
       const appUserSchemaAfter = appUserSchemaInstance.clone()
@@ -123,7 +150,13 @@ describe('appUserSchemaBaseChangesValidator', () => {
       const changes = [toChange({ before: appUserSchemaBefore, after: appUserSchemaInstance })]
       const changeErrors = await appUserSchemaBaseChangesValidator(changes)
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual(getErrorWithSeverity(appUserSchemaInstance.elemID, 'Warning'))
+      expect(changeErrors[0]).toEqual({
+        elemID: appUserSchemaInstance.elemID,
+        severity: 'Warning',
+        message: "Base attributes cannot be deployed via Okta's APIs",
+        detailedMessage:
+          'Salto cannot deploy changes to base attributes, as they are determined by the associated application.',
+      })
     })
     it('should handle undefined after base field', async () => {
       const appUserSchemaAfter = appUserSchemaInstance.clone()
@@ -131,7 +164,13 @@ describe('appUserSchemaBaseChangesValidator', () => {
       const changes = [toChange({ before: appUserSchemaInstance, after: appUserSchemaAfter })]
       const changeErrors = await appUserSchemaBaseChangesValidator(changes)
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual(getErrorWithSeverity(appUserSchemaInstance.elemID, 'Warning'))
+      expect(changeErrors[0]).toEqual({
+        elemID: appUserSchemaInstance.elemID,
+        severity: 'Warning',
+        message: "Base attributes cannot be deployed via Okta's APIs",
+        detailedMessage:
+          'Salto cannot deploy changes to base attributes, as they are determined by the associated application.',
+      })
     })
   })
 })

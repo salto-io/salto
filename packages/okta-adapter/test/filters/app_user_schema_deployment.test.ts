@@ -174,7 +174,7 @@ describe('appUserSchemaDeployment', () => {
       expect(result.deployResult.appliedChanges).toHaveLength(0)
       expect(result.deployResult.errors).toHaveLength(1)
       expect(result.deployResult.errors.map(e => e.message)).toEqual([
-        `Could not find parent application id for user schema ${noParentName} from type ${APP_USER_SCHEMA_TYPE_NAME}`,
+        `Could not find parent application id for AppUserSchema ${noParentName} from type ${APP_USER_SCHEMA_TYPE_NAME}`,
       ])
     })
     it('should return error when app user schema request fails', async () => {

@@ -25,20 +25,22 @@ import {
   AdditionChange,
   ModificationChange,
   isModificationChange,
+  ElemID,
 } from '@salto-io/adapter-api'
-import { config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  definitions as definitionsUtils,
+  fetch as fetchUtils,
+} from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { getParents } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParents, resolvePath, setPath } from '@salto-io/adapter-utils'
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
-import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployWithStatus } from '../deployment'
+import { BASE_PATH } from '../change_validators/app_user_schema_base_properties'
 
 const log = logger(module)
-
-const DEFINITIONS = 'definitions'
-const BASE = 'base'
 
 type AppUserSchema = {
   id: string
@@ -48,15 +50,18 @@ const AppUserSchemaSchema = Joi.object({
   id: Joi.string().required(),
 }).unknown(true)
 
-const isAppUserSchema = (values: unknown): values is AppUserSchema => {
-  const { error } = AppUserSchemaSchema.validate(values)
-  return _.isUndefined(error)
-}
+const isAppUserSchema = createSchemeGuard<AppUserSchema>(
+  AppUserSchemaSchema,
+  'Recieved invalid app user schema response',
+)
 
 const isAppUserSchemaChange = (change: Change): change is Change<InstanceElement> =>
   isInstanceChange(change) && getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME
 
-const getAutoCreatedAppUserSchema = async (applicationId: string, client: OktaClient): Promise<AppUserSchema> => {
+const getAutoCreatedAppUserSchema = async (
+  applicationId: string,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<AppUserSchema> => {
   const url = `/api/v1/meta/schemas/apps/${applicationId}/default`
   const autoCreatedAppUserSchema = (await client.get({ url })).data
   if (!isAppUserSchema(autoCreatedAppUserSchema)) {
@@ -66,7 +71,10 @@ const getAutoCreatedAppUserSchema = async (applicationId: string, client: OktaCl
   return autoCreatedAppUserSchema
 }
 
-const verifyApplicationIsDeleted = async (applicationId: string, client: OktaClient): Promise<boolean> => {
+const verifyApplicationIsDeleted = async (
+  applicationId: string,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<boolean> => {
   try {
     return (
       (
@@ -86,32 +94,24 @@ const verifyApplicationIsDeleted = async (applicationId: string, client: OktaCli
 const getAppUserSchemaInstance = (
   autoCreatedappUserSchema: AppUserSchema,
   appUserSchemaInstance: InstanceElement,
-  apiDefinitions: OktaSwaggerApiConfig,
+  fieldsToOmit: string[],
 ): InstanceElement => {
   const createdAppUserSchemaInstance = appUserSchemaInstance.clone()
-  const { fieldsToOmit } = configUtils.getTypeTransformationConfig(
-    createdAppUserSchemaInstance.elemID.typeName,
-    apiDefinitions.types,
-    apiDefinitions.typeDefaults,
-  )
-  createdAppUserSchemaInstance.value = _.omit(autoCreatedappUserSchema, [
-    ...(fieldsToOmit ?? []).map(field => field.fieldName),
-    'name',
-  ])
+  createdAppUserSchemaInstance.value = _.omit(autoCreatedappUserSchema, [...Object.keys(fieldsToOmit), 'name'])
   return createdAppUserSchemaInstance
 }
 
 const makeModificationFromAddition = async (
   change: AdditionChange<InstanceElement>,
-  client: OktaClient,
-  apiDefinitions: OktaSwaggerApiConfig,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  fieldsToOmit: string[],
 ): Promise<ModificationChange<InstanceElement>> => {
   const appUserSchemaInstance = getChangeData(change)
   const parentApplicationId = getParents(appUserSchemaInstance)[0]?.id
   if (parentApplicationId === undefined) {
-    log.error(`Error while trying to get parent id for user schema ${appUserSchemaInstance.elemID.getFullName()}`)
+    log.error(`Error while trying to get parent id for AppUserSchema ${appUserSchemaInstance.elemID.getFullName()}`)
     throw new Error(
-      `Could not find parent application id for user schema ${appUserSchemaInstance.elemID.name} from type ${appUserSchemaInstance.elemID.typeName}`,
+      `Could not find parent application id for AppUserSchema ${appUserSchemaInstance.elemID.name} from type ${appUserSchemaInstance.elemID.typeName}`,
     )
   }
 
@@ -123,36 +123,40 @@ const makeModificationFromAddition = async (
   const autoCreatedAppUserSchemaInstance = getAppUserSchemaInstance(
     autoCreatedAppUserSchema,
     appUserSchemaInstance,
-    apiDefinitions,
+    fieldsToOmit,
   )
   return { action: 'modify', data: { before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance.clone() } }
 }
 
+const getBaseElemID = (appUserSchemaInstance: InstanceElement): ElemID =>
+  appUserSchemaInstance.elemID.createNestedID(...BASE_PATH)
+
 const deployModificationChange = async (
   change: ModificationChange<InstanceElement>,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const { before } = change.data
   const after = change.data.after.clone()
-  if (before.value[DEFINITIONS]?.[BASE] !== undefined) {
-    _.set(after.value, [DEFINITIONS, BASE], before.value[DEFINITIONS][BASE])
-  } else {
-    _.unset(after.value, [DEFINITIONS, BASE])
-  }
+  const beforeBaseElemId = getBaseElemID(before)
+  setPath(after, getBaseElemID(after), resolvePath(before, beforeBaseElemId))
   await defaultDeployWithStatus(toChange({ before, after }), client, apiDefinitions)
 }
 
 const deployAdditionChange = async (
   change: AdditionChange<InstanceElement>,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  fieldsToOmit: string[],
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
-  const modifiedChange = await makeModificationFromAddition(change, client, apiDefinitions)
+  const modifiedChange = await makeModificationFromAddition(change, client, fieldsToOmit)
   return deployModificationChange(modifiedChange, client, apiDefinitions)
 }
 
-const deployRemovalChange = async (change: Change, client: OktaClient): Promise<void> => {
+const deployRemovalChange = async (
+  change: Change,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<void> => {
   const appUserSchemaInstance = getChangeData(change)
   const parentApplicationId = getParents(appUserSchemaInstance)[0]?.id
   if (!_.isString(parentApplicationId) || !(await verifyApplicationIsDeleted(parentApplicationId, client))) {
@@ -160,13 +164,15 @@ const deployRemovalChange = async (change: Change, client: OktaClient): Promise<
   }
 }
 
-const deployChange = async (
+const deployChange = async <Options extends definitionsUtils.APIDefinitionsOptions = {}>(
   change: Change<InstanceElement>,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  definitions: definitionsUtils.ApiDefinitions<Options>,
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   if (isAdditionChange(change)) {
-    return deployAdditionChange(change, client, apiDefinitions)
+    const fieldsToOmit = fetchUtils.element.getFieldsToOmit(definitions, APP_USER_SCHEMA_TYPE_NAME)
+    return deployAdditionChange(change, client, fieldsToOmit, apiDefinitions)
   }
   if (isModificationChange(change)) {
     return deployModificationChange(change, client, apiDefinitions)
@@ -182,13 +188,13 @@ const deployChange = async (
  * removals - verifying the parent application is deleted. appUserSchema is deleted if and only if the parent application is deleted
  */
 const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
-  name: 'appUserSchemaDeployment',
+  name: 'appUserSchemaDeploymentFilter',
   deploy: async changes => {
-    const client = definitions.clients.options.main.httpClient as OktaClient
+    const client = definitions.clients.options.main.httpClient
     const [relevantChanges, leftoverChanges] = _.partition(changes, isAppUserSchemaChange)
 
     const deployResult = await deployChanges(relevantChanges, async change =>
-      deployChange(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG]),
+      deployChange(change, client, definitions, oldApiDefinitions[API_DEFINITIONS_CONFIG]),
     )
 
     return {

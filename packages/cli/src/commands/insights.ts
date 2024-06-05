@@ -24,17 +24,17 @@ const log = logger(module)
 export const insightsAction: WorkspaceCommandAction<{}> = async ({ workspace }) => {
   try {
     const insights = await getInsights(workspace)
-    log.info('gathered %d insights', insights.length, { workspaceId: workspace.uid })
+    log.info('gathered %d insights', insights.length)
     insights.forEach(insight => {
       log.info(insight.message, {
         isInsight: true,
         adapter: insight.path.adapter,
         path: insight.path.getFullName(),
-        workspaceId: workspace.uid,
+        ruleId: insight.ruleId,
       })
     })
   } catch (e) {
-    log.error('failed to get insights with error: %o', e, { workspaceId: workspace.uid })
+    log.error('failed to get insights with error: %o', e)
   }
   return CliExitCode.Success
 }

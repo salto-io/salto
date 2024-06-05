@@ -19,7 +19,7 @@ const { readFileSync, writeFileSync, existsSync, readdirSync } = require('fs')
 const path = require('path')
 
 
-function main() {
+const main = () => {
   const configTemplate = readFileSync(path.join(__dirname, '..', 'config_template.yml'), 'utf8')
   const adaptersWithJava = readFileSync(path.join(__dirname, '..', 'adapters_with_java.txt'), 'utf8').split('\n').filter(Boolean)
   const e2ePackagesToTest = readFileSync(path.join(__dirname, '..', 'e2e_packages_to_test.txt'), 'utf8').split('\n').filter(Boolean)

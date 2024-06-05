@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-const { execSync } = require('child_process')
+const { execSync, exec } = require('child_process')
 const { readFileSync, writeFileSync, existsSync, readdirSync } = require('fs')
 const path = require('path')
 
-const getChangedFiles = (userBaseCommit) => {
+const getChangedFiles = (userInputBaseCommit) => {
   const commitHashRegex = /\b[0-9a-f]{9}/g
-  const baseCommit = userBaseCommit ?? execSync('$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" $(echo https://api.github.com/repos/${CIRCLE_PULL_REQUEST:19} | sed "s/\/pull\//\/pulls\//") | jq ".base.ref" | tr -d "\x22" )')
+  // If we didn't get a defined commit hash, take one commit back from the first commit in this PR
+  const baseCommit = userInputBaseCommit ?? `^${execSync('curl -s -H "Authorization: token ${GITHUB_AUTH_TOKEN}" https://api.github.com/repos/salto-io/salto/pulls/5931/commits | jq ".[0] | .sha"')}`
+  console.log('base commit:', baseCommit)
   const output = execSync(`git log --oneline --name-only ${baseCommit}..HEAD`).toString().split('\n').filter(line => !commitHashRegex.test(line))
   console.log('git log output:', output)
   return output.filter(file => file && file.startsWith('packages/'))
@@ -64,8 +66,8 @@ const hasE2eTests = (packageName) => {
   return e2eDirHasTestFiles
 }
 
-const findChangedPackages = (baseCommit, workspaceInfo) => {
-  const changedFiles = getChangedFiles(baseCommit)
+const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
+  const changedFiles = getChangedFiles(userInputBaseCommit)
   console.log('Changed files:', changedFiles)
   const changedPackageLocation = changedFiles.map(path => path.split('/').slice(0, 2).join('/')).filter((value, index, self) => self.indexOf(value) === index)
 
@@ -73,19 +75,21 @@ const findChangedPackages = (baseCommit, workspaceInfo) => {
   return changedPackages
 }
 
-const getPackagesToTest = (baseCommit, workspaceInfo) => {
-  const changedPackages = findChangedPackages(baseCommit, workspaceInfo)
+const getPackagesToTest = (userInputBaseCommit, workspaceInfo) => {
+  const changedPackages = findChangedPackages(userInputBaseCommit, workspaceInfo)
   console.log('Changed packages:', changedPackages)
 
   const dependencyMapping = generateDependencyMapping(workspaceInfo)
   console.log('Dependency mapping:', dependencyMapping)
 
   const changedPackagesDependencies = changedPackages.flatMap(package => dependencyMapping[package]).filter((value, index, self) => self.indexOf(value) === index)
+  console.log('Changed packages dependencies:', changedPackagesDependencies)
   const dependenciesLocation = changedPackagesDependencies.map(pkg => workspaceInfo[pkg].location).concat(changedPackages.map(pkg => workspaceInfo[pkg].location)).sort()
   console.log('Changed packages with dependencies:', dependenciesLocation)
 
   packagesToTest = dependenciesLocation.map(location => location.replace('packages/', ''))
-  console.log('Packages to test:', packagesArray)
+  console.log('Packages to test:', packagesToTest)
+  return packagesToTest
 }
 
 
@@ -93,16 +97,15 @@ const main = () => {
   const args = process.argv.slice(2)
   console.log(`User provided arguments: ${args}`)
 
-  const baseCommit = args.length > 0 ? args[0] : null
-  console.log(`attempting to use ${baseCommit} as base commit`)
+  const userInputBaseCommit = args.length > 0 ? args[0] : null
+  console.log(`attempting to use ${userInputBaseCommit} as base commit`)
 
   const workspaceInfo = getWorkspacesInfo()
   const allPackages = Object.keys(workspaceInfo).map(pkg => workspaceInfo[pkg].location.replace('packages/', '')).sort()
   // on main branch, we want to test all packages
-  const packagesToTest = process.env.CIRCLE_BRANCH === 'main' ? allPackages : getPackagesToTest(baseCommit, workspaceInfo)
+  const packagesToTest = process.env.CIRCLE_BRANCH === 'main' ? allPackages : getPackagesToTest(userInputBaseCommit, workspaceInfo)
 
   const e2ePackagesToTest = packagesToTest.filter(hasE2eTests)
-
   const packagesWithE2eTestsFilePath = path.join(__dirname, '..', 'e2e_packages_to_test.txt')
   writeFileSync(packagesWithE2eTestsFilePath, e2ePackagesToTest.join('\n'))
 }

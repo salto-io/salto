@@ -332,6 +332,7 @@ export const getConfigFromConfigChanges = (
         configType,
         _.pickBy(
           {
+            ...currentConfig,
             fetch: _.pickBy(
               {
                 ...(currentConfig.fetch ?? {}),

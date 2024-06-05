@@ -36,7 +36,8 @@ jobs:
 workflows:
   commit:
     jobs:
-      - find_changed_packages
+      - find_changed_packages:
+          context: salto
       - continuation/continue:
       - find_changed_packages
       - continuation/continue:

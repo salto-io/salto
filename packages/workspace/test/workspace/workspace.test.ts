@@ -5138,6 +5138,58 @@ describe('nacl sources reuse', () => {
     await ws.elements(true, 'inactive')
     expect(mockMultiEnv).toHaveBeenCalledTimes(1)
   })
+
+  describe('serializeReferenceSourcesEntries and deserializeReferenceSourcesEntries', () => {
+    it('should serialize and deserialize correctly', async () => {
+      const entries: ReferenceIndexEntry[] = [
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref1'),
+          type: 'strong',
+        },
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref2'),
+          type: 'strong',
+          sourceScope: 'baseId',
+        },
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref3'),
+          type: 'strong',
+          sourceScope: 'value',
+        },
+      ]
+      const serialized = await serializeReferenceSourcesEntries(entries)
+      expect(await deserializeReferenceSourcesEntries(serialized)).toEqual(entries)
+    })
+    it('should deserialize old format correctly', async () => {
+      const oldSerializeFunc = (ids: ElemID[]): string => safeJsonStringify(ids.map(id => id.getFullName()))
+      const serialized = oldSerializeFunc(
+        [
+          'test.adapter.instance.testInstance.ref1',
+          'test.adapter.instance.testInstance.ref2',
+          'test.adapter.instance.testInstance.ref3',
+        ].map(ElemID.fromFullName),
+      )
+      const expected: ReferenceIndexEntry[] = [
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref1'),
+          type: 'strong',
+        },
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref2'),
+          type: 'strong',
+        },
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref3'),
+          type: 'strong',
+        },
+      ]
+      expect(await deserializeReferenceSourcesEntries(serialized)).toEqual(expected)
+    })
+
+    it('should throw error when deserializing invalid format', async () => {
+      await expect(deserializeReferenceSourcesEntries('invalid')).rejects.toThrow()
+    })
+  })
 })
 
 describe('listElementsDependenciesInWorkspace', () => {
@@ -5306,56 +5358,5 @@ describe('listElementsDependenciesInWorkspace', () => {
       [unrelatedFieldC.elemID.getFullName()]: [],
     })
     expect(res.missing).toEqual([])
-  })
-  describe('serializeReferenceSourcesEntries and deserializeReferenceSourcesEntries', () => {
-    it('should serialize and deserialize correctly', async () => {
-      const entries: ReferenceIndexEntry[] = [
-        {
-          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref1'),
-          type: 'strong',
-        },
-        {
-          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref2'),
-          type: 'strong',
-          sourceScope: 'baseId',
-        },
-        {
-          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref3'),
-          type: 'strong',
-          sourceScope: 'value',
-        },
-      ]
-      const serialized = await serializeReferenceSourcesEntries(entries)
-      expect(await deserializeReferenceSourcesEntries(serialized)).toEqual(entries)
-    })
-    it('should deserialize old format correctly', async () => {
-      const oldSerializeFunc = (ids: ElemID[]): string => safeJsonStringify(ids.map(id => id.getFullName()))
-      const serialized = oldSerializeFunc(
-        [
-          'test.adapter.instance.testInstance.ref1',
-          'test.adapter.instance.testInstance.ref2',
-          'test.adapter.instance.testInstance.ref3',
-        ].map(ElemID.fromFullName),
-      )
-      const expected: ReferenceIndexEntry[] = [
-        {
-          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref1'),
-          type: 'strong',
-        },
-        {
-          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref2'),
-          type: 'strong',
-        },
-        {
-          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref3'),
-          type: 'strong',
-        },
-      ]
-      expect(await deserializeReferenceSourcesEntries(serialized)).toEqual(expected)
-    })
-
-    it('should throw error when deserializing invalid format', async () => {
-      await expect(deserializeReferenceSourcesEntries('invalid')).rejects.toThrow()
-    })
   })
 })

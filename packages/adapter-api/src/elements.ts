@@ -34,7 +34,7 @@ export const BuiltinTypesRefByFullName: Record<string, TypeReference<PrimitiveTy
 
 export const createRefToElmWithValue = <T extends TypeElement>(element: T): TypeReference<T> => {
   // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
-  if (isPrimitiveType(element)) {
+  if (isPrimitiveType(element) && element.elemID.getFullName() in BuiltinTypesRefByFullName) {
     // Technically, all TS knows here is that the type of `element` is `T & PrimitiveType`,
     // but that doesn't necessarily mean that `T === PrimitiveType`.
     // We know this is the case though because there are (and probably never will be)

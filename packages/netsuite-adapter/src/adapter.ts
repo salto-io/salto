@@ -362,7 +362,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
-    const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
+    const changedObjectsQuery = await this.getChangedObjectsQuery(
       fetchQueryWithBundles,
       useChangesDetection,
       timeZoneAndFormat,
@@ -461,7 +461,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         : {}
 
     const serverTimeElements =
-      serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
+      sysInfo !== undefined ? await getOrCreateServerTimeElements(sysInfo.time, this.elementsSource, isPartial) : []
 
     const elements = ([] as ChangeDataType[])
       .concat(standardInstances)
@@ -476,7 +476,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     await this.createFiltersRunner({
       operation: 'fetch',
       isPartial,
-      fetchTime: serverTime,
+      fetchTime: sysInfo?.time,
       timeZoneAndFormat,
       deletedElements,
     }).onFetch(elements)
@@ -557,43 +557,40 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { elements, updatedConfig, errors: deletedElementErrors, partialFetchData }
   }
 
-  private async runSuiteAppOperations(
+  private async getChangedObjectsQuery(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
     timeZoneAndFormat: TimeZoneAndFormat,
     sysInfo: SystemInformation | undefined,
-  ): Promise<{
-    changedObjectsQuery?: NetsuiteQuery
-    serverTime?: Date
-  }> {
+  ): Promise<NetsuiteQuery | undefined> {
     if (sysInfo === undefined) {
       log.debug('Did not get sysInfo, skipping SuiteApp operations')
-      return {}
+      return undefined
     }
 
     if (!useChangesDetection) {
       log.debug('Changes detection is disabled')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
 
     const lastFetchTime = await getLastServerTime(this.elementsSource)
     if (lastFetchTime === undefined) {
       log.debug('Failed to get last fetch time')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
+
     if (timeZoneAndFormat?.format === undefined) {
       log.warn('Failed to get date format, skipping changes detection')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
+
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
-    const changedObjectsQuery = await getChangedObjects(
+    return getChangedObjects(
       this.client,
       fetchQuery,
       createDateRange(lastFetchTime, sysInfo.time, timeZoneAndFormat.format),
       serviceIdToLastFetchDate,
     )
-
-    return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
   private static getDeployErrors(

@@ -426,7 +426,7 @@ const getGuideElements = async ({
     fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
     instance => instance.elemID.typeName,
   )
-  console.log('1')
+  console.log(typeNameToGuideInstances.article_attachment)
   // Create new types based on the created instances from all brands,
   // then create new instances with the corresponding type as refType
   const zendeskGuideElements = Object.entries(typeNameToGuideInstances).flatMap(([typeName, instances]) => {
@@ -726,19 +726,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       supportedTypes: _.merge(supportedTypes, GUIDE_BRAND_SPECIFIC_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
-    const nonUniqueItems = combinedRes.elements.filter(item =>
-      item.elemID
-        .getFullName()
-        .includes(
-          'zendesk.article.instance.christmas__INCIDENT_11376_INCIDENT_11376_anotherBrand___Eden_test_sbss_buuuuum_buuuuuuuum@suuuuuuuuuuum',
-        ),
-    )
 
-    const nonUniqueItems2 = combinedRes.elements.filter(item => item.elemID.getFullName().includes('christmas'))
-
-    const nonUniqueItems3 = combinedRes.elements.filter(item => item.elemID.typeName === 'article')
-
-    console.log('7', nonUniqueItems, nonUniqueItems2, nonUniqueItems3)
+    // console.log('7', nonUniqueItems, nonUniqueItems2, nonUniqueItems3)
     return combinedRes
   }
 

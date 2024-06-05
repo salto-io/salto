@@ -641,6 +641,30 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
     })
 
+    it('should return custom record type with matching custom segment in instancesIds', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: [{ type: 'customsegment', scriptId: 'cseg123' }],
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const { instancesIds: currentInstanceIds } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
+      expect(currentInstanceIds).toEqual([
+        { type: 'customsegment', instanceId: 'cseg123' },
+        { type: 'customrecordtype', instanceId: 'customrecord_cseg123' },
+      ])
+    })
+
     it('should pass fetch configured suite apps', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {

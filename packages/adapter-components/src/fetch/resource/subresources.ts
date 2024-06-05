@@ -84,36 +84,34 @@ export const recurseIntoSubresources =
   }): NestedResourceFetcher =>
   async item =>
     Object.fromEntries(
-      (
-        await Promise.all(
-          Object.entries(def.recurseInto ?? {})
-            .filter(([_fieldName, { conditions }]) => shouldRecurseIntoEntry(item.value, item.context, conditions))
-            .map(async ([fieldName, recurseDef]) => {
-              const nestedRequestContext = extractRecurseIntoContext(item, recurseDef)
-              const typeFetcher = typeFetcherCreator({
-                typeName: recurseDef.typeName,
-                context: { ...item.context, ...nestedRequestContext },
-              })
-              if (typeFetcher === undefined) {
-                log.debug('no resource fetcher defined for type %s, cannot recurse into resource', recurseDef.typeName)
-                return []
+      await Promise.all(
+        Object.entries(def.recurseInto ?? {})
+          .filter(([_fieldName, { conditions }]) => shouldRecurseIntoEntry(item.value, item.context, conditions))
+          .map(async ([fieldName, recurseDef]) => {
+            const nestedRequestContext = extractRecurseIntoContext(item, recurseDef)
+            const typeFetcher = typeFetcherCreator({
+              typeName: recurseDef.typeName,
+              context: { ...item.context, ...nestedRequestContext },
+            })
+            if (typeFetcher === undefined) {
+              log.debug('no resource fetcher defined for type %s, cannot recurse into resource', recurseDef.typeName)
+              return []
+            }
+            const recurseRes = await typeFetcher.fetch({ contextResources, typeFetcherCreator })
+            if (!recurseRes.success) {
+              handleError({ typeName: recurseDef.typeName, error: recurseRes.error })
+              return []
+            }
+            const items = typeFetcher.getItems()
+            if (recurseDef.single) {
+              if (items?.length === 1) {
+                return [fieldName, items[0]]
               }
-              const recurseRes = await typeFetcher.fetch({ contextResources, typeFetcherCreator })
-              if (!recurseRes.success) {
-                handleError({ typeName: recurseDef.typeName, error: recurseRes.error })
-                return []
-              }
-              const items = typeFetcher.getItems()
-              if (recurseDef.single) {
-                if (items?.length === 1) {
-                  return [fieldName, items[0]]
-                }
-                log.warn(
-                  `Expected a single value in recurseInto result for ${recurseDef.typeName}.${fieldName} but received: ${items?.length ?? 0}, keeping as list`,
-                )
-              }
-              return [fieldName, items]
-            }),
-        )
-      ).filter(([_fieldName, nestedEntries]) => !_.isEmpty(nestedEntries)),
+              log.warn(
+                `Expected a single value in recurseInto result for ${recurseDef.typeName}.${fieldName} but received: ${items?.length ?? 0}, keeping as list`,
+              )
+            }
+            return [fieldName, items]
+          }),
+      ),
     )

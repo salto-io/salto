@@ -90,6 +90,7 @@ export const omitInstanceValues = <Options extends FetchApiDefinitionsOptions>({
     type,
     transformFunc: omitValues(defQuery),
     strict: false,
+    allowEmpty: true,
   })
 
 export type InstanceCreationParams = {

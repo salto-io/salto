@@ -183,6 +183,7 @@ export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOp
       type: inst.getTypeSync(),
       strict: false,
       pathID: inst.elemID,
+      allowEmpty: true,
       transformFunc: extractStandaloneInstancesFromField({
         adapterName,
         defQuery,

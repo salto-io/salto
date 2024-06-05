@@ -19,6 +19,8 @@ import { GetInsightsFunc, InstanceElement, isInstanceElement, Value } from '@sal
 import { FIELD_CONFIGURATION_TYPE_NAME } from '../constants'
 import { isFieldInstance } from './custom_fields'
 
+const FIELD_CONFIGURATION = 'fieldConfiguration'
+
 const isFieldConfigurationInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME
 
@@ -45,7 +47,11 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(field =>
       isMultilineTextFieldConfigurationWithoutWikiRenderer(field.value, fieldInstancesMap[field.path.name]),
     )
-    .map(field => ({ path: field.path, message: 'Multiline text field without wiki renderer' }))
+    .map(field => ({
+      path: field.path,
+      ruleId: `${FIELD_CONFIGURATION}.multilineWithoutWikiRenderer`,
+      message: 'Multiline text field without wiki renderer',
+    }))
 
   return multilineTextFieldConfigurationsWithoutWikiRenderer
 }

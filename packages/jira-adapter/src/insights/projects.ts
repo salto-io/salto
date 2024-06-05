@@ -27,6 +27,8 @@ import { BOARD_TYPE_NAME, PROJECT_CATEGORY_TYPE, PROJECT_COMPONENT_TYPE, PROJECT
 
 const { makeArray } = collections.array
 
+const PROJECT = 'project'
+
 export const isProjectInstance = (instance: InstanceElement): boolean => instance.elemID.typeName === PROJECT_TYPE
 
 const isProjectCategoryInstance = (instance: InstanceElement): boolean =>
@@ -84,16 +86,19 @@ const getInsights: GetInsightsFunc = elements => {
 
   const unusedProjectCategories = getUnusedProjectCategories(projects, projectCategories).map(instance => ({
     path: instance.elemID,
+    ruleId: `${PROJECT}.unusedCategory`,
     message: 'Project Category is not used by any project',
   }))
 
   const unusedProjectComponents = getUnusedProjectComponents(projects, projectComponents).map(instance => ({
     path: instance.elemID,
+    ruleId: `${PROJECT}.unusedComponent`,
     message: 'Project Component is not used',
   }))
 
   const boardsPerProject = getBoardsPerProject(boards).map(([projectElemId, numOfBoards]) => ({
     path: projectElemId,
+    ruleId: `${PROJECT}.numOfBoards`,
     message: `Project has ${numOfBoards} boards`,
   }))
 

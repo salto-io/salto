@@ -31,6 +31,8 @@ import { SCREEN_TYPE_NAME } from '../constants'
 const { DefaultMap } = collections.map
 const { makeArray } = collections.array
 
+const CUSTOM_FIELD = 'customField'
+
 export const isFieldInstance = (instance: InstanceElement): boolean => instance.elemID.typeName === FIELD_TYPE_NAME
 
 const isCustomFieldInstance = (instance: InstanceElement): boolean =>
@@ -105,32 +107,46 @@ const getInsights: GetInsightsFunc = elements => {
   const customFieldContextInstances = instances.filter(isCustomFieldContextInstance)
   const screenInstances = instances.filter(isScreenInstance)
 
-  const customFieldsWithoutDescription = customFieldInstances
-    .filter(isCustomFieldWithoutDescription)
-    .map(instance => ({ path: instance.elemID, message: 'Custom Field without description' }))
+  const customFieldsWithoutDescription = customFieldInstances.filter(isCustomFieldWithoutDescription).map(instance => ({
+    path: instance.elemID,
+    ruleId: `${CUSTOM_FIELD}.noDescription`,
+    message: 'Custom Field without description',
+  }))
 
-  const customFieldsWithoutContext = customFieldInstances
-    .filter(isCustomFieldWithoutContext)
-    .map(instance => ({ path: instance.elemID, message: 'Custom Field without context' }))
+  const customFieldsWithoutContext = customFieldInstances.filter(isCustomFieldWithoutContext).map(instance => ({
+    path: instance.elemID,
+    ruleId: `${CUSTOM_FIELD}.noContext`,
+    message: 'Custom Field without context',
+  }))
 
   const customFieldOptionsNotSorted = customFieldContextInstances
     .filter(isCustomFieldContextOptionsNotSorted)
     .map(instance => ({
       path: getParent(instance).elemID,
+      ruleId: `${CUSTOM_FIELD}.unsortedOptions`,
       message: 'Custom Field Select list options are not sorted alphabetically',
     }))
 
   const customFieldContextIsGlobal = customFieldContextInstances.filter(isCustomFieldContextGlobal).map(instance => ({
     path: getParent(instance).elemID,
+    ruleId: `${CUSTOM_FIELD}.globalContext`,
     message: 'Custom Field have a global context',
   }))
 
   const duplicateNamesCustomFieldsOnSameIssueType = getDuplicateNamesCustomFieldsOnSameIssueType(
     customFieldInstances,
-  ).map(instance => ({ path: instance.elemID, message: 'Custom Field with duplicate name on the same issue type' }))
+  ).map(instance => ({
+    path: instance.elemID,
+    ruleId: `${CUSTOM_FIELD}.duplicateName`,
+    message: 'Custom Field with duplicate name on the same issue type',
+  }))
 
   const customFieldsThatNotOnAnyScreen = getCustomFieldsThatNotOnAnyScreen(customFieldInstances, screenInstances).map(
-    instance => ({ path: instance.elemID, message: 'Custom Field is not on any screen' }),
+    instance => ({
+      path: instance.elemID,
+      ruleId: `${CUSTOM_FIELD}.notOnScreen`,
+      message: 'Custom Field is not on any screen',
+    }),
   )
 
   return customFieldsWithoutDescription

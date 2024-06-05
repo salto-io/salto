@@ -111,6 +111,7 @@ const getInsights: GetInsightsFunc = elements => {
 
   const unusedScreens = getUnusedScreens(projects, screens, screenSchemes).map(instance => ({
     path: instance.elemID,
+    ruleId: `${instance.elemID.typeName}.unused`,
     message: `${instance.elemID.typeName} is not used by any project`,
   }))
 
@@ -122,6 +123,7 @@ const getInsights: GetInsightsFunc = elements => {
     issueTypeScreenSchemes,
   ).map(instance => ({
     path: instance.elemID,
+    ruleId: `${instance.elemID.typeName}.inactive`,
     message: `${instance.elemID.typeName} is inactive`,
   }))
 

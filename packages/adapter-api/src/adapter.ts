@@ -209,6 +209,7 @@ export type ReferenceInfo = {
 
 export type Insight = {
   path: ElemID
+  ruleId: string
   message: string
 }
 

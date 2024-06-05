@@ -44,6 +44,10 @@ export class SaltoE2EJestEnvironment extends NodeEnvironment {
   }
 
   handleTestEvent(event: Event): void {
+    if (event.name === 'teardown') {
+      this.runningTasksPrinter.clear()
+      return
+    }
     const { id, type, status } = extractStatus(event) ?? {}
 
     if (!id) return

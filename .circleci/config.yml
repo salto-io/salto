@@ -30,8 +30,11 @@ jobs:
       - run:
           name: Compile and Run Find Changed Packages Script
           command: |
+            pr=$(echo https://api.github.com/repos/${CIRCLE_PULL_REQUEST:19} | sed "s/\/pull\//\/pulls\//")
+            base=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" $pr | jq '.base.ref')
+            echo $base
             pushd .circleci/scripts
-            node find_changed_packages.js
+            node find_changed_packages.js $base
             node update_config_template.js
       - persist_to_workspace:
           root: .

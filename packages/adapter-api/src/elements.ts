@@ -37,7 +37,7 @@ export const createRefToElmWithValue = <T extends TypeElement>(element: T): Type
   if (isPrimitiveType(element) && element.elemID.getFullName() in BuiltinTypesRefByFullName) {
     // Technically, all TS knows here is that the type of `element` is `T & PrimitiveType`,
     // but that doesn't necessarily mean that `T === PrimitiveType`.
-    // We know this is the case though because there are (and probably never will be)
+    // We know this is the case though because there aren't (and probably never will be)
     // any types which extend `PrimitiveType`.
     return BuiltinTypesRefByFullName[element.elemID.getFullName()] as TypeReference<T>
   }

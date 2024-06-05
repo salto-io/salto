@@ -83,13 +83,11 @@ const getInsights: GetInsightsFunc = elements => {
       message: 'Automation referenece deleted field',
     }))
 
-  const automationsSendEmailOutsideOrg = automationInstances
-    .filter(isAutomationSendEmailOutsideOrg)
-    .map(instance => ({
-      path: instance.elemID,
-      ruleId: `${AUTOMATION}.emailOutsideOrg`,
-      message: 'Automation send email to users outside the organization',
-    }))
+  const automationsSendEmailOutsideOrg = automationInstances.filter(isAutomationSendEmailOutsideOrg).map(instance => ({
+    path: instance.elemID,
+    ruleId: `${AUTOMATION}.emailOutsideOrg`,
+    message: 'Automation send email to users outside the organization',
+  }))
 
   return automationsWithoutProjects.concat(automationsReferenceDeletedFields).concat(automationsSendEmailOutsideOrg)
 }

@@ -114,6 +114,7 @@ export type FetchParams = {
   addAlias?: boolean
   addBundles?: boolean
   addImportantValues?: boolean
+  addLockedCustomRecordTypes?: boolean
   resolveAccountSpecificValues?: boolean
   skipResolvingAccountSpecificValuesToTypes?: string[]
 } & LockedElementsConfig['fetch']
@@ -128,6 +129,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addAlias: 'addAlias',
   addBundles: 'addBundles',
   addImportantValues: 'addImportantValues',
+  addLockedCustomRecordTypes: 'addLockedCustomRecordTypes',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
   skipResolvingAccountSpecificValuesToTypes: 'skipResolvingAccountSpecificValuesToTypes',
 }
@@ -574,6 +576,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     addBundles: { refType: BuiltinTypes.BOOLEAN },
     addImportantValues: { refType: BuiltinTypes.BOOLEAN },
+    addLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
     skipResolvingAccountSpecificValuesToTypes: { refType: new ListType(BuiltinTypes.STRING) },
   },

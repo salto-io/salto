@@ -74,6 +74,9 @@ export const getElementServiceIdRecords = async (
   element: Element,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<ServiceIdRecords> => {
+  if (element.annotations[CORE_ANNOTATIONS.HIDDEN]) {
+    return {}
+  }
   if (isInstanceElement(element)) {
     if (isStandardType(element.refType)) {
       return getServiceIdsToElemIds(element)

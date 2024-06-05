@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 import { elements, definitions } from '@salto-io/adapter-components'
-import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
-import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
-import { OKTA } from './constants'
+import { BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, createRestriction } from '@salto-io/adapter-api'
+import { OKTA, USER_TYPE_NAME } from './constants'
 
 type GetUsersStrategy = 'searchQuery' | 'allUsers'
 
@@ -74,6 +73,8 @@ const changeValidatorNames = [
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]
 
 // default config values
+export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
+export const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
 const DEFAULT_INCLUDE_PROFILE_MAPPING_PROPERTIES = false
 const DEFAULT_APP_URLS_VALIDATOR_VALUE = false
 
@@ -83,6 +84,7 @@ export const DEFAULT_CONFIG: OktaUserConfig = {
   },
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
+    exclude: [{ type: USER_TYPE_NAME }],
     hideTypes: true,
     convertUsersIds: DEFAULT_CONVERT_USERS_IDS_VALUE,
     enableMissingReferences: true,
@@ -123,3 +125,22 @@ export const configType = definitions.createUserConfigType({
   },
   omitElemID: false,
 })
+
+export const getExcludeUserConfigSuggestion = (
+  userConfig: Readonly<InstanceElement> | undefined,
+): definitions.ConfigChangeSuggestion | undefined => {
+  const typesToExclude = userConfig?.value?.fetch?.exclude
+  const typesToInclude = userConfig?.value?.fetch?.include
+  if (Array.isArray(typesToExclude) && Array.isArray(typesToInclude)) {
+    const isUserExcluded = typesToExclude.find(fetchEnty => fetchEnty?.type === USER_TYPE_NAME)
+    const isUserIncluded = typesToInclude.find(fetchEnty => fetchEnty?.type === USER_TYPE_NAME)
+    if (!isUserExcluded && !isUserIncluded) {
+      return {
+        type: 'typeToExclude',
+        value: USER_TYPE_NAME,
+        reason: 'User type is excluded by default. To include users, explicitly add "User" type into the include list.',
+      }
+    }
+  }
+  return undefined
+}

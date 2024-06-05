@@ -85,7 +85,7 @@ describe('user filter', () => {
         ]
       })
       filter = userFilter(
-        getFilterParams({ paginator: mockPaginator, usersPromise: getUsers(mockPaginator) }),
+        getFilterParams({ paginator: mockPaginator, usersPromise: getUsers(mockPaginator), config: DEFAULT_CONFIG }),
       ) as FilterType
       const elements = [
         groupRuleType,
@@ -141,6 +141,7 @@ describe('user filter', () => {
         getFilterParams({
           paginator: mockPaginator,
           usersPromise: getUsers(mockPaginator),
+          config: DEFAULT_CONFIG,
         }),
       ) as FilterType
       const elements = [accessRuleInstance.clone(), accessPolicyRuleType.clone()]
@@ -203,7 +204,7 @@ describe('user filter', () => {
           { id: '555', profile: { login: 'd@a.com' } },
         ]
       })
-      filter = userFilter(getFilterParams({ paginator: mockPaginator })) as FilterType
+      filter = userFilter(getFilterParams({ paginator: mockPaginator, config: DEFAULT_CONFIG })) as FilterType
       const changes = afterFetchInstances.map(instance => toChange({ after: instance.clone() }))
       await filter.preDeploy(changes)
       const changedInstances = changes.map(getChangeData)
@@ -235,7 +236,7 @@ describe('user filter', () => {
       })
       const before = new InstanceElement('modified', groupMembersType, { members: ['a@a.com', 'b@a.com'] })
       const after = new InstanceElement('modified', groupMembersType, { members: ['b@a.com', 'c@a.com'] })
-      filter = userFilter(getFilterParams({ paginator: mockPaginator })) as FilterType
+      filter = userFilter(getFilterParams({ paginator: mockPaginator, config: DEFAULT_CONFIG })) as FilterType
       const change = toChange({ before, after }) as ModificationChange<InstanceElement>
       await filter.preDeploy([change])
       const beforeMembers = change.data.before.value.members
@@ -254,7 +255,7 @@ describe('user filter', () => {
           { id: '555', profile: { login: 'd@a.com' } },
         ]
       })
-      filter = userFilter(getFilterParams({ paginator: mockPaginator })) as FilterType
+      filter = userFilter(getFilterParams({ paginator: mockPaginator, config: DEFAULT_CONFIG })) as FilterType
       const changes = afterFetchInstances.map(instance => toChange({ after: instance.clone() }))
       // preDeploy sets the mappings
       await filter.preDeploy(changes)

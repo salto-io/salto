@@ -47,7 +47,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { CLIENT_CONFIG, FETCH_CONFIG, OLD_API_DEFINITIONS_CONFIG } from './config'
-import { configType, OktaUserConfig } from './user_config'
+import { configType, getExcludeUserConfigSuggestion, OktaUserConfig, OktaUserFetchConfig } from './user_config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -88,9 +88,10 @@ import {
   OKTA,
   POLICY_PRIORITY_TYPE_NAMES,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
+  USER_TYPE_NAME,
 } from './constants'
-import { getLookUpName } from './reference_mapping'
-import { User, getUsers, getUsersFromInstances } from './user_utils'
+import { getLookUpNameCreator } from './reference_mapping'
+import { User, getUsers, getUsersFromInstances, shouldConvertUserIds } from './user_utils'
 import { isClassicEngineOrg } from './utils'
 import { createFixElementFunctions } from './fix_elements'
 import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch'
@@ -162,6 +163,25 @@ export interface OktaAdapterParams {
   adminClient?: OktaClient
 }
 
+/**
+ * Temporary adjusment to support migration of User type into the exclude list
+ */
+const createElementQueryWithUserType = (
+  fetchConfig: OktaUserFetchConfig,
+  criteria: Record<string, elementUtils.query.QueryCriterion>,
+): elementUtils.query.ElementQuery => {
+  const isUserExcluded = fetchConfig.exclude.find(fetchEnrty => fetchEnrty.type === USER_TYPE_NAME)
+  const isUserIncluded = fetchConfig.include.find(fetchEntry => fetchEntry.type === USER_TYPE_NAME)
+  const updatedConfig =
+    !isUserExcluded && !isUserIncluded
+      ? {
+          ...fetchConfig,
+          exclude: fetchConfig.exclude.concat({ type: USER_TYPE_NAME }),
+        }
+      : fetchConfig
+  return elementUtils.query.createElementQuery(updatedConfig, criteria)
+}
+
 export default class OktaAdapter implements AdapterOperations {
   private createFiltersRunner: (usersPromise?: Promise<User[]>) => Required<Filter>
   private client: OktaClient
@@ -215,7 +235,7 @@ export default class OktaAdapter implements AdapterOperations {
       }),
     }
 
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
+    this.fetchQuery = createElementQueryWithUserType(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
 
@@ -238,7 +258,7 @@ export default class OktaAdapter implements AdapterOperations {
         objects.concatObjects,
       )
     this.fixElementsFunc = combineElementFixers(
-      createFixElementFunctions({ client, config: this.userConfig, elementsSource }),
+      createFixElementFunctions({ client, config: this.userConfig, elementsSource, fetchQuery: this.fetchQuery }),
     )
   }
 
@@ -316,15 +336,14 @@ export default class OktaAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
     progressReporter.reportProgress({ message: 'Fetching elements' })
-    const { convertUsersIds, getUsersStrategy } = this.userConfig[FETCH_CONFIG]
     const classicOrgConfigSuggestion = await this.handleClassicEngineOrg()
     const { errors: oauthError, configChanges: oauthConfigChange } = this.handleOAuthLogin()
     const { elements, errors, configChanges: getElementsConfigChanges } = await this.getElements()
 
-    const usersPromise = convertUsersIds
+    const usersPromise = shouldConvertUserIds(this.fetchQuery, this.userConfig)
       ? getUsers(
           this.paginator,
-          getUsersStrategy === 'searchQuery'
+          this.userConfig.fetch.getUsersStrategy === 'searchQuery'
             ? { userIds: getUsersFromInstances(elements.filter(isInstanceElement)), property: 'id' }
             : undefined,
         )
@@ -337,6 +356,7 @@ export default class OktaAdapter implements AdapterOperations {
     const configChanges = (getElementsConfigChanges ?? [])
       .concat(classicOrgConfigSuggestion ?? [])
       .concat(oauthConfigChange ?? [])
+      .concat(getExcludeUserConfigSuggestion(this.configInstance) ?? [])
     const updatedConfig =
       !_.isEmpty(configChanges) && this.configInstance
         ? definitionsUtils.getUpdatedConfigFromConfigChanges({
@@ -362,6 +382,11 @@ export default class OktaAdapter implements AdapterOperations {
         .filter(isInstanceChange)
         .map(change => applyFunctionToChangeData<Change<InstanceElement>>(change, instance => instance.clone())),
     )
+
+    const getLookUpName = getLookUpNameCreator({
+      enableMissingReferences: this.userConfig.fetch.enableMissingReferences,
+      isUserTypeIncluded: this.fetchQuery.isTypeMatch(USER_TYPE_NAME),
+    })
 
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
@@ -397,6 +422,7 @@ export default class OktaAdapter implements AdapterOperations {
       changeValidator: changeValidator({
         client: this.client,
         userConfig: this.userConfig,
+        fetchQuery: this.fetchQuery,
         oldApiDefsConfig: OLD_API_DEFINITIONS_CONFIG,
       }),
       dependencyChanger,

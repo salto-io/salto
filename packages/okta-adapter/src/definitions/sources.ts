@@ -34,5 +34,6 @@ export const OPEN_API_DEFINITIONS: definitions.sources.OpenAPIDefinition<ClientO
     // Automation type is not documented in swagger
     Automation: { originalTypeName: 'AccessPolicy', rename: false },
     AutomationRule: { originalTypeName: 'PolicyRule', rename: false },
+    UserTypeRef: { originalTypeName: 'UserType', rename: false },
   },
 }

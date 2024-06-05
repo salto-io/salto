@@ -22,6 +22,8 @@ import { AUTOMATION_TYPE } from '../constants'
 
 const { makeArray } = collections.array
 
+const AUTOMATION = 'automation'
+
 const isAutomationInstance = (instance: InstanceElement): boolean => instance.elemID.typeName === AUTOMATION_TYPE
 
 const isAutomationWithoutProjects = (instance: InstanceElement): boolean =>
@@ -67,17 +69,27 @@ const isAutomationSendEmailOutsideOrg = (instance: InstanceElement): boolean =>
 const getInsights: GetInsightsFunc = elements => {
   const automationInstances = elements.filter(isInstanceElement).filter(isAutomationInstance)
 
-  const automationsWithoutProjects = automationInstances
-    .filter(isAutomationWithoutProjects)
-    .map(instance => ({ path: instance.elemID, message: 'Automation without projects' }))
+  const automationsWithoutProjects = automationInstances.filter(isAutomationWithoutProjects).map(instance => ({
+    path: instance.elemID,
+    ruleId: `${AUTOMATION}.noProjects`,
+    message: 'Automation without projects',
+  }))
 
   const automationsReferenceDeletedFields = automationInstances
     .filter(isAutomationReferenceDeletedFields)
-    .map(instance => ({ path: instance.elemID, message: 'Automation referenece deleted field' }))
+    .map(instance => ({
+      path: instance.elemID,
+      ruleId: `${AUTOMATION}.referenceDeletedField`,
+      message: 'Automation referenece deleted field',
+    }))
 
   const automationsSendEmailOutsideOrg = automationInstances
     .filter(isAutomationSendEmailOutsideOrg)
-    .map(instance => ({ path: instance.elemID, message: 'Automation send email to users outside the organization' }))
+    .map(instance => ({
+      path: instance.elemID,
+      ruleId: `${AUTOMATION}.emailOutsideOrg`,
+      message: 'Automation send email to users outside the organization',
+    }))
 
   return automationsWithoutProjects.concat(automationsReferenceDeletedFields).concat(automationsSendEmailOutsideOrg)
 }

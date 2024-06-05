@@ -540,11 +540,7 @@ export const getInsights = async (workspace: Workspace): Promise<Insight[]> => {
       return []
     }
     if (account !== adapter) {
-      log.warn('Cannot get insights when account name is different from the adapter name', {
-        account,
-        adapter,
-        workspaceId: workspace.uid,
-      })
+      log.warn('Cannot get insights when account name (%s) is different from the adapter name (%s)', account, adapter)
       return []
     }
 

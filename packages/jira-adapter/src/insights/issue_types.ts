@@ -23,6 +23,8 @@ import { isProjectInstance } from './projects'
 
 const { makeArray } = collections.array
 
+const ISSUE_TYPE = 'issueType'
+
 const isIssueTypeInstance = (instance: InstanceElement): boolean => instance.elemID.typeName === ISSUE_TYPE_NAME
 
 const isIssueTypeSchemeInstance = (instance: InstanceElement): boolean =>
@@ -68,22 +70,27 @@ const getInsights: GetInsightsFunc = elements => {
   const issueTypeSchemes = instances.filter(isIssueTypeSchemeInstance)
   const projects = instances.filter(isProjectInstance)
 
-  const issueTypesWithoutAvatar = issueTypes
-    .filter(isIssueTypeWithoutAvatar)
-    .map(instance => ({ path: instance.elemID, message: 'Issue Type without avatar' }))
+  const issueTypesWithoutAvatar = issueTypes.filter(isIssueTypeWithoutAvatar).map(instance => ({
+    path: instance.elemID,
+    ruleId: `${ISSUE_TYPE}.noAvater`,
+    message: 'Issue Type without avatar',
+  }))
 
   const unusedIssueTypes = getUnusedIssueTypes(issueTypes, issueTypeSchemes).map(instance => ({
     path: instance.elemID,
+    ruleId: `${ISSUE_TYPE}.unused`,
     message: 'Issue Type not used by any issue type scheme',
   }))
 
   const duplicateNamesIssueTypes = getDuplicateNamesIssueTypes(issueTypes).map(instance => ({
     path: instance.elemID,
+    ruleId: `${ISSUE_TYPE}.duplicateName`,
     message: 'Issue Type with duplicate name',
   }))
 
   const unusedIssueTypeSchemes = getInactiveIssueTypeSchemes(issueTypeSchemes, projects).map(instance => ({
     path: instance.elemID,
+    ruleId: `${ISSUE_TYPE}.inactiveScheme`,
     message: 'Issue Type Scheme is inactive',
   }))
 

@@ -16,7 +16,7 @@
 
 import { isInstanceElement, isReferenceExpression, GetInsightsFunc } from '@salto-io/adapter-api'
 import { isWorkflowV2Instance, WorkflowV2Transition } from '../filters/workflowV2/types'
-import { isReferenceToInstance, isStatusCategoryDone } from './workflow_v1_transitions'
+import { isReferenceToInstance, isStatusCategoryDone, WORKFLOW_TRANSITION } from './workflow_v1_transitions'
 
 const hasResolutionPostFunc = (transition: WorkflowV2Transition, type: 'set' | 'clear'): boolean =>
   transition.actions?.find(
@@ -64,6 +64,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionToStatusCategoryDoneWithoutSettingResolution(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.toStatusDoneWithoutResolution`,
       message: 'Transition to a status category DONE without setting a resolution',
     }))
 
@@ -71,6 +72,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionOutOfStatusCategoryDoneWithoutClearingResolution(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.fromStatusDoneWithoutClearResolution`,
       message: 'Transition out of a status category DONE without clearing the resolution',
     }))
 
@@ -78,6 +80,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionNotSettingResolution(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.noResolution`,
       message: 'Transition do not set a resolution',
     }))
 
@@ -85,6 +88,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionWithoutOpsbarSequenceProperty(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.noOpsbaseSequence`,
       message: 'Transition do not have an opsbar sequence button set',
     }))
 
@@ -92,6 +96,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionFromStatusToItself(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.statusLoop`,
       message: 'Transition from a status to itself',
     }))
 

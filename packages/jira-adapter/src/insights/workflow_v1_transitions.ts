@@ -18,6 +18,8 @@ import _ from 'lodash'
 import { isInstanceElement, isReferenceExpression, InstanceElement, GetInsightsFunc } from '@salto-io/adapter-api'
 import { isWorkflowV1Instance, Transition } from '../filters/workflow/types'
 
+export const WORKFLOW_TRANSITION = 'workflowTransition'
+
 export const isReferenceToInstance = (ref: unknown): ref is { value: InstanceElement } =>
   isReferenceExpression(ref) && isInstanceElement(ref.value)
 
@@ -72,6 +74,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionToStatusCategoryDoneWithoutSettingResolution(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.toStatusDoneWithoutResolution`,
       message: 'Transition to a status category DONE without setting a resolution',
     }))
 
@@ -79,6 +82,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionOutOfStatusCategoryDoneWithoutClearingResolution(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.fromStatusDoneWithoutClearResolution`,
       message: 'Transition out of a status category DONE without clearing the resolution',
     }))
 
@@ -86,6 +90,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionNotSettingResolution(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.noResolution`,
       message: 'Transition do not set a resolution',
     }))
 
@@ -93,6 +98,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionWithoutOpsbarSequenceProperty(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.noOpsbaseSequence`,
       message: 'Transition do not have an opsbar sequence button set',
     }))
 
@@ -100,6 +106,7 @@ const getInsights: GetInsightsFunc = elements => {
     .filter(transition => isTransitionFromStatusToItself(transition.value))
     .map(transition => ({
       path: transition.path,
+      ruleId: `${WORKFLOW_TRANSITION}.statusLoop`,
       message: 'Transition from a status to itself',
     }))
 

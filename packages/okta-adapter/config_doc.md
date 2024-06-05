@@ -73,14 +73,14 @@ okta {
 
 ## Fetch configuration options
 
-| Name                                  | Default when undefined | Description                                                         |
-| --------------------------------------| ---------------------- | ------------------------------------------------------------------- |
-| [include](#fetch-entry-options)       | [{ type = ".*" }]      | List of entries to determine what instances to include in the fetch |
-| [exclude](#fetch-entry-options)       | []                     | List of entries to determine what instances to exclude in the fetch |
-| [elemID](#element-id-customization)   | {}                     | Allows customizing element IDs for specific types                   |
-| convertUsersIds                       | true                   | When enabled, user IDs will be replaced with user login names       |
-| includeGroupMemberships               | false                  | Include group assignments                                           |
-| includeProfileMappingProperties       | true                   | Include profile mapping properties for profile mapping instances    |
+| Name                                | Default when undefined | Description                                                         |
+| ----------------------------------- | ---------------------- | ------------------------------------------------------------------- |
+| [include](#fetch-entry-options)     | [{ type = ".*" }]      | List of entries to determine what instances to include in the fetch |
+| [exclude](#fetch-entry-options)     | []                     | List of entries to determine what instances to exclude in the fetch |
+| [elemID](#element-id-customization) | {}                     | Allows customizing element IDs for specific types                   |
+| convertUsersIds                     | true                   | When enabled, user IDs will be replaced with user login names       |
+| includeGroupMemberships             | false                  | Include group assignments                                           |
+| includeProfileMappingProperties     | true                   | Include profile mapping properties for profile mapping instances    |
 
 ## Fetch entry options
 
@@ -100,22 +100,22 @@ okta {
 ## Element ID parts definitions
 
 | Name        | Default when undefined | Description                                                                         |
-| ----------- | ---------------------- | ----------------------------------------------------------------------------------  | 
+| ----------- | ---------------------- | ----------------------------------------------------------------------------------- |
 | fieldName   | system's default       | The instance's field name value will be used to create the element ID               |
 | isReference | false                  | Set to true if the fieldName is also a Salto reference                              |
 | mapping     | undefined              | Allows applying a specific function to fieldName. Options: 'uppercase', 'lowercase' |
 
 ## Element ID customization
 
-| Name                                  | Default when undefined | Description                                                                       |
-| ------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------|
-| [parts](#element-id-parts-definitions)   | system's default       | All parts definitions will be concatenated to create the element ID               |
-| extendsParent                         | false                  | Whether to concat the parent element ID with the current element ID               |
-| delimiter                             | "_"                    | The delimiter to use to concat Elem ID "parts"                                    |
-| extendSystemPartsDefinition           | false                  | Set to true to combine system's parts definitions with user part definitions      |
+| Name                                   | Default when undefined | Description                                                                  |
+| -------------------------------------- | ---------------------- | ---------------------------------------------------------------------------- |
+| [parts](#element-id-parts-definitions) | system's default       | All parts definitions will be concatenated to create the element ID          |
+| extendsParent                          | false                  | Whether to concat the parent element ID with the current element ID          |
+| delimiter                              | "\_"                   | The delimiter to use to concat Elem ID "parts"                               |
+| extendSystemPartsDefinition            | false                  | Set to true to combine system's parts definitions with user part definitions |
 
 ### Deploy configuration options
 
-| Name               | Default when undefined | Description                                                     |
-| ------------------ | ---------------------- | --------------------------------------------------------------- |
-| omitMissingUsers   | false                  | Configure if to omit users during deploy on types that allow it |
+| Name             | Default when undefined | Description                                                     |
+| ---------------- | ---------------------- | --------------------------------------------------------------- |
+| omitMissingUsers | false                  | Configure if to omit users during deploy on types that allow it |

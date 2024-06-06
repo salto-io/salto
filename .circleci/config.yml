@@ -396,6 +396,7 @@ workflows:
                 - zendesk-adapter
                 - zuora-billing-adapter
                 - google-workspace-adapter
+                - confluence-adapter
               should_install_java: 
                 - false
 

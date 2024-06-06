@@ -2,10 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": ".",
-    "declaration": true
+    "baseUrl": "."
   },
-  "include": ["src/**/*", "test/**/*", "index.ts"],
+  "include": ["src/**/*", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-utils" },

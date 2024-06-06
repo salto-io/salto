@@ -325,7 +325,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
       InstanceElement: v =>
         new InstanceElement(
           v.elemID.nameParts[0],
-          reviveRefTypeOfElement(v),
+          reviveRefTypeOfElement(v) as TypeReference<ObjectType>,
           restoreClasses(v.value),
           v.path,
           restoreClasses(v.annotations),

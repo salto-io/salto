@@ -40,7 +40,14 @@ import { v4 as uuidv4 } from 'uuid'
 import AsyncLock from 'async-lock'
 import wu from 'wu'
 import shellQuote from 'shell-quote'
-import { CONFIG_FEATURES, APPLICATION_ID, FILE_CABINET_PATH_SEPARATOR } from '../constants'
+import {
+  CONFIG_FEATURES,
+  APPLICATION_ID,
+  FILE_CABINET_PATH_SEPARATOR,
+  CUSTOM_SEGMENT,
+  CUSTOM_RECORD_TYPE,
+} from '../constants'
+import { addCustomRecordTypePrefix } from '../types'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
   DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
@@ -461,7 +468,14 @@ export default class SdfClient {
 
     const elements = importResult.flatMap(res => res.elements)
     const failedToFetchAllAtOnce = importResult.some(res => res.failedToFetchAllAtOnce)
-    const instancesIds = importResult.flatMap(res => res.instancesIds)
+    const instancesIds = importResult
+      .flatMap(res => res.instancesIds)
+      .flatMap(instanceId =>
+        // custom segments are always connected to a matching custom record type, that doesn't return in the object:list command
+        instanceId.type === CUSTOM_SEGMENT
+          ? [instanceId, { type: CUSTOM_RECORD_TYPE, instanceId: addCustomRecordTypePrefix(instanceId.instanceId) }]
+          : instanceId,
+      )
 
     return { elements, instancesIds, failedToFetchAllAtOnce, failedTypes }
   }

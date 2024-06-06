@@ -103,7 +103,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         endpoint: {
           path: '/wiki/api/v2/spaces',
           queryArgs: {
-            expand: 'metadata,description,description.plain,metadata.labels,description.view,homepage',
+            'description-format': 'plain',
           },
         },
         transformation: {

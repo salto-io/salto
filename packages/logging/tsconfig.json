@@ -2,9 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": ".",
-    "resolveJsonModule": true
+    "baseUrl": "."
   },
-  "include": ["src/**/*", "src/**/*.json", "test/**/*", "index.ts"],
+  "include": ["src/**/*", "src/**/*.json", "index.ts"],
   "references": [{ "path": "../lowerdash" }]
 }

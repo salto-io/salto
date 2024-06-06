@@ -213,7 +213,7 @@ describe('fields_structure', () => {
         someValue: {
           id: '1',
           value: 'someValue',
-          position: 0,
+          position: 1,
           cascadingOptions: {
             someValue3: {
               id: '3',
@@ -230,7 +230,7 @@ describe('fields_structure', () => {
         someValue2: {
           id: '2',
           value: 'someValue2',
-          position: 1,
+          position: 2,
           cascadingOptions: {
             someValue5: {
               id: '5',
@@ -331,7 +331,7 @@ describe('fields_structure', () => {
         someValue: {
           id: '1',
           value: 'someValue',
-          position: 0,
+          position: 1,
           cascadingOptions: {
             someValue3: {
               id: '3',
@@ -343,7 +343,7 @@ describe('fields_structure', () => {
         someValue2: {
           id: '2',
           value: 'someValue2',
-          position: 1,
+          position: 2,
           cascadingOptions: {
             someValue5: {
               id: '5',

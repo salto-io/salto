@@ -359,11 +359,30 @@ export type FieldDefinition = {
   annotations?: Values
 }
 
+const validateMetaType = (metaType?: ObjectType): ObjectType | undefined => {
+  if (metaType === undefined) {
+    return undefined
+  }
+
+  if (!isObjectType(metaType)) {
+    log.error(`Got an invalid meta type which is not an object type with ID ${(metaType as Element).elemID}.`)
+    return undefined
+  }
+
+  if (isPlaceholderObjectType(metaType)) {
+    log.warn(`Meta type with ID ${metaType.elemID.getFullName()} not found in elements source.`)
+    return undefined
+  }
+
+  return metaType
+}
+
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
 export class ObjectType extends Element {
   fields: FieldMap
+  metaType: TypeReference<ObjectType> | undefined
   isSettings: boolean
 
   constructor({
@@ -371,6 +390,7 @@ export class ObjectType extends Element {
     fields = {},
     annotationRefsOrTypes = {},
     annotations = {},
+    metaType = undefined,
     isSettings = false,
     path = undefined,
   }: {
@@ -378,6 +398,7 @@ export class ObjectType extends Element {
     fields?: Record<string, FieldDefinition>
     annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
+    metaType?: TypeOrRef<ObjectType>
     isSettings?: boolean
     path?: ReadonlyArray<string>
   }) {
@@ -386,6 +407,9 @@ export class ObjectType extends Element {
       fields,
       (fieldDef, name) => new Field(this, name, getRefType(fieldDef.refType), fieldDef.annotations),
     )
+    if (metaType !== undefined) {
+      this.metaType = getRefType(metaType)
+    }
     this.isSettings = isSettings
   }
 
@@ -409,6 +433,14 @@ export class ObjectType extends Element {
     )
   }
 
+  async getMetaType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType | undefined> {
+    return validateMetaType(await this.metaType?.getResolvedValue(elementsSource))
+  }
+
+  getMetaTypeSync(): ObjectType | undefined {
+    return validateMetaType(this.metaType?.getResolvedValueSync())
+  }
+
   /**
    * Return an independent copy of this instance.
    * @return {ObjectType} the cloned instance
@@ -421,6 +453,7 @@ export class ObjectType extends Element {
       fields: this.cloneFields(),
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
+      metaType: this.metaType?.clone(),
       isSettings,
       path: this.path !== undefined ? [...this.path] : undefined,
     })
@@ -435,7 +468,10 @@ export class ObjectType extends Element {
   }
 }
 
-export class PlaceholderObjectType extends ObjectType {}
+export class PlaceholderObjectType extends ObjectType {
+  // This is required to allow typescript to reason about ObjectTypes which are not PlaceholderObjectTypes.
+  isPlaceholder = true
+}
 
 const objectTypeOrPlaceholder = (type: TypeElement | undefined, elemID: ElemID): ObjectType => {
   // This can happen when the user has an instance like
@@ -457,6 +493,7 @@ const validateType = (type: TypeElement | undefined, elemID: ElemID): TypeElemen
   }
   return type
 }
+
 export class InstanceElement extends Element {
   public refType: TypeReference<ObjectType>
   constructor(

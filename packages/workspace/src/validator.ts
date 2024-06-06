@@ -117,6 +117,46 @@ const lengthLimiterStringify = (value: Value, length = MAX_VALUE_LENGTH): string
   return safeValue
 }
 
+export class InvalidMetaTypeTypeValidationError extends ValidationError {
+  readonly value: Value
+
+  constructor({ elemID, value }: { elemID: ElemID; value: Value }) {
+    const safeValue = lengthLimiterStringify(value)
+    super({
+      elemID,
+      error: `Value ${safeValue} is not a valid meta type, most be an ObjectType.`,
+      severity: 'Warning',
+    })
+    this.value = value
+  }
+}
+
+export class InvalidMetaTypeMetaTypeValidationError extends ValidationError {
+  readonly metaType: ObjectType
+
+  constructor({ elemID, metaType }: { elemID: ElemID; metaType: ObjectType }) {
+    super({
+      elemID,
+      error: `Meta type ${metaType.elemID.getFullName()} has a meta type defined (${metaType.metaType?.elemID?.getFullName() ?? '<missing>'}), must be undefined.`,
+      severity: 'Warning',
+    })
+    this.metaType = metaType
+  }
+}
+
+export class InvalidMetaTypeFieldsValidationError extends ValidationError {
+  readonly metaType: ObjectType
+
+  constructor({ elemID, metaType }: { elemID: ElemID; metaType: ObjectType }) {
+    super({
+      elemID,
+      error: `Meta type ${metaType.elemID.getFullName()} has fields defined, must be empty.`,
+      severity: 'Warning',
+    })
+    this.metaType = metaType
+  }
+}
+
 export class InvalidValueValidationError extends ValidationError {
   readonly value: string
   readonly fieldName: string
@@ -675,7 +715,15 @@ const validateFieldValueAndName = ({
 
 const syncGetElementAnnotationTypes = (element: TypeElement | Field): Record<string, TypeElement> => {
   // We assume all elements are resolved, so if we access a field's refType, it will be there
-  const type = isField(element) ? element.refType.type : element
+  let type: TypeElement | undefined
+  if (isField(element)) {
+    type = element.refType.type
+  } else if (isObjectType(element)) {
+    type = element.metaType?.type ?? element
+  } else {
+    type = element
+  }
+
   return {
     ...CoreAnnotationTypes,
     ...InstanceAnnotationTypes,
@@ -695,14 +743,41 @@ const validateField = (field: Field): ValidationError[] => {
     .flatMap(k => validateValue(field.elemID.createNestedID(k), field.annotations[k], annotationTypes[k]))
 }
 
+const validateMetaType = (elemID: ElemID, metaType?: ObjectType): ValidationError[] => {
+  if (metaType === undefined) {
+    // Should never happen because we resolve the element before calling this
+    log.error(`Found unresolved meta type for ${elemID.getFullName()}.`)
+    return []
+  }
+
+  if (!isObjectType(metaType)) {
+    return [new InvalidMetaTypeTypeValidationError({ elemID, value: metaType })]
+  }
+
+  const errors = []
+  if (metaType.metaType !== undefined) {
+    errors.push(new InvalidMetaTypeMetaTypeValidationError({ elemID, metaType }))
+  }
+
+  if (Object.keys(metaType.fields).length > 0) {
+    errors.push(new InvalidMetaTypeFieldsValidationError({ elemID, metaType }))
+  }
+
+  return errors
+}
+
 const validateType = (element: TypeElement): ValidationError[] => {
   const annotationTypes = syncGetElementAnnotationTypes(element)
   const errors = Object.keys(element.annotations)
     .filter(k => annotationTypes[k] !== undefined)
     .flatMap(k => validateValue(element.elemID.createNestedID('attr', k), element.annotations[k], annotationTypes[k]))
   if (isObjectType(element)) {
+    let metaTypeErrors: ValidationError[] = []
+    if (element.metaType !== undefined) {
+      metaTypeErrors = validateMetaType(element.elemID, element.metaType.type)
+    }
     const fieldErrors = Object.values(element.fields).flatMap(elem => validateField(elem))
-    return [...errors, ...fieldErrors]
+    return [...errors, ...metaTypeErrors, ...fieldErrors]
   }
   return errors
 }

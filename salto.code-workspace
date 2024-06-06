@@ -165,6 +165,7 @@
       "datasource",
       "DATETIME",
       "ducktype",
+      "elems",
       "encryptedstring",
       "ENCRYPTEDTEXT",
       "ESOCKETTIMEDOUT",

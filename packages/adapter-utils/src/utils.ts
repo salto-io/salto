@@ -375,12 +375,21 @@ export const elementAnnotationTypes = async (
   if (isInstanceElement(element)) {
     return InstanceAnnotationTypes
   }
+
+  let typeAnnotationTypes: TypeMap
+  if (isField(element)) {
+    typeAnnotationTypes = await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
+  } else if (isObjectType(element)) {
+    typeAnnotationTypes = await ((await element.getMetaType(elementsSource))?.getAnnotationTypes(elementsSource) ??
+      element.getAnnotationTypes(elementsSource))
+  } else {
+    typeAnnotationTypes = await element.getAnnotationTypes(elementsSource)
+  }
+
   return {
     ...InstanceAnnotationTypes,
     ...CoreAnnotationTypes,
-    ...(isField(element)
-      ? await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
-      : await element.getAnnotationTypes(elementsSource)),
+    ...typeAnnotationTypes,
   }
 }
 
@@ -691,6 +700,7 @@ export const flattenElementStr = (element: Element): Element => {
         .mapKeys((_v, k) => flatStr(k))
         .mapValues(flattenField)
         .value(),
+      metaType: obj.metaType,
       isSettings: obj.isSettings,
       path: obj.path?.map(flatStr),
     })
@@ -963,7 +973,10 @@ export const hasValidParent = (element: Element): boolean => {
 // current Reference.getResolvedValue implementation
 // That's why we need this func and do not use getResolvedValue
 // If we decide switch the getResolvedValue behavior in the future we should lose this
-const getResolvedRef = async (ref: TypeReference, elementsSource: ReadOnlyElementsSource): Promise<TypeReference> => {
+const getResolvedRef = async <T extends TypeElement>(
+  ref: TypeReference<T>,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<TypeReference<T | PlaceholderObjectType>> => {
   if (ref.type !== undefined) {
     return ref
   }
@@ -991,6 +1004,9 @@ export const resolveTypeShallow = async (element: Element, elementsSource: ReadO
   }
   if (isObjectType(element)) {
     await awu(Object.values(element.fields)).forEach(async field => resolveTypeShallow(field, elementsSource))
+    if (element.metaType !== undefined) {
+      element.metaType = await getResolvedRef(element.metaType, elementsSource)
+    }
   }
 }
 

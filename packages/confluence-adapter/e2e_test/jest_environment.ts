@@ -14,16 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  createEnvUtils,
-  CredsSpec,
-  JestEnvironmentConstructorArgs,
-  SaltoE2EJestEnvironment,
-} from '@salto-io/e2e-credentials-store'
-import { logger } from '@salto-io/logging'
+import { createEnvUtils, CredsSpec } from '@salto-io/e2e-credentials-store'
 import { Credentials } from '../src/auth'
-
-const log = logger(module)
 
 export const credsSpec = (): CredsSpec<Required<Credentials>> => {
   const confluenceTokenVarName = 'CONFLUENCE_TOKEN'
@@ -42,11 +34,5 @@ export const credsSpec = (): CredsSpec<Required<Credentials>> => {
     validate: async (_creds: Credentials): Promise<void> => undefined,
     typeName: 'confluence',
     globalProp: 'confluence',
-  }
-}
-
-export default class ConfluenceE2EJestEnvironment extends SaltoE2EJestEnvironment {
-  constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace }, ...args)
   }
 }

@@ -368,6 +368,7 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
 export const serializeReferenceSourcesEntries = async (entries: ReferenceIndexEntry[]): Promise<string> =>
   safeJsonStringify(entries.map(entry => ({ ...entry, id: entry.id.getFullName() })))
 
+let hasLoggedOldFormatWarning = false
 export const deserializeReferenceSourcesEntries = async (data: string): Promise<ReferenceIndexEntry[]> => {
   const parsedEntries: unknown = JSON.parse(data)
   if (!Array.isArray(parsedEntries)) {
@@ -376,7 +377,11 @@ export const deserializeReferenceSourcesEntries = async (data: string): Promise<
   }
   // Handle old format
   if (parsedEntries.some(_.isString)) {
-    log.debug('Deserializing old reference sources entries format')
+    // Avoid spammy log, since when we reach here it will be invoked for each key in the index.
+    if (!hasLoggedOldFormatWarning) {
+      log.debug('Deserializing old reference sources entries format')
+      hasLoggedOldFormatWarning = true
+    }
     return parsedEntries.map(id => ({ id: ElemID.fromFullName(id), type: 'strong' }))
   }
   if (parsedEntries.some(isSerliazedReferenceIndexEntry)) {
@@ -1249,6 +1254,17 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
+  const getElementIncomingReferenceInfos: Workspace['getElementIncomingReferenceInfos'] = async (
+    id,
+    envName = currentEnv(),
+  ) => {
+    if (!id.isBaseID()) {
+      throw new Error(`getElementIncomingReferenceInfos only support base ids, received ${id.getFullName()}`)
+    }
+    const entries = makeArray(await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName()))
+    return entries.map(toReferenceIndexEntryWithDefaults)
+  }
+
   const workspace: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1344,23 +1360,10 @@ export const loadWorkspace = async (
       return _.uniqBy(filteredReferences, ref => ref.id.getFullName()).map(toReferenceIndexEntryWithDefaults)
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
-      if (!id.isBaseID()) {
-        throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
-      }
-      const entries = makeArray(
-        await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName()),
-      )
-      return entries.map(entry => entry.id)
+      const referenceInfos = await getElementIncomingReferenceInfos(id, envName)
+      return referenceInfos.map(entry => entry.id)
     },
-    getElementIncomingReferenceInfos: async (id, envName = currentEnv()) => {
-      if (!id.isBaseID()) {
-        throw new Error(`getElementIncomingReferenceInfos only support base ids, received ${id.getFullName()}`)
-      }
-      const entries = makeArray(
-        await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName()),
-      )
-      return entries.map(toReferenceIndexEntryWithDefaults)
-    },
+    getElementIncomingReferenceInfos,
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)

@@ -18,15 +18,12 @@ import { mockClient } from '../utils'
 import changeValidator from '../../src/change_validators'
 import { JIRA } from '../../src/constants'
 import { getDefaultConfig } from '../../src/config/config'
-import { GQL_BASE_URL_GATEWAY, GQL_BASE_URL_GIRA, graphQLResponseType } from '../../src/client/client'
+import { GQL_BASE_URL_GATEWAY, GQL_BASE_URL_GIRA } from '../../src/client/client'
 
 const { client, paginator, connection } = mockClient()
 
 describe('change validator creator', () => {
-  let gqlResponse: graphQLResponseType
   beforeEach(async () => {
-    gqlResponse
-
     connection.get.mockImplementation(async (url: string) => {
       if (url === '/_edge/tenant_info') {
         return {

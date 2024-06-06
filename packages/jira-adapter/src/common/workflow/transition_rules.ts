@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { Value } from '@salto-io/adapter-api'
 import { WorkflowV2TransitionRule } from '../../filters/workflowV2/types'
 
 export enum RuleType {
@@ -22,7 +23,8 @@ export enum RuleType {
   System = 'system',
   Invalid = 'invalid',
 }
-export const isValidRuleType = (value: any): value is RuleType =>
+
+const isValidRuleType = (value: Value): value is RuleType =>
   Object.values(RuleType)
     .filter(ruleType => ruleType !== RuleType.Invalid)
     .includes(value)

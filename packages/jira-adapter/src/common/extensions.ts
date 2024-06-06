@@ -149,10 +149,8 @@ const getInstalledExtensionsGQL = async (client: JiraClient): Promise<ExtensionT
   throw new Error('Failed to get GQL Gateway Installed Apps response')
 }
 
-export const getInstalledExtensions = async (client: JiraClient): Promise<ExtensionType[]> => [
-  ...(await getInstalledExtensionsUPM(client)),
-  ...(await getInstalledExtensionsGQL(client)),
-]
+export const getInstalledExtensions = async (client: JiraClient): Promise<ExtensionType[]> =>
+  (await Promise.all([getInstalledExtensionsUPM(client), getInstalledExtensionsGQL(client)])).flat()
 
 export const getInstalledExtensionsMap = async (client: JiraClient): Promise<Record<string, ExtensionType>> =>
   awu(await getInstalledExtensions(client)).reduce<Record<string, ExtensionType>>((acc, app) => {

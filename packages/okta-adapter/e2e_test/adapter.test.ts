@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import {
-  Change, changeId,
+  Change,
   CORE_ANNOTATIONS,
   DeployResult,
   Element,
@@ -379,7 +379,6 @@ const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<Dep
   const planElementById = _.keyBy(changes.map(getChangeData), inst => inst.elemID.getFullName())
   return awu(changes)
     .map(async change => {
-      log.debug('Deploying change %s', getChangeData(change).elemID.getFullName())
       const deployResult = await adapterAttr.adapter.deploy({
         changeGroup: { groupID: getChangeData(change).elemID.getFullName(), changes: [change] },
         progressReporter: nullProgressReporter,
@@ -438,8 +437,8 @@ const getChangesForInitialCleanup = async (
   types: ObjectType[],
   client: OktaClient,
 ): Promise<Change<InstanceElement>[]> => {
-  let cleanupChanges: Change<InstanceElement>[] = []
-  cleanupChanges = cleanupChanges.concat(
+  const cleanupChanges: Change<InstanceElement>[] = []
+  cleanupChanges.concat(
     elements
       .filter(isInstanceElement)
       .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
@@ -447,12 +446,11 @@ const getChangesForInitialCleanup = async (
       .map(instance => toChange({ before: instance })),
   )
   // Brand related instances don't have the test prefix, so we remove them explicitly.
-  cleanupChanges = cleanupChanges.concat(
+  cleanupChanges.concat(
     (await createBrandChangesForDeploy(types, client))
       .map(getAllChangeData)
       .map(([before, after]) => toChange({ before: after, after: before })),
   )
-  log.debug('Cleaning up the environment before starting e2e test: %s', cleanupChanges.map(change => getChangeData(change).elemID.getFullName()))
   return cleanupChanges
 }
 

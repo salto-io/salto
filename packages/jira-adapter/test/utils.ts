@@ -71,8 +71,9 @@ export const mockClient = (isDataCenter = false, cloudId?: string): ClientWithMo
     },
     isDataCenter,
   })
-
-  client.setCloudId(cloudId)
+  if (cloudId !== undefined) {
+    client.getCloudId = async () => cloudId
+  }
 
   const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client })
   const getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)

@@ -86,7 +86,7 @@ export type WorkflowStatusAndPort = {
 export type WorkflowV2TransitionRuleParameters = {
   appKey?: string
   key?: string
-}
+} & Record<string, unknown>
 
 export type WorkflowV2TransitionRule = {
   ruleKey: string

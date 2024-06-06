@@ -21,7 +21,13 @@ import {
   createSkeletonWorkflowV2TransitionConditionGroup,
   mockClient,
 } from '../../utils'
-import JiraClient, { ExtensionType, EXTENSION_ID_ARI_PREFIX, EXTENSION_ID_LENGTH } from '../../../src/client/client'
+import JiraClient from '../../../src/client/client'
+import {
+  ExtensionType,
+  EXTENSION_ID_ARI_PREFIX,
+  EXTENSION_ID_LENGTH,
+  UPM_INSTALLED_APPS_URL,
+} from '../../../src/common/extensions'
 import { WorkflowV2TransitionRule } from '../../../src/filters/workflowV2/types'
 
 const createConnectTransitionRule = (extensionId: string): WorkflowV2TransitionRule => ({
@@ -45,8 +51,6 @@ const FORGE_EXTENSION: ExtensionType = {
   id: 'a'.repeat(EXTENSION_ID_LENGTH),
   name: 'forge-extension',
 }
-const CLIENT: JiraClient = mockClient(false, DEFAULT_CLOUD_ID).client
-CLIENT.getInstalledExtensions = async () => [CONNECT_EXTENSION, FORGE_EXTENSION]
 
 const NON_EXISTENT_CONNECT_EXTENSION_ID = 'non-existent-extension'
 const NON_EXISTENT_CONNECT_EXTENSION_TRANSITION_RULE = createConnectTransitionRule(NON_EXISTENT_CONNECT_EXTENSION_ID)
@@ -59,9 +63,47 @@ const NON_EXISTENT_EXTENSIONS_TRANSITION_RULES = [
 
 describe('missingAppsTransitionRulesReferencedWorkflowDeletionChangeValidator', () => {
   let workflowInstance: InstanceElement
+  let client: JiraClient
 
   beforeEach(() => {
     workflowInstance = createSkeletonWorkflowV2Instance('workflowInstance')
+    const { connection, client: tempClient } = mockClient(false, DEFAULT_CLOUD_ID)
+    client = tempClient
+    client.gqlPost = async () => ({
+      status: 200,
+      data: {
+        ecosystem: {
+          appInstallationsByContext: {
+            nodes: [
+              {
+                app: {
+                  name: FORGE_EXTENSION.name,
+                  id: EXTENSION_ID_ARI_PREFIX + FORGE_EXTENSION.id,
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+    connection.get.mockImplementation(async url => {
+      if (url === UPM_INSTALLED_APPS_URL) {
+        return {
+          status: 200,
+          data: {
+            plugins: [
+              {
+                name: CONNECT_EXTENSION.name,
+                key: CONNECT_EXTENSION.id,
+                enabled: true,
+                userInstalled: true,
+              },
+            ],
+          },
+        }
+      }
+      throw new Error(`unexpected url: ${url}`)
+    })
   })
   it('Should not raise anything for valid rules', async () => {
     const validTransitionRules = [
@@ -72,7 +114,7 @@ describe('missingAppsTransitionRulesReferencedWorkflowDeletionChangeValidator', 
 
     const afterInstance = workflowInstance.clone()
     afterInstance.value.transitions.transition1.validators.push(...validTransitionRules)
-    const result = await missingExtensionsTransitionRulesChangeValidator(CLIENT)([
+    const result = await missingExtensionsTransitionRulesChangeValidator(client)([
       toChange({ before: workflowInstance, after: afterInstance }),
     ])
     expect(result).toEqual([])
@@ -94,7 +136,7 @@ describe('missingAppsTransitionRulesReferencedWorkflowDeletionChangeValidator', 
     )
     afterInstance.value.transitions.transition1.conditions.conditionGroups[0].conditions.push(...transitionRules)
 
-    const result = await missingExtensionsTransitionRulesChangeValidator(CLIENT)([
+    const result = await missingExtensionsTransitionRulesChangeValidator(client)([
       toChange({ before: workflowInstance, after: afterInstance }),
     ])
     expect(result).toBeArrayOfSize(8) // We added 2 missing extension transition rules every time we pushed transitionRules (4 times)
@@ -108,7 +150,7 @@ describe('missingAppsTransitionRulesReferencedWorkflowDeletionChangeValidator', 
 
     const afterInstance = workflowInstance.clone()
     afterInstance.value.transitions.transition1.validators.push(...transitionRules)
-    const result = await missingExtensionsTransitionRulesChangeValidator(CLIENT)([
+    const result = await missingExtensionsTransitionRulesChangeValidator(client)([
       toChange({ before: workflowInstance, after: afterInstance }),
     ])
     expect(result).toEqual([

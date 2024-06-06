@@ -168,7 +168,7 @@ export const walkOverTransitionIdsV2 = (transition: WorkflowV2Transition, func: 
         !_.isEmpty(_.get(action, 'parameters.scriptRunner.transitionId')),
     )
     .forEach(action => {
-      func(_.get(action, 'parameters.scriptRunner'))
+      func(action.parameters?.scriptRunner)
     })
 }
 

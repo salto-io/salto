@@ -24,30 +24,24 @@ import {
   ElemID,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import JiraClient, { ExtensionType } from '../../client/client'
+import JiraClient from '../../client/client'
 import {
   isWorkflowV2Instance,
   WorkflowV2TransitionConditionGroup,
   WorkflowV2TransitionRule,
   WorkflowV2Instance,
 } from '../../filters/workflowV2/types'
+import { getInstalledExtensionsMap, ExtensionType } from '../../common/extensions'
+import {
+  getRuleTypeFromWorkflowTransitionRule,
+  RuleType,
+  getExtensionIdFromWorkflowTransitionRule,
+} from '../../common/workflow/transition_rules'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-enum RuleType {
-  Connect = 'connect',
-  Forge = 'forge',
-  System = 'system',
-  Invalid = 'invalid',
-}
-
 type TransitionRuleWithElemIDType = WorkflowV2TransitionRule & { elemID: ElemID }
-
-const isValidRuleType = (value: any): value is RuleType =>
-  Object.values(RuleType)
-    .filter(ruleType => ruleType !== RuleType.Invalid)
-    .includes(value)
 
 const tagTransitionRulesWithIndexElemID = (
   elemID: ElemID,
@@ -98,58 +92,6 @@ const getTransitionRulesWithElemID: (workflow: WorkflowV2Instance) => Transition
     return [...validatorRules, ...actionRules, ...conditionRules]
   })
 
-const getRuleTypeFromWorkflowTransitionRule = (transitionRule: WorkflowV2TransitionRule): RuleType => {
-  // ruleKey is of the format "<type>:<some-string>"
-  const ruleType = transitionRule.ruleKey.split(':')[0]
-  if (!isValidRuleType(ruleType)) {
-    return RuleType.Invalid
-  }
-
-  return ruleType
-}
-
-const getExtensionKeyFromWorkflowTransitionRule = (transitionRule: WorkflowV2TransitionRule): string | undefined => {
-  const ruleType = getRuleTypeFromWorkflowTransitionRule(transitionRule)
-
-  switch (ruleType) {
-    case RuleType.Connect:
-      return transitionRule.parameters?.appKey
-    case RuleType.Forge:
-      return transitionRule.parameters?.key
-    default:
-      return undefined
-  }
-}
-
-export const getExtensionIdFromWorkflowTransitionRule = (
-  transitionRule: WorkflowV2TransitionRule,
-): string | undefined => {
-  const ruleType = getRuleTypeFromWorkflowTransitionRule(transitionRule)
-  const extensionKey = getExtensionKeyFromWorkflowTransitionRule(transitionRule)
-  if (extensionKey === undefined) {
-    return undefined
-  }
-  /**
-   * extensionKey is of the following format:
-   * Connect) <extension-id>__<suffix>
-   * Forge) <prefix>/<extension-id>/<target-cloud-env-id>/<suffix>
-   */
-  switch (ruleType) {
-    case RuleType.Connect:
-      return extensionKey.split('__')[0]
-    case RuleType.Forge:
-      return extensionKey.split('/')[1]
-    default:
-      return undefined
-  }
-}
-
-export const getInstalledExtensionsMap = async (client: JiraClient): Promise<Record<string, ExtensionType>> =>
-  awu(await client.getInstalledExtensions()).reduce<Record<string, ExtensionType>>((acc, app) => {
-    acc[app.id] = app
-    return acc
-  }, {})
-
 export const missingExtensionsTransitionRulesChangeValidator =
   (client: JiraClient): ChangeValidator =>
   async changes => {
@@ -171,7 +113,7 @@ export const missingExtensionsTransitionRulesChangeValidator =
     try {
       installedExtensionsMap = await getInstalledExtensionsMap(client)
     } catch (error) {
-      log.error("Couldn't fetch Jira cloud id.")
+      log.error("Couldn't fetch installed extensions.")
       return []
     }
 

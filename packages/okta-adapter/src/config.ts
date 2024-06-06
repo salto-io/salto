@@ -26,6 +26,7 @@ import {
   POLICY_RULE_PRIORITY_TYPE_NAMES,
   POLICY_PRIORITY_TYPE_NAMES,
 } from './constants'
+import { AdditionalAction } from './definitions/types'
 
 type UserDeployConfig = definitions.UserDeployConfig
 
@@ -35,10 +36,7 @@ export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
-export type OktaStatusActionName = 'activate' | 'deactivate'
-export type OktaActionName = ActionName | OktaStatusActionName
-
-export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
+export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<ActionName | AdditionalAction>
 export type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
 export type OktaDeployConfig = UserDeployConfig & { omitMissingUsers?: boolean }
 
@@ -215,29 +213,6 @@ const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] =
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
-  Group: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/groups',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/groups/{groupId}',
-        method: 'put',
-        urlParamsToFields: {
-          groupId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/groups/{groupId}',
-        method: 'delete',
-        urlParamsToFields: {
-          groupId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
   Application: {
     deployRequests: {
       add: {

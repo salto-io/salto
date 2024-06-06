@@ -13,8 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-export type AdditionalAction = never
+export type StatusActionName = 'activate' | 'deactivate'
+export type AdditionalAction = StatusActionName
 export type ClientOptions = 'main' | 'private'
 export type PaginationOptions = 'cursorHeader' | 'cursor'
-export type OktaFetchOptions = { clientOptions: ClientOptions; paginationOptions: PaginationOptions }
+export type OktaFetchOptions = {
+  clientOptions: ClientOptions;
+  paginationOptions: PaginationOptions,
+  additionalAction: AdditionalAction
+}

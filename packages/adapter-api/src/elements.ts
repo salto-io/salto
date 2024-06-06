@@ -30,15 +30,18 @@ const { mapValuesAsync } = promises.object
 
 const log = logger(module)
 
-export const BuiltinTypesRefByFullName: Record<string, TypeReference> = {}
+export const BuiltinTypesRefByFullName: Record<string, TypeReference<PrimitiveType>> = {}
 
-export const createRefToElmWithValue = (element: TypeElement): TypeReference =>
-  // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
-  BuiltinTypesRefByFullName[element.elemID.getFullName()] ?? new TypeReference(element.elemID, element)
+export const createRefToElmWithValue = <T extends TypeElement>(element: T): TypeReference<T> =>
+  // For BuiltinTypes we use hardcoded refs with values to avoid duplicate instances.
+  // If the element ID is in the present we know the element is of type PrimitiveType but TS does not,
+  // so we need to tell it.
+  (BuiltinTypesRefByFullName[element.elemID.getFullName()] as TypeReference<T>) ??
+  new TypeReference(element.elemID, element)
 
 // This is used to allow constructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
-const getRefType = (typeOrRef: TypeOrRef): TypeReference =>
+const getRefType = <T extends TypeElement>(typeOrRef: TypeOrRef<T>): TypeReference<T> =>
   isTypeReference(typeOrRef) ? typeOrRef : createRefToElmWithValue(typeOrRef)
 
 /**
@@ -136,7 +139,7 @@ export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TopLevelElement = TypeElement | InstanceElement
 export type TypeMap = Record<string, TypeElement>
-type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference
+type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference<T>
 export type TypeRefMap = Record<string, TypeOrRef>
 export type ReferenceMap = Record<string, TypeReference>
 
@@ -355,6 +358,7 @@ export type FieldDefinition = {
   refType: TypeOrRef
   annotations?: Values
 }
+
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
@@ -454,10 +458,10 @@ const validateType = (type: TypeElement | undefined, elemID: ElemID): TypeElemen
   return type
 }
 export class InstanceElement extends Element {
-  public refType: TypeReference
+  public refType: TypeReference<ObjectType>
   constructor(
     name: string,
-    typeOrRefType: ObjectType | TypeReference,
+    typeOrRefType: TypeOrRef<ObjectType>,
     public value: Values = {},
     path?: ReadonlyArray<string>,
     annotations?: Values,

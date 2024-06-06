@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, ElemID, TypeReference } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, TypeReference, ObjectType } from '@salto-io/adapter-api'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError } from './common'
 
@@ -44,7 +44,7 @@ export class DuplicateInstanceKeyError extends MergeError {
 }
 
 const mergeInstanceDefinitions = (
-  { elemID, refType }: { elemID: ElemID; refType: TypeReference },
+  { elemID, refType }: { elemID: ElemID; refType: TypeReference<ObjectType> },
   instanceDefs: InstanceElement[],
 ): MergeResult<InstanceElement> => {
   const valueMergeResult =

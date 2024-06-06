@@ -29,6 +29,7 @@ import {
   isInstanceElement,
   isType,
   TypeElement,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, getSubtypes, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -214,6 +215,12 @@ export const createResolvedTypesElementsSource = (elementsSource: ReadOnlyElemen
           'Expected type of Instance %s to be resolved. Type elemID: %s. Returning Instance with non fully resolved type.',
           instance.elemID.getFullName(),
           instance.refType.elemID.getFullName(),
+        )
+        return instance
+      }
+      if (!isObjectType(resolvedType)) {
+        log.warn(
+          'Expected type of Instance %s to be an Object type. Type elemID: %s. Returning Instance with non fully resolved type.',
         )
         return instance
       }

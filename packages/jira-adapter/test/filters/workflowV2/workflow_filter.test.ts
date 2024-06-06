@@ -1607,6 +1607,20 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           })
         })
 
+        it('should fail gracefully when the version does not match the service', async () => {
+          deployChangeMock.mockRejectedValueOnce(
+            new clientUtils.HTTPError('Workflow version and version token must match', {
+              status: 409,
+              data: {},
+            }),
+          )
+          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(1)
+          expect(result.deployResult.errors[0].message).toEqual(
+            'Error: The workflow version does not match the version in Jira; please fetch and try again',
+          )
+        })
+
         it('should not fail the deployment if the migration fails', async () => {
           connection.get.mockResolvedValueOnce({
             status: 200,

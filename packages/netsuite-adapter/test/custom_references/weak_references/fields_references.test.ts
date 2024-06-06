@@ -345,7 +345,7 @@ describe('fields references', () => {
     })
 
     it('should keep unresolved references if in the scriptid list', async () => {
-      const objectIdListInstance = createObjectIdListElements([
+      const scriptidListInstances = createObjectIdListElements([
         {
           type: 'someType',
           instanceId: 'generated_dependency_1',
@@ -354,9 +354,13 @@ describe('fields references', () => {
           type: 'someType',
           instanceId: 'netsuite_reference_1',
         },
-      ])[1]
+      ])
       const clonedForm2 = form2.clone()
-      const elementsSource = buildElementsSourceFromElements([instance1, generatedDependency1, objectIdListInstance])
+      const elementsSource = buildElementsSourceFromElements([
+        instance1,
+        generatedDependency1,
+        ...scriptidListInstances,
+      ])
       const fixes = await fieldsHandler.removeWeakReferences({ elementsSource })([form2])
       expect(clonedForm2).toEqual(form2)
 

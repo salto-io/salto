@@ -25,12 +25,9 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { createMissingInstance } from './missing_references'
 
 const { awu } = collections.asynciterable
-
-const log = logger(module)
 
 export type ApiNameFunc = (elem: Element) => string
 export type LookupFunc = (val: Value, context?: string) => string
@@ -236,8 +233,6 @@ export class FieldReferenceResolver<
   }
 
   async match(field: Field, element: Element): Promise<boolean> {
-    log.debug('Matching: %s with: %s %s %s', field.name, this.src.field, this.src.parentTypes, this.src.instanceTypes)
-    log.debug('lookupName: %s', elemLookupName(field.parent))
     return (
       matchName(field.name, this.src.field) &&
       (this.src.parentTypes === undefined || this.src.parentTypes.includes(elemLookupName(field.parent))) &&
@@ -277,9 +272,7 @@ export const generateReferenceResolverFinder = <
     .groupBy(def => def.src.field)
     .value()
 
-  log.debug('Reference resolvers by field:', matchersByFieldName)
-
-   return async (field, element) =>
+  return async (field, element) =>
     awu(matchersByFieldName[field.name] ?? [])
       .filter(resolver => resolver.match(field, element))
       .toArray()

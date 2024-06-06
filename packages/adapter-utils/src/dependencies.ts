@@ -16,6 +16,8 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { Element, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import Joi from 'joi'
+import { createSchemeGuard, validateReferenceExpression } from './utils'
 
 export type DependencyDirection = 'input' | 'output'
 
@@ -30,6 +32,21 @@ export type DetailedDependency = {
 export type FlatDetailedDependency = {
   reference: ReferenceExpression
 } & DependencyOccurrence
+
+const dependencyOccurrenceSchema = Joi.object({
+  direction: Joi.string().valid('input', 'output').optional(),
+  location: Joi.custom(validateReferenceExpression('location')).optional(),
+})
+
+const detailedDependencySchema = Joi.object({
+  reference: Joi.custom(validateReferenceExpression('reference')).required(),
+  occurrences: Joi.array().items(dependencyOccurrenceSchema).optional(),
+})
+
+export const isDetailedDependency = createSchemeGuard<DetailedDependency>(
+  detailedDependencySchema,
+  'received invalid detailed dependency',
+)
 
 /**
  * Add additional generated dependencies while keeping the structure sorted and filtered

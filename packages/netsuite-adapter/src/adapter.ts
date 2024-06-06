@@ -137,6 +137,7 @@ import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 import { buildNetsuiteBundlesQuery } from './config/bundle_query'
 import { customReferenceHandlers } from './custom_references'
+import { getOrCreateObjectIdListElements } from './scriptid_list'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -460,6 +461,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const serverTimeElements =
       serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
 
+    const scriptIdListElements = await getOrCreateObjectIdListElements(instancesIds, this.elementsSource, isPartial)
+
     const elements = ([] as ChangeDataType[])
       .concat(standardInstances)
       .concat(standardTypes)
@@ -469,6 +472,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(suiteQLTableElements)
       .concat(suiteAppConfigElements)
       .concat(serverTimeElements)
+      .concat(scriptIdListElements)
 
     await this.createFiltersRunner({
       operation: 'fetch',

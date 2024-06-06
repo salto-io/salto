@@ -137,6 +137,7 @@ import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 import { buildNetsuiteBundlesQuery } from './config/bundle_query'
 import { customReferenceHandlers } from './custom_references'
+import { SystemInformation } from './client/suiteapp_client/types'
 import { getOrCreateObjectIdListElements } from './scriptid_list'
 
 const { makeArray } = collections.array
@@ -351,7 +352,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean,
   ): Promise<FetchByQueryReturnType> => {
-    const [configRecords, installedBundles] = await Promise.all([
+    const [sysInfo, configRecords, installedBundles] = await Promise.all([
+      this.client.getSystemInformation(),
       this.client.getConfigRecords(),
       this.client.getInstalledBundles(),
     ])
@@ -361,10 +363,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
-    const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
+    const changedObjectsQuery = await this.getChangedObjectsQuery(
       fetchQueryWithBundles,
       useChangesDetection,
       timeZoneAndFormat,
+      sysInfo,
     )
     const updatedFetchQuery =
       changedObjectsQuery !== undefined ? andQuery(changedObjectsQuery, fetchQueryWithBundles) : fetchQueryWithBundles
@@ -459,7 +462,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         : {}
 
     const serverTimeElements =
-      serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
+      sysInfo !== undefined ? await getOrCreateServerTimeElements(sysInfo.time, this.elementsSource, isPartial) : []
 
     const scriptIdListElements = await getOrCreateObjectIdListElements(instancesIds, this.elementsSource, isPartial)
 
@@ -477,7 +480,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     await this.createFiltersRunner({
       operation: 'fetch',
       isPartial,
-      fetchTime: serverTime,
+      fetchTime: sysInfo?.time,
       timeZoneAndFormat,
       deletedElements,
     }).onFetch(elements)
@@ -558,43 +561,40 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { elements, updatedConfig, errors: deletedElementErrors, partialFetchData }
   }
 
-  private async runSuiteAppOperations(
+  private async getChangedObjectsQuery(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
     timeZoneAndFormat: TimeZoneAndFormat,
-  ): Promise<{
-    changedObjectsQuery?: NetsuiteQuery
-    serverTime?: Date
-  }> {
-    const sysInfo = await this.client.getSystemInformation()
+    sysInfo: SystemInformation | undefined,
+  ): Promise<NetsuiteQuery | undefined> {
     if (sysInfo === undefined) {
       log.debug('Did not get sysInfo, skipping SuiteApp operations')
-      return {}
+      return undefined
     }
 
     if (!useChangesDetection) {
       log.debug('Changes detection is disabled')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
 
     const lastFetchTime = await getLastServerTime(this.elementsSource)
     if (lastFetchTime === undefined) {
       log.debug('Failed to get last fetch time')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
+
     if (timeZoneAndFormat?.format === undefined) {
       log.warn('Failed to get date format, skipping changes detection')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
+
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
-    const changedObjectsQuery = await getChangedObjects(
+    return getChangedObjects(
       this.client,
       fetchQuery,
       createDateRange(lastFetchTime, sysInfo.time, timeZoneAndFormat.format),
       serviceIdToLastFetchDate,
     )
-
-    return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
   private static getDeployErrors(

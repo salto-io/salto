@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createEnvUtils, creds, CredsLease, CredsSpec, SuspendCredentialsError } from '@salto-io/e2e-credentials-store'
+import {
+  createEnvUtils,
+  creds,
+  CredsLease,
+  CredsSpec,
+  SuspendCredentialsError,
+} from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
 import { ApiLimitsTooLowError, validateCredentials } from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
@@ -25,15 +31,18 @@ const log = logger(module)
 const MIN_API_REQUESTS_NEEDED = 2000
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
-export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentials> => {
-  const addEnvName = (varName: string): string => (envName === undefined ? varName : [varName, envName].join('_'))
+export const credsSpec = (
+  envName?: string,
+): CredsSpec<UsernamePasswordCredentials> => {
+  const addEnvName = (varName: string): string =>
+    envName === undefined ? varName : [varName, envName].join('_')
   const userEnvVarName = addEnvName('SF_USER')
   const passwordEnvVarName = addEnvName('SF_PASSWORD')
   const tokenEnvVarName = addEnvName('SF_TOKEN')
   const sandboxEnvVarName = addEnvName('SF_SANDBOX')
   return {
-    envHasCreds: env => userEnvVarName in env,
-    fromEnv: env => {
+    envHasCreds: (env) => userEnvVarName in env,
+    fromEnv: (env) => {
       const envUtils = createEnvUtils(env)
       return {
         username: envUtils.required(userEnvVarName),
@@ -42,12 +51,20 @@ export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentia
         isSandbox: envUtils.bool(sandboxEnvVarName),
       }
     },
-    validate: async (credentials: UsernamePasswordCredentials): Promise<void> => {
+    validate: async (
+      credentials: UsernamePasswordCredentials,
+    ): Promise<void> => {
       try {
-        await validateCredentials(new UsernamePasswordCredentials(credentials), MIN_API_REQUESTS_NEEDED)
+        await validateCredentials(
+          new UsernamePasswordCredentials(credentials),
+          MIN_API_REQUESTS_NEEDED,
+        )
       } catch (e) {
         if (e instanceof ApiLimitsTooLowError) {
-          throw new SuspendCredentialsError(e, NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT)
+          throw new SuspendCredentialsError(
+            e,
+            NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT,
+          )
         }
         throw e
       }
@@ -58,7 +75,9 @@ export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentia
 }
 
 export type TestHelpers = {
-  credentials: (envName?: string) => Promise<CredsLease<UsernamePasswordCredentials>>
+  credentials: (
+    envName?: string,
+  ) => Promise<CredsLease<UsernamePasswordCredentials>>
   CUSTOM_OBJECT: string
 }
 export const testHelpers = (): TestHelpers => ({

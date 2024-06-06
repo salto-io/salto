@@ -20,6 +20,7 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   displayName: 'persistent-pool',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/src/index.ts'],
+  testEnvironment: './dist/test/lib/dynamodb/environment',
   coverageThreshold: {
     global: {
       branches: 90,

@@ -57,7 +57,7 @@ const CLOUD_ID_RESPONSE_SCHEME = Joi.object({
 
 const isCloudIdResponse = createSchemeGuard<CloudIdResponseType>(
   CLOUD_ID_RESPONSE_SCHEME,
-  'Failed to get cloud id response',
+  'Failed to get cloud id response with the expected format.',
 )
 
 export type graphQLResponseType = {
@@ -91,7 +91,6 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
     this.isDataCenter = clientOpts.isDataCenter
-    this.cloudId = undefined
   }
 
   public get baseUrl(): string {

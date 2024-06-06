@@ -16,10 +16,11 @@
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import {
-  Change,
+  Change, changeId,
   CORE_ANNOTATIONS,
   DeployResult,
   Element,
+  getAllChangeData,
   getChangeData,
   InstanceElement,
   isAdditionChange,
@@ -27,7 +28,6 @@ import {
   isEqualValues,
   isInstanceChange,
   isInstanceElement,
-  isModificationChange,
   isObjectType,
   ObjectType,
   ProgressReporter,
@@ -71,7 +71,7 @@ import {
   USER_SCHEMA_TYPE_NAME,
   USERTYPE_TYPE_NAME,
 } from '../src/constants'
-import { createFetchDefinitions } from '../src/definitions/fetch/fetch'
+import { createFetchDefinitions } from '../src/definitions/fetch'
 import { DEFAULT_CONFIG } from '../src/user_config'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
@@ -379,7 +379,7 @@ const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<Dep
   const planElementById = _.keyBy(changes.map(getChangeData), inst => inst.elemID.getFullName())
   return awu(changes)
     .map(async change => {
-      log.debug('Deploying change for %s (%s)', getChangeData(change).elemID.getFullName(), change.action)
+      log.debug('Deploying change %s', getChangeData(change).elemID.getFullName())
       const deployResult = await adapterAttr.adapter.deploy({
         changeGroup: { groupID: getChangeData(change).elemID.getFullName(), changes: [change] },
         progressReporter: nullProgressReporter,
@@ -438,28 +438,21 @@ const getChangesForInitialCleanup = async (
   types: ObjectType[],
   client: OktaClient,
 ): Promise<Change<InstanceElement>[]> => {
-  const removalChanges: Change<InstanceElement>[] = elements
-    .filter(isInstanceElement)
-    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX) || inst.elemID.typeName === DOMAIN_TYPE_NAME)
-    .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
-    .map(instance => toChange({ before: instance }))
-
-  // Brand related instances don't have the test prefix, so we reverse them explicitly.
-  const reversedBrandChanges: Change<InstanceElement>[] = (await createBrandChangesForDeploy(types, client))
-    .filter(isModificationChange) // We can't reverse "add" actions because we'd need the service ID.
-    .map(change =>
-      toChange({
-        before: change.data.after,
-        after: change.data.before,
-      }),
-    )
-
-  const cleanupChanges = [...removalChanges, ...reversedBrandChanges]
-
-  log.info(
-    'Cleaning up the environment before starting e2e test: %s',
-    cleanupChanges.map(change => getChangeData(change).elemID.getFullName()),
+  let cleanupChanges: Change<InstanceElement>[] = []
+  cleanupChanges = cleanupChanges.concat(
+    elements
+      .filter(isInstanceElement)
+      .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
+      .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
+      .map(instance => toChange({ before: instance })),
   )
+  // Brand related instances don't have the test prefix, so we remove them explicitly.
+  cleanupChanges = cleanupChanges.concat(
+    (await createBrandChangesForDeploy(types, client))
+      .map(getAllChangeData)
+      .map(([before, after]) => toChange({ before: after, after: before })),
+  )
+  log.debug('Cleaning up the environment before starting e2e test: %s', cleanupChanges.map(change => getChangeData(change).elemID.getFullName()))
   return cleanupChanges
 }
 

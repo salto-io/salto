@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { Change, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
-import { filter } from '@salto-io/adapter-utils'
+import { filter, GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { AdapterFilterCreator } from '../filter_utils'
 import { ConvertError, deployChanges } from '../deployment'
 import { generateLookupFunc } from '../references'
@@ -32,14 +32,17 @@ export const defaultDeployFilterCreator =
     deployChangeFunc,
     convertError,
     fieldReferenceResolverCreator,
+    customLookupFunc,
   }: {
     deployChangeFunc?: (args: ChangeAndContext) => Promise<void>
     convertError: ConvertError
     fieldReferenceResolverCreator?: FieldReferenceResolverCreator<Options>
+    customLookupFunc?: GetLookupNameFunc
   }): AdapterFilterCreator<{}, TResult, {}, Options> =>
   ({ definitions, elementSource, sharedContext }) => ({
     name: 'defaultDeployFilter',
     deploy: async (changes, changeGroup) => {
+
       const { deploy, ...otherDefs } = definitions
       if (deploy === undefined) {
         throw new Error('could not find deploy definitions')
@@ -48,7 +51,7 @@ export const defaultDeployFilterCreator =
         throw new Error('change group not provided')
       }
 
-      const lookupFunc = generateLookupFunc(definitions.references?.rules ?? [], fieldReferenceResolverCreator)
+      const lookupFunc = customLookupFunc ?? generateLookupFunc(definitions.references?.rules ?? [], fieldReferenceResolverCreator)
       const changeResolver = createChangeElementResolver<Change<InstanceElement>>({ getLookUpName: lookupFunc })
 
       const deployResult = await deployChanges({

@@ -167,6 +167,9 @@ describe('remove fields filter', () => {
     const billingType = createCustomObjectType(
       'blng__RevenueRecognitionTreatment__c',
       {
+        annotations: {
+          apiName: 'blng__RevenueRecognitionTreatment__c',
+        },
         fields: {
           blng_Active__c: {
             refType: BuiltinTypes.BOOLEAN,

@@ -28,7 +28,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import { isEmpty } from 'lodash'
+import _, { isEmpty } from 'lodash'
 import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS, JIRA } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -78,16 +78,26 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     log.warn('Elements source was not passed to permissionTypeValidator. Skipping validator')
     return []
   }
+  let permissionSchemeChanges = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
+
+  if (_.isEmpty(permissionSchemeChanges)) {
+    return []
+  }
   const allowedPermissionTypes = await getAllowedPermissionTypes(elementsSource)
   if (!allowedPermissionTypes) {
     log.warn('Could not find allowed permission types for permissionTypeValidator. Skipping validator')
     return []
   }
-  return awu(changes)
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
+
+  permissionSchemeChanges = permissionSchemeChanges.filter(
+    instance => !isEmpty(getInvalidPermissions(instance, allowedPermissionTypes)),
+  )
+
+  return awu(permissionSchemeChanges)
     .filter(instance => !isEmpty(getInvalidPermissions(instance, allowedPermissionTypes)))
     .map(async instance => ({
       elemID: instance.elemID,

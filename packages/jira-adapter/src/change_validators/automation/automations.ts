@@ -20,6 +20,7 @@ import {
   isInstanceChange,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE } from '../../constants'
@@ -34,16 +35,22 @@ export const automationsValidator: ChangeValidator = async (changes, elementsSou
     return []
   }
 
+  const automationChanges = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+
+  if (_.isEmpty(automationChanges)) {
+    return []
+  }
+
   const nameToAutomations = await awu(await elementsSource.list())
     .filter(id => id.typeName === AUTOMATION_TYPE && id.idType === 'instance')
     .map(id => elementsSource.get(id))
     .groupBy(instance => instance.value.name)
 
-  return changes
-    .filter(isInstanceChange)
-    .filter(isAdditionChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+  return automationChanges
     .filter(instance => nameToAutomations[instance.value.name].length > 1)
     .map(instance => ({
       elemID: instance.elemID,

@@ -22,6 +22,7 @@ import {
   isAdditionChange,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { QUEUE_TYPE } from '../constants'
@@ -38,17 +39,23 @@ export const defaultAdditionQueueValidator: (config: JiraConfig) => ChangeValida
       return []
     }
 
+    const queueChanges = changes
+      .filter(isInstanceChange)
+      .filter(isAdditionChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+
+    if (_.isEmpty(queueChanges)) {
+      return []
+    }
+
     const projectToQueues = await awu(await elementsSource.list())
       .filter(id => id.typeName === QUEUE_TYPE && id.idType === 'instance')
       .map(id => elementsSource.get(id))
       .filter(queue => isReferenceExpression(queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0]))
       .groupBy(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.getFullName())
 
-    return awu(changes)
-      .filter(isInstanceChange)
-      .filter(isAdditionChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+    return awu(queueChanges)
       .filter(queue => hasValidParent(queue))
       .filter(async instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]

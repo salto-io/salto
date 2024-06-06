@@ -70,13 +70,19 @@ export const referencedWorkflowDeletionChangeValidator =
       )
       return []
     }
-    const workflowNameToReferencingWorkflowSchemes =
-      await mapWorkflowNameToReferencingWorkflowSchemesIDs(elementsSource)
-    return awu(changes)
+
+    const workflowChanges = changes
       .filter(isInstanceChange)
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(isWorkflowV2Instance)
+
+    if (_.isEmpty(workflowChanges)) {
+      return []
+    }
+    const workflowNameToReferencingWorkflowSchemes =
+      await mapWorkflowNameToReferencingWorkflowSchemesIDs(elementsSource)
+    return awu(workflowChanges)
       .filter(workflow => !_.isEmpty(workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]))
       .map(workflow => ({
         elemID: workflow.elemID,

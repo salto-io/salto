@@ -112,34 +112,45 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === PROJECT_TYPE)
       .filter(project => project.value.issueTypeScreenScheme?.issueTypeScreenScheme?.id !== undefined)
-      .map(project => [
-        project.value.id,
-        [
-          ...new Set(
-            issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
-              .filter((issueTypeMapping: issueTypeMappingStruct) =>
-                IsIssueTypeInIssueTypeSchemesOrDefault(
-                  issueTypeMapping,
-                  issueTypeSchemesToIssueTypeList,
-                  project.value.issueTypeScheme?.issueTypeScheme.id,
+      .map(project => {
+        const projectIssueTypeMappings =
+          issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
+
+        if (projectIssueTypeMappings === undefined) {
+          log.error(
+            `Project (${project.value.id}) issueTypeScreenSchemes (${project.value.issueTypeScreenScheme.issueTypeScreenScheme.id}) has no issueTypeMappings`,
+          )
+          return [project.value.id, []]
+        }
+        return [
+          project.value.id,
+          [
+            ...new Set(
+              issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
+                ?.filter((issueTypeMapping: issueTypeMappingStruct) =>
+                  IsIssueTypeInIssueTypeSchemesOrDefault(
+                    issueTypeMapping,
+                    issueTypeSchemesToIssueTypeList,
+                    project.value.issueTypeScheme?.issueTypeScheme.id,
+                  ),
+                )
+                .filter((issueTypeMapping: issueTypeMappingStruct) =>
+                  isRelevantMapping(
+                    issueTypeMapping.issueTypeId,
+                    issueTypeScreenSchemesToiIssueTypeMappings[
+                      project.value.issueTypeScreenScheme.issueTypeScreenScheme.id
+                    ].length,
+                    issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].length,
+                  ),
+                )
+                .map(
+                  (issueTypeMapping: issueTypeMappingStruct) =>
+                    screensSchemesToDefaultOrViewScreens[issueTypeMapping.screenSchemeId],
                 ),
-              )
-              .filter((issueTypeMapping: issueTypeMappingStruct) =>
-                isRelevantMapping(
-                  issueTypeMapping.issueTypeId,
-                  issueTypeScreenSchemesToiIssueTypeMappings[
-                    project.value.issueTypeScreenScheme.issueTypeScreenScheme.id
-                  ].length,
-                  issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].length,
-                ),
-              )
-              .map(
-                (issueTypeMapping: issueTypeMappingStruct) =>
-                  screensSchemesToDefaultOrViewScreens[issueTypeMapping.screenSchemeId],
-              ),
-          ),
-        ],
-      ]),
+            ),
+          ],
+        ]
+      }),
   )
 }
 

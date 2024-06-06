@@ -329,12 +329,6 @@ export const generateLookupFunc = <
 
     if (strategies.length === 0) {
       log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
-      log.debug('defs: %s', defs)
-      log.debug('args.field: %s, args.element: %s', args.field, args.element)
-      const s1 = (await resolverFinder(args.field, args.element))
-      const s2 = s1.filter(def => def.target?.type === undefined || args.ref.elemID.typeName === def.target.type)
-      const s3 = s2.map(def => def.serializationStrategy)
-      log.debug('s1: %s, s2: %s, s3: %s', s1, s2, s3)
       return undefined
     }
 

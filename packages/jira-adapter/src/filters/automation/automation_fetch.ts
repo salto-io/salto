@@ -42,6 +42,8 @@ import { JiraConfig } from '../../config/config'
 import { getCloudId } from './cloud_id'
 import { convertRuleScopeValueToProjects } from './automation_structure'
 
+const AUTOMATION_RETRY_CODES = [504, 502]
+
 export type AssetComponent = {
   value: {
     workspaceId?: string
@@ -121,8 +123,8 @@ const requestPageRecurse = async ({
 
     return response.data
   } catch (e) {
-    // we get an occasional 504 from the Automation's APIs, Atlassian's solution is to retry
-    if (!(e instanceof clientUtils.HTTPError && e.response?.status === 504)) {
+    // we get an occasional 504/502 from the Automation's APIs, Atlassian's solution is to retry
+    if (!(e instanceof clientUtils.HTTPError && AUTOMATION_RETRY_CODES.includes(e.response?.status))) {
       throw e
     }
   }

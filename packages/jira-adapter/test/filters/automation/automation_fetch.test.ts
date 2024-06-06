@@ -581,6 +581,27 @@ describe('automationFetchFilter', () => {
 
     expect(elements[1].elemID.getFullName()).toEqual('jira.Automation.instance.automationName_projectName')
   })
+  it('should retry if response is 502', async () => {
+    const { client: cli, connection: conn } = mockClient(false)
+    client = cli
+    connection = conn
+
+    conn.post.mockImplementationOnce(mockPostResponse) // for cloud id
+    conn.post.mockImplementationOnce(async () => {
+      throw new HTTPError('failed', { data: {}, status: 502 })
+    })
+    conn.post.mockImplementationOnce(mockPostResponse)
+    const elements = [project2Instance]
+    await (
+      automationFetchFilter(
+        getFilterParams({
+          client,
+        }),
+      ) as filterUtils.FilterWith<'onFetch'>
+    ).onFetch(elements)
+
+    expect(elements[1].elemID.getFullName()).toEqual('jira.Automation.instance.automationName_projectName')
+  })
   it('should fail if retry response is 504 and passed retries count', async () => {
     const { client: cli, connection: conn } = mockClient(false)
     client = cli

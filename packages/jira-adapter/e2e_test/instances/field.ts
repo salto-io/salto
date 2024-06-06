@@ -32,7 +32,7 @@ const p1Option = {
       position: 1,
     },
   },
-  position: 0,
+  position: 1,
 }
 
 export const createFieldValues = (name: string): Values => ({
@@ -56,17 +56,17 @@ export const createContextValues = (name: string, allElements: Element[]): Value
           position: 0,
         },
       },
-      position: 1,
+      position: 2,
     },
     p3: {
       value: 'p3',
       disabled: true,
-      position: 2,
+      position: 3,
     },
     p4: {
       value: 'p4',
       disabled: false,
-      position: 3,
+      position: 4,
     },
   },
   issueTypeIds: [

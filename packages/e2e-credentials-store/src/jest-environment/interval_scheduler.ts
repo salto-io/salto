@@ -44,4 +44,8 @@ export default class IntervalScheduler {
     ;[...this.intervals.values()].map(v => v.intervalId).forEach(clearInterval)
     this.intervals.clear()
   }
+
+  size(): number {
+    return this.intervals.size
+  }
 }

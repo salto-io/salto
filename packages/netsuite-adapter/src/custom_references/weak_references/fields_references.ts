@@ -27,19 +27,27 @@ import {
   Value,
   isInstanceElement,
   isReferenceExpression,
+  isElement,
 } from '@salto-io/adapter-api'
 import { WeakReferencesHandler } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
-import { TransformFunc, WALK_NEXT_STEP, transformElement, walkOnValue } from '@salto-io/adapter-utils'
+import {
+  TransformFunc,
+  WALK_NEXT_STEP,
+  transformElement,
+  walkOnValue,
+  isDetailedDependency,
+  DetailedDependency,
+  resolvePath,
+  setPath,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { ADDRESS_FORM, ENTRY_FORM, INDEX, TRANSACTION_FORM } from '../../constants'
+import { ADDRESS_FORM, ENTRY_FORM, ID_FIELD, INDEX, SCRIPT_ID, TRANSACTION_FORM } from '../../constants'
 import { captureServiceIdInfo } from '../../service_id_info'
+import { getObjectIdList } from '../../scriptid_list'
+import { getElementValueOrAnnotations } from '../../types'
 
 const { awu } = collections.asynciterable
-
-type GeneratedDependency = {
-  reference: ReferenceExpression
-}
 
 type MappedList = Record<string, { index: number; [key: string]: Value }>
 
@@ -47,9 +55,6 @@ const formTypeNames = new Set([ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM])
 
 const isFormInstanceElement = (element: Value): element is InstanceElement =>
   isInstanceElement(element) && formTypeNames.has(element.elemID.typeName)
-
-const isGeneratedDependency = (val: unknown): val is GeneratedDependency =>
-  values.isPlainRecord(val) && isReferenceExpression(val.reference)
 
 const getIdReferencesRecord = (formInstance: InstanceElement): Record<string, ReferenceExpression> => {
   const referencesRecord: Record<string, ReferenceExpression> = {}
@@ -75,7 +80,7 @@ const getGeneratedDependenciesReferencesRecord = (
   const referencesRecord: Record<string, ReferenceExpression> = {}
   const generatedDependencies = formInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
   if (Array.isArray(generatedDependencies)) {
-    generatedDependencies.filter(isGeneratedDependency).forEach((dep, index) => {
+    generatedDependencies.filter(isDetailedDependency).forEach((dep, index) => {
       referencesRecord[
         formInstance.elemID.createNestedID(CORE_ANNOTATIONS.GENERATED_DEPENDENCIES, index.toString()).getFullName()
       ] = dep.reference
@@ -101,65 +106,43 @@ const getFormReferences = (formInstance: InstanceElement): ReferenceInfo[] => {
 const getAllFormsReferences: GetCustomReferencesFunc = async elements =>
   elements.filter(isFormInstanceElement).flatMap(getFormReferences)
 
-const checkIfUnresolvedGeneratedDependency = (value: string, generatedDependencies: Set<string>): boolean => {
-  const capture = captureServiceIdInfo(value)[0]
-  return capture ? generatedDependencies.has(capture.serviceId) : false
-}
-
-const isUnresolvedReference = async (
+const isUnresolvedReferenceExpression = async (
   ref: ReferenceExpression,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<boolean> => (await elementsSource.get(ref.elemID.createTopLevelParentID().parent)) === undefined
 
-const handleGeneratedDependencies = async (
-  form: InstanceElement,
-  elementsSource: ReadOnlyElementsSource,
-): Promise<{ fixedGeneratedDependencies: GeneratedDependency[]; unresolvedGeneratedDependencies: Set<string> }> => {
-  if (!form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]) {
-    return { fixedGeneratedDependencies: [], unresolvedGeneratedDependencies: new Set<string>() }
-  }
-  const generatedDependencies = collections.array
-    .makeArray(form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
-    .filter(isGeneratedDependency)
-
-  const [unresolved, resolved] = await awu(generatedDependencies).partition(async dep =>
-    isUnresolvedReference(dep.reference, elementsSource),
-  )
-
-  return {
-    fixedGeneratedDependencies: resolved,
-    unresolvedGeneratedDependencies: new Set<string>(
-      unresolved.map(dep => dep.reference.elemID.createTopLevelParentID().parent.name),
-    ),
-  }
+const isUnresolvedNetsuiteReference = (
+  value: string,
+  generatedDependencies: Set<string>,
+  envScriptIds: Set<string>,
+): boolean => {
+  const capture = captureServiceIdInfo(value)
+  return capture
+    .map(serviceIdInfo => serviceIdInfo.serviceId.split('.')[0])
+    .some(serviceId => !generatedDependencies.has(serviceId) && !envScriptIds.has(serviceId))
 }
 
 const getPathsToRemove = async (
   form: InstanceElement,
+  generatedDependencies: Set<string>,
   elementsSource: ReadOnlyElementsSource,
-  unresolvedGeneratedDependencies: Set<string>,
+  envScriptIds: Set<string>,
 ): Promise<ElemID[]> => {
   const pathsToRemove: ElemID[] = []
 
   const transformPathsToRemove: TransformFunc = async ({ value, path }) => {
-    if (!values.isPlainRecord(value)) {
+    if (!values.isPlainRecord(value) || !path) {
       return value
     }
-    const { id } = value
+    const id = value[ID_FIELD]
     if (id === undefined) {
       return value
     }
-    if (isReferenceExpression(id) && (await isUnresolvedReference(id, elementsSource))) {
-      if (path) {
-        pathsToRemove.push(path)
-      }
-      return undefined
+    if (isReferenceExpression(id) && (await isUnresolvedReferenceExpression(id, elementsSource))) {
+      pathsToRemove.push(path)
     }
-    if (_.isString(id) && checkIfUnresolvedGeneratedDependency(id, unresolvedGeneratedDependencies)) {
-      if (path) {
-        pathsToRemove.push(path)
-      }
-      return undefined
+    if (_.isString(id) && isUnresolvedNetsuiteReference(id, generatedDependencies, envScriptIds)) {
+      pathsToRemove.push(path)
     }
     return value
   }
@@ -170,8 +153,49 @@ const getPathsToRemove = async (
     elementsSource,
     strict: false,
   })
-
   return pathsToRemove
+}
+
+const getScriptIdFromReference = async (
+  ref: ReferenceExpression,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<string | undefined> => {
+  const element = await elementsSource.get(ref.elemID.createTopLevelParentID().parent)
+  return isElement(element) ? getElementValueOrAnnotations(element)[SCRIPT_ID] : undefined
+}
+
+const getGeneratedDependencyListAndScriptIdSet = async (
+  generatedDependencies: DetailedDependency[],
+  elementsSource: ReadOnlyElementsSource,
+): Promise<{ generatedDependencies: DetailedDependency[]; scriptIds: Set<string> }> => {
+  const filteredDependencies: DetailedDependency[] = []
+  const scriptIds: Set<string> = new Set()
+
+  await awu(generatedDependencies).forEach(async dep => {
+    const scriptId = await getScriptIdFromReference(dep.reference, elementsSource)
+    if (_.isString(scriptId)) {
+      filteredDependencies.push(dep)
+      scriptIds.add(scriptId)
+    }
+  })
+
+  return {
+    generatedDependencies: filteredDependencies,
+    scriptIds,
+  }
+}
+
+const getResolvedGeneratedDependencies = async (
+  form: InstanceElement,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<{ generatedDependencies: DetailedDependency[]; scriptIds: Set<string> }> => {
+  if (!form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]) {
+    return { generatedDependencies: [], scriptIds: new Set<string>() }
+  }
+  const generatedDependencies = collections.array
+    .makeArray(form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
+    .filter(isDetailedDependency)
+  return getGeneratedDependencyListAndScriptIdSet(generatedDependencies, elementsSource)
 }
 
 const hasIndexAttribute = (val: unknown): boolean => values.isPlainRecord(val) && _.isNumber(val[INDEX])
@@ -187,12 +211,13 @@ const fixIndexInMappedList = (mappedList: MappedList): void =>
     })
 
 const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
-  const pathsToFixIndex = new Set<string>(
-    pathsToRemove.map(path => form.elemID.getRelativePath(path.createParentID()).join('.')),
+  const pathsToFixIndex = _.uniqBy(
+    pathsToRemove.map(path => path.createParentID()),
+    id => id.getFullName(),
   )
 
   pathsToFixIndex.forEach(path => {
-    const parent = _.get(form.value, path)
+    const parent = resolvePath(form, path)
     if (isMappedList(parent)) {
       fixIndexInMappedList(parent)
     }
@@ -202,27 +227,25 @@ const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
 const getFixedElementAndPaths = async (
   form: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
-): Promise<{ instance: InstanceElement; paths: ElemID[] } | undefined> => {
+  envScriptIds: Set<string>,
+): Promise<{ instance: InstanceElement; relatedPaths: ElemID[] } | undefined> => {
   const fixedForm = form.clone()
 
-  const { fixedGeneratedDependencies, unresolvedGeneratedDependencies } = await handleGeneratedDependencies(
-    form,
-    elementsSource,
-  )
+  const { generatedDependencies, scriptIds } = await getResolvedGeneratedDependencies(fixedForm, elementsSource)
 
-  const pathsToRemove = await getPathsToRemove(fixedForm, elementsSource, unresolvedGeneratedDependencies)
+  const pathsToRemove = await getPathsToRemove(fixedForm, scriptIds, elementsSource, envScriptIds)
 
   if (pathsToRemove.length === 0) {
     return undefined
   }
 
-  pathsToRemove.forEach(path => _.unset(fixedForm.value, fixedForm.elemID.getRelativePath(path).join('.')))
+  pathsToRemove.forEach(path => setPath(fixedForm, path, undefined))
 
   fixIndexes(fixedForm, pathsToRemove)
 
-  fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = fixedGeneratedDependencies
+  fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = generatedDependencies
 
-  return { instance: fixedForm, paths: pathsToRemove }
+  return { instance: fixedForm, relatedPaths: pathsToRemove }
 }
 
 const removeUnresolvedFieldElements: WeakReferencesHandler<{
@@ -230,23 +253,22 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
 }>['removeWeakReferences'] =
   ({ elementsSource }): FixElementsFunc =>
   async elements => {
+    const envScriptIds = new Set<string>((await getObjectIdList(elementsSource)).map(objectid => objectid.instanceId))
     const fixedFormsWithPaths = await awu(elements)
       .filter(isFormInstanceElement)
-      .map(form => getFixedElementAndPaths(form, elementsSource))
+      .map(form => getFixedElementAndPaths(form, elementsSource, envScriptIds))
       .filter(values.isDefined)
       .toArray()
 
-    const formErrors: ChangeError[] = fixedFormsWithPaths.flatMap(({ instance, paths }) =>
-      paths.map(path => {
-        const fullPath = `${instance.elemID.name}.${instance.elemID.getRelativePath(path).join('.')}`
-        return {
-          elemID: instance.elemID,
-          severity: 'Info',
-          message: 'Deploying without all referenced fields',
-          detailedMessage: `This ${fullPath} is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.`,
-        }
-      }),
-    )
+    const formErrors: ChangeError[] = fixedFormsWithPaths.map(({ instance, relatedPaths }) => {
+      const relatedPathsStrings = relatedPaths.map(path => instance.elemID.getRelativePath(path).join('.'))
+      return {
+        elemID: instance.elemID,
+        severity: 'Info',
+        message: 'Deploying without all referenced fields',
+        detailedMessage: `This form references fields that do not exist in the target environment. As a result, this form will be deployed without these fields: ${relatedPathsStrings.join(', ')}`,
+      }
+    })
 
     return {
       fixedElements: fixedFormsWithPaths.map(element => element.instance),

@@ -159,7 +159,10 @@ const transformOptionsToMap = (instance: InstanceElement): void => {
   instance.value.contexts
     ?.filter((context: Values) => context.options !== undefined)
     .forEach((context: Values) => {
-      const optionsWithIndex = context.options.map((option: Values, position: number) => ({ ...option, position }))
+      const optionsWithIndex = context.options.map((option: Values, position: number) => ({
+        ...option,
+        position: position + 1,
+      }))
 
       context.options = _.keyBy(optionsWithIndex, option => naclCase(option.value))
     })

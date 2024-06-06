@@ -657,6 +657,7 @@ const createCustomizations = ({
       },
       fieldCustomizations: {
         id: { hide: true },
+        name: { hide: true },
         [naclCase('$schema')]: { omit: true },
         _links: { omit: true },
         type: { omit: true },

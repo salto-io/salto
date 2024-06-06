@@ -27,6 +27,7 @@ import {
   OBJECT_TYPE_TYPE,
   PORTAL_GROUP_TYPE,
   PORTAL_SETTINGS_TYPE_NAME,
+  PRIORITY_TYPE_NAME,
   QUEUE_TYPE,
   REQUEST_TYPE_NAME,
   SLA_TYPE_NAME,
@@ -222,6 +223,13 @@ const aliasMap: Record<string, AliasData> = {
       },
     ],
     separator: ':',
+  },
+  [PRIORITY_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'name',
+      },
+    ],
   },
 }
 

@@ -38,12 +38,12 @@ export const defineAdditionalTypes = (
   typeConfig?: Record<string, TypeSwaggerConfig>,
 ): void => {
   additionalTypes.forEach(({ typeName, cloneFrom }) => {
-    const origType = definedTypes[cloneFrom]
-    if (!origType) {
+    const originalType = definedTypes[cloneFrom]
+    if (!originalType) {
       throw new Error(`could not find type ${cloneFrom} needed for additional resource ${typeName}`)
     }
     const additionalType = new ObjectType({
-      ...origType,
+      ...originalType.clone(),
       elemID: new ElemID(adapterName, typeName),
     })
     definedTypes[typeName] = additionalType

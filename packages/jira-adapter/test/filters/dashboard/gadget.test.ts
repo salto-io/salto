@@ -30,7 +30,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import gadgetFilter, {
   getDashboardPropertiesAsync,
-  promiseInstantToPropertiesResponse,
+  InstantToPropertiesResponse,
 } from '../../../src/filters/dashboard/gadget'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
@@ -56,14 +56,14 @@ describe('gadgetFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
   let elements: Element[]
-  let adapterContext: { dashboardPropertiesPromise: Promise<promiseInstantToPropertiesResponse> }
+  let adapterContext: { dashboardPropertiesPromise: InstantToPropertiesResponse[] }
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
     adapterContext = {
-      dashboardPropertiesPromise: Promise.resolve([]),
+      dashboardPropertiesPromise: [],
     }
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     filter = gadgetFilter(
@@ -143,31 +143,45 @@ describe('gadgetFilter', () => {
   })
 
   describe('async get', () => {
+    let responsePromise: InstantToPropertiesResponse[]
+    beforeEach(async () => {
+      responsePromise = getDashboardPropertiesAsync(client, elements)
+    })
     it('should return the dashboard properties', async () => {
       const response = await Promise.all(
-        (await getDashboardPropertiesAsync(client, elements)) as promiseInstantToPropertiesResponse,
+        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+          instanceMap,
+          await promisePropertyValue,
+        ]),
       )
       expect(response).toHaveLength(1)
       expect(response[0][0]).toBe(instance)
-      expect(await response[0][1]).toEqual([
+      expect(response[0][1]).toEqual([
         ['key1', 'value1'],
         ['key2', 'value2'],
       ])
     })
 
     it('should return empty list if the elements are not instances', async () => {
-      const response = await getDashboardPropertiesAsync(client, [dashboardGadgetType])
+      const response = await Promise.all(
+        (getDashboardPropertiesAsync(client, [dashboardGadgetType]) as InstantToPropertiesResponse[]).map(
+          async ({ instance: instanceMap, promisePropertyValue }) => [instanceMap, await promisePropertyValue],
+        ),
+      )
       expect(response).toHaveLength(0)
     })
 
     it('should return empty list if the request threw an error', async () => {
       connection.get.mockRejectedValue(new Error('error'))
       const response = await Promise.all(
-        (await getDashboardPropertiesAsync(client, elements)) as promiseInstantToPropertiesResponse,
+        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+          instanceMap,
+          await promisePropertyValue,
+        ]),
       )
       expect(response).toHaveLength(1)
       expect(response[0][0]).toBe(instance)
-      expect(await response[0][1]).toEqual([])
+      expect(response[0][1]).toEqual([])
     })
     it('should return empty list when got invalid response from keys request', async () => {
       connection.get.mockImplementation(async (url: string) => {
@@ -199,7 +213,10 @@ describe('gadgetFilter', () => {
         throw new Error('Unexpected url')
       })
       const response = await Promise.all(
-        (await getDashboardPropertiesAsync(client, elements)) as promiseInstantToPropertiesResponse,
+        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+          instanceMap,
+          await promisePropertyValue,
+        ]),
       )
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', undefined)
@@ -207,17 +224,20 @@ describe('gadgetFilter', () => {
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', undefined)
 
       expect(response[0][0]).toBe(instance)
-      expect(await response[0][1]).toEqual([])
+      expect(response[0][1]).toEqual([])
     })
     it('should not add properties when keys request failed', async () => {
       connection.get.mockRejectedValue(new Error('Failed to get keys'))
 
       const response = await Promise.all(
-        (await getDashboardPropertiesAsync(client, elements)) as promiseInstantToPropertiesResponse,
+        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+          instanceMap,
+          await promisePropertyValue,
+        ]),
       )
 
       expect(response[0][0]).toBe(instance)
-      expect(await response[0][1]).toEqual([])
+      expect(response[0][1]).toEqual([])
     })
 
     it('should not add properties when got invalid response from values request', async () => {
@@ -258,11 +278,14 @@ describe('gadgetFilter', () => {
       })
 
       const response = await Promise.all(
-        (await getDashboardPropertiesAsync(client, elements)) as promiseInstantToPropertiesResponse,
+        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+          instanceMap,
+          await promisePropertyValue,
+        ]),
       )
 
       expect(response[0][0]).toBe(instance)
-      expect(await response[0][1]).toEqual([
+      expect(response[0][1]).toEqual([
         ['key1', undefined],
         ['key2', 'value2'],
       ])
@@ -303,11 +326,14 @@ describe('gadgetFilter', () => {
       })
 
       const response = await Promise.all(
-        (await getDashboardPropertiesAsync(client, elements)) as promiseInstantToPropertiesResponse,
+        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+          instanceMap,
+          await promisePropertyValue,
+        ]),
       )
 
       expect(response[0][0]).toBe(instance)
-      expect(await response[0][1]).toEqual([
+      expect(response[0][1]).toEqual([
         ['key1', undefined],
         ['key2', 'value2'],
       ])
@@ -316,7 +342,7 @@ describe('gadgetFilter', () => {
   describe('onFetch', () => {
     it('should add deployment annotations to properties field', async () => {
       elements = [dashboardGadgetType]
-      adapterContext.dashboardPropertiesPromise = new Promise<[]>(res => res([]))
+      adapterContext.dashboardPropertiesPromise = []
       await filter.onFetch?.(elements)
       expect(dashboardGadgetType.fields.properties.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,

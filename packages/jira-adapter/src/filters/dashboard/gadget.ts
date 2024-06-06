@@ -44,11 +44,9 @@ import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
 
-export type promiseInstantToPropertiesResponse = Promise<(InstanceElement | Promise<unknown[][]>)[]>[]
-
-export type dashboardPropertiesResponse = {
-  propertiesValuesPromise: Promise<unknown[][][]>
-  instantToPropertiesResponse: [InstanceElement, Promise<unknown[][]>][]
+export type InstantToPropertiesResponse = {
+  instance: InstanceElement
+  promisePropertyValue: Promise<[string, unknown][]>
 }
 
 const getSubTypes = (): {
@@ -136,39 +134,32 @@ const getPropertyValue = async (instance: InstanceElement, key: string, client: 
     return undefined
   }
 }
-export const getDashboardPropertiesAsync = async (
-  client: JiraClient,
-  elements: Element[],
-): Promise<promiseInstantToPropertiesResponse> => {
-  const dashboardPropertiesResponse: dashboardPropertiesResponse = {
-    propertiesValuesPromise: Promise.resolve([]),
-    instantToPropertiesResponse: [],
-  }
-  return elements
+
+const getAPIResponse = async (client: JiraClient, instance: InstanceElement): Promise<[string, unknown][]> => {
+  const keys = await getPropertiesKeys(instance, client)
+  return Promise.all(keys.map(async key => [key, await getPropertyValue(instance, key, client)])) as Promise<
+    [string, unknown][]
+  >
+}
+
+export const getDashboardPropertiesAsync = (client: JiraClient, elements: Element[]): InstantToPropertiesResponse[] =>
+  elements
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
-    .map(async instance => {
-      const keys = await getPropertiesKeys(instance, client)
-      const propertyValuesPromise = Promise.all(
-        keys.map(async key => [key, await getPropertyValue(instance, key, client)]),
-      )
-      dashboardPropertiesResponse.instantToPropertiesResponse.push([instance, propertyValuesPromise])
-      return [instance, propertyValuesPromise]
-    })
-}
+    .map(instance => ({
+      instance,
+      promisePropertyValue: getAPIResponse(client, instance),
+    }))
 
 const filter: FilterCreator = ({ client, config, adapterContext }) => ({
   name: 'gadgetFilter',
   onFetch: async elements => {
-    const promiseInstantToPropertiesResponse: promiseInstantToPropertiesResponse =
-      await adapterContext.dashboardPropertiesPromise
-
-    const instantToPropertiesResponse = await Promise.all(promiseInstantToPropertiesResponse)
+    const instantsToPropertiesResponse: InstantToPropertiesResponse[] = adapterContext.dashboardPropertiesPromise
 
     await Promise.all(
-      instantToPropertiesResponse.map(async ([instance, promisePropertyValue]) => {
-        const properties = Object.fromEntries(await (promisePropertyValue as Promise<unknown[][]>))
-        ;(instance as InstanceElement).value.properties = _.pickBy(properties, values.isDefined)
+      instantsToPropertiesResponse.map(async ({ instance, promisePropertyValue }) => {
+        const properties = Object.fromEntries(await promisePropertyValue)
+        instance.value.properties = _.pickBy(properties, values.isDefined)
       }),
     )
 

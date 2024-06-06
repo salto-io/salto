@@ -33,16 +33,10 @@ import { JiraConfig } from '../../config/config'
 
 const log = logger(module)
 
-export type dashboardLayoutsResponse = {
-  dashboardLayoutPromise: Promise<
-    clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>[] | undefined
-  >[]
-  instanceToResponse: [InstanceElement, clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>][]
+export type InstanceToResponse = {
+  instance: InstanceElement
+  PromiseResponse: Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]> | undefined>
 }
-
-export type PromiseInstanceNameToResponse = Promise<
-  [InstanceElement, clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>]
->[]
 
 export const deployLayout = async (
   dashboardChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
@@ -87,11 +81,25 @@ export const deployLayout = async (
   })
 }
 
-export const getDashboardLayoutsAsync = async (
+const getAPIResponse = async (
+  client: JiraClient,
+  instance: InstanceElement,
+): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]> | undefined> => {
+  try {
+    return await client.get({ url: `/rest/dashboards/1.0/${instance.value.id}` })
+  } catch (err) {
+    log.warn(
+      `Failed to fetch dashboard layout for ${instance.elemID.getFullName()}: ${err}, inspectValue: ${inspectValue(err)}`,
+    )
+    return undefined
+  }
+}
+
+export const getDashboardLayoutsAsync = (
   client: JiraClient,
   config: JiraConfig,
   elements: Element[],
-): Promise<PromiseInstanceNameToResponse | undefined> => {
+): InstanceToResponse[] | undefined => {
   if (!config.client.usePrivateAPI) {
     log.debug('Skipping dashboard layout filter because private API is not enabled')
     return undefined
@@ -99,29 +107,25 @@ export const getDashboardLayoutsAsync = async (
   return elements
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
-    .map(async instance => {
-      let response
-      try {
-        response = await client.get({ url: `/rest/dashboards/1.0/${instance.value.id}` })
-      } catch (err) {
-        log.warn(
-          `Failed to fetch dashboard layout for ${instance.elemID.getFullName()}: ${err}, inspectValue: ${inspectValue(err)}`,
-        )
-      }
-      return [instance, response]
-    }) as PromiseInstanceNameToResponse
+    .map(instance => ({
+      instance,
+      PromiseResponse: getAPIResponse(client, instance),
+    }))
 }
 
 const filter: FilterCreator = ({ adapterContext }) => ({
   name: 'dashboardLayoutFilter',
   onFetch: async () => {
-    const promiseInstanceNameToResponse: PromiseInstanceNameToResponse | undefined =
-      await adapterContext.dashboardLayoutPromise
-    if (promiseInstanceNameToResponse !== undefined) {
-      const instanceToResponse = (await Promise.all(promiseInstanceNameToResponse)).filter(
-        ([_instance, response]) => response !== undefined,
-      )
-      instanceToResponse.map(async ([instance, response]) => {
+    const instanceToResponse: InstanceToResponse[] | undefined = adapterContext.dashboardLayoutPromise
+    if (instanceToResponse === undefined) {
+      return
+    }
+    await Promise.all(
+      instanceToResponse.map(async ({ instance, PromiseResponse }) => {
+        const response = await PromiseResponse
+        if (response === undefined) {
+          return
+        }
         if (Array.isArray(response.data)) {
           log.error(
             `Invalid response from server when fetching dashboard layout for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`,
@@ -129,8 +133,8 @@ const filter: FilterCreator = ({ adapterContext }) => ({
           return
         }
         instance.value.layout = response.data.layout
-      })
-    }
+      }),
+    )
   },
 })
 

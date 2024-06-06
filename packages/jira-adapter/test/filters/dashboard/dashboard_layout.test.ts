@@ -20,7 +20,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import dashboardLayoutFilter, {
   getDashboardLayoutsAsync,
-  PromiseInstanceNameToResponse,
+  InstanceToResponse,
 } from '../../../src/filters/dashboard/dashboard_layout'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_TYPE, JIRA } from '../../../src/constants'
@@ -34,13 +34,13 @@ describe('dashboardLayoutFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
   let elements: Element[]
-  let adapterContext: { dashboardLayoutPromise: Promise<PromiseInstanceNameToResponse | undefined> }
+  let adapterContext: { dashboardLayoutPromise: InstanceToResponse[] | undefined }
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
-    adapterContext = { dashboardLayoutPromise: Promise.resolve(undefined) }
+    adapterContext = { dashboardLayoutPromise: undefined }
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     filter = dashboardLayoutFilter(
       getFilterParams({
@@ -78,13 +78,11 @@ describe('dashboardLayoutFilter', () => {
 
   describe('async get', () => {
     it('should return the dashboard layout', async () => {
-      const response = await Promise.all(
-        (await getDashboardLayoutsAsync(client, config, elements)) as PromiseInstanceNameToResponse,
-      )
+      const response = getDashboardLayoutsAsync(client, config, elements) as InstanceToResponse[]
 
       expect(response).toHaveLength(1)
-      expect(response[0][0]).toBe(instance)
-      expect(response[0][1]).toEqual({
+      expect(response[0].instance).toBe(instance)
+      expect(await response[0].PromiseResponse).toEqual({
         status: 200,
         data: {
           layout: 'AAA',
@@ -94,63 +92,51 @@ describe('dashboardLayoutFilter', () => {
 
     it('should return undefined if the config usePrivateAPI is false', async () => {
       config.client.usePrivateAPI = false
-      const response = await getDashboardLayoutsAsync(client, config, elements)
+      const response = getDashboardLayoutsAsync(client, config, elements)
       expect(response).toBeUndefined()
     })
 
     it('should return empty list if the elements are not instances', async () => {
-      const response = await getDashboardLayoutsAsync(client, config, [dashboardType])
+      const response = getDashboardLayoutsAsync(client, config, [dashboardType]) as InstanceToResponse[]
       expect(response).toHaveLength(0)
     })
     it('should return undefined if the request threw an error', async () => {
       connection.get.mockRejectedValue(new Error('error'))
-      const response = await Promise.all(
-        (await getDashboardLayoutsAsync(client, config, elements)) as PromiseInstanceNameToResponse,
-      )
+      const response = getDashboardLayoutsAsync(client, config, elements) as InstanceToResponse[]
       expect(response).toHaveLength(1)
-      expect(response[0][0]).toBe(instance)
-      expect(response[0][1]).toBeUndefined()
+      expect(await response[0].PromiseResponse).toBeUndefined()
     })
   })
   describe('onFetch', () => {
     it('should add layout to the instance', async () => {
-      const p1 = new Promise<
-        [InstanceElement, clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>]
-      >(resolve =>
-        resolve([
-          instance,
-          {
-            status: 200,
-            data: {
-              layout: 'AAA',
-            },
+      const Apiresponse = new Promise<clientUtils.Response<clientUtils.ResponseValue>>(resolve =>
+        resolve({
+          status: 200,
+          data: {
+            layout: 'AAA',
           },
-        ]),
+        }),
       )
-      adapterContext.dashboardLayoutPromise = new Promise<PromiseInstanceNameToResponse>(resolve => resolve([p1]))
+      adapterContext.dashboardLayoutPromise = [{ instance, PromiseResponse: Apiresponse }]
       await filter.onFetch(elements)
       expect(instance.value.layout).toBe('AAA')
     })
     it('should not add layout when dashboardLayoutPromise is undefined', async () => {
-      adapterContext.dashboardLayoutPromise = Promise.resolve(undefined)
+      const Errorresponse = new Promise<undefined>(resolve => resolve(undefined))
+      adapterContext.dashboardLayoutPromise = [{ instance, PromiseResponse: Errorresponse }]
       await filter.onFetch(elements)
 
       expect(instance.value.layout).toBeUndefined()
       expect(connection.get).not.toHaveBeenCalled()
     })
     it('should not add layout if response is invalid', async () => {
-      const p1 = new Promise<
-        [InstanceElement, clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>]
-      >(resolve =>
-        resolve([
-          instance,
-          {
-            status: 200,
-            data: [],
-          },
-        ]),
+      const Apiresponse = new Promise<clientUtils.Response<clientUtils.ResponseValue[]>>(resolve =>
+        resolve({
+          status: 200,
+          data: [],
+        }),
       )
-      adapterContext.dashboardLayoutPromise = new Promise<PromiseInstanceNameToResponse>(resolve => resolve([p1]))
+      adapterContext.dashboardLayoutPromise = [{ instance, PromiseResponse: Apiresponse }]
       await filter.onFetch(elements)
       expect(instance.value.layout).toBeUndefined()
     })

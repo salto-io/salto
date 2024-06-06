@@ -36,6 +36,7 @@ import {
   LIFE_CYCLE_POLICY_TYPE_NAME,
   GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+  GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
 } from '../../constants'
 import { AdditionalAction, ClientOptions } from '../types'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
@@ -44,6 +45,8 @@ import {
   adjustRoleDefinitionForDeployment,
   createCustomizationsWithBasePath,
   createDefinitionForAppRoleAssignment,
+  createDefinitionForGroupLifecyclePolicyGroupModification,
+  getGroupLifecyclePolicyGroupModificationRequest,
   omitReadOnlyFields,
 } from './utils'
 
@@ -113,32 +116,6 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/directory/administrativeUnits/{id}',
-                method: 'delete',
-              },
-            },
-          },
-        ],
-      },
-    },
-  },
-  [CONDITIONAL_ACCESS_POLICY_TYPE_NAME]: {
-    requestsByAction: {
-      customizations: {
-        add: [
-          {
-            request: {
-              endpoint: {
-                path: '/identity/conditionalAccess/policies',
-                method: 'post',
-              },
-            },
-          },
-        ],
-        remove: [
-          {
-            request: {
-              endpoint: {
-                path: '/identity/conditionalAccess/policies/{id}',
                 method: 'delete',
               },
             },
@@ -245,6 +222,14 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
+          {
+            request: getGroupLifecyclePolicyGroupModificationRequest('add'),
+            condition: {
+              transformForCheck: {
+                pick: [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME],
+              },
+            },
+          },
         ],
         modify: [
           {
@@ -254,7 +239,14 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'patch',
               },
             },
+            condition: {
+              transformForCheck: {
+                omit: [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME],
+              },
+            },
           },
+          createDefinitionForGroupLifecyclePolicyGroupModification('add'),
+          createDefinitionForGroupLifecyclePolicyGroupModification('remove'),
         ],
         remove: [
           {
@@ -675,6 +667,42 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/policies/authenticationMethodsPolicy/authenticationMethodConfigurations/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [CONDITIONAL_ACCESS_POLICY_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/identity/conditionalAccess/policies',
+                method: 'post',
+              },
+            },
+          },
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/identity/conditionalAccess/policies/{id}',
+                method: 'patch',
+              },
+            },
+          },
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/identity/conditionalAccess/policies/{id}',
                 method: 'delete',
               },
             },

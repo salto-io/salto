@@ -26,7 +26,7 @@ import {
   DIRECTORY_ROLE_TEMPLATE_TYPE_NAME,
   DIRECTORY_ROLE_TYPE_NAME,
   DOMAIN_NAME_REFERENCES_FIELD_NAME,
-  GROUP_LIFE_CYCLE_POLICY_TYPE_NAME,
+  GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
   GROUP_TYPE_NAME,
   LIFE_CYCLE_POLICY_TYPE_NAME,
   ODATA_TYPE_FIELD_NACL_CASE,
@@ -107,7 +107,7 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     serializationStrategy: 'appId',
   },
   {
-    src: { field: 'id', parentTypes: [GROUP_LIFE_CYCLE_POLICY_TYPE_NAME] },
+    src: { field: GROUP_LIFE_CYCLE_POLICY_FIELD_NAME },
     target: { type: LIFE_CYCLE_POLICY_TYPE_NAME },
     serializationStrategy: 'id',
   },

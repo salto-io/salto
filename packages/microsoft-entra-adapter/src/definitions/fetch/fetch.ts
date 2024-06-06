@@ -197,6 +197,11 @@ const graphV1Customizations: FetchCustomizations = {
               ..._.omit(value, GROUP_ADDITIONAL_DATA_FIELD_NAME),
               // This is a workaround to retrieve the additional data from each group call, and then spread it into the group
               ..._.get(value, GROUP_ADDITIONAL_DATA_FIELD_NAME, [])[0],
+              // lifeCyclePolicy is a singleton
+              [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]: _.get(
+                _.get(value, GROUP_LIFE_CYCLE_POLICY_FIELD_NAME, [])[0],
+                'id',
+              ),
             },
           }
         },
@@ -231,6 +236,12 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromField: 'managedGroupTypes',
+              match: ['Selected'],
+            },
+          ],
         },
       },
     },

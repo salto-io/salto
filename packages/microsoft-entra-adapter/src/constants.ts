@@ -23,7 +23,7 @@ export const DELEGATED_PERMISSION_CLASSIFICATIONS_FIELD_NAME = 'delegatedPermiss
 export const DOMAIN_NAME_REFERENCES_FIELD_NAME = 'domainNameReferences'
 export const GROUP_ADDITIONAL_DATA_FIELD_NAME = 'additionalData'
 export const APP_ROLE_ASSIGNMENT_FIELD_NAME = 'appRoleAssignments'
-export const GROUP_LIFE_CYCLE_POLICY_FIELD_NAME = 'lifeCyclePolicies'
+export const GROUP_LIFE_CYCLE_POLICY_FIELD_NAME = 'lifeCyclePolicy'
 export const MEMBERS_FIELD_NAME = 'members'
 export const TOKEN_ISSUANCE_POLICY_FIELD_NAME = 'tokenIssuancePolicies'
 

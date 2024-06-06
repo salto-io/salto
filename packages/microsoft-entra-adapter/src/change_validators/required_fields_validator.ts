@@ -27,7 +27,6 @@ import {
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
-  AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME,
   AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME,
   AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
   CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
@@ -63,7 +62,7 @@ const validateRequiredFieldForLocation = (instance: InstanceElement): ChangeErro
       const IP_RANGES_REQUIRED_FIELDS = ['cidrAddress', ODATA_TYPE_FIELD_NACL_CASE]
 
       const ipRangesField = _.get(instance.value, 'ipRanges')
-      if (!_.isArray(ipRangesField)) {
+      if (!_.isArray(ipRangesField) || _.isEmpty(ipRangesField)) {
         return {
           elemID: instance.elemID,
           severity: 'Error',
@@ -73,12 +72,12 @@ const validateRequiredFieldForLocation = (instance: InstanceElement): ChangeErro
       }
 
       const invalidIpRangesIndices = ipRangesField
-        .filter((ipRange: unknown, index: number): number | undefined => {
+        .map((ipRange: unknown, index: number): number | undefined => {
           const missingFields = IP_RANGES_REQUIRED_FIELDS.filter(fieldName => _.isEmpty(_.get(ipRange, fieldName)))
-          return _.isEmpty(missingFields) ? index : undefined
+          return _.isEmpty(missingFields) ? undefined : index
         })
         .filter(isDefined)
-
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       return invalidIpRangesIndices.length === 0
         ? undefined
         : {
@@ -103,22 +102,22 @@ const validateRequiredFieldForLocation = (instance: InstanceElement): ChangeErro
         elemID: instance.elemID,
         severity: 'Error',
         message: `Missing required fields ${ODATA_TYPE_FIELD_NACL_CASE}`,
-        detailedMessage: `Instance ${instance.elemID.name} is missing required fields ${ODATA_TYPE_FIELD_NACL_CASE}`,
+        detailedMessage: `Instance ${instance.elemID.name} is missing required field ${ODATA_TYPE_FIELD_NACL_CASE}`,
       }
   }
 }
 
 const TYPE_TO_VALIDATION_RULES_ON_ADDITION: RequiredFieldsMap = {
-  [AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
-  [AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: { fieldNames: ['allowedCombinations'] },
   [CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: { custom: validateRequiredFieldForLocation },
+  [AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
+  [AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: { fieldNames: ['allowedCombinations'] },
   [DIRECTORY_ROLE_TYPE_NAME]: { fieldNames: ['roleTemplateId'] },
   [ROLE_DEFINITION_TYPE_NAME]: { fieldNames: ['displayName', 'rolePermissions', 'isBuiltIn'] },
 }
 
 const TYPE_TO_VALIDATION_RULES_ON_MODIFICATION: RequiredFieldsMap = {
-  [AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
   [CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: { custom: validateRequiredFieldForLocation },
+  [AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
 }
 
 const validateForChangeType = ({

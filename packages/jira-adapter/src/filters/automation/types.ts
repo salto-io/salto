@@ -183,7 +183,7 @@ export const createAutomationTypes = (): {
       schemaId: { refType: BuiltinTypes.STRING },
       objectTypeLabel: { refType: BuiltinTypes.STRING },
       objectTypeId: { refType: BuiltinTypes.STRING },
-      requestType: { refType: BuiltinTypes.STRING },
+      requestType: { refType: BuiltinTypes.UNKNOWN }, // can be string or { type: string; value: string }
       serviceDesk: {
         refType: BuiltinTypes.STRING,
         annotations: {

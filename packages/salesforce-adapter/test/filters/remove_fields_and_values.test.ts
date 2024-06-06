@@ -20,9 +20,11 @@ import {
   Element,
   InstanceElement,
 } from '@salto-io/adapter-api'
-import { makeFilter } from '../../src/filters/remove_fields_and_values'
+import removeFieldAndValuesFilter, {
+  makeFilter,
+} from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
-import { defaultFilterContext } from '../utils'
+import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
 describe('remove fields filter', () => {
@@ -158,6 +160,46 @@ describe('remove fields filter', () => {
       expect(testInstance.value.doesNotExistInType).toBeDefined()
       expect(testInstance.value.doesNotExistInType).toEqual(
         mockInstance.value.doesNotExistInType,
+      )
+    })
+  })
+  describe('Billing UniqueId', () => {
+    const billingType = createCustomObjectType(
+      'blng__RevenueRecognitionTreatment__c',
+      {
+        fields: {
+          blng_Active__c: {
+            refType: BuiltinTypes.BOOLEAN,
+          },
+          blng__UniqueId__c: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      },
+    )
+    const billingInstance = new InstanceElement('SomeInstance', billingType, {
+      blng_Active__c: true,
+      blng__UniqueId__c: 'some_unique_id',
+    })
+
+    let elements: Element[]
+
+    beforeEach(async () => {
+      elements = [billingType, billingInstance].map((element) =>
+        element.clone(),
+      )
+      const filterUnderTest = removeFieldAndValuesFilter({
+        config: defaultFilterContext,
+      }) as FilterWith<'onFetch'>
+      await filterUnderTest.onFetch(elements)
+    })
+
+    it('should remove only the appropriate field', () => {
+      expect((elements[0] as ObjectType).fields).not.toContainKey(
+        'blng__UniqueId__c',
+      )
+      expect((elements[1] as InstanceElement).value).not.toContainKey(
+        'blng__UniqueId__c',
       )
     })
   })

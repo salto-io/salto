@@ -171,18 +171,26 @@ describe('remove fields filter', () => {
           apiName: 'blng__RevenueRecognitionTreatment__c',
         },
         fields: {
-          blng_Active__c: {
+          blng__Active__c: {
             refType: BuiltinTypes.BOOLEAN,
           },
           blng__UniqueId__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          blng__Family__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          blng__NextOpenPeriod__c: {
             refType: BuiltinTypes.STRING,
           },
         },
       },
     )
     const billingInstance = new InstanceElement('SomeInstance', billingType, {
-      blng_Active__c: true,
+      blng__Active__c: true,
       blng__UniqueId__c: 'some_unique_id',
+      blng__Family__c: 'some_family',
+      blng__NextOpenPeriod__c: 'some_period',
     })
 
     let elements: Element[]
@@ -198,12 +206,16 @@ describe('remove fields filter', () => {
     })
 
     it('should remove only the appropriate field', () => {
-      expect((elements[0] as ObjectType).fields).not.toContainKey(
-        'blng__UniqueId__c',
-      )
-      expect((elements[1] as InstanceElement).value).not.toContainKey(
-        'blng__UniqueId__c',
-      )
+      const objectType = elements[0] as ObjectType
+      const instance = elements[1] as InstanceElement
+      expect(objectType.fields).not.toContainKey('blng__UniqueId__c')
+      expect(objectType.fields).not.toContainKey('blng__Family__c')
+      expect(objectType.fields).not.toContainKey('blng__NextOpenPeriod__c')
+      expect(objectType.fields).toContainKey('blng__Active__c')
+      expect(instance.value).not.toContainKey('blng__UniqueId__c')
+      expect(instance.value).not.toContainKey('blng__Family__c')
+      expect(instance.value).not.toContainKey('blng__NextOpenPeriod__c')
+      expect(instance.value).toContainKey('blng__Active__c')
     })
   })
 })

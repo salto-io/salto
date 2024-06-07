@@ -25,7 +25,10 @@ import { apiNameSync, isCustomObjectSync, metadataTypeSync } from './utils'
 
 const TYPE_NAME_TO_FIELD_REMOVALS: Map<string, string[]> = new Map([
   ['Profile', ['tabVisibilities']],
-  ['blng__RevenueRecognitionTreatment__c', ['blng__UniqueId__c']],
+  [
+    'blng__RevenueRecognitionTreatment__c',
+    ['blng__UniqueId__c', 'blng__Family__c', 'blng__NextOpenPeriod__c'],
+  ],
 ])
 
 const fieldRemovalsForType = (

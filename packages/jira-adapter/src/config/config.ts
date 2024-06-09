@@ -221,6 +221,7 @@ export type ChangeValidatorName =
   | 'workflowStatusMappings'
   | 'inboundTransition'
   | 'issueTypeSchemeMigration'
+  | 'missingExtensionsTransitionRules'
   | 'activeSchemeChange'
   | 'masking'
   | 'issueTypeDeletion'
@@ -284,6 +285,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
     inboundTransition: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    missingExtensionsTransitionRules: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
     masking: { refType: BuiltinTypes.BOOLEAN },
     issueTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
@@ -315,6 +317,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+
 const jiraDeployConfigType = definitions.createUserDeployConfigType(JIRA, changeValidatorConfigType, {
   ...defaultMissingUserFallbackField,
   taskMaxRetries: { refType: BuiltinTypes.NUMBER },

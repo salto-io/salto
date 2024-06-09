@@ -41,6 +41,25 @@ const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
 
 const RATE_LIMIT_HEADER_PREFIX = 'x-ratelimit-'
 
+export const GET_CLOUD_ID_URL = '/_edge/tenant_info'
+export const GQL_BASE_URL_GIRA = '/rest/gira/1'
+export const GQL_BASE_URL_GATEWAY = '/gateway/api/graphql'
+
+export type CloudIdResponseType = {
+  cloudId: string
+}
+
+const CLOUD_ID_RESPONSE_SCHEME = Joi.object({
+  cloudId: Joi.required(),
+})
+  .unknown(true)
+  .required()
+
+const isCloudIdResponse = createSchemeGuard<CloudIdResponseType>(
+  CLOUD_ID_RESPONSE_SCHEME,
+  'Failed to get cloud id response with the expected format.',
+)
+
 export type graphQLResponseType = {
   data: unknown
   errors?: unknown[]
@@ -60,7 +79,7 @@ const isGraphQLResponse = createSchemeGuard<graphQLResponseType>(
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<Credentials, definitions.ClientRateLimitConfig> {
   readonly isDataCenter: boolean
-
+  private cloudId: Promise<string> | undefined
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig> & { isDataCenter: boolean },
   ) {
@@ -246,5 +265,22 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
         ...(args.headers ?? {}),
       },
     })
+  }
+
+  private async getCloudIdPromise(): Promise<string> {
+    const response = await this.get({
+      url: GET_CLOUD_ID_URL,
+    })
+    if (!isCloudIdResponse(response.data)) {
+      throw new Error(`'Failed to get cloud id, received invalid response' ${response.data}`)
+    }
+    return response.data.cloudId
+  }
+
+  public async getCloudId(): Promise<string> {
+    if (this.cloudId === undefined) {
+      this.cloudId = this.getCloudIdPromise()
+    }
+    return this.cloudId
   }
 }

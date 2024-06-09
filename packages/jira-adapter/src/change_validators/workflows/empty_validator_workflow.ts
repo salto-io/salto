@@ -28,7 +28,7 @@ import { isWorkflowV1Instance, Transition as TransitionV1, WorkflowV1Instance } 
 import {
   isWorkflowInstance,
   isWorkflowV2Instance,
-  WorkflowTransitionV2,
+  WorkflowV2Transition,
   WorkflowV2Instance,
 } from '../../filters/workflowV2/types'
 
@@ -63,10 +63,10 @@ const workflowV1HasEmptyValidator = (transition: TransitionV1, invalidValidators
   })
 }
 
-const workflowV2HasEmptyValidator = (transition: WorkflowTransitionV2, invalidValidators: Set<string>): void => {
+const workflowV2HasEmptyValidator = (transition: WorkflowV2Transition, invalidValidators: Set<string>): void => {
   transition.validators?.forEach(validator => {
     if (isEmptyValidatorV2(validator)) {
-      invalidValidators.add(validator.parameters.ruleType)
+      invalidValidators.add(_.get(validator, 'parameters.ruleType'))
     }
   })
 }

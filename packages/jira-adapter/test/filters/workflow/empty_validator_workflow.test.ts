@@ -116,17 +116,20 @@ describe('empty validator workflow', () => {
             type: 'Directed',
             validators: [
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'fieldHasSingleValue',
                   fieldKey: 'fieldKey',
                 },
               },
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'addonType',
                 },
               },
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'fieldHasSingleValue',
                 },
@@ -142,12 +145,14 @@ describe('empty validator workflow', () => {
         await filter.preDeploy(changes)
         expect(getChangeData(changes[0]).value.transitions.tran1.validators).toEqual([
           {
+            ruleKey: 'ruleKey',
             parameters: {
               ruleType: 'fieldHasSingleValue',
               fieldKey: 'fieldKey',
             },
           },
           {
+            ruleKey: 'ruleKey',
             parameters: {
               ruleType: 'addonType',
             },
@@ -158,12 +163,14 @@ describe('empty validator workflow', () => {
         workflowV2Instance.value.transitions.tran1.validators.pop()
         expect(getChangeData(changes[0]).value.transitions.tran1.validators).toEqual([
           {
+            ruleKey: 'ruleKey',
             parameters: {
               ruleType: 'fieldHasSingleValue',
               fieldKey: 'fieldKey',
             },
           },
           {
+            ruleKey: 'ruleKey',
             parameters: {
               ruleType: 'addonType',
             },

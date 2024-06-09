@@ -370,26 +370,25 @@ export const transformValuesSync = ({
 
 export const elementAnnotationTypes = async (
   element: Element,
-  elementsSource?: ReadOnlyElementsSource,
+  elementSource?: ReadOnlyElementsSource,
 ): Promise<TypeMap> => {
   if (isInstanceElement(element)) {
     return InstanceAnnotationTypes
   }
 
-  let typeAnnotationTypes: TypeMap
+  let annotationsType: Element
   if (isField(element)) {
-    typeAnnotationTypes = await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
+    annotationsType = await element.getType(elementSource)
   } else if (isObjectType(element)) {
-    typeAnnotationTypes = await ((await element.getMetaType(elementsSource))?.getAnnotationTypes(elementsSource) ??
-      element.getAnnotationTypes(elementsSource))
+    annotationsType = (await element.getMetaType(elementSource)) ?? element
   } else {
-    typeAnnotationTypes = await element.getAnnotationTypes(elementsSource)
+    annotationsType = element
   }
 
   return {
     ...InstanceAnnotationTypes,
     ...CoreAnnotationTypes,
-    ...typeAnnotationTypes,
+    ...(await annotationsType.getAnnotationTypes(elementSource)),
   }
 }
 

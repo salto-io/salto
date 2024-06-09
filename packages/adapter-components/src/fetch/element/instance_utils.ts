@@ -170,6 +170,17 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   return { toElemName, toPath }
 }
 
+const removeNullValuesTransformFunc: TransformFuncSync = ({ value }) => (value === null ? undefined : value)
+
+const removeNullValues = (values: Values, type: ObjectType, allowEmpty = false): Values =>
+  transformValuesSync({
+    values,
+    type,
+    transformFunc: removeNullValuesTransformFunc,
+    strict: false,
+    allowEmpty,
+  }) ?? {}
+
 /**
  * Generate an instance for a single entry returned for a given type, and set its elem id and path.
  * Assuming the entry is already in its final structure (after running to InstanceValue).
@@ -181,7 +192,7 @@ export const createInstance = ({
   toPath,
   defaultName,
   parent,
-}: InstanceCreationParams): InstanceElement | undefined => {
+}: InstanceCreationParams): InstanceElement | undefined | undefined => {
   const annotations = _.pick(entry, Object.keys(INSTANCE_ANNOTATIONS))
   const value = _.omit(entry, Object.keys(INSTANCE_ANNOTATIONS))
   const refinedValue = value !== undefined ? removeNullValues(value, type) : {}

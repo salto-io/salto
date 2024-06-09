@@ -41,6 +41,7 @@ import {
 } from '../../definitions'
 import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
+import { removeNullValues } from './type_utils'
 
 /**
  * Transform a value to a valid instance value by nacl-casing all its keys,
@@ -168,17 +169,6 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
 
   return { toElemName, toPath }
 }
-
-const removeNullValuesTransformFunc: TransformFuncSync = ({ value }) => (value === null ? undefined : value)
-
-const removeNullValues = (values: Values, type: ObjectType, allowEmpty = false): Values =>
-  transformValuesSync({
-    values,
-    type,
-    transformFunc: removeNullValuesTransformFunc,
-    strict: false,
-    allowEmpty,
-  }) ?? {}
 
 /**
  * Generate an instance for a single entry returned for a given type, and set its elem id and path.

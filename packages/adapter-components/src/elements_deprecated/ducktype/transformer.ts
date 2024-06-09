@@ -22,7 +22,6 @@ import {
   ObjectType,
   ElemIdGetter,
   SaltoError,
-  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -346,6 +345,7 @@ export const getTypeAndInstances = async ({
   const filteredInstances = customInstanceFilter !== undefined ? customInstanceFilter(instances) : instances
   const elements = [type, ...nestedTypes, ...filteredInstances]
   const transformationConfigByType = getTransformationConfigByType(typesConfig)
+
   // We currently don't support extracting standalone fields from the types we recursed into
   await extractStandaloneFields({
     adapterName,
@@ -470,7 +470,6 @@ export const getAllElements = async ({
   })
   const objectTypes = Object.fromEntries(elements.filter(isObjectType).map(e => [e.elemID.name, e]))
   const instancesAndTypes = [...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e))]
-
   if (shouldAddRemainingTypes) {
     addRemainingTypes({
       adapterName,
@@ -480,7 +479,6 @@ export const getAllElements = async ({
       typeDefaultConfig: typeDefaults,
     })
   }
-
   return {
     elements: instancesAndTypes,
     configChanges: getUniqueConfigSuggestions(configSuggestions),

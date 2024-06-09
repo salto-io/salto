@@ -23,9 +23,10 @@ import {
   ElemID,
   ElemIdGetter,
 } from '@salto-io/adapter-api'
-import { pathNaclCase, naclCase, TransformFunc, TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
+import { pathNaclCase, naclCase, TransformFunc, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lDValues } from '@salto-io/lowerdash'
+import { removeNullValues } from '../fetch/element/type_utils'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from '../fetch/element/constants'
 import {
   TransformationConfig,
@@ -129,17 +130,6 @@ export const generateInstanceNameFromConfig = (
     ? getNameMapping({ name: instanceName, nameMapping, customNameMappingFunctions: {} })
     : instanceName
 }
-
-export const removeNullValuesTransformFunc: TransformFuncSync = ({ value }) => (value === null ? undefined : value)
-
-export const removeNullValues = (values: Values, type: ObjectType, allowEmpty = false): Values =>
-  transformValuesSync({
-    values,
-    type,
-    transformFunc: removeNullValuesTransformFunc,
-    strict: false,
-    allowEmpty,
-  }) ?? {}
 
 export const getInstanceNaclName = ({
   entry,

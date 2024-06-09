@@ -33,4 +33,10 @@ logsalto.log
 # parsed blueprint cache
 .cache
 
+# turbo
+packages/**/.turbo
+.turbo/cache
+.turbo/cookies
+.turbo/daemon
+
 .eslintcache

@@ -75,6 +75,9 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
+    mockAxiosAdapter
+      .onGet('https://api.pagerduty.com/users?include[]=subdomains')
+      .reply(200, { users: [{ subdomains: ['salto'] }] })
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
@@ -262,6 +265,22 @@ describe('adapter', () => {
       expect(getChangeData(modify).value.description).toEqual('new desc')
       const add = results[1].appliedChanges[0] as Change<InstanceElement>
       expect(getChangeData(add).value.name).toEqual('IT Mainframe Policy2')
+    })
+  })
+  describe('creating adapter with the wrong subdomain', () => {
+    it('should not return any elements in the fetch', async () => {
+      expect(adapter.configType).toBeDefined()
+      const { elements } = await adapter
+        .operations({
+          credentials: new InstanceElement('config', credentialsType, {
+            accessToken: 'pass',
+            subdomain: 'not-salto',
+          }),
+          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+        .fetch({ progressReporter: { reportProgress: () => null } })
+      expect(elements).toEqual([])
     })
   })
 })

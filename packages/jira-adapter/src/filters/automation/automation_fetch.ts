@@ -153,11 +153,12 @@ const createInstance = (
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
   const serviceIds = elementUtils.createServiceIds({ entry: values, serviceIDFields: ['id'], typeID: type.elemID })
-  const idFields = configUtils.getTypeTransformationConfig(
+  const TypeTransformationConfig = configUtils.getTypeTransformationConfig(
     AUTOMATION_TYPE,
     config.apiDefinitions.types,
     config.apiDefinitions.typeDefaults,
-  ).idFields ?? ['name']
+  )
+  const idFields = TypeTransformationConfig.idFields ?? ['name']
   const idFieldsWithoutProjects = idFields.filter(field => field !== PROJECTS_FIELD)
   const defaultName = naclCase(
     [
@@ -173,7 +174,12 @@ const createInstance = (
 
   const instanceName = getElemIdFunc && serviceIds ? getElemIdFunc(JIRA, serviceIds, defaultName).name : defaultName
 
-  return new InstanceElement(instanceName, type, values, [
+  const valuesAfterOmitFields = _.omit(
+    values,
+    (TypeTransformationConfig.fieldsToOmit ?? []).map(field => field.fieldName),
+  )
+
+  return new InstanceElement(instanceName, type, valuesAfterOmitFields, [
     JIRA,
     elementUtils.RECORDS_PATH,
     AUTOMATION_TYPE,

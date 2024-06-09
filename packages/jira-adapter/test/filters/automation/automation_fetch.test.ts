@@ -65,6 +65,7 @@ describe('automationFetchFilter', () => {
               'ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/3',
             ],
           },
+          ruleHome: 'some value', // should always omit this field
         },
       ],
     },

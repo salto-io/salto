@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { logger } from '@salto-io/logging'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementsAndErrors } from '../../definitions/system/fetch/element'
 import { generateType } from './type_element'
 import { createInstance, getInstanceCreationFunctions, recursiveNaclCase } from './instance_utils'
@@ -22,6 +23,7 @@ import { GenerateTypeArgs } from '../../definitions/system/fetch/types'
 import { InvalidSingletonType } from './type_utils'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 
+const { isDefined } = lowerdashValues
 const log = logger(module)
 
 /**
@@ -75,6 +77,7 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
         defaultName: `unnamed_${index}`,
       }),
     )
+    .filter(isDefined)
 
   // TODO filter instances by fetch query before extracting standalone fields (SALTO-5425)
 

@@ -19,8 +19,9 @@
   },
   "scripts": {
     "preinstall": "./build_utils/find_conflicting_versions.js",
+    "import-plugins": "./build_utils/import-plugins.js",
     "verify": "./build_utils/verify_tsconfig_references.js",
-    "pre-build": "yarn verify && yarn generate",
+    "pre-build": "yarn import-plugins && yarn verify && yarn generate",
     "build": "yarn pre-build && yarn build-ts && yarn lint",
     "generate": "yarn workspaces foreach -vpAi -j 4 run generate",
     "lint": "./build_utils/turbo_run.sh lint",

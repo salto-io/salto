@@ -65,6 +65,7 @@ describe('automationFetchFilter', () => {
               'ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/3',
             ],
           },
+          ruleHome: 'some value', // should always omit this field
         },
       ],
     },
@@ -803,7 +804,6 @@ describe('automationFetchFilter', () => {
       expect(automation.value).toEqual({
         id: '1',
         name: 'automationName',
-        projects: [],
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },
@@ -825,8 +825,6 @@ describe('automationFetchFilter', () => {
               },
             ],
           },
-          children: [],
-          conditions: [],
         },
         components: [
           {
@@ -866,11 +864,8 @@ describe('automationFetchFilter', () => {
                     },
                   ],
                 },
-                children: [],
-                conditions: [],
               },
             ],
-            conditions: [],
           },
         ],
       })
@@ -905,7 +900,6 @@ describe('automationFetchFilter', () => {
       expect(automation.value).toEqual({
         id: '1',
         name: 'automationName',
-        projects: [],
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },
@@ -924,8 +918,6 @@ describe('automationFetchFilter', () => {
               },
             ],
           },
-          children: [],
-          conditions: [],
         },
         components: [
           {
@@ -959,11 +951,8 @@ describe('automationFetchFilter', () => {
                     },
                   ],
                 },
-                children: [],
-                conditions: [],
               },
             ],
-            conditions: [],
           },
         ],
       })
@@ -992,7 +981,6 @@ describe('automationFetchFilter', () => {
                 {
                   id: '1',
                   name: 'automationName',
-                  projects: [],
                   ruleScope: {
                     resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
                   },
@@ -1013,8 +1001,6 @@ describe('automationFetchFilter', () => {
                         },
                       ],
                     },
-                    children: [],
-                    conditions: [],
                   },
                   components: [
                     {
@@ -1033,8 +1019,6 @@ describe('automationFetchFilter', () => {
                           },
                         ],
                       },
-                      children: [],
-                      conditions: [],
                     },
                   ],
                 },
@@ -1072,7 +1056,6 @@ describe('automationFetchFilter', () => {
       expect(automation.value).toEqual({
         id: '1',
         name: 'automationName',
-        projects: [],
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },
@@ -1090,8 +1073,6 @@ describe('automationFetchFilter', () => {
               },
             ],
           },
-          children: [],
-          conditions: [],
         },
         components: [
           {
@@ -1108,8 +1089,6 @@ describe('automationFetchFilter', () => {
                 },
               ],
             },
-            children: [],
-            conditions: [],
           },
         ],
       })
@@ -1138,7 +1117,6 @@ describe('automationFetchFilter', () => {
                 {
                   id: '1',
                   name: 'automationName',
-                  projects: [],
                   ruleScope: {
                     resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
                   },
@@ -1160,8 +1138,6 @@ describe('automationFetchFilter', () => {
                           },
                         ],
                       },
-                      children: [],
-                      conditions: [],
                     },
                   ],
                 },
@@ -1199,11 +1175,9 @@ describe('automationFetchFilter', () => {
       expect(automation.value).toEqual({
         id: '1',
         name: 'automationName',
-        projects: [],
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },
-        trigger: {},
         components: [
           {
             component: 'ACTION',
@@ -1221,8 +1195,6 @@ describe('automationFetchFilter', () => {
                 },
               ],
             },
-            children: [],
-            conditions: [],
           },
         ],
       })
@@ -1251,7 +1223,6 @@ describe('automationFetchFilter', () => {
                 {
                   id: '1',
                   name: 'automationName',
-                  projects: [],
                   ruleScope: {
                     resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
                   },
@@ -1290,7 +1261,6 @@ describe('automationFetchFilter', () => {
       expect(automation.value).toEqual({
         id: '1',
         name: 'automationName',
-        projects: [],
         ruleScope: {
           resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
         },

@@ -21,7 +21,7 @@ import {
   ReferenceExpression,
   Values,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -31,7 +31,6 @@ import {
   AUTOMATION_RETRY_PERIODS,
   AUTOMATION_TYPE,
   fetchFailedWarnings,
-  JIRA,
   PROJECT_TYPE,
   PROJECTS_FIELD,
 } from '../../constants'
@@ -41,6 +40,7 @@ import { createAutomationTypes } from './types'
 import { JiraConfig } from '../../config/config'
 import { getCloudId } from './cloud_id'
 import { convertRuleScopeValueToProjects } from './automation_structure'
+import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 
 const AUTOMATION_RETRY_CODES = [504, 502]
 
@@ -145,40 +145,38 @@ const postPaginated = async (url: string, client: JiraClient, pageSize: number):
   return items
 }
 
-const createInstance = (
+const createInstance = async (
   values: Values,
   type: ObjectType,
   idToProject: Record<string, InstanceElement>,
   config: JiraConfig,
   getElemIdFunc?: ElemIdGetter,
-): InstanceElement => {
-  const serviceIds = elementUtils.createServiceIds({ entry: values, serviceIDFields: ['id'], typeID: type.elemID })
+): Promise<InstanceElement> => {
   const idFields = configUtils.getTypeTransformationConfig(
     AUTOMATION_TYPE,
     config.apiDefinitions.types,
     config.apiDefinitions.typeDefaults,
   ).idFields ?? ['name']
   const idFieldsWithoutProjects = idFields.filter(field => field !== PROJECTS_FIELD)
-  const defaultName = naclCase(
-    [
-      getInstanceName(values, idFieldsWithoutProjects, AUTOMATION_TYPE) ?? '',
-      ...(idFields.includes(PROJECTS_FIELD)
-        ? (convertRuleScopeValueToProjects(values) ?? [])
-            .map((project: Values) => idToProject[project.projectId]?.value.name)
-            .filter(lowerdashValues.isDefined)
-            .sort()
-        : []),
-    ].join('_'),
-  )
+  const defaultName = [
+    getInstanceName(values, idFieldsWithoutProjects, AUTOMATION_TYPE) ?? '',
+    ...(idFields.includes(PROJECTS_FIELD)
+      ? (convertRuleScopeValueToProjects(values) ?? [])
+          .map((project: Values) => idToProject[project.projectId]?.value.name)
+          .filter(lowerdashValues.isDefined)
+          .sort()
+      : []),
+  ].join('_')
 
-  const instanceName = getElemIdFunc && serviceIds ? getElemIdFunc(JIRA, serviceIds, defaultName).name : defaultName
-
-  return new InstanceElement(instanceName, type, values, [
-    JIRA,
-    elementUtils.RECORDS_PATH,
-    AUTOMATION_TYPE,
-    pathNaclCase(instanceName),
-  ])
+  return elementUtils.toBasicInstance({
+    entry: values,
+    type,
+    transformationConfigByType: configUtils.getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
+    transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
+    defaultName,
+    getElemIdFunc,
+    takeDefaultName: true,
+  })
 }
 
 // For components that has assets fields, we need to remove some fields that can be calculated from the schema and object type
@@ -247,9 +245,13 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       const automations = await getAutomations(client, config)
       const { automationType, subTypes } = createAutomationTypes()
 
-      automations.forEach(automation =>
-        elements.push(createInstance(automation, automationType, idToProject, config, getElemIdFunc)),
+      const automationsToPush = await Promise.all(
+        automations.map(async automation =>
+          createInstance(automation, automationType, idToProject, config, getElemIdFunc),
+        ),
       )
+      elements.push(...automationsToPush)
+
       if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
         elements
           .filter(isInstanceElement)

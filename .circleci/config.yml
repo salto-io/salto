@@ -15,19 +15,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run Find Changed Packages Script
-          command: |
-            find ./packages -mindepth 1 -maxdepth 1 -type d '!' -exec test -e "{}/package.json" ';' -print \
-              | xargs --no-run-if-empty rm -r
-
-      - run: yarn config set ignore-engines true
-
-      - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
-
-        # Yarn has some random race-condition failures, trying multiple times seems to help
-        # when the source of the problem is yarn itself and not the packages
-      - run: yarn || yarn || yarn
-      - run:
           name: Compile and Run Find Changed Packages Script
           command: |
             pushd .circleci/scripts
@@ -42,8 +29,7 @@ jobs:
 workflows:
   commit:
     jobs:
-      - find_changed_packages:
-          context: salto
+      - find_changed_packages
       - continuation/continue:
           requires:
             - find_changed_packages

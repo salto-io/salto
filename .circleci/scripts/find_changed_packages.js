@@ -20,11 +20,10 @@ const path = require('path')
 
 const getChangedFiles = (userInputBaseCommit) => {
   const commitHashRegex = /\b[0-9a-f]{9}/g
-  // If we didn't get a defined commit hash, take one commit back from the first commit in this PR
-  const baseCommit = userInputBaseCommit ?? `${execSync('curl -s -H "Authorization: token ${GITHUB_AUTH_TOKEN}" https://api.github.com/repos/salto-io/salto/pulls/5931/commits | jq -r ".[0] | .sha" | tr -d "\n"')}^`
+  const baseCommit = userInputBaseCommit ?? execSync('git merge-base main HEAD').toString().trim()
   console.log('base commit:', baseCommit)
-  const output = execSync(`git log --oneline --name-only ${baseCommit}..HEAD`).toString().split('\n').filter(line => !commitHashRegex.test(line))
-  console.log('git log output:', output)
+  const output = execSync(`git diff --oneline --name-only ${baseCommit}..HEAD`).toString().split('\n')
+  console.log('git diff output:', output)
   return output.filter(file => file && file.startsWith('packages/'))
 }
 
@@ -72,13 +71,14 @@ const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
   const changedPackageLocation = changedFiles.map(path => path.split('/').slice(0, 2).join('/')).filter((value, index, self) => self.indexOf(value) === index)
 
   const changedPackages = changedPackageLocation.map(packageDir =>Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir))
-  return changedPackages
+  // if there are undefined values, it means that there are files that changed outside of the packages directory. Return null to indicate that we should test all packages
+  const hasChangedFilesOutsidePackage = changedPackages.length === 0 || changedPackages.some(pkg => !pkg)
+  console.log('Changed packages:', changedPackages)
+  console.log('Has undefined packages:', hasChangedFilesOutsidePackage)
+  return hasChangedFilesOutsidePackage ? null : changedPackages
 }
 
-const getPackagesToTest = (userInputBaseCommit, workspaceInfo) => {
-  const changedPackages = findChangedPackages(userInputBaseCommit, workspaceInfo)
-  console.log('Changed packages:', changedPackages)
-
+const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
   const dependencyMapping = generateDependencyMapping(workspaceInfo)
   console.log('Dependency mapping:', dependencyMapping)
 
@@ -87,9 +87,16 @@ const getPackagesToTest = (userInputBaseCommit, workspaceInfo) => {
   const dependenciesLocation = changedPackagesDependencies.map(pkg => workspaceInfo[pkg].location).concat(changedPackages.map(pkg => workspaceInfo[pkg].location)).sort()
   console.log('Changed packages with dependencies:', dependenciesLocation)
 
-  packagesToTest = dependenciesLocation.map(location => location.replace('packages/', ''))
-  console.log('Packages to test:', packagesToTest)
+  const packagesToTest = dependenciesLocation.map(location => location.replace('packages/', ''))
   return packagesToTest
+}
+
+const getPackagesToTest = (userInputBaseCommit, workspaceInfo, allPackages) => {
+  const changedPackages = findChangedPackages(userInputBaseCommit, workspaceInfo)
+  console.log('Changed packages:', changedPackages)
+
+  return changedPackages ? getDependenciesFromChangedPackages(changedPackages, workspaceInfo) : allPackages
+
 }
 
 const main = () => {
@@ -102,7 +109,8 @@ const main = () => {
   const workspaceInfo = getWorkspacesInfo()
   const allPackages = Object.keys(workspaceInfo).map(pkg => workspaceInfo[pkg].location.replace('packages/', '')).sort()
   // on main branch, we want to test all packages
-  const packagesToTest = process.env.CIRCLE_BRANCH === 'main' ? allPackages : getPackagesToTest(userInputBaseCommit, workspaceInfo)
+  const packagesToTest = process.env.CIRCLE_BRANCH === 'main' ? allPackages : getPackagesToTest(userInputBaseCommit, workspaceInfo, allPackages)
+  console.log('Packages to test:', packagesToTest)
 
   const e2ePackagesToTest = packagesToTest.filter(hasE2eTests)
   const packagesWithE2eTestsFilePath = path.join(__dirname, '..', 'e2e_packages_to_test.txt')

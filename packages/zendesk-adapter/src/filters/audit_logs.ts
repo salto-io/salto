@@ -234,6 +234,10 @@ const getChangedByName = async ({
 const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string, InstanceElement>): void => {
   // add update at for all the elements
   instances.forEach(elem => {
+    if (elem.elemID.typeName === 'macro_categories') {
+      // eslint-disable-next-line no-console
+      console.log('hi!', elem)
+    }
     if (elem.value.updated_at !== undefined) {
       elem.annotations[CORE_ANNOTATIONS.CHANGED_AT] = elem.value.updated_at
     }
@@ -402,6 +406,8 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
     // add update at for all the elements
     const instances = elements.filter(isInstanceElement)
     const idByInstance = _.keyBy(instances, inst => inst.elemID.getFullName())
+    // eslint-disable-next-line no-console
+    console.log('hi', instances.length)
     addChangedAt(instances, idByInstance)
 
     // create time elements

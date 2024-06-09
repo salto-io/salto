@@ -198,11 +198,11 @@ import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import asyncApiCallsFilter from './filters/async_api_calls'
 import addImportantValuesFilter from './filters/add_important_values'
 import ScriptRunnerClient from './client/script_runner_client'
-import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
 import { hasSoftwareProject } from './utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
+import { createFixElementFunctions } from './fix_elements'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -471,9 +471,7 @@ export default class JiraAdapter implements AdapterOperations {
         objects.concatObjects,
       )
 
-    this.fixElementsFunc = combineElementFixers(
-      _.mapValues(weakReferenceHandlers, handler => handler.removeWeakReferences({ elementsSource })),
-    )
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ elementsSource, client, config }))
   }
 
   private async generateSwaggers(): Promise<AdapterSwaggers> {

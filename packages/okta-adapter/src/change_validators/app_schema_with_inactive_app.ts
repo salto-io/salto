@@ -17,10 +17,12 @@ import {
   ChangeValidator,
   getChangeData,
   isInstanceChange,
-  isModificationChange,
   InstanceElement,
   ModificationChange,
   isInstanceElement,
+  isAdditionOrModificationChange,
+  AdditionChange,
+  isAdditionChange,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -31,17 +33,22 @@ const log = logger(module)
 
 const isWithInactiveApp = (
   app: InstanceElement,
-  appChange: ModificationChange<InstanceElement> | undefined,
+  appChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement> | undefined,
 ): boolean => {
   if (appChange === undefined) {
     return app.value?.status === INACTIVE_STATUS
   }
-  const beforeAppStatus = appChange.data.before.value?.status
   const afterAppStatus = appChange.data.after.value?.status
+  if (isAdditionChange(appChange)) {
+    return afterAppStatus === INACTIVE_STATUS
+  }
+  const beforeAppStatus = appChange.data.before.value?.status
   return beforeAppStatus === INACTIVE_STATUS && afterAppStatus === INACTIVE_STATUS
 }
 
-export const getParentApp = (change: ModificationChange<InstanceElement>): InstanceElement | undefined => {
+export const getParentApp = (
+  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
+): InstanceElement | undefined => {
   const parents = getParents(getChangeData(change))
   if (
     _.isEmpty(parents) ||
@@ -61,7 +68,7 @@ export const appUserSchemaWithInactiveAppValidator: ChangeValidator = async chan
   const [appUserSchemaChanges, appChanges] = _.partition(
     changes
       .filter(isInstanceChange)
-      .filter(isModificationChange)
+      .filter(isAdditionOrModificationChange)
       .filter(change =>
         [APP_USER_SCHEMA_TYPE_NAME, APPLICATION_TYPE_NAME].includes(getChangeData(change).elemID.typeName),
       ),
@@ -91,8 +98,8 @@ export const appUserSchemaWithInactiveAppValidator: ChangeValidator = async chan
       return {
         elemID: appUserSchema.elemID,
         severity: 'Error',
-        message: `Cannot modify App User schema when its associated app is ${INACTIVE_STATUS}`,
-        detailedMessage: `Cannot modify App User schema '${appUserSchema.elemID.name}' because its associated app '${appName}' is inactive. Please activate the app in order to modify this element.`,
+        message: `Cannot deploy App User schema when its associated app is ${INACTIVE_STATUS}`,
+        detailedMessage: `Cannot deploy App User schema '${appUserSchema.elemID.name}' because its associated app '${appName}' is inactive. Please activate the app in order to modify this element.`,
       }
     })
 }

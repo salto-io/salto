@@ -31,7 +31,14 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
-import { DefQuery, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
+import {
+  ApiDefinitions,
+  APIDefinitionsOptions,
+  DefQuery,
+  NameMappingFunctionMap,
+  queryWithDefault,
+  ResolveCustomNameMappingOptionsType,
+} from '../../definitions'
 import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 
@@ -183,4 +190,15 @@ export const createInstance = ({
 
   const args = { entry, parent, defaultName }
   return new InstanceElement(toElemName(args), type, value, toPath(args), annotations)
+}
+
+export const getFieldsToOmit = <Options extends APIDefinitionsOptions = {}>(
+  definitions: ApiDefinitions<Options>,
+  typeName: string,
+): string[] => {
+  const defQuery = queryWithDefault(definitions.fetch?.instances ?? {})
+  const customizations = defQuery.query(typeName)?.element?.fieldCustomizations ?? {}
+  return Object.entries(customizations)
+    .filter(([, customization]) => customization.omit === true)
+    .map(([fieldName]) => fieldName)
 }

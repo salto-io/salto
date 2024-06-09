@@ -60,8 +60,8 @@ describe('appSchemaWithInActiveAppValidator', () => {
       {
         elemID: appUserSchema1.elemID,
         severity: 'Error',
-        message: `Cannot modify App User schema when its associated app is ${INACTIVE_STATUS}`,
-        detailedMessage: `Cannot modify App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app in order to modify this element.`,
+        message: `Cannot deploy App User schema when its associated app is ${INACTIVE_STATUS}`,
+        detailedMessage: `Cannot deploy App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app in order to modify this element.`,
       },
     ])
   })
@@ -80,8 +80,8 @@ describe('appSchemaWithInActiveAppValidator', () => {
       {
         elemID: appUserSchema1.elemID,
         severity: 'Error',
-        message: `Cannot modify App User schema when its associated app is ${INACTIVE_STATUS}`,
-        detailedMessage: `Cannot modify App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app in order to modify this element.`,
+        message: `Cannot deploy App User schema when its associated app is ${INACTIVE_STATUS}`,
+        detailedMessage: `Cannot deploy App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app in order to modify this element.`,
       },
     ])
   })

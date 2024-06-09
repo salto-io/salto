@@ -619,8 +619,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         })
       }
     }
-    // eslint-disable-next-line no-console
-    console.log('a', defaultSubdomainResult.elements.filter(isInstanceElement).length)
 
     if (!isGuideInFetch) {
       return defaultSubdomainResult
@@ -750,8 +748,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         this.createClientBySubdomain(brandInstance.value.subdomain),
       ]),
     )
-    // eslint-disable-next-line no-console
-    console.log('b', elements.filter(isInstanceElement).length)
+
     // This exposes different subdomain clients for Guide related types filters
     const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
     const updatedConfig =

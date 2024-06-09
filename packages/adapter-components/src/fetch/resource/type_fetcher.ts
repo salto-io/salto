@@ -148,10 +148,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
 
       const maybeFilterItemWithCustomFilter =
         customItemFilter === undefined ? () => true : (item: ValueGeneratedItem) => customItemFilter(item)
-      if (typeName === 'macro_categories') {
-        // eslint-disable-next-line no-console
-        console.log('hey!', itemsWithContext)
-      }
+
       const allFragments = await Promise.all(
         itemsWithContext.filter(maybeFilterItemWithCustomFilter).map(async item => {
           const nestedResources = await recurseIntoFetcher(item)
@@ -194,8 +191,6 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
       Object.values(mergedFragments)
         .flat()
         .forEach(item => items.push(item))
-      // eslint-disable-next-line no-console
-      console.log(typeName, items.length)
 
       done = true
       return {

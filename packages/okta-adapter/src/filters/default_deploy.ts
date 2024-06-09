@@ -24,10 +24,10 @@ import { defaultDeployWithStatus, deployChanges } from '../deployment'
 const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'oldDefaultDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [newInfraChanges, oldInfraChanges] = _.partition(changes,
-      change =>
-        definitions.deploy?.instances.customizations?.[getChangeData(change).elemID.typeName] !== undefined
-      )
+    const [newInfraChanges, oldInfraChanges] = _.partition(
+      changes,
+      change => definitions.deploy?.instances.customizations?.[getChangeData(change).elemID.typeName] !== undefined,
+    )
     const client = definitions.clients.options.main.httpClient
     const deployResult = await deployChanges(oldInfraChanges.filter(isInstanceChange), async change => {
       await defaultDeployWithStatus(change, client, oldApiDefinitions.apiDefinitions)

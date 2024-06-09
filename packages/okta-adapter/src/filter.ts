@@ -16,7 +16,7 @@
 import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { OldOktaDefinitionsConfig } from './config'
 import { User } from './user_utils'
-import { OktaFetchOptions } from './definitions/types'
+import { OktaOptions } from './definitions/types'
 import { OktaUserConfig } from './user_config'
 
 export const { filterRunner } = filterUtils
@@ -37,5 +37,5 @@ export type FilterCreator = filterUtils.AdapterFilterCreator<
   OktaUserConfig,
   filterUtils.FilterResult,
   FilterAdditionalParams,
-  OktaFetchOptions
+  OktaOptions
 >

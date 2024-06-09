@@ -42,7 +42,6 @@ export const defaultDeployFilterCreator =
   ({ definitions, elementSource, sharedContext }) => ({
     name: 'defaultDeployFilter',
     deploy: async (changes, changeGroup) => {
-
       const { deploy, ...otherDefs } = definitions
       if (deploy === undefined) {
         throw new Error('could not find deploy definitions')
@@ -51,7 +50,8 @@ export const defaultDeployFilterCreator =
         throw new Error('change group not provided')
       }
 
-      const lookupFunc = customLookupFunc ?? generateLookupFunc(definitions.references?.rules ?? [], fieldReferenceResolverCreator)
+      const lookupFunc =
+        customLookupFunc ?? generateLookupFunc(definitions.references?.rules ?? [], fieldReferenceResolverCreator)
       const changeResolver = createChangeElementResolver<Change<InstanceElement>>({ getLookUpName: lookupFunc })
 
       const deployResult = await deployChanges({

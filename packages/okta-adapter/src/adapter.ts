@@ -29,7 +29,9 @@ import {
   getChangeData,
   isInstanceElement,
   FixElementsFunc,
-  TypeMap, SaltoError, isSaltoError,
+  TypeMap,
+  SaltoError,
+  isSaltoError,
 } from '@salto-io/adapter-api'
 import {
   elements as elementUtils,
@@ -39,7 +41,8 @@ import {
   definitions as definitionsUtils,
   openapi,
   restoreChangeElement,
-  filters as filterUtils, createChangeElementResolver,
+  filters as filterUtils,
+  createChangeElementResolver,
 } from '@salto-io/adapter-components'
 import { inspectValue, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -98,7 +101,7 @@ import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './defi
 import { createDeployDefinitions } from './definitions/deploy'
 import { PAGINATION } from './definitions/requests/pagination'
 import { createClientDefinitions, shouldAccessPrivateAPIs } from './definitions/requests/clients'
-import { OktaFetchOptions } from './definitions/types'
+import { OktaOptions } from './definitions/types'
 import { OPEN_API_DEFINITIONS } from './definitions/sources'
 import { getAdminUrl } from './client/admin'
 import { getOktaError } from './deployment'
@@ -152,7 +155,7 @@ const DEFAULT_FILTERS = [
   defaultDeployFilter,
 
   // This catches types we moved to the new infra definitions
-  filterUtils.defaultDeployFilterCreator<FilterResult, OktaFetchOptions>({
+  filterUtils.defaultDeployFilterCreator<FilterResult, OktaOptions>({
     convertError: getOktaError,
     customLookupFunc: getLookUpName,
     fieldReferenceResolverCreator: OktaFieldReferenceResolver.create,
@@ -208,7 +211,7 @@ export default class OktaAdapter implements AdapterOperations {
   private isOAuthLogin: boolean
   private adminClient?: OktaClient
   private fixElementsFunc: FixElementsFunc
-  private definitions: definitionsUtils.RequiredDefinitions<OktaFetchOptions>
+  private definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -425,7 +428,7 @@ export default class OktaAdapter implements AdapterOperations {
     })
 
     const lookupFunc = getLookUpName
-      /*
+    /*
       this.definitions.references === undefined
         ? generateLookupFunc([])
         : generateLookupFunc(this.definitions.references?.rules ?? [], def => this.referenceResolver(def))
@@ -437,8 +440,8 @@ export default class OktaAdapter implements AdapterOperations {
     const changeResolver = createChangeElementResolver({ getLookUpName: lookupFunc })
     const resolvedChanges = await awu(instanceChanges)
       .map(async change =>
-        (deployDefQuery.query(getChangeData(change).elemID.typeName)?.referenceResolution?.when === 'early'
-            && !SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
+        deployDefQuery.query(getChangeData(change).elemID.typeName)?.referenceResolution?.when === 'early' &&
+        !SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? changeResolver(change)
           : change,
       )

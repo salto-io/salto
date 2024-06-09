@@ -17,8 +17,8 @@ export type StatusActionName = 'activate' | 'deactivate'
 export type AdditionalAction = StatusActionName
 export type ClientOptions = 'main' | 'private'
 export type PaginationOptions = 'cursorHeader' | 'cursor'
-export type OktaFetchOptions = {
-  clientOptions: ClientOptions;
-  paginationOptions: PaginationOptions,
+export type OktaOptions = {
+  clientOptions: ClientOptions
+  paginationOptions: PaginationOptions
   additionalAction: AdditionalAction
 }

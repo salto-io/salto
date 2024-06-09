@@ -42,6 +42,7 @@ import {
   restoreChangeElement,
   filters as filterUtils,
   createChangeElementResolver,
+  deployment as deploymentUtils,
 } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -103,8 +104,6 @@ import { OktaOptions } from './definitions/types'
 import { OPEN_API_DEFINITIONS } from './definitions/sources'
 import { getAdminUrl } from './client/admin'
 import { getOktaError } from './deployment'
-import { restoreInstanceTypeFromChange } from '@salto-io/adapter-components/dist/src/deployment'
-import { queryWithDefault } from '@salto-io/adapter-components/dist/src/definitions'
 
 const { awu } = collections.asynciterable
 const { generateOpenApiTypes } = openapi
@@ -398,17 +397,10 @@ export default class OktaAdapter implements AdapterOperations {
       }
     }
 
-    const lookupFunc = getLookUpName
-    /*
-      this.definitions.references === undefined
-        ? generateLookupFunc([])
-        : generateLookupFunc(this.definitions.references?.rules ?? [], def => this.referenceResolver(def))
-       */
-
     const sourceChanges = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
     const runner = this.createFiltersRunner()
-    const deployDefQuery = queryWithDefault(this.definitions.deploy.instances)
-    const changeResolver = createChangeElementResolver({ getLookUpName: lookupFunc })
+    const deployDefQuery = definitionsUtils.queryWithDefault(this.definitions.deploy.instances)
+    const changeResolver = createChangeElementResolver({ getLookUpName })
     const resolvedChanges = await awu(instanceChanges)
       .map(async change =>
         deployDefQuery.query(getChangeData(change).elemID.typeName)?.referenceResolution?.when === 'early' &&
@@ -441,9 +433,9 @@ export default class OktaAdapter implements AdapterOperations {
     }
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
-      .map(change => restoreChangeElement(change, sourceChanges, lookupFunc))
+      .map(change => restoreChangeElement(change, sourceChanges, getLookUpName))
       .toArray()
-    const restoredAppliedChanges = restoreInstanceTypeFromChange({
+    const restoredAppliedChanges = deploymentUtils.restoreInstanceTypeFromChange({
       appliedChanges,
       originalInstanceChanges: instanceChanges,
     })

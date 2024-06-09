@@ -90,7 +90,7 @@ class WalkErrors<T> extends Map<NodeId, Error> {
   }
 
   set(nodeId: NodeId, value: Error, visited: Set<string> = new Set()): this {
-    log.error('Error encountered while walking on node %s: original stack: %s', nodeId, value.stack)
+    log.error('Error encountered while walking on node %s: %s\n stack: %s', nodeId, value, value.stack)
     const idAsString = nodeId.toString()
     if (visited.has(idAsString)) {
       return this

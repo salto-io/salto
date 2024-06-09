@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
+import { validatePlainObject } from '@salto-io/adapter-utils'
 import { UserFetchConfig } from '../../config'
 import { Options } from '../types'
 import {
@@ -53,7 +54,6 @@ import {
 } from '../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { adjustEntitiesWithExpandedMembers } from './utils'
-import { validatePlainObject } from '../type-validators'
 
 type FetchApiDefinition = definitions.fetch.InstanceFetchApiDefinitions<Options>
 type FetchCustomizations = Record<string, FetchApiDefinition>
@@ -236,12 +236,6 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
-          conditions: [
-            {
-              fromField: 'managedGroupTypes',
-              match: ['Selected'],
-            },
-          ],
         },
       },
     },
@@ -301,9 +295,28 @@ const graphV1Customizations: FetchCustomizations = {
     },
   },
   // We directly fetch the groupLifeCyclePolicies in another call. However, we also fetch it here per group to be able to reference it.
-  // TODO: investigate if we can receive all these references in a single call
-  // Also, it throws an error in case the groupLifeCyclePolicy 'managedGroupTypes' field is not set to 'Selected'
+  // TODO SALTO-6072: investigate if we can receive all these references in a single call
   [GROUP_LIFE_CYCLE_POLICY_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+      context: {
+        dependsOn: {
+          [LIFE_CYCLE_POLICY_TYPE_NAME]: {
+            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
+            transformation: {
+              pick: ['managedGroupTypes'],
+            },
+          },
+        },
+        // TODO SALTO-6077: we currently overlook this definition. We should validate this definition after fixing the issue
+        conditions: [
+          {
+            fromContext: LIFE_CYCLE_POLICY_TYPE_NAME,
+            match: ['Selected'],
+          },
+        ],
+      },
+    },
     requests: [
       {
         endpoint: {
@@ -594,7 +607,7 @@ const graphV1Customizations: FetchCustomizations = {
         endpoint: {
           path: '/directoryRoles',
           queryArgs: {
-            $expand: "members($filter=not isof('microsoft.graph.user'))",
+            $expand: 'members',
           },
         },
         transformation: {
@@ -705,7 +718,7 @@ const graphV1Customizations: FetchCustomizations = {
       },
     },
   },
-  // TODO: There's a problem with this API. In the website they're using graph.windows.net, which is the Azure AD API.
+  // TODO SALTO-6073: There's a problem with this API. In the website they're using graph.windows.net, which is the Azure AD API.
   // The docs which specify graph.microsoft.com behave differently. We need to investigate this further.
   [ROLE_DEFINITION_TYPE_NAME]: {
     requests: [

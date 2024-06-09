@@ -67,8 +67,14 @@ const APPLICATION_MODIFICATION_REQUEST: DeployRequestDefinition = {
 }
 
 const graphV1CustomDefinitions: DeployCustomDefinitions = {
-  ...createDefinitionForAppRoleAssignment('groups', GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME),
-  ...createDefinitionForAppRoleAssignment('servicePrincipals', SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME),
+  ...createDefinitionForAppRoleAssignment({
+    parentResourceName: 'groups',
+    typeName: GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+  }),
+  ...createDefinitionForAppRoleAssignment({
+    parentResourceName: 'servicePrincipals',
+    typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+  }),
   [ADMINISTRATIVE_UNIT_TYPE_NAME]: {
     requestsByAction: {
       customizations: {
@@ -84,20 +90,9 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          // TODO: handle members addition
-          // {
-          //   request: {
-          //     endpoint: {
-          //       path: '/directory/administrativeUnits/{id}/members/$ref',
-          //       method: 'post',
-          //       body: {
-          //         '@odata.id': '{memberId}',
-          //       },
-          //     },
-          //   },
-          // },
+          // TODO SALTO-6051: handle members addition
         ],
-        // TODO: handle members modification
+        // TODO SALTO-6051: handle members modification
         modify: [
           {
             request: {
@@ -336,7 +331,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          // TODO: add and modify members array
+          // TODO SALTO-6051: add and modify members array
         ],
         modify: [
           {
@@ -506,10 +501,9 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 path: '/domains',
                 method: 'post',
               },
-              // We can only specify the id when creating a domain
+              // TODO SALTO-6071: We can only specify the id when creating a domain
               // We cannot immediately modify the domain after creation since it should be verified first
               // The verification process requires the appropriate DNS record, but DNS changes can take up to 72 hours
-              // TODO: We will add a CV to warn that non-default fields will not be deployed on creation
               transformation: {
                 pick: ['id'],
               },

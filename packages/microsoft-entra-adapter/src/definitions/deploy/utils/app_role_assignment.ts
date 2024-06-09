@@ -15,14 +15,16 @@
  */
 
 import _ from 'lodash'
-import { isAdditionChange } from '@salto-io/adapter-api'
-import { validatePlainObject } from '../../type-validators'
+import { validatePlainObject } from '@salto-io/adapter-utils'
 import { DeployCustomDefinitions, EndpointPath } from '../types'
 
-export const createDefinitionForAppRoleAssignment = (
-  parentResourceName: string,
-  typeName: string,
-): DeployCustomDefinitions => ({
+export const createDefinitionForAppRoleAssignment = ({
+  parentResourceName,
+  typeName,
+}: {
+  parentResourceName: string
+  typeName: string
+}): DeployCustomDefinitions => ({
   [typeName]: {
     requestsByAction: {
       customizations: {
@@ -37,11 +39,8 @@ export const createDefinitionForAppRoleAssignment = (
                 omit: ['id'],
                 adjust: item => {
                   validatePlainObject(item.value, typeName)
-                  if (!isAdditionChange(item.context.change)) {
-                    throw new Error('Unexpected value, expected a plain object')
-                  }
                   const parentId = _.get(item.context, 'additionalContext.parent_id')
-                  if (parentId === undefined) {
+                  if (!_.isString(parentId)) {
                     throw new Error(`Missing parent_id in context, cannot add ${typeName} without a parent_id`)
                   }
                   return {

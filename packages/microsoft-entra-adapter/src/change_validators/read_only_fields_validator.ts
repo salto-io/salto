@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { ChangeError, ChangeValidator, isModificationChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import {
@@ -30,7 +29,6 @@ import {
   SERVICE_PRINCIPAL_TYPE_NAME,
 } from '../constants'
 
-const log = logger(module)
 const { isDefined } = values
 
 export const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, string[]> = {
@@ -53,20 +51,22 @@ export const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, string[]> = {
   [DOMAIN_TYPE_NAME]: [DOMAIN_NAME_REFERENCES_FIELD_NAME, 'id'],
 }
 
-export const readOnlyFieldsValidator: ChangeValidator = async (changes, elementSource) => {
-  if (elementSource === undefined) {
-    log.warn(`elementSource is undefined, skipping ${readOnlyFieldsValidator.name}`)
-    return []
-  }
+// TODO SALTO-6046: Generalize as an infra capability
+/*
+ * Checks if any read-only fields were modified and returns a warning for each such change.
+ * We're also using the read-only fields definition to remove these fields from the changes on deploy.
+ */
+export const readOnlyFieldsValidator: ChangeValidator = async changes => {
+  const relevantTypes = Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS)
   const changesWithReadOnlyFields = changes
     .filter(isModificationChange)
-    .filter(change => Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS).includes(change.data.after.elemID.typeName))
+    .filter(change => relevantTypes.includes(change.data.after.elemID.typeName))
 
   return changesWithReadOnlyFields
     .map((change): ChangeError | undefined => {
       const readOnlyFields = TYPE_NAME_TO_READ_ONLY_FIELDS[change.data.after.elemID.typeName]
-      const modifiedFields = readOnlyFields.filter(
-        fieldName => _.get(change.data.before, fieldName) !== _.get(change.data.after, fieldName),
+      const modifiedFields = readOnlyFields.filter(fieldName =>
+        _.isEqual(_.get(change.data.before, fieldName), _.get(change.data.after, fieldName)),
       )
       return _.isEmpty(modifiedFields)
         ? undefined
@@ -74,7 +74,7 @@ export const readOnlyFieldsValidator: ChangeValidator = async (changes, elementS
             elemID: change.data.after.elemID,
             severity: 'Warning',
             message: 'Read-only fields were modified',
-            detailedMessage: `Instance ${change.data.after.elemID.name} has modified read-only fields: ${modifiedFields.join(', ')}. These changes will be ignored.`,
+            detailedMessage: `Instance has modified read-only fields: ${modifiedFields.join(', ')}. These changes will be ignored.`,
           }
     })
     .filter(isDefined)

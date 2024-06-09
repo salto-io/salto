@@ -15,8 +15,8 @@
  */
 
 import _ from 'lodash'
-import { ROLE_DEFINITION_TYPE_NAME } from '../../../constants'
-import { validateArray, validatePlainObject } from '../../type-validators'
+import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
+import { ODATA_TYPE_FIELD, ROLE_DEFINITION_TYPE_NAME } from '../../../constants'
 import { AdjustFunction } from '../types'
 
 // For some reason the fetch result doesn't return proper structure according to the docs
@@ -32,10 +32,10 @@ export const adjustRoleDefinitionForDeployment: AdjustFunction = ({ value }) => 
       rolePermissions: rolePermissions.map(rolePermission => {
         validatePlainObject(rolePermission, 'rolePermission')
         return {
-          '@odata.type': 'microsoft.graph.rolePermission',
+          [ODATA_TYPE_FIELD]: 'microsoft.graph.rolePermission',
           resourceActions: [
             {
-              '@odata.type': 'microsoft.graph.resourceAction',
+              [ODATA_TYPE_FIELD]: 'microsoft.graph.resourceAction',
               ...rolePermission,
             },
           ],

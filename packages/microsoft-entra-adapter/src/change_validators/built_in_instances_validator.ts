@@ -20,11 +20,8 @@ import {
   isInstanceElement,
   isRemovalOrModificationChange,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, ROLE_DEFINITION_TYPE_NAME } from '../constants'
-
-const log = logger(module)
 
 type BuiltInIndicator = {
   fieldName: string
@@ -41,11 +38,10 @@ const POTENTIAL_BUILD_IN_TYPES: Record<string, BuiltInIndicator> = {
   },
 }
 
-export const builtInInstancesValidator: ChangeValidator = async (changes, elementSource) => {
-  if (elementSource === undefined) {
-    log.warn(`elementSource is undefined, skipping ${builtInInstancesValidator.name}`)
-    return []
-  }
+/*
+ * Validates that built-in instances are not modified or removed.
+ */
+export const builtInInstancesValidator: ChangeValidator = async changes => {
   const potentialBuiltInChanges = changes
     .filter(isRemovalOrModificationChange)
     .map(getChangeData)
@@ -63,7 +59,7 @@ export const builtInInstancesValidator: ChangeValidator = async (changes, elemen
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Built-in instances are read-only',
-      detailedMessage: `Built-in instance ${instance.elemID.name} of type ${typeName} cannot be modified or removed`,
+      detailedMessage: 'Built-in instances cannot be modified or removed',
     }))
   })
 }

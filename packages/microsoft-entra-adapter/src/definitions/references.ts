@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
-import _ from 'lodash'
 import {
   ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
   APPLICATION_TYPE_NAME,
@@ -144,10 +143,10 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
     },
   },
   contextStrategyLookup: {
-    ODataType: async ({ instance, fieldPath }) => {
-      const currentFieldIndex = fieldPath?.getFullNameParts().slice(-2)[0]
-      const refType = _.get(instance.value, `members.${currentFieldIndex}.${ODATA_TYPE_FIELD_NACL_CASE}`)
-      return SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME[refType]
-    },
+    ODataType: referenceUtils.neighborContextGetter({
+      contextFieldName: ODATA_TYPE_FIELD_NACL_CASE,
+      getLookUpName: async ({ ref }) => ref.elemID.name,
+      contextValueMapper: refType => SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME[refType],
+    }),
   },
 }

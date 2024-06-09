@@ -15,8 +15,8 @@
  */
 
 import _ from 'lodash'
+import { validatePlainObject } from '@salto-io/adapter-utils'
 import { TYPE_NAME_TO_READ_ONLY_FIELDS } from '../../../change_validators'
-import { validatePlainObject } from '../../type-validators'
 import { AdjustFunction } from '../types'
 
 export const omitReadOnlyFields: AdjustFunction = ({ typeName, value, context }) => {

@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { naclCase } from '@salto-io/adapter-utils'
+
 export const ADAPTER_NAME = 'microsoft_entra'
 
 // Fields
@@ -60,7 +62,8 @@ export const TOKEN_ISSUANCE_POLICY_TYPE_NAME = `${APPLICATION_TYPE_NAME}__${TOKE
 export const TOKEN_LIFETIME_POLICY_TYPE_NAME = 'tokenLifetimePolicy'
 
 // OData fields
-export const ODATA_TYPE_FIELD_NACL_CASE = '_odata_type@mv'
+export const ODATA_TYPE_FIELD = '@odata.type'
+export const ODATA_TYPE_FIELD_NACL_CASE = naclCase(ODATA_TYPE_FIELD)
 
 export const ODATA_PREFIX = '#microsoft.graph.'
 export const SUPPORTED_DIRECTORY_OBJECT_TYPE_NAME_TO_ODATA_TYPE_NAME: Record<string, string> = {

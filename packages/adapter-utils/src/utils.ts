@@ -66,7 +66,7 @@ import { extractAdditionalPropertiesField } from './additional_properties'
 
 const { mapValuesAsync } = promises.object
 const { awu, mapAsync, toArrayAsync } = collections.asynciterable
-const { isDefined } = lowerDashValues
+const { isDefined, isPlainObject } = lowerDashValues
 
 const log = logger(module)
 
@@ -993,6 +993,20 @@ export const createSchemeGuardForInstance =
     }
     return true
   }
+
+export function validatePlainObject(obj: unknown, fieldName: string): asserts obj is Values {
+  if (!isPlainObject(obj)) {
+    log.warn(`Expected ${fieldName} to be a plain object, but got ${obj}`)
+    throw new Error(`Expected ${fieldName} to be a plain object, but got ${obj}`)
+  }
+}
+
+export function validateArray(obj: unknown, fieldName: string): asserts obj is unknown[] {
+  if (!Array.isArray(obj)) {
+    log.warn(`Expected ${fieldName} to be an array, but got ${obj}`)
+    throw new Error(`Expected ${fieldName} to be an array, but got ${obj}`)
+  }
+}
 
 export const getSubtypes = (types: ObjectType[], validateUniqueness = false): ObjectType[] => {
   const subtypes: Record<string, ObjectType> = {}

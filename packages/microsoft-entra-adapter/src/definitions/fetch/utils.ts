@@ -14,32 +14,32 @@
  * limitations under the License.
  */
 
-import { values } from '@salto-io/lowerdash'
+import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME } from '../../constants'
+import { ODATA_TYPE_FIELD, SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME } from '../../constants'
 
-const { isPlainObject } = values
-
-// Microsoft Graph OData query language does not support selecting the @odata.type field, but we need it for reference resolution.
+// Microsoft Graph OData query language does not support selecting only the id and odata.type fields, so we need to
+// filter them out after fetching the data.
+// Also, for some types the query language does not support filtering the relevant types, so we need to filter them out
+// after fetching the data.
 export const adjustEntitiesWithExpandedMembers: definitions.AdjustFunction = ({ value, typeName }) => {
-  if (!isPlainObject(value)) {
-    throw new Error(`Expected ${typeName} value to be an object`)
-  }
+  validatePlainObject(value, typeName)
+  const members = _.get(value, 'members', [])
+  validateArray(members, `${typeName} members`)
 
   return {
     value: {
       ...value,
-      members: _.get(value, 'members', [])
+      members: members
         .map((member: unknown): object => {
-          if (!isPlainObject(member)) {
-            throw new Error(`Expected ${typeName} member to be an object`)
-          }
-
-          return _.pick(member, ['id', '@odata.type'])
+          validatePlainObject(member, `${typeName} member`)
+          return _.pick(member, ['id', ODATA_TYPE_FIELD])
         })
         .filter((member: object) =>
-          Object.keys(SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME).includes(_.get(member, '@odata.type')),
+          Object.keys(SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME).includes(
+            _.get(member, ODATA_TYPE_FIELD),
+          ),
         ),
     },
   }

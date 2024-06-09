@@ -48,8 +48,8 @@
     "parse-link-header": "^2.0.0",
     "qs": "^6.10.1",
     "soap": "^0.44.0",
-    "wu": "^2.1.0",
-    "uuid": "^8.3.0"
+    "uuid": "^8.3.0",
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.58",

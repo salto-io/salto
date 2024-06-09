@@ -22,7 +22,6 @@ import {
   isObjectType,
   FetchOptions,
   DeployOptions,
-  Change,
   isInstanceChange,
   ElemIdGetter,
   ReadOnlyElementsSource,
@@ -44,7 +43,7 @@ import {
   filters as filterUtils,
   createChangeElementResolver,
 } from '@salto-io/adapter-components'
-import { inspectValue, logDuration } from '@salto-io/adapter-utils'
+import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
@@ -104,10 +103,7 @@ import { OktaOptions } from './definitions/types'
 import { OPEN_API_DEFINITIONS } from './definitions/sources'
 import { getAdminUrl } from './client/admin'
 import { getOktaError } from './deployment'
-import {
-  overrideInstanceTypeForDeploy,
-  restoreInstanceTypeFromChange,
-} from '@salto-io/adapter-components/dist/src/deployment'
+import { restoreInstanceTypeFromChange } from '@salto-io/adapter-components/dist/src/deployment'
 import { queryWithDefault } from '@salto-io/adapter-components/dist/src/definitions'
 
 const { awu } = collections.asynciterable

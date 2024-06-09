@@ -15,15 +15,11 @@
  */
 
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
-import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { ODATA_TYPE_FIELD, SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME } from '../../constants'
+import { ODATA_TYPE_FIELD, SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME } from '../../../constants'
+import { AdjustFunction } from '../types'
 
-// Microsoft Graph OData query language does not support selecting only the id and odata.type fields, so we need to
-// filter them out after fetching the data.
-// Also, for some types the query language does not support filtering the relevant types, so we need to filter them out
-// after fetching the data.
-export const adjustEntitiesWithExpandedMembers: definitions.AdjustFunction = ({ value, typeName }) => {
+export const adjustEntitiesWithExpandedMembers: AdjustFunction = ({ value, typeName }) => {
   validatePlainObject(value, typeName)
   const members = _.get(value, 'members', [])
   validateArray(members, `${typeName} members`)

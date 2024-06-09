@@ -30,3 +30,5 @@ export type Options = definitions.APIDefinitionsOptions & {
   referenceSerializationStrategies: CustomReferenceSerializationStrategyName
   referenceIndexNames: CustomIndexField
 }
+
+export type EndpointPath = definitions.EndpointPath

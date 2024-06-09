@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { definitions } from '@salto-io/adapter-components'
-import { AdditionalAction, ClientOptions } from '../types'
 
-export type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<
-  AdditionalAction,
-  ClientOptions
->
-export type DeployCustomDefinitions = Record<string, InstanceDeployApiDefinitions>
-export type DeployRequestDefinition = definitions.deploy.DeployRequestDefinition<ClientOptions>
-export type DeployableRequestDefinition = definitions.deploy.DeployableRequestDefinition<ClientOptions>
-export type AdjustFunction = definitions.AdjustFunction<definitions.deploy.ChangeAndContext>
+import { definitions } from '@salto-io/adapter-components'
+import { Options } from '../types'
+
+export type FetchApiDefinition = definitions.fetch.InstanceFetchApiDefinitions<Options>
+export type FetchCustomizations = Record<string, FetchApiDefinition>
+export type ElementFieldCustomization = definitions.fetch.ElementFieldCustomization
+export type FieldIDPart = definitions.fetch.FieldIDPart
+export type AdjustFunction = definitions.AdjustFunction

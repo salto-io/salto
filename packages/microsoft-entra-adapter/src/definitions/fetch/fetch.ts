@@ -53,128 +53,19 @@ import {
   DOMAIN_TYPE_NAME,
 } from '../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
-import { adjustEntitiesWithExpandedMembers } from './utils'
-
-type FetchApiDefinition = definitions.fetch.InstanceFetchApiDefinitions<Options>
-type FetchCustomizations = Record<string, FetchApiDefinition>
-
-const DEFAULT_FIELDS_TO_HIDE: Record<string, { hide: true }> = {
-  created_at: {
-    hide: true,
-  },
-  updated_at: {
-    hide: true,
-  },
-  created_by_id: {
-    hide: true,
-  },
-  updated_by_id: {
-    hide: true,
-  },
-}
-const ID_FIELD_TO_HIDE = { id: { hide: true } }
-
-const DEFAULT_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
-  _links: {
-    omit: true,
-  },
-  createdDateTime: {
-    omit: true,
-  },
-  renewedDateTime: {
-    omit: true,
-  },
-  modifiedDateTime: {
-    omit: true,
-  },
-  expirationDateTime: {
-    omit: true,
-  },
-  includeUsers: {
-    omit: true,
-  },
-  excludeUsers: {
-    omit: true,
-  },
-  '_odata_context@mv': {
-    omit: true,
-  },
-  'includes_odata_context@mv': {
-    omit: true,
-  },
-  'excludes_odata_context@mv': {
-    omit: true,
-  },
-  'includeTargets_odata_context@mv': {
-    omit: true,
-  },
-  'combinationConfigurations_odata_context@mv': {
-    omit: true,
-  },
-  'authenticationStrength_odata_context@mv': {
-    omit: true,
-  },
-  'inheritsPermissionsFrom_odata_context@mv': {
-    omit: true,
-  },
-  // It's just the tenant id, which is always the same for a single env and is not required when deploying
-  appOwnerOrganizationId: {
-    omit: true,
-  },
-}
-
-const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'displayName' }
-const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
-
-const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_HIDE,
-  DEFAULT_FIELDS_TO_OMIT,
-)
-
-const DEFAULT_TRANSFORMATION = { root: 'value' }
-
-const createDefinitionForAppRoleAssignment = (parentResourceName: string): FetchApiDefinition => ({
-  requests: [
-    {
-      endpoint: {
-        path: `/${parentResourceName}/{id}/appRoleAssignments` as definitions.EndpointPath,
-      },
-      transformation: {
-        ...DEFAULT_TRANSFORMATION,
-        pick: ['id', 'appRoleId', 'resourceId'],
-      },
-    },
-  ],
-  element: {
-    topLevel: {
-      isTopLevel: true,
-      elemID: {
-        extendsParent: true,
-        parts: [
-          { fieldName: 'appRoleId', isReference: true },
-          { fieldName: 'resourceId', isReference: true },
-        ],
-      },
-    },
-    fieldCustomizations: ID_FIELD_TO_HIDE,
-  },
-})
-
-const createCustomizationsWithBasePath = (
-  customizations: FetchCustomizations,
-  basePath: definitions.EndpointPath,
-): FetchCustomizations =>
-  _.mapValues(customizations, customization => ({
-    ...customization,
-    requests: customization.requests?.map(req => ({
-      ...req,
-      endpoint: {
-        ...req.endpoint,
-        path: `${basePath}${req.endpoint.path}` as definitions.EndpointPath,
-      },
-    })),
-  }))
+import { FetchCustomizations } from './types'
+import {
+  DEFAULT_FIELD_CUSTOMIZATIONS,
+  DEFAULT_ID_PARTS,
+  DEFAULT_TRANSFORMATION,
+  ID_FIELD_TO_HIDE,
+  NAME_ID_FIELD,
+} from './constants'
+import {
+  adjustEntitiesWithExpandedMembers,
+  createCustomizationsWithBasePath,
+  createDefinitionForAppRoleAssignment,
+} from './utils'
 
 const graphV1Customizations: FetchCustomizations = {
   [GROUP_TYPE_NAME]: {

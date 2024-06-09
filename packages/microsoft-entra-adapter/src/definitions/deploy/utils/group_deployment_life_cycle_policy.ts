@@ -18,7 +18,8 @@ import _ from 'lodash'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { getChangeData, isModificationChange } from '@salto-io/adapter-api'
 import { GROUP_LIFE_CYCLE_POLICY_FIELD_NAME, GROUP_TYPE_NAME } from '../../../constants'
-import { DeployRequestDefinition, DeployableRequestDefinition, EndpointPath } from '../types'
+import { EndpointPath } from '../../types'
+import { DeployRequestDefinition, DeployableRequestDefinition } from '../types'
 
 export const getGroupLifecyclePolicyGroupModificationRequest = (action: 'add' | 'remove'): DeployRequestDefinition => ({
   endpoint: {

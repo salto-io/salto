@@ -16,7 +16,8 @@
 
 import _ from 'lodash'
 import { validatePlainObject } from '@salto-io/adapter-utils'
-import { DeployCustomDefinitions, EndpointPath } from '../types'
+import { EndpointPath } from '../../types'
+import { DeployCustomDefinitions } from '../types'
 
 export const createDefinitionForAppRoleAssignment = ({
   parentResourceName,

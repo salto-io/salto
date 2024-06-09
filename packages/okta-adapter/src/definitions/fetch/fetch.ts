@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
 import { definitions, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { POLICY_TYPE_NAME_TO_PARAMS } from '../../config'
-import { OktaFetchOptions } from '../types'
+import { OktaOptions } from '../types'
 import { OktaUserConfig } from '../../user_config'
 import {
   ACCESS_POLICY_TYPE_NAME,
@@ -57,7 +57,7 @@ const getPrivateAPICustomizations = ({
 }: {
   endpoint: definitions.EndpointPath
   serviceUrl: string
-}): definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions> => ({
+}): definitions.fetch.InstanceFetchApiDefinitions<OktaOptions> => ({
   requests: [{ endpoint: { path: endpoint, client: 'private' } }],
   resource: { directFetch: true },
   element: {
@@ -74,7 +74,7 @@ const getPrivateAPISettingsDefinitions = ({
   usePrivateAPI,
 }: {
   usePrivateAPI: boolean
-}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => {
+}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => {
   if (!usePrivateAPI) {
     return {}
   }
@@ -142,7 +142,7 @@ const accessPolicyRuleCustomizer: definitions.fetch.FetchTopLevelElementDefiniti
   extendsParent: true,
 }
 
-const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => {
+const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => {
   const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
   const policyRulesToOmitPriorities = [PROFILE_ENROLLMENT_RULE_TYPE_NAME]
   const rulesWithFieldsCustomizations = [MFA_RULE_TYPE_NAME, IDP_RULE_TYPE_NAME]
@@ -227,7 +227,7 @@ const createCustomizations = ({
 }: {
   usePrivateAPI: boolean
   includeProfileMappingProperties: boolean
-}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => ({
+}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => ({
   // top-level types
   Group: {
     requests: [
@@ -1154,7 +1154,7 @@ export const createFetchDefinitions = (
   userConfig: OktaUserConfig,
   usePrivateAPI: boolean,
   baseUrl?: string,
-): definitions.fetch.FetchApiDefinitions<OktaFetchOptions> => {
+): definitions.fetch.FetchApiDefinitions<OktaOptions> => {
   const {
     fetch: { includeProfileMappingProperties },
   } = userConfig

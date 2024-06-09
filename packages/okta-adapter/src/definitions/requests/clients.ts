@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import { definitions } from '@salto-io/adapter-components'
-import { ClientOptions, OktaFetchOptions, PaginationOptions } from '../types'
+import { ClientOptions, OktaOptions, PaginationOptions } from '../types'
 import { OktaUserConfig } from '../../user_config'
 
 export const createClientDefinitions = (
   clients: Record<ClientOptions, definitions.RESTApiClientDefinition<PaginationOptions>['httpClient']>,
-): definitions.ApiDefinitions<OktaFetchOptions>['clients'] => ({
+): definitions.ApiDefinitions<OktaOptions>['clients'] => ({
   default: 'main',
   options: {
     main: {

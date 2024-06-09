@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from './types'
 import { GROUP_TYPE_NAME } from '../constants'
@@ -26,36 +25,42 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   [GROUP_TYPE_NAME]: {
     requestsByAction: {
       customizations: {
-        add: [{
-          request: {
-            endpoint: {
-              path: '/api/v1/groups',
-              method: 'post',
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/api/v1/groups',
+                method: 'post',
+              },
             },
           },
-        }],
-        modify: [{
-          request: {
-            endpoint: {
-              path: '/api/v1/groups/{groupId}',
-              method: 'put',
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/api/v1/groups/{groupId}',
+                method: 'put',
+              },
+              context: {
+                groupId: 'id',
+              },
             },
-            context: {
-              groupId: 'id',
-            }
           },
-        }],
-        remove: [{
-          request: {
-            endpoint: {
-              path: '/api/v1/groups/{groupId}',
-              method: 'delete',
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/api/v1/groups/{groupId}',
+                method: 'delete',
+              },
+              context: {
+                groupId: 'id',
+              },
             },
-            context: {
-              groupId: 'id',
-            }
           },
-        }],
+        ],
       },
     },
   },

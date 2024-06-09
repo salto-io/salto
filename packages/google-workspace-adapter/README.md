@@ -21,6 +21,7 @@ salto account login -a oauth google_workspace
 The adapter also supports OAuth authentication. To authenticate using OAuth, use the `oauth` authentication method and follow the following steps:
 
 1. Enable Oauth for your app by following the instructions [here](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred).
+   1. Ensure the OAuth consent screen you're creating is set to Internal. Otherwise, you'll have to re-login every week.
 2. Set the `redirectUri` configuration parameter as `http://localhost:{port}/extract`, where `port` is the port number you want to use.
 3. Enable These APIs [here](https://console.cloud.google.com/apis) =>`Enable APIS AND SERVICES`:
    1. `Admin SDK API`

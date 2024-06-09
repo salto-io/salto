@@ -79,7 +79,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     if (valuesByType[typeName] === undefined) {
       valuesByType[typeName] = []
     }
-    valuesByType[typeName].push(...validEntries)
+    validEntries.forEach(entry => valuesByType[typeName].push(entry))
   }
 
   const handleError: ElementGenerator['handleError'] = ({ typeName, error }) => {

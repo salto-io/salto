@@ -21,7 +21,14 @@ import {
   ReferenceExpression,
   Values,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import {
+  createSchemeGuard,
+  naclCase,
+  pathNaclCase,
+  WalkOnFunc,
+  walkOnValue,
+  WALK_NEXT_STEP,
+} from '@salto-io/adapter-utils'
 import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -145,6 +152,15 @@ const postPaginated = async (url: string, client: JiraClient, pageSize: number):
   return items
 }
 
+const omitFields =
+  (fieldsToOmit: string[]): WalkOnFunc =>
+  ({ value }) => {
+    if (lowerdashValues.isPlainRecord(value)) {
+      fieldsToOmit.forEach(field => delete value[field])
+    }
+    return WALK_NEXT_STEP.RECURSE
+  }
+
 const createInstance = (
   values: Values,
   type: ObjectType,
@@ -174,17 +190,20 @@ const createInstance = (
 
   const instanceName = getElemIdFunc && serviceIds ? getElemIdFunc(JIRA, serviceIds, defaultName).name : defaultName
 
-  const valuesAfterOmitFields = _.omit(
-    values,
-    (TypeTransformationConfig.fieldsToOmit ?? []).map(field => field.fieldName),
-  )
-
-  return new InstanceElement(instanceName, type, valuesAfterOmitFields, [
+  const elem = new InstanceElement(instanceName, type, values, [
     JIRA,
     elementUtils.RECORDS_PATH,
     AUTOMATION_TYPE,
     pathNaclCase(instanceName),
   ])
+
+  walkOnValue({
+    elemId: elem.elemID,
+    value: elem.value,
+    func: omitFields((TypeTransformationConfig.fieldsToOmit ?? []).map(field => field.fieldName)),
+  })
+
+  return elem
 }
 
 // For components that has assets fields, we need to remove some fields that can be calculated from the schema and object type

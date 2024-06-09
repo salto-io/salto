@@ -810,7 +810,6 @@ describe('automationFetchFilter', () => {
         },
         trigger: {
           component: 'ACTION',
-          schemaVersion: 1,
           type: 'cmdb.object.create',
           value: {
             objectTypeId: '35',
@@ -832,7 +831,6 @@ describe('automationFetchFilter', () => {
         components: [
           {
             component: 'ACTION',
-            schemaVersion: 1,
             type: 'cmdb.object.create',
             value: {
               objectTypeId: '35',
@@ -851,7 +849,6 @@ describe('automationFetchFilter', () => {
             children: [
               {
                 component: 'ACTION',
-                schemaVersion: 1,
                 type: 'cmdb.object.create',
                 value: {
                   objectTypeId: '35',
@@ -912,7 +909,6 @@ describe('automationFetchFilter', () => {
         },
         trigger: {
           component: 'ACTION',
-          schemaVersion: 1,
           type: 'cmdb.object.create',
           value: {
             objectTypeId: '35',
@@ -931,7 +927,6 @@ describe('automationFetchFilter', () => {
         components: [
           {
             component: 'ACTION',
-            schemaVersion: 1,
             type: 'cmdb.object.create',
             value: {
               objectTypeId: '35',
@@ -947,7 +942,6 @@ describe('automationFetchFilter', () => {
             children: [
               {
                 component: 'ACTION',
-                schemaVersion: 1,
                 type: 'cmdb.object.create',
                 value: {
                   objectTypeId: '35',
@@ -999,7 +993,6 @@ describe('automationFetchFilter', () => {
                   },
                   trigger: {
                     component: 'ACTION',
-                    schemaVersion: 1,
                     type: 'cmdb.object.create',
                     value: {
                       workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
@@ -1020,7 +1013,6 @@ describe('automationFetchFilter', () => {
                   components: [
                     {
                       component: 'ACTION',
-                      schemaVersion: 1,
                       type: 'cmdb.object.create',
                       value: {
                         workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
@@ -1079,7 +1071,6 @@ describe('automationFetchFilter', () => {
         },
         trigger: {
           component: 'ACTION',
-          schemaVersion: 1,
           type: 'cmdb.object.create',
           value: {
             schemaId: '5',
@@ -1097,7 +1088,6 @@ describe('automationFetchFilter', () => {
         components: [
           {
             component: 'ACTION',
-            schemaVersion: 1,
             type: 'cmdb.object.create',
             value: {
               schemaId: '5',
@@ -1147,7 +1137,6 @@ describe('automationFetchFilter', () => {
                   components: [
                     {
                       component: 'ACTION',
-                      schemaVersion: 1,
                       type: 'cmdb.object.create',
                       value: {
                         objectTypeId: '35',
@@ -1208,7 +1197,6 @@ describe('automationFetchFilter', () => {
         components: [
           {
             component: 'ACTION',
-            schemaVersion: 1,
             type: 'cmdb.object.create',
             value: {
               objectTypeId: '35',

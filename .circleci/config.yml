@@ -87,6 +87,9 @@ jobs:
 
     resource_class: xlarge
     working_directory: ~/project
+    environment:
+      TURBO_TEAM: CircleDev
+      TURBO_UI: false  
 
     steps:
       - restore_cache:

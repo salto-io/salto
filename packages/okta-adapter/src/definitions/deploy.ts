@@ -56,7 +56,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 method: 'delete',
               },
               context: {
-                groupId: 'id',
+                groupId: '{id}',
               },
             },
           },

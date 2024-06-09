@@ -26,6 +26,7 @@ import { paginate } from '../src/client/pagination'
 import { GetUserMapFunc, getUserMapFuncCreator } from '../src/users'
 import { JIRA, WORKFLOW_CONFIGURATION_TYPE } from '../src/constants'
 import ScriptRunnerClient from '../src/client/script_runner_client'
+import { WorkflowV2TransitionConditionGroup, WorkflowV2Transition } from '../src/filters/workflowV2/types'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
@@ -33,14 +34,16 @@ export const createCredentialsInstance = (credentials: Credentials): InstanceEle
 export const createConfigInstance = (config: JiraConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)
 
+export const DEFAULT_CLOUD_ID = 'cloudId'
+export const DEFAULT_RESPONSE = { status: 200, data: '' }
 const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
-  get: mockFunction<clientUtils.APIConnection['get']>().mockResolvedValue({ status: 200, data: '' }),
-  head: mockFunction<clientUtils.APIConnection['head']>().mockResolvedValue({ status: 200, data: '' }),
-  options: mockFunction<clientUtils.APIConnection['options']>().mockResolvedValue({ status: 200, data: '' }),
-  post: mockFunction<clientUtils.APIConnection['post']>().mockResolvedValue({ status: 200, data: '' }),
-  put: mockFunction<clientUtils.APIConnection['put']>().mockResolvedValue({ status: 200, data: '' }),
-  delete: mockFunction<clientUtils.APIConnection['delete']>().mockResolvedValue({ status: 200, data: '' }),
-  patch: mockFunction<clientUtils.APIConnection['patch']>().mockResolvedValue({ status: 200, data: '' }),
+  get: mockFunction<clientUtils.APIConnection['get']>().mockResolvedValue(DEFAULT_RESPONSE),
+  head: mockFunction<clientUtils.APIConnection['head']>().mockResolvedValue(DEFAULT_RESPONSE),
+  options: mockFunction<clientUtils.APIConnection['options']>().mockResolvedValue(DEFAULT_RESPONSE),
+  post: mockFunction<clientUtils.APIConnection['post']>().mockResolvedValue(DEFAULT_RESPONSE),
+  put: mockFunction<clientUtils.APIConnection['put']>().mockResolvedValue(DEFAULT_RESPONSE),
+  delete: mockFunction<clientUtils.APIConnection['delete']>().mockResolvedValue(DEFAULT_RESPONSE),
+  patch: mockFunction<clientUtils.APIConnection['patch']>().mockResolvedValue(DEFAULT_RESPONSE),
 })
 
 type ClientWithMockConnection = {
@@ -50,7 +53,7 @@ type ClientWithMockConnection = {
   getUserMapFunc: GetUserMapFunc
   scriptRunnerClient: ScriptRunnerClient
 }
-export const mockClient = (isDataCenter = false): ClientWithMockConnection => {
+export const mockClient = (isDataCenter = false, cloudId?: string): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new JiraClient({
     credentials: {
@@ -68,6 +71,10 @@ export const mockClient = (isDataCenter = false): ClientWithMockConnection => {
     },
     isDataCenter,
   })
+  if (cloudId !== undefined) {
+    client.getCloudId = async () => cloudId
+  }
+
   const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client })
   const getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
   const scriptRunnerClient = new ScriptRunnerClient({
@@ -122,6 +129,20 @@ export const createEmptyType = (type: string): ObjectType =>
     elemID: new ElemID(JIRA, type),
   })
 
+export const createSkeletonWorkflowV2TransitionConditionGroup = (): WorkflowV2TransitionConditionGroup => ({
+  operation: 'ALL',
+  conditions: [],
+  conditionGroups: [],
+})
+
+export const createSkeletonWorkflowV2Transition = (name: string): WorkflowV2Transition => ({
+  name,
+  type: 'DIRECTED',
+  conditions: createSkeletonWorkflowV2TransitionConditionGroup(),
+  actions: [],
+  validators: [],
+})
+
 export const createSkeletonWorkflowV2Instance = (name: string): InstanceElement =>
   new InstanceElement(name, createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
     name,
@@ -130,10 +151,7 @@ export const createSkeletonWorkflowV2Instance = (name: string): InstanceElement 
       type: 'type',
     },
     transitions: {
-      transition: {
-        name: `${name}Transition`,
-        type: 'DIRECTED',
-      },
+      transition1: createSkeletonWorkflowV2Transition(`${name}Transition1`),
     },
     statuses: [],
   })

@@ -72,6 +72,7 @@ import { automationToAssetsValidator } from './automation/automation_to_assets'
 import { addJsmProjectValidator } from './adding_jsm_project'
 import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
+import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
 
 const { deployTypesNotSupportedValidator, createChangeValidator } = deployment.changeValidators
 
@@ -103,6 +104,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     sameIssueTypeNameChange: sameIssueTypeNameChangeValidator,
     referencedWorkflowDeletion: referencedWorkflowDeletionChangeValidator(config),
     statusMigrationChange: statusMigrationChangeValidator,
+    missingExtensionsTransitionRules: missingExtensionsTransitionRulesChangeValidator(client),
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),
     workflowStatusMappings: workflowStatusMappingsValidator,

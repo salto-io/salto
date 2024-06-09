@@ -41,7 +41,7 @@ import { filter, logDuration } from '@salto-io/adapter-utils'
 import { combineElementFixers } from '@salto-io/adapter-components'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
-import { BUNDLE } from './constants'
+import { BUNDLE, CUSTOM_RECORD_TYPE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -111,11 +111,12 @@ import dependencyChanger from './dependency_changer'
 import { cloneChange } from './change_validators/utils'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getCustomRecords } from './custom_records/custom_records'
+import { createLockedCustomRecordTypes } from './custom_records/custom_record_type'
 import { getDataElements } from './data_elements/data_elements'
 import { getSuiteQLTableElements } from './data_elements/suiteql_table_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { ImportFileCabinetResult } from './client/types'
+import { FailedTypes, ImportFileCabinetResult } from './client/types'
 import {
   DEFAULT_VALIDATE,
   DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
@@ -132,11 +133,14 @@ import {
   buildNetsuiteQuery,
   convertToQueryParams,
   notQuery,
+  isIdsQuery,
 } from './config/query'
 import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 import { buildNetsuiteBundlesQuery } from './config/bundle_query'
 import { customReferenceHandlers } from './custom_references'
+import { SystemInformation } from './client/suiteapp_client/types'
+import { getOrCreateObjectIdListElements } from './scriptid_list'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -350,7 +354,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean,
   ): Promise<FetchByQueryReturnType> => {
-    const [configRecords, installedBundles] = await Promise.all([
+    const [sysInfo, configRecords, installedBundles] = await Promise.all([
+      this.client.getSystemInformation(),
       this.client.getConfigRecords(),
       this.client.getInstalledBundles(),
     ])
@@ -360,10 +365,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
-    const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
+    const changedObjectsQuery = await this.getChangedObjectsQuery(
       fetchQueryWithBundles,
       useChangesDetection,
       timeZoneAndFormat,
+      sysInfo,
     )
     const updatedFetchQuery =
       changedObjectsQuery !== undefined ? andQuery(changedObjectsQuery, fetchQueryWithBundles) : fetchQueryWithBundles
@@ -378,10 +384,29 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return result
     }
 
+    const getLockedCustomRecordTypes = (failedTypes: FailedTypes, instancesIds: ObjectID[]): ObjectType[] => {
+      const scriptIdsSet = new Set(instancesIds.map(item => item.instanceId))
+      const lockedCustomRecordTypesScriptIds = _.uniq(
+        (failedTypes.lockedError[CUSTOM_RECORD_TYPE] ?? []).concat(
+          this.userConfig.fetch.lockedElementsToExclude?.types
+            .filter(isIdsQuery)
+            .filter(type => type.name === CUSTOM_RECORD_TYPE)
+            .flatMap(type => type.ids ?? [])
+            .filter(scriptId => scriptIdsSet.has(scriptId)) ?? [],
+        ),
+      )
+      if (!this.userConfig.fetch.addLockedCustomRecordTypes) {
+        log.debug('skip adding the following locked custom record types: %o', lockedCustomRecordTypesScriptIds)
+        return []
+      }
+      return createLockedCustomRecordTypes(lockedCustomRecordTypesScriptIds)
+    }
+
     const getStandardAndCustomElements = async (): Promise<{
       standardInstances: InstanceElement[]
       standardTypes: TypeElement[]
       customRecordTypes: ObjectType[]
+      lockedCustomRecordTypes: ObjectType[]
       customRecords: InstanceElement[]
       instancesIds: ObjectID[]
       failures: Omit<FetchByQueryFailures, 'largeSuiteQLTables'>
@@ -409,9 +434,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const [standardInstances, types] = _.partition(elements, isInstanceElement)
       const [objectTypes, otherTypes] = _.partition(types, isObjectType)
       const [customRecordTypes, standardTypes] = _.partition(objectTypes, isCustomRecordType)
+      const lockedCustomRecordTypes = getLockedCustomRecordTypes(failedTypes, instancesIds)
       const { elements: customRecords, largeTypesError: failedCustomRecords } = await getCustomRecords(
         this.client,
-        customRecordTypes,
+        customRecordTypes.concat(lockedCustomRecordTypes),
         fetchQueryWithBundles,
         this.getElemIdFunc,
       )
@@ -419,6 +445,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         standardInstances,
         standardTypes: [...standardTypes, ...otherTypes],
         customRecordTypes,
+        lockedCustomRecordTypes,
         customRecords,
         instancesIds,
         failures: { failedCustomRecords, failedFilePaths, failedToFetchAllAtOnce, failedTypes },
@@ -426,7 +453,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
 
     const [
-      { standardInstances, standardTypes, customRecordTypes, customRecords, instancesIds, failures },
+      {
+        standardInstances,
+        standardTypes,
+        customRecordTypes,
+        lockedCustomRecordTypes,
+        customRecords,
+        instancesIds,
+        failures,
+      },
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
       { elements: suiteQLTableElements, largeSuiteQLTables },
     ] = await Promise.all([
@@ -458,22 +493,26 @@ export default class NetsuiteAdapter implements AdapterOperations {
         : {}
 
     const serverTimeElements =
-      serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
+      sysInfo !== undefined ? await getOrCreateServerTimeElements(sysInfo.time, this.elementsSource, isPartial) : []
+
+    const scriptIdListElements = await getOrCreateObjectIdListElements(instancesIds, this.elementsSource, isPartial)
 
     const elements = ([] as ChangeDataType[])
       .concat(standardInstances)
       .concat(standardTypes)
       .concat(customRecordTypes)
+      .concat(lockedCustomRecordTypes)
       .concat(customRecords)
       .concat(dataElements)
       .concat(suiteQLTableElements)
       .concat(suiteAppConfigElements)
       .concat(serverTimeElements)
+      .concat(scriptIdListElements)
 
     await this.createFiltersRunner({
       operation: 'fetch',
       isPartial,
-      fetchTime: serverTime,
+      fetchTime: sysInfo?.time,
       timeZoneAndFormat,
       deletedElements,
     }).onFetch(elements)
@@ -554,43 +593,40 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { elements, updatedConfig, errors: deletedElementErrors, partialFetchData }
   }
 
-  private async runSuiteAppOperations(
+  private async getChangedObjectsQuery(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
     timeZoneAndFormat: TimeZoneAndFormat,
-  ): Promise<{
-    changedObjectsQuery?: NetsuiteQuery
-    serverTime?: Date
-  }> {
-    const sysInfo = await this.client.getSystemInformation()
+    sysInfo: SystemInformation | undefined,
+  ): Promise<NetsuiteQuery | undefined> {
     if (sysInfo === undefined) {
       log.debug('Did not get sysInfo, skipping SuiteApp operations')
-      return {}
+      return undefined
     }
 
     if (!useChangesDetection) {
       log.debug('Changes detection is disabled')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
 
     const lastFetchTime = await getLastServerTime(this.elementsSource)
     if (lastFetchTime === undefined) {
       log.debug('Failed to get last fetch time')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
+
     if (timeZoneAndFormat?.format === undefined) {
       log.warn('Failed to get date format, skipping changes detection')
-      return { serverTime: sysInfo.time }
+      return undefined
     }
+
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
-    const changedObjectsQuery = await getChangedObjects(
+    return getChangedObjects(
       this.client,
       fetchQuery,
       createDateRange(lastFetchTime, sysInfo.time, timeZoneAndFormat.format),
       serviceIdToLastFetchDate,
     )
-
-    return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
   private static getDeployErrors(

@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import {
+  CORE_ANNOTATIONS,
   getChangeData,
   isAdditionChange,
   isObjectType,
@@ -106,7 +107,9 @@ const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, elementsSource
   onFetch: async elements => {
     const types = elements.filter(isObjectType)
     const existingTypeNames = new Set(types.map(type => type.elemID.getFullName()))
-    const customRecordTypes = types.filter(isCustomRecordType)
+    const customRecordTypes = types
+      .filter(isCustomRecordType)
+      .filter(type => !type.annotations[CORE_ANNOTATIONS.HIDDEN])
     const elementSourceTypes = await getElementsSourceTypes(elementsSource, isPartial, existingTypeNames)
     const elementSourceCustomRecordTypes = await getElementsSourceCustomRecordTypes(
       elementsSourceIndex,

@@ -43,6 +43,7 @@ describe('instance_references filter', () => {
     let workflowInstance: InstanceElement
     let instanceWithRefs: InstanceElement
     let customRecordType: ObjectType
+    let lockedCustomRecordType: ObjectType
 
     const getIndexesMock = jest.fn()
     const elementsSourceIndex = {
@@ -115,6 +116,7 @@ describe('instance_references filter', () => {
           refWithAppId: '[appid=foo.bar, scriptid=top_level]',
           refToCustomSegmentWithAppId: '[appid=foo.bar, type=customsegment, scriptid=cseg_1]',
           refWithBundleId: '[bundleid=123, scriptid=top_level]',
+          refToHiddenElement: '[scriptid=customrecord_locked]',
         },
         undefined,
         {
@@ -139,6 +141,14 @@ describe('instance_references filter', () => {
           [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
           [SCRIPT_ID]: 'customrecord1',
           customsegment: '[scriptid=cseg_1]',
+        },
+      })
+      lockedCustomRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord_locked'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord_locked',
+          [CORE_ANNOTATIONS.HIDDEN]: true,
         },
       })
     })
@@ -376,6 +386,16 @@ describe('instance_references filter', () => {
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
       expect(instanceWithRefs.value.refWithBundleId).toEqual('[bundleid=123, scriptid=top_level]')
+    })
+
+    it('should not replace reference to hidden element', async () => {
+      await filterCreator({
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([lockedCustomRecordType, instanceWithRefs])
+      expect(instanceWithRefs.value.refToHiddenElement).toEqual('[scriptid=customrecord_locked]')
     })
 
     it('should not replace path references for unresolved ref', async () => {

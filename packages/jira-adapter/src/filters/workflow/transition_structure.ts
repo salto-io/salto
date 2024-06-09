@@ -21,7 +21,7 @@ import Joi from 'joi'
 import _ from 'lodash'
 import { Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
-import { WorkflowStatusAndPort, WorkflowTransitionV2 } from '../workflowV2/types'
+import { WorkflowStatusAndPort, WorkflowV2Transition } from '../workflowV2/types'
 
 const { makeArray } = collections.array
 
@@ -50,7 +50,7 @@ const getTransitionTypeFromKey = (key: string): string => {
   return type === 'Circular' ? 'Global' : type
 }
 
-const getTransitionType = (transition: WorkflowTransitionV1 | WorkflowTransitionV2): TransitionType => {
+const getTransitionType = (transition: WorkflowTransitionV1 | WorkflowV2Transition): TransitionType => {
   if (transition.type?.toLowerCase() === 'initial') {
     return 'Initial'
   }
@@ -93,7 +93,7 @@ export const createStatusMap = (statuses: Status[]): Map<string, string> =>
   )
 
 export const getTransitionKey = (
-  transition: WorkflowTransitionV1 | WorkflowTransitionV2,
+  transition: WorkflowTransitionV1 | WorkflowV2Transition,
   statusesMap: Map<string, string>,
 ): string => {
   const type = getTransitionType(transition)
@@ -160,15 +160,15 @@ export const walkOverTransitionIds = (transition: WorkflowTransitionV1, func: (v
     })
 }
 
-export const walkOverTransitionIdsV2 = (transition: WorkflowTransitionV2, func: (value: Value) => void): void => {
+export const walkOverTransitionIdsV2 = (transition: WorkflowV2Transition, func: (value: Value) => void): void => {
   transition.actions
     ?.filter(
       action =>
         action.parameters?.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE &&
-        !_.isEmpty(action.parameters.scriptRunner?.transitionId),
+        !_.isEmpty(_.get(action, 'parameters.scriptRunner.transitionId')),
     )
     .forEach(action => {
-      func(action.parameters.scriptRunner)
+      func(action.parameters?.scriptRunner)
     })
 }
 

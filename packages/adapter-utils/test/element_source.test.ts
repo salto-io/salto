@@ -42,11 +42,11 @@ describe('elementSource', () => {
           },
         }),
       ]
-      const elementsSource = buildElementsSourceFromElements(elements)
+      const elementSource = buildElementsSourceFromElements(elements)
 
       describe('getAll', () => {
         it('should return all the elements', async () => {
-          const receivedElements = await toArrayAsync(await elementsSource.getAll())
+          const receivedElements = await toArrayAsync(await elementSource.getAll())
           expect(receivedElements).toEqual(elements)
         })
 
@@ -66,38 +66,38 @@ describe('elementSource', () => {
 
       describe('get', () => {
         it('should return element if it exists', async () => {
-          expect(await elementsSource.get(new ElemID('adapter', 'type1'))).toBe(elements[0])
+          expect(await elementSource.get(new ElemID('adapter', 'type1'))).toBe(elements[0])
         })
 
-        it('should return undefined if it does not exists', async () => {
-          expect(await elementsSource.get(new ElemID('adapter', 'type3'))).toBeUndefined()
+        it('should return undefined if it does not exist', async () => {
+          expect(await elementSource.get(new ElemID('adapter', 'type3'))).toBeUndefined()
         })
 
         it('should return a nested field if it exists', async () => {
-          expect(await elementsSource.get(new ElemID('adapter', 'nestedType', 'field', 'strField'))).toBe(
+          expect(await elementSource.get(new ElemID('adapter', 'nestedType', 'field', 'strField'))).toBe(
             elements[2].fields.strField,
           )
         })
 
-        it('should return a nested field if it does not exist', async () => {
-          expect(await elementsSource.get(new ElemID('adapter', 'nestedType', 'field', 'numField'))).toBeUndefined()
+        it('should return undefined if a nested field does not exist', async () => {
+          expect(await elementSource.get(new ElemID('adapter', 'nestedType', 'field', 'numField'))).toBeUndefined()
         })
       })
 
       describe('list', () => {
         it('should return all the elements ids', async () => {
-          const receivedElementsIds = await collections.asynciterable.toArrayAsync(await elementsSource.list())
+          const receivedElementsIds = await collections.asynciterable.toArrayAsync(await elementSource.list())
           expect(receivedElementsIds).toEqual(elements.map(e => e.elemID))
         })
       })
 
       describe('has', () => {
         it('should return true if element id exists', async () => {
-          expect(await elementsSource.has(new ElemID('adapter', 'type1'))).toBeTruthy()
+          expect(await elementSource.has(new ElemID('adapter', 'type1'))).toBeTruthy()
         })
 
         it('should return false if element id does not exist', async () => {
-          expect(await elementsSource.has(new ElemID('adapter', 'type3'))).toBeFalsy()
+          expect(await elementSource.has(new ElemID('adapter', 'type3'))).toBeFalsy()
         })
       })
     })
@@ -198,7 +198,7 @@ describe('elementSource', () => {
     let resolveTypeShallowSpy: jest.SpyInstance
     let unresolvedType: ObjectType
     let objectType: ObjectType
-    let elementsSource: ReadOnlyElementsSource
+    let elementSource: ReadOnlyElementsSource
     beforeEach(() => {
       unresolvedType = new ObjectType({
         elemID: new ElemID('adapter', 'unresolvedType'),
@@ -212,15 +212,15 @@ describe('elementSource', () => {
           },
         },
       })
-      const originalElementsSource = buildElementsSourceFromElements([objectType, unresolvedType])
-      elementsSource = buildLazyShallowTypeResolverElementsSource(originalElementsSource)
+      const originalElementSource = buildElementsSourceFromElements([objectType, unresolvedType])
+      elementSource = buildLazyShallowTypeResolverElementsSource(originalElementSource)
     })
     it('should resolve the type shallowly once', async () => {
-      const resolvedElement = await elementsSource.get(objectType.elemID)
+      const resolvedElement = await elementSource.get(objectType.elemID)
       expect(resolvedElement.fields[UNRESOLVED_FIELD_NAME]?.refType).toEqual(
         new TypeReference(unresolvedType.elemID, unresolvedType),
       )
-      expect(resolvedElement).toEqual(await elementsSource.get(objectType.elemID))
+      expect(resolvedElement).toEqual(await elementSource.get(objectType.elemID))
       const callsOnTheObjectType = resolveTypeShallowSpy.mock.calls.filter(args => args[0] === objectType)
       expect(callsOnTheObjectType).toHaveLength(1)
     })

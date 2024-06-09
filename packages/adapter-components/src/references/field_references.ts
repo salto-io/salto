@@ -73,14 +73,14 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
   resolverFinder,
   elemIDLookupMaps,
   fieldsWithResolvedReferences,
-  elementsSource,
+  elementSource,
   contextStrategyLookup = emptyContextStrategyLookup,
 }: {
   instance: InstanceElement
   resolverFinder: ReferenceResolverFinder<TContext, CustomIndexField>
   elemIDLookupMaps: Record<string, multiIndex.Index<[string, string], ElemID>>
   fieldsWithResolvedReferences: Set<string>
-  elementsSource: ReadOnlyElementsSource
+  elementSource: ReadOnlyElementsSource
   contextStrategyLookup?: Record<TContext, ContextFunc>
 }): Promise<Values> => {
   const getRefElem = async ({
@@ -113,7 +113,7 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
         return undefined
       }
 
-      return elementsSource.get(elemID)
+      return elementSource.get(elemID)
     }
 
     const isValidContextFunc = (funcName?: string): boolean =>
@@ -123,14 +123,14 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
     }
     const parentContextFunc =
       target.parentContext !== undefined ? contextStrategyLookup[target.parentContext] : doNothing
-    const elemParent = target.parent ?? (await parentContextFunc({ instance, elementsSource, field, fieldPath: path }))
+    const elemParent = target.parent ?? (await parentContextFunc({ instance, elementSource, field, fieldPath: path }))
 
     const typeContextFunc = target.typeContext !== undefined ? contextStrategyLookup[target.typeContext] : doNothing
     const elemType =
       target.type ??
       (await typeContextFunc({
         instance,
-        elementsSource,
+        elementSource,
         field,
         fieldPath: path,
       }))
@@ -274,19 +274,15 @@ export const addReferences = async <
   const instances = elements.filter(isInstanceElement)
 
   const indexer = multiIndex.buildMultiIndex<Element>()
-
-  let fieldLookups: Record<string, multiIndex.Index<[string, string], ElemID>> = {}
-  if (fieldsToGroupBy.length > 0) {
-    fieldsToGroupBy.forEach(fieldName =>
-      indexer.addIndex({
-        name: fieldName,
-        filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
-        key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
-        map: inst => inst.elemID,
-      }),
-    )
-    fieldLookups = await indexer.process(awu(contextElements))
-  }
+  fieldsToGroupBy.forEach(fieldName =>
+    indexer.addIndex({
+      name: fieldName,
+      filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
+      key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
+      map: inst => inst.elemID,
+    }),
+  )
+  const fieldLookups = fieldsToGroupBy.length === 0 ? {} : await indexer.process(awu(contextElements))
 
   const fieldsWithResolvedReferences = new Set<string>()
   await awu(instances).forEach(async instance => {
@@ -295,7 +291,7 @@ export const addReferences = async <
       resolverFinder,
       elemIDLookupMaps: fieldLookups,
       fieldsWithResolvedReferences,
-      elementsSource: buildElementsSourceFromElements(contextElements),
+      elementSource: buildElementsSourceFromElements(contextElements),
       contextStrategyLookup,
     })
   })

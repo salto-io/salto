@@ -82,30 +82,40 @@ describe('DashboardGadgetReferences', () => {
 
   describe('gadgetValuesContextFunc', () => {
     let field: Field
-    let elementsSource: ReadOnlyElementsSource
+    let elementSource: ReadOnlyElementsSource
 
     beforeEach(async () => {
       // field are elemByElemID are only needed because it is mandatory in ContextFunc, but are not going to be used
       field = new Field(filterType, 'mock', filterType)
-      elementsSource = buildElementsSourceFromElements([])
+      elementSource = buildElementsSourceFromElements([])
     })
 
     it('should return undefined if fieldPath is undefined', async () => {
-      const result = await gadgetValuesContextFunc({ instance, elementsSource, field })
+      const result = await gadgetValuesContextFunc({ instance, elementSource, field })
       expect(result).toBeUndefined()
     })
 
     it('should return FIELD_TYPE_NAME for valid keys: ystattype, xstattype, statistictype, statType', async () => {
       const fieldPath = instance.elemID.createNestedID('properties', 'values', '4', 'value')
-      const result1 = await gadgetValuesContextFunc({ instance, elementsSource, field, fieldPath })
+      const result1 = await gadgetValuesContextFunc({ instance, elementSource, field, fieldPath })
       expect(result1).toEqual('Field')
     })
     it('should determine type based on value prefix for the key: projectOrFilterId', async () => {
       const projectPath = instance.elemID.createNestedID('properties', 'values', '2', 'value')
       const filterPath = instance.elemID.createNestedID('properties', 'values', '3', 'value')
-      const result1 = await gadgetValuesContextFunc({ instance, elementsSource, field, fieldPath: projectPath })
+      const result1 = await gadgetValuesContextFunc({
+        instance,
+        elementSource,
+        field,
+        fieldPath: projectPath,
+      })
       expect(result1).toEqual('Project')
-      const result2 = await gadgetValuesContextFunc({ instance, elementsSource, field, fieldPath: filterPath })
+      const result2 = await gadgetValuesContextFunc({
+        instance,
+        elementSource,
+        field,
+        fieldPath: filterPath,
+      })
       expect(result2).toEqual('Filter')
     })
   })

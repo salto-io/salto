@@ -31,12 +31,12 @@ const log = logger(module)
 export type ContextValueMapperFunc = (val: string) => string | undefined
 export type ContextFunc = ({
   instance,
-  elementsSource,
+  elementSource,
   field,
   fieldPath,
 }: {
   instance: InstanceElement
-  elementsSource: ReadOnlyElementsSource
+  elementSource: ReadOnlyElementsSource
   field: Field
   fieldPath?: ElemID
   levelsUp?: number
@@ -78,7 +78,7 @@ export const neighborContextGetter =
     contextValueMapper?: ContextValueMapperFunc
     getLookUpName: GetLookupNameFunc
   }): ContextFunc =>
-  async ({ instance, elementsSource, fieldPath }) => {
+  async ({ instance, elementSource, fieldPath }) => {
     if (fieldPath === undefined || contextFieldName === undefined) {
       return undefined
     }
@@ -87,7 +87,7 @@ export const neighborContextGetter =
       const contextField = await getField(await instance.getType(), fieldPath.createTopLevelParentID().path)
       const refWithValue = new ReferenceExpression(
         context.elemID,
-        context.value ?? (await elementsSource.get(context.elemID)),
+        context.value ?? (await elementSource.get(context.elemID)),
       )
       return getLookUpName({ ref: refWithValue, field: contextField, path, element: instance })
     }

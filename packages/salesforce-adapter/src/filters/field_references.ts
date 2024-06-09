@@ -100,7 +100,7 @@ const contextStrategyLookup: Record<
   ReferenceContextStrategyName,
   referenceUtils.ContextFunc
 > = {
-  instanceParent: async ({ instance, elementsSource }) => {
+  instanceParent: async ({ instance, elementSource: elementsSource }) => {
     const parentRef = getParents(instance)[0]
     const parent = isReferenceExpression(parentRef)
       ? await elementsSource.get(parentRef.elemID)
@@ -193,7 +193,7 @@ export const addReferences = async (
       resolverFinder,
       elemIDLookupMaps: { elemIDLookup },
       fieldsWithResolvedReferences,
-      elementsSource: referenceElements,
+      elementSource: referenceElements,
       contextStrategyLookup,
     })
   })

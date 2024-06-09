@@ -76,11 +76,12 @@ export const buildElementsSourceFromElements = (
   }
 
   const get = async (id: ElemID): Promise<Value> => {
-    if (id.getFullName() in elementsMap) {
-      return elementsMap[id.getFullName()]
-    }
-
-    if (!id.isTopLevel()) {
+    if (id.isTopLevel()) {
+      const element = elementsMap[id.getFullName()]
+      if (element !== undefined) {
+        return element
+      }
+    } else {
       const { parent } = id.createTopLevelParentID()
       const topLevel = elementsMap[parent.getFullName()]
       if (topLevel !== undefined) {

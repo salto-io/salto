@@ -191,7 +191,6 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
       Object.values(mergedFragments)
         .flat()
         .forEach(item => items.push(item))
-
       done = true
       return {
         success: true,

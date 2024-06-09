@@ -289,7 +289,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
       return new ReferenceExpression(reviveElemID(elemID))
     }
 
-    const reviveRefTypeOfElement = (v: Value): TypeReference => {
+    const reviveTypeReference = (v: Value): TypeReference => {
       if (v.refType !== undefined) {
         return restoreClasses(v.refType)
       }
@@ -315,7 +315,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
         ? _.mapValues(
             _.pickBy(v, val => isSerializedClass(val) && val[SALTO_CLASS_FIELD] === 'Field'),
             val => ({
-              refType: reviveRefTypeOfElement(val),
+              refType: reviveTypeReference(val),
               annotations: restoreClasses(val.annotations),
             }),
           )
@@ -325,7 +325,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
       InstanceElement: v =>
         new InstanceElement(
           v.elemID.nameParts[0],
-          reviveRefTypeOfElement(v) as TypeReference<ObjectType>,
+          reviveTypeReference(v) as TypeReference<ObjectType>,
           restoreClasses(v.value),
           v.path,
           restoreClasses(v.annotations),
@@ -336,6 +336,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
           fields: reviveFieldDefinitions(v.fields),
           annotationRefsOrTypes: reviveAnnotationRefTypes(v),
           annotations: restoreClasses(v.annotations),
+          metaType: v.metaType ? (reviveTypeReference(v.metaType) as TypeReference<ObjectType>) : undefined,
           isSettings: v.isSettings,
           path: v.path,
         })
@@ -359,7 +360,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
           // in this case we set a placeholder object type so we're able to recognize it later.
           new PlaceholderObjectType({ elemID: new ElemID(elemId.adapter, elemId.typeName) }),
           elemId.name,
-          reviveRefTypeOfElement(v),
+          reviveTypeReference(v),
           restoreClasses(v.annotations),
         )
       },

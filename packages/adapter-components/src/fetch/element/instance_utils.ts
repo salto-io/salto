@@ -208,3 +208,14 @@ export const getFieldsToOmit = <Options extends APIDefinitionsOptions = {}>(
     .filter(([, customization]) => customization.omit === true)
     .map(([fieldName]) => fieldName)
 }
+
+export const getFieldsToOmit = <Options extends APIDefinitionsOptions = {}>(
+  definitions: ApiDefinitions<Options>,
+  typeName: string,
+): string[] => {
+  const defQuery = queryWithDefault(definitions.fetch?.instances ?? {})
+  const customizations = defQuery.query(typeName)?.element?.fieldCustomizations ?? {}
+  return Object.entries(customizations)
+    .filter(([, customization]) => customization.omit === true)
+    .map(([fieldName]) => fieldName)
+}

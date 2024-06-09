@@ -49,9 +49,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
       ]
       const res = await requiredFieldsValidator(changes, elementSource)
       expect(res).toHaveLength(1)
-      expect(res[0].detailedMessage).toEqual(
-        `Instance testAuthenticationMethodConfiguration is missing required fields _odata_type@mv on ${changeType}`,
-      )
+      expect(res[0].detailedMessage).toEqual(`Instance is missing required fields _odata_type@mv on ${changeType}`)
     })
 
     it('should not return change error for instance with all required fields on %s', async () => {
@@ -106,7 +104,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
       ]
       const res = await requiredFieldsValidator(changes, elementSource)
       expect(res).toHaveLength(1)
-      expect(res[0].detailedMessage).toEqual(`Instance ${INSTANCE_NAME} is missing required field displayName`)
+      expect(res[0].detailedMessage).toEqual('Instance is missing required field displayName')
     })
 
     it('when displayName is present but odata type is missing', async () => {
@@ -130,7 +128,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
       ]
       const res = await requiredFieldsValidator(changes, elementSource)
       expect(res).toHaveLength(1)
-      expect(res[0].detailedMessage).toEqual(`Instance ${INSTANCE_NAME} is missing required field _odata_type@mv`)
+      expect(res[0].detailedMessage).toEqual('Instance is missing required field _odata_type@mv')
     })
 
     describe('when locationType is ipRange', () => {
@@ -157,7 +155,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
         const res = await requiredFieldsValidator(changes, elementSource)
         expect(res).toHaveLength(1)
         expect(res[0].detailedMessage).toEqual(
-          `Instance ${INSTANCE_NAME} is missing required field ipRanges or has a bad format. Expected Array of objects with fields cidrAddress, _odata_type@mv`,
+          'Instance is missing required field ipRanges or has a bad format. Expected Array of objects with fields cidrAddress, _odata_type@mv',
         )
       })
 
@@ -185,7 +183,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
         const res = await requiredFieldsValidator(changes, elementSource)
         expect(res).toHaveLength(1)
         expect(res[0].detailedMessage).toEqual(
-          `Instance ${INSTANCE_NAME} is missing required field ipRanges or has a bad format. Expected Array of objects with fields cidrAddress, _odata_type@mv`,
+          'Instance is missing required field ipRanges or has a bad format. Expected Array of objects with fields cidrAddress, _odata_type@mv',
         )
       })
 
@@ -216,7 +214,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
         const res = await requiredFieldsValidator(changes, elementSource)
         expect(res).toHaveLength(1)
         expect(res[0].detailedMessage).toEqual(
-          `Instance ${INSTANCE_NAME} is missing required fields cidrAddress, _odata_type@mv in ipRanges at indices 0`,
+          'Instance is missing required fields cidrAddress, _odata_type@mv in ipRanges at indices 0',
         )
       })
 
@@ -269,9 +267,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
         ]
         const res = await requiredFieldsValidator(changes, elementSource)
         expect(res).toHaveLength(1)
-        expect(res[0].detailedMessage).toEqual(
-          `Instance ${INSTANCE_NAME} is missing required field countriesAndRegions`,
-        )
+        expect(res[0].detailedMessage).toEqual('Instance is missing required field countriesAndRegions')
       })
 
       it('when countriesAndRegions field is present', async () => {

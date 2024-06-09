@@ -41,9 +41,7 @@ describe(`${builtInInstancesValidator.name}`, () => {
       ]
       const res = await builtInInstancesValidator(changes, elementSource)
       expect(res).toHaveLength(1)
-      expect(res[0].detailedMessage).toEqual(
-        'Built-in instance testAuthenticationStrengthPolicy of type authenticationStrengthPolicy cannot be modified or removed',
-      )
+      expect(res[0].detailedMessage).toEqual('Built-in instances cannot be modified or removed')
     })
 
     it('should not return change error for non built-in authentication strength policy', async () => {
@@ -83,9 +81,7 @@ describe(`${builtInInstancesValidator.name}`, () => {
       ]
       const res = await builtInInstancesValidator(changes, elementSource)
       expect(res).toHaveLength(1)
-      expect(res[0].detailedMessage).toEqual(
-        'Built-in instance testRoleDefinition of type roleDefinition cannot be modified or removed',
-      )
+      expect(res[0].detailedMessage).toEqual('Built-in instances cannot be modified or removed')
     })
 
     it('should not return change error for non built-in role definition', async () => {

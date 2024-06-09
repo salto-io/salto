@@ -51,6 +51,8 @@ import {
   DOMAIN_NAME_REFERENCES_FIELD_NAME,
   DOMAIN_NAME_REFERENCE_TYPE_NAME,
   DOMAIN_TYPE_NAME,
+  PERMISSION_GRANT_POLICY_TYPE_NAME,
+  CROSS_TENANT_ACCESS_POLICY_TYPE_NAME,
 } from '../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { FetchCustomizations } from './types'
@@ -631,6 +633,46 @@ const graphV1Customizations: FetchCustomizations = {
     element: {
       topLevel: {
         isTopLevel: true,
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [PERMISSION_GRANT_POLICY_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/policies/permissionGrantPolicies',
+        },
+        transformation: DEFAULT_TRANSFORMATION,
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  [CROSS_TENANT_ACCESS_POLICY_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/policies/crossTenantAccessPolicy',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+        elemID: {
+          parts: [{ fieldName: 'id' }],
+        },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },

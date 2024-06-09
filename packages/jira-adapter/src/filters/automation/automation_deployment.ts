@@ -41,7 +41,6 @@ import { FilterCreator } from '../../filter'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
-import { getCloudId } from './cloud_id'
 import { getAutomations } from './automation_fetch'
 import { JiraConfig } from '../../config/config'
 import { PROJECT_TYPE_TO_RESOURCE_TYPE } from './automation_structure'
@@ -508,7 +507,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
-      const cloudId = !client.isDataCenter ? await getCloudId(client) : undefined
+      const cloudId = !client.isDataCenter ? await client.getCloudId() : undefined
       if (isAdditionChange(change)) {
         await createAutomation(getChangeData(change), client, cloudId, config)
         await updateAutomationLabels(change, client, cloudId)

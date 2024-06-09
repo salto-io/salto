@@ -32,7 +32,7 @@ import {
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
-import JiraClient from '../../../src/client/client'
+import JiraClient, { GQL_BASE_URL_GIRA } from '../../../src/client/client'
 import requestTypeLayoutsFilter from '../../../src/filters/layouts/request_type_request_form'
 import { getFilterParams, mockClient } from '../../utils'
 import { JIRA, PROJECT_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
@@ -111,7 +111,7 @@ describe('requestTypeLayoutsFilter', () => {
 
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             data: {
               issueLayoutConfiguration: {
@@ -217,7 +217,7 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it('should not add missing reference if enableMissingRef is false', async () => {
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             data: {
               issueLayoutConfiguration: {
@@ -321,7 +321,7 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it('should add request form when metadata is null', async () => {
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             data: {
               issueLayoutConfiguration: {
@@ -365,7 +365,7 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it("should remove requestType from elements if couldn't fetch requestType layouts since it does not exist or user does not have required permissions ", async () => {
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             errors: [
               {
@@ -391,7 +391,7 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it("should not remove requestType from elements if couldn't fetch requestType layouts for different error ", async () => {
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             errors: [
               {

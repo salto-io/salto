@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValuesSync } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
-import { apiNameSync, isCustomObjectSync, metadataTypeSync } from './utils'
+import { apiNameSync } from './utils'
 
 const TYPE_NAME_TO_FIELD_REMOVALS: Map<string, string[]> = new Map([
   ['Profile', ['tabVisibilities']],
@@ -35,9 +35,7 @@ const fieldRemovalsForType = (
   type: ObjectType,
   typeNameToFieldRemovals: Map<string, string[]>,
 ): string[] => {
-  const typeName = isCustomObjectSync(type)
-    ? apiNameSync(type) ?? ''
-    : metadataTypeSync(type)
+  const typeName = apiNameSync(type) ?? ''
   return typeNameToFieldRemovals.get(typeName) ?? []
 }
 

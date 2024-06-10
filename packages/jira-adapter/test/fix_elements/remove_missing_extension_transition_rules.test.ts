@@ -125,7 +125,11 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     instance.value.transitions.transition1.actions = [...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES]
 
     const result = await removeMissingExtensionsTransitionRulesHandler({ config, client, elementsSource })([instance])
-    expect(result.fixedElements).toHaveLength(1)
+
+    const fixedInstance = instance.clone()
+    fixedInstance.value.transitions.transition1.actions = []
+
+    expect(result.fixedElements).toEqual([fixedInstance])
     expect(result.errors).toEqual([
       {
         elemID: instance.elemID.createNestedID('transitions', 'transition1'),
@@ -141,7 +145,11 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     instance.value.transitions.transition1.validators = [...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES]
 
     const result = await removeMissingExtensionsTransitionRulesHandler({ config, client, elementsSource })([instance])
-    expect(result.fixedElements).toHaveLength(1)
+
+    const fixedInstance = instance.clone()
+    fixedInstance.value.transitions.transition1.validators = []
+
+    expect(result.fixedElements).toEqual([fixedInstance])
     expect(result.errors).toEqual([
       {
         elemID: instance.elemID.createNestedID('transitions', 'transition1'),
@@ -158,7 +166,10 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     instance.value.transitions.transition1.conditions.conditions = [...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES]
 
     const result = await removeMissingExtensionsTransitionRulesHandler({ config, client, elementsSource })([instance])
-    expect(result.fixedElements).toHaveLength(1)
+    const fixedInstance = instance.clone()
+    fixedInstance.value.transitions.transition1.conditions.conditions = []
+
+    expect(result.fixedElements).toEqual([fixedInstance])
     expect(result.errors).toEqual([
       {
         elemID: instance.elemID.createNestedID('transitions', 'transition1'),
@@ -180,7 +191,10 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     ]
 
     const result = await removeMissingExtensionsTransitionRulesHandler({ config, client, elementsSource })([instance])
-    expect(result.fixedElements).toHaveLength(1)
+    const fixedInstance = instance.clone()
+    fixedInstance.value.transitions.transition1.conditions.conditionGroups[0].conditions = []
+
+    expect(result.fixedElements).toEqual([fixedInstance])
     expect(result.errors).toEqual([
       {
         elemID: instance.elemID.createNestedID('transitions', 'transition1'),
@@ -207,7 +221,7 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     instance.value.transitions.transition1.conditions.conditionGroups[0].conditions = [...validTransitionRules]
 
     const result = await removeMissingExtensionsTransitionRulesHandler({ config, client, elementsSource })([instance])
-    expect(result.fixedElements).toHaveLength(0)
+    expect(result.fixedElements).toEqual([])
     expect(result.errors).toEqual([])
   })
   it('should fix transitions only once, irrelevant of how many invalid transition rules they have', async () => {
@@ -224,7 +238,14 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     ]
 
     const result = await removeMissingExtensionsTransitionRulesHandler({ config, client, elementsSource })([instance])
-    expect(result.fixedElements).toHaveLength(1)
+
+    const fixedInstance = instance.clone()
+    fixedInstance.value.transitions.transition1.actions = []
+    fixedInstance.value.transitions.transition1.validators = []
+    fixedInstance.value.transitions.transition1.conditions.conditions = []
+    fixedInstance.value.transitions.transition1.conditions.conditionGroups[0].conditions = []
+
+    expect(result.fixedElements).toEqual([fixedInstance])
     expect(result.errors).toEqual([
       {
         elemID: instance.elemID.createNestedID('transitions', 'transition1'),
@@ -242,7 +263,12 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     instance.value.transitions.transition2.validators = [...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES]
 
     const result = await removeMissingExtensionsTransitionRulesHandler({ config, client, elementsSource })([instance])
-    expect(result.fixedElements).toHaveLength(1)
+
+    const fixedInstance = instance.clone()
+    fixedInstance.value.transitions.transition1.actions = []
+    fixedInstance.value.transitions.transition2.validators = []
+
+    expect(result.fixedElements).toEqual([fixedInstance])
     expect(result.errors).toEqual([
       {
         elemID: instance.elemID.createNestedID('transitions', 'transition1'),

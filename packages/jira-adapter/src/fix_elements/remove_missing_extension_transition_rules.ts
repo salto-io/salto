@@ -17,7 +17,7 @@
 
 import _ from 'lodash'
 import { isInstanceElement, Element, ElemID } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import { FixElementsHandler } from './types'
 import { getInstalledExtensionsMap, ExtensionType } from '../common/extensions'
 import {
@@ -26,14 +26,23 @@ import {
   WorkflowV2TransitionRule,
   isWorkflowV2Instance,
 } from '../filters/workflowV2/types'
-import { HasKeyOfType, MakeOptional } from '../../../lowerdash/src/types'
 import { getExtensionIdFromWorkflowTransitionRule } from '../common/workflow/transition_rules'
+import { SeverityLevel } from '../../../adapter-api/src/error'
 
 const { awu } = collections.asynciterable
 
+/**
+ * This method updates an object's WorkflowV2TransitionRule[] and returns whether it was changed or not.
+ * @param obj An object that has property with the name given in key that maps to WorkflowV2TransitionRule[].
+ *            In our case, it'll either be a WorkflowV2Transition or WorkflowV2TransitionConditionGroup.
+ * @param key The name of the property with value that is of type WorkflowV2TransitionRule[]
+ *            (validators/actions for WorkflowV2Transition or conditions for WorkflowV2TransitionConditionGroup)
+ * @param predicate Function that checks whether WorkflowV2TransitionRule should be filtered out or not.
+ * @returns boolean indicating whether obj[key] was updated or not.
+ */
 const updateAndCheckTransitionRules = <
   K extends string,
-  T extends MakeOptional<HasKeyOfType<K, WorkflowV2TransitionRule[]>, K>,
+  T extends Partial<types.HasKeyOfType<K, WorkflowV2TransitionRule[]>>,
 >(
   obj: T,
   key: K,
@@ -52,15 +61,15 @@ const updateAndCheckWorkflowConditionGroup = (
   if (conditionGroup === undefined) {
     return false
   }
-  const fixedConditions = updateAndCheckTransitionRules(conditionGroup, 'conditions', predicate)
+  const hasFixedConditions = updateAndCheckTransitionRules(conditionGroup, 'conditions', predicate)
 
   if (conditionGroup.conditionGroups !== undefined) {
-    const fixedConditionGroups = conditionGroup.conditionGroups.map(innerConditionGroup =>
+    const hasFixedConditionGroups = conditionGroup.conditionGroups.map(innerConditionGroup =>
       updateAndCheckWorkflowConditionGroup(predicate, innerConditionGroup),
     )
-    return fixedConditions || _.some(fixedConditionGroups)
+    return hasFixedConditions || _.some(hasFixedConditionGroups)
   }
-  return fixedConditions
+  return hasFixedConditions
 }
 
 const updateAndCheckWorkflowTransition = (
@@ -91,30 +100,35 @@ export const removeMissingExtensionsTransitionRulesHandler: FixElementsHandler =
     if (!config.fetch.enableNewWorkflowAPI || !config.deploy.ignoreMissingExtensions) {
       return { fixedElements: [], errors: [] }
     }
-    const installedExtensionsMap: Record<string, ExtensionType> = await getInstalledExtensionsMap(client)
-    const fixedTransitions: ElemID[] = []
 
-    const fixedElements = await awu(elements)
+    const relevantElements = await awu(elements)
       .filter(isInstanceElement)
       .map(instance => instance.clone())
       .filter(isWorkflowV2Instance)
-      .filter(workflowInstance =>
-        _.some(
-          Object.entries(workflowInstance.value.transitions).map(([transitionName, transition]) => {
-            if (updateAndCheckWorkflowTransition(installedExtensionsMap, transition)) {
-              fixedTransitions.push(workflowInstance.elemID.createNestedID('transitions', transitionName))
-              return true
-            }
-            return false
-          }),
-        ),
-      )
-      .filter(values.isDefined)
       .toArray()
+
+    if (_.isEmpty(relevantElements)) {
+      return { fixedElements: [], errors: [] }
+    }
+
+    const installedExtensionsMap: Record<string, ExtensionType> = await getInstalledExtensionsMap(client)
+    const fixedTransitions: ElemID[] = []
+
+    const fixedElements = relevantElements.filter(workflowInstance =>
+      _.some(
+        Object.entries(workflowInstance.value.transitions).map(([transitionName, transition]) => {
+          if (updateAndCheckWorkflowTransition(installedExtensionsMap, transition)) {
+            fixedTransitions.push(workflowInstance.elemID.createNestedID('transitions', transitionName))
+            return true
+          }
+          return false
+        }),
+      ),
+    )
 
     const errors = fixedTransitions.map(id => ({
       elemID: id,
-      severity: 'Info' as const,
+      severity: 'Info' as SeverityLevel,
       message: 'Deploying workflow transition without all of its rules.',
       detailedMessage:
         'This workflow transition contains rules for Jira apps that do not exist in the target environment. It will be deployed without them.',

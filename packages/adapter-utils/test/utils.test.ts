@@ -2661,7 +2661,7 @@ describe('Test utils.ts', () => {
   describe(`${validatePlainObject.name}`, () => {
     it('should throw an error if value is not a plain object', () => {
       expect(() => validatePlainObject('lala', 'fieldName')).toThrow(
-        new Error('Expected fieldName to be a plain object, but got lala'),
+        new Error("Expected fieldName to be a plain object, but got 'lala'"),
       )
       expect(() => validatePlainObject(123, 'fieldName')).toThrow(
         new Error('Expected fieldName to be a plain object, but got 123'),
@@ -2670,10 +2670,10 @@ describe('Test utils.ts', () => {
         new Error('Expected fieldName to be a plain object, but got []'),
       )
       expect(() => validatePlainObject(new Map(), 'fieldName')).toThrow(
-        new Error('Expected fieldName to be a plain object, but got Map {}'),
+        new Error('Expected fieldName to be a plain object, but got Map(0) {}'),
       )
       expect(() => validatePlainObject(new Set(), 'fieldName')).toThrow(
-        new Error('Expected fieldName to be a plain object, but got Set {}'),
+        new Error('Expected fieldName to be a plain object, but got Set(0) {}'),
       )
     })
 
@@ -2686,15 +2686,15 @@ describe('Test utils.ts', () => {
   describe(`${validateArray.name}`, () => {
     it('should throw an error if value is not an array', () => {
       expect(() => validateArray('lala', 'fieldName')).toThrow(
-        new Error('Expected fieldName to be an array, but got lala'),
+        new Error("Expected fieldName to be an array, but got 'lala'"),
       )
       expect(() => validateArray(123, 'fieldName')).toThrow(new Error('Expected fieldName to be an array, but got 123'))
       expect(() => validateArray({}, 'fieldName')).toThrow(new Error('Expected fieldName to be an array, but got {}'))
       expect(() => validateArray(new Map(), 'fieldName')).toThrow(
-        new Error('Expected fieldName to be an array, but got Map {}'),
+        new Error('Expected fieldName to be an array, but got Map(0) {}'),
       )
       expect(() => validateArray(new Set(), 'fieldName')).toThrow(
-        new Error('Expected fieldName to be an array, but got Set {}'),
+        new Error('Expected fieldName to be an array, but got Set(0) {}'),
       )
     })
 

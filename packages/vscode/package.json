@@ -3,9 +3,6 @@
   "displayName": "Salto NACL Configuration Editor",
   "description": "Provides rich support for NACL Configuration files, including syntax highlighting, auto-complete, code navigation and more.",
   "version": "0.3.58",
-  "installConfig": {
-    "hoistingLimits": "dependencies"
-  },
   "publishConfig": {
     "access": "public"
   },

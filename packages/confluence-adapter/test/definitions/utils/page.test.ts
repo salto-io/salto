@@ -52,7 +52,7 @@ describe('page definitions utils', () => {
         expect(adjustPageOnModification(args).value.version.number).toEqual(2)
       })
 
-      it('should return the same value if the version number is not a number (should not happen)', () => {
+      it('should return version = 2 if the version number is not a number (should not happen)', () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -66,7 +66,7 @@ describe('page definitions utils', () => {
           },
           value: { version: { number: 'not a number' } },
         }
-        expect(adjustPageOnModification(args).value).toEqual(args.value)
+        expect(adjustPageOnModification(args).value.version).toEqual({ number: 2 })
       })
     })
     describe('updateHomepageId', () => {

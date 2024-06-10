@@ -21,6 +21,7 @@ import {
   addSpaceKey,
   adjustPageOnModification,
   homepageAdditionToModification,
+  putHomepageIdInAdditionContext,
   shouldDeleteRestrictionOnPageModification,
   shouldNotModifyRestrictionOnPageAddition,
 } from '../utils'
@@ -127,6 +128,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 transformation: {
                   omit: ['restriction'],
                   adjust: adjustPageOnModification,
+                },
+                context: {
+                  custom: () => putHomepageIdInAdditionContext,
                 },
               },
               copyFromResponse: {

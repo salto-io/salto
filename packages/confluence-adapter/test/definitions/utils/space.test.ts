@@ -16,7 +16,6 @@
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import {
-  adjustHomepageToId,
   createPermissionUniqueKey,
   isPermissionObject,
   restructurePermissionsAndCreateInternalIdMap,
@@ -221,17 +220,6 @@ describe('space definitions utils', () => {
           type2_id2_key2_targetType2: 'internalId2',
         },
       })
-    })
-  })
-
-  describe('adjustHomepageToId', () => {
-    it('should convert homepage object to id', () => {
-      const item = {
-        typeName: 'mockType',
-        value: { homepage: { someField: 'yay', id: 'mockId' } },
-        context: {},
-      }
-      expect(adjustHomepageToId(item).value).toEqual({ homepage: 'mockId' })
     })
   })
 

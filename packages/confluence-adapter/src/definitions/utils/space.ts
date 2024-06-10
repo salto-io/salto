@@ -95,23 +95,13 @@ export const spaceMergeAndTransformAdjust: definitions.AdjustFunction<{
 }
 
 /**
- * Adjust function for transforming space instances upon fetch.
- * We convert homepage object returned from the service to its id, then we build a reference from it.
- */
-export const adjustHomepageToId: definitions.AdjustFunction = args => {
-  const value = validateValue(args.value)
-  value.homepage = _.get(value, 'homepage.id')
-  return { ...args, value }
-}
-
-/**
  * Group space with its homepage upon addition.
  * We want to first deploy the space, a default homepage will be created in the service. We want to modify it
  */
 export const spaceChangeGroupWithItsHomepage: deployment.grouping.ChangeIdFunction = async change => {
   const changeData = getChangeData(change)
   if (isInstanceElement(changeData)) {
-    const homepageRef = changeData.value.homepage
+    const homepageRef = changeData.value.homepageId
     // in case of addition, we want the space to be in the same group as its homepage
     if (isAdditionChange(change) && isReferenceExpression(homepageRef)) {
       return homepageRef.elemID.getFullName()

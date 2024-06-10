@@ -28,10 +28,10 @@ export const validateCredentials = async ({
   credentials: Credentials
 }): Promise<AccountInfo> => {
   try {
-    const users = await connection.get('/users?include[]=subdomains')
+    const users = await connection.get('/users?limit=1&include[]=subdomains')
     const subdomain = users.data.users[0].subdomains[0]
     if (subdomain !== credentials.subdomain) {
-      throw new Error('Subdomain does not match')
+      throw new Error('The subdomain given does not match with the subdomain that associated with the token')
     }
     return { accountId: credentials.subdomain }
   } catch (e) {

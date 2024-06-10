@@ -76,7 +76,7 @@ describe('adapter', () => {
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter
-      .onGet('https://api.pagerduty.com/users?include[]=subdomains')
+      .onGet('https://api.pagerduty.com/users?limit=1&include[]=subdomains')
       .reply(200, { users: [{ subdomains: ['salto'] }] })
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)

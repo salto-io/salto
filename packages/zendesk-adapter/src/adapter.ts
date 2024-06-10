@@ -151,6 +151,7 @@ import auditTimeFilter from './filters/audit_logs'
 import sideConversationsFilter from './filters/side_conversation'
 import { isCurrentUserResponse } from './user_utils'
 import addAliasFilter from './filters/add_alias'
+import addRecurseIntoFieldFilter from './filters/add_recurse_into_field'
 import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
@@ -187,6 +188,7 @@ const { concatObjects } = objects
 const SECTIONS_TYPE_NAME = 'sections'
 
 export const DEFAULT_FILTERS = [
+  addRecurseIntoFieldFilter,
   ticketStatusCustomStatusDeployFilter,
   ticketFieldFilter,
   userFieldFilter,

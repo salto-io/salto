@@ -31,7 +31,7 @@ import {
   isSaltoError,
   SaltoError,
   isRemovalChange,
-  isServiceId,
+  isServiceId, isInstanceChange,
 } from '@salto-io/adapter-api'
 import {
   config as configUtils,
@@ -39,11 +39,12 @@ import {
   elements as elementUtils,
   client as clientUtils,
   fetch as fetchUtils,
+  definitions as definitionUtils,
 } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections, promises } from '@salto-io/lowerdash'
-import { ACTIVE_STATUS, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'
+import { ACTIVE_STATUS, CUSTOM_NAME_FIELD, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'
 import { OktaSwaggerApiConfig } from './config'
 import { StatusActionName } from './definitions/types'
 
@@ -169,6 +170,13 @@ export const assignServiceIdToAdditionChange = async (
   }
 }
 
+export const isInactiveCustomAppChange = ({ change }: definitionUtils.deploy.ChangeAndContext): boolean =>
+  isModificationChange(change) &&
+  change.data.before.value.status === INACTIVE_STATUS &&
+  change.data.after.value.status === INACTIVE_STATUS &&
+  // customName field only exist in custom applications
+  getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
+
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */
@@ -213,6 +221,52 @@ export const defaultDeployChange = async (
     throw getOktaError(getChangeData(change).elemID, err)
   }
 }
+
+const shouldActivateAfterModification = ({
+                                           change,
+                                         }: definitionUtils.deploy.ChangeAndContext): boolean =>
+  isModificationChange(change) &&
+  isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
+
+const shouldActivateAfterAddition = ({
+                                       change,
+                                       sharedContext,
+                                     }: definitionUtils.deploy.ChangeAndContext): boolean => {
+  // Update status for the created instance if necessary
+  const response = sharedContext[getChangeData(change).elemID.getFullName()]
+  if (isAdditionChange(change) && isResponseWithStatus(response)) {
+    const changeStatus = getChangeData(change).value.status
+    if (isActivationChange({ before: response.status, after: changeStatus })) {
+      return true
+    }
+  }
+  return false
+}
+
+const shouldDeactivateAfterAddition = ({
+                                         change,
+                                         sharedContext,
+                                       }: definitionUtils.deploy.ChangeAndContext): boolean => {
+  const response = sharedContext[getChangeData(change).elemID.getFullName()]
+  if (isAdditionChange(change) && isResponseWithStatus(response)) {
+    const changeStatus = getChangeData(change).value.status
+    if (isDeactivationChange({ before: response.status, after: changeStatus })) {
+      return true
+    }
+  }
+  return false
+}
+
+
+export const shouldActivateAfterChange = (changeAndContext: definitionUtils.deploy.ChangeAndContext): boolean =>
+  shouldActivateAfterAddition(changeAndContext) || shouldActivateAfterModification(changeAndContext)
+
+export const shouldDeactivateAfterChange = (changeAndContext: definitionUtils.deploy.ChangeAndContext): boolean =>
+  shouldDeactivateAfterAddition(changeAndContext)
+
+export const shouldDeactivateBeforeChange = ({ change }: definitionUtils.deploy.ChangeAndContext): boolean =>
+  isDeactivationModificationChange(change) || shouldDeactivateBeforeRemoval(change)
+
 
 /**
  * Deploy change with "add", "modify", "remove", "activation" and "deactivation" endpoints

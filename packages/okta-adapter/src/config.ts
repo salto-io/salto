@@ -213,43 +213,6 @@ const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] =
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
-  Application: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/apps/{applicationId}',
-        method: 'put',
-        urlParamsToFields: {
-          applicationId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/apps/{applicationId}',
-        method: 'delete',
-        urlParamsToFields: {
-          applicationId: 'id',
-        },
-        omitRequestBody: true,
-      },
-      activate: {
-        url: '/api/v1/apps/{applicationId}/lifecycle/activate',
-        method: 'post',
-        urlParamsToFields: {
-          applicationId: 'id',
-        },
-      },
-      deactivate: {
-        url: '/api/v1/apps/{applicationId}/lifecycle/deactivate',
-        method: 'post',
-        urlParamsToFields: {
-          applicationId: 'id',
-        },
-      },
-    },
-  },
   ApplicationGroupAssignment: {
     deployRequests: {
       add: {

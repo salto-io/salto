@@ -54,7 +54,7 @@ import {
   deployStatusChange,
   getOktaError,
   isActivationChange,
-  isDeactivationChange,
+  isDeactivationChange, isInactiveCustomAppChange,
 } from '../deployment'
 
 const log = logger(module)
@@ -122,12 +122,6 @@ const getSubdomainFromElementsSource = async (elementsSource: ReadOnlyElementsSo
   }
   return orgSettingInstance.value.subdomain
 }
-
-export const isInactiveCustomAppChange = (change: ModificationChange<InstanceElement>): boolean =>
-  change.data.before.value.status === INACTIVE_STATUS &&
-  change.data.after.value.status === INACTIVE_STATUS &&
-  // customName field only exist in custom applications
-  getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
 
 const deployApp = async (
   change: Change<InstanceElement>,
@@ -225,6 +219,7 @@ const filterCreator: FilterCreator = ({ elementSource, definitions, oldApiDefini
         }
       })
   },
+  /*
   deploy: async changes => {
     const client = definitions.clients.options.main.httpClient
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -241,6 +236,7 @@ const filterCreator: FilterCreator = ({ elementSource, definitions, oldApiDefini
       deployResult,
     }
   },
+   */
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     changes
       .map(getChangeData)

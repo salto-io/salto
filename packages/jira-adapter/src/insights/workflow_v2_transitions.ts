@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { isInstanceElement, isReferenceExpression, GetInsightsFunc } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression, GetInsightsFunc, isReferenceToInstance } from '@salto-io/adapter-api'
 import { isWorkflowV2Instance, WorkflowV2Transition } from '../filters/workflowV2/types'
-import { isReferenceToInstance, isStatusCategoryDone, WORKFLOW_TRANSITION } from './workflow_v1_transitions'
+import { isStatusCategoryDone, WORKFLOW_TRANSITION } from './workflow_v1_transitions'
 
 const hasResolutionPostFunc = (transition: WorkflowV2Transition, type: 'set' | 'clear'): boolean =>
   transition.actions?.find(

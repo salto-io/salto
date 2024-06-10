@@ -15,10 +15,9 @@
  */
 
 import { collections } from '@salto-io/lowerdash'
-import { GetInsightsFunc, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { GetInsightsFunc, InstanceElement, isInstanceElement, isReferenceToInstance } from '@salto-io/adapter-api'
 import { isProjectInstance } from './projects'
 import { ISSUE_TYPE_SCREEN_SCHEME_TYPE, SCREEN_SCHEME_TYPE, SCREEN_TYPE_NAME } from '../constants'
-import { isReferenceToInstance } from './workflow_v1_transitions'
 import { isWorkflowV1Instance, WorkflowV1Instance } from '../filters/workflow/types'
 import { isWorkflowV2Instance, WorkflowV2Instance } from '../filters/workflowV2/types'
 

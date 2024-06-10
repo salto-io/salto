@@ -996,15 +996,15 @@ export const createSchemeGuardForInstance =
 
 export function validatePlainObject(obj: unknown, fieldName: string): asserts obj is Values {
   if (!isPlainObject(obj)) {
-    log.warn(`Expected ${fieldName} to be a plain object, but got ${obj}`)
-    throw new Error(`Expected ${fieldName} to be a plain object, but got ${obj}`)
+    log.warn('Expected  %s to be a plain object, but got %o', fieldName, obj)
+    throw new Error(`Expected ${fieldName} to be a plain object, but got ${safeJsonStringify(obj)}`)
   }
 }
 
 export function validateArray(obj: unknown, fieldName: string): asserts obj is unknown[] {
   if (!Array.isArray(obj)) {
-    log.warn(`Expected ${fieldName} to be an array, but got ${obj}`)
-    throw new Error(`Expected ${fieldName} to be an array, but got ${obj}`)
+    log.warn('Expected %s to be an array, but got %o', fieldName, obj)
+    throw new Error(`Expected ${fieldName} to be an array, but got ${safeJsonStringify(obj)}`)
   }
 }
 

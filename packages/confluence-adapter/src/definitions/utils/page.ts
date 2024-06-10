@@ -71,7 +71,9 @@ const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeA
       value: {
         ...value,
         version: {
-          number: 2, // case where homepage is created in the service with version = 1
+          // In case of homepage addition, we don't have a version number yet but it is "1" in the service
+          // It has been set to one when we created the space and the default homepage was created
+          number: 2,
         },
       },
     }

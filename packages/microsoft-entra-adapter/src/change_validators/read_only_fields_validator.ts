@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeError, ChangeValidator, isModificationChange } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import {
@@ -60,13 +60,14 @@ export const readOnlyFieldsValidator: ChangeValidator = async changes => {
   const relevantTypes = Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS)
   const changesWithReadOnlyFields = changes
     .filter(isModificationChange)
+    .filter(isInstanceChange)
     .filter(change => relevantTypes.includes(change.data.after.elemID.typeName))
 
   return changesWithReadOnlyFields
     .map((change): ChangeError | undefined => {
       const readOnlyFields = TYPE_NAME_TO_READ_ONLY_FIELDS[change.data.after.elemID.typeName]
-      const modifiedFields = readOnlyFields.filter(fieldName =>
-        _.isEqual(_.get(change.data.before, fieldName), _.get(change.data.after, fieldName)),
+      const modifiedFields = readOnlyFields.filter(
+        fieldName => !_.isEqual(_.get(change.data.before.value, fieldName), _.get(change.data.after.value, fieldName)),
       )
       return _.isEmpty(modifiedFields)
         ? undefined

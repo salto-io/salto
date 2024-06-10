@@ -15,7 +15,6 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, ROLE_DEFINITION_TYPE_NAME } from '../../src/constants'
 import { builtInInstancesValidator } from '../../src/change_validators'
 
@@ -30,16 +29,12 @@ describe(`${builtInInstancesValidator.name}`, () => {
         authenticationStrengthPolicyType,
         { policyType: 'builtIn' },
       )
-      const elementSource = buildElementsSourceFromElements([
-        authenticationStrengthPolicyType,
-        authenticationStrengthPolicy,
-      ])
       const changes = [
         toChange({
           before: authenticationStrengthPolicy.clone(),
         }),
       ]
-      const res = await builtInInstancesValidator(changes, elementSource)
+      const res = await builtInInstancesValidator(changes)
       expect(res).toHaveLength(1)
       expect(res[0].detailedMessage).toEqual('Built-in instances cannot be modified or removed')
     })
@@ -53,16 +48,12 @@ describe(`${builtInInstancesValidator.name}`, () => {
         authenticationStrengthPolicyType,
         { policyType: 'notBuiltIn' },
       )
-      const elementSource = buildElementsSourceFromElements([
-        authenticationStrengthPolicyType,
-        authenticationStrengthPolicy,
-      ])
       const changes = [
         toChange({
           before: authenticationStrengthPolicy.clone(),
         }),
       ]
-      const res = await builtInInstancesValidator(changes, elementSource)
+      const res = await builtInInstancesValidator(changes)
       expect(res).toHaveLength(0)
     })
   })
@@ -73,13 +64,12 @@ describe(`${builtInInstancesValidator.name}`, () => {
         elemID: new ElemID(ADAPTER_NAME, ROLE_DEFINITION_TYPE_NAME),
       })
       const roleDefinition = new InstanceElement('testRoleDefinition', roleDefinitionType, { isBuiltIn: true })
-      const elementSource = buildElementsSourceFromElements([roleDefinitionType, roleDefinition])
       const changes = [
         toChange({
           before: roleDefinition.clone(),
         }),
       ]
-      const res = await builtInInstancesValidator(changes, elementSource)
+      const res = await builtInInstancesValidator(changes)
       expect(res).toHaveLength(1)
       expect(res[0].detailedMessage).toEqual('Built-in instances cannot be modified or removed')
     })
@@ -87,13 +77,12 @@ describe(`${builtInInstancesValidator.name}`, () => {
     it('should not return change error for non built-in role definition', async () => {
       const roleDefinitionType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, ROLE_DEFINITION_TYPE_NAME) })
       const roleDefinition = new InstanceElement('testRoleDefinition', roleDefinitionType, { isBuiltIn: false })
-      const elementSource = buildElementsSourceFromElements([roleDefinitionType, roleDefinition])
       const changes = [
         toChange({
           before: roleDefinition.clone(),
         }),
       ]
-      const res = await builtInInstancesValidator(changes, elementSource)
+      const res = await builtInInstancesValidator(changes)
       expect(res).toHaveLength(0)
     })
   })

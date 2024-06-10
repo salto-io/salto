@@ -42,7 +42,9 @@ export const createDefinitionForAppRoleAssignment = ({
                   validatePlainObject(value, typeName)
                   const parentId = _.get(context, 'additionalContext.parent_id')
                   if (!_.isString(parentId)) {
-                    throw new Error(`Missing parent_id in context, cannot add ${typeName} without a parent_id`)
+                    throw new Error(
+                      `Cannot find principalId for ${typeName}. PrincipalId is required for creating an appRoleAssignment`,
+                    )
                   }
                   return {
                     value: {

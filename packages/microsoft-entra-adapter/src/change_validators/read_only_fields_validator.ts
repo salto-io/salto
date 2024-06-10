@@ -75,7 +75,7 @@ export const readOnlyFieldsValidator: ChangeValidator = async changes => {
             elemID: change.data.after.elemID,
             severity: 'Warning',
             message: 'Read-only fields were modified',
-            detailedMessage: `Instance has modified read-only fields: ${modifiedFields.join(', ')}. These changes will be ignored.`,
+            detailedMessage: `The following read-only fields were changed and cannot be deployed: ${modifiedFields.join(', ')}. These changes will be ignored.`,
           }
     })
     .filter(isDefined)

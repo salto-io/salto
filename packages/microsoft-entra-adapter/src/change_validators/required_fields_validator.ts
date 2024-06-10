@@ -15,14 +15,15 @@
  */
 import { values as lowerDashValues, types } from '@salto-io/lowerdash'
 import {
-  Change,
+  AdditionChange,
   ChangeError,
   ChangeValidator,
   InstanceElement,
+  ModificationChange,
   getChangeData,
   isAdditionChange,
-  isInstanceElement,
-  isModificationChange,
+  isAdditionOrModificationChange,
+  isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
@@ -52,7 +53,7 @@ const validateRequiredFieldsForLocation = (instance: InstanceElement): ChangeErr
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Missing required fields',
-      detailedMessage: 'Instance is missing required field displayName',
+      detailedMessage: 'The required field displayName is missing',
     }
   }
 
@@ -67,7 +68,7 @@ const validateRequiredFieldsForLocation = (instance: InstanceElement): ChangeErr
           elemID: instance.elemID,
           severity: 'Error',
           message: 'Required field ipRanges is either missing or has a bad format',
-          detailedMessage: `Instance is missing required field ipRanges or has a bad format. Expected Array of objects with fields ${IP_RANGES_REQUIRED_FIELDS.join(', ')}`,
+          detailedMessage: `The required field ipRanges is missing or has a bad format. Expected Array of objects with fields ${IP_RANGES_REQUIRED_FIELDS.join(', ')}`,
         }
       }
 
@@ -77,14 +78,13 @@ const validateRequiredFieldsForLocation = (instance: InstanceElement): ChangeErr
           return _.isEmpty(missingFields) ? undefined : index
         })
         .filter(isDefined)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       return invalidIpRangesIndices.length === 0
         ? undefined
         : {
             elemID: instance.elemID,
             severity: 'Error',
             message: 'Missing required fields',
-            detailedMessage: `Instance is missing required fields ${IP_RANGES_REQUIRED_FIELDS.join(', ')} in ipRanges at indices ${invalidIpRangesIndices.join(', ')}`,
+            detailedMessage: `The required fields: ${IP_RANGES_REQUIRED_FIELDS.join(', ')} in ipRanges at indices ${invalidIpRangesIndices.join(', ')} are missing`,
           }
     }
     case COUNTRY_LOCATION_DATA_TYPE:
@@ -93,7 +93,7 @@ const validateRequiredFieldsForLocation = (instance: InstanceElement): ChangeErr
             elemID: instance.elemID,
             severity: 'Error',
             message: 'Missing required fields',
-            detailedMessage: 'Instance is missing required field countriesAndRegions',
+            detailedMessage: 'The required field countriesAndRegions is missing',
           }
         : undefined
     case undefined:
@@ -102,7 +102,7 @@ const validateRequiredFieldsForLocation = (instance: InstanceElement): ChangeErr
         elemID: instance.elemID,
         severity: 'Error',
         message: 'Missing required fields',
-        detailedMessage: `Instance is missing required field ${ODATA_TYPE_FIELD_NACL_CASE}`,
+        detailedMessage: `The required field ${ODATA_TYPE_FIELD_NACL_CASE} is missing`,
       }
   }
 }
@@ -121,56 +121,37 @@ const TYPE_TO_VALIDATION_RULES_ON_MODIFICATION: RequiredFieldsMap = {
 }
 
 /*
- * Validates that all required fields are present in the instances for the given change type (addition or modification).
+ * Validates that all required fields are present in the given change, according to the given validation rules.
  */
-const validateForChangeType = ({
-  changes,
-  changeType,
-}: {
-  changes: readonly Change[]
-  changeType: 'addition' | 'modification'
-}): ChangeError[] => {
-  const { validationRulesMap, filterFunc } =
-    changeType === 'addition'
-      ? {
-          validationRulesMap: TYPE_TO_VALIDATION_RULES_ON_ADDITION,
-          filterFunc: isAdditionChange,
-        }
+const validateSingleChange = (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+): ChangeError | undefined => {
+  const isAddition = isAdditionChange(change)
+  const instance = getChangeData(change)
+  const validationRulesMap = isAddition
+    ? TYPE_TO_VALIDATION_RULES_ON_ADDITION
+    : TYPE_TO_VALIDATION_RULES_ON_MODIFICATION
+  const validationRule = validationRulesMap[instance.elemID.typeName]
+  if (validationRule?.custom !== undefined) {
+    return validationRule.custom(instance)
+  }
+  if (validationRule?.fieldNames !== undefined) {
+    const instanceFieldNames = Object.keys(instance.value)
+    const missingFields = validationRule.fieldNames.filter(fieldName => !instanceFieldNames.includes(fieldName))
+    return _.isEmpty(missingFields)
+      ? undefined
       : {
-          validationRulesMap: TYPE_TO_VALIDATION_RULES_ON_MODIFICATION,
-          filterFunc: isModificationChange,
+          elemID: instance.elemID,
+          severity: 'Error',
+          message: 'Missing required fields',
+          detailedMessage: `The following fields ${missingFields.join(', ')} are missing and required on ${isAddition ? 'addition' : 'modification'} changes.`,
         }
-
-  const relevantChanges = changes
-    .filter(filterFunc)
-    .map(getChangeData)
-    .filter(isInstanceElement)
-    .filter(instance => Object.keys(validationRulesMap).includes(instance.elemID.typeName))
-
-  return relevantChanges
-    .map((instance): ChangeError | undefined => {
-      const validationRule = validationRulesMap[instance.elemID.typeName]
-      if (validationRule.fieldNames !== undefined) {
-        const instanceFieldNames = Object.keys(instance.value)
-        const missingFields = validationRule.fieldNames.filter(fieldName => !instanceFieldNames.includes(fieldName))
-        return _.isEmpty(missingFields)
-          ? undefined
-          : {
-              elemID: instance.elemID,
-              severity: 'Error',
-              message: 'Missing required fields',
-              detailedMessage: `Instance is missing required fields ${missingFields.join(', ')} on ${changeType}`,
-            }
-      }
-      return validationRule.custom(instance)
-    })
-    .filter(isDefined)
+  }
+  return undefined
 }
 
 /*
  * Validates that all required fields are present in the instances on addition and modification changes.
  */
-export const requiredFieldsValidator: ChangeValidator = async changes => [
-  ...validateForChangeType({ changes, changeType: 'addition' }),
-  ...validateForChangeType({ changes, changeType: 'modification' }),
-]
+export const requiredFieldsValidator: ChangeValidator = async changes =>
+  changes.filter(isInstanceChange).filter(isAdditionOrModificationChange).map(validateSingleChange).filter(isDefined)

@@ -46,7 +46,7 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
       const res = await readOnlyFieldsValidator(changes)
       expect(res).toHaveLength(1)
       expect(res[0].detailedMessage).toEqual(
-        'Instance has modified read-only fields: inheritsPermissionsFrom. These changes will be ignored.',
+        'The following read-only fields were changed and cannot be deployed: inheritsPermissionsFrom. These changes will be ignored.',
       )
     })
 
@@ -85,7 +85,7 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
       const res = await readOnlyFieldsValidator(changes)
       expect(res).toHaveLength(1)
       expect(res[0].detailedMessage).toEqual(
-        'Instance has modified read-only fields: appId, displayName. These changes will be ignored.',
+        'The following read-only fields were changed and cannot be deployed: appId, displayName. These changes will be ignored.',
       )
     })
 
@@ -125,7 +125,7 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
       const res = await readOnlyFieldsValidator(changes)
       expect(res).toHaveLength(1)
       expect(res[0].detailedMessage).toEqual(
-        'Instance has modified read-only fields: appId, publisherDomain. These changes will be ignored.',
+        'The following read-only fields were changed and cannot be deployed: appId, publisherDomain. These changes will be ignored.',
       )
     })
 
@@ -165,7 +165,7 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
       const res = await readOnlyFieldsValidator(changes)
       expect(res).toHaveLength(1)
       expect(res[0].detailedMessage).toEqual(
-        'Instance has modified read-only fields: description, displayName. These changes will be ignored.',
+        'The following read-only fields were changed and cannot be deployed: description, displayName. These changes will be ignored.',
       )
     })
 

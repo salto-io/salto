@@ -24,6 +24,7 @@ export const adjustEntitiesWithExpandedMembers: AdjustFunction = ({ value, typeN
   const members = _.get(value, 'members', [])
   validateArray(members, `${typeName} members`)
 
+  const supportedDirectoryObjectODataTypeNames = Object.keys(SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME)
   return {
     value: {
       ...value,
@@ -32,11 +33,7 @@ export const adjustEntitiesWithExpandedMembers: AdjustFunction = ({ value, typeN
           validatePlainObject(member, `${typeName} member`)
           return _.pick(member, ['id', ODATA_TYPE_FIELD])
         })
-        .filter((member: object) =>
-          Object.keys(SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME).includes(
-            _.get(member, ODATA_TYPE_FIELD),
-          ),
-        ),
+        .filter((member: object) => supportedDirectoryObjectODataTypeNames.includes(_.get(member, ODATA_TYPE_FIELD))),
     },
   }
 }

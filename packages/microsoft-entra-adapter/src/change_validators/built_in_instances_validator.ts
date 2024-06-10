@@ -42,15 +42,15 @@ const POTENTIAL_BUILD_IN_TYPES: Record<string, BuiltInIndicator> = {
  * Validates that built-in instances are not modified or removed.
  */
 export const builtInInstancesValidator: ChangeValidator = async changes => {
-  const potentialBuiltInChanges = changes
+  const potentialBuiltInInstances = changes
     .filter(isRemovalOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => Object.keys(POTENTIAL_BUILD_IN_TYPES).includes(instance.elemID.typeName))
 
-  const potentialBuiltInChangesByType = _.groupBy(potentialBuiltInChanges, change => change.elemID.typeName)
+  const potentialBuiltInInstancesByType = _.groupBy(potentialBuiltInInstances, change => change.elemID.typeName)
 
-  return Object.entries(potentialBuiltInChangesByType).flatMap(([typeName, instances]) => {
+  return Object.entries(potentialBuiltInInstancesByType).flatMap(([typeName, instances]) => {
     const builtInIndicator = POTENTIAL_BUILD_IN_TYPES[typeName]
     const builtInInstancesChanges = instances.filter(
       instance => _.get(instance.value, builtInIndicator.fieldName) === builtInIndicator.value,
@@ -58,8 +58,8 @@ export const builtInInstancesValidator: ChangeValidator = async changes => {
     return builtInInstancesChanges.map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Built-in instances are read-only',
-      detailedMessage: 'Built-in instances cannot be modified or removed',
+      message: 'Built-in elements are read-only',
+      detailedMessage: 'Built-in elements cannot be modified or removed',
     }))
   })
 }

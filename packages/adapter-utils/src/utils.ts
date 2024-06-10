@@ -994,17 +994,19 @@ export const createSchemeGuardForInstance =
     return true
   }
 
-export function validatePlainObject(obj: unknown, fieldName: string): asserts obj is Values {
+export function validatePlainObject(obj: unknown, valueName: string): asserts obj is Values {
   if (!isPlainObject(obj)) {
-    log.warn('Expected  %s to be a plain object, but got %o', fieldName, obj)
-    throw new Error(`Expected ${fieldName} to be a plain object, but got ${safeJsonStringify(obj)}`)
+    const objStr = inspect(obj)
+    log.warn('Expected  %s to be a plain object, but got %s', valueName, objStr)
+    throw new Error(`Expected ${valueName} to be a plain object, but got ${objStr}`)
   }
 }
 
-export function validateArray(obj: unknown, fieldName: string): asserts obj is unknown[] {
+export function validateArray(obj: unknown, valueName: string): asserts obj is unknown[] {
   if (!Array.isArray(obj)) {
-    log.warn('Expected %s to be an array, but got %o', fieldName, obj)
-    throw new Error(`Expected ${fieldName} to be an array, but got ${safeJsonStringify(obj)}`)
+    const objStr = inspect(obj)
+    log.warn('Expected %s to be an array, but got %s', valueName, objStr)
+    throw new Error(`Expected ${valueName} to be an array, but got ${objStr}`)
   }
 }
 

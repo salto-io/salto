@@ -101,7 +101,6 @@
     "@typescript-eslint/parser": "4.22.1",
     "aws-sdk-client-mock": "^0.5.5",
     "eslint": "^7.3.2",
-    "eslint-config-airbnb": "18.0.1",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-header": "^3.0.0",
     "eslint-plugin-import": "^2.18.2",

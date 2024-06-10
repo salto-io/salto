@@ -22,7 +22,7 @@ module.exports = {
 
   extends: [
     'eslint:recommended',
-    'airbnb',
+    // 'airbnb',
     'plugin:@typescript-eslint/recommended',
     'plugin:import/errors',
     'plugin:import/warnings',

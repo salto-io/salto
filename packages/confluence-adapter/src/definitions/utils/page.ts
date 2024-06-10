@@ -92,9 +92,7 @@ const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeA
 /**
  * custom context function that adds homepage id to additionContext in case it is a homepage of a new deployed space.
  */
-export const putHomepageIdInAdditionContext = (
-  args: definitions.deploy.ChangeAndContext,
-): Record<string, unknown> => {
+export const putHomepageIdInAdditionContext = (args: definitions.deploy.ChangeAndContext): Record<string, unknown> => {
   const spaceChange = args.changeGroup?.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
   if (spaceChange === undefined) {
     return {}

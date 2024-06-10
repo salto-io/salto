@@ -24,7 +24,11 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
-import { adjustPageOnModification, homepageAdditionToModification, putHomepageIdInAdditionContext } from '../../../src/definitions/utils'
+import {
+  adjustPageOnModification,
+  homepageAdditionToModification,
+  putHomepageIdInAdditionContext,
+} from '../../../src/definitions/utils'
 
 describe('page definitions utils', () => {
   const pageObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, PAGE_TYPE_NAME) })

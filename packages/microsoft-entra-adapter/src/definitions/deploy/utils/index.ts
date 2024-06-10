@@ -15,7 +15,7 @@
  */
 export { createDefinitionForAppRoleAssignment } from './app_role_assignment'
 export { adjustRoleDefinitionForDeployment } from './role_definition'
-export { createCustomizationsWithBasePath } from './path_adjustment'
+export { createCustomizationsWithBasePath as createCustomizationsWithBasePathForDeploy } from './path_adjustment'
 export { omitReadOnlyFields } from './read_only_fields'
 export {
   getGroupLifecyclePolicyGroupModificationRequest,

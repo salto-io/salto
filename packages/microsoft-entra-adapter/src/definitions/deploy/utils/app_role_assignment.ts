@@ -38,15 +38,15 @@ export const createDefinitionForAppRoleAssignment = ({
               },
               transformation: {
                 omit: ['id'],
-                adjust: item => {
-                  validatePlainObject(item.value, typeName)
-                  const parentId = _.get(item.context, 'additionalContext.parent_id')
+                adjust: ({ value, context }) => {
+                  validatePlainObject(value, typeName)
+                  const parentId = _.get(context, 'additionalContext.parent_id')
                   if (!_.isString(parentId)) {
                     throw new Error(`Missing parent_id in context, cannot add ${typeName} without a parent_id`)
                   }
                   return {
                     value: {
-                      ...item.value,
+                      ...value,
                       principalId: parentId,
                     },
                   }

@@ -15,9 +15,9 @@
  */
 
 import { FetchCustomizations } from '../../../src/definitions/fetch/types'
-import { createCustomizationsWithBasePath } from '../../../src/definitions/fetch/utils'
+import { createCustomizationsWithBasePathForFetch } from '../../../src/definitions/fetch/utils'
 
-describe(`${createCustomizationsWithBasePath.name}`, () => {
+describe(`${createCustomizationsWithBasePathForFetch.name}`, () => {
   it('should return the correct customizations', () => {
     const customizations: FetchCustomizations = {
       a: {
@@ -31,7 +31,7 @@ describe(`${createCustomizationsWithBasePath.name}`, () => {
       },
     }
     const basePath = '/base'
-    const result = createCustomizationsWithBasePath(customizations, basePath)
+    const result = createCustomizationsWithBasePathForFetch(customizations, basePath)
     expect(result).toEqual({
       a: {
         requests: [

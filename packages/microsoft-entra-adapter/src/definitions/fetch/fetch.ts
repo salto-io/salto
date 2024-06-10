@@ -65,7 +65,7 @@ import {
 } from './constants'
 import {
   adjustEntitiesWithExpandedMembers,
-  createCustomizationsWithBasePath,
+  createCustomizationsWithBasePathForFetch,
   createDefinitionForAppRoleAssignment,
 } from './utils'
 
@@ -795,8 +795,8 @@ const graphBetaCustomizations: FetchCustomizations = {
 }
 
 const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
-  ...createCustomizationsWithBasePath(graphV1Customizations, GRAPH_V1_PATH),
-  ...createCustomizationsWithBasePath(graphBetaCustomizations, GRAPH_BETA_PATH),
+  ...createCustomizationsWithBasePathForFetch(graphV1Customizations, GRAPH_V1_PATH),
+  ...createCustomizationsWithBasePathForFetch(graphBetaCustomizations, GRAPH_BETA_PATH),
 })
 
 export const createFetchDefinitions = (

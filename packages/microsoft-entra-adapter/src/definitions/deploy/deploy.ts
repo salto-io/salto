@@ -43,7 +43,7 @@ import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { DeployCustomDefinitions, DeployRequestDefinition } from './types'
 import {
   adjustRoleDefinitionForDeployment,
-  createCustomizationsWithBasePath,
+  createCustomizationsWithBasePathForDeploy,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
@@ -750,8 +750,8 @@ const createCustomizations = (): DeployCustomDefinitions => {
   >({})
 
   return _.merge(standardRequestDefinitions, {
-    ...createCustomizationsWithBasePath(graphV1CustomDefinitions, GRAPH_V1_PATH),
-    ...createCustomizationsWithBasePath(graphBetaCustomDefinitions, GRAPH_BETA_PATH),
+    ...createCustomizationsWithBasePathForDeploy(graphV1CustomDefinitions, GRAPH_V1_PATH),
+    ...createCustomizationsWithBasePathForDeploy(graphBetaCustomDefinitions, GRAPH_BETA_PATH),
   })
 }
 

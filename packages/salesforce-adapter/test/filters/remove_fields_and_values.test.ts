@@ -163,8 +163,8 @@ describe('remove fields filter', () => {
       )
     })
   })
-  describe('Billing UniqueId', () => {
-    const billingType = createCustomObjectType(
+  describe('CPQ billing types', () => {
+    const revenueRecognitionTreatmentType = createCustomObjectType(
       'blng__RevenueRecognitionTreatment__c',
       {
         annotations: {
@@ -186,19 +186,49 @@ describe('remove fields filter', () => {
         },
       },
     )
-    const billingInstance = new InstanceElement('SomeInstance', billingType, {
-      blng__Active__c: true,
-      blng__UniqueId__c: 'some_unique_id',
-      blng__Family__c: 'some_family',
-      blng__NextOpenPeriod__c: 'some_period',
+    const financePeriodType = createCustomObjectType('blng__FinancePeriod__c', {
+      annotations: {
+        apiName: 'blng__FinancePeriod__c',
+      },
+      fields: {
+        blng__Family__c: {
+          refType: BuiltinTypes.STRING,
+        },
+        blng__NextOpenPeriod__c: {
+          refType: BuiltinTypes.STRING,
+        },
+        blng__PeriodStatus__c: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
     })
+    const revenueRecognitionTreatmentInstance = new InstanceElement(
+      'SomeInstance',
+      revenueRecognitionTreatmentType,
+      {
+        blng__Active__c: true,
+        blng__UniqueId__c: 'some_unique_id',
+      },
+    )
+    const financePeriodInstance = new InstanceElement(
+      'SomeInstance',
+      financePeriodType,
+      {
+        blng__Family__c: 'some_family',
+        blng__NextOpenPeriod__c: 'some_period',
+        blng__PeriodStatus__c: 'some_status',
+      },
+    )
 
     let elements: Element[]
 
     beforeEach(async () => {
-      elements = [billingType, billingInstance].map((element) =>
-        element.clone(),
-      )
+      elements = [
+        revenueRecognitionTreatmentType,
+        revenueRecognitionTreatmentInstance,
+        financePeriodType,
+        financePeriodInstance,
+      ].map((element) => element.clone())
       const filterUnderTest = removeFieldAndValuesFilter({
         config: defaultFilterContext,
       }) as FilterWith<'onFetch'>
@@ -206,16 +236,23 @@ describe('remove fields filter', () => {
     })
 
     it('should remove only the appropriate field', () => {
-      const objectType = elements[0] as ObjectType
-      const instance = elements[1] as InstanceElement
-      expect(objectType.fields).not.toContainKey('blng__UniqueId__c')
-      expect(objectType.fields).not.toContainKey('blng__Family__c')
-      expect(objectType.fields).not.toContainKey('blng__NextOpenPeriod__c')
-      expect(objectType.fields).toContainKey('blng__Active__c')
-      expect(instance.value).not.toContainKey('blng__UniqueId__c')
-      expect(instance.value).not.toContainKey('blng__Family__c')
-      expect(instance.value).not.toContainKey('blng__NextOpenPeriod__c')
-      expect(instance.value).toContainKey('blng__Active__c')
+      const revenueObjectType = elements[0] as ObjectType
+      const revenueInstance = elements[1] as InstanceElement
+      const financeObjectType = elements[2] as ObjectType
+      const financeInstance = elements[3] as InstanceElement
+      expect(revenueObjectType.fields).not.toContainKey('blng__UniqueId__c')
+      expect(revenueObjectType.fields).toContainKey('blng__Active__c')
+      expect(revenueInstance.value).not.toContainKey('blng__UniqueId__c')
+      expect(revenueInstance.value).toContainKey('blng__Active__c')
+
+      expect(financeObjectType.fields).not.toContainKey('blng__Family__c')
+      expect(financeObjectType.fields).not.toContainKey(
+        'blng__NextOpenPeriod__c',
+      )
+      expect(financeObjectType.fields).toContainKey('blng__PeriodStatus__c')
+      expect(financeInstance.value).not.toContainKey('blng__Family__c')
+      expect(financeInstance.value).not.toContainKey('blng__NextOpenPeriod__c')
+      expect(financeInstance.value).toContainKey('blng__PeriodStatus__c')
     })
   })
 })

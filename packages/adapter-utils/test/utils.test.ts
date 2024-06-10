@@ -88,6 +88,8 @@ import {
   TransformFuncSync,
   getIndependentElemIDs,
   getInstancesFromElementSource,
+  validatePlainObject,
+  validateArray,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2655,6 +2657,53 @@ describe('Test utils.ts', () => {
       expect(schemeGuard({ a: 2 })).toBeFalsy()
     })
   })
+
+  describe(`${validatePlainObject.name}`, () => {
+    it('should throw an error if value is not a plain object', () => {
+      expect(() => validatePlainObject('lala', 'fieldName')).toThrow(
+        new Error("Expected fieldName to be a plain object, but got 'lala'"),
+      )
+      expect(() => validatePlainObject(123, 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got 123'),
+      )
+      expect(() => validatePlainObject([], 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got []'),
+      )
+      expect(() => validatePlainObject(new Map(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got Map(0) {}'),
+      )
+      expect(() => validatePlainObject(new Set(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got Set(0) {}'),
+      )
+    })
+
+    it('should not throw an error if value is a plain object', () => {
+      expect(() => validatePlainObject({}, 'fieldName')).not.toThrow()
+      expect(() => validatePlainObject({ a: 1 }, 'fieldName')).not.toThrow()
+    })
+  })
+
+  describe(`${validateArray.name}`, () => {
+    it('should throw an error if value is not an array', () => {
+      expect(() => validateArray('lala', 'fieldName')).toThrow(
+        new Error("Expected fieldName to be an array, but got 'lala'"),
+      )
+      expect(() => validateArray(123, 'fieldName')).toThrow(new Error('Expected fieldName to be an array, but got 123'))
+      expect(() => validateArray({}, 'fieldName')).toThrow(new Error('Expected fieldName to be an array, but got {}'))
+      expect(() => validateArray(new Map(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be an array, but got Map(0) {}'),
+      )
+      expect(() => validateArray(new Set(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be an array, but got Set(0) {}'),
+      )
+    })
+
+    it('should not throw an error if value is an array', () => {
+      expect(() => validateArray([], 'fieldName')).not.toThrow()
+      expect(() => validateArray([1], 'fieldName')).not.toThrow()
+    })
+  })
+
   describe('getSubtypes', () => {
     it('should return the expected subtypes', () => {
       const typeA = new ObjectType({ elemID: new ElemID('adapter', 'A') })

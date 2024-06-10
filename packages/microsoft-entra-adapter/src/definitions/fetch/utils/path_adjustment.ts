@@ -13,11 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { builtInInstancesValidator, readOnlyFieldsValidator, requiredFieldsValidator } from './change_validators'
 
-export default (): Record<string, ChangeValidator> => ({
-  builtInInstances: builtInInstancesValidator,
-  requiredFields: requiredFieldsValidator,
-  readOnlyFields: readOnlyFieldsValidator,
-})
+import _ from 'lodash'
+import { EndpointPath } from '../../types'
+import { FetchCustomizations } from '../types'
+
+export const createCustomizationsWithBasePath = (
+  customizations: FetchCustomizations,
+  basePath: EndpointPath,
+): FetchCustomizations =>
+  _.mapValues(customizations, customization => ({
+    ...customization,
+    requests: customization.requests?.map(req => ({
+      ...req,
+      endpoint: {
+        ...req.endpoint,
+        path: `${basePath}${req.endpoint.path}` as EndpointPath,
+      },
+    })),
+  }))

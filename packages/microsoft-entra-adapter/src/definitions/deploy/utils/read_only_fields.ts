@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { builtInInstancesValidator, readOnlyFieldsValidator, requiredFieldsValidator } from './change_validators'
 
-export default (): Record<string, ChangeValidator> => ({
-  builtInInstances: builtInInstancesValidator,
-  requiredFields: requiredFieldsValidator,
-  readOnlyFields: readOnlyFieldsValidator,
-})
+import _ from 'lodash'
+import { validatePlainObject } from '@salto-io/adapter-utils'
+import { TYPE_NAME_TO_READ_ONLY_FIELDS } from '../../../change_validators'
+import { AdjustFunction } from '../types'
+
+export const omitReadOnlyFields: AdjustFunction = ({ typeName, value, context }) => {
+  validatePlainObject(value, typeName)
+  const readOnlyFieldsToOmit = TYPE_NAME_TO_READ_ONLY_FIELDS[typeName]
+  if (readOnlyFieldsToOmit === undefined || context.action !== 'modify') {
+    return { value }
+  }
+  return { value: _.omit(value, readOnlyFieldsToOmit) }
+}

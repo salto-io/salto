@@ -21,11 +21,11 @@ import {
   InstanceElement,
   isInstanceElement,
   isReferenceExpression,
+  isReferenceToInstance,
   Value,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
-import { isReferenceToInstance } from './workflow_v1_transitions'
 import { SCREEN_TYPE_NAME } from '../constants'
 
 const { DefaultMap } = collections.map

@@ -21,7 +21,15 @@ import { hash as hashUtils } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement, isVariable } from './elements'
+import {
+  Element,
+  ReadOnlyElementsSource,
+  PlaceholderObjectType,
+  TypeElement,
+  isVariable,
+  isInstanceElement,
+  InstanceElement,
+} from './elements'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -164,6 +172,11 @@ export class ReferenceExpression {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isReferenceExpression = (value: any): value is ReferenceExpression => value instanceof ReferenceExpression
+
+export const isReferenceToInstance = (
+  ref: unknown,
+): ref is Omit<ReferenceExpression, 'value'> & { value: InstanceElement } =>
+  isReferenceExpression(ref) && isInstanceElement(ref.value)
 
 export class VariableExpression extends ReferenceExpression {
   constructor(elemID: ElemID, resValue?: Value, topLevelParent?: Element) {

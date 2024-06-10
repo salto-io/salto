@@ -15,13 +15,10 @@
  */
 
 import _ from 'lodash'
-import { isInstanceElement, isReferenceExpression, InstanceElement, GetInsightsFunc } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression, GetInsightsFunc, isReferenceToInstance } from '@salto-io/adapter-api'
 import { isWorkflowV1Instance, Transition } from '../filters/workflow/types'
 
 export const WORKFLOW_TRANSITION = 'workflowTransition'
-
-export const isReferenceToInstance = (ref: unknown): ref is { value: InstanceElement } =>
-  isReferenceExpression(ref) && isInstanceElement(ref.value)
 
 export const isStatusCategoryDone = (ref: unknown): boolean =>
   isReferenceToInstance(ref) &&

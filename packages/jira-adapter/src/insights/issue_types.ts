@@ -16,9 +16,14 @@
 
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { GetInsightsFunc, InstanceElement, isInstanceElement, isStaticFile } from '@salto-io/adapter-api'
+import {
+  GetInsightsFunc,
+  InstanceElement,
+  isInstanceElement,
+  isReferenceToInstance,
+  isStaticFile,
+} from '@salto-io/adapter-api'
 import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME } from '../constants'
-import { isReferenceToInstance } from './workflow_v1_transitions'
 import { isProjectInstance } from './projects'
 
 const { makeArray } = collections.array

@@ -20,9 +20,11 @@ import {
   Element,
   InstanceElement,
 } from '@salto-io/adapter-api'
-import { makeFilter } from '../../src/filters/remove_fields_and_values'
+import removeFieldAndValuesFilter, {
+  makeFilter,
+} from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
-import { defaultFilterContext } from '../utils'
+import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
 describe('remove fields filter', () => {
@@ -159,6 +161,98 @@ describe('remove fields filter', () => {
       expect(testInstance.value.doesNotExistInType).toEqual(
         mockInstance.value.doesNotExistInType,
       )
+    })
+  })
+  describe('CPQ billing types', () => {
+    const revenueRecognitionTreatmentType = createCustomObjectType(
+      'blng__RevenueRecognitionTreatment__c',
+      {
+        annotations: {
+          apiName: 'blng__RevenueRecognitionTreatment__c',
+        },
+        fields: {
+          blng__Active__c: {
+            refType: BuiltinTypes.BOOLEAN,
+          },
+          blng__UniqueId__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          blng__Family__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          blng__NextOpenPeriod__c: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      },
+    )
+    const financePeriodType = createCustomObjectType('blng__FinancePeriod__c', {
+      annotations: {
+        apiName: 'blng__FinancePeriod__c',
+      },
+      fields: {
+        blng__Family__c: {
+          refType: BuiltinTypes.STRING,
+        },
+        blng__NextOpenPeriod__c: {
+          refType: BuiltinTypes.STRING,
+        },
+        blng__PeriodStatus__c: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    })
+    const revenueRecognitionTreatmentInstance = new InstanceElement(
+      'SomeInstance',
+      revenueRecognitionTreatmentType,
+      {
+        blng__Active__c: true,
+        blng__UniqueId__c: 'some_unique_id',
+      },
+    )
+    const financePeriodInstance = new InstanceElement(
+      'SomeInstance',
+      financePeriodType,
+      {
+        blng__Family__c: 'some_family',
+        blng__NextOpenPeriod__c: 'some_period',
+        blng__PeriodStatus__c: 'some_status',
+      },
+    )
+
+    let elements: Element[]
+
+    beforeEach(async () => {
+      elements = [
+        revenueRecognitionTreatmentType,
+        revenueRecognitionTreatmentInstance,
+        financePeriodType,
+        financePeriodInstance,
+      ].map((element) => element.clone())
+      const filterUnderTest = removeFieldAndValuesFilter({
+        config: defaultFilterContext,
+      }) as FilterWith<'onFetch'>
+      await filterUnderTest.onFetch(elements)
+    })
+
+    it('should remove only the appropriate field', () => {
+      const revenueObjectType = elements[0] as ObjectType
+      const revenueInstance = elements[1] as InstanceElement
+      const financeObjectType = elements[2] as ObjectType
+      const financeInstance = elements[3] as InstanceElement
+      expect(revenueObjectType.fields).not.toContainKey('blng__UniqueId__c')
+      expect(revenueObjectType.fields).toContainKey('blng__Active__c')
+      expect(revenueInstance.value).not.toContainKey('blng__UniqueId__c')
+      expect(revenueInstance.value).toContainKey('blng__Active__c')
+
+      expect(financeObjectType.fields).not.toContainKey('blng__Family__c')
+      expect(financeObjectType.fields).not.toContainKey(
+        'blng__NextOpenPeriod__c',
+      )
+      expect(financeObjectType.fields).toContainKey('blng__PeriodStatus__c')
+      expect(financeInstance.value).not.toContainKey('blng__Family__c')
+      expect(financeInstance.value).not.toContainKey('blng__NextOpenPeriod__c')
+      expect(financeInstance.value).toContainKey('blng__PeriodStatus__c')
     })
   })
 })

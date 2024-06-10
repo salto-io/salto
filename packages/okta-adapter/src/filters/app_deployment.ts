@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// Ignore all typing errors in this file
+// @ts-ignore
 import _ from 'lodash'
 import Joi from 'joi'
 import {
@@ -226,6 +229,7 @@ const filterCreator: FilterCreator = ({ elementSource, definitions, oldApiDefini
       changes,
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME,
     )
+
     const subdomain = await getSubdomainFromElementsSource(elementSource)
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
       deployApp(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG], subdomain),

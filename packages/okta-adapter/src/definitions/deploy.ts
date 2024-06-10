@@ -161,13 +161,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             condition: {
               custom: () => (changeAndContext) => {
                 const { change } = changeAndContext
-                return isModificationChange(change) &&
+                return isRemovalChange(change) ||
+                (isModificationChange(change) &&
                   (isDeactivationChange({
-                      before: change.data.before.value.status,
-                      after: change.data.after.value.status
-                    }) ||
-                    isInactiveCustomAppChange(changeAndContext))
-              }
+                    before: change.data.before.value.status,
+                    after: change.data.after.value.status,
+                  })) ||
+                  isInactiveCustomAppChange(changeAndContext))
+              },
             },
             request: {
               endpoint: {
@@ -183,9 +184,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     toActionNames: ({ change }) => {
-      if (isAdditionChange(change)) {
-        return ['add', 'activate']
-      }
       if (isRemovalChange(change)) {
         return ['deactivate', 'remove']
       }
@@ -195,14 +193,17 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       return [change.action]
     },
     actionDependencies: [
+      /*
       {
         first: 'add',
         second: 'activate',
       },
+      */
       {
         first: 'deactivate',
         second: 'remove',
       },
+      /*
       {
         first: 'activate',
         second: 'modify',
@@ -211,6 +212,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         first: 'modify',
         second: 'deactivate',
       },
+      */
     ],
   },
 })

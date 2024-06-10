@@ -233,14 +233,14 @@ describe('space definitions utils', () => {
 
     it('should return element full name when change is not addition change', async () => {
       const spaceInstance = new InstanceElement('mockSpaceName', spaceObjectType, {
-        homepage: new ReferenceExpression(homepageInstance.elemID),
+        homepageId: new ReferenceExpression(homepageInstance.elemID),
       })
       const change = toChange({ before: spaceInstance })
       expect(await spaceChangeGroupWithItsHomepage(change)).toEqual('confluence.space.instance.mockSpaceName')
     })
     it('should return homepage full name when change is addition', async () => {
       const spaceInstance = new InstanceElement('mockName', spaceObjectType, {
-        homepage: new ReferenceExpression(homepageInstance.elemID),
+        homepageId: new ReferenceExpression(homepageInstance.elemID),
       })
       const change = toChange({ after: spaceInstance })
       expect(await spaceChangeGroupWithItsHomepage(change)).toEqual('confluence.page.instance.mockPageName')

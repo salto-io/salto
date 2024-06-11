@@ -1087,11 +1087,42 @@ describe('NodeMap', () => {
         expect(subject.getReverse(11)).toContain(10)
       })
     })
+    describe('when nodes do not exist (and createMissingNodes=false)', () => {
+      beforeEach(() => {
+        subject.addEdge(10, 11, { createMissingNodes: false })
+      })
+      it('should not add nodes', () => {
+        expect(subject.keys()).not.toContain(10)
+        expect(subject.keys()).not.toContain(11)
+      })
+      it('should add edge', () => {
+        expect(subject.get(10)).not.toContain(11)
+      })
+      it('should add reverse edge', () => {
+        expect(subject.getReverse(11)).not.toContain(10)
+      })
+    })
     describe('when nodes exist prior to edge', () => {
       beforeEach(() => {
         subject.addNode(1, [2, 3])
         subject.addNode(2, [4])
         subject.addEdge(2, 3)
+      })
+      it('should add new edge', () => {
+        expect(subject.get(2)).toContain(3)
+      })
+      it('should add reverse edge', () => {
+        expect(subject.getReverse(3)).toContain(2)
+      })
+      it('should maintain existing edges', () => {
+        expect(subject.get(2)).toContain(4)
+      })
+    })
+    describe('when nodes exist prior to edge (and createMissingNodes=false)', () => {
+      beforeEach(() => {
+        subject.addNode(1, [2, 3])
+        subject.addNode(2, [4])
+        subject.addEdge(2, 3, { createMissingNodes: false })
       })
       it('should add new edge', () => {
         expect(subject.get(2)).toContain(3)

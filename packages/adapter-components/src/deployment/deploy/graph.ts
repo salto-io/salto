@@ -92,7 +92,7 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
       })
     })
     defQuery.query(typeName)?.actionDependencies?.forEach(({ first, second }) => {
-      graph.addEdge(toNodeID(typeName, second), toNodeID(typeName, first))
+      graph.addEdge(toNodeID(typeName, second), toNodeID(typeName, first), { createMissingNodes: false })
     })
   })
   dependencies?.forEach(({ first, second }) => {

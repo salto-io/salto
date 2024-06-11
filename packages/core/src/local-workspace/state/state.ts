@@ -204,6 +204,13 @@ export const localState = (
   }
 
   const loadStateData = async (): Promise<state.StateData> => {
+    const loadAccountNames = async (stateData: state.StateData): Promise<string[] | undefined> => {
+      const accounts = await stateData.accounts.get('account_names')
+      if (accounts !== undefined) {
+        return accounts
+      }
+      return awu(stateData.deprecated.accountsUpdateDate.keys()).toArray()
+    }
     const quickAccessStateData = await state.buildStateData(
       envName,
       remoteMapCreator,
@@ -213,10 +220,10 @@ export const localState = (
     const filePaths = await currentContentProvider.findStateFiles(currentFilePrefix)
     const stateFilesHash = await currentContentProvider.getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash')) ?? toMD5(safeJsonStringify([]))
-    const cachedAccounts = await awu(quickAccessStateData.accounts.entries()).toArray()
-    if (quickAccessHash !== stateFilesHash || cachedAccounts.length === 0) {
+    const cachedAccounts = await loadAccountNames(quickAccessStateData)
+    if (quickAccessHash !== stateFilesHash) {
       log.debug(
-        'found different hash or obsolete cache - loading state data (quickAccessHash=%s stateFilesHash=%s cachedAccounts = %o)',
+        'found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s cachedAccounts = %o)',
         quickAccessHash,
         stateFilesHash,
         cachedAccounts,

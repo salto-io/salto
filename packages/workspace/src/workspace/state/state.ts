@@ -29,6 +29,9 @@ export type StateData = {
   saltoMetadata: RemoteMap<string, StateMetadataKey>
   staticFilesSource: StateStaticFilesSource
   topLevelPathIndex: PathIndex
+  deprecated: {
+    accountsUpdateDate: RemoteMap<Date>
+  }
 }
 
 type UpdateConfigArgs = {
@@ -97,4 +100,13 @@ export const buildStateData = async (
     persistent,
   }),
   staticFilesSource,
+  deprecated: {
+    // TODO remove once all workspaces are converted to the new state format (cf. the 'accounts' member)
+    accountsUpdateDate: await remoteMapCreator<Date>({
+      namespace: createStateNamespace(envName, 'service_update_date'),
+      serialize: async date => date.toISOString(),
+      deserialize: async data => new Date(data),
+      persistent,
+    }),
+  },
 })

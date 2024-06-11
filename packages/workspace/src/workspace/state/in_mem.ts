@@ -138,7 +138,14 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    existingAccounts: async (): Promise<string[]> => (await (await stateData()).accounts.get('account_names')) ?? [],
+    existingAccounts: async (): Promise<string[]> => {
+      const stateDataVal = await stateData()
+      const accounts = await stateDataVal.accounts.get('account_names')
+      if (accounts !== undefined) {
+        return accounts
+      }
+      return awu(stateDataVal.deprecated.accountsUpdateDate.keys()).toArray()
+    },
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> => (await stateData()).topLevelPathIndex,
     clear: async () => {
@@ -147,6 +154,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       await currentStateData.pathIndex.clear()
       await currentStateData.topLevelPathIndex.clear()
       await currentStateData.accounts.clear()
+      await currentStateData.deprecated.accountsUpdateDate.clear()
       await currentStateData.saltoMetadata.clear()
       await currentStateData.staticFilesSource.clear()
     },

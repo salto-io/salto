@@ -1106,7 +1106,7 @@ describe('NodeMap', () => {
       undefined,
       { createMissingNodes: true },
       { createMissingNodes: false },
-    ])('when nodes exist prior to edge (params = %s)', (params) => {
+    ])('when nodes exist prior to edge (params = %s)', params => {
       beforeEach(() => {
         subject.addNode(1, [2, 3])
         subject.addNode(2, [4])

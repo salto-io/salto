@@ -620,6 +620,7 @@ describe('FieldReferences filter', () => {
         elements,
         buildElementsSourceFromElements(elements),
         modifiedDefs,
+        [],
       )
     })
     afterAll(() => {

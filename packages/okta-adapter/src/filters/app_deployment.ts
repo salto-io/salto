@@ -22,7 +22,6 @@ import {
   Change,
   InstanceElement,
   Element,
-  isInstanceChange,
   getChangeData,
   isAdditionOrModificationChange,
   isAdditionChange,
@@ -32,7 +31,6 @@ import {
   ReadOnlyElementsSource,
   Values,
   isModificationChange,
-  ModificationChange,
   isObjectType,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
@@ -48,10 +46,9 @@ import {
   ACTIVE_STATUS,
   SAML_2_0_APP,
 } from '../constants'
-import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
+import { OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import {
-  deployChanges,
   defaultDeployChange,
   deployEdges,
   deployStatusChange,
@@ -222,25 +219,6 @@ const filterCreator: FilterCreator = ({ elementSource, definitions, oldApiDefini
         }
       })
   },
-  /*
-  deploy: async changes => {
-    const client = definitions.clients.options.main.httpClient
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME,
-    )
-
-    const subdomain = await getSubdomainFromElementsSource(elementSource)
-    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployApp(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG], subdomain),
-    )
-
-    return {
-      leftoverChanges,
-      deployResult,
-    }
-  },
-   */
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     changes
       .map(getChangeData)

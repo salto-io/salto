@@ -14,24 +14,50 @@
  * limitations under the License.
  */
 
+import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from './types'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, INACTIVE_STATUS } from '../constants'
+import { APPLICATION_TYPE_NAME, CUSTOM_NAME_FIELD, GROUP_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 import {
   getChangeData,
-  isAdditionChange,
   isModificationChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import {
   isActivationChange, isDeactivationChange,
   isInactiveCustomAppChange,
-  shouldActivateAfterChange, shouldDeactivateAfterChange,
-  shouldDeactivateBeforeChange,
 } from '../deployment'
+import { isDefined } from '@salto-io/lowerdash/dist/src/values'
+import {
+  DeployableRequestDefinition,
+  DeployRequestDefinition,
+} from '@salto-io/adapter-components/dist/src/definitions/system/deploy'
+import Cli from '@salto-io/e2e-credentials-store/dist/src/cli'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
+
+const createDeployAppPolicyRequest = (target: string): DeployableRequestDefinition<ClientOptions> => ({
+  condition: {
+    custom: () => ({ change }) =>
+      isDefined(_.get(getChangeData(change).value, target)),
+  },
+  request: {
+    endpoint: {
+      path: '/api/v1/apps/{source}/policies/{target}',
+      method: 'put',
+    },
+    context: {
+      source: '{id}',
+      target: `{${target}}`,
+    },
+  },
+})
+
+const createDeployAppPolicyRequests = (): DeployableRequestDefinition<ClientOptions>[] => [
+  createDeployAppPolicyRequest('accessPolicy'),
+  createDeployAppPolicyRequest('profileEnrollment'),
+]
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => ({
   [GROUP_TYPE_NAME]: {
@@ -78,6 +104,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   },
   [APPLICATION_TYPE_NAME]: {
     requestsByAction: {
+      default: {
+        request: {
+          transformation: {
+            omit: ['id', '_links', CUSTOM_NAME_FIELD],
+          },
+        },
+      },
       customizations: {
         add: [
           {
@@ -95,15 +128,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 }),
               },
             },
-            // TODO: Is this merged? Should I also copy service Id here?
-            copyFromResponse: {
-              toSharedContext: {
-                pick: ['status'],
-                single: true,
-                nestUnderElemID: true,
-              },
-            },
           },
+          ...createDeployAppPolicyRequests(),
         ],
         modify: [
           {
@@ -117,6 +143,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
           },
+          ...createDeployAppPolicyRequests(),
         ],
         remove: [
           {
@@ -136,13 +163,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             condition: {
               custom: () => (changeAndContext) => {
                 const { change } = changeAndContext
-                return isModificationChange(change) &&
-                  (isActivationChange({
-                      before: change.data.before.value.status,
-                      after: change.data.after.value.status,
-                    }) ||
-                    // Custom app must be activated before applying any other changes
-                    isInactiveCustomAppChange(changeAndContext))
+                return isActivationChange(change) ||
+                  // Custom app must be activated before applying any other changes
+                  isInactiveCustomAppChange(changeAndContext)
               },
             },
             request: {
@@ -161,13 +184,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             condition: {
               custom: () => (changeAndContext) => {
                 const { change } = changeAndContext
-                return isRemovalChange(change) ||
-                (isModificationChange(change) &&
-                  (isDeactivationChange({
-                    before: change.data.before.value.status,
-                    after: change.data.after.value.status,
-                  })) ||
-                  isInactiveCustomAppChange(changeAndContext))
+                return isDeactivationChange(change) ||
+                  // Custom app must be activated before applying any other changes
+                  isInactiveCustomAppChange(changeAndContext)
               },
             },
             request: {
@@ -193,17 +212,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       return [change.action]
     },
     actionDependencies: [
-      /*
       {
         first: 'add',
         second: 'activate',
       },
-      */
       {
         first: 'deactivate',
         second: 'remove',
       },
-      /*
       {
         first: 'activate',
         second: 'modify',
@@ -212,7 +228,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         first: 'modify',
         second: 'deactivate',
       },
-      */
     ],
   },
 })

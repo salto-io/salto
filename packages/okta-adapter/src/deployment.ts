@@ -31,7 +31,7 @@ import {
   isSaltoError,
   SaltoError,
   isRemovalChange,
-  isServiceId, isInstanceChange,
+  isServiceId,
 } from '@salto-io/adapter-api'
 import {
   config as configUtils,
@@ -109,11 +109,19 @@ export const getOktaError = (elemID: ElemID, error: Error): Error => {
   return error
 }
 
-export const isActivationChange = ({ before, after }: { before: string; after: string }): boolean =>
+export const isActivationModification = ({ before, after }: { before: string; after: string }): boolean =>
   before === INACTIVE_STATUS && after === ACTIVE_STATUS
 
-export const isDeactivationChange = ({ before, after }: { before: string; after: string }): boolean =>
+export const isActivationChange = (change: Change<InstanceElement>): boolean =>
+  isModificationChange(change) &&
+  isActivationModification({ before: change.data.before.value.status, after: change.data.after.value.status })
+
+export const isDeactivationModification = ({ before, after }: { before: string; after: string }): boolean =>
   before === ACTIVE_STATUS && after === INACTIVE_STATUS
+
+export const isDeactivationChange = (change: Change<InstanceElement>): boolean =>
+  isModificationChange(change) &&
+  isDeactivationModification({ before: change.data.before.value.status, after: change.data.after.value.status })
 
 const isDeactivationModificationChange = (change: Change<InstanceElement>): boolean =>
   isModificationChange(change) &&

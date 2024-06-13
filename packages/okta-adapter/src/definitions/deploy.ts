@@ -37,10 +37,13 @@ import Cli from '@salto-io/e2e-credentials-store/dist/src/cli'
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
 
-const createDeployAppPolicyRequest = (target: string): DeployableRequestDefinition<ClientOptions> => ({
+/**
+ * Create a deploy request for setting a policy associated with an `Application`.
+ */
+const createDeployAppPolicyRequest = (policyName: string): DeployableRequestDefinition<ClientOptions> => ({
   condition: {
     custom: () => ({ change }) =>
-      isDefined(_.get(getChangeData(change).value, target)),
+      isDefined(_.get(getChangeData(change).value, policyName)),
   },
   request: {
     endpoint: {
@@ -49,11 +52,14 @@ const createDeployAppPolicyRequest = (target: string): DeployableRequestDefiniti
     },
     context: {
       source: '{id}',
-      target: `{${target}}`,
+      target: `{${policyName}}`,
     },
   },
 })
 
+/**
+ * Create deploy requests for setting all policies associated with an `Application`.
+ */
 const createDeployAppPolicyRequests = (): DeployableRequestDefinition<ClientOptions>[] => [
   createDeployAppPolicyRequest('accessPolicy'),
   createDeployAppPolicyRequest('profileEnrollment'),
@@ -119,6 +125,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 path: '/api/v1/apps',
                 method: 'post',
                 queryArgs: {
+                  // Whether to activate the app upon creation, default is true if omitted.
                   activate: '{activate}',
                 },
               },
@@ -128,6 +135,15 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 }),
               },
             },
+            /*
+            copyFromResponse: {
+              additional: {
+                adjust: ({value, context}) => {
+
+                },
+              },
+            },
+            */
           },
           ...createDeployAppPolicyRequests(),
         ],
@@ -140,6 +156,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
               context: {
                 applicationId: '{id}',
+              },
+              transformation: {
+                adjust: ({ value }) => ({
+                  value: {
+                    name: _.get(value, 'customName'),
+                  }
+                }),
               },
             },
           },
@@ -161,12 +184,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         activate: [
           {
             condition: {
-              custom: () => (changeAndContext) => {
-                const { change } = changeAndContext
-                return isActivationChange(change) ||
-                  // Custom app must be activated before applying any other changes
-                  isInactiveCustomAppChange(changeAndContext)
-              },
+              custom: () => ({ change }) =>
+                isActivationChange(change) ||
+                // Custom app must be activated before applying any other changes
+                isInactiveCustomAppChange(change),
             },
             request: {
               endpoint: {
@@ -182,12 +203,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         deactivate: [
           {
             condition: {
-              custom: () => (changeAndContext) => {
-                const { change } = changeAndContext
-                return isDeactivationChange(change) ||
-                  // Custom app must be activated before applying any other changes
-                  isInactiveCustomAppChange(changeAndContext)
-              },
+              custom: () => ({ change }) =>
+                isDeactivationChange(change) ||
+                // Custom app must be activated before applying any other changes
+                isInactiveCustomAppChange(change),
             },
             request: {
               endpoint: {
@@ -212,10 +231,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       return [change.action]
     },
     actionDependencies: [
-      {
-        first: 'add',
-        second: 'activate',
-      },
       {
         first: 'deactivate',
         second: 'remove',

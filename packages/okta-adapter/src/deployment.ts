@@ -123,10 +123,6 @@ export const isDeactivationChange = (change: Change<InstanceElement>): boolean =
   isModificationChange(change) &&
   isDeactivationModification({ before: change.data.before.value.status, after: change.data.after.value.status })
 
-const isDeactivationModificationChange = (change: Change<InstanceElement>): boolean =>
-  isModificationChange(change) &&
-  isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
-
 const DEACTIVATE_BEFORE_REMOVAL_TYPES = new Set([NETWORK_ZONE_TYPE_NAME])
 const shouldDeactivateBeforeRemoval = (change: Change<InstanceElement>): boolean =>
   isRemovalChange(change) && DEACTIVATE_BEFORE_REMOVAL_TYPES.has(getChangeData(change).elemID.typeName)
@@ -178,7 +174,7 @@ export const assignServiceIdToAdditionChange = async (
   }
 }
 
-export const isInactiveCustomAppChange = ({ change }: definitionUtils.deploy.ChangeAndContext): boolean =>
+export const isInactiveCustomAppChange = (change: Change<InstanceElement>): boolean =>
   isModificationChange(change) &&
   change.data.before.value.status === INACTIVE_STATUS &&
   change.data.after.value.status === INACTIVE_STATUS &&
@@ -234,7 +230,7 @@ const shouldActivateAfterModification = ({
                                            change,
                                          }: definitionUtils.deploy.ChangeAndContext): boolean =>
   isModificationChange(change) &&
-  isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
+  isActivationModification({ before: change.data.before.value.status, after: change.data.after.value.status })
 
 const shouldActivateAfterAddition = ({
                                        change,
@@ -244,7 +240,7 @@ const shouldActivateAfterAddition = ({
   const response = sharedContext[getChangeData(change).elemID.getFullName()]
   if (isAdditionChange(change) && isResponseWithStatus(response)) {
     const changeStatus = getChangeData(change).value.status
-    if (isActivationChange({ before: response.status, after: changeStatus })) {
+    if (isActivationModification({ before: response.status, after: changeStatus })) {
       return true
     }
   }
@@ -258,7 +254,7 @@ const shouldDeactivateAfterAddition = ({
   const response = sharedContext[getChangeData(change).elemID.getFullName()]
   if (isAdditionChange(change) && isResponseWithStatus(response)) {
     const changeStatus = getChangeData(change).value.status
-    if (isDeactivationChange({ before: response.status, after: changeStatus })) {
+    if (isDeactivationModification({ before: response.status, after: changeStatus })) {
       return true
     }
   }
@@ -273,55 +269,7 @@ export const shouldDeactivateAfterChange = (changeAndContext: definitionUtils.de
   shouldDeactivateAfterAddition(changeAndContext)
 
 export const shouldDeactivateBeforeChange = ({ change }: definitionUtils.deploy.ChangeAndContext): boolean =>
-  isDeactivationModificationChange(change) || shouldDeactivateBeforeRemoval(change)
-
-
-/**
- * Deploy change with "add", "modify", "remove", "activation" and "deactivation" endpoints
- */
-export const defaultDeployWithStatus = async (
-  change: Change<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-  apiDefinitions: OktaSwaggerApiConfig,
-  fieldsToIgnore?: string[],
-  queryParams?: Record<string, string>,
-): Promise<deployment.ResponseResult> => {
-  try {
-    // some changes can't be applied when status is ACTIVE, so we need to deactivate them first
-    if (isDeactivationModificationChange(change) || shouldDeactivateBeforeRemoval(change)) {
-      await deployStatusChange(change, client, apiDefinitions, 'deactivate')
-    }
-    const response = await defaultDeployChange(change, client, apiDefinitions, fieldsToIgnore, queryParams)
-
-    // Update status for the created instance if necessary
-    if (isAdditionChange(change) && isResponseWithStatus(response)) {
-      const changeStatus = getChangeData(change).value.status
-      if (isActivationChange({ before: response.status, after: changeStatus })) {
-        log.debug(
-          `Instance ${getChangeData(change).elemID.getFullName()} created in status ${INACTIVE_STATUS}, changing to ${ACTIVE_STATUS}`,
-        )
-        await deployStatusChange(change, client, apiDefinitions, 'activate')
-      } else if (isDeactivationChange({ before: response.status, after: changeStatus })) {
-        log.debug(
-          `Instance ${getChangeData(change).elemID.getFullName()} created in status ${ACTIVE_STATUS}, changing to ${INACTIVE_STATUS}`,
-        )
-        await deployStatusChange(change, client, apiDefinitions, 'deactivate')
-      }
-    }
-
-    // If the instance is activated, we should first make the changes and then change the status
-    if (
-      isModificationChange(change) &&
-      isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
-    ) {
-      await deployStatusChange(change, client, apiDefinitions, 'activate')
-    }
-
-    return response
-  } catch (err) {
-    throw getOktaError(getChangeData(change).elemID, err)
-  }
-}
+  isDeactivationChange(change) || shouldDeactivateBeforeRemoval(change)
 
 const getValuesToAdd = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,

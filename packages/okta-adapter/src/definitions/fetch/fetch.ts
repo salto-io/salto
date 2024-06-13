@@ -352,7 +352,7 @@ const createCustomizations = ({
       fieldCustomizations: {
         name: { fieldType: 'string' },
         id: { hide: true },
-        [CUSTOM_NAME_FIELD]: { fieldType: 'string', hide: true },
+        [CUSTOM_NAME_FIELD]: { fieldType: 'string', hide: false },
         _links: { hide: true },
         _embedded: { omit: true },
         credentials: { fieldType: 'ApplicationCredentials' },

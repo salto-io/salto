@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 import { elements, definitions } from '@salto-io/adapter-components'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, createRestriction } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { OKTA, USER_TYPE_NAME } from './constants'
 
+const log = logger(module)
 type GetUsersStrategy = 'searchQuery' | 'allUsers'
 
 export type OktaUserFetchConfig = definitions.UserFetchConfig<{
@@ -131,7 +134,11 @@ export const getExcludeUserConfigSuggestion = (
 ): definitions.ConfigChangeSuggestion | undefined => {
   const typesToExclude = userConfig?.value?.fetch?.exclude
   const typesToInclude = userConfig?.value?.fetch?.include
-  if (Array.isArray(typesToExclude) && Array.isArray(typesToInclude)) {
+  if (!Array.isArray(typesToExclude)) {
+    log.error('failed creating config suggestion to exclude users, expected fetch.exclude to be an array, but instead got %s', safeJsonStringify(typesToExclude))
+    return undefined
+  }
+  if (Array.isArray(typesToInclude)) {
     const isUserExcluded = typesToExclude.find(fetchEnty => fetchEnty?.type === USER_TYPE_NAME)
     const isUserIncluded = typesToInclude.find(fetchEnty => fetchEnty?.type === USER_TYPE_NAME)
     if (!isUserExcluded && !isUserIncluded) {

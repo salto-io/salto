@@ -99,7 +99,7 @@ export const omitMissingUsersHandler: FixElementsHandler =
     if (!omitMissingUsers || fetchQuery.isTypeMatch(USER_TYPE_NAME)) {
       return { fixedElements: [], errors: [] }
     }
-    log.debug('start omitMissingUsersHandler function')
+    log.trace('start omitMissingUsersHandler function')
     const paginator = createPaginator({
       client,
       paginationFuncCreator: paginate,

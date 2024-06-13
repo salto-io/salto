@@ -43,7 +43,7 @@ export const usersValidator: (
   fetchQuery: elementsUtils.query.ElementQuery,
 ) => ChangeValidator = (client, config, fetchQuery) => async changes => {
   if (!shouldConvertUserIds(fetchQuery, config)) {
-    log.debug('Skipped usersValidator because convertUsersIds config flag is disabled')
+    log.trace('Skipped usersValidator because convertUsersIds config flag is disabled')
     return []
   }
   const relevantInstances = changes

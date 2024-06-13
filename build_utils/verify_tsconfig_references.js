@@ -36,9 +36,33 @@ const filterValues = (o, f) => Object.fromEntries(
   Object.entries(o).filter(([k, v], i) => f(v, k, i))
 )
 
+const readWorkspacesFromYarnBerry = async () => {
+  const { stdout } = await exec('yarn workspaces list --json -v')
+  const workspaces = stdout
+    .trim()
+    .split('\n')
+    .map(line => JSON.parse(line))
+    .filter(r => r.name[0] === '@')
+    .map(({ name, location, workspaceDependencies, mismatchedWorkspaceDependencies }) => ({
+      name,
+      location,
+      workspaceDependencies: workspaceDependencies.map(dep => "@salto-io" + dep.substr('packages'.length)),
+      mismatchedWorkspaceDependencies,
+    }))
+
+  const result = {}
+  workspaces.forEach(ws => {
+    result[ws.name] = {
+      location: ws.location,
+      workspaceDependencies: ws.workspaceDependencies,
+      mismatchedWorkspaceDependencies: ws.mismatchedWorkspaceDependencies,
+    }
+  })
+  return result
+}
+
 const readWorkspaces = async () => {
-  const { stdout } = await exec('yarn workspaces -s info')
-  return JSON.parse(stdout)
+  return readWorkspacesFromYarnBerry()
 }
 
 const readTsConfig = filename => {
@@ -82,12 +106,11 @@ const main = async () => {
     ),
     v => v.length,
   )
-
-  const workspacePackageToReference = (
-    package, refPackage,
-  ) => ({
-    path: path.relative(workspaces[package].location, workspaces[refPackage].location)
-  })
+  
+  const workspacePackageToReference = (package, refPackage) => {
+    const relativePath = path.relative(workspaces[package].location, workspaces[refPackage])
+    return { path: relativePath }
+  }
 
   const extraneousReferences = filterValues(
     mapValues(

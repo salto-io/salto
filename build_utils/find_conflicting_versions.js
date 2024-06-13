@@ -32,11 +32,15 @@ const filterValues = (o, f) => Object.fromEntries(
 )
 
 const readManifests = async () => {
-  const { stdout } = await exec('yarn workspaces -s info')
-  return mapValuesAsync(JSON.parse(stdout), async info => {
-    const manifestFile = path.join(info.location, 'package.json')
-    return JSON.parse(await fs.promises.readFile(manifestFile))
-  })
+  const { stdout } = await exec('yarn workspaces list --json -v')
+  const entries = await Promise.all(
+    JSON.parse(`[${stdout.split('\n').filter(Boolean).join(',')}]`)
+      .map(async ({ name, location }) => {
+        const manifestFile = path.join(location, 'package.json')
+        return [name, JSON.parse(await fs.promises.readFile(manifestFile))]
+      }),
+  )
+  return Object.fromEntries(entries)
 }
 
 const main = async () => {
@@ -54,10 +58,13 @@ const main = async () => {
     {},
   )
 
+  // jest-circus: create-react-app does is using jest 27 via but jest-circus v27 was not installed
+  const ignoreDeps = [/^jest-circus$/]
   const mismatchedVersions = filterValues(
     depsVersions,
-    versions => Object.keys(versions).length > 1
+    (versions, key) => !ignoreDeps.some(element => key.match(element)) && Object.keys(versions).length > 1
   )
+  console.log(mismatchedVersions)
 
   const numberOfMismatches = Object.keys(mismatchedVersions).length
   if (numberOfMismatches === 0) {

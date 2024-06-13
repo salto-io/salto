@@ -1917,7 +1917,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
-      idFields: ['file_name', 'inline', 'id'],
+      idFields: ['file_name', 'inline'],
       sourceTypeName: 'article__attachments',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },

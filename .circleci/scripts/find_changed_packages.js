@@ -72,7 +72,7 @@ const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
   console.log('Changed files:', changedFiles)
   const hasChangedFilesOutsidePackage = changedFiles.any(file => !file.startsWith('packages/'))
 
-  const changedPackageLocation = Set(changedFiles.map(path => path.split('/').slice(0, 2).join('/')))
+  const changedPackageLocation = new Set(changedFiles.map(path => path.split('/').slice(0, 2).join('/')))
 
   const changedPackages = Array.from(changedPackageLocation).map(packageDir =>Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir))
 
@@ -85,9 +85,9 @@ const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
   const dependencyMapping = generateDependencyMapping(workspaceInfo)
   console.log('Dependency mapping:', dependencyMapping)
 
-  const changedPackagesDependencies = changedPackages.flatMap(package => dependencyMapping[package]).filter((value, index, self) => self.indexOf(value) === index)
+  const changedPackagesDependencies = new Set(changedPackages.flatMap(package => dependencyMapping[package]).filter(Boolean))
   console.log('Changed packages dependencies:', changedPackagesDependencies)
-  const dependenciesLocation = changedPackagesDependencies.map(pkg => workspaceInfo[pkg].location).concat(changedPackages.map(pkg => workspaceInfo[pkg].location)).sort()
+  const dependenciesLocation = Array.from(changedPackagesDependencies).map(pkg => workspaceInfo[pkg].location).concat(changedPackages.map(pkg => workspaceInfo[pkg].location)).sort()
   console.log('Changed packages with dependencies:', dependenciesLocation)
 
   const packagesToTest = dependenciesLocation.map(location => location.replace('packages/', ''))

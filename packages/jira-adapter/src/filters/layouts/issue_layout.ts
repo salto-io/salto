@@ -118,7 +118,7 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
 
         if (projectIssueTypeMappings === undefined) {
           log.error(
-            `Project (${project.value.id}) issueTypeScreenSchemes (${project.value.issueTypeScreenScheme.issueTypeScreenScheme.id}) has no issueTypeMappings`,
+            `Project (${project.value.id}) issueTypeScreenScheme (${project.value.issueTypeScreenScheme.issueTypeScreenScheme.id}) has no issueTypeMapping`,
           )
           return [project.value.id, []]
         }
@@ -127,7 +127,7 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
           [
             ...new Set(
               issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
-                ?.filter((issueTypeMapping: issueTypeMappingStruct) =>
+                .filter((issueTypeMapping: issueTypeMappingStruct) =>
                   IsIssueTypeInIssueTypeSchemesOrDefault(
                     issueTypeMapping,
                     issueTypeSchemesToIssueTypeList,

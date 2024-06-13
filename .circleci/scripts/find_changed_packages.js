@@ -41,17 +41,17 @@ const generateDependencyMapping = (workspaceInfo) => {
     while (stack.length > 0) {
       const currentPackage = stack.pop();
 
-      const info = workspaceInfo[currentPackage];
-      if (!info || !info.workspaceDependencies) continue;
+      const dependentPackages = workspaceInfo[currentPackage];
+      if (!dependentPackages || !dependentPackages.workspaceDependencies) continue;
 
-      info.workspaceDependencies.forEach(dep => {
-        if (!dependencyMapping[dep]) {
+      dependentPackages.workspaceDependencies.forEach(dependency => {
+        if (!dependencyMapping[dependency]) {
           // Add package itself to its dependency mapping. We need to test ourselves as well
-          dependencyMapping[dep] = [dep];
+          dependencyMapping[dependency] = [dependency];
         }
-        if (!dependencyMapping[dep].includes(currentPackage)) {
-          dependencyMapping[dep].push(currentPackage);
-          stack.push(dep);
+        if (!dependencyMapping[dependency].includes(currentPackage)) {
+          dependencyMapping[dependency].push(currentPackage);
+          stack.push(dependency);
         }
       });
     }

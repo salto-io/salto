@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG } from '../config'
-
-const log = logger(module)
 
 type RecurseIntoFieldComponent = {
   recurseIntoFields: { fieldName: string }[]
@@ -58,7 +55,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
   name: 'addRecurseIntoField',
   onFetch: async (elements: Element[]): Promise<void> => {
     if (config[FETCH_CONFIG].useNewInfra !== true) {
-      log.info('not running addRecurseIntoField filter as the fetch is not using the new infra')
       return
     }
 

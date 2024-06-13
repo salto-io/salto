@@ -155,6 +155,7 @@ module.exports = {
         '@typescript-eslint/ban-ts-ignore': [0],
         'max-classes-per-file': [0],
         'import/no-unresolved': [0], // unable to read paths from tsconfig.json
+        'import/default': [0],
       },
     },
   ],

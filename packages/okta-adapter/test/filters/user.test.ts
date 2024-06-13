@@ -162,7 +162,10 @@ describe('user filter', () => {
     })
     it('should not replace anything if convertUsersIds config option is disabled', async () => {
       const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
-        yield []
+        yield [
+          { id: '111', profile: { login: 'a@a.com' } },
+          { id: '222', profile: { login: 'b@a.com' } },
+        ]
       })
       filter = userFilter(
         getFilterParams({
@@ -170,15 +173,11 @@ describe('user filter', () => {
           config: {
             ...DEFAULT_CONFIG,
             [FETCH_CONFIG]: {
-              include: [
-                {
-                  type: '.*',
-                },
-              ],
-              exclude: [],
+              ...DEFAULT_CONFIG.fetch,
               convertUsersIds: false,
             },
           },
+          usersPromise: getUsers(mockPaginator),
         }),
       ) as FilterType
       const elements = [groupRuleInstance.clone(), groupRuleType.clone()]
@@ -191,7 +190,37 @@ describe('user filter', () => {
           people: { users: { exclude: ['111', '222'] } },
         },
       })
-      expect(mockPaginator).toHaveBeenCalledTimes(0)
+    })
+    it('should not replace anything if User type is included in fetch config', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
+        yield [
+          { id: '111', profile: { login: 'a@a.com' } },
+          { id: '222', profile: { login: 'b@a.com' } },
+        ]
+      })
+      filter = userFilter(
+        getFilterParams({
+          paginator: mockPaginator,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              ...DEFAULT_CONFIG.fetch,
+              exclude: [],
+            },
+          },
+          usersPromise: getUsers(mockPaginator),
+        }),
+      ) as FilterType
+      const elements = [groupRuleInstance.clone(), groupRuleType.clone()]
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const groupRule = instances.find(e => e.elemID.typeName === GROUP_RULE_TYPE_NAME)
+      expect(groupRule?.value).toEqual({
+        name: 'test',
+        conditions: {
+          people: { users: { exclude: ['111', '222'] } },
+        },
+      })
     })
   })
   describe('preDeploy', () => {

@@ -135,7 +135,10 @@ export const getExcludeUserConfigSuggestion = (
   const typesToExclude = userConfig?.value?.fetch?.exclude
   const typesToInclude = userConfig?.value?.fetch?.include
   if (!Array.isArray(typesToExclude)) {
-    log.error('failed creating config suggestion to exclude users, expected fetch.exclude to be an array, but instead got %s', safeJsonStringify(typesToExclude))
+    log.error(
+      'failed creating config suggestion to exclude users, expected fetch.exclude to be an array, but instead got %s',
+      safeJsonStringify(typesToExclude),
+    )
     return undefined
   }
   if (Array.isArray(typesToInclude)) {

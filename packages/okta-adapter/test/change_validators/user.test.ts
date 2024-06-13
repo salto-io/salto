@@ -121,4 +121,19 @@ describe('usersValidator', () => {
     const changeErrors = await changeValidator([toChange({ after: instance })])
     expect(changeErrors).toEqual([])
   })
+
+  describe('When User type is included', () => {
+    it('should do nothing if User type is included', async () => {
+      const usersExcludedFetchQuery = createFetchQuery({
+        ...DEFAULT_CONFIG,
+        fetch: {
+          ...DEFAULT_CONFIG.fetch,
+          exclude: [],
+        },
+      })
+      const changeValidator = usersValidator(client, DEFAULT_CONFIG, usersExcludedFetchQuery)
+      const changeErrors = await changeValidator([toChange({ after: ruleInstance })])
+      expect(changeErrors).toHaveLength(0)
+    })
+  })
 })

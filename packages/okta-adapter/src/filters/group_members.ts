@@ -160,7 +160,7 @@ const deployGroupMembershipChange = async (
   const parentGroupId = getParents(getChangeData(change))[0]?.id // parent is already resolved
   if (!_.isString(parentGroupId)) {
     log.error(
-      'Faild to deploy group membership for change %s because parent group id for group is missing: %s',
+      'Failed to deploy group membership for change %s because parent group id for group is missing: %s',
       getChangeData(change).elemID.getFullName(),
       safeJsonStringify(getChangeData(change)),
     )

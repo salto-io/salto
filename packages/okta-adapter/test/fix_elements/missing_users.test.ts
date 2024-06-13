@@ -20,7 +20,7 @@ import * as userUtilsModule from '../../src/user_utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { omitMissingUsersHandler } from '../../src/fix_elements/missing_users'
-import { OktaUserConfig } from '../../src/user_config'
+import { DEFAULT_CONFIG, OktaUserConfig } from '../../src/user_config'
 import { createFetchQuery } from '../utils'
 
 const createUsersValue = (includeUsers: string[] | undefined, excludeUsers: string[] | undefined): Values => ({
@@ -169,6 +169,25 @@ If you continue, they will be omitted. Learn more: ${userUtilsModule.OMIT_MISSIN
           property: 'id',
         })
       })
+    })
+  })
+  describe('When User type is included', () => {
+    it('should do nothing if User type is included', async () => {
+      const config = {
+        ...DEFAULT_CONFIG,
+        fetch: {
+          ...DEFAULT_CONFIG.fetch,
+          exclude: [],
+        },
+      }
+      const usersExcludedFetchQuery = createFetchQuery(config)
+      const result = await omitMissingUsersHandler({
+        config,
+        client: mockClient,
+        elementsSource,
+        fetchQuery: usersExcludedFetchQuery,
+      })(missingUsersHandlerInput)
+      expect(result.errors).toHaveLength(0)
     })
   })
 })

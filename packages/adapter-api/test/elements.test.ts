@@ -203,6 +203,18 @@ describe('Test elements.ts', () => {
       expect(isEqualElements(ot, otDiff)).toBeFalsy()
     })
 
+    it('should identify object types with different meta types', () => {
+      const otDiff1 = ot.clone()
+      const otDiff2 = ot.clone()
+
+      otDiff1.metaType = new TypeReference(new ElemID('test', 'meta1'))
+      otDiff2.metaType = undefined
+
+      expect(isEqualElements(ot, otDiff1)).toBeFalsy()
+      expect(isEqualElements(otDiff1, otDiff2)).toBeFalsy()
+      expect(isEqualElements(otDiff2, otDiff2)).toBeTruthy()
+    })
+
     it('should use the same path when cloning object types', () => {
       const obj = new ObjectType({
         elemID: otID,

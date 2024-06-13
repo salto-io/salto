@@ -498,6 +498,7 @@ export const transformElement = async <T extends Element>({
       annotationRefsOrTypes: element.annotationRefTypes,
       annotations: transformedAnnotations,
       path: element.path,
+      metaType: element.metaType,
       isSettings: element.isSettings,
     })
 
@@ -779,6 +780,7 @@ export const filterByID = async <T extends Element | Values>(
       annotationRefsOrTypes: await filterAnnotationType(value.annotationRefTypes),
       fields: await filterFields(value.fields),
       path: value.path,
+      metaType: value.metaType,
       isSettings: value.isSettings,
     }) as Value as T
   }

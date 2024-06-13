@@ -215,7 +215,10 @@ export const serializeStream = async <T = Element>(
   const resolveCircles = (v: any): any =>
     isPrimitiveType(v)
       ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
-      : new ObjectType({ elemID: v.elemID })
+      : new ObjectType({
+          elemID: v.elemID,
+          metaType: v.metaType !== undefined ? new TypeReference<ObjectType>(v.metaType.elemID) : undefined,
+        })
   const referenceTypeReplacer = (e: TypeReference): TypeReference & SerializedClass => {
     if (referenceSerializerMode === 'keepRef') {
       if (isType(e.type) && !isContainerType(e.type)) {
@@ -289,7 +292,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
       return new ReferenceExpression(reviveElemID(elemID))
     }
 
-    const reviveTypeReference = (v: Value): TypeReference => {
+    const reviveRefTypeOfElement = (v: Value): TypeReference => {
       if (v.refType !== undefined) {
         return restoreClasses(v.refType)
       }
@@ -315,7 +318,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
         ? _.mapValues(
             _.pickBy(v, val => isSerializedClass(val) && val[SALTO_CLASS_FIELD] === 'Field'),
             val => ({
-              refType: reviveTypeReference(val),
+              refType: reviveRefTypeOfElement(val),
               annotations: restoreClasses(val.annotations),
             }),
           )
@@ -325,7 +328,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
       InstanceElement: v =>
         new InstanceElement(
           v.elemID.nameParts[0],
-          reviveTypeReference(v) as TypeReference<ObjectType>,
+          reviveRefTypeOfElement(v) as TypeReference<ObjectType>,
           restoreClasses(v.value),
           v.path,
           restoreClasses(v.annotations),
@@ -336,7 +339,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
           fields: reviveFieldDefinitions(v.fields),
           annotationRefsOrTypes: reviveAnnotationRefTypes(v),
           annotations: restoreClasses(v.annotations),
-          metaType: v.metaType ? (reviveTypeReference(v.metaType) as TypeReference<ObjectType>) : undefined,
+          metaType: v.metaType ? (restoreClasses(v.metaType) as TypeReference<ObjectType>) : undefined,
           isSettings: v.isSettings,
           path: v.path,
         })
@@ -360,7 +363,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
           // in this case we set a placeholder object type so we're able to recognize it later.
           new PlaceholderObjectType({ elemID: new ElemID(elemId.adapter, elemId.typeName) }),
           elemId.name,
-          reviveTypeReference(v),
+          reviveRefTypeOfElement(v),
           restoreClasses(v.annotations),
         )
       },

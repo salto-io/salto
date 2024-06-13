@@ -428,9 +428,22 @@ export class ObjectType extends Element {
         _.mapValues(this.fields, f => f.elemID.getFullName()),
         _.mapValues(other.fields, f => f.elemID.getFullName()),
       ) &&
+      this.isMetaTypeEqual(other) &&
       _.isEqual(this.isSettings, other.isSettings) &&
       _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n], options)))
     )
+  }
+
+  isMetaTypeEqual(other: ObjectType): boolean {
+    if (this.metaType === undefined && other.metaType === undefined) {
+      return true
+    }
+
+    if (this.metaType === undefined || other.metaType === undefined) {
+      return false
+    }
+
+    return this.metaType.elemID.isEqual(other.metaType.elemID)
   }
 
   async getMetaType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType | undefined> {

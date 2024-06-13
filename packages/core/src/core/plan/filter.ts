@@ -71,6 +71,7 @@ const createValidType = (typeChange: Change<ObjectType>, invalidChangesElemIds: 
     fields: fieldsForAfter,
     annotationRefsOrTypes: _.clone(typeToClone.annotationRefTypes),
     annotations: cloneDeepWithoutRefs(typeToClone.annotations),
+    metaType: typeToClone.metaType,
     isSettings: typeToClone.isSettings,
   })
 }

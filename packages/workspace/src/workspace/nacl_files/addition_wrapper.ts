@@ -112,6 +112,7 @@ const createObjectTypeFromNestedAdditions = (
         annotationRefsOrTypes: {},
         annotations: {},
         path,
+        metaType: commonObjectType.metaType,
         isSettings: commonObjectType.isSettings,
       },
     ),

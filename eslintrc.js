@@ -157,6 +157,7 @@ module.exports = {
         'import/no-unresolved': [0], // unable to read paths from tsconfig.json
         'import/default': [0], // occurs when dropping airbnb plugin
         'prefer-const' : [0], // occurs when dropping airbnb plugin
+        'import/named': [0], // occurs when dropping airbnb plugin
       },
     },
   ],

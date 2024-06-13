@@ -3,19 +3,14 @@ version: 2.1
 
 setup: true
 
-setup: true
-
 orbs:
-  continuation: circleci/continuation@1.0.0
   continuation: circleci/continuation@1.0.0
 
 jobs:
   find_changed_packages:
-  find_changed_packages:
     docker:
       - image: cimg/node:14.15
-    resource_class: large
-    resource_class: large
+    resource_class: small
 
     steps:
       - checkout
@@ -28,16 +23,11 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - .circleci/continue_config.yml
-  
-            - .circleci/continue_config.yml
-  
+            - .circleci/continue_config.yml  
 
 workflows:
   commit:
     jobs:
-      - find_changed_packages
-      - continuation/continue:
       - find_changed_packages
       - continuation/continue:
           requires:

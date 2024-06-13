@@ -83,7 +83,7 @@ const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
 
 const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
   const dependencyMapping = generateDependencyMapping(workspaceInfo)
-  console.log('Original dependency mapping:', dependencyMapping)
+  console.log('Dependency mapping:', dependencyMapping)
 
   const changedPackagesDependencies = new Set(changedPackages.flatMap(package => dependencyMapping[package]).filter(Boolean))
   console.log('Changed packages dependencies:', changedPackagesDependencies)

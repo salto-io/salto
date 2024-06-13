@@ -19,7 +19,6 @@ const { readFileSync, writeFileSync, existsSync, readdirSync } = require('fs')
 const path = require('path')
 
 const getChangedFiles = (userInputBaseCommit) => {
-  const commitHashRegex = /\b[0-9a-f]{9}/g
   const baseCommit = userInputBaseCommit ?? execSync('git merge-base main HEAD').toString().trim()
   console.log('base commit:', baseCommit)
   const output = execSync(`git diff --oneline --name-only ${baseCommit}..HEAD`).toString().split('\n')
@@ -32,29 +31,32 @@ const getWorkspacesInfo = () => {
   return JSON.parse(JSON.parse(output).data)
 }
 
-const resolveTransitiveDependencies = (packageName, workspaceInfo) => {
-  const packageInfo = workspaceInfo[packageName]
-  if (!packageInfo) {
-    return
-  }
-
-  return packageInfo['workspaceDependencies'].map(dep => resolveTransitiveDependencies(dep, workspaceInfo))
-}
-
-
 const generateDependencyMapping = (workspaceInfo) => {
-  return Object.entries(workspaceInfo)
-  .map(([packageName, info]) => 
-    info.workspaceDependencies.map(dep => [dep, packageName])
-  )
-  .flat()
-  .reduce((acc, [dep, packageName]) => {
-    if (!acc[dep]) {
-      acc[dep] = []
+  const dependencyMapping = {};
+  const stack = [];
+
+  Object.keys(workspaceInfo).forEach(packageName => {
+    stack.push(packageName);
+
+    while (stack.length > 0) {
+      const currentPackage = stack.pop();
+
+      const info = workspaceInfo[currentPackage];
+      if (!info || !info.workspaceDependencies) continue;
+
+      info.workspaceDependencies.forEach(dep => {
+        if (!dependencyMapping[dep]) {
+          dependencyMapping[dep] = [];
+        }
+        if (!dependencyMapping[dep].includes(currentPackage)) {
+          dependencyMapping[dep].push(currentPackage);
+          stack.push(dep);
+        }
+      });
     }
-    acc[dep].push(packageName)
-    return acc
-  }, {})
+  });
+
+  return dependencyMapping;
 }
 
 const hasE2eTests = (packageName) => {
@@ -68,13 +70,14 @@ const hasE2eTests = (packageName) => {
 const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
   const changedFiles = getChangedFiles(userInputBaseCommit)
   console.log('Changed files:', changedFiles)
-  const changedPackageLocation = changedFiles.map(path => path.split('/').slice(0, 2).join('/')).filter((value, index, self) => self.indexOf(value) === index)
+  const hasChangedFilesOutsidePackage = changedFiles.any(file => !file.startsWith('packages/'))
 
-  const changedPackages = changedPackageLocation.map(packageDir =>Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir))
-  // if there are undefined values, it means that there are files that changed outside of the packages directory. Return null to indicate that we should test all packages
-  const hasChangedFilesOutsidePackage = changedPackages.length === 0 || changedPackages.some(pkg => !pkg)
+  const changedPackageLocation = Set(changedFiles.map(path => path.split('/').slice(0, 2).join('/')))
+
+  const changedPackages = Array.from(changedPackageLocation).map(packageDir =>Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir))
+
   console.log('Changed packages:', changedPackages)
-  console.log('Has undefined packages:', hasChangedFilesOutsidePackage)
+  console.log('Has changes outside packages directory:', hasChangedFilesOutsidePackage)
   return hasChangedFilesOutsidePackage ? null : changedPackages
 }
 
@@ -96,7 +99,6 @@ const getPackagesToTest = (userInputBaseCommit, workspaceInfo, allPackages) => {
   console.log('Changed packages:', changedPackages)
 
   return changedPackages ? getDependenciesFromChangedPackages(changedPackages, workspaceInfo) : allPackages
-
 }
 
 const main = () => {
@@ -104,7 +106,9 @@ const main = () => {
   console.log(`User provided arguments: ${args}`)
 
   const userInputBaseCommit = args.length > 0 ? args[0] : null
-  console.log(`attempting to use ${userInputBaseCommit} as base commit`)
+  if (userInputBaseCommit) {
+    console.log(`User provided base commit: ${userInputBaseCommit}`)
+  }
 
   const workspaceInfo = getWorkspacesInfo()
   const allPackages = Object.keys(workspaceInfo).map(pkg => workspaceInfo[pkg].location.replace('packages/', '')).sort()

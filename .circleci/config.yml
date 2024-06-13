@@ -20,7 +20,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Compile and Run Find Changed Packages Script
+          name: Run Find Changed Packages Script
           command: |
             pushd .circleci/scripts
             node find_changed_packages.js

@@ -13,19 +13,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const deepMerge = require('../../build_utils/deep_merge')
-
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'adapter-components',
-  displayName: 'adapter-components',
-  rootDir: `${__dirname}`,
-  collectCoverageFrom: ['!<rootDir>/**/index.ts'],
-  coverageThreshold: {
-    global: {
-      branches: 85,
-      functions: 95.5,
-      lines: 95,
-      statements: 95,
-    },
-  },
-})
+export { deployAdministrativeUnitMembersFilter } from './deploy_administrative_unit_members'
+export { deployDirectoryRoleMembersFilter } from './deploy_directory_role_members'

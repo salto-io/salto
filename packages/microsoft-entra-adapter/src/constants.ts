@@ -64,6 +64,8 @@ export const TOKEN_ISSUANCE_POLICY_TYPE_NAME = `${APPLICATION_TYPE_NAME}__${TOKE
 export const TOKEN_LIFETIME_POLICY_TYPE_NAME = 'tokenLifetimePolicy'
 
 // OData fields
+export const ODATA_ID_FIELD = '@odata.id'
+export const ODATA_ID_FIELD_NACL_CASE = naclCase(ODATA_ID_FIELD)
 export const ODATA_TYPE_FIELD = '@odata.type'
 export const ODATA_TYPE_FIELD_NACL_CASE = naclCase(ODATA_TYPE_FIELD)
 

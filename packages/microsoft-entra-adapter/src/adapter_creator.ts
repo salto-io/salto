@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createAdapter, credentials } from '@salto-io/adapter-components'
+import { createAdapter, credentials, filters } from '@salto-io/adapter-components'
 import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
@@ -29,6 +29,7 @@ import {
   credentialsType,
   oauthRequestParameters,
 } from './client/oauth'
+import { deployAdministrativeUnitMembersFilter, deployDirectoryRoleMembersFilter } from './filters'
 
 const { defaultCredentialsFromConfig } = credentials
 
@@ -57,6 +58,11 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     connectionCreatorFromConfig: () => createConnection,
     credentialsFromConfig: defaultCredentialsFromConfig,
     additionalChangeValidators: () => createChangeValidator(),
+    customizeFilterCreators: args => ({
+      deployAdministrativeUnitMembersFilter,
+      deployDirectoryRoleMembersFilter,
+      ...filters.createCommonFilters<Options, UserConfig>(args),
+    }),
   },
   initialClients: {
     main: undefined,

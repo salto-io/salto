@@ -23,7 +23,7 @@ const getChangedFiles = (userInputBaseCommit) => {
   console.log('base commit:', baseCommit)
   const output = execSync(`git diff --oneline --name-only ${baseCommit}..HEAD`).toString().split('\n')
   console.log('git diff output:', output)
-  return output.filter(file => file && file.startsWith('packages/'))
+  return output.filter(Boolean)
 }
 
 const getWorkspacesInfo = () => {
@@ -32,32 +32,34 @@ const getWorkspacesInfo = () => {
 }
 
 const generateDependencyMapping = (workspaceInfo) => {
-  const dependencyMapping = {};
-  const stack = [];
+  const dependencyMapping = {}
+  const stack = []
 
   Object.keys(workspaceInfo).forEach(packageName => {
-    stack.push(packageName);
+    stack.push(packageName)
 
     while (stack.length > 0) {
-      const currentPackage = stack.pop();
+      const currentPackage = stack.pop()
 
-      const dependentPackages = workspaceInfo[currentPackage];
-      if (!dependentPackages || !dependentPackages.workspaceDependencies) continue;
+      const dependentPackages = workspaceInfo[currentPackage]
+      if (!dependentPackages || !dependentPackages.workspaceDependencies) {
+        continue
+      }
 
       dependentPackages.workspaceDependencies.forEach(dependency => {
         if (!dependencyMapping[dependency]) {
           // Add package itself to its dependency mapping. We need to test ourselves as well
-          dependencyMapping[dependency] = [dependency];
+          dependencyMapping[dependency] = [dependency]
         }
         if (!dependencyMapping[dependency].includes(currentPackage)) {
-          dependencyMapping[dependency].push(currentPackage);
-          stack.push(dependency);
+          dependencyMapping[dependency].push(currentPackage)
+          stack.push(dependency)
         }
-      });
+      })
     }
-  });
+  })
 
-  return dependencyMapping;
+  return dependencyMapping
 }
 
 const hasE2eTests = (packageName) => {

@@ -82,13 +82,13 @@ const updateAndCheckWorkflowTransition = (
   }
 
   // Fix action rules
-  const fixedActions = updateAndCheckTransitionRules(transition, 'actions', checkExtensionForRule)
+  const hasFixedActions = updateAndCheckTransitionRules(transition, 'actions', checkExtensionForRule)
   // Fix validators rules
-  const fixedValidators = updateAndCheckTransitionRules(transition, 'validators', checkExtensionForRule)
+  const hasFixedValidators = updateAndCheckTransitionRules(transition, 'validators', checkExtensionForRule)
   // Fix condition rules
-  const fixedConditions = updateAndCheckWorkflowConditionGroup(checkExtensionForRule, transition.conditions)
+  const hasFixedConditions = updateAndCheckWorkflowConditionGroup(checkExtensionForRule, transition.conditions)
 
-  return fixedActions || fixedValidators || fixedConditions
+  return hasFixedActions || hasFixedValidators || hasFixedConditions
 }
 
 /**

@@ -224,6 +224,51 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     expect(result.fixedElements).toEqual([])
     expect(result.errors).toEqual([])
   })
+  it('should only fix transitions rules of missing extensions without affecting valid transition rules.', async () => {
+    const validTransitionRules = [
+      createForgeTransitionRule(FORGE_EXTENSION.id),
+      createConnectTransitionRule(CONNECT_EXTENSION.id),
+    ]
+    instance.value.transitions.transition1 = createSkeletonWorkflowV2Transition('transition1')
+    instance.value.transitions.transition1.actions = [
+      ...validTransitionRules,
+      ...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES,
+    ]
+    instance.value.transitions.transition1.validators = [
+      ...validTransitionRules,
+      ...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES,
+    ]
+    instance.value.transitions.transition1.conditions = createSkeletonWorkflowV2TransitionConditionGroup()
+    instance.value.transitions.transition1.conditions.conditions = [
+      ...validTransitionRules,
+      ...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES,
+    ]
+    instance.value.transitions.transition1.conditions.conditionGroups.push(
+      createSkeletonWorkflowV2TransitionConditionGroup(),
+    )
+    instance.value.transitions.transition1.conditions.conditionGroups[0].conditions = [
+      ...validTransitionRules,
+      ...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES,
+    ]
+
+    const fixedInstance = instance.clone()
+    fixedInstance.value.transitions.transition1.actions = [...validTransitionRules]
+    fixedInstance.value.transitions.transition1.validators = [...validTransitionRules]
+    fixedInstance.value.transitions.transition1.conditions.conditions = [...validTransitionRules]
+    fixedInstance.value.transitions.transition1.conditions.conditionGroups[0].conditions = [...validTransitionRules]
+
+    const result = await removeMissingExtensionsTransitionRulesHandler({ config, client, elementsSource })([instance])
+    expect(result.fixedElements).toEqual([fixedInstance])
+    expect(result.errors).toEqual([
+      {
+        elemID: instance.elemID.createNestedID('transitions', 'transition1'),
+        severity: 'Info' as const,
+        message: 'Deploying workflow transition without all of its rules.',
+        detailedMessage:
+          'This workflow transition contains rules for Jira apps that do not exist in the target environment. It will be deployed without them.',
+      },
+    ])
+  })
   it('should fix transitions only once, irrelevant of how many invalid transition rules they have', async () => {
     instance.value.transitions.transition1 = createSkeletonWorkflowV2Transition('transition1')
     instance.value.transitions.transition1.actions = [...NON_EXISTENT_EXTENSIONS_TRANSITION_RULES]

@@ -103,8 +103,6 @@ const getPackagesToTest = (userInputBaseCommit, workspaceInfo, allPackages) => {
 
 const main = () => {
   const args = process.argv.slice(2)
-  console.log(`User provided arguments: ${args}`)
-
   const userInputBaseCommit = args.length > 0 ? args[0] : null
   if (userInputBaseCommit) {
     console.log(`User provided base commit: ${userInputBaseCommit}`)

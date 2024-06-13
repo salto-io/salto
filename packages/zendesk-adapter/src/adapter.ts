@@ -420,13 +420,18 @@ const getGuideElements = async ({
       })
     }),
   )
+  console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+  const b = fetchResultWithDuplicateTypes
+    .flatMap(result => result.elements)
+    .filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
+  console.log(b)
 
   // const flattenedInstances = fetchResultWithDuplicateTypes.flatMap(result => result.elements)
   const typeNameToGuideInstances = _.groupBy(
     fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
     instance => instance.elemID.typeName,
   )
-  console.log(typeNameToGuideInstances.article_attachment)
+  // console.log(typeNameToGuideInstances.article_attachment)
   // Create new types based on the created instances from all brands,
   // then create new instances with the corresponding type as refType
   const zendeskGuideElements = Object.entries(typeNameToGuideInstances).flatMap(([typeName, instances]) => {
@@ -441,6 +446,10 @@ const getGuideElements = async ({
   })
   console.log('2')
   // Create instances from standalone fields that were not created in previous steps
+  console.log('yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy')
+  const y = zendeskGuideElements.filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
+  console.log(y)
+
   await elementUtils.ducktype.extractStandaloneFields({
     adapterName: ZENDESK,
     elements: zendeskGuideElements,
@@ -453,6 +462,9 @@ const getGuideElements = async ({
     fetchResult => fetchResult.configChanges ?? [],
   )
   const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
+  console.log('eeeeeeeeeeeeeeeeeeeeeeeeeeeeee')
+  const c = zendeskGuideElements.filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
+  console.log(c)
   return {
     elements: useNewInfra ? zendeskGuideElements : zendeskGuideElements,
     configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
@@ -701,6 +713,9 @@ export default class ZendeskAdapter implements AdapterOperations {
           },
         ]),
       )
+      console.log('DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD')
+      const q = combinedRes.elements.filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
+      console.log(q)
 
       const zendeskGuideElements = await getGuideElements({
         brandsList,
@@ -715,6 +730,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       combinedRes.configChanges = combinedRes.configChanges.concat(zendeskGuideElements.configChanges ?? [])
       combinedRes.elements = combinedRes.elements.concat(zendeskGuideElements.elements)
       combinedRes.errors = combinedRes.errors.concat(zendeskGuideElements.errors ?? [])
+      const b = combinedRes.elements.filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
+      console.log(b)
     }
     console.log('6')
     // Remaining types should be added once to avoid overlaps between the generated elements,
@@ -726,7 +743,9 @@ export default class ZendeskAdapter implements AdapterOperations {
       supportedTypes: _.merge(supportedTypes, GUIDE_BRAND_SPECIFIC_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
-
+    console.log('CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
+    const q = combinedRes.elements.filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
+    console.log(q)
     // console.log('7', nonUniqueItems, nonUniqueItems2, nonUniqueItems3)
     return combinedRes
   }
@@ -785,6 +804,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     await this.logSubscriptionData()
     const localeError = await this.isLocaleEnUs()
     const { elements, configChanges, errors } = await this.getElements()
+    console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+    const c = elements.filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
+    console.log(c)
+    console.log('BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const brandsWithHelpCenter = elements
@@ -812,6 +835,9 @@ export default class ZendeskAdapter implements AdapterOperations {
     if (this.logIdsFunc !== undefined) {
       this.logIdsFunc()
     }
+
+    const b = elements.filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
+    console.log(b)
 
     return { elements, errors: fetchErrors, updatedConfig }
   }

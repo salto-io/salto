@@ -83,12 +83,12 @@ const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
 
 const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
   const dependencyMapping = generateDependencyMapping(workspaceInfo)
-  console.log('Dependency mapping:', dependencyMapping)
+  console.log('Original dependency mapping:', dependencyMapping)
 
   const changedPackagesDependencies = new Set(changedPackages.flatMap(package => dependencyMapping[package]).filter(Boolean))
   console.log('Changed packages dependencies:', changedPackagesDependencies)
   const dependenciesLocation = Array.from(changedPackagesDependencies).map(pkg => workspaceInfo[pkg].location).concat(changedPackages.map(pkg => workspaceInfo[pkg].location)).sort()
-  console.log('Changed packages with dependencies:', dependenciesLocation)
+  console.log('Changed packages with dependencies location:', dependenciesLocation)
 
   const packagesToTest = dependenciesLocation.map(location => location.replace('packages/', ''))
   return packagesToTest

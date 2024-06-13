@@ -158,6 +158,7 @@ module.exports = {
         'import/default': [0], // occurs when dropping airbnb plugin
         'prefer-const' : [0], // occurs when dropping airbnb plugin
         'import/named': [0], // occurs when dropping airbnb plugin
+        'import/no-named-as-default-member': [0], // occurs when dropping airbnb plugin
       },
     },
   ],

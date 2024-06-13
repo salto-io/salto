@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-const { execSync, exec } = require('child_process')
-const { readFileSync, writeFileSync, existsSync, readdirSync } = require('fs')
+const { execSync } = require('child_process')
+const { writeFileSync, existsSync, readdirSync } = require('fs')
 const path = require('path')
 
 const getChangedFiles = (userInputBaseCommit) => {
@@ -46,7 +46,8 @@ const generateDependencyMapping = (workspaceInfo) => {
 
       info.workspaceDependencies.forEach(dep => {
         if (!dependencyMapping[dep]) {
-          dependencyMapping[dep] = [];
+          // Add package itself to its dependency mapping. We need to test ourselves as well
+          dependencyMapping[dep] = [dep];
         }
         if (!dependencyMapping[dep].includes(currentPackage)) {
           dependencyMapping[dep].push(currentPackage);
@@ -70,11 +71,11 @@ const hasE2eTests = (packageName) => {
 const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
   const changedFiles = getChangedFiles(userInputBaseCommit)
   console.log('Changed files:', changedFiles)
-  const hasChangedFilesOutsidePackage = changedFiles.any(file => !file.startsWith('packages/'))
+  const hasChangedFilesOutsidePackage = changedFiles.some(file => !file.startsWith('packages/'))
 
   const changedPackageLocation = new Set(changedFiles.map(path => path.split('/').slice(0, 2).join('/')))
 
-  const changedPackages = Array.from(changedPackageLocation).map(packageDir =>Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir))
+  const changedPackages = Array.from(changedPackageLocation).map(packageDir => Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir))
 
   console.log('Changed packages:', changedPackages)
   console.log('Has changes outside packages directory:', hasChangedFilesOutsidePackage)
@@ -87,7 +88,7 @@ const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
 
   const changedPackagesDependencies = new Set(changedPackages.flatMap(package => dependencyMapping[package]).filter(Boolean))
   console.log('Changed packages dependencies:', changedPackagesDependencies)
-  const dependenciesLocation = Array.from(changedPackagesDependencies).map(pkg => workspaceInfo[pkg].location).concat(changedPackages.map(pkg => workspaceInfo[pkg].location)).sort()
+  const dependenciesLocation = Array.from(changedPackagesDependencies).map(pkg => workspaceInfo[pkg].location).sort()
   console.log('Changed packages with dependencies location:', dependenciesLocation)
 
   const packagesToTest = dependenciesLocation.map(location => location.replace('packages/', ''))

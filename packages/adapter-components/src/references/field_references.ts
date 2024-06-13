@@ -266,9 +266,6 @@ export const addReferences = async <
   >(defs, fieldReferenceResolverCreator)
   const instances = elements.filter(isInstanceElement)
 
-  // copied from Salesforce - both should be handled similarly:
-  // TODO - when transformValues becomes async the first index can be to elemID and not the whole
-  // element and we can use the element source directly instead of creating the second index
   const indexer = multiIndex.buildMultiIndex<Element>().addIndex({
     name: 'elemByElemID',
     key: elem => [elem.elemID.getFullName()],

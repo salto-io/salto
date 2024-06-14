@@ -20,7 +20,7 @@ import {
   loadLocalWorkspace,
   fetchFromWorkspace,
 } from '@salto-io/core'
-import { Workspace, nacl } from '@salto-io/workspace'
+import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'

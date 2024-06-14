@@ -23,6 +23,14 @@ const log = logger(module)
 
 type InMemoryState = State
 
+const getExistingAccounts = async (stateData: StateData): Promise<string[]> => {
+  const accounts = await stateData.accounts.get('account_names')
+  if (accounts !== undefined) {
+    return accounts
+  }
+  return awu(stateData.deprecated.accountsUpdateDate.keys()).toArray()
+}
+
 export const buildInMemState = (loadData: () => Promise<StateData>, persistent = true): InMemoryState => {
   let innerStateData: Promise<StateData>
   const stateData = async (): Promise<StateData> => {
@@ -47,7 +55,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       return
     }
     const data = await stateData()
-    const existingAccounts = (await data.accounts.get('account_names')) ?? []
+    const existingAccounts = await getExistingAccounts(data)
     await data.accounts.set('account_names', _.union(existingAccounts, accounts))
   }
 
@@ -138,14 +146,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    existingAccounts: async (): Promise<string[]> => {
-      const stateDataVal = await stateData()
-      const accounts = await stateDataVal.accounts.get('account_names')
-      if (accounts !== undefined) {
-        return accounts
-      }
-      return awu(stateDataVal.deprecated.accountsUpdateDate.keys()).toArray()
-    },
+    existingAccounts: async () => getExistingAccounts(await stateData()),
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> => (await stateData()).topLevelPathIndex,
     clear: async () => {

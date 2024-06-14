@@ -93,7 +93,7 @@ export const buildStateData = async (
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  saltoMetadata: await remoteMapCreator<string, 'version'>({
+  saltoMetadata: await remoteMapCreator<string, StateMetadataKey>({
     namespace: createStateNamespace(envName, 'salto_metadata'),
     serialize: async data => data,
     deserialize: async data => data,

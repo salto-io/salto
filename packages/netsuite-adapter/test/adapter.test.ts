@@ -620,9 +620,9 @@ describe('Adapter', () => {
         it('should create scriptid list elements with an empty list', async () => {
           const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
           const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
-          expect(scriptIdListElements).toHaveLength(3)
+          expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
-          expect(scriptIdListElements.filter(isObjectType).length).toEqual(2)
+          expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
           const instance = scriptIdListElements.find(isInstanceElement) as InstanceElement
           expect(collections.array.makeArray(instance.value.scriptid_list)).toEqual([])
         })
@@ -640,9 +640,9 @@ describe('Adapter', () => {
           })
           const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
           const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
-          expect(scriptIdListElements).toHaveLength(3)
+          expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
-          expect(scriptIdListElements.filter(isObjectType).length).toEqual(2)
+          expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
           const instance = scriptIdListElements.find(isInstanceElement) as InstanceElement
           expect(collections.array.makeArray(instance.value[OBJECT_ID_LIST_FIELD_NAME])).toEqual([
             {
@@ -678,9 +678,9 @@ describe('Adapter', () => {
           })
           const { elements } = await adapter.fetch(mockFetchOpts)
           const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
-          expect(scriptIdListElements).toHaveLength(3)
+          expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
-          expect(scriptIdListElements.filter(isObjectType).length).toEqual(2)
+          expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
           const instance = scriptIdListElements.find(isInstanceElement) as InstanceElement
           expect(collections.array.makeArray(instance.value[OBJECT_ID_LIST_FIELD_NAME])).toEqual([
             {
@@ -706,9 +706,9 @@ describe('Adapter', () => {
           })
           const { elements } = await netsuiteAdapter.fetch({ ...mockFetchOpts, withChangesDetection })
           const scriptIdListElements = elements.filter(elem => elem.elemID.typeName === OBJECT_ID_LIST_TYPE_NAME)
-          expect(scriptIdListElements).toHaveLength(3)
+          expect(scriptIdListElements).toHaveLength(2)
           expect(scriptIdListElements.filter(isInstanceElement).length).toEqual(1)
-          expect(scriptIdListElements.filter(isObjectType).length).toEqual(2)
+          expect(scriptIdListElements.filter(isObjectType).length).toEqual(1)
           const instance = scriptIdListElements.find(isInstanceElement) as InstanceElement
           expect(collections.array.makeArray(instance.value[OBJECT_ID_LIST_FIELD_NAME])).toEqual([
             {

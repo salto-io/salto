@@ -30,9 +30,12 @@ import {
   ASSIGNMENT_RULES_METADATA_TYPE,
   CHANGED_AT_SINGLETON,
   CPQ_CONDITIONS_MET,
+  CPQ_ERROR_CONDITION,
+  CPQ_ERROR_CONDITION_RULE_FIELD,
   CPQ_PRICE_CONDITION,
   CPQ_PRICE_CONDITION_RULE_FIELD,
   CPQ_PRICE_RULE,
+  CPQ_PRODUCT_RULE,
   CPQ_QUOTE,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
@@ -81,6 +84,28 @@ const SBAA_APPROVAL_RULE_TYPE = createCustomObjectType(SBAA_APPROVAL_RULE, {
 })
 
 const CPQ_PRICE_RULE_TYPE = createCustomObjectType(CPQ_PRICE_RULE, {
+  fields: {
+    [CPQ_CONDITIONS_MET]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      },
+    },
+    [OWNER_ID]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+        [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [constants.API_NAME]: OWNER_ID,
+      },
+    },
+  },
+})
+
+const CPQ_PRODUCT_RULE_TYPE = createCustomObjectType(CPQ_PRODUCT_RULE, {
   fields: {
     [CPQ_CONDITIONS_MET]: {
       refType: BuiltinTypes.STRING,
@@ -668,12 +693,25 @@ export const mockTypes = {
       },
     },
   }),
+  [CPQ_PRODUCT_RULE]: CPQ_PRODUCT_RULE_TYPE,
   StandardValueSet: createMetadataObjectType({
     annotations: {
       metadataType: 'StandardValueSet',
       dirName: 'standardValueSets',
       suffix: 'svs',
       hasMetaFile: true,
+    },
+  }),
+  [CPQ_ERROR_CONDITION]: createCustomObjectType(CPQ_ERROR_CONDITION, {
+    fields: {
+      [CPQ_ERROR_CONDITION_RULE_FIELD]: {
+        refType: Types.primitiveDataTypes.Lookup,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        },
+      },
     },
   }),
 }

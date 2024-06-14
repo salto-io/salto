@@ -88,7 +88,7 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
             //   "0.1.2"
             // We do not expect this in new-format files, but keep the code here so older state files are parsed as valid.
             // once we are certain all state files are updated, we can remove the `key === 3` section.
-            log.trace('Old format state file %s contains the Salto version information', name)
+            log.debug('Old format state file %s contains the Salto version information', name)
           } else {
             log.error('found unexpected entry in state file %s - key %s. ignoring', name, key)
           }
@@ -162,13 +162,6 @@ export const localState = (
   }
 
   const loadStateData = async (): Promise<state.StateData> => {
-    const loadAccountNames = async (stateData: state.StateData): Promise<string[] | undefined> => {
-      const accounts = await stateData.accounts.get('account_names')
-      if (accounts !== undefined) {
-        return accounts
-      }
-      return awu(stateData.deprecated.accountsUpdateDate.keys()).toArray()
-    }
     const quickAccessStateData = await state.buildStateData(
       envName,
       remoteMapCreator,
@@ -178,13 +171,11 @@ export const localState = (
     const filePaths = await currentContentProvider.findStateFiles(currentFilePrefix)
     const stateFilesHash = await currentContentProvider.getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash')) ?? toMD5(safeJsonStringify([]))
-    const cachedAccounts = await loadAccountNames(quickAccessStateData)
     if (quickAccessHash !== stateFilesHash) {
       log.debug(
-        'found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s cachedAccounts = %o)',
+        'found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s)',
         quickAccessHash,
         stateFilesHash,
-        cachedAccounts,
       )
       await syncQuickAccessStateData({
         stateData: quickAccessStateData,

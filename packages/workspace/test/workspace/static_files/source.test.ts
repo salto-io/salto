@@ -309,6 +309,12 @@ describe('Static Files', () => {
           expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
         })
       })
+      describe('isPathIncluded', () => {
+        it('should forward the isPathIncluded call to the dir store', async () => {
+          expect(staticFilesSource.isPathIncluded('path')).toBeTruthy()
+          expect(mockDirStore.isPathIncluded).toHaveBeenCalledWith('path')
+        })
+      })
       describe('Clear', () => {
         it('should clear all directory stores', async () => {
           mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())

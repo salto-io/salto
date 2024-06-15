@@ -22,7 +22,7 @@ export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinit
   cursor: {
     funcCreator: () =>
       cursorPagination({
-        pathChecker: fetchUtils.request.pagination.defaultPathChecker,
+        pathChecker: (endpointPath, nextPath) => endpointPath === nextPath || endpointPath === `/wiki${nextPath}`,
         paginationField: '_links.next',
       }),
   },

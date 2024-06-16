@@ -78,7 +78,6 @@ export const createDeployDefinitions = (): DeployApiDefinitions => ({
             updateServiceIDs: true,
           },
         },
-        customizations: {},
       },
       referenceResolution: {
         when: 'early',

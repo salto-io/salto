@@ -21,12 +21,17 @@ import { adapter } from '../src/adapter_creator'
 import { Credentials } from '../src/auth'
 import { JiraConfig, configType, getDefaultConfig } from '../src/config/config'
 import JiraClient from '../src/client/client'
+import { EXTENSION_ID_ARI_PREFIX } from '../src/common/extensions'
 import { FilterCreator } from '../src/filter'
 import { paginate } from '../src/client/pagination'
 import { GetUserMapFunc, getUserMapFuncCreator } from '../src/users'
 import { JIRA, WORKFLOW_CONFIGURATION_TYPE } from '../src/constants'
 import ScriptRunnerClient from '../src/client/script_runner_client'
-import { WorkflowV2TransitionConditionGroup, WorkflowV2Transition } from '../src/filters/workflowV2/types'
+import {
+  WorkflowV2TransitionConditionGroup,
+  WorkflowV2Transition,
+  WorkflowV2TransitionRule,
+} from '../src/filters/workflowV2/types'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
@@ -155,3 +160,13 @@ export const createSkeletonWorkflowV2Instance = (name: string): InstanceElement 
     },
     statuses: [],
   })
+
+export const createConnectTransitionRule = (extensionId: string): WorkflowV2TransitionRule => ({
+  ruleKey: 'connect:some-rule',
+  parameters: { appKey: `${extensionId}` },
+})
+export const createForgeTransitionRule = (extensionId: string): WorkflowV2TransitionRule => ({
+  ruleKey: 'forge:some-rule',
+  parameters: { key: `${EXTENSION_ID_ARI_PREFIX}${extensionId}/some-suffix` },
+})
+export const createSystemTransitionRule = (): WorkflowV2TransitionRule => ({ ruleKey: 'system:some-rule' })

@@ -403,17 +403,8 @@ export default class OktaAdapter implements AdapterOperations {
       )
       .toArray()
     const saltoErrors: SaltoError[] = []
-    try {
-      await runner.preDeploy(resolvedChanges)
-    } catch (e) {
-      if (!isSaltoError(e)) {
-        throw e
-      }
-      return {
-        appliedChanges: [],
-        errors: [e],
-      }
-    }
+    await runner.preDeploy(resolvedChanges)
+
     const { deployResult } = await runner.deploy(resolvedChanges, changeGroup)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     try {
@@ -428,12 +419,8 @@ export default class OktaAdapter implements AdapterOperations {
     const appliedChanges = await awu(appliedChangesBeforeRestore)
       .map(change => restoreChangeElement(change, sourceChanges, getLookUpName))
       .toArray()
-    const restoredAppliedChanges = deploymentUtils.restoreInstanceTypeFromChange({
-      appliedChanges,
-      originalInstanceChanges: instanceChanges,
-    })
     return {
-      appliedChanges: restoredAppliedChanges,
+      appliedChanges,
       errors: deployResult.errors.concat(saltoErrors),
     }
   }

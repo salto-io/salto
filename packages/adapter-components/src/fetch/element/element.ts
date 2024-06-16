@@ -117,7 +117,8 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
   const generate: ElementGenerator['generate'] = () => {
     const allResults = Object.entries(valuesByType).flatMap(([typeName, values]) => {
       try {
-        return generateInstancesWithInitialTypes({
+        return defQuery.query(typeName)?.element?.topLevel === undefined ? { instances: [], types: [] } :
+        generateInstancesWithInitialTypes({
           adapterName,
           defQuery,
           entries: values,

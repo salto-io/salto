@@ -41,7 +41,6 @@ const filter: FilterCreator = () => ({
             type: await instance.getType(),
             transformFunc: ({ value }) => value,
             strict: false,
-            allowEmpty: false,
           })) ?? {}
       })
   },

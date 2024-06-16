@@ -90,7 +90,8 @@ const extractToStaticFile = async (
       type: await instance.getType(),
       transformFunc,
       strict: false,
-      allowEmpty: true,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
     })) ?? values
 }
 

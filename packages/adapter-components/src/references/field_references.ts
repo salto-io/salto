@@ -227,7 +227,8 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
       transformFunc: transformPrimitive,
       strict: false,
       pathID: instance.elemID,
-      allowEmpty: true,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
     })) ?? instance.value
   )
 }

@@ -864,16 +864,40 @@ describe('Test utils.ts', () => {
       })
     })
 
-    describe('with allowEmpty', () => {
+    describe('with allowEmptyArrays', () => {
       it('should not remove empty list', async () => {
         const result = await transformValues({
           values: [],
           type: new ListType(BuiltinTypes.NUMBER),
           transformFunc: ({ value }) => value,
-          allowEmpty: true,
+          allowEmptyArrays: true,
         })
 
         expect(result).toEqual([])
+      })
+
+      it('should remove empty object', async () => {
+        const result = await transformValues({
+          values: {},
+          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          transformFunc: ({ value }) => value,
+          allowEmptyArrays: true,
+        })
+
+        expect(result).toEqual(undefined)
+      })
+    })
+
+    describe('with allowEmptyObjects', () => {
+      it('should remove empty list', async () => {
+        const result = await transformValues({
+          values: [],
+          type: new ListType(BuiltinTypes.NUMBER),
+          transformFunc: ({ value }) => value,
+          allowEmptyObjects: true,
+        })
+
+        expect(result).toEqual(undefined)
       })
 
       it('should not remove empty object', async () => {
@@ -881,7 +905,7 @@ describe('Test utils.ts', () => {
           values: {},
           type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
           transformFunc: ({ value }) => value,
-          allowEmpty: true,
+          allowEmptyObjects: true,
         })
 
         expect(result).toEqual({})
@@ -1420,16 +1444,39 @@ describe('Test utils.ts', () => {
       })
     })
 
-    describe('with allowEmpty', () => {
+    describe('with allowEmptyArrays', () => {
       it('should not remove empty list', async () => {
         const result = transformValuesSync({
           values: [],
           type: new ListType(BuiltinTypes.NUMBER),
           transformFunc: ({ value }) => value,
-          allowEmpty: true,
+          allowEmptyArrays: true,
         })
 
         expect(result).toEqual([])
+      })
+
+      it('should remove empty object', async () => {
+        const result = transformValuesSync({
+          values: {},
+          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          transformFunc: ({ value }) => value,
+          allowEmptyArrays: true,
+        })
+
+        expect(result).toEqual(undefined)
+      })
+    })
+    describe('with allowEmptyObjects', () => {
+      it('should remove empty list', async () => {
+        const result = transformValuesSync({
+          values: [],
+          type: new ListType(BuiltinTypes.NUMBER),
+          transformFunc: ({ value }) => value,
+          allowEmptyObjects: true,
+        })
+
+        expect(result).toEqual(undefined)
       })
 
       it('should not remove empty object', async () => {
@@ -1437,7 +1484,7 @@ describe('Test utils.ts', () => {
           values: {},
           type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
           transformFunc: ({ value }) => value,
-          allowEmpty: true,
+          allowEmptyObjects: true,
         })
 
         expect(result).toEqual({})

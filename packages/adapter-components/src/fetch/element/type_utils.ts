@@ -333,5 +333,6 @@ export const removeNullValues = (values: Values, type: ObjectType, allowEmpty = 
     type,
     transformFunc: removeNullValuesTransformFunc,
     strict: false,
-    allowEmpty,
+    allowEmptyArrays: allowEmpty,
+    allowEmptyObjects: allowEmpty,
   }) ?? {}

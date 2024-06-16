@@ -531,7 +531,8 @@ const cloneValuesWithAttributePrefixes = async (
     transformFunc: createPathsSetCallback,
     pathID: instance.elemID,
     strict: false,
-    allowEmpty: true,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
   })
 
   const addAttributePrefixFunc: MapKeyFunc = ({ key, pathID }) => {

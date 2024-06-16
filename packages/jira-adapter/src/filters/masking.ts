@@ -59,7 +59,8 @@ const maskValues = async (instance: InstanceElement, masking: MaskingConfig): Pr
       type: await instance.getType(),
       pathID: instance.elemID,
       strict: false,
-      allowEmpty: true,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
       transformFunc: ({ value, path }) => {
         if (path?.name === 'headers' && isHeaders(value)) {
           maskHeaders(value, masking.automationHeaders, instance.elemID)

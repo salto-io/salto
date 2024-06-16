@@ -230,7 +230,8 @@ const removeHiddenFromValues = (
     pathID,
     elementsSource,
     strict: false,
-    allowEmpty: true,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
   })
 
 const isChangeToHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>

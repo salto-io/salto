@@ -84,7 +84,8 @@ const removeValuesFromInstances = (
           type: inst.getTypeSync(),
           transformFunc: removeValuesFunc,
           strict: true,
-          allowEmpty: true,
+          allowEmptyArrays: true,
+          allowEmptyObjects: true,
           pathID: inst.elemID,
         }) || inst.value
     })

@@ -36,7 +36,8 @@ const filter: FilterCreator = () => ({
             values: instance.value,
             type: await instance.getType(),
             pathID: instance.elemID,
-            allowEmpty: true,
+            allowEmptyArrays: true,
+            allowEmptyObjects: true,
             strict: false,
             transformFunc: ({ value, field, path }) => {
               const isInArray = path?.getFullNameParts().some(isStringNumber)

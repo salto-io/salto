@@ -58,6 +58,7 @@ import { FilterCreator, Filter, filterRunner, FilterResult } from './filter'
 import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
 import defaultDeployFilter from './filters/default_deploy'
+import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
 import userTypeFilter from './filters/user_type'
@@ -143,17 +144,11 @@ const DEFAULT_FILTERS = [
   profileMappingRemovalFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
-
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,
-
   // This catches types we moved to the new infra definitions
-  filterUtils.defaultDeployFilterCreator<FilterResult, OktaOptions>({
-    convertError: getOktaError,
-    customLookupFunc: getLookUpName,
-    fieldReferenceResolverCreator: OktaFieldReferenceResolver.create,
-  }),
+  defaultDeployDefinitionsFilter,
 ]
 
 const SKIP_RESOLVE_TYPE_NAMES = [

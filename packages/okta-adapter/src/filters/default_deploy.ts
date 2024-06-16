@@ -15,8 +15,11 @@
  */
 import _ from 'lodash'
 import { Change, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { definitions as definitionUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { defaultDeployWithStatus, deployChanges } from '../deployment'
+
+const { queryWithDefault } = definitionUtils
 
 /**
  * Deploys all the changes that were not deployed by the previous filters
@@ -26,7 +29,7 @@ const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [newInfraChanges, oldInfraChanges] = _.partition(
       changes,
-      change => definitions.deploy?.instances.customizations?.[getChangeData(change).elemID.typeName] !== undefined,
+      change => queryWithDefault(definitions.deploy?.instances ?? {}).allKeys().includes(getChangeData(change).elemID.typeName)
     )
     const client = definitions.clients.options.main.httpClient
     const deployResult = await deployChanges(oldInfraChanges.filter(isInstanceChange), async change => {

@@ -30,13 +30,14 @@ import {
   PrimitiveType,
   PrimitiveTypes,
   TypeElement,
+  Values,
   createRefToElmWithValue,
   createRestriction,
   isEqualElements,
   isPrimitiveType,
   isTypeReference,
 } from '@salto-io/adapter-api'
-import { getSubtypes } from '@salto-io/adapter-utils'
+import { TransformFuncSync, getSubtypes, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
@@ -323,3 +324,14 @@ export const getReachableTypes = <Options extends FetchApiDefinitionsOptions>({
 
   return types.filter(type => rootTypeNames.has(type.elemID.name) || rootTypesSubtypes.has(type.elemID.name))
 }
+
+export const removeNullValuesTransformFunc: TransformFuncSync = ({ value }) => (value === null ? undefined : value)
+
+export const removeNullValues = (values: Values, type: ObjectType, allowEmpty = false): Values =>
+  transformValuesSync({
+    values,
+    type,
+    transformFunc: removeNullValuesTransformFunc,
+    strict: false,
+    allowEmpty,
+  }) ?? {}

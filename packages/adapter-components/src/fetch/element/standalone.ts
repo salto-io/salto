@@ -26,13 +26,14 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { TransformFuncSync, invertNaclCase, transformValuesSync } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { createInstance, getInstanceCreationFunctions } from './instance_utils'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 import { NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 import { generateType } from './type_element'
 
+const { isDefined } = lowerdashValues
 const log = logger(module)
 
 /*
@@ -123,16 +124,19 @@ const extractStandaloneInstancesFromField =
       nestUnderPath,
       customNameMappingFunctions,
     })
-    const newInstances = standaloneEntries.map((entry, index) =>
-      createInstance({
-        entry,
-        type: fieldType,
-        toElemName,
-        toPath,
-        defaultName: `${invertNaclCase(parent.elemID.name)}__unnamed_${index}`,
-        parent: standaloneDef.addParentAnnotation !== false ? parent : undefined,
-      }),
-    )
+    const newInstances = standaloneEntries
+      .map((entry, index) =>
+        createInstance({
+          entry,
+          type: fieldType,
+          toElemName,
+          toPath,
+          defaultName: `${invertNaclCase(parent.elemID.name)}__unnamed_${index}`,
+          parent: standaloneDef.addParentAnnotation !== false ? parent : undefined,
+        }),
+      )
+      .filter(isDefined)
+
     newInstances.forEach(inst => instanceOutput.push(inst))
 
     if (standaloneDef.referenceFromParent === false) {

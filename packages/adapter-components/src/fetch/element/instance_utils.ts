@@ -41,6 +41,7 @@ import {
 } from '../../definitions'
 import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
+import { removeNullValues } from './type_utils'
 
 /**
  * Transform a value to a valid instance value by nacl-casing all its keys,
@@ -180,16 +181,21 @@ export const createInstance = ({
   toPath,
   defaultName,
   parent,
-}: InstanceCreationParams): InstanceElement => {
+}: InstanceCreationParams): InstanceElement | undefined => {
   const annotations = _.pick(entry, Object.keys(INSTANCE_ANNOTATIONS))
   const value = _.omit(entry, Object.keys(INSTANCE_ANNOTATIONS))
+  const refinedValue = value !== undefined ? removeNullValues(value, type) : {}
+
+  if (_.isEmpty(refinedValue)) {
+    return undefined
+  }
   if (parent !== undefined) {
     annotations[INSTANCE_ANNOTATIONS.PARENT] = collections.array.makeArray(annotations[INSTANCE_ANNOTATIONS.PARENT])
     annotations[INSTANCE_ANNOTATIONS.PARENT].push(new ReferenceExpression(parent.elemID, parent))
   }
 
   const args = { entry, parent, defaultName }
-  return new InstanceElement(toElemName(args), type, value, toPath(args), annotations)
+  return new InstanceElement(toElemName(args), type, refinedValue, toPath(args), annotations)
 }
 
 export const getFieldsToOmit = <Options extends APIDefinitionsOptions = {}>(

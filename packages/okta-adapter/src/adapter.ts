@@ -40,7 +40,6 @@ import {
   definitions as definitionsUtils,
   openapi,
   restoreChangeElement,
-  filters as filterUtils,
   createChangeElementResolver,
   deployment as deploymentUtils,
 } from '@salto-io/adapter-components'
@@ -54,7 +53,7 @@ import { configType, OktaUserConfig } from './user_config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
-import { FilterCreator, Filter, filterRunner, FilterResult } from './filter'
+import { FilterCreator, Filter, filterRunner } from './filter'
 import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
 import defaultDeployFilter from './filters/default_deploy'
@@ -93,7 +92,7 @@ import {
   POLICY_PRIORITY_TYPE_NAMES,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
 } from './constants'
-import { getLookUpName, OktaFieldReferenceResolver } from './reference_mapping'
+import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
 import { isClassicEngineOrg } from './utils'
 import { createFixElementFunctions } from './fix_elements'
@@ -104,7 +103,6 @@ import { createClientDefinitions, shouldAccessPrivateAPIs } from './definitions/
 import { OktaOptions } from './definitions/types'
 import { OPEN_API_DEFINITIONS } from './definitions/sources'
 import { getAdminUrl } from './client/admin'
-import { getOktaError } from './deployment'
 
 const { awu } = collections.asynciterable
 const { generateOpenApiTypes } = openapi

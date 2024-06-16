@@ -467,7 +467,6 @@ const deployCleanup = async (adapterAttr: Reals, types: ObjectType[], elements: 
   log.debug('Cleaning up the environment before starting e2e test')
   const cleanupChanges = await getChangesForInitialCleanup(elements, types, adapterAttr.client)
   const removals = cleanupChanges.filter(change => getChangeData(change).elemID.typeName !== APPLICATION_TYPE_NAME)
-  //await removeAllApps(adapterAttr, cleanupChanges)
   await deployChanges(adapterAttr, cleanupChanges.filter(change => getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME))
   await deployChanges(adapterAttr, removals)
   log.debug('Environment cleanup successful')

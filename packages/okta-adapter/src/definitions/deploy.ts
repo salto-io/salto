@@ -15,24 +15,21 @@
  */
 
 import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import { AdditionalAction, ClientOptions } from './types'
-import { APPLICATION_TYPE_NAME, CUSTOM_NAME_FIELD, GROUP_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 import {
   getChangeData,
   isModificationChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
+import { AdditionalAction, ClientOptions } from './types'
+import { APPLICATION_TYPE_NAME, CUSTOM_NAME_FIELD, GROUP_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 import {
   isActivationChange, isDeactivationChange,
   isInactiveCustomAppChange,
 } from '../deployment'
-import { isDefined } from '@salto-io/lowerdash/dist/src/values'
-import {
-  DeployableRequestDefinition,
-  DeployRequestDefinition,
-} from '@salto-io/adapter-components/dist/src/definitions/system/deploy'
-import Cli from '@salto-io/e2e-credentials-store/dist/src/cli'
+
+const { isDefined } = values
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -40,7 +37,7 @@ export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<Addit
 /**
  * Create a deploy request for setting a policy associated with an `Application`.
  */
-const createDeployAppPolicyRequest = (policyName: string): DeployableRequestDefinition<ClientOptions> => ({
+const createDeployAppPolicyRequest = (policyName: string): definitions.deploy.DeployableRequestDefinition<ClientOptions> => ({
   condition: {
     custom: () => ({ change }) =>
       isDefined(_.get(getChangeData(change).value, policyName)),
@@ -60,7 +57,7 @@ const createDeployAppPolicyRequest = (policyName: string): DeployableRequestDefi
 /**
  * Create deploy requests for setting all policies associated with an `Application`.
  */
-const createDeployAppPolicyRequests = (): DeployableRequestDefinition<ClientOptions>[] => [
+const createDeployAppPolicyRequests = (): definitions.deploy.DeployableRequestDefinition<ClientOptions>[] => [
   createDeployAppPolicyRequest('accessPolicy'),
   createDeployAppPolicyRequest('profileEnrollment'),
 ]

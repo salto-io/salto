@@ -127,6 +127,7 @@ const DEACTIVATE_BEFORE_REMOVAL_TYPES = new Set([NETWORK_ZONE_TYPE_NAME])
 const shouldDeactivateBeforeRemoval = (change: Change<InstanceElement>): boolean =>
   isRemovalChange(change) && DEACTIVATE_BEFORE_REMOVAL_TYPES.has(getChangeData(change).elemID.typeName)
 
+
 export const deployStatusChange = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
@@ -270,6 +271,51 @@ export const shouldDeactivateAfterChange = (changeAndContext: definitionUtils.de
 
 export const shouldDeactivateBeforeChange = ({ change }: definitionUtils.deploy.ChangeAndContext): boolean =>
   isDeactivationChange(change) || shouldDeactivateBeforeRemoval(change)
+
+/**
+ * Deploy change with "add", "modify", "remove", "activation" and "deactivation" endpoints
+ */
+export const defaultDeployWithStatus = async (
+  change: Change<InstanceElement>,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  apiDefinitions: OktaSwaggerApiConfig,
+  fieldsToIgnore?: string[],
+  queryParams?: Record<string, string>,
+): Promise<deployment.ResponseResult> => {
+  try {
+    // some changes can't be applied when status is ACTIVE, so we need to deactivate them first
+    if (isDeactivationChange(change) || shouldDeactivateBeforeRemoval(change)) {
+      await deployStatusChange(change, client, apiDefinitions, 'deactivate')
+    }
+    const response = await defaultDeployChange(change, client, apiDefinitions, fieldsToIgnore, queryParams)
+
+    // Update status for the created instance if necessary
+    if (isAdditionChange(change) && isResponseWithStatus(response)) {
+      const changeStatus = getChangeData(change).value.status
+      if (isActivationModification({ before: response.status, after: changeStatus })) {
+        log.debug(
+          `Instance ${getChangeData(change).elemID.getFullName()} created in status ${INACTIVE_STATUS}, changing to ${ACTIVE_STATUS}`,
+        )
+        await deployStatusChange(change, client, apiDefinitions, 'activate')
+      } else if (isDeactivationModification({ before: response.status, after: changeStatus })) {
+        log.debug(
+          `Instance ${getChangeData(change).elemID.getFullName()} created in status ${ACTIVE_STATUS}, changing to ${INACTIVE_STATUS}`,
+        )
+        await deployStatusChange(change, client, apiDefinitions, 'deactivate')
+      }
+    }
+
+    // If the instance is activated, we should first make the changes and then change the status
+    if (isActivationChange(change)) {
+      await deployStatusChange(change, client, apiDefinitions, 'activate')
+    }
+
+    return response
+  } catch (err) {
+    throw getOktaError(getChangeData(change).elemID, err)
+  }
+}
+
 
 const getValuesToAdd = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,

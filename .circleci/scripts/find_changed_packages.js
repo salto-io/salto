@@ -73,15 +73,15 @@ const hasE2eTests = (packageName) => {
 const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
   const changedFiles = getChangedFiles(userInputBaseCommit)
   console.log('Changed files:', changedFiles)
-  const hasChangedFilesOutsidePackage = changedFiles.some(file => !file.startsWith('packages/'))
-
+  
   const changedPackageLocation = new Set(changedFiles.map(path => path.split('/').slice(0, 2).join('/')))
-
+  
   const changedPackages = Array.from(changedPackageLocation).map(packageDir => Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir))
+  const hasChangedFilesOutsidePackage = changedPackages.some(pkg => !pkg)
 
   console.log('Changed packages:', changedPackages)
   console.log('Has changes outside packages directory:', hasChangedFilesOutsidePackage)
-  return hasChangedFilesOutsidePackage ? null : changedPackages
+  return { changedPackages, hasChangedFilesOutsidePackage }
 }
 
 const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
@@ -98,10 +98,8 @@ const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
 }
 
 const getPackagesToTest = (userInputBaseCommit, workspaceInfo, allPackages) => {
-  const changedPackages = findChangedPackages(userInputBaseCommit, workspaceInfo)
-  console.log('Changed packages:', changedPackages)
-
-  return changedPackages ? getDependenciesFromChangedPackages(changedPackages, workspaceInfo) : allPackages
+  const { changedPackages, hasChangedFilesOutsidePackage } = findChangedPackages(userInputBaseCommit, workspaceInfo)
+  return hasChangedFilesOutsidePackage ? allPackages : getDependenciesFromChangedPackages(changedPackages, workspaceInfo)
 }
 
 const main = () => {

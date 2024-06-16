@@ -43,7 +43,6 @@
     "@salto-io/salesforce-formula-parser": "0.1.5",
     "bottleneck": "^2.19.5",
     "fast-xml-parser": "^4.4.0",
-    "he": "^1.2.0",
     "joi": "^17.4.0",
     "jszip": "^3.2.2",
     "lodash": "^4.17.21",

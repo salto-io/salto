@@ -34,7 +34,6 @@ import {
 import _ from 'lodash'
 import { TransformFuncArgs, transformValues, WALK_NEXT_STEP, WalkOnFunc, walkOnValue } from '@salto-io/adapter-utils'
 import { XMLBuilder, XMLParser } from 'fast-xml-parser'
-import { decode, encode } from 'he'
 import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
@@ -132,7 +131,6 @@ const fetchTransformFunc = async ({ value, field, path }: TransformFuncArgs, typ
 const xmlParser = new XMLParser({
   attributeNamePrefix: ATTRIBUTE_PREFIX,
   ignoreAttributes: false,
-  tagValueProcessor: (_name, val) => decode(val),
 })
 
 const createAnalyticsInstance = async (instance: InstanceElement, analyticsType: ObjectType): Promise<void> => {
@@ -321,7 +319,7 @@ const xmlBuilder = new XMLBuilder({
   format: true,
   ignoreAttributes: false,
   cdataPropName: CDATA_TAG_NAME,
-  tagValueProcessor: (_name, val) => encode((val as { toString: () => string }).toString()),
+  tagValueProcessor: (_name, val) => String(val),
 })
 
 const returnToOriginalShape = async (instance: InstanceElement): Promise<Values> => {

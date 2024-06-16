@@ -16,7 +16,6 @@
 
 import _ from 'lodash'
 import { XMLParser } from 'fast-xml-parser'
-import { decode } from 'he'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import {
@@ -44,7 +43,6 @@ const isXmlContent = (val: unknown): val is string => _.isString(val) && val.sta
 const xmlParser = new XMLParser({
   attributeNamePrefix: ATTRIBUTE_PREFIX,
   ignoreAttributes: false,
-  tagValueProcessor: (_name, val) => decode(val),
 })
 
 const isSameXmlValues = (xml1: string, xml2: string): boolean => {

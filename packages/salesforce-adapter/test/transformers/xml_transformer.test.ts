@@ -96,7 +96,7 @@ describe('XML Transformer', () => {
       const profileValues = {
         fullName: 'TestProfile',
         num: 12,
-        str: 'str <> bla',
+        str: 'str <&> bla',
         b: true,
       }
       beforeEach(async () => {
@@ -146,18 +146,19 @@ describe('XML Transformer', () => {
       describe('serialized xml file', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let values: any
-        beforeAll(() => {
-          values = xmlParser.parse(
-            zipFiles[`${packageName}/profiles/TestProfile.profile`],
-          )
+        let zipFile: string
+        beforeEach(() => {
+          zipFile = zipFiles[`${packageName}/profiles/TestProfile.profile`]
+          values = xmlParser.parse(zipFile)
         })
         it('should write serialized values to instance xml file', () => {
           expect(values).toMatchObject({
             Profile: _.omit(profileValues, ['fullName', 'str']),
           })
         })
-        it('should encode special XML characters', () => {
-          expect(values.Profile.str).toEqual('str &#x3C;&#x3E; bla')
+        it('should support special XML characters', () => {
+          expect(zipFile).toMatch(/&lt;&amp;&gt;/)
+          expect(values.Profile.str).toEqual('str <&> bla')
         })
       })
     })

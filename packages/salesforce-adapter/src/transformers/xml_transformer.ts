@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import he from 'he'
 import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import {
   RetrieveResult,
@@ -321,7 +320,6 @@ export const isComplexType = (
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
-  tagValueProcessor: (_name, val) => he.decode(val),
 })
 
 export const xmlToValues = (
@@ -517,7 +515,6 @@ export const fromRetrieveResult = async (
 const builder = new XMLBuilder({
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
   ignoreAttributes: false,
-  tagValueProcessor: (_name, val) => he.encode(String(val)),
 })
 
 const toMetadataXml = (name: string, values: Values): string =>

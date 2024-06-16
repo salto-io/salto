@@ -76,6 +76,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
+  automationPageSize?: number
 }
 
 export type MaskingConfig = {
@@ -354,6 +355,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
+    automationPageSize: { refType: BuiltinTypes.NUMBER },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,
@@ -405,6 +407,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.enableIssueLayouts',
       'fetch.removeDuplicateProjectRoles',
       'fetch.enableNewWorkflowAPI',
+      'fetch.automationPageSize',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       SCRIPT_RUNNER_API_DEFINITIONS,

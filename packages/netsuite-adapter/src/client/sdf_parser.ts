@@ -17,7 +17,7 @@ import _ from 'lodash'
 import os from 'os'
 import osPath from 'path'
 import he from 'he'
-import xmlParser from 'fast-xml-parser'
+import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import readdirp from 'readdirp'
 import { logger } from '@salto-io/logging'
 import { promises, collections } from '@salto-io/lowerdash'
@@ -75,11 +75,11 @@ const DEFAULT_FOLDER_ATTRIBUTES =
   `  <isprivate>F</isprivate>${os.EOL}` +
   `</folder>${os.EOL}`
 
-const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
+const xmlParser = new XMLParser({
   attributeNamePrefix: ATTRIBUTE_PREFIX,
   ignoreAttributes: false,
-  tagValueProcessor: val => he.decode(val),
-}
+  tagValueProcessor: (_name, val) => he.decode(val),
+})
 
 export const getSrcDirPath = (projectPath: string): string => osPath.resolve(projectPath, SRC_DIR)
 
@@ -96,7 +96,7 @@ export const getFeaturesXmlPath = (projectPath: string): string =>
   osPath.resolve(projectPath, SRC_DIR, ACCOUNT_CONFIGURATION_DIR, FEATURES_XML)
 
 const convertToCustomizationInfo = (xmlContent: string): CustomizationInfo => {
-  const parsedXmlValues = xmlParser.parse(xmlContent, XML_PARSE_OPTIONS)
+  const parsedXmlValues = xmlParser.parse(xmlContent)
   const typeName = Object.keys(parsedXmlValues)[0]
   return { typeName, values: parsedXmlValues[typeName] }
 }
@@ -143,16 +143,18 @@ const convertToFolderCustomizationInfo = ({
   path,
 })
 
+const xmlBuilder = new XMLBuilder({
+  attributeNamePrefix: ATTRIBUTE_PREFIX,
+  // We convert to an unformatted xml since the CDATA transformation is wrong when formatting.
+  format: false,
+  ignoreAttributes: false,
+  cdataPropName: CDATA_TAG_NAME,
+  tagValueProcessor: (_name, val) => he.encode(val as string),
+})
+
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
   // eslint-disable-next-line new-cap
-  new xmlParser.j2xParser({
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    // We convert to an not formatted xml since the CDATA transformation is wrong when having format
-    format: false,
-    ignoreAttributes: false,
-    cdataTagName: CDATA_TAG_NAME,
-    tagValueProcessor: val => he.encode(val),
-  }).parse({ [customizationInfo.typeName]: customizationInfo.values })
+  xmlBuilder.build({ [customizationInfo.typeName]: customizationInfo.values })
 
 const transformCustomObject = async (
   scriptId: string,
@@ -309,7 +311,7 @@ export const parseFeaturesXml = async (projectPath: string): Promise<Customizati
     return undefined
   }
   const xmlContent = await readFile(filePath)
-  const featuresXml = xmlParser.parse(xmlContent.toString(), XML_PARSE_OPTIONS)
+  const featuresXml = xmlParser.parse(xmlContent.toString())
 
   const featuresList = makeArray(featuresXml[FEATURES_TAG]?.[FEATURES_LIST_TAG])
   return {

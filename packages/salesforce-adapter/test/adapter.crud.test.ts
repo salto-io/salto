@@ -43,7 +43,7 @@ import {
   DeployResult as JSForceDeployResult,
 } from '@salto-io/jsforce'
 import JSZip from 'jszip'
-import xmlParser from 'fast-xml-parser'
+import { XMLParser } from 'fast-xml-parser'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import {
@@ -57,11 +57,12 @@ import Connection from '../src/client/jsforce'
 import { CustomObject } from '../src/client/types'
 import mockAdapter from './adapter'
 import {
+  createElement,
   createValueSetEntry,
   createCustomObjectType,
   nullProgressReporter,
+  removeElement,
 } from './utils'
-import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import {
   mockDeployResult,
@@ -86,6 +87,8 @@ describe('SalesforceAdapter CRUD', () => {
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const instanceName = 'Instance'
+
+  const xmlParser = new XMLParser()
 
   type DeployedPackage = {
     manifest?: Package

@@ -33,7 +33,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TransformFuncArgs, transformValues, WALK_NEXT_STEP, WalkOnFunc, walkOnValue } from '@salto-io/adapter-utils'
-import { parse, j2xParser } from 'fast-xml-parser'
+import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import { decode, encode } from 'he'
 import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -129,15 +129,14 @@ const fetchTransformFunc = async ({ value, field, path }: TransformFuncArgs, typ
   return value
 }
 
+const xmlParser = new XMLParser({
+  attributeNamePrefix: ATTRIBUTE_PREFIX,
+  ignoreAttributes: false,
+  tagValueProcessor: (_name, val) => decode(val),
+})
+
 const createAnalyticsInstance = async (instance: InstanceElement, analyticsType: ObjectType): Promise<void> => {
-  const definitionValues = _.omit(
-    parse(instance.value[DEFINITION], {
-      attributeNamePrefix: ATTRIBUTE_PREFIX,
-      ignoreAttributes: false,
-      tagValueProcessor: val => decode(val),
-    })[ROOT],
-    fieldsToOmitFromDefinition,
-  )
+  const definitionValues = _.omit(xmlParser.parse(instance.value[DEFINITION])[ROOT], fieldsToOmitFromDefinition)
 
   const updatedValues = await transformValues({
     values: definitionValues,
@@ -317,6 +316,14 @@ const createDefinitionName = (instance: InstanceElement, definitionValues: Value
       : instance.value[NAME]
 }
 
+const xmlBuilder = new XMLBuilder({
+  attributeNamePrefix: ATTRIBUTE_PREFIX,
+  format: true,
+  ignoreAttributes: false,
+  cdataPropName: CDATA_TAG_NAME,
+  tagValueProcessor: (_name, val) => encode((val as { toString: () => string }).toString()),
+})
+
 const returnToOriginalShape = async (instance: InstanceElement): Promise<Values> => {
   const analyticsType = await instance.getType()
 
@@ -336,13 +343,7 @@ const returnToOriginalShape = async (instance: InstanceElement): Promise<Values>
   createDefinitionName(instance, updatedDefinitionValues)
 
   // eslint-disable-next-line new-cap
-  const xmlString = new j2xParser({
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    format: true,
-    ignoreAttributes: false,
-    cdataTagName: CDATA_TAG_NAME,
-    tagValueProcessor: val => encode(val.toString()),
-  }).parse({ [ROOT]: updatedDefinitionValues })
+  const xmlString = xmlBuilder.build({ [ROOT]: updatedDefinitionValues })
 
   return {
     ..._.omit(instance.value, Object.keys(definitionValues)),

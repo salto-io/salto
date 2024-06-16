@@ -15,7 +15,7 @@
  */
 
 import _ from 'lodash'
-import { parse } from 'fast-xml-parser'
+import { XMLParser } from 'fast-xml-parser'
 import { decode } from 'he'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
@@ -41,21 +41,19 @@ const isStringArray = (val: unknown): val is string[] => Array.isArray(val) && _
 
 const isXmlContent = (val: unknown): val is string => _.isString(val) && val.startsWith(`<${ROOT}>`)
 
+const xmlParser = new XMLParser({
+  attributeNamePrefix: ATTRIBUTE_PREFIX,
+  ignoreAttributes: false,
+  tagValueProcessor: (_name, val) => decode(val),
+})
+
 const isSameXmlValues = (xml1: string, xml2: string): boolean => {
-  const values1 = parse(xml1, {
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: val => decode(val),
-  })
-  const values2 = parse(xml2, {
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: val => decode(val),
-  })
+  const values1 = xmlParser.parse(xml1)
+  const values2 = xmlParser.parse(xml2)
   return _.isEqual(values1, values2)
 }
 
-const discardUnrelevantChanges = (
+const discardIrrelevantChanges = (
   existingInstance: InstanceElement | undefined,
   newInstance: InstanceElement,
 ): void => {
@@ -113,7 +111,7 @@ const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
       .filter(elem => elem.elemID.typeName === WORKBOOK)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        discardUnrelevantChanges(await elementsSource.get(instance.elemID), instance)
+        discardIrrelevantChanges(await elementsSource.get(instance.elemID), instance)
       })
   },
   preDeploy: async (changes: Change[]) => {

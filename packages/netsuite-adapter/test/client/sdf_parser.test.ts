@@ -283,9 +283,10 @@ describe('sdf parser', () => {
         },
         scriptId: 'custentity_my_script_id',
       }
+      const xmlContent = convertToXmlContent(custInfo)
       // We use here === instead of expect.toEqual() since jest treats html encoding as equal to
       // the decoded value
-      expect(convertToXmlContent(custInfo) === OBJECT_XML_WITH_HTML_CHARS).toBeTruthy()
+      expect(xmlContent === OBJECT_XML_WITH_HTML_CHARS).toBeTruthy()
     })
   })
   describe('convertToFeaturesXmlContent', () => {

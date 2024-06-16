@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import he from 'he'
-import parser from 'fast-xml-parser'
+import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import {
   RetrieveResult,
   FileProperties,
@@ -318,28 +318,36 @@ export const isComplexType = (
 ): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
+  tagValueProcessor: (_name, val) => he.decode(val),
+})
+
 export const xmlToValues = (
   xmlAsString: string,
 ): { values: Values; typeName: string } => {
-  const parsedXml = parser.parse(xmlAsString, {
-    ignoreAttributes: false,
-    attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
-    tagValueProcessor: (val) => he.decode(val),
-  })
+  const parsedXml = parser.parse(xmlAsString)
 
   const parsedEntries = Object.entries<Values>(parsedXml)
-  if (parsedEntries.length !== 1) {
-    // Should never happen
+  if (parsedEntries.length === 0) {
+    // Should never happen.
+    log.debug(
+      'Found no root nodes in xml: %s',
+      Object.keys(parsedXml).join(','),
+    )
+    return { typeName: '', values: {} }
+  }
+  if (parsedEntries.length > 2) {
+    // Should never happen.
     log.debug(
       'Found %d root nodes in xml: %s',
       parsedEntries.length,
       Object.keys(parsedXml).join(','),
     )
-    if (parsedEntries.length === 0) {
-      return { typeName: '', values: {} }
-    }
   }
-  const [typeName, values] = parsedEntries[0]
+  // If there are 2 entries the first is the top level.
+  const [typeName, values] = parsedEntries[parsedEntries.length - 1]
   if (!_.isPlainObject(values)) {
     log.debug(
       'Could not find values for type %s in xml:\n%s',
@@ -506,13 +514,15 @@ export const fromRetrieveResult = async (
   return instances.filter(isDefined)
 }
 
+const builder = new XMLBuilder({
+  attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
+  ignoreAttributes: false,
+  tagValueProcessor: (_name, val) => he.encode(String(val)),
+})
+
 const toMetadataXml = (name: string, values: Values): string =>
   // eslint-disable-next-line new-cap
-  new parser.j2xParser({
-    attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: (val) => he.encode(String(val)),
-  }).parse({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
+  builder.build({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
 
 const cloneValuesWithAttributePrefixes = async (
   instance: InstanceElement,

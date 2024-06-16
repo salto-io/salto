@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import xmlParser from 'fast-xml-parser'
+import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import osPath from 'path'
 import { logger } from '@salto-io/logging'
 import { Graph } from './graph_utils'
@@ -26,6 +26,16 @@ const log = logger(module)
 
 // The '/' prefix is needed to make osPath.resolve treat '~' as the root
 const PROJECT_ROOT_TILDE_PREFIX = `${osPath.sep}~`
+
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,
+})
+
+const xmlBuilder = new XMLBuilder({
+  format: true,
+  ignoreAttributes: false,
+  suppressBooleanAttributes: false,
+})
 
 export const reorderDeployXml = (deployContent: string, dependencyGraph: Graph<SDFObjectNode>): string => {
   const nodesInCycle = new Set(dependencyGraph.findCycle())
@@ -40,7 +50,7 @@ export const reorderDeployXml = (deployContent: string, dependencyGraph: Graph<S
     .map(node => node.value.customizationInfo)
 
   const customTypeInfos = custInfosInTopologicalOrder.filter(isCustomTypeInfo)
-  const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })
+  const deployXml = xmlParser.parse(deployContent)
   const { objects } = deployXml.deploy
 
   if (customTypeInfos.length > 0) {
@@ -56,8 +66,5 @@ export const reorderDeployXml = (deployContent: string, dependencyGraph: Graph<S
   }
 
   // eslint-disable-next-line new-cap
-  return new xmlParser.j2xParser({
-    ignoreAttributes: false,
-    format: true,
-  }).parse(deployXml)
+  return xmlBuilder.build(deployXml)
 }

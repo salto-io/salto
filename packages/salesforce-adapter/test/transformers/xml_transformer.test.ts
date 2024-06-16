@@ -17,7 +17,7 @@ import { isStaticFile, StaticFile } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import JSZip from 'jszip'
-import xmlParser from 'fast-xml-parser'
+import { XMLParser } from 'fast-xml-parser'
 import { RetrieveResult, FileProperties } from '@salto-io/jsforce'
 import {
   fromRetrieveResult,
@@ -40,6 +40,7 @@ import {
 
 describe('XML Transformer', () => {
   describe('createDeployPackage', () => {
+    const xmlParser = new XMLParser()
     const getZipFiles = async (
       pkg: DeployPackage,
     ): Promise<Record<string, string>> => {

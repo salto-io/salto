@@ -349,6 +349,7 @@ const createCustomizations = ({
         isTopLevel: true,
         serviceUrl: { path: '/admin/app/{name}/instance/{id}/#tab-general' },
         elemID: { parts: [{ fieldName: 'label' }] },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: {
         name: { fieldType: 'string' },

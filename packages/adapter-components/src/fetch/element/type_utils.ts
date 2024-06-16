@@ -329,12 +329,22 @@ export const getReachableTypes = <Options extends FetchApiDefinitionsOptions>({
 
 export const removeNullValuesTransformFunc: TransformFuncSync = ({ value }) => (value === null ? undefined : value)
 
-export const removeNullValues = (values: Values, type: ObjectType, allowEmpty = false): Values =>
+export const removeNullValues = ({
+  values,
+  type,
+  allowEmptyArrays = false,
+  allowEmptyObjects = false,
+}: {
+  values: Values
+  type: ObjectType
+  allowEmptyArrays?: boolean
+  allowEmptyObjects?: boolean
+}): Values =>
   transformValuesSync({
     values,
     type,
     transformFunc: removeNullValuesTransformFunc,
     strict: false,
-    allowEmptyArrays: allowEmpty,
-    allowEmptyObjects: allowEmpty,
+    allowEmptyArrays,
+    allowEmptyObjects,
   }) ?? {}

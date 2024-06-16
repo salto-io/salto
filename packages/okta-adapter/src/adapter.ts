@@ -476,6 +476,7 @@ export default class OktaAdapter implements AdapterOperations {
         client: this.client,
         userConfig: this.userConfig,
         fetchQuery: this.fetchQuery,
+        definitions: this.definitions,
         oldApiDefsConfig: OLD_API_DEFINITIONS_CONFIG,
       }),
       dependencyChanger,

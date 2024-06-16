@@ -15,7 +15,8 @@
  */
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment, elements as elementsUtils } from '@salto-io/adapter-components'
+import { deployment, elements as elementsUtils,
+import {  definitions as definitionUtils } from '@salto-io/adapter-components'
 import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
@@ -49,21 +50,34 @@ import {
   PRIVATE_API_DEFINITIONS_CONFIG,
 } from '../config'
 import { OktaUserConfig, ChangeValidatorName } from '../user_config'
+import { OktaOptions } from '../definitions/types'
 
-const { createCheckDeploymentBasedOnConfigValidator, getDefaultChangeValidators, createChangeValidator } =
+const {
+  createCheckDeploymentBasedOnConfigValidator,
+  createCheckDeploymentBasedOnDefinitionsValidator,
+  getDefaultChangeValidators,
+  createChangeValidator,
+} =
   deployment.changeValidators
 
 export default ({
-  client,
-  userConfig,
+                  client,
+                  userConfig,
   fetchQuery,
-  oldApiDefsConfig,
-}: {
+                  definitions,
+                  oldApiDefsConfig,
+                }: {
   client: OktaClient
   userConfig: OktaUserConfig
   fetchQuery: elementsUtils.query.ElementQuery
+  definitions: definitionUtils.ApiDefinitions<OktaOptions>
   oldApiDefsConfig: OldOktaDefinitionsConfig
 }): ChangeValidator => {
+  const typesDeployedWithOldInfra = [
+    ...Object.keys(oldApiDefsConfig[API_DEFINITIONS_CONFIG].types),
+    ...Object.keys(oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types),
+  ]
+  const typesDeployedWithNewInfra = Object.keys(definitions.deploy?.instances.customizations ?? {})
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
@@ -71,6 +85,11 @@ export default ({
         oldApiDefsConfig[API_DEFINITIONS_CONFIG].types,
         oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types,
       ),
+      typesWithNoDeploy: typesDeployedWithNewInfra,
+    }),
+    createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator<OktaOptions>({
+      deployDefinitions: definitions.deploy ?? { instances: {} },
+      typesWithNoDeploy: typesDeployedWithOldInfra,
     }),
     application: applicationValidator,
     appGroup: appGroupValidator,

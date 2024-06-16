@@ -57,16 +57,15 @@ const {
   createCheckDeploymentBasedOnDefinitionsValidator,
   getDefaultChangeValidators,
   createChangeValidator,
-} =
-  deployment.changeValidators
+} = deployment.changeValidators
 
 export default ({
-                  client,
-                  userConfig,
+  client,
+  userConfig,
   fetchQuery,
-                  definitions,
-                  oldApiDefsConfig,
-                }: {
+  definitions,
+  oldApiDefsConfig,
+}: {
   client: OktaClient
   userConfig: OktaUserConfig
   fetchQuery: elementsUtils.query.ElementQuery

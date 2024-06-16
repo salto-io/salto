@@ -33,8 +33,8 @@ describe('role', () => {
 
   it('should not return permission changes on permission query error', async () => {
     runSuiteQLMock.mockResolvedValueOnce([
-      { scriptid: 'a', time: '2021-01-11 20:55:17' },
-      { scriptid: 'b', time: '2021-01-11 21:55:17' },
+      { rolescriptid: 'a', time: '2021-01-11 20:55:17' },
+      { rolescriptid: 'b', time: '2021-01-11 21:55:17' },
       { invalid: 0 },
     ])
     runSuiteQLMock.mockResolvedValueOnce([
@@ -61,8 +61,8 @@ describe('role', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
-        { scriptid: 'a', time: '2021-01-11 20:55:17' },
-        { scriptid: 'b', time: '2021-01-11 21:55:17' },
+        { rolescriptid: 'a', time: '2021-01-11 20:55:17' },
+        { rolescriptid: 'b', time: '2021-01-11 21:55:17' },
         { invalid: 0 },
       ])
       runSuiteQLMock.mockResolvedValueOnce([

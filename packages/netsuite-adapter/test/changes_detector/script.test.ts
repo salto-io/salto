@@ -34,8 +34,16 @@ describe('script', () => {
     let results: Change[]
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
-      runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'a', id: '1' }, { scriptid: 'b', id: '2' }, { invalid: 0 }])
-      runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'c', id: '3' }, { scriptid: 'd', id: '4' }, { invalid: 0 }])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptscriptid: 'a', id: '1' },
+        { scriptscriptid: 'b', id: '2' },
+        { invalid: 0 },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptscriptid: 'c', id: '3' },
+        { scriptscriptid: 'd', id: '4' },
+        { invalid: 0 },
+      ])
       runSuiteQLMock.mockResolvedValueOnce([
         {
           lastmodifieddate: '03/15/2021',
@@ -62,13 +70,13 @@ describe('script', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
-        { scriptid: 'a', time: '2021-01-14 18:55:15' },
-        { scriptid: 'b', time: '2021-01-14 18:55:15' },
+        { scriptscriptid: 'a', time: '2021-01-14 18:55:15' },
+        { scriptscriptid: 'b', time: '2021-01-14 18:55:15' },
         { invalid: 0 },
       ])
       runSuiteQLMock.mockResolvedValueOnce([
-        { scriptid: 'c', time: '2021-01-14 18:55:15' },
-        { scriptid: 'd', time: '2021-01-14 18:55:15' },
+        { scriptscriptid: 'c', time: '2021-01-14 18:55:15' },
+        { scriptscriptid: 'd', time: '2021-01-14 18:55:15' },
         { invalid: 0 },
       ])
       runSuiteQLMock.mockResolvedValueOnce([])

@@ -29,14 +29,11 @@ const hasScriptId = (res: Record<string, unknown>): res is { scriptid: string } 
   return true
 }
 
-const getScriptIdsQuery = ({ from, where }: { from: string; where?: string }): string =>
-  `SELECT scriptid FROM ${from} ${where ? `WHERE ${where}` : ''} ORDER BY scriptid ASC`
-
 const getMatchingCustomRecords = async (
   client: NetsuiteClient,
   isCustomRecordTypeMatch: NetsuiteQuery['isCustomRecordTypeMatch'],
 ): Promise<string[]> =>
-  (await client.runSuiteQL(getScriptIdsQuery({ from: CUSTOM_RECORD_TYPE })))
+  (await client.runSuiteQL({ select: 'internalid, scriptid', from: CUSTOM_RECORD_TYPE, orderBy: 'internalid' }))
     ?.filter(hasScriptId)
     .map(({ scriptid }) => scriptid.toLowerCase())
     .filter(isCustomRecordTypeMatch) ?? []
@@ -53,12 +50,12 @@ export const getChangedCustomRecords = async (
     customRecordTypesScriptIds.map(
       async customRecordTypeScriptId =>
         (
-          await client.runSuiteQL(
-            getScriptIdsQuery({
-              from: customRecordTypeScriptId,
-              where: `lastmodified BETWEEN ${startDate} AND ${endDate}`,
-            }),
-          )
+          await client.runSuiteQL({
+            select: 'id, scriptid',
+            from: customRecordTypeScriptId,
+            where: `lastmodified BETWEEN ${startDate} AND ${endDate}`,
+            orderBy: 'id',
+          })
         )
           ?.filter(hasScriptId)
           .map(({ scriptid }) => ({
@@ -82,7 +79,9 @@ export const getCustomRecords = async (
     customRecordTypesScriptIds
       .filter(customRecordTypesScriptId => !customRecordTypesToIgnore.has(customRecordTypesScriptId))
       .map(async customRecordTypeScriptId => {
-        const scriptIds = (await client.runSuiteQL(getScriptIdsQuery({ from: customRecordTypeScriptId })))
+        const scriptIds = (
+          await client.runSuiteQL({ select: 'id, scriptid', from: customRecordTypeScriptId, orderBy: 'id' })
+        )
           ?.filter(hasScriptId)
           .map(({ scriptid }) => scriptid.toLowerCase())
         return {

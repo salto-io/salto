@@ -181,15 +181,21 @@ describe('sdf internal ids tests', () => {
       await filterCreator(filterOpts).onFetch?.(elements.concat(clientScriptType))
     })
     it('should query information from api', () => {
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        2,
-        'SELECT scriptid, internalid FROM customfield ORDER BY internalid ASC',
-      )
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        3,
-        'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC',
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, {
+        select: 'scriptid, id',
+        from: 'clientscript',
+        orderBy: 'id',
+      })
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, {
+        select: 'scriptid, internalid',
+        from: 'customfield',
+        orderBy: 'internalid',
+      })
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, {
+        select: 'scriptid, internalid',
+        from: 'customrecordtype',
+        orderBy: 'internalid',
+      })
       expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
         { type: 'savedsearch', filters: [], columns: ['id', 'internalid'] },
@@ -243,11 +249,16 @@ describe('sdf internal ids tests', () => {
         )
       })
       it('should query information from api', () => {
-        expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
-        expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-          2,
-          'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC',
-        )
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, {
+          select: 'scriptid, id',
+          from: 'clientscript',
+          orderBy: 'id',
+        })
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, {
+          select: 'scriptid, internalid',
+          from: 'customrecordtype',
+          orderBy: 'internalid',
+        })
         expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
         expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
           { type: 'savedsearch', filters: [], columns: ['id', 'internalid'] },

@@ -104,14 +104,11 @@ describe('SuiteQL table elements', () => {
   describe('when there are no existing instances', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockImplementation(query =>
-        query.includes('count(*)')
+        query.select.includes('count(*)')
           ? [
               {
                 count:
-                  query.includes(`FROM ${TYPE_WITH_MAX_RESULTS} `) ||
-                  query.includes(`FROM ${TYPE_WITH_ALLOWED_MAX_RESULTS} `)
-                    ? '200000'
-                    : '3',
+                  query.from === TYPE_WITH_MAX_RESULTS || query.from === TYPE_WITH_ALLOWED_MAX_RESULTS ? '200000' : '3',
               },
             ]
           : [
@@ -258,9 +255,10 @@ describe('SuiteQL table elements', () => {
       const query = QUERIES_BY_TABLE_NAME[TYPE_WITH_ALLOWED_MAX_RESULTS]
       expect(result.elements.find(elem => elem.elemID.name === TYPE_WITH_ALLOWED_MAX_RESULTS)).toBeDefined()
       expect(runSuiteQLMock).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `SELECT ${query?.internalIdField}, ${query?.nameField} FROM ${TYPE_WITH_ALLOWED_MAX_RESULTS} `,
-        ),
+        expect.objectContaining({
+          select: `${query?.internalIdField}, ${query?.nameField}`,
+          from: TYPE_WITH_ALLOWED_MAX_RESULTS,
+        }),
       )
     })
   })
@@ -268,7 +266,7 @@ describe('SuiteQL table elements', () => {
   describe('when there are existing instances', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockImplementation(query =>
-        query.includes('count(*)')
+        query.select.includes('count(*)')
           ? [{ count: '3' }]
           : [
               { id: '1', name: 'Updated name' },
@@ -333,22 +331,28 @@ describe('SuiteQL table elements', () => {
 
     it('should call runSuiteQL with right queries', () => {
       // instance with latest version is called with lastmodifieddate
-      expect(runSuiteQLMock).toHaveBeenCalledWith(
-        "SELECT id, name FROM currency WHERE lastmodifieddate >= TO_DATE('2024-1-1', 'YYYY-MM-DD') ORDER BY id ASC",
-      )
+      expect(runSuiteQLMock).toHaveBeenCalledWith({
+        select: 'id, name',
+        from: 'currency',
+        where: "lastmodifieddate >= TO_DATE('2024-1-1', 'YYYY-MM-DD')",
+        orderBy: 'id',
+      })
       // instance without latest version is called without lastmodifieddate
-      expect(runSuiteQLMock).toHaveBeenCalledWith('SELECT id, name FROM department  ORDER BY id ASC')
+      expect(runSuiteQLMock).toHaveBeenCalledWith({ select: 'id, name', from: 'department', orderBy: 'id' })
       // empty instance with latest version is called with lastmodifieddate
-      expect(runSuiteQLMock).toHaveBeenCalledWith(
-        "SELECT id, name FROM subsidiary WHERE lastmodifieddate >= TO_DATE('2024-1-1', 'YYYY-MM-DD') ORDER BY id ASC",
-      )
+      expect(runSuiteQLMock).toHaveBeenCalledWith({
+        select: 'id, name',
+        from: 'subsidiary',
+        where: "lastmodifieddate >= TO_DATE('2024-1-1', 'YYYY-MM-DD')",
+        orderBy: 'id',
+      })
     })
   })
 
   describe('when isPartial=true', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockImplementation(query =>
-        query.includes('count(*)')
+        query.select.includes('count(*)')
           ? [{ count: '3' }]
           : [
               { id: '1', entityid: 'Some name' },
@@ -411,7 +415,7 @@ describe('SuiteQL table elements', () => {
 
     it('should not call runSuiteQL', () => {
       expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
-      expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM employee'))
+      expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'employee' }))
     })
   })
 

@@ -90,38 +90,35 @@ describe('script', () => {
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(
         1,
-        `
-      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
-      FROM script
-      JOIN systemnote ON systemnote.recordid = script.id
-      WHERE systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -417
-      GROUP BY script.scriptid
-      ORDER BY script.scriptid ASC
-    `,
+
+        {
+          select: `script.scriptid as scriptscriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time`,
+          from: 'script',
+          join: 'systemnote ON systemnote.recordid = script.id',
+          where:
+            "systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -417",
+          groupBy: 'script.scriptid',
+          orderBy: 'scriptscriptid',
+        },
       )
 
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        2,
-        `
-      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
-      FROM scriptdeployment 
-      JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
-      JOIN script ON scriptdeployment.script = script.id
-      WHERE systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -418
-      GROUP BY script.scriptid
-      ORDER BY script.scriptid ASC
-    `,
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, {
+        select: `script.scriptid as scriptscriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time`,
+        from: 'scriptdeployment',
+        join: 'systemnote ON systemnote.recordid = scriptdeployment.primarykey JOIN script ON scriptdeployment.script = script.id',
+        where:
+          "systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -418",
+        groupBy: 'script.scriptid',
+        orderBy: 'scriptscriptid',
+      })
 
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        3,
-        `
-      SELECT internalid
-      FROM customfield
-      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
-      ORDER BY internalid ASC
-    `,
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, {
+        select: 'internalid',
+        from: 'customfield',
+        where:
+          "fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')",
+        orderBy: 'internalid',
+      })
     })
   })
 

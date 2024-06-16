@@ -44,7 +44,12 @@ const querySuiteQLTable = async (
   tableName: string,
   internalIds: string[],
 ): Promise<Record<string, string>> => {
-  const results = await client.runSuiteQL(`SELECT id, name FROM ${tableName} WHERE id IN (${internalIds.join(', ')})`)
+  const results = await client.runSuiteQL({
+    select: 'id, name',
+    from: tableName,
+    where: `id IN (${internalIds.join(', ')})`,
+    orderBy: 'id',
+  })
   if (results === undefined) {
     log.warn('failed quering internal id to name mapping in table %s', tableName)
     return {}

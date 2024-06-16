@@ -92,26 +92,21 @@ describe('role', () => {
     })
 
     it('should make the right query', () => {
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        1,
-        `
-      SELECT role.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
-      FROM role
-      JOIN systemnote ON systemnote.recordid = role.id
-      WHERE systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -118
-      GROUP BY role.scriptid
-      ORDER BY role.scriptid ASC
-    `,
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, {
+        select: `role.scriptid as rolescriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time`,
+        from: 'role',
+        join: 'systemnote ON systemnote.recordid = role.id',
+        where:
+          "systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -118",
+        groupBy: 'role.scriptid',
+        orderBy: 'rolescriptid',
+      })
 
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        2,
-        `
-      SELECT scriptid, id
-      FROM role
-      ORDER BY id ASC
-    `,
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, {
+        select: 'scriptid, id',
+        from: 'role',
+        orderBy: 'id',
+      })
 
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
         {

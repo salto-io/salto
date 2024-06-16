@@ -496,10 +496,10 @@ export const getSuiteQLNameToInternalIdsMap = async (
 const getWhereParam = (
   { lastModifiedDateField }: Pick<QueryParams, 'lastModifiedDateField'>,
   lastFetchTime: Date | undefined,
-): string =>
+): string | undefined =>
   lastModifiedDateField !== undefined && lastFetchTime !== undefined
-    ? `WHERE ${lastModifiedDateField} >= ${toSuiteQLWhereDateString(lastFetchTime)}`
-    : ''
+    ? `${lastModifiedDateField} >= ${toSuiteQLWhereDateString(lastFetchTime)}`
+    : undefined
 
 const shouldSkipQuery = async (
   client: NetsuiteClient,
@@ -509,21 +509,28 @@ const shouldSkipQuery = async (
   maxAllowedRecords: number,
 ): Promise<{ skip: boolean; exclude?: boolean }> => {
   const whereParam = getWhereParam(queryParams, lastFetchTime)
-  const queryString = `SELECT count(*) as count FROM ${tableName} ${whereParam}`
-  const results = await client.runSuiteQL(queryString)
+  const query = {
+    select: 'count(*) as count',
+    from: tableName,
+    where: whereParam,
+  }
+  const results = await client.runSuiteQL(query)
   if (results?.length !== 1) {
-    log.warn('query received unexpected number of results: %o', { queryString, numOfResults: results?.length })
+    log.warn('query received unexpected number of results: %o', { query, numOfResults: results?.length })
     return { skip: true }
   }
   const [result] = results
   if (!_.isString(result.count) || !strings.isNumberStr(result.count)) {
-    log.warn('query received unexpected result (expected "count" to be a number string): %o', { queryString, result })
+    log.warn('query received unexpected result (expected "count" to be a number string): %o', {
+      query,
+      result,
+    })
     return { skip: true }
   }
   const count = Number(result.count)
   if (count > maxAllowedRecords) {
     log.warn(
-      `skipping query of ${tableName}${whereParam !== '' ? ` (${whereParam})` : ''} because it has ${count} results (max allowed: ${maxAllowedRecords})`,
+      `skipping query of ${tableName}${whereParam !== '' ? ` (WHERE ${whereParam})` : ''} because it has ${count} results (max allowed: ${maxAllowedRecords})`,
     )
     return { skip: true, exclude: true }
   }
@@ -536,9 +543,12 @@ const getInternalIdsMap = async (
   { internalIdField, nameField, lastModifiedDateField }: QueryParams,
   lastFetchTime: Date | undefined,
 ): Promise<InternalIdsMap> => {
-  const whereLastModified = getWhereParam({ lastModifiedDateField }, lastFetchTime)
-  const queryString = `SELECT ${internalIdField}, ${nameField} FROM ${tableName} ${whereLastModified} ORDER BY ${internalIdField} ASC`
-  const results = await client.runSuiteQL(queryString)
+  const results = await client.runSuiteQL({
+    select: `${internalIdField}, ${nameField}`,
+    from: tableName,
+    where: getWhereParam({ lastModifiedDateField }, lastFetchTime),
+    orderBy: internalIdField,
+  })
   if (results === undefined) {
     log.warn('failed to query table %s', tableName)
     return {}

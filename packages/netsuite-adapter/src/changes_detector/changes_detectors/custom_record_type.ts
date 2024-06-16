@@ -24,12 +24,12 @@ const changesDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => {
     const [startDate, endDate] = dateRange.toSuiteQLRange()
 
-    const results = await client.runSuiteQL(`
-        SELECT scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time
-        FROM customrecordtype
-        WHERE lastmodifieddate BETWEEN ${startDate} AND ${endDate}
-        ORDER BY scriptid ASC
-      `)
+    const results = await client.runSuiteQL({
+      select: `internalid, scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time`,
+      from: 'customrecordtype',
+      where: `lastmodifieddate BETWEEN ${startDate} AND ${endDate}`,
+      orderBy: 'internalid',
+    })
 
     if (results === undefined) {
       log.warn('customrecordtype changes query failed')

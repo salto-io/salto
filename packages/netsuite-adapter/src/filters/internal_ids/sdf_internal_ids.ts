@@ -95,8 +95,16 @@ const getTableName = (element: Element): string => {
   return element.elemID.typeName
 }
 
-const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string): Promise<RecordIdResult[]> => {
-  const recordIdResults = await client.runSuiteQL(query)
+const queryRecordIds = async (
+  client: NetsuiteClient,
+  idParamName: 'id' | 'internalid',
+  recordType: string,
+): Promise<RecordIdResult[]> => {
+  const recordIdResults = await client.runSuiteQL({
+    select: `scriptid, ${idParamName}`,
+    from: recordType,
+    orderBy: idParamName,
+  })
   if (recordIdResults === undefined) {
     return []
   }
@@ -145,8 +153,7 @@ const fetchRecordType = async (
   client: NetsuiteClient,
   recordType: string,
 ): Promise<Record<string, string>> => {
-  const query = `SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`
-  const recordTypeIds = await queryRecordIds(client, query, recordType)
+  const recordTypeIds = await queryRecordIds(client, idParamName, recordType)
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }

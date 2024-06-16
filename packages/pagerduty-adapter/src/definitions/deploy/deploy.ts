@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
+import { values } from '@salto-io/lowerdash'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   BUSINESS_SERVICE_TYPE_NAME,
@@ -34,7 +35,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   >({
     [BUSINESS_SERVICE_TYPE_NAME]: { bulkPath: '/business_services', nestUnderField: 'business_service' },
     [ESCALATION_POLICY_TYPE_NAME]: { bulkPath: '/escalation_policies', nestUnderField: 'escalation_policy' },
-    [SCHEDULE_TYPE_NAME]: { bulkPath: '/schedules', nestUnderField: 'schedule' },
     [TEAM_TYPE_NAME]: { bulkPath: '/teams', nestUnderField: 'team' },
   })
 
@@ -208,6 +208,68 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 transformForCheck: {
                   pick: ['eventOrchestrationsRouter'],
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [SCHEDULE_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules',
+                  method: 'post',
+                },
+                transformation: {
+                  nestUnderField: 'schedule',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  adjust: ({ value }) => {
+                    if (!values.isPlainRecord(value)) {
+                      throw new Error('Expected value to be a plain record')
+                    }
+                    const { schedule_layers: scheduleLayers } = value
+                    if (scheduleLayers === undefined || !Array.isArray(scheduleLayers)) {
+                      // log.error('Expected schedule_layers to be an array')
+                      return { value }
+                    }
+                    const { layer_mapping: layerMapping } = value
+                    if (layerMapping === undefined || !values.isPlainRecord(layerMapping)) {
+                      throw new Error('Expected layer_mapping to be a plain record')
+                    }
+                    scheduleLayers.forEach(layer => {
+                      const { name, start } = layer
+                      const id = layerMapping[name.concat(start)]
+                      layer.id = id
+                    })
+                    const temp = { schedule: _.omit(value, 'layer_mapping') }
+                    return { value: temp }
+                  },
                 },
               },
             },

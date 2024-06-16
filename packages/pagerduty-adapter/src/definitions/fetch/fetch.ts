@@ -25,6 +25,7 @@ import {
   SERVICE_TYPE_NAME,
   TEAM_TYPE_NAME,
 } from '../../constants'
+import { values } from '@salto-io/lowerdash'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {}
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
@@ -217,6 +218,24 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'schedules',
+          adjust: ({ value }) => {
+            if (!values.isPlainRecord(value)) {
+              throw new Error('Expected value to be a plain record')
+            }
+            const { schedule_layers: scheduleLayers } = value
+            if (scheduleLayers === undefined || !Array.isArray(scheduleLayers)) {
+              // log.error('Expected schedule_layers to be an array')
+              return { value }
+            }
+            const layerMapping: Record<string, string> = {}
+            scheduleLayers.forEach(layer => {
+              const { name, start } = layer
+              const key = name.concat(start)
+              layerMapping[key] = layer.id
+            })
+            value.layer_mapping = layerMapping
+            return { value }
+          },
         },
       },
     ],
@@ -234,6 +253,21 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         id: {
           hide: true,
+        },
+        users: {
+          omit: true,
+        },
+        layer_mapping: {
+          hide: true,
+        },
+      },
+    },
+  },
+  schedule__schedule_layers: {
+    element: {
+      fieldCustomizations: {
+        id: {
+          omit: true,
         },
       },
     },

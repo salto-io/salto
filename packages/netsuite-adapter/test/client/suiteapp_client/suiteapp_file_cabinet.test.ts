@@ -34,6 +34,7 @@ import { customtransactiontypeType } from '../../../src/autogen/types/standard_t
 import {
   ExistingFileCabinetInstanceDetails,
   FileCabinetInstanceDetails,
+  SuiteQLQueryArgs,
 } from '../../../src/client/suiteapp_client/types'
 import { getFileCabinetTypes } from '../../../src/types/file_cabinet_types'
 import { largeFoldersToExclude } from '../../../src/client/file_cabinet_utils'
@@ -228,12 +229,12 @@ describe('suiteapp_file_cabinet', () => {
   ]
 
   const getFoldersResponse = (
-    suiteQlQuery: string,
+    suiteQlQuery: SuiteQLQueryArgs,
   ): typeof topLevelFoldersResponse | typeof subFoldersQueryResponse => {
-    if (suiteQlQuery.includes("istoplevel = 'T'")) {
+    if (suiteQlQuery.where?.includes("istoplevel = 'T'")) {
       return topLevelFoldersResponse
     }
-    if (suiteQlQuery.includes("istoplevel = 'F'")) {
+    if (suiteQlQuery.where?.includes("istoplevel = 'F'")) {
       return subFoldersQueryResponse
     }
     throw new Error("missing 'istoplevel' criteria")
@@ -269,11 +270,11 @@ describe('suiteapp_file_cabinet', () => {
     } as unknown as MockInterface<NetsuiteQuery>
 
     mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-      if (suiteQlQuery.includes('FROM file')) {
+      if (suiteQlQuery.from === 'file') {
         return filesQueryResponse
       }
 
-      if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+      if (suiteQlQuery.from === 'mediaitemfolder') {
         return getFoldersResponse(suiteQlQuery)
       }
       throw new Error(`Unexpected query: ${suiteQlQuery}`)
@@ -325,11 +326,11 @@ describe('suiteapp_file_cabinet', () => {
       ]
 
       mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-        if (suiteQlQuery.includes('FROM file')) {
+        if (suiteQlQuery.from === 'file') {
           return filesQueryResponseWithBigFile
         }
 
-        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+        if (suiteQlQuery.from === 'mediaitemfolder') {
           return getFoldersResponse(suiteQlQuery)
         }
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
@@ -400,7 +401,7 @@ describe('suiteapp_file_cabinet', () => {
     it('should call suiteql with missing feature error param', async () => {
       await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query, maxFileCabinetSizeInGB)
       expect(mockSuiteAppClient.runSuiteQL).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT name, id, bundleable'),
+        expect.objectContaining({ select: expect.stringContaining('id, name, bundleable') }),
         THROW_ON_MISSING_FEATURE_ERROR,
       )
     })
@@ -408,11 +409,11 @@ describe('suiteapp_file_cabinet', () => {
     it("return empty result when no top level folder matches the adapter's query", async () => {
       query.isParentFolderMatch.mockReturnValue(false)
       mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-        if (suiteQlQuery.includes('FROM file')) {
+        if (suiteQlQuery.from === 'file') {
           return filesQueryResponse
         }
 
-        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+        if (suiteQlQuery.from === 'mediaitemfolder') {
           return getFoldersResponse(suiteQlQuery)
         }
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
@@ -518,11 +519,13 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
       )
-      const testWhereQuery = "hideinbundle = 'F' AND folder IN (5, 3)"
-      const suiteQlQuery =
-        'SELECT name, id, filesize, isinactive, isonline,' +
-        ' addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle' +
-        ` FROM file WHERE ${testWhereQuery} ORDER BY id ASC`
+      const suiteQlQuery = {
+        select:
+          'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
+        from: 'file',
+        where: "hideinbundle = 'F' AND folder IN (5, 3)",
+        orderBy: 'id',
+      }
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
       expect(elements).toEqual([expectedResults[0], expectedResults[1], expectedResults[3]])
     })
@@ -568,11 +571,13 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
       )
-      const testWhereQuery = "hideinbundle = 'F' AND folder IN (5, 3)"
-      const suiteQlQuery =
-        'SELECT name, id, filesize, isinactive, isonline,' +
-        ' addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle' +
-        ` FROM file WHERE ${testWhereQuery} ORDER BY id ASC`
+      const suiteQlQuery = {
+        select:
+          'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
+        from: 'file',
+        where: "hideinbundle = 'F' AND folder IN (5, 3)",
+        orderBy: 'id',
+      }
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
       expect(elements).toEqual([expectedResults[0], expectedResults[1], expectedResults[3]])
     })
@@ -586,11 +591,13 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
       )
-      const testWhereQuery = "hideinbundle = 'F' AND folder IN (5, 3, 4)"
-      const suiteQlQuery =
-        'SELECT name, id, filesize, isinactive, isonline,' +
-        ' addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle' +
-        ` FROM file WHERE ${testWhereQuery} ORDER BY id ASC`
+      const suiteQlQuery = {
+        select:
+          'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
+        from: 'file',
+        where: "hideinbundle = 'F' AND folder IN (5, 3, 4)",
+        orderBy: 'id',
+      }
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
       expect(elements).toEqual(expectedResults)
     })
@@ -605,10 +612,10 @@ describe('suiteapp_file_cabinet', () => {
 
     it("should remove 'bundleable' from query and try again if SuiteBundles ins't enabled", async () => {
       mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-        if (suiteQlQuery.includes('bundleable') || suiteQlQuery.includes('hideinbundle')) {
+        if (suiteQlQuery.select.includes('bundleable') || suiteQlQuery.select.includes('hideinbundle')) {
           throw new Error(SUITEBUNDLES_DISABLED_ERROR)
         }
-        if (suiteQlQuery.includes('FROM file')) {
+        if (suiteQlQuery.from === 'file') {
           return filesQueryResponse
         }
         return getFoldersResponse(suiteQlQuery)
@@ -620,23 +627,40 @@ describe('suiteapp_file_cabinet', () => {
       expect(elements).toEqual(expectedResults)
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(
         1,
-        "SELECT name, id, bundleable, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC",
+        {
+          select: 'id, name, bundleable, isinactive, isprivate, description, parent',
+          from: 'mediaitemfolder',
+          where: "istoplevel = 'T'",
+          orderBy: 'id',
+        },
         THROW_ON_MISSING_FEATURE_ERROR,
       )
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(
         2,
-        "SELECT name, id, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC",
+        {
+          select: 'id, name, isinactive, isprivate, description, parent',
+          from: 'mediaitemfolder',
+          where: "istoplevel = 'T'",
+          orderBy: 'id',
+        },
         THROW_ON_MISSING_FEATURE_ERROR,
       )
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(
         3,
-        "SELECT name, id, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'F' AND (appfolder LIKE 'folder5%') ORDER BY id ASC",
+        {
+          select: 'id, name, isinactive, isprivate, description, parent',
+          from: 'mediaitemfolder',
+          where: "istoplevel = 'F' AND (appfolder LIKE 'folder5%')",
+          orderBy: 'id',
+        },
         THROW_ON_MISSING_FEATURE_ERROR,
       )
-      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(
-        4,
-        'SELECT name, id, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url FROM file WHERE folder IN (5, 3, 4) ORDER BY id ASC',
-      )
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(4, {
+        select: 'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url',
+        from: 'file',
+        where: 'folder IN (5, 3, 4)',
+        orderBy: 'id',
+      })
     })
   })
 

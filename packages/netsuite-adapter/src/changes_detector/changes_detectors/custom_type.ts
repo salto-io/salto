@@ -24,12 +24,12 @@ const log = logger(module)
 const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateRange): Promise<ChangedObject[]> => {
   const [startDate, endDate] = dateRange.toSuiteQLRange()
 
-  const results = await client.runSuiteQL(`
-      SELECT scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time
-      FROM ${type}
-      WHERE lastmodifieddate BETWEEN ${startDate} AND ${endDate}
-      ORDER BY scriptid ASC
-    `)
+  const results = await client.runSuiteQL({
+    select: `internalid, scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time`,
+    from: type,
+    where: `lastmodifieddate BETWEEN ${startDate} AND ${endDate}`,
+    orderBy: 'internalid',
+  })
 
   if (results === undefined) {
     log.warn(`${type} changes query failed`)

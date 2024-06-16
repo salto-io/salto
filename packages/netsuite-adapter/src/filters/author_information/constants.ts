@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee ORDER BY id ASC'
+
+import { SuiteQLQueryArgs } from '../../client/suiteapp_client/types'
+
+export const EMPLOYEE_NAME_QUERY: SuiteQLQueryArgs = {
+  select: 'id, entityid',
+  from: 'employee',
+  orderBy: 'id',
+}
+
 export const EMPLOYEE_SCHEMA = {
   items: {
     properties: {

@@ -44,6 +44,15 @@ export const SUITE_QL_RESULTS_SCHEMA = {
   additionalProperties: true,
 }
 
+export type SuiteQLQueryArgs = {
+  select: string
+  from: string
+  join?: string
+  where?: string
+  groupBy?: string
+  orderBy?: string
+}
+
 export type SuiteQLResults = {
   hasMore: boolean
   items: Values[]

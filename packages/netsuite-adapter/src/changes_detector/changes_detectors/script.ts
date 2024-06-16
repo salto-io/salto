@@ -32,8 +32,8 @@ const parseChanges = (
     return []
   }
   return changes
-    .filter((res): res is { scriptid: string; time: string } => {
-      if ([res.scriptid, res.time].some(val => typeof val !== 'string')) {
+    .filter((res): res is { scriptscriptid: string; time: string } => {
+      if ([res.scriptscriptid, res.time].some(val => typeof val !== 'string')) {
         log.warn(`Got invalid result from ${queryName} changes query, %o`, res)
         return false
       }
@@ -41,7 +41,7 @@ const parseChanges = (
     })
     .map(res => ({
       type: 'object',
-      objectId: res.scriptid,
+      objectId: res.scriptscriptid,
       time: convertSuiteQLStringToDate(res.time, dateRange.end),
     }))
 }
@@ -58,31 +58,30 @@ const changesDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => {
     const [startDate, endDate] = dateRange.toSuiteQLRange()
 
-    const scriptChangesPromise = client.runSuiteQL(`
-      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
-      FROM script
-      JOIN systemnote ON systemnote.recordid = script.id
-      WHERE systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -417
-      GROUP BY script.scriptid
-      ORDER BY script.scriptid ASC
-    `)
+    const scriptChangesPromise = client.runSuiteQL({
+      select: `script.scriptid as scriptscriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time`,
+      from: 'script',
+      join: 'systemnote ON systemnote.recordid = script.id',
+      where: `systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -417`,
+      groupBy: 'script.scriptid',
+      orderBy: 'scriptscriptid',
+    })
 
-    const scriptDeploymentChangesPromise = client.runSuiteQL(`
-      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
-      FROM scriptdeployment 
-      JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
-      JOIN script ON scriptdeployment.script = script.id
-      WHERE systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -418
-      GROUP BY script.scriptid
-      ORDER BY script.scriptid ASC
-    `)
+    const scriptDeploymentChangesPromise = client.runSuiteQL({
+      select: `script.scriptid as scriptscriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time`,
+      from: 'scriptdeployment',
+      join: 'systemnote ON systemnote.recordid = scriptdeployment.primarykey JOIN script ON scriptdeployment.script = script.id',
+      where: `systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -418`,
+      groupBy: 'script.scriptid',
+      orderBy: 'scriptscriptid',
+    })
 
-    const scriptFieldsChangesPromise = client.runSuiteQL(`
-      SELECT internalid
-      FROM customfield
-      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN ${startDate} AND ${endDate}
-      ORDER BY internalid ASC
-    `)
+    const scriptFieldsChangesPromise = client.runSuiteQL({
+      select: 'internalid',
+      from: 'customfield',
+      where: `fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN ${startDate} AND ${endDate}`,
+      orderBy: 'internalid',
+    })
 
     const [scriptChanges, scriptDeploymentChanges, scriptFieldsChanges] = await Promise.all([
       scriptChangesPromise,

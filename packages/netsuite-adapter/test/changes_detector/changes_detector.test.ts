@@ -137,8 +137,8 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isCustomRecordTypeMatch('customrecord2')).toBeFalsy()
 
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
-    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
-    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord1'))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'customrecordtype' }))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'customrecord1' }))
   })
 
   it('should match custom records of custom segments', async () => {
@@ -161,8 +161,8 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isCustomRecordMatch({ type: 'customrecord_cseg1', instanceId: 'val_123' })).toBeTruthy()
 
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
-    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
-    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord_cseg1'))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'customrecordtype' }))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'customrecord_cseg1' }))
   })
 
   it('should return all the results of system note query failed', async () => {

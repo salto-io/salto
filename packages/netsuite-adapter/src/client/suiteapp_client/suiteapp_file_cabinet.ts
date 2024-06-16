@@ -246,16 +246,19 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
     isSuiteBundlesEnabled = true,
   ): Promise<{ folderResults: FolderResult[]; isSuiteBundlesEnabled: boolean }> =>
     retryOnRetryableError(async () => {
-      const foldersQuery =
-        `SELECT name, id${isSuiteBundlesEnabled ? BUNDLEABLE : ''}, isinactive, isprivate, description, parent` +
-        ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`
+      const foldersQuery = {
+        select: `id, name${isSuiteBundlesEnabled ? BUNDLEABLE : ''}, isinactive, isprivate, description, parent`,
+        from: 'mediaitemfolder',
+        where: whereQuery,
+        orderBy: 'id',
+      }
       try {
         const foldersResults = await suiteAppClient.runSuiteQL(foldersQuery, THROW_ON_MISSING_FEATURE_ERROR)
         return { folderResults: validateFoldersResults(foldersResults), isSuiteBundlesEnabled: true }
       } catch (e) {
         if (toError(e).message === SUITEBUNDLES_DISABLED_ERROR && isSuiteBundlesEnabled) {
           log.debug("SuiteBundles not enabled in the account, removing 'bundleable' from query")
-          const noBundleableQuery = foldersQuery.replace(BUNDLEABLE, '')
+          const noBundleableQuery = { ...foldersQuery, select: foldersQuery.select.replace(BUNDLEABLE, '') }
           const queryResult = await suiteAppClient.runSuiteQL(noBundleableQuery, THROW_ON_MISSING_FEATURE_ERROR)
           return { folderResults: validateFoldersResults(queryResult), isSuiteBundlesEnabled: false }
         }
@@ -286,10 +289,12 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
       )
       const results = await Promise.all(
         whereQueries.map(async whereQuery => {
-          const filesResults = await suiteAppClient.runSuiteQL(
-            `SELECT name, id, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url${isSuiteBundlesEnabled ? ', bundleable, hideinbundle' : ''}` +
-              ` FROM file WHERE ${whereQuery} ORDER BY id ASC`,
-          )
+          const filesResults = await suiteAppClient.runSuiteQL({
+            select: `id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url${isSuiteBundlesEnabled ? ', bundleable, hideinbundle' : ''}`,
+            from: 'file',
+            where: whereQuery,
+            orderBy: 'id',
+          })
 
           if (filesResults === undefined) {
             throw new RetryableError(new Error('Failed to list files'))

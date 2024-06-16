@@ -50,13 +50,14 @@ describe('file_cabinet', () => {
       })
 
       it('should make the right query', () => {
-        expect(runSuiteQLMock).toHaveBeenCalledWith(`
-    SELECT mediaitemfolder.appfolder, file.name, ${toSuiteQLSelectDateString('file.lastmodifieddate')} as time
-    FROM file
-    JOIN mediaitemfolder ON mediaitemfolder.id = file.folder
-    WHERE file.lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
-    ORDER BY file.id ASC
-  `)
+        expect(runSuiteQLMock).toHaveBeenCalledWith({
+          select: `file.id as fileid, mediaitemfolder.appfolder, file.name, ${toSuiteQLSelectDateString('file.lastmodifieddate')} as time`,
+          from: 'file',
+          join: 'mediaitemfolder ON mediaitemfolder.id = file.folder',
+          where:
+            "file.lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')",
+          orderBy: 'fileid',
+        })
       })
     })
 
@@ -109,12 +110,12 @@ describe('file_cabinet', () => {
       })
 
       it('should make the right query', () => {
-        expect(runSuiteQLMock).toHaveBeenCalledWith(`
-    SELECT appfolder, ${toSuiteQLSelectDateString('lastmodifieddate')} as time
-    FROM mediaitemfolder
-    WHERE lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
-    ORDER BY id ASC
-  `)
+        expect(runSuiteQLMock).toHaveBeenCalledWith({
+          select: `id, appfolder, ${toSuiteQLSelectDateString('lastmodifieddate')} as time`,
+          from: 'mediaitemfolder',
+          where: "lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')",
+          orderBy: 'id',
+        })
       })
     })
 

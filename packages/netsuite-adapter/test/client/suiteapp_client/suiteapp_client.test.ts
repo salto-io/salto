@@ -76,7 +76,7 @@ describe('SuiteAppClient', () => {
           ],
         })
 
-        const results = await client.runSuiteQL('query')
+        const results = await client.runSuiteQL({ select: 'field', from: 'table' })
 
         expect(results).toEqual([{ a: 1 }, { a: 2 }])
         expect(mockAxiosAdapter.history.post.length).toBe(1)
@@ -84,7 +84,7 @@ describe('SuiteAppClient', () => {
         expect(req.url).toEqual(
           'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0',
         )
-        expect(JSON.parse(req.data)).toEqual({ q: 'query' })
+        expect(JSON.parse(req.data)).toEqual({ q: 'SELECT field FROM table' })
         expect(req.headers).toEqual({
           Authorization: expect.any(String),
           'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ describe('SuiteAppClient', () => {
           })
         })
 
-        const results = await client.runSuiteQL('query')
+        const results = await client.runSuiteQL({ select: 'field', from: 'table' })
 
         expect(results).toEqual(items)
         expect(mockAxiosAdapter.history.post.length).toBe(2)
@@ -147,7 +147,7 @@ describe('SuiteAppClient', () => {
           })
         })
 
-        const results = await client.runSuiteQL('query')
+        const results = await client.runSuiteQL({ select: 'field', from: 'table' })
 
         expect(results).toEqual(items)
         expect(mockAxiosAdapter.history.post.length).toBe(2)
@@ -163,13 +163,15 @@ describe('SuiteAppClient', () => {
 
       it('should throw InvalidSuiteAppCredentialsError', async () => {
         mockAxiosAdapter.onPost().reply(401, 'Invalid SuiteApp credentials')
-        await expect(client.runSuiteQL('query')).rejects.toThrow(InvalidSuiteAppCredentialsError)
+        await expect(client.runSuiteQL({ select: 'field', from: 'table' })).rejects.toThrow(
+          InvalidSuiteAppCredentialsError,
+        )
       })
 
       describe('query failure', () => {
         it('exception thrown', async () => {
           mockAxiosAdapter.onPost().reply(() => [])
-          expect(await client.runSuiteQL('')).toBeUndefined()
+          expect(await client.runSuiteQL({ select: '', from: '' })).toBeUndefined()
         })
         it('should throw customize error', async () => {
           mockAxiosAdapter.onPost().reply(400, {
@@ -180,8 +182,12 @@ describe('SuiteAppClient', () => {
               },
             ],
           })
-          await expect(client.runSuiteQL('query', { 'some err': 'custom error1' })).rejects.toThrow('custom error1')
-          await expect(client.runSuiteQL('query', { 'other error': 'custom error2' })).resolves.not.toThrow()
+          await expect(
+            client.runSuiteQL({ select: 'field', from: 'table' }, { 'some err': 'custom error1' }),
+          ).rejects.toThrow('custom error1')
+          await expect(
+            client.runSuiteQL({ select: 'field', from: 'table' }, { 'other error': 'custom error2' }),
+          ).resolves.not.toThrow()
         })
         it('with concurrency error retry', async () => {
           jest
@@ -203,7 +209,7 @@ describe('SuiteAppClient', () => {
               ],
             })
 
-          expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])
+          expect(await client.runSuiteQL({ select: 'field', from: 'table' })).toEqual([{ a: 1 }, { a: 2 }])
           expect(mockAxiosAdapter.history.post.length).toBe(3)
         })
         it('with server error retry', async () => {
@@ -226,12 +232,12 @@ describe('SuiteAppClient', () => {
               ],
             })
 
-          expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])
+          expect(await client.runSuiteQL({ select: 'field', from: 'table' })).toEqual([{ a: 1 }, { a: 2 }])
           expect(mockAxiosAdapter.history.post.length).toBe(4)
         })
         it('invalid results', async () => {
           mockAxiosAdapter.onPost().reply(200, {})
-          expect(await client.runSuiteQL('')).toBeUndefined()
+          expect(await client.runSuiteQL({ select: 'field', from: 'table' })).toBeUndefined()
           expect(mockAxiosAdapter.history.post.length).toBe(6)
         })
       })

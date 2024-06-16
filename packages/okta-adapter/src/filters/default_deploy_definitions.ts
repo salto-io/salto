@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  filters as filterUtils,
-} from '@salto-io/adapter-components'
+import { filters as filterUtils } from '@salto-io/adapter-components'
 import { FilterCreator, FilterResult } from '../filter'
 import { OktaOptions } from '../definitions/types'
 import { getOktaError } from '../deployment'

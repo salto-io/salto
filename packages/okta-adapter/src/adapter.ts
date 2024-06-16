@@ -41,7 +41,6 @@ import {
   openapi,
   restoreChangeElement,
   createChangeElementResolver,
-  deployment as deploymentUtils,
 } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'

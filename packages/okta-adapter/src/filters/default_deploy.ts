@@ -27,9 +27,10 @@ const { queryWithDefault } = definitionUtils
 const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'oldDefaultDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [newInfraChanges, oldInfraChanges] = _.partition(
-      changes,
-      change => queryWithDefault(definitions.deploy?.instances ?? {}).allKeys().includes(getChangeData(change).elemID.typeName)
+    const [newInfraChanges, oldInfraChanges] = _.partition(changes, change =>
+      queryWithDefault(definitions.deploy?.instances ?? {})
+        .allKeys()
+        .includes(getChangeData(change).elemID.typeName),
     )
     const client = definitions.clients.options.main.httpClient
     const deployResult = await deployChanges(oldInfraChanges.filter(isInstanceChange), async change => {

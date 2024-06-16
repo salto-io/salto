@@ -450,6 +450,7 @@ export default class OktaAdapter implements AdapterOperations {
       changeValidator: changeValidator({
         client: this.client,
         userConfig: this.userConfig,
+        definitions: this.definitions,
         oldApiDefsConfig: OLD_API_DEFINITIONS_CONFIG,
       }),
       dependencyChanger,

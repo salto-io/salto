@@ -54,6 +54,7 @@ export type InstanceCreationParams = {
   parent?: InstanceElement
   normalized?: boolean
   getElemIdFunc?: ElemIdGetter
+  takeDefaultName?: boolean
 }
 
 export const joinInstanceNameParts = (nameParts: unknown[]): string | undefined =>
@@ -183,7 +184,14 @@ export const toBasicInstance = async ({
   parent,
   defaultName,
   getElemIdFunc,
+  takeDefaultName = false,
 }: InstanceCreationParams): Promise<InstanceElement> => {
+  const getName = (idFields: string[]): string => {
+    if (takeDefaultName) {
+      return defaultName
+    }
+    return getInstanceName(entry, idFields, type.elemID.name) ?? defaultName
+  }
   const omitFields: TransformFunc = ({ value, field }) => {
     if (field !== undefined) {
       const parentType = field.parent.elemID.name
@@ -211,7 +219,7 @@ export const toBasicInstance = async ({
     transformationDefaultConfig,
   )
 
-  const name = getInstanceName(entry, idFields, type.elemID.typeName) ?? defaultName
+  const name = getName(idFields)
   const parentName = parent && nestName ? parent.elemID.name : undefined
   const adapterName = type.elemID.adapter
   const naclName = getInstanceNaclName({

@@ -1624,6 +1624,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Automation: {
     transformation: {
+      fieldsToOmit: [{ fieldName: 'ruleHome' }],
       serviceUrl: '/jira/settings/automation#/rule/{id}',
       idFields: ['name', PROJECTS_FIELD], // idFields is handled separately in automation filter.
     },

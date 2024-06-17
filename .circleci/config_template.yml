@@ -1,0 +1,447 @@
+
+version: 2.1
+
+orbs:
+  win: circleci/windows@2.2.0
+  aws-s3: circleci/aws-s3@1.0.15
+  aws-cli: circleci/aws-cli@2.0.3
+  coveralls: coveralls/coveralls@1.0.6
+  macos: circleci/macos@2.4.1
+
+commands:
+  run_e2e_tests:
+    parameters:
+      should_install_java:
+        type: boolean
+        default: false
+      package_name:
+        type: string
+    steps:
+      - when:
+          condition: << parameters.should_install_java >>
+          steps:
+            run:
+              name: Install Java
+              command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
+      - run:
+          name: Run E2E tests for package << parameters.package_name >>
+          command: |
+            pushd packages/<< parameters.package_name >>
+            yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
+          no_output_timeout: 20m
+          environment:
+            SALTO_LOG_LEVEL: 'info'
+            # enable telemetry for end2end so we can count more events
+            # webpack configuration is irrelevant in this case and therefore
+            # we explicitly configure it in here
+            SALTO_TELEMETRY_DISABLE: '0'
+            SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
+            JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
+
+      - store_test_results:
+          path: reports
+
+  set_s3_pkg_urls:
+    steps:
+      - run:
+          name: Set S3 URLs according to date and git hash
+          environment:
+            GIT_REVISION: << pipeline.git.revision >>
+            PIPELINE_NUMBER: << pipeline.number >>
+          command: |
+            echo "export S3_PKG_BUCKET=salto-cli-releases" >> $BASH_ENV
+            echo "export PKG_PREFIX=${GIT_REVISION:0:8}_${PIPELINE_NUMBER}" >> $BASH_ENV
+            source $BASH_ENV
+            echo "export S3_PKG_HASH_PREFIX=s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/${PKG_PREFIX}" >> $BASH_ENV
+            source $BASH_ENV
+
+  upload_pkg:
+    parameters:
+      workspace_dir:
+        type: string
+
+      out_filename:
+        type: string
+
+    steps:
+      - aws-cli/install:
+          version: 2.2.2
+      - aws-cli/setup:
+          aws-region: AWS_DEFAULT_REGION
+      - set_s3_pkg_urls
+
+      - store_artifacts:
+          path: packages/<< parameters.workspace_dir >>/pkg
+          destination: pkg/<< parameters.out_filename >>
+
+      - aws-s3/sync:
+          from: packages/<< parameters.workspace_dir >>/pkg
+          to: ${S3_PKG_HASH_PREFIX}/<< parameters.out_filename >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:14.15
+
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - restore_cache:
+          keys:
+            - v1-project-{{ .Branch }}
+            - v1-project-main
+
+      - checkout
+
+      - run:
+          name: remove empty directories from the packages dir
+          command: |
+            find ./packages -mindepth 1 -maxdepth 1 -type d '!' -exec test -e "{}/package.json" ';' -print \
+              | xargs --no-run-if-empty rm -r
+
+      - run:
+          # eslint will verify that the license header exists on the linted source files, this step is
+          # to verify that other non-linted files also contains the license header (and therefore this is
+          # in the 'build' job)
+          name: verify that the license header is prepended to the non eslint'd source files
+          command: build_utils/verify_license_header.sh
+
+      - run: yarn config set ignore-engines true
+
+      - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
+
+        # Yarn has some random race-condition failures, trying multiple times seems to help
+        # when the source of the problem is yarn itself and not the packages
+      - run: yarn || yarn || yarn
+
+      - run:
+          # As a workaround to the --frozen-lockfile flag not working with workspaces
+          # (see: https://github.com/yarnpkg/yarn/issues/4098)
+          # we use a regular `yarn` and add an explicit test that the yarn.lock file is unchanged
+          name: ensure yarn.lock file is up to date
+          command: '! git diff --name-only | grep yarn.lock'
+
+      - run:
+          name: fix eslint cache
+          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
+
+      - run: yarn build
+
+      - persist_to_workspace:
+          root: .
+          paths:
+            - '*'
+
+  save_project_cache:
+    docker:
+      - image: cimg/base:2020.01
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - save_cache:
+          paths:
+            - .
+          key: v1-project-{{ .Branch }}-{{ epoch }}
+
+  unit_test:
+    docker:
+      - image: cimg/node:14.15
+
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run unit tests
+          command: yarn test -w 4 --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
+            # https://github.com/pinojs/koa-pino-logger/issues/16
+            FORCE_COLOR: 1
+
+      - store_test_results:
+          path: reports
+
+      - coveralls/upload
+
+  prettier:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run prettier
+          command: yarn check-format --concurrency 2
+
+  publish_on_version_change:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - add_ssh_keys:
+          fingerprints:
+            - '49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17'
+
+      - set_s3_pkg_urls
+
+      - aws-cli/install:
+          version: 2.2.2
+      - aws-cli/setup:
+          aws-region: AWS_DEFAULT_REGION
+
+      - run:
+          name: Release version
+          command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
+
+  e2e_tests:
+    parameters:
+      package_name:
+        type: string
+      should_install_java:
+        type: boolean
+    docker:
+      - image: cimg/node:14.15
+    resource_class: large
+    working_directory: /mnt/ramdisk/project
+    steps:
+      - attach_workspace:
+          at: .
+      - run_e2e_tests:
+          package_name: <<parameters.package_name>>
+          should_install_java: <<parameters.should_install_java>>     
+
+  package_cli:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          environment:
+            PYTHON: '/usr/bin/python3'
+          name: Build native executables
+          command: yarn workspace @salto-io/cli package
+
+      - upload_pkg:
+          workspace_dir: cli
+          out_filename: cli
+
+  test_cli_mac:
+    macos:
+      xcode: 14.2.0
+    resource_class: macos.m1.medium.gen1
+
+    steps:
+      - set_s3_pkg_urls
+
+      - aws-s3/copy:
+          from: ${S3_PKG_HASH_PREFIX}/cli/mac/salto
+          to: .
+
+      - macos/install-rosetta
+
+      - run:
+          command: chmod +x ./salto
+
+      - run:
+          name: run CLI --help
+          command: ./salto --help
+
+      - run:
+          name: Test CLI init
+          command: mkdir workspace && cd workspace && ../salto init -e env1
+
+  test_cli_linux:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - set_s3_pkg_urls
+
+      - aws-cli/install:
+          version: 2.2.2
+
+      - aws-cli/setup:
+          aws-region: AWS_DEFAULT_REGION
+
+      - aws-s3/copy:
+          from: ${S3_PKG_HASH_PREFIX}/cli/linux/salto
+          to: .
+
+      - run:
+          command: chmod +x ./salto
+
+      - run:
+          name: run CLI --help
+          command: ./salto --help
+
+      - run:
+          name: Test CLI init
+          command: mkdir workspace && cd workspace && ../salto init -e env1
+
+  test_cli_win:
+    executor:
+      name: win/default
+      shell: bash.exe
+
+    steps:
+      - set_s3_pkg_urls
+
+      - aws-s3/copy:
+          from: ${S3_PKG_HASH_PREFIX}/cli/win/salto.exe
+          to: .
+
+      - run:
+          name: run CLI --help
+          command: ./salto.exe --help
+
+      - run:
+          name: Test CLI init
+          command: mkdir workspace && cd workspace && ../salto.exe init -e env1
+
+  package_vscode_extension:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Create a VSIX file
+          command: yarn workspace salto-vscode package
+
+      - upload_pkg:
+          workspace_dir: vscode
+          out_filename: vscode/salto.vsix
+
+  sync_s3_pkg_latest:
+    docker:
+      - image: cimg/python:3.10
+
+    steps:
+      - set_s3_pkg_urls
+
+      - aws-s3/sync:
+          from: ${S3_PKG_HASH_PREFIX}/
+          to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
+          arguments: '--delete --acl public-read'
+
+      - run:
+          name: Create a marker file with the git hash
+          command: touch ./PACKAGED_FROM.${PKG_PREFIX}
+
+      - aws-s3/copy:
+          from: ./PACKAGED_FROM.${PKG_PREFIX}
+          to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
+          arguments: '--acl public-read'
+
+  publish_canary:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Set NPM token
+          command: |
+            # set token at npmrc - without making the git local copy dirty
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
+            echo ".npmrc" >> .git/info/exclude
+            git update-index --assume-unchanged .npmrc
+
+      - run:
+          name: Set git identity
+          command: |
+            # version git commit is not pushed, so this just needs to be configured
+            git config user.email "$(git log -1 --format='%ae')"
+            git config user.name "$(git log -1 --format='%an')"
+
+      - run:
+          name: Publish canary version
+          command: .circleci/scripts/publish-canary.sh
+
+workflows:
+  commit:
+    jobs:
+      - build
+      # <TEST_MATRIX_E2E>
+      # <TEST_MATRIX_E2E_JAVA>
+      - save_project_cache:
+          requires:
+            - build
+
+      - unit_test:
+          requires:
+            - build
+
+      - prettier:
+          requires:
+            - build
+
+      - test_cli_mac:
+          requires:
+            - package_cli
+
+      - test_cli_linux:
+          requires:
+            - package_cli
+
+      - test_cli_win:
+          requires:
+            - package_cli
+
+      - package_cli:
+          requires:
+            - build
+            - unit_test
+
+      - package_vscode_extension:
+          requires:
+            - build
+            - unit_test
+
+      - sync_s3_pkg_latest:
+          requires:
+            - package_cli
+            - package_vscode_extension
+
+      - publish_canary:
+          context: salto
+          filters:
+            branches:
+              only:
+                - main
+          requires:
+            - build
+            - unit_test
+            # <NEEDS_E2E_TEST_REQUIREMENT>
+            # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>
+
+      - publish_on_version_change:
+          context: salto
+          filters:
+            branches:
+              only:
+                - main
+          requires:
+            - build
+            - unit_test
+            # <NEEDS_E2E_TEST_REQUIREMENT>
+            # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>

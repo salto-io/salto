@@ -155,6 +155,14 @@ jobs:
             - '*'
 
   unit_test:
+    parameters:
+      package_name: 
+        type: string
+      parallelism:
+        type: integer
+
+    parallelism: << parameters.parallelism >>
+
     docker:
       - image: cimg/node:18.9
 
@@ -168,14 +176,13 @@ jobs:
       - restore_yarn_cache
 
       - run:
-          name: Run unit tests
+          name: << parameters.package_name >> unit tests
           command: |
             yarn config set cacheFolder /mnt/ramdisk/project/.yarn/cache
             yarn config set nodeLinker node-modules
-            yarn test --reporters=default --reporters=jest-junit --ci --colors --forceExit
+            yarn workspace << parameters.package_name >> test --reporters=default --reporters=jest-junit --ci --colors
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
-            # https://github.com/pinojs/koa-pino-logger/issues/16
 
       - store_test_results:
           path: reports
@@ -400,11 +407,14 @@ workflows:
   commit:
     jobs:
       - build
-      # <TEST_MATRIX_E2E>
-      # <TEST_MATRIX_E2E_JAVA>
+
       - unit_test:
           requires:
             - build
+      # <TEST_MATRIX_UT>
+
+      # <TEST_MATRIX_E2E>
+      # <TEST_MATRIX_E2E_JAVA>
 
       - prettier:
           requires:

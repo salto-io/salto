@@ -15,11 +15,21 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run Find Changed Packages Script
+          name: set up yarn
           command: |
-            pushd .circleci/scripts
-            node find_changed_packages.js
-            node update_config_template.js
+            yarn set version 3.1.0
+            yarn config set cacheFolder /mnt/ramdisk/project/.yarn/cache
+            yarn config set nodeLinker node-modules
+          environment:
+            YARN_IGNORE_NODE: 1
+
+      - run:
+          name: Generate Dynamic Pipeline
+          command: |
+            node .circleci/scripts/find_changed_packages.js
+            node .circleci/scripts/dynamic_unit_tests.js
+            node .circleci/scripts/update_config_template.js
+
       - persist_to_workspace:
           root: .
           paths:

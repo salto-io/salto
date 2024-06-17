@@ -43,7 +43,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 method: 'put',
               },
               context: {
-                groupId: 'id',
+                groupId: '{id}',
               },
             },
           },

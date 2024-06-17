@@ -77,7 +77,7 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import OktaClient from '../src/client/client'
-import { OktaFetchOptions } from '../src/definitions/types'
+import { OktaOptions } from '../src/definitions/types'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -467,13 +467,13 @@ const deployCleanup = async (adapterAttr: Reals, types: ObjectType[], elements: 
   log.debug('Cleaning up the environment before starting e2e test')
   const cleanupChanges = await getChangesForInitialCleanup(elements, types, adapterAttr.client)
   const removals = cleanupChanges.filter(change => getChangeData(change).elemID.typeName !== APPLICATION_TYPE_NAME)
-  await removeAllApps(adapterAttr, cleanupChanges)
+  await deployChanges(adapterAttr, cleanupChanges.filter(change => getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME))
   await deployChanges(adapterAttr, removals)
   log.debug('Environment cleanup successful')
 }
 
 const getHiddenFieldsToOmit = (
-  fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaFetchOptions>,
+  fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaOptions>,
   typeName: string,
 ): string[] => {
   const customizations = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)
@@ -491,7 +491,7 @@ describe('Okta adapter E2E', () => {
     const testSuffix = uuidv4().slice(0, 8)
     let elements: Element[] = []
     let deployResults: DeployResult[]
-    let fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaFetchOptions>
+    let fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaOptions>
 
     const deployAndFetch = async (changes: Change[]): Promise<void> => {
       deployResults = await deployChanges(adapterAttr, changes)

@@ -39,12 +39,14 @@ import {
   elements as elementUtils,
   client as clientUtils,
   fetch as fetchUtils,
+  definitions as definitionUtils,
 } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections, promises } from '@salto-io/lowerdash'
-import { ACTIVE_STATUS, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'
-import { OktaStatusActionName, OktaSwaggerApiConfig } from './config'
+import { ACTIVE_STATUS, CUSTOM_NAME_FIELD, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'
+import { OktaSwaggerApiConfig } from './config'
+import { StatusActionName } from './definitions/types'
 
 const log = logger(module)
 
@@ -107,25 +109,30 @@ export const getOktaError = (elemID: ElemID, error: Error): Error => {
   return error
 }
 
-export const isActivationChange = ({ before, after }: { before: string; after: string }): boolean =>
+export const isActivationModification = ({ before, after }: { before: string; after: string }): boolean =>
   before === INACTIVE_STATUS && after === ACTIVE_STATUS
 
-export const isDeactivationChange = ({ before, after }: { before: string; after: string }): boolean =>
+export const isActivationChange = (change: Change<InstanceElement>): boolean =>
+  isModificationChange(change) &&
+  isActivationModification({ before: change.data.before.value.status, after: change.data.after.value.status })
+
+export const isDeactivationModification = ({ before, after }: { before: string; after: string }): boolean =>
   before === ACTIVE_STATUS && after === INACTIVE_STATUS
 
-const isDeactivationModificationChange = (change: Change<InstanceElement>): boolean =>
+export const isDeactivationChange = (change: Change<InstanceElement>): boolean =>
   isModificationChange(change) &&
-  isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
+  isDeactivationModification({ before: change.data.before.value.status, after: change.data.after.value.status })
 
 const DEACTIVATE_BEFORE_REMOVAL_TYPES = new Set([NETWORK_ZONE_TYPE_NAME])
 const shouldDeactivateBeforeRemoval = (change: Change<InstanceElement>): boolean =>
   isRemovalChange(change) && DEACTIVATE_BEFORE_REMOVAL_TYPES.has(getChangeData(change).elemID.typeName)
 
+
 export const deployStatusChange = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
   apiDefinitions: OktaSwaggerApiConfig,
-  operation: OktaStatusActionName,
+  operation: StatusActionName,
 ): Promise<void> => {
   const deployRequests = apiDefinitions.types?.[getChangeData(change).elemID.typeName]?.deployRequests
   const instance = getChangeData(change)
@@ -167,6 +174,13 @@ export const assignServiceIdToAdditionChange = async (
     log.warn('Received unexpected response, could not assign service id to change: %o', response)
   }
 }
+
+export const isInactiveCustomAppChange = (change: Change<InstanceElement>): boolean =>
+  isModificationChange(change) &&
+  change.data.before.value.status === INACTIVE_STATUS &&
+  change.data.after.value.status === INACTIVE_STATUS &&
+  // customName field only exist in custom applications
+  getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
 
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
@@ -213,6 +227,51 @@ export const defaultDeployChange = async (
   }
 }
 
+const shouldActivateAfterModification = ({
+                                           change,
+                                         }: definitionUtils.deploy.ChangeAndContext): boolean =>
+  isModificationChange(change) &&
+  isActivationModification({ before: change.data.before.value.status, after: change.data.after.value.status })
+
+const shouldActivateAfterAddition = ({
+                                       change,
+                                       sharedContext,
+                                     }: definitionUtils.deploy.ChangeAndContext): boolean => {
+  // Update status for the created instance if necessary
+  const response = sharedContext[getChangeData(change).elemID.getFullName()]
+  if (isAdditionChange(change) && isResponseWithStatus(response)) {
+    const changeStatus = getChangeData(change).value.status
+    if (isActivationModification({ before: response.status, after: changeStatus })) {
+      return true
+    }
+  }
+  return false
+}
+
+const shouldDeactivateAfterAddition = ({
+                                         change,
+                                         sharedContext,
+                                       }: definitionUtils.deploy.ChangeAndContext): boolean => {
+  const response = sharedContext[getChangeData(change).elemID.getFullName()]
+  if (isAdditionChange(change) && isResponseWithStatus(response)) {
+    const changeStatus = getChangeData(change).value.status
+    if (isDeactivationModification({ before: response.status, after: changeStatus })) {
+      return true
+    }
+  }
+  return false
+}
+
+
+export const shouldActivateAfterChange = (changeAndContext: definitionUtils.deploy.ChangeAndContext): boolean =>
+  shouldActivateAfterAddition(changeAndContext) || shouldActivateAfterModification(changeAndContext)
+
+export const shouldDeactivateAfterChange = (changeAndContext: definitionUtils.deploy.ChangeAndContext): boolean =>
+  shouldDeactivateAfterAddition(changeAndContext)
+
+export const shouldDeactivateBeforeChange = ({ change }: definitionUtils.deploy.ChangeAndContext): boolean =>
+  isDeactivationChange(change) || shouldDeactivateBeforeRemoval(change)
+
 /**
  * Deploy change with "add", "modify", "remove", "activation" and "deactivation" endpoints
  */
@@ -225,7 +284,7 @@ export const defaultDeployWithStatus = async (
 ): Promise<deployment.ResponseResult> => {
   try {
     // some changes can't be applied when status is ACTIVE, so we need to deactivate them first
-    if (isDeactivationModificationChange(change) || shouldDeactivateBeforeRemoval(change)) {
+    if (isDeactivationChange(change) || shouldDeactivateBeforeRemoval(change)) {
       await deployStatusChange(change, client, apiDefinitions, 'deactivate')
     }
     const response = await defaultDeployChange(change, client, apiDefinitions, fieldsToIgnore, queryParams)
@@ -233,12 +292,12 @@ export const defaultDeployWithStatus = async (
     // Update status for the created instance if necessary
     if (isAdditionChange(change) && isResponseWithStatus(response)) {
       const changeStatus = getChangeData(change).value.status
-      if (isActivationChange({ before: response.status, after: changeStatus })) {
+      if (isActivationModification({ before: response.status, after: changeStatus })) {
         log.debug(
           `Instance ${getChangeData(change).elemID.getFullName()} created in status ${INACTIVE_STATUS}, changing to ${ACTIVE_STATUS}`,
         )
         await deployStatusChange(change, client, apiDefinitions, 'activate')
-      } else if (isDeactivationChange({ before: response.status, after: changeStatus })) {
+      } else if (isDeactivationModification({ before: response.status, after: changeStatus })) {
         log.debug(
           `Instance ${getChangeData(change).elemID.getFullName()} created in status ${ACTIVE_STATUS}, changing to ${INACTIVE_STATUS}`,
         )
@@ -247,10 +306,7 @@ export const defaultDeployWithStatus = async (
     }
 
     // If the instance is activated, we should first make the changes and then change the status
-    if (
-      isModificationChange(change) &&
-      isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
-    ) {
+    if (isActivationChange(change)) {
       await deployStatusChange(change, client, apiDefinitions, 'activate')
     }
 
@@ -259,6 +315,7 @@ export const defaultDeployWithStatus = async (
     throw getOktaError(getChangeData(change).elemID, err)
   }
 }
+
 
 const getValuesToAdd = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,

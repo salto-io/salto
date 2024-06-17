@@ -38,7 +38,7 @@ import { OKTA, SIGN_ON_RULE_TYPE_NAME } from '../../src/constants'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import { OldOktaDefinitionsConfig } from '../../src/config'
-import { OktaFetchOptions } from '../../src/definitions/types'
+import { OktaOptions } from '../../src/definitions/types'
 
 describe('policyPrioritiesFilter', () => {
   const createInstance = (id: number, isSystem: boolean, type: ObjectType, parent?: InstanceElement): InstanceElement =>
@@ -230,7 +230,7 @@ describe('policyPrioritiesFilter', () => {
   })
   describe('deploy', () => {
     let connection: MockInterface<clientUtils.APIConnection>
-    let definitions: definitionsUtils.RequiredDefinitions<OktaFetchOptions>
+    let definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
     beforeEach(() => {
       const { client: cli, connection: conn } = mockClient()
       client = cli

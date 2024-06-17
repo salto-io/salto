@@ -18,7 +18,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, ElemID, InstanceElement, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockClient } from './utils'
 import OktaClient from '../src/client/client'
-import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, OKTA } from '../src/constants'
+import { GROUP_RULE_TYPE_NAME, BRAND_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, OKTA } from '../src/constants'
 import { defaultDeployChange, defaultDeployWithStatus, deployStatusChange, getOktaError } from '../src/deployment'
 import { DEFAULT_API_DEFINITIONS, OktaSwaggerApiConfig } from '../src/config'
 
@@ -201,14 +201,14 @@ describe('deployment.ts', () => {
             id: '123',
           },
         })
-        const groupInstance = new InstanceElement(
-          'group',
-          new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) }),
-          { name: 'group' },
+        const brandInstance = new InstanceElement(
+          'brand',
+          new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) }),
+          { name: 'brand' },
         )
-        await defaultDeployWithStatus(toChange({ after: groupInstance.clone() }), client, DEFAULT_API_DEFINITIONS, [])
+        await defaultDeployWithStatus(toChange({ after: brandInstance.clone() }), client, DEFAULT_API_DEFINITIONS, [])
         expect(mockConnection.post).toHaveBeenCalledTimes(1)
-        expect(mockConnection.post).toHaveBeenCalledWith('/api/v1/groups', { name: 'group' }, undefined)
+        expect(mockConnection.post).toHaveBeenCalledWith('/api/v1/brands', { name: 'brand' }, undefined)
       })
     })
 

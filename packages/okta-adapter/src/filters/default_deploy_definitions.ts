@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export type StatusActionName = 'activate' | 'deactivate'
-export type AdditionalAction = StatusActionName
-export type ClientOptions = 'main' | 'private'
-export type PaginationOptions = 'cursorHeader' | 'cursor'
-export type OktaOptions = {
-  clientOptions: ClientOptions
-  paginationOptions: PaginationOptions
-  additionalAction: AdditionalAction
-}
+import { filters as filterUtils } from '@salto-io/adapter-components'
+import { FilterCreator, FilterResult } from '../filter'
+import { OktaOptions } from '../definitions/types'
+import { getOktaError } from '../deployment'
+import { getLookUpName, OktaFieldReferenceResolver } from '../reference_mapping'
+
+const filterCreator: FilterCreator = filterUtils.defaultDeployFilterCreator<FilterResult, OktaOptions>({
+  convertError: getOktaError,
+  customLookupFunc: getLookUpName,
+  fieldReferenceResolverCreator: OktaFieldReferenceResolver.create,
+})
+
+export default filterCreator

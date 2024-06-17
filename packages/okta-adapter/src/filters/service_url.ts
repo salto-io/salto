@@ -15,10 +15,10 @@
  */
 import { filters } from '@salto-io/adapter-components'
 import { FilterAdditionalParams, FilterCreator, FilterResult } from '../filter'
-import { OktaFetchOptions } from '../definitions/types'
+import { OktaOptions } from '../definitions/types'
 import { OktaUserConfig } from '../user_config'
 
 const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<OktaUserConfig, FilterResult, FilterAdditionalParams, OktaFetchOptions>()(params)
+  filters.serviceUrlFilterCreator<OktaUserConfig, FilterResult, FilterAdditionalParams, OktaOptions>()(params)
 
 export default filter

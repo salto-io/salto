@@ -22,7 +22,6 @@ import {
   isObjectType,
   FetchOptions,
   DeployOptions,
-  Change,
   isInstanceChange,
   ElemIdGetter,
   ReadOnlyElementsSource,
@@ -30,18 +29,20 @@ import {
   isInstanceElement,
   FixElementsFunc,
   TypeMap,
+  SaltoError,
+  isSaltoError,
 } from '@salto-io/adapter-api'
 import {
   elements as elementUtils,
   client as clientUtils,
   combineElementFixers,
-  resolveChangeElement,
   fetch as fetchUtils,
   definitions as definitionsUtils,
   openapi,
   restoreChangeElement,
+  createChangeElementResolver,
 } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
+import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
@@ -55,6 +56,7 @@ import { FilterCreator, Filter, filterRunner } from './filter'
 import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
 import defaultDeployFilter from './filters/default_deploy'
+import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
 import userTypeFilter from './filters/user_type'
@@ -94,9 +96,10 @@ import { User, getUsers, getUsersFromInstances } from './user_utils'
 import { isClassicEngineOrg } from './utils'
 import { createFixElementFunctions } from './fix_elements'
 import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch'
+import { createDeployDefinitions } from './definitions/deploy'
 import { PAGINATION } from './definitions/requests/pagination'
 import { createClientDefinitions, shouldAccessPrivateAPIs } from './definitions/requests/clients'
-import { OktaFetchOptions } from './definitions/types'
+import { OktaOptions } from './definitions/types'
 import { OPEN_API_DEFINITIONS } from './definitions/sources'
 import { getAdminUrl } from './client/admin'
 
@@ -141,6 +144,8 @@ const DEFAULT_FILTERS = [
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,
+  // This catches types we moved to the new infra definitions
+  defaultDeployDefinitionsFilter,
 ]
 
 const SKIP_RESOLVE_TYPE_NAMES = [
@@ -173,7 +178,7 @@ export default class OktaAdapter implements AdapterOperations {
   private isOAuthLogin: boolean
   private adminClient?: OktaClient
   private fixElementsFunc: FixElementsFunc
-  private definitions: definitionsUtils.RequiredDefinitions<OktaFetchOptions>
+  private definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -204,6 +209,7 @@ export default class OktaAdapter implements AdapterOperations {
         shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig),
         getAdminUrl(this.client.baseUrl),
       ),
+      deploy: createDeployDefinitions(),
       sources: { openAPI: [OPEN_API_DEFINITIONS] },
     }
 
@@ -357,38 +363,64 @@ export default class OktaAdapter implements AdapterOperations {
    */
   @logDuration('deploying account configuration')
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changesToDeploy = await Promise.all(
-      changeGroup.changes
-        .filter(isInstanceChange)
-        .map(change => applyFunctionToChangeData<Change<InstanceElement>>(change, instance => instance.clone())),
-    )
+    const [instanceChanges, nonInstanceChanges] = _.partition(changeGroup.changes, isInstanceChange)
+    if (nonInstanceChanges.length > 0) {
+      log.warn(
+        `We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`,
+      )
+    }
+    if (instanceChanges.length === 0) {
+      log.warn(`no instance changes in group ${changeGroup.groupID}`)
+      return {
+        appliedChanges: [],
+        errors: [],
+      }
+    }
+    if (this.definitions.deploy?.instances === undefined) {
+      // not supposed to happen if we didn't fail on a change validator
+      return {
+        appliedChanges: [],
+        errors: [
+          {
+            message: 'no deploy definitions found, cannot deploy changes',
+            severity: 'Error',
+          },
+        ],
+      }
+    }
 
-    const resolvedChanges = await awu(changesToDeploy)
+    const sourceChanges = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
+    const runner = this.createFiltersRunner()
+    const deployDefQuery = definitionsUtils.queryWithDefault(this.definitions.deploy.instances)
+    const changeResolver = createChangeElementResolver({ getLookUpName })
+    const resolvedChanges = await awu(instanceChanges)
       .map(async change =>
-        SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
-          ? change
-          : resolveChangeElement(change, getLookUpName),
+        deployDefQuery.query(getChangeData(change).elemID.typeName)?.referenceResolution?.when === 'early' &&
+        !SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+          ? changeResolver(change)
+          : change,
       )
       .toArray()
-    const runner = this.createFiltersRunner()
+    const saltoErrors: SaltoError[] = []
     await runner.preDeploy(resolvedChanges)
 
-    const {
-      deployResult: { appliedChanges, errors },
-    } = await runner.deploy(resolvedChanges)
+    const { deployResult } = await runner.deploy(resolvedChanges, changeGroup)
+    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
+    try {
+      await runner.onDeploy(appliedChangesBeforeRestore)
+    } catch (e) {
+      if (!isSaltoError(e)) {
+        throw e
+      }
+      saltoErrors.push(e)
+    }
 
-    const appliedChangesBeforeRestore = [...appliedChanges]
-    await runner.onDeploy(appliedChangesBeforeRestore)
-
-    const sourceChanges = _.keyBy(changesToDeploy, change => getChangeData(change).elemID.getFullName())
-
-    const restoredAppliedChanges = await awu(appliedChangesBeforeRestore)
+    const appliedChanges = await awu(appliedChangesBeforeRestore)
       .map(change => restoreChangeElement(change, sourceChanges, getLookUpName))
       .toArray()
-
     return {
-      appliedChanges: restoredAppliedChanges,
-      errors,
+      appliedChanges,
+      errors: deployResult.errors.concat(saltoErrors),
     }
   }
 
@@ -397,6 +429,7 @@ export default class OktaAdapter implements AdapterOperations {
       changeValidator: changeValidator({
         client: this.client,
         userConfig: this.userConfig,
+        definitions: this.definitions,
         oldApiDefsConfig: OLD_API_DEFINITIONS_CONFIG,
       }),
       dependencyChanger,

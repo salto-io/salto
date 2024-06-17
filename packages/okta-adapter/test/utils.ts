@@ -28,7 +28,7 @@ import { FilterCreator } from '../src/filter'
 import { Credentials } from '../src/auth'
 import { DEFAULT_CONFIG, OktaUserConfig } from '../src/user_config'
 import { OLD_API_DEFINITIONS_CONFIG } from '../src/config'
-import { OktaFetchOptions } from '../src/definitions/types'
+import { OktaOptions } from '../src/definitions/types'
 import { createClientDefinitions } from '../src/definitions/requests/clients'
 import { PAGINATION } from '../src/definitions/requests/pagination'
 import { createFetchDefinitions } from '../src/definitions/fetch/fetch'
@@ -81,7 +81,7 @@ export const createDefinitions = ({
 }: {
   client?: OktaClient
   usePrivateAPI?: boolean
-}): definitionsUtils.RequiredDefinitions<OktaFetchOptions> => {
+}): definitionsUtils.RequiredDefinitions<OktaOptions> => {
   const cli = client ?? mockClient().client
   return {
     clients: createClientDefinitions({ main: cli, private: cli }),

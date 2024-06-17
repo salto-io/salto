@@ -9,7 +9,7 @@ orbs:
 jobs:
   find_changed_packages:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
     resource_class: small
 
     steps:

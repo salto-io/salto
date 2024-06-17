@@ -9,6 +9,15 @@ orbs:
   macos: circleci/macos@2.4.1
 
 commands:
+  restore_yarn_cache:
+    description: restore yarn cache
+    steps:
+      - restore_cache:
+          keys:
+            - &yarn-cache yarn-cache-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - yarn-cache-v2-{{ arch }}}-{{ .Branch }}
+            - yarn-cache-v2-{{ arch }}}-main
+
   run_e2e_tests:
     parameters:
       should_install_java:
@@ -26,6 +35,8 @@ commands:
       - run:
           name: Run E2E tests for package << parameters.package_name >>
           command: |
+            yarn config set cacheFolder /mnt/ramdisk/project/.yarn/cache
+            yarn config set nodeLinker node-modules
             pushd packages/<< parameters.package_name >>
             yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
@@ -81,18 +92,24 @@ commands:
 jobs:
   build:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     resource_class: xlarge
-    working_directory: /mnt/ramdisk/project
+    working_directory: ~/project
+    environment:
+      TURBO_TEAM: CircleDev
+      TURBO_UI: false  
+      TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
 
     steps:
+      - checkout
+
+      - restore_yarn_cache
+
       - restore_cache:
           keys:
-            - v1-project-{{ .Branch }}
-            - v1-project-main
-
-      - checkout
+            - &turbo-cache turbo-cache-v2-{{ .Branch }}-{{ checksum "turbo.json" }}
+            - turbo-cache-v2-main
 
       - run:
           name: remove empty directories from the packages dir
@@ -107,48 +124,39 @@ jobs:
           name: verify that the license header is prepended to the non eslint'd source files
           command: build_utils/verify_license_header.sh
 
-      - run: yarn config set ignore-engines true
+      - run: 
+          name: set up yarn
+          command: |
+            yarn set version 3.1.0
+            yarn config set cacheFolder /mnt/ramdisk/project/.yarn/cache
+            yarn config set nodeLinker node-modules
+          environment:
+            YARN_IGNORE_NODE: 1
 
-      - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
+      - run: yarn --immutable
 
-        # Yarn has some random race-condition failures, trying multiple times seems to help
-        # when the source of the problem is yarn itself and not the packages
-      - run: yarn || yarn || yarn
-
-      - run:
-          # As a workaround to the --frozen-lockfile flag not working with workspaces
-          # (see: https://github.com/yarnpkg/yarn/issues/4098)
-          # we use a regular `yarn` and add an explicit test that the yarn.lock file is unchanged
-          name: ensure yarn.lock file is up to date
-          command: '! git diff --name-only | grep yarn.lock'
-
-      - run:
-          name: fix eslint cache
-          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
+      - save_cache:
+          key: *yarn-cache
+          paths:
+            - /mnt/ramdisk/project/.yarn
+          when: always
 
       - run: yarn build
+
+      - save_cache:
+          key: *turbo-cache
+          paths:
+            - /mnt/ramdisk/project/.turbo
+          when: always
 
       - persist_to_workspace:
           root: .
           paths:
             - '*'
 
-  save_project_cache:
-    docker:
-      - image: cimg/base:2020.01
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - save_cache:
-          paths:
-            - .
-          key: v1-project-{{ .Branch }}-{{ epoch }}
-
   unit_test:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -157,13 +165,17 @@ jobs:
       - attach_workspace:
           at: .
 
+      - restore_yarn_cache
+
       - run:
           name: Run unit tests
-          command: yarn test -w 4 --reporters=default --reporters=jest-junit
+          command: |
+            yarn config set cacheFolder /mnt/ramdisk/project/.yarn/cache
+            yarn config set nodeLinker node-modules
+            yarn test --reporters=default --reporters=jest-junit --ci --colors --forceExit
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
             # https://github.com/pinojs/koa-pino-logger/issues/16
-            FORCE_COLOR: 1
 
       - store_test_results:
           path: reports
@@ -172,19 +184,21 @@ jobs:
 
   prettier:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
           at: .
 
+      - restore_yarn_cache
+
       - run:
           name: Run prettier
-          command: yarn check-format --concurrency 2
+          command: yarn check-format
 
   publish_on_version_change:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -212,23 +226,26 @@ jobs:
       should_install_java:
         type: boolean
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
     resource_class: large
     working_directory: /mnt/ramdisk/project
     steps:
       - attach_workspace:
           at: .
+      - restore_yarn_cache
       - run_e2e_tests:
           package_name: <<parameters.package_name>>
           should_install_java: <<parameters.should_install_java>>     
 
   package_cli:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
           at: .
+
+      - restore_yarn_cache
 
       - run:
           environment:
@@ -267,7 +284,7 @@ jobs:
 
   test_cli_linux:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - set_s3_pkg_urls
@@ -315,11 +332,13 @@ jobs:
 
   package_vscode_extension:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
           at: .
+
+      - restore_yarn_cache
 
       - run:
           name: Create a VSIX file
@@ -352,7 +371,7 @@ jobs:
 
   publish_canary:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
       - attach_workspace:
@@ -383,10 +402,6 @@ workflows:
       - build
       # <TEST_MATRIX_E2E>
       # <TEST_MATRIX_E2E_JAVA>
-      - save_project_cache:
-          requires:
-            - build
-
       - unit_test:
           requires:
             - build

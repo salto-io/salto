@@ -197,11 +197,13 @@ const createInstance = (
     pathNaclCase(instanceName),
   ])
 
-  walkOnValue({
-    elemId: elem.elemID,
-    value: elem.value,
-    func: omitFields((TypeTransformationConfig.fieldsToOmit ?? []).map(field => field.fieldName)),
-  })
+  if (TypeTransformationConfig.fieldsToOmit !== undefined && TypeTransformationConfig.fieldsToOmit.length > 0) {
+    walkOnValue({
+      elemId: elem.elemID,
+      value: elem.value,
+      func: omitFields((TypeTransformationConfig.fieldsToOmit ?? []).map(field => field.fieldName)),
+    })
+  }
 
   return elem
 }

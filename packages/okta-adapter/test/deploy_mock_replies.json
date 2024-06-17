@@ -1,0 +1,128 @@
+[
+	{
+		"url": "/api/v1/groups",
+		"method": "POST",
+		"status": 200,
+		"response": {
+			"id": "fakeid123",
+			"created": "2024-06-17T08:11:40.000Z",
+			"lastUpdated": "2024-06-17T08:11:40.000Z",
+			"lastMembershipUpdated": "2024-06-17T08:11:40.000Z",
+			"objectClass": [
+				"okta:user_group"
+			],
+			"type": "OKTA_GROUP",
+			"profile": {
+				"name": "Engineers",
+				"description": "all the engineers"
+			},
+			"_links": {
+				"logo": [
+					{
+						"name": "medium",
+						"href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-medium.30ce6d4085dff29412984e4c191bc874.png",
+						"type": "image/png"
+					},
+					{
+						"name": "large",
+						"href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-large.c3cb8cda8ae0add1b4fe928f5844dbe3.png",
+						"type": "image/png"
+					}
+				],
+				"owners": {
+					"href": "https://<sanitized>/api/v1/groups/fakeid123/owners"
+				},
+				"users": {
+					"href": "https://<sanitized>/api/v1/groups/fakeid123/users"
+				},
+				"apps": {
+					"href": "https://<sanitized>/api/v1/groups/fakeid123/apps"
+				}
+			}
+		},
+		"headers": {
+			"x-rate-limit-limit": "250",
+			"x-rate-limit-remaining": "249",
+			"x-rate-limit-reset": "1718611960"
+		},
+		"data": {
+			"objectClass": [
+				"okta:user_group"
+			],
+			"type": "OKTA_GROUP",
+			"profile": {
+				"name": "Engineers",
+				"description": "all the engineers"
+			}
+		}
+	},
+	{
+		"url": "/api/v1/groups/fakeid123",
+		"method": "PUT",
+		"status": 200,
+		"response": {
+			"id": "fakeid123",
+			"created": "2024-06-17T08:11:40.000Z",
+			"lastUpdated": "2024-06-17T08:13:52.000Z",
+			"lastMembershipUpdated": "2024-06-17T08:11:40.000Z",
+			"objectClass": [
+				"okta:user_group"
+			],
+			"type": "OKTA_GROUP",
+			"profile": {
+				"name": "Programmers",
+				"description": "all the engineers"
+			},
+			"_links": {
+				"logo": [
+					{
+						"name": "medium",
+						"href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-medium.30ce6d4085dff29412984e4c191bc874.png",
+						"type": "image/png"
+					},
+					{
+						"name": "large",
+						"href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-large.c3cb8cda8ae0add1b4fe928f5844dbe3.png",
+						"type": "image/png"
+					}
+				],
+				"owners": {
+					"href": "https://<sanitized>/api/v1/groups/fakeid123/owners"
+				},
+				"users": {
+					"href": "https://<sanitized>/api/v1/groups/fakeid123/users"
+				},
+				"apps": {
+					"href": "https://<sanitized>/api/v1/groups/fakeid123/apps"
+				}
+			}
+		},
+		"headers": {
+			"x-rate-limit-limit": "500",
+			"x-rate-limit-remaining": "499",
+			"x-rate-limit-reset": "1718612092"
+		},
+		"data": {
+			"id": "fakeid123",
+			"objectClass": [
+				"okta:user_group"
+			],
+			"type": "OKTA_GROUP",
+			"profile": {
+				"name": "Programmers",
+				"description": "all the engineers"
+			}
+		}
+	},
+	{
+		"url": "/api/v1/groups/fakeid123",
+		"method": "DELETE",
+		"status": 204,
+		"response": "",
+		"headers": {
+			"x-rate-limit-limit": "500",
+			"x-rate-limit-remaining": "499",
+			"x-rate-limit-reset": "1718612851"
+		}
+	}
+]

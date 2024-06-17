@@ -270,16 +270,16 @@ describe('file', () => {
 
         // beforeEach(async () => {
         // })
-        
+
         it('removes the dir', async () => {
-            dirTmp = await tmp.dir()
-            dir = dirTmp.path
-            await fs.promises.copyFile(__filename, path.join(dir, 'a_file'))
-            await file.rm(dir)
-            expect(await file.exists(dir)).toBeFalsy()
-            if (await file.exists(dir)) {
-              await dirTmp.cleanup()
-            }
+          dirTmp = await tmp.dir()
+          dir = dirTmp.path
+          await fs.promises.copyFile(__filename, path.join(dir, 'a_file'))
+          await file.rm(dir)
+          expect(await file.exists(dir)).toBeFalsy()
+          if (await file.exists(dir)) {
+            await dirTmp.cleanup()
+          }
         })
 
         // afterEach(async () => {

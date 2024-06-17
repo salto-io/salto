@@ -1164,6 +1164,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       })
       config.deploy.taskMaxRetries = 3
       elementsSource = buildElementsSourceFromElements([projectInstance, workflowSchemeInstance])
+      jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
       filter = workflowFilter(
         getFilterParams({
           client,
@@ -1764,7 +1765,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               expect(result.deployResult.errors).toHaveLength(1)
               expect(result.deployResult.errors[0].message).toEqual('Error: message')
               expect(result.deployResult.errors[0].severity).toEqual('Error')
-              expect(deployChangeMock).toHaveBeenCalledTimes(3)
+              expect(deployChangeMock).toHaveBeenCalledTimes(5)
             })
           })
         })

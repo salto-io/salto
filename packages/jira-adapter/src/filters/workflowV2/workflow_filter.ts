@@ -80,7 +80,7 @@ import {
   TRANSITION_LIST_FIELDS,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
-import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
+import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_RETRY_PERIODS } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
@@ -562,15 +562,17 @@ const deployWorkflow = async ({
   }
   let response: clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
   try {
-    response = await acquireLockRetry(() =>
-      defaultDeployChange({
-        change,
-        client,
-        apiDefinitions: config.apiDefinitions,
-        elementsSource,
-        fieldsToIgnore: fieldsToIgnoreFunc,
-      }),
-    )
+    response = await acquireLockRetry({
+      fn: () =>
+        defaultDeployChange({
+          change,
+          client,
+          apiDefinitions: config.apiDefinitions,
+          elementsSource,
+          fieldsToIgnore: fieldsToIgnoreFunc,
+        }),
+      delays: WORKFLOW_RETRY_PERIODS,
+    })
   } catch (error) {
     if (
       error instanceof clientUtils.HTTPError &&

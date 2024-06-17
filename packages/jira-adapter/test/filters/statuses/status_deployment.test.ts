@@ -190,7 +190,7 @@ describe('statusDeploymentFilter', () => {
           const { deployResult } = await filter.deploy(changes)
           expect(deployResult.appliedChanges).toHaveLength(0)
           expect(deployResult.errors).toHaveLength(1)
-          expect(mockConnection.put).toHaveBeenCalledTimes(3)
+          expect(mockConnection.put).toHaveBeenCalledTimes(5)
         })
         it('addition', async () => {
           mockConnection.post.mockRejectedValue(
@@ -203,7 +203,7 @@ describe('statusDeploymentFilter', () => {
           )
           const changes = [toChange({ after: additionInstance })]
           const { deployResult } = await filter.deploy(changes)
-          expect(mockConnection.post).toHaveBeenCalledTimes(3)
+          expect(mockConnection.post).toHaveBeenCalledTimes(5)
           expect(additionInstance.value.id).not.toEqual('12345')
           expect(deployResult.appliedChanges).toHaveLength(0)
           expect(deployResult.errors).toHaveLength(1)

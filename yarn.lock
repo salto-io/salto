@@ -3852,7 +3852,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -3904,7 +3904,7 @@ __metadata:
     soap: ^0.44.0
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
   languageName: unknown
@@ -3950,7 +3950,7 @@ __metadata:
     truncate-utf8-bytes: ^1.0.2
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -3959,20 +3959,216 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@salto-io/aws-utils@workspace:packages/aws-utils"
   dependencies:
+<<<<<<< HEAD
     lodash "^4.17.21"
     moo "^0.5.2"
+||||||| parent of a2c9077a1 (bump typescript to 4.8.4 and align with saas)
+    "@aws-sdk/client-s3": 3.198.0
+    "@aws-sdk/middleware-retry": 3.198.0
+    "@salto-io/logging": 0.3.58
+    "@salto-io/test-utils": 0.3.58
+    "@types/jest": ^27.4.0
+    "@types/lodash": ^4.14.168
+    "@types/node": ^12.7.1
+    "@typescript-eslint/eslint-plugin": 4.22.1
+    "@typescript-eslint/parser": 4.22.1
+    eslint: ^7.3.2
+    eslint-config-airbnb: 18.0.1
+    eslint-config-prettier: 9.1.0
+    eslint-plugin-header: ^3.0.0
+    eslint-plugin-import: ^2.18.2
+    eslint-plugin-jest: ^22.6.4
+    eslint-plugin-jsx-a11y: ^6.2.1
+    eslint-plugin-react: ^7.14.3
+    eslint-plugin-react-hooks: ^1.7.0
+    jest: ^27.4.5
+    jest-circus: ^27.4.5
+    jest-junit: ^12.0.0
+    prettier: 3.2.5
+    ts-jest: ^27.1.2
+    tsc-watch: ^2.2.1
+    typescript: 4.1.3
+  languageName: unknown
+  linkType: soft
+=======
+    "@aws-sdk/client-s3": 3.198.0
+    "@aws-sdk/middleware-retry": 3.198.0
+    "@salto-io/logging": 0.3.58
+    "@salto-io/test-utils": 0.3.58
+    "@types/jest": ^27.4.0
+    "@types/lodash": ^4.14.168
+    "@types/node": ^12.7.1
+    "@typescript-eslint/eslint-plugin": 4.22.1
+    "@typescript-eslint/parser": 4.22.1
+    eslint: ^7.3.2
+    eslint-config-airbnb: 18.0.1
+    eslint-config-prettier: 9.1.0
+    eslint-plugin-header: ^3.0.0
+    eslint-plugin-import: ^2.18.2
+    eslint-plugin-jest: ^22.6.4
+    eslint-plugin-jsx-a11y: ^6.2.1
+    eslint-plugin-react: ^7.14.3
+    eslint-plugin-react-hooks: ^1.7.0
+    jest: ^27.4.5
+    jest-circus: ^27.4.5
+    jest-junit: ^12.0.0
+    prettier: 3.2.5
+    ts-jest: ^27.1.2
+    tsc-watch: ^2.2.1
+    typescript: 4.8.4
+  languageName: unknown
+  linkType: soft
+>>>>>>> a2c9077a1 (bump typescript to 4.8.4 and align with saas)
 
 "@salto-io/suitecloud-cli@1.8.0-salto-2":
   version "1.8.0-salto-2"
   resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.8.0-salto-2.tgz#faba9351b15b9caf13937fd39160d4c5c9b1945c"
   integrity sha512-yXkmRJQLWlQUBXuW+GX7PtS0qE3BTGi9XaPvFAAe+yXamlK4I/AiywEpJ8ClLErta454wxRvLFlxJYmOy+YB+w==
   dependencies:
+<<<<<<< HEAD
     "@salto-io/logging" "<0.4.0"
     chalk "4.1.2"
     cli-spinner "0.2.10"
     commander "10.0.0"
     inquirer "8.2.5"
     xml2js "0.6.0"
+||||||| parent of a2c9077a1 (bump typescript to 4.8.4 and align with saas)
+    "@salto-io/adapter-api": 0.3.58
+    "@salto-io/adapter-utils": 0.3.58
+    "@salto-io/core": 0.3.58
+    "@salto-io/dag": 0.3.58
+    "@salto-io/e2e-credentials-store": 0.3.58
+    "@salto-io/file": 0.3.58
+    "@salto-io/logging": 0.3.58
+    "@salto-io/lowerdash": 0.3.58
+    "@salto-io/parser": 0.3.58
+    "@salto-io/salesforce-adapter": 0.3.58
+    "@salto-io/test-utils": 0.3.58
+    "@salto-io/workspace": 0.3.58
+    "@types/express": ^4.17.7
+    "@types/inquirer": 7.3.1
+    "@types/jest": ^27.4.0
+    "@types/semver": ^7.3.3
+    "@types/source-map-support": ^0.5.0
+    "@types/supertest": ^2.0.4
+    "@types/tmp": ^0.1.0
+    "@typescript-eslint/eslint-plugin": 4.22.1
+    "@typescript-eslint/parser": 4.22.1
+    chalk: ^2.4.2
+    commander: ^10.0.0
+    eslint: ^7.3.2
+    eslint-config-airbnb: 18.0.1
+    eslint-config-prettier: 9.1.0
+    eslint-plugin-header: ^3.0.0
+    eslint-plugin-import: ^2.18.2
+    eslint-plugin-jest: ^22.6.4
+    eslint-plugin-jsx-a11y: ^6.2.1
+    eslint-plugin-react: ^7.14.3
+    eslint-plugin-react-hooks: ^1.7.0
+    express: ^4.17.1
+    figlet: ^1.2.4
+    glob: ^7.1.6
+    inquirer: ^7.3.1
+    jest: ^27.4.5
+    jest-circus: ^27.4.5
+    jest-junit: ^12.0.0
+    lodash: ^4.17.21
+    memory-streams: ^0.1.3
+    moment: ^2.24.0
+    nexe: 4.0.0-rc.2
+    nexe-natives: ^1.0.2
+    null-loader: ^4.0.1
+    open: ^7.2.0
+    ora: ^4.0.3
+    package: ^1.0.1
+    pietile-eventemitter: ^1.0.0
+    prettier: 3.2.5
+    raw-loader: ^4.0.2
+    semver: ^7.3.2
+    sinon: ^9.0.3
+    source-map-loader: ^4.0.1
+    source-map-support: ^0.5.13
+    supertest: ^5.0.0
+    tmp-promise: ^2.0.2
+    ts-jest: ^27.1.2
+    typescript: 4.1.3
+    wait-for-expect: ^3.0.2
+    webpack: ^5.75.0
+    webpack-cli: ^4.3.0
+    wu: ^2.1.0
+  bin:
+    salto: ./bin/salto
+  languageName: unknown
+  linkType: soft
+=======
+    "@salto-io/adapter-api": 0.3.58
+    "@salto-io/adapter-utils": 0.3.58
+    "@salto-io/core": 0.3.58
+    "@salto-io/dag": 0.3.58
+    "@salto-io/e2e-credentials-store": 0.3.58
+    "@salto-io/file": 0.3.58
+    "@salto-io/logging": 0.3.58
+    "@salto-io/lowerdash": 0.3.58
+    "@salto-io/parser": 0.3.58
+    "@salto-io/salesforce-adapter": 0.3.58
+    "@salto-io/test-utils": 0.3.58
+    "@salto-io/workspace": 0.3.58
+    "@types/express": ^4.17.7
+    "@types/inquirer": 7.3.1
+    "@types/jest": ^27.4.0
+    "@types/semver": ^7.3.3
+    "@types/source-map-support": ^0.5.0
+    "@types/supertest": ^2.0.4
+    "@types/tmp": ^0.1.0
+    "@typescript-eslint/eslint-plugin": 4.22.1
+    "@typescript-eslint/parser": 4.22.1
+    chalk: ^2.4.2
+    commander: ^10.0.0
+    eslint: ^7.3.2
+    eslint-config-airbnb: 18.0.1
+    eslint-config-prettier: 9.1.0
+    eslint-plugin-header: ^3.0.0
+    eslint-plugin-import: ^2.18.2
+    eslint-plugin-jest: ^22.6.4
+    eslint-plugin-jsx-a11y: ^6.2.1
+    eslint-plugin-react: ^7.14.3
+    eslint-plugin-react-hooks: ^1.7.0
+    express: ^4.17.1
+    figlet: ^1.2.4
+    glob: ^7.1.6
+    inquirer: ^7.3.1
+    jest: ^27.4.5
+    jest-circus: ^27.4.5
+    jest-junit: ^12.0.0
+    lodash: ^4.17.21
+    memory-streams: ^0.1.3
+    moment: ^2.24.0
+    nexe: 4.0.0-rc.2
+    nexe-natives: ^1.0.2
+    null-loader: ^4.0.1
+    open: ^7.2.0
+    ora: ^4.0.3
+    package: ^1.0.1
+    pietile-eventemitter: ^1.0.0
+    prettier: 3.2.5
+    raw-loader: ^4.0.2
+    semver: ^7.3.2
+    sinon: ^9.0.3
+    source-map-loader: ^4.0.1
+    source-map-support: ^0.5.13
+    supertest: ^5.0.0
+    tmp-promise: ^2.0.2
+    ts-jest: ^27.1.2
+    typescript: 4.8.4
+    wait-for-expect: ^3.0.2
+    webpack: ^5.75.0
+    webpack-cli: ^4.3.0
+    wu: ^2.1.0
+  bin:
+    salto: ./bin/salto
+  languageName: unknown
+  linkType: soft
+>>>>>>> a2c9077a1 (bump typescript to 4.8.4 and align with saas)
 
 "@sideway/address@^4.1.3":
   version "4.1.3"
@@ -4010,7 +4206,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -4100,7 +4296,7 @@ __metadata:
     stream-json: ^1.7.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
     wait-for-expect: ^3.0.2
     wu: ^2.1.0
@@ -4131,7 +4327,7 @@ __metadata:
     lodash: ^4.17.21
     prettier: 3.2.5
     ts-jest: ^27.1.2
-    typescript: 4.1.3
+    typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -4168,7 +4364,7 @@ __metadata:
     readdirp: ^3.1.1
     seedrandom: ^3.0.5
     ts-jest: ^27.1.2
-    typescript: 4.1.3
+    typescript: 4.8.4
     unique-names-generator: ^4.3.1
   languageName: unknown
   linkType: soft
@@ -4206,7 +4402,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     yargs: ^13.3.0
   languageName: unknown
   linkType: soft
@@ -4243,7 +4439,7 @@ __metadata:
     tmp-promise: ^2.0.2
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -4284,7 +4480,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
   languageName: unknown
   linkType: soft
@@ -4323,7 +4519,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -4372,7 +4568,7 @@ __metadata:
     semver: ^7.3.2
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
     xml-js: ^1.6.11
@@ -4441,7 +4637,7 @@ __metadata:
     lodash: ^4.17.21
     prettier: 3.2.5
     ts-jest: ^27.1.2
-    typescript: 4.1.3
+    typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -4479,7 +4675,7 @@ __metadata:
     tmp-promise: ^2.0.2
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
   languageName: unknown
@@ -4512,7 +4708,7 @@ __metadata:
     stacktrace-parser: ^0.1.9
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -4551,7 +4747,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -4613,7 +4809,7 @@ __metadata:
     shell-quote: ^1.7.3
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
     xml-js: ^1.6.11
@@ -4666,7 +4862,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
     xml-js: ^1.6.11
@@ -4707,7 +4903,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -4744,7 +4940,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -4781,7 +4977,7 @@ __metadata:
     jest-junit: ^12.0.0
     prettier: 3.2.5
     ts-jest: ^27.1.2
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
   languageName: unknown
   linkType: soft
@@ -4848,7 +5044,7 @@ __metadata:
     requestretry: ^7.1.0
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -4895,7 +5091,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -4933,7 +5129,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -4971,7 +5167,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -5016,7 +5212,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -5056,7 +5252,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -5101,7 +5297,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -5156,7 +5352,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
   languageName: unknown
@@ -5195,7 +5391,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
-    typescript: 4.1.3
+    typescript: 4.8.4
   languageName: unknown
   linkType: soft
 
@@ -16898,7 +17094,7 @@ internal-slot@^1.0.2:
     readdirp: ^3.1.1
     tmp-promise: ^2.0.2
     ts-jest: ^27.1.2
-    typescript: 4.1.3
+    typescript: 4.8.4
     vsce: ^2.9.2
     vscode-test: ^1.0.2
     wu: ^2.1.0

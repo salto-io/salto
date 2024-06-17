@@ -259,6 +259,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        elemID: { parts: }
       },
       fieldCustomizations: {
         id: {

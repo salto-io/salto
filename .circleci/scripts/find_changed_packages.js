@@ -27,8 +27,15 @@ const getChangedFiles = (userInputBaseCommit) => {
 }
 
 const getWorkspacesInfo = () => {
-  const output = execSync('yarn --json workspaces info', { encoding: 'utf8' })
-  return JSON.parse(JSON.parse(output).data)
+  const output = execSync('yarn workspaces list --json -v', { encoding: 'utf8' })
+  const transformToObject = (array) => {
+    return array.reduce((acc,item) => {
+      const { name, ...rest } = item
+      acc[name] = rest
+      return acc
+    }, {})
+  }
+  return transformToObject(JSON.parse(`[${output.split('\n').filter(Boolean).join(',')}]`))
 }
 
 const generateDependencyMapping = (workspaceInfo) => {

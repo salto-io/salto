@@ -49,6 +49,9 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
   updated_by: {
     omit: true,
   },
+  version: {
+    omit: true,
+  },
 }
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
@@ -232,6 +235,32 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         escalation_policies: {
           omit: true,
         },
+        id: {
+          hide: true,
+        },
+        users: {
+          omit: true,
+        },
+        schedule_layers: {
+          standalone: {
+            typeName: 'scheduleLayers',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: false,
+          },
+        },
+      },
+    },
+  },
+  schedule__schedule_layers: {
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
         id: {
           hide: true,
         },

@@ -22,7 +22,12 @@ import {
   isInstanceElement,
   ObjectType,
   FetchResult,
-  AdapterOperations, ElemID, DeployResult, toChange, Change, getChangeData, ProgressReporter,
+  AdapterOperations,
+  ElemID,
+  toChange,
+  Change,
+  getChangeData,
+  ProgressReporter,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -487,9 +492,7 @@ describe('adapter', () => {
       groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
       group1 = new InstanceElement('group1', groupType, {
         id: 'fakeid123',
-        objectClass: [
-          'okta:user_group',
-        ],
+        objectClass: ['okta:user_group'],
         type: 'OKTA_GROUP',
         profile: {
           name: 'Engineers',

@@ -21,7 +21,7 @@ const path = require('path')
 const getChangedFiles = (userInputBaseCommit) => {
   const baseCommit = userInputBaseCommit ?? execSync('git merge-base main HEAD').toString().trim()
   console.log('base commit:', baseCommit)
-  const output = execSync(`git diff --oneline --name-only ${baseCommit}..HEAD`).toString().split('\n')
+  const output = execSync(`git diff --name-only ${baseCommit}..HEAD`).toString().split('\n')
   console.log('git diff output:', output)
   return output.filter(Boolean)
 }

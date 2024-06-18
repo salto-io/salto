@@ -25,9 +25,26 @@ serviceplaceholder {
         type = "Group" // TODO replace with a service type
       }
     ]
+    elemID = {
+      myType = {
+        parts = [
+          {
+            fieldName = "label"
+          },
+          {
+            fieldName = "status"
+            isReference = true
+          }
+        ]
+        extendsParent = true
+      }
+    }
+
   }
 }
 ```
+
+// TODO - all numbers and values should be adjusted, adapter-specific user-facing configuration options should be included as well
 
 ## Configuration options
 
@@ -38,12 +55,12 @@ serviceplaceholder {
 
 ### Client configuration options
 
-| Name                                             | Default when undefined | Description                                                         |
-| ------------------------------------------------ | ---------------------- | ------------------------------------------------------------------- |
-| [retry](#retry-configuration-options)            | `{}` (no overrides)    | Configuration for retrying on errors                                |
-| [rateLimit](#rate-limit-configuration-options)   | `{}` (no overrides)    | Limits on the number of concurrent requests of different types      |
-| maxRequestsPerMinute                             | 700  // TODO adjust    | Limits on the number of requests per minute                         |
-| [timeout](#client-timeout-configuration-options) | `{}` (no overrides)    | Configuration for setting request timeouts                          |
+| Name                                             | Default when undefined | Description                                                    |
+| ------------------------------------------------ | ---------------------- | -------------------------------------------------------------- |
+| [retry](#retry-configuration-options)            | `{}` (no overrides)    | Configuration for retrying on errors                           |
+| [rateLimit](#rate-limit-configuration-options)   | `{}` (no overrides)    | Limits on the number of concurrent requests of different types |
+| maxRequestsPerMinute                             | 700                    | Limits on the number of requests per minute                    |
+| [timeout](#client-timeout-configuration-options) | `{}` (no overrides)    | Configuration for setting request timeouts                     |
 
 #### Client timeout configuration options
 
@@ -57,15 +74,15 @@ serviceplaceholder {
 
 | Name        | Default when undefined | Description                                      |
 | ----------- | ---------------------- | ------------------------------------------------ |
-| maxAttempts | `5` // TODO adjust     | The number of attempts to make for each request  |
-| retryDelay  | `5000` // TODO adjust  | The time (milliseconds) to wait between attempts |
+| maxAttempts | `5`                    | The number of attempts to make for each request  |
+| retryDelay  | `5000`                 | The time (milliseconds) to wait between attempts |
 
 ### Rate limit configuration options
 
-| Name  | Default when undefined          | Description                              |
-| ----- | ------------------------------- | ---------------------------------------- |
-| get   | `20` // TODO adjust             | Max number of concurrent get requests    |
-| total | `-1` (unlimited) // TODO adjust | Shared limit for all concurrent requests |
+| Name  | Default when undefined | Description                              |
+| ----- | ---------------------- | ---------------------------------------- |
+| get   | `20`                   | Max number of concurrent get requests    |
+| total | `-1` (unlimited)       | Shared limit for all concurrent requests |
 
 ## Fetch configuration options
 
@@ -77,30 +94,30 @@ serviceplaceholder {
 
 ## Fetch entry options
 
-| Name                              | Default when undefined | Description                                                     |
-| --------------------------------- | ---------------------- | --------------------------------------------------------------- |
-| type                              | ""                     | A regex of the Salto type name to include in the entry          |
-| [criteria](#fetch-entry-criteria) |                        | A List of criteria to filter specific instance of certain types |
+| Name                              | Default when undefined | Description                                                                  |
+| --------------------------------- | ---------------------- | ---------------------------------------------------------------------------- |
+| type                              | ""                     | A regular expression used to filter instances by matching to their type name |
+| [criteria](#fetch-entry-criteria) |                        | A List of criteria to filter specific instance of certain types              |
 
 ## Fetch entry criteria
 
-| Name   | Default when undefined | Description                                                                  |
-| ------ | ---------------------- | ---------------------------------------------------------------------------- |
-| type   | .\*                    | A regex used to filter instances by matching the regex to their type name    |
+| Name | Default when undefined | Description                                                               |
+| ---- | ---------------------- | ------------------------------------------------------------------------- |
+| type | .\*                    | A regex used to filter instances by matching the regex to their type name |
+
+## Element ID customization
+
+| Name                                   | Default when undefined | Description                                                                                                                                       |
+| -------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [parts](#element-id-parts-definitions) | system's default       | All parts definitions will be concatenated to create the element ID                                                                               |
+| extendsParent                          | false                  | Whether to concatenate the parent element ID with the current element ID                                                                          |
+| delimiter                              | "\_"                   | The delimiter to use to concatenate Elem ID "parts"                                                                                               |
+| extendSystemPartsDefinition            | false                  | Set to true to append the user-defined parts with the default system definition. When false, the user definitions override the system definitions |
 
 ## Element ID parts definitions
 
 | Name        | Default when undefined | Description                                                                         |
 | ----------- | ---------------------- | ----------------------------------------------------------------------------------- |
-| fieldName   | system's default       | The instance's field name value will be used to create the element ID               |
+| fieldName   | system's default       | The instance's field name whose value will be used to create the element ID         |
 | isReference | false                  | Set to true if the fieldName is also a Salto reference                              |
 | mapping     | undefined              | Allows applying a specific function to fieldName. Options: 'uppercase', 'lowercase' |
-
-## Element ID customization
-
-| Name                                   | Default when undefined | Description                                                                  |
-| -------------------------------------- | ---------------------- | ---------------------------------------------------------------------------- |
-| [parts](#element-id-parts-definitions) | system's default       | All parts definitions will be concatenated to create the element ID          |
-| extendsParent                          | false                  | Whether to concat the parent element ID with the current element ID          |
-| delimiter                              | "\_"                   | The delimiter to use to concat Elem ID "parts"                               |
-| extendSystemPartsDefinition            | false                  | Set to true to combine system's parts definitions with user part definitions |

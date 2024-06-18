@@ -2,11 +2,11 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@2.2.0
-  aws-s3: circleci/aws-s3@1.0.15
-  aws-cli: circleci/aws-cli@2.0.3
-  coveralls: coveralls/coveralls@1.0.6
-  macos: circleci/macos@2.4.1
+  win: circleci/windows@5.0.0
+  aws-s3: circleci/aws-s3@4.0.0
+  aws-cli: circleci/aws-cli@4.1.3
+  coveralls: coveralls/coveralls@2.2.1
+  macos: circleci/macos@2.5.1
 
 commands:
   restore_yarn_cache:
@@ -75,10 +75,9 @@ commands:
         type: string
 
     steps:
-      - aws-cli/install:
-          version: 2.2.2
-      - aws-cli/setup:
-          aws-region: AWS_DEFAULT_REGION
+      - aws-cli/install
+      - aws-cli/setup
+
       - set_s3_pkg_urls
 
       - store_artifacts:
@@ -108,7 +107,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - &turbo-cache turbo-cache-v2-{{ .Branch }}-{{ checksum "turbo.json" }}
+            - &turbo-cache turbo-cache-v2-{{ .Branch }}-{{ epoch }}
             - turbo-cache-v2-main
 
       - run:
@@ -217,10 +216,8 @@ jobs:
 
       - set_s3_pkg_urls
 
-      - aws-cli/install:
-          version: 2.2.2
-      - aws-cli/setup:
-          aws-region: AWS_DEFAULT_REGION
+      - aws-cli/install
+      - aws-cli/setup
 
       - run:
           name: Release version
@@ -296,11 +293,8 @@ jobs:
     steps:
       - set_s3_pkg_urls
 
-      - aws-cli/install:
-          version: 2.2.2
-
-      - aws-cli/setup:
-          aws-region: AWS_DEFAULT_REGION
+      - aws-cli/install
+      - aws-cli/setup
 
       - aws-s3/copy:
           from: ${S3_PKG_HASH_PREFIX}/cli/linux/salto
@@ -408,9 +402,6 @@ workflows:
     jobs:
       - build
 
-      - unit_test:
-          requires:
-            - build
       # <TEST_MATRIX_UT>
 
       # <TEST_MATRIX_E2E>

@@ -76,6 +76,9 @@ const generateUtMatrix = (templateName, outputName) => {
   const utPackagesToTest = readFileSync(path.join(__dirname, '..', 'ut_packages_to_test.txt'), 'utf8').split('\n')
   
   const utMatrix = `
+      - unit_test:
+          requires:
+            - build
           name: unit_tests-<< matrix.package_name >>
           matrix:
             parameters:

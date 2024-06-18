@@ -21,6 +21,7 @@ import {
   BUSINESS_SERVICE_TYPE_NAME,
   ESCALATION_POLICY_TYPE_NAME,
   EVENT_ORCHESTRATION_TYPE_NAME,
+  SCHEDULE_LAYERS_TYPE_NAME,
   SCHEDULE_TYPE_NAME,
   SERVICE_TYPE_NAME,
   TEAM_TYPE_NAME,
@@ -243,23 +244,23 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         schedule_layers: {
           standalone: {
-            typeName: 'scheduleLayers',
+            typeName: SCHEDULE_LAYERS_TYPE_NAME,
             addParentAnnotation: true,
             referenceFromParent: true,
-            nestPathUnderParent: false,
+            nestPathUnderParent: true,
           },
         },
       },
     },
   },
-  schedule__schedule_layers: {
+  [SCHEDULE_LAYERS_TYPE_NAME]: {
     resource: {
       directFetch: false,
     },
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: }
+        elemID: { extendsParent: true },
       },
       fieldCustomizations: {
         id: {

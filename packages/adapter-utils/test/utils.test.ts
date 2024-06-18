@@ -882,7 +882,7 @@ describe('Test utils.ts', () => {
         },
       })
       describe('with allowEmptyArrays', () => {
-        it('should not remove empty list and remove empty objects', async () => {
+        it('should remove empty objects and not remove empty list', async () => {
           const result = await transformValues({
             values: {
               arr: [],
@@ -910,7 +910,7 @@ describe('Test utils.ts', () => {
       })
 
       describe('with allowEmptyObjects', () => {
-        it('should not remove empty objects and remove empty list', async () => {
+        it('should remove empty lists and not remove empty objects', async () => {
           const result = await transformValues({
             values: {
               arr: [],
@@ -929,6 +929,38 @@ describe('Test utils.ts', () => {
 
           expect(result).toEqual({
             obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
+      })
+
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+            allowEmptyArrays: true,
+          })
+
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
               val: 'a',
             },
             emptyObj: {
@@ -1489,7 +1521,7 @@ describe('Test utils.ts', () => {
         },
       })
       describe('with allowEmptyArrays', () => {
-        it('should not remove empty list and remove empty objects', async () => {
+        it('should remove empty objects and not remove empty lists', async () => {
           const result = await transformValues({
             values: {
               arr: [],
@@ -1536,6 +1568,38 @@ describe('Test utils.ts', () => {
 
           expect(result).toEqual({
             obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
+      })
+
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+            allowEmptyArrays: true,
+          })
+
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
               val: 'a',
             },
             emptyObj: {

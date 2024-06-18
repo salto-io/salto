@@ -240,7 +240,7 @@ const recurseIntoValue = ({
       // because we cannot get here with an object
       const isEmptyString = _.isString(newVal) && _.isEmpty(newVal)
       if (isEmptyString) {
-        log.warn('found empty string %s in field %s, string will be omitted: %s', newVal, field?.name, allowEmptyArrays)
+        log.warn('found empty string found in path %s, string will be omitted: %s', keyPathID, !allowEmptyArrays)
       }
       const valueIsEmpty = (Array.isArray(newVal) && _.isEmpty(newVal)) || isEmptyString
       return valueIsEmpty && !allowEmptyArrays ? undefined : newVal

@@ -108,7 +108,7 @@ export const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
 
 export const OBJECT_XML_WITH_HTML_CHARS =
   '<entitycustomfield scriptid="custentity_my_script_id">' +
-  '<label>Golf &amp; Co’Co element​Name</label>' +
+  '<label>Golf &#x26; Co&#x2019;Co element&#x200B;Name</label>' +
   '</entitycustomfield>'
 
 export const OBJECTS_DIR_FILES = ['a.xml', 'b.xml', 'a.template.html']

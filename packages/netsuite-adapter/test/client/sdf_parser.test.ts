@@ -273,7 +273,7 @@ describe('sdf parser', () => {
     })
   })
   describe('convertToXmlContent', () => {
-    it('should encode to html chars', async () => {
+    it('should encode invalid xml chars', async () => {
       const custInfo = {
         typeName: 'entitycustomfield',
         values: {
@@ -286,7 +286,10 @@ describe('sdf parser', () => {
       const xmlContent = convertToXmlContent(custInfo)
       // We use here === instead of expect.toEqual() since jest treats html encoding as equal to
       // the decoded value
-      expect(xmlContent === OBJECT_XML_WITH_HTML_CHARS).toBeTruthy()
+      expect(
+        xmlContent ===
+          '<entitycustomfield scriptid="custentity_my_script_id"><label>Golf &amp; Co’Co element​Name</label></entitycustomfield>',
+      ).toBeTruthy()
     })
   })
   describe('convertToFeaturesXmlContent', () => {

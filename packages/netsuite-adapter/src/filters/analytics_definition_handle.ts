@@ -34,6 +34,7 @@ import {
 import _ from 'lodash'
 import { TransformFuncArgs, transformValues, WALK_NEXT_STEP, WalkOnFunc, walkOnValue } from '@salto-io/adapter-utils'
 import { XMLBuilder, XMLParser } from 'fast-xml-parser'
+import he from 'he'
 import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
@@ -91,7 +92,7 @@ const fetchTransformFunc = async ({ value, field, path }: TransformFuncArgs, typ
     path !== undefined &&
     !EXPRESSION_VALUE_VALUE_REGEX.test(path.getFullName())
   ) {
-    log.debug('Found a value with an unkown type. path: %s, value: %o', path?.getFullName(), value)
+    log.debug('Found a value with an unknown type. path: %s, value: %o', path?.getFullName(), value)
   }
   if (_.isPlainObject(value)) {
     if (value[TYPE] === xmlType.null) {
@@ -131,6 +132,7 @@ const fetchTransformFunc = async ({ value, field, path }: TransformFuncArgs, typ
 const xmlParser = new XMLParser({
   attributeNamePrefix: ATTRIBUTE_PREFIX,
   ignoreAttributes: false,
+  tagValueProcessor: (_name, val) => he.decode(val),
 })
 
 const createAnalyticsInstance = async (instance: InstanceElement, analyticsType: ObjectType): Promise<void> => {
@@ -319,7 +321,6 @@ const xmlBuilder = new XMLBuilder({
   format: true,
   ignoreAttributes: false,
   cdataPropName: CDATA_TAG_NAME,
-  tagValueProcessor: (_name, val) => String(val),
 })
 
 const returnToOriginalShape = async (instance: InstanceElement): Promise<Values> => {

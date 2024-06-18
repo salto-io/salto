@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import os from 'os'
 import osPath from 'path'
+import he from 'he'
 import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import readdirp from 'readdirp'
 import { logger } from '@salto-io/logging'
@@ -77,6 +78,7 @@ const DEFAULT_FOLDER_ATTRIBUTES =
 const xmlParser = new XMLParser({
   attributeNamePrefix: ATTRIBUTE_PREFIX,
   ignoreAttributes: false,
+  tagValueProcessor: (_name, val) => he.decode(val),
 })
 
 export const getSrcDirPath = (projectPath: string): string => osPath.resolve(projectPath, SRC_DIR)

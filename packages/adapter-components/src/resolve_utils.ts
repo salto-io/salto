@@ -73,7 +73,8 @@ export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, e
     transformFunc: valuesReplacer,
     strict: false,
     elementsSource,
-    allowEmpty,
+    allowEmptyArrays: allowEmpty,
+    allowEmptyObjects: allowEmpty,
   })
 }
 

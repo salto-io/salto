@@ -3076,7 +3076,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(ZENDESK),
+      refType: createClientConfigType({ adapter: ZENDESK }),
     },
     [FETCH_CONFIG]: {
       refType: definitions.createUserFetchConfigType({

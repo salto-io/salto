@@ -19,7 +19,7 @@ import { createClientConfigType, validateClientConfig } from '../../../src/defin
 describe('client_config', () => {
   describe('createClientConfigType', () => {
     it('should return default type when no custom buckets were added', async () => {
-      const type = createClientConfigType('myAdapter')
+      const type = createClientConfigType({ adapter: 'myAdapter' })
       expect(Object.keys(type.fields)).toHaveLength(5)
       expect(type.fields.rateLimit).toBeDefined()
       expect(type.fields.retry).toBeDefined()
@@ -35,7 +35,7 @@ describe('client_config', () => {
         total: number
         a: number
         b: number
-      }>('myAdapter', ['a', 'b'])
+      }>({ adapter: 'myAdapter', bucketNames: ['a', 'b'] })
       expect(Object.keys(type.fields)).toHaveLength(5)
       expect(type.fields.rateLimit).toBeDefined()
       expect(type.fields.retry).toBeDefined()

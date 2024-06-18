@@ -37,7 +37,8 @@ export const INCLUDE_ALL = 'All'
 export const FILE_CABINET = 'FileCabinet'
 export const ALL_TYPES_REGEX = '.*'
 
-export const FILE_TYPES_TO_EXCLUDE_REGEX = '.*\\.(csv|pdf|eml|png|gif|jpeg|xls|xlsx|doc|docx|ppt|pptx)'
+export const EXTENSION_REGEX = '.*\\.'
+export const FILE_TYPES_TO_EXCLUDE_REGEX = `${EXTENSION_REGEX}(csv|pdf|eml|png|gif|jpeg|xls|xlsx|doc|docx|ppt|pptx)`
 
 // Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
 export const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/

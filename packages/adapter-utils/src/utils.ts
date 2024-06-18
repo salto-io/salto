@@ -417,7 +417,6 @@ export const transformElement = async <T extends Element>({
   strict,
   elementsSource,
   runOnFields,
-  allowEmpty,
   allowEmptyArrays,
   allowEmptyObjects,
 }: {
@@ -426,7 +425,6 @@ export const transformElement = async <T extends Element>({
   strict?: boolean
   elementsSource?: ReadOnlyElementsSource
   runOnFields?: boolean
-  allowEmpty?: boolean
   allowEmptyArrays?: boolean
   allowEmptyObjects?: boolean
 }): Promise<T> => {
@@ -436,8 +434,8 @@ export const transformElement = async <T extends Element>({
     transformFunc,
     strict,
     elementsSource,
-    allowEmptyArrays: allowEmptyArrays ?? allowEmpty,
-    allowEmptyObjects: allowEmptyObjects ?? allowEmpty,
+    allowEmptyArrays,
+    allowEmptyObjects,
   })
 
   if (isInstanceElement(element)) {
@@ -449,8 +447,8 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         pathID: element.elemID,
-        allowEmptyArrays: allowEmptyArrays ?? allowEmpty,
-        allowEmptyObjects: allowEmptyObjects ?? allowEmpty,
+        allowEmptyArrays,
+        allowEmptyObjects,
       })) || {}
 
     newElement = new InstanceElement(
@@ -474,7 +472,6 @@ export const transformElement = async <T extends Element>({
             strict,
             elementsSource,
             runOnFields,
-            allowEmpty,
             allowEmptyArrays,
             allowEmptyObjects,
           })
@@ -522,7 +519,6 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         runOnFields,
-        allowEmpty,
         allowEmptyArrays,
         allowEmptyObjects,
       }),
@@ -538,7 +534,6 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         runOnFields,
-        allowEmpty,
         allowEmptyArrays,
         allowEmptyObjects,
       }),

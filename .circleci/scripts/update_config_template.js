@@ -74,6 +74,7 @@ const generateE2eMatrix = (templateName, outputName) => {
 const generateUtMatrix = (templateName, outputName) => {
   const configTemplate = readFileSync(templateName, 'utf8')
   const utPackagesToTest = readFileSync(path.join(__dirname, '..', 'ut_packages_to_test.txt'), 'utf8').split('\n')
+  const utPackagesWithPrettyName = utPackagesToTest.map((pkg) => { return `${pkg.split('/').pop()}:${pkg}` })
   
   const utMatrix = `
       - unit_test:
@@ -85,10 +86,10 @@ const generateUtMatrix = (templateName, outputName) => {
               parallelism:
                 - 1
               package_name: 
-                - "${utPackagesToTest.join('"\n                - "')}"`
-  const alteredConfigTemplate = configTemplate.replace(
+                - "${utPackagesWithPrettyName.join('"\n                - "')}"`
+    const alteredConfigTemplate = configTemplate.replace(
     /# <TEST_MATRIX_UT>/g,
-    utPackagesToTest.length > 0 ? utMatrix : '',
+    utPackagesWithPrettyName.length > 0 ? utMatrix : '',
     )
   writeFileSync(outputName, alteredConfigTemplate)
 }

@@ -35,7 +35,8 @@ const filter: FilterCreator = () => ({
             type: await instance.getType(),
             pathID: instance.elemID,
             strict: false,
-            allowEmpty: true,
+            allowEmptyArrays: true,
+            allowEmptyObjects: true,
             transformFunc: ({ value, path }) => {
               if (path?.name === 'self') {
                 return undefined

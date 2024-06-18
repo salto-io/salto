@@ -42,7 +42,8 @@ const filterCreator: LocalFilterCreator = () => ({
             type: instance.getTypeSync(),
             transformFunc: transformPrimitive,
             strict: false,
-            allowEmpty: true,
+            allowEmptyArrays: true,
+            allowEmptyObjects: true,
           }) || {}
       })
   },

@@ -151,7 +151,8 @@ const sortLists = async (instance: InstanceElement): Promise<void> => {
       values: instance.value,
       type: await instance.getType(),
       strict: false,
-      allowEmpty: true,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
       transformFunc: async ({ value, field }) => {
         if (field === undefined || !Array.isArray(value)) {
           return value

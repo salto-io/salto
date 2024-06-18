@@ -25,13 +25,26 @@ const { humanFileSize } = strings
 const MAX_MERGE_CONTENT_SIZE = 10 * 1024 * 1024
 const MERGE_TIMEOUT = 10 * 1000
 
+const getLineSeparator = (str: string): string => {
+  const numOfCrlf = str.match(/\r\n/g)?.length ?? 0
+  const numOfLf = (str.match(/\n/g)?.length ?? 0) - numOfCrlf
+  const numOfCr = (str.match(/\r/g)?.length ?? 0) - numOfCrlf
+  if (numOfCrlf > numOfCr && numOfCrlf > numOfLf) {
+    return '\r\n'
+  }
+  if (numOfCr > numOfLf) {
+    return '\r'
+  }
+  return '\n'
+}
+
 const isConflictChunk = (chunk: diff3.ICommResult<string>): boolean =>
   !('common' in chunk) && chunk.buffer1.length > 0 && chunk.buffer2.length > 0
 
 const mergeTwoStrings = (
   first: string,
   second: string,
-  { stringSeparator }: { stringSeparator: string },
+  { stringSeparator }: { stringSeparator: RegExp },
   timeout: number,
 ): { conflict: boolean; result: string[] } => {
   const result = diff3.diffComm(first.split(stringSeparator), second.split(stringSeparator), timeout)
@@ -71,7 +84,7 @@ export const mergeStrings = (
         )
         return undefined
       }
-      const options = { excludeFalseConflicts: true, stringSeparator: '\n' }
+      const options = { excludeFalseConflicts: true, stringSeparator: /\r\n|\n|\r/g }
       try {
         const { conflict, result } =
           base !== undefined
@@ -80,8 +93,11 @@ export const mergeStrings = (
         if (conflict) {
           log.debug('conflict found in %s', changeId)
         } else {
-          log.debug('merged %s successfully', changeId)
-          return result.join(options.stringSeparator)
+          // getting the line separator of the current version in the workspace
+          const lineSeparator = getLineSeparator(current)
+          // eslint-disable-next-line no-restricted-syntax
+          log.debug('merged %s successfully- using line separator %s', changeId, JSON.stringify(lineSeparator))
+          return result.join(lineSeparator)
         }
       } catch (e) {
         if (e instanceof diff3.TimeoutError) {

@@ -238,7 +238,11 @@ const recurseIntoValue = ({
       // but we do not want to omit those, we only want to omit empty
       // objects, arrays and strings. we don't need to check for objects here
       // because we cannot get here with an object
-      const valueIsEmpty = (Array.isArray(newVal) || _.isString(newVal)) && _.isEmpty(newVal)
+      const isEmptyString = _.isString(newVal) && _.isEmpty(newVal)
+      if (isEmptyString) {
+        log.warn('found empty string %s in field %s, string will be omitted: %s', newVal, field?.name, allowEmptyArrays)
+      }
+      const valueIsEmpty = (Array.isArray(newVal) && _.isEmpty(newVal)) || isEmptyString
       return valueIsEmpty && !allowEmptyArrays ? undefined : newVal
     }
     const fieldMapper = fieldMapperGenerator(fieldType, newVal)
@@ -381,13 +385,15 @@ export const transformElementAnnotations = async <T extends Element>({
   transformFunc,
   strict,
   elementsSource,
-  allowEmpty,
+  allowEmptyArrays,
+  allowEmptyObjects,
 }: {
   element: T
   transformFunc: TransformFunc
   strict?: boolean
   elementsSource?: ReadOnlyElementsSource
-  allowEmpty?: boolean
+  allowEmptyArrays?: boolean
+  allowEmptyObjects?: boolean
 }): Promise<Values> =>
   (await transformValues({
     values: element.annotations,
@@ -396,8 +402,8 @@ export const transformElementAnnotations = async <T extends Element>({
     strict,
     pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
     elementsSource,
-    allowEmptyArrays: allowEmpty,
-    allowEmptyObjects: allowEmpty,
+    allowEmptyArrays,
+    allowEmptyObjects,
     isTopLevel: false,
   })) || {}
 
@@ -408,6 +414,8 @@ export const transformElement = async <T extends Element>({
   elementsSource,
   runOnFields,
   allowEmpty,
+  allowEmptyArrays,
+  allowEmptyObjects,
 }: {
   element: T
   transformFunc: TransformFunc
@@ -415,6 +423,8 @@ export const transformElement = async <T extends Element>({
   elementsSource?: ReadOnlyElementsSource
   runOnFields?: boolean
   allowEmpty?: boolean
+  allowEmptyArrays?: boolean
+  allowEmptyObjects?: boolean
 }): Promise<T> => {
   let newElement: Element
   const transformedAnnotations = await transformElementAnnotations({
@@ -422,7 +432,8 @@ export const transformElement = async <T extends Element>({
     transformFunc,
     strict,
     elementsSource,
-    allowEmpty,
+    allowEmptyArrays: allowEmptyArrays ?? allowEmpty,
+    allowEmptyObjects: allowEmptyObjects ?? allowEmpty,
   })
 
   if (isInstanceElement(element)) {
@@ -434,8 +445,8 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         pathID: element.elemID,
-        allowEmptyArrays: allowEmpty,
-        allowEmptyObjects: allowEmpty,
+        allowEmptyArrays: allowEmptyArrays ?? allowEmpty,
+        allowEmptyObjects: allowEmptyObjects ?? allowEmpty,
       })) || {}
 
     newElement = new InstanceElement(
@@ -460,6 +471,8 @@ export const transformElement = async <T extends Element>({
             elementsSource,
             runOnFields,
             allowEmpty,
+            allowEmptyArrays,
+            allowEmptyObjects,
           })
         }
         return undefined
@@ -506,6 +519,8 @@ export const transformElement = async <T extends Element>({
         elementsSource,
         runOnFields,
         allowEmpty,
+        allowEmptyArrays,
+        allowEmptyObjects,
       }),
     )
     return newElement as T
@@ -520,6 +535,8 @@ export const transformElement = async <T extends Element>({
         elementsSource,
         runOnFields,
         allowEmpty,
+        allowEmptyArrays,
+        allowEmptyObjects,
       }),
     )
     return newElement as T

@@ -224,7 +224,18 @@ export type FieldReferenceDefinition = {
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
 
-export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
+/**
+ * The rules for finding and resolving values into (and back from) reference expressions.
+ * Overlaps between rules are allowed, and the first successful conversion wins.
+ * Current order (defined by generateReferenceResolverFinder):
+ *  1. Exact field names take precedence over regexp
+ *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
+ *
+ * A value will be converted into a reference expression if:
+ * 1. An element matching the rule is found.
+ * 2. Resolving the resulting reference expression back returns the original value.
+ */
+export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'field',
@@ -883,18 +894,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'sobjectType', parentTypes: ['AnimationRule'] },
     target: { type: CUSTOM_OBJECT },
   },
-]
-
-// Optional reference that should not be used if enumFieldPermissions config is on
-export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] =
-  [
-    {
-      src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
-      target: { type: CUSTOM_FIELD },
-    },
-  ]
-
-export const referencesFromProfile: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
+    target: { type: CUSTOM_FIELD },
+  },
   {
     src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
@@ -931,9 +934,6 @@ export const referencesFromProfile: FieldReferenceDefinition[] = [
     serializationStrategy: 'relativeApiName',
     target: { type: CUSTOM_FIELD, parentContext: 'instanceParent' },
   },
-]
-
-export const referencesFromPermissionSets: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
     target: { type: CUSTOM_FIELD },
@@ -943,42 +943,6 @@ export const referencesFromPermissionSets: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
 ]
-
-/**
- * The rules for finding and resolving values into (and back from) reference expressions.
- * Overlaps between rules are allowed, and the first successful conversion wins.
- * Current order (defined by generateReferenceResolverFinder):
- *  1. Exact field names take precedence over regexp
- *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
- *
- * A value will be converted into a reference expression if:
- * 1. An element matching the rule is found.
- * 2. Resolving the resulting reference expression back returns the original value.
- */
-const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
-  ...defaultFieldNameToTypeMappingDefs,
-  ...fieldPermissionEnumDisabledExtraMappingDefs,
-  ...referencesFromProfile,
-  ...referencesFromPermissionSets,
-]
-
-export const getReferenceMappingDefs = (args: {
-  enumFieldPermissions: boolean
-  otherProfileRefs: boolean
-  permissionsSetRefs: boolean
-}): FieldReferenceDefinition[] => {
-  let refDefs = defaultFieldNameToTypeMappingDefs
-  if (args.enumFieldPermissions) {
-    refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
-  }
-  if (args.otherProfileRefs) {
-    refDefs = refDefs.concat(referencesFromProfile)
-  }
-  if (args.permissionsSetRefs) {
-    refDefs = refDefs.concat(referencesFromPermissionSets)
-  }
-  return refDefs
-}
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>
   _.isString(matcher) ? matcher === name : matcher.test(name)

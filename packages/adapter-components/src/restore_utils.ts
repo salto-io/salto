@@ -117,7 +117,8 @@ export const restoreValues: RestoreValuesFunc = async (source, targetElement, ge
     element: targetElement,
     transformFunc: restoreValuesFunc,
     strict: false,
-    allowEmpty,
+    allowEmptyArrays: allowEmpty,
+    allowEmptyObjects: allowEmpty,
   })
 }
 

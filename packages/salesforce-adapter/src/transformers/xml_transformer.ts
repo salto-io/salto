@@ -320,6 +320,7 @@ export const isComplexType = (
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
+  ignoreDeclaration: true,
 })
 
 export const xmlToValues = (
@@ -328,24 +329,18 @@ export const xmlToValues = (
   const parsedXml = parser.parse(xmlAsString)
 
   const parsedEntries = Object.entries<Values>(parsedXml)
-  if (parsedEntries.length === 0) {
-    // Should never happen.
-    log.debug(
-      'Found no root nodes in xml: %s',
-      Object.keys(parsedXml).join(','),
-    )
-    return { typeName: '', values: {} }
-  }
-  if (parsedEntries.length > 2) {
+  if (parsedEntries.length !== 1) {
     // Should never happen.
     log.debug(
       'Found %d root nodes in xml: %s',
       parsedEntries.length,
       Object.keys(parsedXml).join(','),
     )
+    if (parsedEntries.length === 0) {
+      return { typeName: '', values: {} }
+    }
   }
-  // If there are 2 entries the first is the top level.
-  const [typeName, values] = parsedEntries[parsedEntries.length - 1]
+  const [typeName, values] = parsedEntries[0]
   if (!_.isPlainObject(values)) {
     log.debug(
       'Could not find values for type %s in xml:\n%s',

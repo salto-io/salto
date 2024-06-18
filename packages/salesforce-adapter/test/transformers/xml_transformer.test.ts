@@ -438,6 +438,7 @@ describe('XML Transformer', () => {
                 '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n' +
                 '    <apiVersion>47.0</apiVersion>\n' +
                 '    <status>Active</status>\n' +
+                "    <description>An Apex class to read &amp; enjoy.\nIt's sure nice to have some special characters &lt;here&gt;.</description>\r\n" +
                 '</ApexClass>\n',
             },
             {
@@ -468,6 +469,9 @@ describe('XML Transformer', () => {
         expect(metadataInfo.fullName).toEqual('MyApexClass')
         expect(metadataInfo.apiVersion).toEqual(47)
         expect(metadataInfo.status).toEqual('Active')
+        expect(metadataInfo.description).toEqual(
+          "An Apex class to read & enjoy.\nIt's sure nice to have some special characters <here>.",
+        )
         expect(isStaticFile(metadataInfo.content)).toEqual(true)
         const contentStaticFile = metadataInfo.content as StaticFile
         expect(await contentStaticFile.getContent()).toEqual(

@@ -47,11 +47,7 @@ const xmlParser = new XMLParser({
   tagValueProcessor: (_name, val) => he.decode(val),
 })
 
-const isSameXmlValues = (xml1: string, xml2: string): boolean => {
-  const values1 = xmlParser.parse(xml1)
-  const values2 = xmlParser.parse(xml2)
-  return _.isEqual(values1, values2)
-}
+const isSameXmlValues = (xml1: string, xml2: string): boolean => _.isEqual(xmlParser.parse(xml1), xmlParser.parse(xml2))
 
 const discardIrrelevantChanges = (
   existingInstance: InstanceElement | undefined,

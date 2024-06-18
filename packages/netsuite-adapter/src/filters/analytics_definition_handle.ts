@@ -321,6 +321,8 @@ const xmlBuilder = new XMLBuilder({
   format: true,
   ignoreAttributes: false,
   cdataPropName: CDATA_TAG_NAME,
+  processEntities: false,
+  tagValueProcessor: (_name, val) => he.encode(String(val)),
 })
 
 const returnToOriginalShape = async (instance: InstanceElement): Promise<Values> => {
@@ -341,7 +343,6 @@ const returnToOriginalShape = async (instance: InstanceElement): Promise<Values>
 
   createDefinitionName(instance, updatedDefinitionValues)
 
-  // eslint-disable-next-line new-cap
   const xmlString = xmlBuilder.build({ [ROOT]: updatedDefinitionValues })
 
   return {

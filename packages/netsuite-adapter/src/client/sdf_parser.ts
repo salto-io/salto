@@ -149,10 +149,11 @@ const xmlBuilder = new XMLBuilder({
   format: false,
   ignoreAttributes: false,
   cdataPropName: CDATA_TAG_NAME,
+  processEntities: false,
+  tagValueProcessor: (_name, val) => he.encode(String(val)),
 })
 
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
-  // eslint-disable-next-line new-cap
   xmlBuilder.build({ [customizationInfo.typeName]: customizationInfo.values })
 
 const transformCustomObject = async (

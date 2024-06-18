@@ -679,7 +679,7 @@ export const definitionWithArrays = `<root>
         <_ITEM_>a</_ITEM_>
         <_ITEM_>b</_ITEM_>
       </datasets>
-      <definition>&lt;root&gt;&lt;version&gt;1&lt;/version&gt;&lt;columnAxis&gt;&lt;dimensionTree&gt;&lt;_T_&gt;dataDimension&lt;/_T_&gt;&lt;id&gt;6&lt;/id&gt;&lt;children type=&quot;array&quot;&gt;&lt;_ITEM_&gt;&lt;ref&gt;3&lt;/ref&gt;&lt;/_ITEM_&gt;&lt;/children&gt;&lt;items type=&quot;array&quot;&gt;&lt;_ITEM_&gt;&lt;id&gt;2&lt;/id&gt;&lt;expression&gt;&lt;function&gt;field&lt;/function&gt;&lt;args&gt;&lt;type&gt;&lt;_T_&gt;textType&lt;/_T_&gt;&lt;/type&gt;&lt;dataSourceId&gt;custdataset_dilly_1&lt;/dataSourceId&gt;&lt;fieldId&gt;displaynamewithhierarchy&lt;/fieldId&gt;&lt;/args&gt;&lt;/expression&gt;&lt;/_ITEM_&gt;&lt;/items&gt;&lt;/dimensionTree&gt;&lt;uiSettings&gt;&lt;headerAlwaysVisible type=&quot;boolean&quot;&gt;true&lt;/headerAlwaysVisible&gt;&lt;/uiSettings&gt;&lt;/columnAxis&gt;&lt;rowAxis&gt;&lt;dimensionTree&gt;&lt;_T_&gt;section&lt;/_T_&gt;&lt;id&gt;5&lt;/id&gt;&lt;children type=&quot;array&quot;&gt;&lt;_ITEM_&gt;&lt;_T_&gt;dataDimension&lt;/_T_&gt;&lt;id&gt;4&lt;/id&gt;&lt;items type=&quot;array&quot;&gt;&lt;_ITEM_&gt;&lt;id&gt;1&lt;/id&gt;&lt;expression&gt;&lt;function&gt;field&lt;/function&gt;&lt;args&gt;&lt;type&gt;&lt;_T_&gt;textType&lt;/_T_&gt;&lt;/type&gt;&lt;dataSourceId&gt;custdataset_dilly_1&lt;/dataSourceId&gt;&lt;fieldId&gt;description&lt;/fieldId&gt;&lt;/args&gt;&lt;/expression&gt;&lt;/_ITEM_&gt;&lt;/items&gt;&lt;/_ITEM_&gt;&lt;/children&gt;&lt;/dimensionTree&gt;&lt;/rowAxis&gt;&lt;measures type=&quot;array&quot;&gt;&lt;_ITEM_&gt;&lt;_T_&gt;dataMeasure&lt;/_T_&gt;&lt;id&gt;3&lt;/id&gt;&lt;aggregation&gt;count&lt;/aggregation&gt;&lt;expression&gt;&lt;function&gt;field&lt;/function&gt;&lt;args&gt;&lt;type&gt;&lt;_T_&gt;recordType&lt;/_T_&gt;&lt;id&gt;record_accttype&lt;/id&gt;&lt;/type&gt;&lt;dataSourceId&gt;custdataset_dilly_1&lt;/dataSourceId&gt;&lt;fieldId&gt;accttype&lt;/fieldId&gt;&lt;/args&gt;&lt;/expression&gt;&lt;/_ITEM_&gt;&lt;/measures&gt;&lt;/root&gt;</definition>
+      <definition>&#x3C;root&#x3E;&#x3C;version&#x3E;1&#x3C;/version&#x3E;&#x3C;columnAxis&#x3E;&#x3C;dimensionTree&#x3E;&#x3C;_T_&#x3E;dataDimension&#x3C;/_T_&#x3E;&#x3C;id&#x3E;6&#x3C;/id&#x3E;&#x3C;children type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;ref&#x3E;3&#x3C;/ref&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/children&#x3E;&#x3C;items type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;id&#x3E;2&#x3C;/id&#x3E;&#x3C;expression&#x3E;&#x3C;function&#x3E;field&#x3C;/function&#x3E;&#x3C;args&#x3E;&#x3C;type&#x3E;&#x3C;_T_&#x3E;textType&#x3C;/_T_&#x3E;&#x3C;/type&#x3E;&#x3C;dataSourceId&#x3E;custdataset_dilly_1&#x3C;/dataSourceId&#x3E;&#x3C;fieldId&#x3E;displaynamewithhierarchy&#x3C;/fieldId&#x3E;&#x3C;/args&#x3E;&#x3C;/expression&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/items&#x3E;&#x3C;/dimensionTree&#x3E;&#x3C;uiSettings&#x3E;&#x3C;headerAlwaysVisible type=&#x22;boolean&#x22;&#x3E;true&#x3C;/headerAlwaysVisible&#x3E;&#x3C;/uiSettings&#x3E;&#x3C;/columnAxis&#x3E;&#x3C;rowAxis&#x3E;&#x3C;dimensionTree&#x3E;&#x3C;_T_&#x3E;section&#x3C;/_T_&#x3E;&#x3C;id&#x3E;5&#x3C;/id&#x3E;&#x3C;children type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;_T_&#x3E;dataDimension&#x3C;/_T_&#x3E;&#x3C;id&#x3E;4&#x3C;/id&#x3E;&#x3C;items type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;id&#x3E;1&#x3C;/id&#x3E;&#x3C;expression&#x3E;&#x3C;function&#x3E;field&#x3C;/function&#x3E;&#x3C;args&#x3E;&#x3C;type&#x3E;&#x3C;_T_&#x3E;textType&#x3C;/_T_&#x3E;&#x3C;/type&#x3E;&#x3C;dataSourceId&#x3E;custdataset_dilly_1&#x3C;/dataSourceId&#x3E;&#x3C;fieldId&#x3E;description&#x3C;/fieldId&#x3E;&#x3C;/args&#x3E;&#x3C;/expression&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/items&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/children&#x3E;&#x3C;/dimensionTree&#x3E;&#x3C;/rowAxis&#x3E;&#x3C;measures type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;_T_&#x3E;dataMeasure&#x3C;/_T_&#x3E;&#x3C;id&#x3E;3&#x3C;/id&#x3E;&#x3C;aggregation&#x3E;count&#x3C;/aggregation&#x3E;&#x3C;expression&#x3E;&#x3C;function&#x3E;field&#x3C;/function&#x3E;&#x3C;args&#x3E;&#x3C;type&#x3E;&#x3C;_T_&#x3E;recordType&#x3C;/_T_&#x3E;&#x3C;id&#x3E;record_accttype&#x3C;/id&#x3E;&#x3C;/type&#x3E;&#x3C;dataSourceId&#x3E;custdataset_dilly_1&#x3C;/dataSourceId&#x3E;&#x3C;fieldId&#x3E;accttype&#x3C;/fieldId&#x3E;&#x3C;/args&#x3E;&#x3C;/expression&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/measures&#x3E;&#x3C;/root&#x3E;</definition>
       <id type="null"></id>
       <applicationId type="null"></applicationId>
       <version type="null"></version>
@@ -714,89 +714,3 @@ export const definitionWithArrays = `<root>
   <datasetLinks type="array"></datasetLinks>
 </root>
 `
-
-const newDefinitionWithArrays = `<root>
-  <dataViews type="array">
-    <_ITEM_>
-      <_T_>dataView</_T_>
-      <scriptId type="string">1</scriptId>
-      <id type="null"></id>
-      <applicationId type="null"></applicationId>
-      <version type="null"></version>
-      <name type="null"></name>
-      <workbook type="null"></workbook>
-      <datasets type="array"></datasets>
-      <columns type="array"></columns>
-      <order type="null"></order>
-    </_ITEM_>
-    <_ITEM_>
-      <_T_>dataView</_T_>
-      <scriptId>2</scriptId>
-      <id type="null"></id>
-      <applicationId type="null"></applicationId>
-      <version type="null"></version>
-      <name type="null"></name>
-      <workbook type="null"></workbook>
-      <datasets type="array"></datasets>
-      <columns type="array"></columns>
-      <order type="null"></order>
-    </_ITEM_>
-  </dataViews>
-  <pivots type="array">
-    <_ITEM_>
-      <_T_>pivot</_T_>
-      <scriptId type="string">4</scriptId>
-      <datasets type="array">
-        <_ITEM_>b</_ITEM_>
-        <_ITEM_>a</_ITEM_>
-      </datasets>
-      <id type="null"></id>
-      <applicationId type="null"></applicationId>
-      <version type="null"></version>
-      <name type="null"></name>
-      <workbook type="null"></workbook>
-      <format type="null"></format>
-      <order type="null"></order>
-      <definition>&lt;root>&lt;version>1&lt;/version>&lt;rowAxis>&lt;dimensionTree>&lt;_T_>section&lt;/_T_>&lt;id>5&lt;/id>&lt;children type="array">&lt;_ITEM_>&lt;_T_>dataDimension&lt;/_T_>&lt;id>4&lt;/id>&lt;items type="array">&lt;_ITEM_>&lt;id>1&lt;/id>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>textType&lt;/_T_>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>description&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/items>&lt;/_ITEM_>&lt;/children>&lt;/dimensionTree>&lt;/rowAxis>&lt;columnAxis>&lt;dimensionTree>&lt;_T_>dataDimension&lt;/_T_>&lt;id>6&lt;/id>&lt;children type="array">&lt;_ITEM_>&lt;ref>3&lt;/ref>&lt;/_ITEM_>&lt;/children>&lt;items type="array">&lt;_ITEM_>&lt;id>2&lt;/id>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>textType&lt;/_T_>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>displaynamewithhierarchy&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/items>&lt;/dimensionTree>&lt;uiSettings>&lt;headerAlwaysVisible type="boolean">true&lt;/headerAlwaysVisible>&lt;/uiSettings>&lt;/columnAxis>&lt;measures type="array">&lt;_ITEM_>&lt;_T_>dataMeasure&lt;/_T_>&lt;id>3&lt;/id>&lt;aggregation>count&lt;/aggregation>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>recordType&lt;/_T_>&lt;id>record_accttype&lt;/id>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>accttype&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/measures>&lt;/root></definition>
-    </_ITEM_>
-  </pivots>
-  <Workbook>
-    <dataViewIDs type="array">
-      <_ITEM_ type="string">1</_ITEM_>
-      <_ITEM_>2</_ITEM_>
-    </dataViewIDs>
-    <pivotIDs type="array">
-      <_ITEM_ type="string">3</_ITEM_>
-    </pivotIDs>
-    <_T_>workbook</_T_>
-    <id type="null"></id>
-    <scriptId type="null"></scriptId>
-    <applicationId type="null"></applicationId>
-    <version type="null"></version>
-    <name type="null"></name>
-    <audience type="null"></audience>
-    <ownerId type="null"></ownerId>
-    <description type="null"></description>
-    <chartIDs type="array"></chartIDs>
-  </Workbook>
-  <scriptid type="null"></scriptid>
-  <name>arrays test</name>
-  <charts type="array"></charts>
-  <datasetLinks type="array"></datasetLinks>
-</root>
-`
-
-const newWorkbookWithArraysValue = {
-  scriptid: 'custworkbook_with_arrays',
-  name: {
-    '#text': '[scriptid=name]',
-  },
-  definition: newDefinitionWithArrays,
-}
-
-export const newWorkbookWithArrays = new InstanceElement(
-  'custworkbook_with_arrays',
-  workbook,
-  newWorkbookWithArraysValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)

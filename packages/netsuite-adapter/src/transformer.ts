@@ -36,6 +36,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   MapKeyFunc,
+  SortKeysFunc,
   mapKeysRecursive,
   TransformFunc,
   transformValues,
@@ -184,7 +185,16 @@ export const createInstanceElement = async (
   const transformAttributeKey: MapKeyFunc = ({ key }) =>
     key.startsWith(ATTRIBUTE_PREFIX) ? key.slice(ATTRIBUTE_PREFIX.length) : key
 
-  const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values, transformAttributeKey)
+  // We later assume that the `scriptid` value (which comes from an attribute) is always first, so we put them first.
+  const nonAttributeKeyIndicator = (k: string): number => (k.startsWith(ATTRIBUTE_PREFIX) ? 0 : 1)
+  const sortKeysAttributesFirst: SortKeysFunc = (a, b) => nonAttributeKeyIndicator(a) - nonAttributeKeyIndicator(b)
+
+  const valuesWithTransformedAttrs = mapKeysRecursive(
+    customizationInfo.values,
+    transformAttributeKey,
+    undefined,
+    sortKeysAttributesFirst,
+  )
 
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] =

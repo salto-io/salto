@@ -66,7 +66,7 @@ const pathPrefixRegex = new RegExp(
   'm',
 )
 
-const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
+const shouldExtractToGeneratedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
   serviceIdInfoRecord.appid !== undefined ||
   serviceIdInfoRecord.bundleid !== undefined ||
   !serviceIdInfoRecord.isFullMatch
@@ -196,14 +196,14 @@ const replaceReferenceValues = async (
       }
 
       if (path?.isAttrID() && path.createParentID().name === CORE_ANNOTATIONS.PARENT) {
-        if (!shouldExtractToGenereatedDependency(serviceIdInfoRecord)) {
+        if (!shouldExtractToGeneratedDependency(serviceIdInfoRecord)) {
           returnValue = new ReferenceExpression(elemID.createBaseID().parent)
           return
         }
         dependenciesToAdd.push(elemID.createBaseID().parent)
         return
       }
-      if (!shouldExtractToGenereatedDependency(serviceIdInfoRecord)) {
+      if (!shouldExtractToGeneratedDependency(serviceIdInfoRecord)) {
         returnValue = new ReferenceExpression(elemID, serviceID)
         return
       }

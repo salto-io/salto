@@ -103,6 +103,7 @@ export const getServiceIdsToElemIds = (element: Element): ServiceIdRecords => {
     return getClosestParentServiceId(parentElemId)
   }
 
+  // Since walkOnElement runs a DFS, this assumes that the script ID of an object appears before any of its children.
   walkOnElement({
     element,
     func: ({ value, path }) => {

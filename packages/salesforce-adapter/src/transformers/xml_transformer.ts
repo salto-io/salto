@@ -321,12 +321,14 @@ const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
   ignoreDeclaration: true,
+  tagValueProcessor: (_name, val) => val.replace(/&#xD;/g, '\r'),
 })
 
 export const xmlToValues = (
   xmlAsString: string,
 ): { values: Values; typeName: string } => {
-  const parsedXml = parser.parse(xmlAsString)
+  // SF do not encode their CRs and the XML parser converts them to LFs, so we preserve them.
+  const parsedXml = parser.parse(xmlAsString.replace(/\r/g, '&#xD;'))
 
   const parsedEntries = Object.entries<Values>(parsedXml)
   if (parsedEntries.length !== 1) {

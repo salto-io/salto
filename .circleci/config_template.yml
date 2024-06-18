@@ -108,6 +108,7 @@ jobs:
       - restore_cache:
           keys:
             - &turbo-cache turbo-cache-v2-{{ .Branch }}-{{ epoch }}
+            - turbo-cache-v2-{{ .Branch }}
             - turbo-cache-v2-main
 
       - run:
@@ -179,7 +180,8 @@ jobs:
           command: |
             yarn config set cacheFolder /mnt/ramdisk/project/.yarn/cache
             yarn config set nodeLinker node-modules
-            yarn workspace << parameters.package_name >> test --reporters=default --reporters=jest-junit --ci --colors
+            PACKAGE=$(echo "<< parameters.package_name >>" | cut -d':' -f2)
+            yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
 
@@ -401,9 +403,7 @@ workflows:
   commit:
     jobs:
       - build
-
       # <TEST_MATRIX_UT>
-
       # <TEST_MATRIX_E2E>
       # <TEST_MATRIX_E2E_JAVA>
 

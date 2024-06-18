@@ -34,10 +34,7 @@ import { collections } from '@salto-io/lowerdash'
 import filterCreator, {
   addReferences,
 } from '../../src/filters/field_references'
-import {
-  FieldReferenceDefinition,
-  getReferenceMappingDefs,
-} from '../../src/transformers/reference_mapping'
+import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
 import {
   OBJECTS_PATH,
   SALESFORCE,
@@ -611,11 +608,9 @@ describe('FieldReferences filter', () => {
 
     beforeAll(async () => {
       elements = generateElements()
-      const modifiedDefs = getReferenceMappingDefs({
-        enumFieldPermissions: false,
-        otherProfileRefs: false,
-        permissionsSetRefs: false,
-      }).map((def) => _.omit(def, 'serializationStrategy'))
+      const modifiedDefs = fieldNameToTypeMappingDefs.map((def) =>
+        _.omit(def, 'serializationStrategy'),
+      )
       await addReferences(
         elements,
         buildElementsSourceFromElements(elements),
@@ -938,82 +933,6 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       expect(instanceMissingActionForType.value.actions.name).toEqual('foo')
       expect(instanceInvalidActionType.value.actions.name).toEqual('foo')
       expect(instanceFlowRecordLookup.value.filters[1].field).toEqual('unknown')
-    })
-  })
-})
-
-describe('getReferenceMappingDefs', () => {
-  let defs: FieldReferenceDefinition[]
-
-  describe('Without any optional defs', () => {
-    beforeEach(() => {
-      defs = getReferenceMappingDefs({
-        enumFieldPermissions: false,
-        otherProfileRefs: false,
-        permissionsSetRefs: false,
-      })
-    })
-    it('should not have any profile-related references', () => {
-      defs
-        .flatMap((def) => def.src.parentTypes)
-        .forEach((type) => expect(type).not.toInclude('Profile'))
-    })
-  })
-  describe('With profile-related optional defs', () => {
-    beforeEach(() => {
-      defs = getReferenceMappingDefs({
-        enumFieldPermissions: false,
-        otherProfileRefs: true,
-        permissionsSetRefs: true,
-      })
-    })
-    it('should have profile-related references, but not FLS', () => {
-      const profileRelatedDefs = defs
-        .flatMap((def) => def.src.parentTypes)
-        .filter((type) => type.includes('Profile'))
-      expect(profileRelatedDefs).not.toBeEmpty()
-
-      profileRelatedDefs.forEach((type) =>
-        expect(type).not.toInclude('ProfileFieldLevelSecurity'),
-      )
-    })
-  })
-  describe('With FLS-related optional defs', () => {
-    beforeEach(() => {
-      defs = getReferenceMappingDefs({
-        enumFieldPermissions: true,
-        otherProfileRefs: false,
-        permissionsSetRefs: false,
-      })
-    })
-    it('should have only FLS-related profile references', () => {
-      const profileRelatedDefs = defs
-        .flatMap((def) => def.src.parentTypes)
-        .filter((type) => type.includes('Profile'))
-      expect(profileRelatedDefs).not.toBeEmpty()
-
-      profileRelatedDefs.forEach((type) =>
-        expect(type).toInclude('ProfileFieldLevelSecurity'),
-      )
-    })
-  })
-  describe('With all optional defs', () => {
-    beforeEach(() => {
-      defs = getReferenceMappingDefs({
-        enumFieldPermissions: true,
-        otherProfileRefs: true,
-        permissionsSetRefs: true,
-      })
-    })
-    it('should have only all profile references', () => {
-      const profileRelatedDefs = defs
-        .flatMap((def) => def.src.parentTypes)
-        .filter((type) => type.includes('Profile'))
-      const flsRelatedDefs = profileRelatedDefs.filter((type) =>
-        type.includes('ProfileFieldLevelSecurity'),
-      )
-      expect(flsRelatedDefs).not.toBeEmpty()
-      expect(profileRelatedDefs.length).toBeGreaterThan(flsRelatedDefs.length)
     })
   })
 })

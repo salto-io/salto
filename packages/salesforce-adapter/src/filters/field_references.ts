@@ -30,8 +30,8 @@ import {
   generateReferenceResolverFinder,
   ReferenceContextStrategyName,
   FieldReferenceDefinition,
+  fieldNameToTypeMappingDefs,
   getLookUpName,
-  getReferenceMappingDefs,
 } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -46,6 +46,7 @@ import {
   ROLE_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
 import {
   buildElementsSourceForFetch,
@@ -225,21 +226,20 @@ export const addReferences = async (
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async (elements) => {
-    const refDef = getReferenceMappingDefs({
-      enumFieldPermissions: config.enumFieldPermissions ?? false,
-      otherProfileRefs: config.fetchProfile.isFeatureEnabled(
-        'generateRefsInProfiles',
-      ),
-      permissionsSetRefs:
-        !config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets'),
-    })
+    const typesToIgnore: string[] = []
+    if (!config.fetchProfile.isFeatureEnabled('generateRefsInProfiles')) {
+      typesToIgnore.push(PROFILE_METADATA_TYPE)
+    }
+    if (
+      config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets')
+    ) {
+      typesToIgnore.push(PERMISSION_SET_METADATA_TYPE)
+    }
     await addReferences(
       elements,
       buildElementsSourceForFetch(elements, config),
-      refDef,
-      config.fetchProfile.isFeatureEnabled('generateRefsInProfiles')
-        ? []
-        : [PROFILE_METADATA_TYPE],
+      fieldNameToTypeMappingDefs,
+      typesToIgnore,
     )
   },
 })

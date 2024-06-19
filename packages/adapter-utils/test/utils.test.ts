@@ -2449,7 +2449,10 @@ describe('Test utils.ts', () => {
 
   describe('mapKeysRecursive', () => {
     it('should map all keys recursively', () => {
-      const result = mapKeysRecursive(mockInstance.value, ({ key }) => key.toUpperCase())
+      const result = mapKeysRecursive({
+        values: mockInstance.value,
+        func: ({ key }) => key.toUpperCase(),
+      })
       expect(Object.keys(result)).toEqual(expect.arrayContaining(['BOOL', 'STR', 'OBJ', 'OBJWITHINNEROBJ', 'NUMMAP']))
       expect(Object.keys(result.OBJWITHINNEROBJ)).toContain('INNEROBJ')
       expect(Object.keys(result.OBJWITHINNEROBJ.INNEROBJ)).toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
@@ -2457,16 +2460,16 @@ describe('Test utils.ts', () => {
     })
 
     it('should map keys recursively when passing the pathID', () => {
-      const result = mapKeysRecursive(
-        mockInstance.value,
-        ({ key, pathID }) => {
+      const result = mapKeysRecursive({
+        values: mockInstance.value,
+        func: ({ key, pathID }) => {
           if (pathID?.getFullName().toLowerCase().includes('key')) {
             return key.toUpperCase()
           }
           return key
         },
-        mockInstance.elemID,
-      )
+        pathID: mockInstance.elemID,
+      })
       expect(Object.keys(result)).toEqual(expect.arrayContaining(['bool', 'str', 'obj', 'objWithInnerObj', 'numMap']))
       expect(Object.keys(result.objWithInnerObj)).toContain('innerObj')
       expect(Object.keys(result.objWithInnerObj.innerObj)).toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))

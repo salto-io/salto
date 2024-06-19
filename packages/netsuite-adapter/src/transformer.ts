@@ -189,12 +189,11 @@ export const createInstanceElement = async (
   const nonAttributeKeyIndicator = (k: string): number => (k.startsWith(ATTRIBUTE_PREFIX) ? 0 : 1)
   const sortKeysAttributesFirst: SortKeysFunc = (a, b) => nonAttributeKeyIndicator(a) - nonAttributeKeyIndicator(b)
 
-  const valuesWithTransformedAttrs = mapKeysRecursive(
-    customizationInfo.values,
-    transformAttributeKey,
-    undefined,
-    sortKeysAttributesFirst,
-  )
+  const valuesWithTransformedAttrs = mapKeysRecursive({
+    values: customizationInfo.values,
+    func: transformAttributeKey,
+    keySortFunc: sortKeysAttributesFirst,
+  })
 
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] =
@@ -290,7 +289,11 @@ export const restoreAttributes = async (values: Values, type: ObjectType, instan
     return key
   }
 
-  return mapKeysRecursive(values, restoreAttributeFunc, instancePath)
+  return mapKeysRecursive({
+    values,
+    func: restoreAttributeFunc,
+    pathID: instancePath,
+  })
 }
 
 // According to https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html

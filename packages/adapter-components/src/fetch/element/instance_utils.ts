@@ -55,7 +55,10 @@ const log = logger(module)
  */
 export const recursiveNaclCase = (value: Values, invert = false): Values => {
   const func = invert ? invertNaclCase : naclCase
-  return mapKeysRecursive(value, ({ key }) => func(key))
+  return mapKeysRecursive({
+    values: value,
+    func: ({ key }) => func(key),
+  })
 }
 
 /**

@@ -72,6 +72,9 @@ describe('policyPrioritiesFilter', () => {
   let client: OktaClient
   let elements: InstanceElement[]
   describe('fetch', () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
     it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should add rule%sPriority instance and type to the elements',
       async (policyRuleName: string) => {
@@ -264,7 +267,7 @@ describe('policyPrioritiesFilter', () => {
       const logging = logger('okta-adapter/src/filters/policy_priority')
       const logErrorSpy = jest.spyOn(logging, 'error')
       await filter.onFetch(elements)
-      expect(logErrorSpy).toHaveBeenCalledWith(`Duplicate priorities found for ${policyRuleInstanceTwo.elemID.getFullName()},${policyRuleInstanceThree.elemID.getFullName()}`)
+      expect(logErrorSpy).toHaveBeenCalledWith(`Duplicate priorities found for ${policyRuleInstanceTwo.elemID.getFullName()},${policyRuleInstanceThree.elemID.getFullName()} with priority 2`)
     })
     it.each(ALL_SUPPORTED_POLICY_NAMES)(
       'should log an error when there are duplicate priorities in %sPriority instance',
@@ -281,7 +284,7 @@ describe('policyPrioritiesFilter', () => {
         const logging = logger('okta-adapter/src/filters/policy_priority')
         const logErrorSpy = jest.spyOn(logging, 'error')
         await filter.onFetch(elements)
-        expect(logErrorSpy).toHaveBeenCalledWith(`Duplicate priorities found for ${policyInstanceTwo.elemID.getFullName()},${policyInstanceThree.elemID.getFullName()}`)
+        expect(logErrorSpy).toHaveBeenCalledWith(`Duplicate priorities found for ${policyInstanceTwo.elemID.getFullName()},${policyInstanceThree.elemID.getFullName()} with priority 2`)
       },
     )
     it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(

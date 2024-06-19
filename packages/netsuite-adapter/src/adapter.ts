@@ -123,6 +123,7 @@ import {
   ALL_TYPES_REGEX,
   DEFAULT_WARN_STALE_DATA,
   DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+  EXTENSION_REGEX,
 } from './config/constants'
 import {
   FetchByQueryFunc,
@@ -379,6 +380,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const result = await this.client.importFileCabinetContent(
         updatedFetchQuery,
         this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
+        this.userConfig.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
       )
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result

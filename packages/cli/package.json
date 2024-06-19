@@ -35,7 +35,7 @@
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
     "e2e-test": "RUN_E2E_TESTS=1 jest",
     "generate": "./generate.sh",
-    "package": "node ./package_native.js"
+    "package": "./package.sh"
   },
   "dependencies": {
     "@salto-io/adapter-api": "0.3.60",

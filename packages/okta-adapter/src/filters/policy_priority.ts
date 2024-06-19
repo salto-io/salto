@@ -106,7 +106,9 @@ const logDuplicatePriorities = (instances: InstanceElement[]): void => {
   const instanceByPriority = _.groupBy(instances, inst => inst.value.priority)
   Object.entries(instanceByPriority).forEach(([priority, insts]) => {
     if (Array.isArray(insts) && insts.length > 1) {
-      log.error(`Duplicate priorities found for ${insts.map(inst => inst.elemID.getFullName())} with priority ${priority}`)
+      log.error(
+        `Duplicate priorities found for ${insts.map(inst => inst.elemID.getFullName())} with priority ${priority}`,
+      )
     }
   })
 }

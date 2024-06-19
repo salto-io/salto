@@ -119,6 +119,25 @@ const optionsType = new ObjectType({
         [CORE_ANNOTATIONS.ALIAS]: 'List of Object Field',
       },
     },
+    booleanField: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Boolean Field',
+        [CORE_ANNOTATIONS.ALIAS]: 'Boolean Field',
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    numberField: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Number Field',
+        [CORE_ANNOTATIONS.ALIAS]: 'Number Field',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: [1, 2, 3],
+          enforce_value: true,
+        }),
+      },
+    },
   },
 })
 

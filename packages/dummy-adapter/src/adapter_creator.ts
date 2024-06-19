@@ -21,7 +21,10 @@ import {
   ObjectType,
   ListType,
   GetCustomReferencesFunc,
+  ConfigCreator,
+  createRestriction,
 } from '@salto-io/adapter-api'
+import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
@@ -58,6 +61,75 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
+
+
+const objectFieldType = new ObjectType({
+  elemID: new ElemID(DUMMY_ADAPTER, 'objectFieldType'),
+  fields: {
+    stringField: { refType: BuiltinTypes.STRING, annotations: {[CORE_ANNOTATIONS.DESCRIPTION]: 'String Field'} },
+    numberField: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true, [CORE_ANNOTATIONS.ALIAS]: 'Number Field' } },
+  },
+})
+
+const optionsType = new ObjectType({
+  elemID: new ElemID(DUMMY_ADAPTER, 'configOptionsType'),
+  fields: {
+    listOfStrings: { 
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'List of strings',
+        [CORE_ANNOTATIONS.ALIAS]: 'List of strings',
+      }
+    },
+    restrictedListOfStrings: { 
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Restricted List of strings',
+        [CORE_ANNOTATIONS.ALIAS]: 'Restricted List Of Strings',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: ['first value', 'second value', 'third value'],
+          enforce_value: false,
+        }),
+      },
+    },
+    enforcedRestrictedListOfStrings: { 
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Enforced Restricted List of strings',
+        [CORE_ANNOTATIONS.ALIAS]: 'Enforced Restricted List Of Strings',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: ['first value', 'second value', 'third value'],
+          enforce_value: true,
+        }),
+      },
+    },
+    objectField: {
+      refType: objectFieldType,
+      annotations: {
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Object Field',
+        [CORE_ANNOTATIONS.ALIAS]: 'Object Field',
+      }
+    },
+    listOfObjectField: {
+      refType: new ListType(objectFieldType),
+      annotations: {
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'List of Object Field',
+        [CORE_ANNOTATIONS.ALIAS]: 'List of Object Field',
+      }
+    }
+  },
+
+})
+
+
+const configCreator: ConfigCreator = {
+  optionsType,
+  getConfig: _options => (
+    createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  )
+}
+
 export const adapter: Adapter = {
   operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
   validateCredentials: async () => ({ accountId: '' }),
@@ -68,4 +140,5 @@ export const adapter: Adapter = {
   },
   configType,
   getCustomReferences,
+  configCreator,
 }

@@ -39,7 +39,7 @@ import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from '../client/constants'
+import { CDATA_TAG_NAME } from '../client/constants'
 import { parsedWorkbookType, workbookDefinitionFields } from '../type_parsers/analytics_parsers/parsed_workbook'
 import { datasetDefinitionFields, parsedDatasetType } from '../type_parsers/analytics_parsers/parsed_dataset'
 import { TypeAndInnerTypes } from '../types/object_types'
@@ -74,6 +74,7 @@ import {
 import { captureServiceIdInfo } from '../service_id_info'
 import { workbookType } from '../autogen/types/standard_types/workbook'
 import { datasetType } from '../autogen/types/standard_types/dataset'
+import { XML_BUILDER_DEFAULT_OPTIONS, XML_PARSER_DEFAULT_OPTIONS } from '../client/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -130,8 +131,7 @@ const fetchTransformFunc = async ({ value, field, path }: TransformFuncArgs, typ
 }
 
 const xmlParser = new XMLParser({
-  attributeNamePrefix: ATTRIBUTE_PREFIX,
-  ignoreAttributes: false,
+  ...XML_PARSER_DEFAULT_OPTIONS,
   tagValueProcessor: (_name, val) => he.decode(val),
 })
 
@@ -317,11 +317,8 @@ const createDefinitionName = (instance: InstanceElement, definitionValues: Value
 }
 
 const xmlBuilder = new XMLBuilder({
-  attributeNamePrefix: ATTRIBUTE_PREFIX,
-  format: true,
-  ignoreAttributes: false,
+  ...XML_BUILDER_DEFAULT_OPTIONS,
   cdataPropName: CDATA_TAG_NAME,
-  processEntities: false,
   tagValueProcessor: (_name, val) => he.encode(String(val)),
 })
 

@@ -31,8 +31,8 @@ import {
   TemplateCustomTypeInfo,
 } from './types'
 import { CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../constants'
-import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './constants'
-import { isFileCustomizationInfo } from './utils'
+import { CDATA_TAG_NAME } from './constants'
+import { isFileCustomizationInfo, XML_BUILDER_DEFAULT_OPTIONS, XML_PARSER_DEFAULT_OPTIONS } from './utils'
 
 const log = logger(module)
 const { withLimitedConcurrency } = promises.array
@@ -76,8 +76,7 @@ const DEFAULT_FOLDER_ATTRIBUTES =
   `</folder>${os.EOL}`
 
 const xmlParser = new XMLParser({
-  attributeNamePrefix: ATTRIBUTE_PREFIX,
-  ignoreAttributes: false,
+  ...XML_PARSER_DEFAULT_OPTIONS,
   tagValueProcessor: (_name, val) => he.decode(val),
 })
 
@@ -144,12 +143,10 @@ const convertToFolderCustomizationInfo = ({
 })
 
 const xmlBuilder = new XMLBuilder({
-  attributeNamePrefix: ATTRIBUTE_PREFIX,
+  ...XML_BUILDER_DEFAULT_OPTIONS,
   // We convert to an unformatted xml since the CDATA transformation is wrong when formatting.
   format: false,
-  ignoreAttributes: false,
   cdataPropName: CDATA_TAG_NAME,
-  processEntities: false,
   tagValueProcessor: (_name, val) => he.encode(String(val)),
 })
 

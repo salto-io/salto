@@ -14,28 +14,17 @@
  * limitations under the License.
  */
 
-import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import osPath from 'path'
 import { logger } from '@salto-io/logging'
 import { Graph } from './graph_utils'
 import { SDFObjectNode } from './types'
-import { isCustomTypeInfo } from './utils'
+import { isCustomTypeInfo, xmlParser, xmlBuilder } from './utils'
 import { OBJECTS_DIR, getCustomTypeInfoPath } from './sdf_parser'
 
 const log = logger(module)
 
 // The '/' prefix is needed to make osPath.resolve treat '~' as the root
 const PROJECT_ROOT_TILDE_PREFIX = `${osPath.sep}~`
-
-const xmlParser = new XMLParser({
-  ignoreAttributes: false,
-})
-
-const xmlBuilder = new XMLBuilder({
-  format: true,
-  ignoreAttributes: false,
-  suppressBooleanAttributes: false,
-})
 
 export const reorderDeployXml = (deployContent: string, dependencyGraph: Graph<SDFObjectNode>): string => {
   const nodesInCycle = new Set(dependencyGraph.findCycle())

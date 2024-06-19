@@ -30,9 +30,8 @@ import {
 import { TransformFunc, resolvePath, transformValuesSync } from '@salto-io/adapter-utils'
 import { DATASET, SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import { ATTRIBUTE_PREFIX } from '../client/constants'
 import { DATASET_LINK, DATASET_LINKS, DATASETS, ROOT } from '../type_parsers/analytics_parsers/analytics_constants'
-import { addAdditionalDependency } from '../client/utils'
+import { addAdditionalDependency, XML_PARSER_DEFAULT_OPTIONS } from '../client/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -42,8 +41,7 @@ const isStringArray = (val: unknown): val is string[] => Array.isArray(val) && _
 const isXmlContent = (val: unknown): val is string => _.isString(val) && val.startsWith(`<${ROOT}>`)
 
 const xmlParser = new XMLParser({
-  attributeNamePrefix: ATTRIBUTE_PREFIX,
-  ignoreAttributes: false,
+  ...XML_PARSER_DEFAULT_OPTIONS,
   tagValueProcessor: (_name, val) => he.decode(val),
 })
 

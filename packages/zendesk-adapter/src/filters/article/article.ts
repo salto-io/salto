@@ -357,6 +357,17 @@ const getAttachmentData = (
       .filter(id => id !== undefined)
       .map(Number),
   )
+  if (article.elemID.getFullName().includes('category_anotherBrand___Eden_test_sbss')) {
+    // eslint-disable-next-line no-console
+    console.log('POOOOOPOOOOOOPAAAAAAAAPAAAAAA')
+    // eslint-disable-next-line no-console
+    console.log('article: ', article.value.attachments)
+    // eslint-disable-next-line no-console
+    console.log('attachmentIDS: ', attachmentsIds.length)
+    // eslint-disable-next-line no-console
+    console.log('inline att instances: ', inlineAttachmentInstances.length)
+  }
+
   return { inlineAttachmentsNameById, attachmentIdsFromArticleBody }
 }
 
@@ -381,6 +392,16 @@ const calculateAndRemoveDeletedAttachments = ({
   articleInstances.forEach(article => {
     const articleRemovedAttachmentsIds = new Set<number>()
     const attachmentData = getAttachmentData(article, attachmentById, translationsByName)
+    if (article.elemID.getFullName().includes('category_anotherBrand___Eden_test_sbss')) {
+      // // eslint-disable-next-line no-console
+      // console.log('POOOOOPOOOOOOPAAAAAAAAPAAAAAA')
+      // // eslint-disable-next-line no-console
+      // console.log('article: ', article.elemID)
+      // // eslint-disable-next-line no-console
+      // console.log('attachment from body: ', attachmentData.attachmentIdsFromArticleBody.size)
+      // // eslint-disable-next-line no-console
+      // console.log('inline attachments: ', Object.keys(attachmentData.inlineAttachmentsNameById).length)
+    }
     Object.keys(attachmentData.inlineAttachmentsNameById).forEach(id => {
       const numberId = Number(id)
       if (!attachmentData.attachmentIdsFromArticleBody.has(numberId)) {
@@ -422,6 +443,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         .filter(article => article.value.id !== undefined)
       setupArticleUserSegmentId(elements, articleInstances)
       const attachments = elements.filter(instance => instance.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
+      // eslint-disable-next-line no-console
+      console.log('starting with ', attachments.length, ' attachments')
       const attachmentType = attachments.find(isObjectType)
       if (attachmentType === undefined) {
         log.error('could not find article_attachment object type')
@@ -433,6 +456,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         attachments.filter(isInstanceElement).filter(attachment => getName(attachment) !== undefined),
         getName,
       )
+      // eslint-disable-next-line no-console
+      console.log('1 with ', attachments.length, ' attachments')
+
       const attachmentById: Record<number, InstanceElement> = _.keyBy(
         attachments.filter(isInstanceElement).filter(attachment => getId(attachment) !== undefined),
         getId,
@@ -452,6 +478,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         attachments,
         attachment => isInstanceElement(attachment) && allRemovedAttachmentsIds.has(getId(attachment)),
       )
+      // eslint-disable-next-line no-console
+      console.log('2 with ', attachments.length, ' attachments')
+
       // If in the future articles could share attachments this would have to be changed! We delete attachments that
       // do not appear in one article, we currently do not check across all articles.
       _.remove(
@@ -461,6 +490,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           isInstanceElement(element) &&
           allRemovedAttachmentsIds.has(getId(element)),
       )
+      // eslint-disable-next-line no-console
+      console.log('ending with ', attachments.length, ' attachments')
+
       const attachmentErrors = await getArticleAttachments({
         brandIdToClient,
         attachmentType,

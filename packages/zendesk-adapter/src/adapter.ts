@@ -431,6 +431,7 @@ const getGuideElements = async ({
     fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
     instance => instance.elemID.typeName,
   )
+
   // console.log(typeNameToGuideInstances.article_attachment)
   // Create new types based on the created instances from all brands,
   // then create new instances with the corresponding type as refType
@@ -444,11 +445,9 @@ const getGuideElements = async ({
     })
     return _.concat(guideElements.instances as Element[], guideElements.nestedTypes, guideElements.type)
   })
-  console.log('2')
+
   // Create instances from standalone fields that were not created in previous steps
   console.log('yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy')
-  const y = zendeskGuideElements.filter(a => a.elemID.getFullName() === 'zendesk.article_attachment')
-  console.log(y)
 
   await elementUtils.ducktype.extractStandaloneFields({
     adapterName: ZENDESK,

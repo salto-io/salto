@@ -155,6 +155,12 @@ const getAttachmentContent = async ({
   }
   const client = brandIdToClient[attachment.value.brand]
   let res
+  if (attachment.value.relative_path.includes('17241330655891')) {
+    // eslint-disable-next-line no-console
+    console.log('do i ever get here???????????????????????????')
+    // eslint-disable-next-line no-console
+    console.log(attachment)
+  }
   try {
     res = await client.get({
       url: path,
@@ -200,6 +206,8 @@ export const getArticleAttachments = async ({
 }): Promise<SaltoElementError[]> => {
   const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get ?? 100
   log.debug(`there are ${attachments.length} attachments, going to get their content in chunks of ${rateLimit}`)
+  // eslint-disable-next-line no-console
+  console.log(`there are ${attachments.length} attachments`)
   const attachChunk = _.chunk(attachments, rateLimit)
   return awu(attachChunk)
     .flatMap(async (attach: Attachment[], index: number) => {

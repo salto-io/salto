@@ -1432,7 +1432,7 @@ const createCustomizations = (): Record<
         parent_section_id: { fieldType: 'number' },
         sections: { fieldType: 'list<section>' },
         articles: { fieldType: 'list<article>' },
-        translations: { fieldType: 'list<section_translation>' },
+        // translations: { fieldType: 'list<section_translation>' },
         html_url: { omit: true },
         // translations: {
         //   // extract each item in the holidays field to its own instance
@@ -1503,7 +1503,7 @@ const createCustomizations = (): Record<
           standalone: {
             typeName: 'article_attachment',
             addParentAnnotation: true,
-            referenceFromParent: false,
+            referenceFromParent: true,
             nestPathUnderParent: true,
           },
         },
@@ -1549,7 +1549,7 @@ const createCustomizations = (): Record<
         content_url: { hide: true, fieldType: 'string' },
         size: { hide: true, fieldType: 'number' },
         relative_path: { hide: true, fieldType: 'string' },
-        article_attachments: { fieldType: 'List<article_attachment>' },
+        // article_attachments: { fieldType: 'List<article_attachment>' },
         content: { fieldType: 'string' },
         hash: { hide: true, fieldType: 'string' },
         display_file_name: { omit: true },
@@ -1580,6 +1580,63 @@ const createCustomizations = (): Record<
   //     },
   //   },
   // },
+
+  theme: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v2/guide/theming/themes',
+        },
+        transformation: { root: 'themes', adjust: transformGuideItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'brand_id', isReference: true }, { fieldName: 'name' }],
+        },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'string' },
+        live: { hide: true, fieldType: 'boolean' },
+        author: { hide: true, fieldType: 'string' },
+        version: { hide: true, fieldType: 'string' },
+        root: { fieldType: 'theme_folder' },
+      },
+    },
+  },
+
+  theme_file: {
+    element: {
+      fieldCustomizations: {
+        filename: { fieldType: 'string' },
+        content: { fieldType: 'unknown' },
+      },
+    },
+  },
+
+  theme_folder: {
+    element: {
+      fieldCustomizations: {
+        files: { fieldType: 'map<theme_file>' },
+        folders: { fieldType: 'map<theme_folder>' },
+      },
+    },
+  },
+
+  theme_settings: {
+    element: {
+      fieldCustomizations: {
+        brand: { fieldType: 'number' },
+        liveTheme: { fieldType: 'string' },
+      },
+    },
+  },
 
   guide_language_settings: {
     requests: [

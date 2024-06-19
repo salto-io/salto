@@ -24,6 +24,7 @@ import {
   ListType,
   isObjectType,
   FieldDefinition,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import {
@@ -193,7 +194,8 @@ export const generateType = ({
     TYPES_PATH,
     ...(isSubType ? [SUBTYPES_PATH, ...naclName.split(ID_SEPARATOR).map(pathNaclCase)] : [pathNaclCase(naclName)]),
   ]
-
+  // eslint-disable-next-line no-console
+  console.log('hi', name)
   const nestedTypes: ObjectType[] = []
   const addNestedType = (typeWithNested: NestedTypeWithNestedTypes): ObjectType | ListType | PrimitiveType => {
     if (isObjectType(typeWithNested.type)) {
@@ -224,7 +226,14 @@ export const generateType = ({
         },
       }
     : Object.fromEntries(
-        _.uniq(entries.flatMap(e => Object.keys(e))).map(fieldName => [
+        _.uniq(
+          entries.flatMap(e => {
+            if (isInstanceElement(e)) {
+              return Object.keys(e.value)
+            }
+            return Object.keys(e)
+          }),
+        ).map(fieldName => [
           fieldName,
           {
             refType: addNestedType(

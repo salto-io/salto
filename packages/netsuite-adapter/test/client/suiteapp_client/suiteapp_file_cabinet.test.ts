@@ -286,7 +286,7 @@ describe('suiteapp_file_cabinet', () => {
 
   describe('importFileCabinet', () => {
     const maxFileCabinetSizeInGB = 1
-    const extensionsToExclude = ['.*\\csv']
+    const extensionsToExclude = ['.*\\.csv']
     it('should return all the files', async () => {
       const suiteAppFileCabinet = createSuiteAppFileCabinetOperations(suiteAppClient)
       const { elements } = await suiteAppFileCabinet.importFileCabinet(
@@ -558,7 +558,7 @@ describe('suiteapp_file_cabinet', () => {
         select:
           'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
         from: 'file',
-        where: "NOT REGEXP_LIKE(name, '.*\\csv') AND hideinbundle = 'F' AND folder IN (5, 3)",
+        where: "NOT REGEXP_LIKE(name, '.*\\.csv') AND hideinbundle = 'F' AND folder IN (5, 3)",
         orderBy: 'id',
       }
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
@@ -613,7 +613,7 @@ describe('suiteapp_file_cabinet', () => {
         select:
           'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
         from: 'file',
-        where: "NOT REGEXP_LIKE(name, '.*\\csv') AND hideinbundle = 'F' AND folder IN (5, 3)",
+        where: "NOT REGEXP_LIKE(name, '.*\\.csv') AND hideinbundle = 'F' AND folder IN (5, 3)",
         orderBy: 'id',
       }
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
@@ -634,7 +634,7 @@ describe('suiteapp_file_cabinet', () => {
         select:
           'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
         from: 'file',
-        where: "NOT REGEXP_LIKE(name, '.*\\csv') AND hideinbundle = 'F' AND folder IN (5, 3, 4)",
+        where: "NOT REGEXP_LIKE(name, '.*\\.csv') AND hideinbundle = 'F' AND folder IN (5, 3, 4)",
         orderBy: 'id',
       }
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
@@ -702,7 +702,7 @@ describe('suiteapp_file_cabinet', () => {
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(4, {
         select: 'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url',
         from: 'file',
-        where: "NOT REGEXP_LIKE(name, '.*\\csv') AND folder IN (5, 3, 4)",
+        where: "NOT REGEXP_LIKE(name, '.*\\.csv') AND folder IN (5, 3, 4)",
         orderBy: 'id',
       })
     })

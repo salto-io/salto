@@ -30,7 +30,6 @@ import {
   FixElementsFunc,
   TypeMap,
   SaltoError,
-  isSaltoError,
 } from '@salto-io/adapter-api'
 import {
   elements as elementUtils,
@@ -431,14 +430,7 @@ export default class OktaAdapter implements AdapterOperations {
 
     const { deployResult } = await runner.deploy(resolvedChanges, changeGroup)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
-    try {
-      await runner.onDeploy(appliedChangesBeforeRestore)
-    } catch (e) {
-      if (!isSaltoError(e)) {
-        throw e
-      }
-      saltoErrors.push(e)
-    }
+    await runner.onDeploy(appliedChangesBeforeRestore)
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
       .map(change => restoreChangeElement(change, sourceChanges, getLookUpName))

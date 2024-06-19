@@ -76,7 +76,7 @@ export default ({
     ...Object.keys(oldApiDefsConfig[API_DEFINITIONS_CONFIG].types),
     ...Object.keys(oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types),
   ]
-  const typesDeployedWithNewInfra = Object.keys(definitions.deploy?.instances.customizations ?? {})
+  const typesDeployedWithNewInfra = definitionUtils.queryWithDefault(definitions.deploy?.instances ?? {}).allKeys()
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({

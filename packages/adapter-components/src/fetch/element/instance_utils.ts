@@ -44,7 +44,7 @@ import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { removeNullValues } from './type_utils'
 
-const log = logger(module)  
+const log = logger(module)
 
 /**
  * Transform a value to a valid instance value by nacl-casing all its keys,

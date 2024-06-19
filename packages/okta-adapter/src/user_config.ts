@@ -122,4 +122,5 @@ export const configType = definitions.createUserConfigType({
     usePrivateAPI: { refType: BuiltinTypes.BOOLEAN },
   },
   omitElemID: false,
+  pathsToOmitFromDefaultConfig: ['fetch.enableMissingReferences', 'fetch.getUsersStrategy'],
 })

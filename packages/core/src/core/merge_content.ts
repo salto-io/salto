@@ -25,29 +25,50 @@ const { humanFileSize } = strings
 const MAX_MERGE_CONTENT_SIZE = 10 * 1024 * 1024
 const MERGE_TIMEOUT = 10 * 1000
 
-const getLineSeparator = (str: string): string => {
-  const numOfCrlf = str.match(/\r\n/g)?.length ?? 0
-  const numOfLf = (str.match(/\n/g)?.length ?? 0) - numOfCrlf
-  const numOfCr = (str.match(/\r/g)?.length ?? 0) - numOfCrlf
-  if (numOfCrlf > numOfCr && numOfCrlf > numOfLf) {
-    return '\r\n'
+type LineWithTerminator = string & { terminator: string }
+
+const splitToLinesWithTerminators = (multilineString: string): LineWithTerminator[] => {
+  const linesWithTerminators: LineWithTerminator[] = []
+  let currentLine = ''
+
+  for (let i = 0; i < multilineString.length; i += 1) {
+    const char = multilineString[i]
+    const nextChar = multilineString[i + 1]
+
+    if (char === '\r' && nextChar === '\n') {
+      // Windows style \r\n
+      linesWithTerminators.push(Object.assign(currentLine, { terminator: '\r\n' }))
+      currentLine = ''
+      i += 1 // Skip the \n part
+    } else if (char === '\r' || char === '\n' || char === '\u2028' || char === '\u2029') {
+      // Other terminators: \r, \n, \u2028, \u2029
+      linesWithTerminators.push(Object.assign(currentLine, { terminator: char }))
+      currentLine = ''
+    } else {
+      currentLine += char
+    }
   }
-  if (numOfCr > numOfLf) {
-    return '\r'
+
+  // Add the last line if there is no terminator at the end
+  if (currentLine !== '') {
+    linesWithTerminators.push(Object.assign(currentLine, { terminator: '' }))
   }
-  return '\n'
+
+  return linesWithTerminators
 }
 
-const isConflictChunk = (chunk: diff3.ICommResult<string>): boolean =>
+const joinLinesWithTerminators = (lines: LineWithTerminator[]): string =>
+  lines.reduce((res, line) => res.concat(line, line.terminator ?? '\n'), '')
+
+const isConflictChunk = (chunk: diff3.ICommResult<LineWithTerminator>): boolean =>
   !('common' in chunk) && chunk.buffer1.length > 0 && chunk.buffer2.length > 0
 
 const mergeTwoStrings = (
-  first: string,
-  second: string,
-  { stringSeparator }: { stringSeparator: RegExp },
+  first: LineWithTerminator[],
+  second: LineWithTerminator[],
   timeout: number,
-): { conflict: boolean; result: string[] } => {
-  const result = diff3.diffComm(first.split(stringSeparator), second.split(stringSeparator), timeout)
+): { conflict: boolean; result: LineWithTerminator[] } => {
+  const result = diff3.diffComm(first, second, timeout)
   if (result.some(isConflictChunk)) {
     return { conflict: true, result: [] }
   }
@@ -84,20 +105,27 @@ export const mergeStrings = (
         )
         return undefined
       }
-      const options = { excludeFalseConflicts: true, stringSeparator: /\r\n|\n|\r/g }
+      const options = { excludeFalseConflicts: true }
       try {
         const { conflict, result } =
           base !== undefined
-            ? diff3.mergeDiff3(current, base, incoming, options, MERGE_TIMEOUT)
-            : mergeTwoStrings(current, incoming, options, MERGE_TIMEOUT)
+            ? diff3.mergeDiff3(
+                splitToLinesWithTerminators(current),
+                splitToLinesWithTerminators(base),
+                splitToLinesWithTerminators(incoming),
+                options,
+                MERGE_TIMEOUT,
+              )
+            : mergeTwoStrings(
+                splitToLinesWithTerminators(current),
+                splitToLinesWithTerminators(incoming),
+                MERGE_TIMEOUT,
+              )
         if (conflict) {
           log.debug('conflict found in %s', changeId)
         } else {
-          // getting the line separator of the current version in the workspace
-          const lineSeparator = getLineSeparator(current)
-          // eslint-disable-next-line no-restricted-syntax
-          log.debug('merged %s successfully- using line separator %s', changeId, JSON.stringify(lineSeparator))
-          return result.join(lineSeparator)
+          log.debug('merged %s successfully', changeId)
+          return joinLinesWithTerminators(result as LineWithTerminator[])
         }
       } catch (e) {
         if (e instanceof diff3.TimeoutError) {

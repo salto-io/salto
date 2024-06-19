@@ -546,11 +546,11 @@ const cloneValuesWithAttributePrefixes = async (
     return key
   }
 
-  return mapKeysRecursive({
-    values: instance.value,
-    func: addAttributePrefixFunc,
-    pathID: instance.elemID,
-  })
+  return mapKeysRecursive(
+    instance.value,
+    addAttributePrefixFunc,
+    instance.elemID,
+  )
 }
 
 // Create values with the XML_ATTRIBUTE_PREFIX for xml attributes fields

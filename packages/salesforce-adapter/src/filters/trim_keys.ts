@@ -50,11 +50,7 @@ const filterCreator: LocalFilterCreator = () => ({
           LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
       )
       .forEach((inst) => {
-        inst.value = mapKeysRecursive({
-          values: inst.value,
-          func: trimKeys,
-          pathID: inst.elemID,
-        })
+        inst.value = mapKeysRecursive(inst.value, trimKeys, inst.elemID)
       })
   },
 })

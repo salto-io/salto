@@ -73,10 +73,7 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
       form.value.design.settings.templateId = resp.data.id
     }
     const resolvedForm = await resolveValues(form, getLookUpName)
-    const data = mapKeysRecursive({
-      values: resolvedForm.value,
-      func: ({ key }) => invertNaclCase(key),
-    })
+    const data = mapKeysRecursive(resolvedForm.value, ({ key }) => invertNaclCase(key))
     // RequestType Id is a string, but the forms API expects a number
     if (Array.isArray(data.publish?.portal?.portalRequestTypeIds)) {
       data.publish.portal.portalRequestTypeIds = data.publish.portal.portalRequestTypeIds.map((id: string) =>
@@ -176,10 +173,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .flat()
       .filter(isDefined)
     forms.forEach(form => {
-      form.value = mapKeysRecursive({
-        values: form.value,
-        func: ({ key }) => naclCase(key),
-      })
+      form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
     if (projectsWithoutForms.length > 0) {

@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { ElemID, Element } from '@salto-io/adapter-api'
+import { ElemID, Element, isElement, isInstanceElement, isType } from '@salto-io/adapter-api'
 import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
 import { SCRIPT_ID } from './constants'
 import { ServiceIdRecords } from './elements_source_index/types'
@@ -103,15 +104,28 @@ export const getServiceIdsToElemIds = (element: Element): ServiceIdRecords => {
     return getClosestParentServiceId(parentElemId)
   }
 
-  // Since walkOnElement runs a DFS, this assumes that the script ID of an object appears before any of its children.
   walkOnElement({
     element,
     func: ({ value, path }) => {
-      if (path.name === SCRIPT_ID && typeof value === 'string') {
+      let container = value
+      let containerPath = path
+      if (isInstanceElement(value)) {
+        container = value.value
+      } else if (isElement(value)) {
+        container = value.annotations
+        if (isType(value)) {
+          containerPath = path.createNestedID('attr')
+        }
+      }
+      if (_.isPlainObject(container) && typeof container[SCRIPT_ID] === 'string') {
+        const scriptID = container[SCRIPT_ID]
         const parentServiceId = getClosestParentServiceId(path)
-        const resolvedServiceId = parentServiceId === undefined ? value : `${parentServiceId}.${value}`
-        parentElemIdFullNameToServiceId[path.createParentID().getFullName()] = resolvedServiceId
-        serviceIdsToElemIds[resolvedServiceId] = { elemID: path, serviceID: value }
+        const resolvedServiceId = parentServiceId === undefined ? scriptID : `${parentServiceId}.${scriptID}`
+        parentElemIdFullNameToServiceId[path.getFullName()] = resolvedServiceId
+        serviceIdsToElemIds[resolvedServiceId] = {
+          elemID: containerPath.createNestedID(SCRIPT_ID),
+          serviceID: scriptID,
+        }
       }
       return WALK_NEXT_STEP.RECURSE
     },

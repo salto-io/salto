@@ -856,47 +856,18 @@ type MapKeysRecursiveArgs = {
 }
 
 export type MapKeyFunc = (args: MapKeysRecursiveArgs) => string
-export type SortKeysFunc = (a: string, b: string) => number
 
-export const mapKeysRecursive = ({
-  values,
-  func,
-  pathID,
-  keySortFunc,
-}: {
-  values: Values
-  func: MapKeyFunc
-  pathID?: ElemID
-  keySortFunc?: SortKeysFunc
-}): Values => {
-  if (_.isArray(values)) {
-    return values.map((val, idx) =>
-      mapKeysRecursive({
-        values: val,
-        func,
-        pathID: pathID?.createNestedID(String(idx)),
-        keySortFunc,
-      }),
-    )
+export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID): Values => {
+  if (_.isArray(obj)) {
+    return obj.map((val, idx) => mapKeysRecursive(val, func, pathID?.createNestedID(String(idx))))
   }
-  if (_.isPlainObject(values)) {
-    const entries = Object.entries(values)
-    if (keySortFunc !== undefined) {
-      entries.sort(([aKey, _aVal], [bKey, _bVal]) => keySortFunc(aKey, bKey))
-    }
-    return Object.fromEntries(
-      entries.map(([key, val]) => [
-        func({ key, pathID: pathID?.createNestedID(key) }),
-        mapKeysRecursive({
-          values: val,
-          func,
-          pathID: pathID?.createNestedID(key),
-          keySortFunc,
-        }),
-      ]),
-    )
+  if (_.isPlainObject(obj)) {
+    return _(obj)
+      .mapKeys((_val, key) => func({ key, pathID: pathID?.createNestedID(String(key)) }))
+      .mapValues((val, key) => mapKeysRecursive(val, func, pathID?.createNestedID(String(key))))
+      .value()
   }
-  return values
+  return obj
 }
 
 const createDefaultValuesFromType = async (

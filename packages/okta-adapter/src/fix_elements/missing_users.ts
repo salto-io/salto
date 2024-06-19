@@ -30,6 +30,7 @@ import {
   OMIT_MISSING_USERS_CONFIGURATION_LINK,
 } from '../user_utils'
 import { FixElementsHandler } from './types'
+import { USER_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -92,13 +93,13 @@ const isInstanceWithUsers = (element: unknown): element is InstanceElement =>
  * An error with severity "Warning" will be returned for each fixed instance
  */
 export const omitMissingUsersHandler: FixElementsHandler =
-  ({ config, client }) =>
+  ({ config, client, fetchQuery }) =>
   async elements => {
-    log.debug('start omitMissingUsersHandler function')
     const { omitMissingUsers } = config[DEPLOY_CONFIG] || {}
-    if (!omitMissingUsers) {
+    if (!omitMissingUsers || fetchQuery.isTypeMatch(USER_TYPE_NAME)) {
       return { fixedElements: [], errors: [] }
     }
+    log.trace('start omitMissingUsersHandler function')
     const paginator = createPaginator({
       client,
       paginationFuncCreator: paginate,

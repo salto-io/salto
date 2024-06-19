@@ -33,6 +33,7 @@ import {
   MFA_POLICY_TYPE_NAME,
   OKTA,
   USERTYPE_TYPE_NAME,
+  USER_TYPE_NAME,
 } from '../../src/constants'
 import { getFilterParams } from '../utils'
 import { FETCH_CONFIG } from '../../src/config'
@@ -65,10 +66,30 @@ describe('fieldReferencesFilter', () => {
       groupIds: { refType: new ListType(BuiltinTypes.STRING) },
     },
   })
+  const groupRuleUserCondition = new ObjectType({
+    elemID: new ElemID(OKTA, 'GroupRuleUserCondition'),
+    fields: {
+      exclude: { refType: new ListType(BuiltinTypes.STRING) },
+      include: { refType: new ListType(BuiltinTypes.STRING) },
+    },
+  })
+  const groupRulePeopleCondition = new ObjectType({
+    elemID: new ElemID(OKTA, 'GroupRulePeopleCondition'),
+    fields: {
+      users: { refType: groupRuleUserCondition },
+    },
+  })
+  const groupRuleCondition = new ObjectType({
+    elemID: new ElemID(OKTA, 'GroupRuleConditions'),
+    fields: {
+      people: { refType: groupRulePeopleCondition },
+    },
+  })
   const ruleType = new ObjectType({
     elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME),
     fields: {
       assignUserToGroups: { refType: groupRuleAssign },
+      conditions: { refType: groupRuleCondition },
     },
   })
   const authenticatorType = new ObjectType({
@@ -108,7 +129,11 @@ describe('fieldReferencesFilter', () => {
     }),
     new InstanceElement('app1', appType, { id: '222' }),
     new InstanceElement('userType1', userTypeType, { id: '111' }),
-    new InstanceElement('rule', ruleType, { id: '111', assignUserToGroups: { groupIds: ['missingId'] } }),
+    new InstanceElement('rule', ruleType, {
+      id: '111',
+      assignUserToGroups: { groupIds: ['missingId'] },
+      conditions: { people: { users: { exclude: ['111'] } } },
+    }),
     new InstanceElement('authenticator', authenticatorType, { name: 'OTP', key: 'otp' }),
     new InstanceElement('mfa', mfaType, {
       settings: { authenticators: [{ key: 'otp' }] },
@@ -160,6 +185,55 @@ describe('fieldReferencesFilter', () => {
       expect(mfa.value.settings.authenticators[0].key.elemID.getFullName()).toEqual(
         'okta.Authenticator.instance.authenticator',
       )
+    })
+    describe('When User type is enabled', () => {
+      it('should create references to User instances', async () => {
+        const userType = new ObjectType({ elemID: new ElemID(OKTA, USER_TYPE_NAME) })
+        const userInstance = new InstanceElement('user1', userType, { id: '111' })
+        const elements = [...generateElements().map(e => e.clone()), userInstance, userType]
+        const filter = filterCreator(
+          getFilterParams({
+            config: {
+              ...DEFAULT_CONFIG,
+              fetch: {
+                ...DEFAULT_CONFIG.fetch,
+                exclude: [],
+              },
+            },
+          }),
+        ) as FilterType
+        await filter.onFetch(elements)
+        const ruleInst = elements.filter(
+          e => isInstanceElement(e) && e.elemID.typeName === GROUP_RULE_TYPE_NAME,
+        )[0] as InstanceElement
+        expect(ruleInst.value.conditions?.people?.users?.exclude?.[0]).toBeInstanceOf(ReferenceExpression)
+        expect(ruleInst.value.conditions?.people?.users?.exclude?.[0].elemID.getFullName()).toEqual(
+          userInstance.elemID.getFullName(),
+        )
+      })
+    })
+    describe('When User type is disabled', () => {
+      it('should not create references to User instances', async () => {
+        const userType = new ObjectType({ elemID: new ElemID(OKTA, USER_TYPE_NAME) })
+        const userInstance = new InstanceElement('user1', userType, { id: '111' })
+        const elements = [...generateElements().map(e => e.clone()), userInstance, userType]
+        const filter = filterCreator(
+          getFilterParams({
+            config: {
+              ...DEFAULT_CONFIG,
+              fetch: {
+                ...DEFAULT_CONFIG.fetch,
+                exclude: [{ type: USER_TYPE_NAME }],
+              },
+            },
+          }),
+        ) as FilterType
+        await filter.onFetch(elements)
+        const ruleInst = elements.filter(
+          e => isInstanceElement(e) && e.elemID.typeName === GROUP_RULE_TYPE_NAME,
+        )[0] as InstanceElement
+        expect(ruleInst.value.conditions?.people?.users?.exclude?.[0]).toEqual('111')
+      })
     })
   })
 })

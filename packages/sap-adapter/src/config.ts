@@ -132,7 +132,7 @@ export const configType = createMatchingObjectType<Partial<SAPConfig>>({
   elemID: new ElemID(SAP),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(SAP),
+      refType: createClientConfigType({ adapter: SAP }),
     },
     [FETCH_CONFIG]: {
       refType: definitions.createUserFetchConfigType({

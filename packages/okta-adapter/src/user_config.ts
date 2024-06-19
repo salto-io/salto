@@ -117,8 +117,8 @@ export const configType = definitions.createUserConfigType({
   changeValidatorNames: [...changeValidatorNames],
   additionalFetchFields: additionalFetchConfigFields,
   additionalDeployFields: { omitMissingUsers: { refType: BuiltinTypes.BOOLEAN } },
+  additionRateLimitFields: { rateLimitBuffer: { refType: BuiltinTypes.NUMBER } },
   additionalClientFields: {
-    rateLimitBuffer: { refType: BuiltinTypes.NUMBER },
     usePrivateAPI: { refType: BuiltinTypes.BOOLEAN },
   },
   omitElemID: false,

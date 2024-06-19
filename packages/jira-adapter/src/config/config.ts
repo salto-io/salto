@@ -182,7 +182,7 @@ export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): J
 })
 
 const createClientConfigType = (): ObjectType => {
-  const configType = definitions.createClientConfigType(JIRA)
+  const configType = definitions.createClientConfigType({ adapter: JIRA })
   configType.fields.FieldConfigurationItemsDeploymentLimit = new Field(
     configType,
     'FieldConfigurationItemsDeploymentLimit',

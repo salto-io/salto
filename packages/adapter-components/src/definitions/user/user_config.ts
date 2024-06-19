@@ -43,6 +43,7 @@ type ConfigTypeCreatorParams<TCustomNameMappingOptions extends string = never> =
   additionalFields?: Record<string, FieldDefinition>
   additionalFetchFields?: Record<string, FieldDefinition>
   additionalDeployFields?: Record<string, FieldDefinition>
+  additionRateLimitFields?: Record<string, FieldDefinition>
   additionalClientFields?: Record<string, FieldDefinition>
   changeValidatorNames?: string[]
   omitElemID?: boolean
@@ -59,6 +60,7 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
   additionalFields,
   additionalFetchFields,
   additionalDeployFields,
+  additionRateLimitFields,
   additionalClientFields,
   omitElemID,
 }: ConfigTypeCreatorParams<TCustomNameMappingOptions>): ObjectType =>
@@ -66,7 +68,11 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
     elemID: new ElemID(adapterName),
     fields: {
       client: {
-        refType: createClientConfigType(adapterName, undefined, additionalClientFields),
+        refType: createClientConfigType({
+          adapter: adapterName,
+          additionRateLimitFields,
+          additionalClientFields,
+        }),
       },
       fetch: {
         refType: createUserFetchConfigType({

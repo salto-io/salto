@@ -56,11 +56,17 @@ export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Pa
   timeout: ClientTimeoutConfig
 }>
 
-export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>(
-  adapter: string,
-  bucketNames?: (keyof RateLimitConfig)[],
-  additionRateLimitFields?: Record<string, FieldDefinition>,
-): ObjectType => {
+export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>({
+  adapter,
+  bucketNames,
+  additionRateLimitFields,
+  additionalClientFields,
+}: {
+  adapter: string
+  bucketNames?: (keyof RateLimitConfig)[]
+  additionRateLimitFields?: Record<string, FieldDefinition>
+  additionalClientFields?: Record<string, FieldDefinition>
+}): ObjectType => {
   const createFieldDefWithMin = (min: number): FieldDefinition => ({
     refType: BuiltinTypes.NUMBER,
     // note: not enforced yet
@@ -125,6 +131,7 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       maxRequestsPerMinute: createFieldDefWithMin(-1),
       pageSize: { refType: clientPageSizeConfigType },
       timeout: { refType: clientTimeoutConfigType },
+      ...additionalClientFields,
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

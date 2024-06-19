@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import * as diff3 from '@salto-io/node-diff3'
 import { isBinary } from 'istextorbinary'
 import { logger } from '@salto-io/logging'
@@ -58,10 +59,15 @@ const splitToLinesWithTerminators = (multilineString: string): LineWithTerminato
 }
 
 const joinLinesWithTerminators = (lines: LineWithTerminator[]): string =>
-  lines.reduce(
-    (res, line, i) => res.concat(line, line.terminator === '' && i < lines.length - 1 ? '\n' : line.terminator ?? '\n'),
-    '',
-  )
+  lines.reduce((res, line, i) => {
+    if (line.terminator === '' && i < lines.length - 1) {
+      // in case that it's the last line of current/base/incoming, but there are more lines in the merged version
+      // we want to use previous non-empty line terminator.
+      const terminator = _.findLast(lines, l => l.terminator !== '', i - 1)?.terminator ?? '\n'
+      return res.concat(line, terminator)
+    }
+    return res.concat(line, line.terminator ?? '\n')
+  }, '')
 
 const isConflictChunk = (chunk: diff3.ICommResult<LineWithTerminator>): boolean =>
   !('common' in chunk) && chunk.buffer1.length > 0 && chunk.buffer2.length > 0

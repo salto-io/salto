@@ -20,7 +20,6 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   displayName: 'zendesk-adapter',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: process.env.RUN_E2E_TESTS ? '@salto-io/zendesk-adapter/dist/e2e_test/jest_environment' : undefined,
   coverageThreshold: {
     global: {
       branches: 84,

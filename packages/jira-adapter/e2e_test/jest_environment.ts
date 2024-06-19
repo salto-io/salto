@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  createEnvUtils,
-  CredsSpec,
-  JestEnvironmentConstructorArgs,
-  SaltoE2EJestEnvironment,
-} from '@salto-io/e2e-credentials-store'
-import { logger } from '@salto-io/logging'
+import { createEnvUtils, CredsSpec } from '@salto-io/e2e-credentials-store'
 import { Credentials } from '../src/auth'
-
-const log = logger(module)
 
 export const credsSpec = (isDataCenter = false): CredsSpec<Required<Credentials>> => {
   const jiraPrefix = isDataCenter ? 'JIRA_DC' : 'JIRA'
@@ -45,11 +37,5 @@ export const credsSpec = (isDataCenter = false): CredsSpec<Required<Credentials>
     },
     typeName: isDataCenter ? 'jira_datacenter' : 'jira',
     globalProp: 'jira',
-  }
-}
-
-export default class JiraE2EJestEnvironment extends SaltoE2EJestEnvironment {
-  constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace }, ...args)
   }
 }

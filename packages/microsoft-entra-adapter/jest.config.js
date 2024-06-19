@@ -20,7 +20,6 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   displayName: 'microsoft-entra-adapter',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
   coverageThreshold: {
     global: {
       branches: 83.8,

@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  createEnvUtils,
-  CredsSpec,
-  JestEnvironmentConstructorArgs,
-  SaltoE2EJestEnvironment,
-} from '@salto-io/e2e-credentials-store'
-import { logger } from '@salto-io/logging'
+import { createEnvUtils, CredsSpec } from '@salto-io/e2e-credentials-store'
 import { Credentials } from '../src/auth'
-
-const log = logger(module)
 
 export const credsSpec = (): CredsSpec<Required<Credentials>> => {
   const googleWorkspaceClientIdVarName = 'GOOGLE_WORKSPACE_CLIENT_ID'
@@ -41,11 +33,5 @@ export const credsSpec = (): CredsSpec<Required<Credentials>> => {
     validate: async (_creds: Credentials): Promise<void> => undefined,
     typeName: 'google-workspace',
     globalProp: 'google-workspace',
-  }
-}
-
-export default class GoogleWorkspaceE2EJestEnvironment extends SaltoE2EJestEnvironment {
-  constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace }, ...args)
   }
 }

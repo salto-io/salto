@@ -18,8 +18,6 @@ import {
   creds,
   CredsLease,
   CredsSpec,
-  JestEnvironmentConstructorArgs,
-  SaltoE2EJestEnvironment,
   SuspendCredentialsError,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
@@ -73,12 +71,6 @@ export const credsSpec = (
     },
     typeName: 'salesforce',
     globalProp: envName ? `salesforce_${envName}` : 'salseforce',
-  }
-}
-
-export default class SalesforceE2EJestEnvironment extends SaltoE2EJestEnvironment {
-  constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace }, ...args)
   }
 }
 

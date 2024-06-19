@@ -58,7 +58,10 @@ const splitToLinesWithTerminators = (multilineString: string): LineWithTerminato
 }
 
 const joinLinesWithTerminators = (lines: LineWithTerminator[]): string =>
-  lines.reduce((res, line) => res.concat(line, line.terminator ?? '\n'), '')
+  lines.reduce(
+    (res, line, i) => res.concat(line, line.terminator === '' && i < lines.length - 1 ? '\n' : line.terminator ?? '\n'),
+    '',
+  )
 
 const isConflictChunk = (chunk: diff3.ICommResult<LineWithTerminator>): boolean =>
   !('common' in chunk) && chunk.buffer1.length > 0 && chunk.buffer2.length > 0

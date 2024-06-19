@@ -102,7 +102,8 @@ export const getNewElementsFromInstances = ({
   transformationDefaultConfig: DuckTypeTransformationDefaultConfig
 }): Entries => {
   const { hasDynamicFields } = getConfigWithDefault(transformationConfigByType[typeName], transformationDefaultConfig)
-
+  // eslint-disable-next-line no-console
+  console.log('zgzgzgzgzgzgzgzgzgzgzgzgzgzgzg', typeName)
   const { type: newType, nestedTypes: newNestedTypes } = generateType({
     adapterName,
     name: typeName,
@@ -111,6 +112,9 @@ export const getNewElementsFromInstances = ({
     transformationConfigByType,
     transformationDefaultConfig,
   })
+  // eslint-disable-next-line no-console
+  console.log('uyuyuyuyuyuyuyuyuyuyuyuyuyu', newType, newNestedTypes)
+
   return {
     instances: instances.map(
       inst => new InstanceElement(inst.elemID.name, newType, inst.value, inst.path, inst.annotations),

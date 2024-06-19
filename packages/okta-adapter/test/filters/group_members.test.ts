@@ -128,7 +128,7 @@ describe('groupMembersFilter', () => {
     })
 
     describe('when User type is included', () => {
-      it('should create GroupMembership instances with references to users as ids and not as emails', async () => {
+      it('should create GroupMembership instances with member list as ids and not emails', async () => {
         const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
           yield [
             { id: '111', profile: { login: 'a@a.com' } },

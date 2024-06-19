@@ -213,7 +213,7 @@ describe('fieldReferencesFilter', () => {
       })
     })
     describe('When User type is disabled', () => {
-      it('should create references to User instances', async () => {
+      it('should not create references to User instances', async () => {
         const userType = new ObjectType({ elemID: new ElemID(OKTA, USER_TYPE_NAME) })
         const userInstance = new InstanceElement('user1', userType, { id: '111' })
         const elements = [...generateElements().map(e => e.clone()), userInstance, userType]

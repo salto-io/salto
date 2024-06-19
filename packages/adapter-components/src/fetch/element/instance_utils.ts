@@ -30,6 +30,7 @@ import {
   transformValuesSync,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
 import {
   ApiDefinitions,
@@ -42,6 +43,8 @@ import {
 import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { removeNullValues } from './type_utils'
+
+const log = logger(module)  
 
 /**
  * Transform a value to a valid instance value by nacl-casing all its keys,
@@ -99,6 +102,22 @@ export const omitInstanceValues = <Options extends FetchApiDefinitionsOptions>({
     transformFunc: omitValues(defQuery),
     strict: false,
   })
+
+/**
+ * calling "omitInstanceValues" on all instances and adding a log time to it
+ */
+export const omitAllInstancesValues = <Options extends FetchApiDefinitionsOptions>({
+  instances,
+  defQuery,
+}: {
+  instances: InstanceElement[]
+  defQuery: ElementAndResourceDefFinder<Options>
+}): void =>
+  log.timeDebug(() => {
+    instances.forEach(inst => {
+      inst.value = omitInstanceValues({ value: inst.value, type: inst.getTypeSync(), defQuery })
+    })
+  }, 'omitAllInstancesValues')
 
 export type InstanceCreationParams = {
   entry: Values

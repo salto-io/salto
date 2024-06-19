@@ -235,7 +235,7 @@ export const overrideFieldTypes = <Options extends FetchApiDefinitionsOptions>({
   definedTypes: Record<string, ObjectType>
   defQuery: ElementAndResourceDefFinder<Options>
   finalTypeNames?: Set<string>
-}): void => {
+}): void => log.timeDebug(() => {
   Object.entries(definedTypes).forEach(([typeName, type]) => {
     if (finalTypeNames?.has(typeName)) {
       log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
@@ -263,7 +263,7 @@ export const overrideFieldTypes = <Options extends FetchApiDefinitionsOptions>({
     // (serviceid for strings / serviceid_number for numbers)
     resourceDef?.serviceIDFields?.forEach(fieldName => markServiceIdField(fieldName, type.fields, typeName))
   })
-}
+}, 'overrideFieldTypes')
 
 /**
  * Hide and omit fields based on the defined customization.
@@ -276,7 +276,7 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
   definedTypes: Record<string, ObjectType>
   defQuery: ElementAndResourceDefFinder<Options>
   finalTypeNames?: Set<string>
-}): void => {
+}): void => log.timeDebug(() => {
   Object.entries(definedTypes).forEach(([typeName, type]) => {
     if (finalTypeNames?.has(typeName)) {
       log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
@@ -304,7 +304,7 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
       }
     })
   })
-}
+}, 'hideAndOmitFields')
 
 /**
  * Filter for types that are either used by instance or defined in fetch definitions

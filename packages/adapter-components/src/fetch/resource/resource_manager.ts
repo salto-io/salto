@@ -67,8 +67,8 @@ export const createResourceManager = <ClientOptions extends string>({
   initialRequestContext?: Record<string, unknown>
   customItemFilter?: (item: ValueGeneratedItem) => boolean
 }): ResourceManager => ({
-  fetch: log.timeDebug(
-    () => async query => {
+  fetch: query => log.timeDebug(
+    async () => {
       const createTypeFetcher: TypeFetcherCreator = ({ typeName, context }) =>
         createTypeResourceFetcher({
           adapterName,
@@ -87,7 +87,7 @@ export const createResourceManager = <ClientOptions extends string>({
       )
       const graph = createDependencyGraph(resourceDefQuery.getAll())
       try {
-        await graph.walkAsync(async typeName => {
+        await graph.walkAsync(typeName => log.timeDebug(async () => {
           const resourceFetcher = resourceFetchers[typeName]
           if (resourceFetcher === undefined) {
             log.debug('no resource fetcher defined for type %s:%s', adapterName, typeName)
@@ -113,7 +113,7 @@ export const createResourceManager = <ClientOptions extends string>({
             typeName: typeNameAsStr,
             entries: resourceFetcher.getItems()?.map(item => item.value) ?? [],
           })
-        })
+        }, 'fetching resources for type %s.%s', adapterName, typeName))
       } catch (e) {
         if (e instanceof WalkError) {
           // In case we decided to fail the entire fetch we don't want the error to be wrapped in a WalkError

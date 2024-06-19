@@ -33,7 +33,7 @@ const log = logger(module)
  */
 export const generateInstancesWithInitialTypes = <Options extends FetchApiDefinitionsOptions>(
   args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>,
-): ElementsAndErrors => {
+): ElementsAndErrors => log.timeDebug(() => {
   const { defQuery, entries, adapterName, typeName, getElemIdFunc, customNameMappingFunctions, definedTypes } = args
   const { element: elementDef } = defQuery.query(typeName) ?? {}
   if (elementDef === undefined) {
@@ -91,4 +91,4 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
   })
 
   return { types: [type, ...nestedTypes], instances: instancesWithStandalone }
-}
+}, 'generateInstancesWithInitialTypes for %s.%s', args.adapterName, args.typeName)

@@ -360,16 +360,14 @@ describe('issue layout filter', () => {
     })
 
     describe('get the correct screens for the issue Layouts', () => {
-      // it('should return empty list if screen scheme does not have screens', async () => {
-      //   issueTypeScreenSchemeInstance1.value.issueTypeMappings[0] = { issueTypeId: 100, screenSchemeId: 111 }
-      //   projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }
-      //   projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 10 } }
-      //   const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      //   expect(Object.entries(res)).toHaveLength(1)
-      //   expect(res['11111']).toEqual({
-      //     undefined: Promise.resolve({ data: {} }),
-      //   })
-      // })
+      it('should return empty list if screen scheme does not have screens', async () => {
+        issueTypeScreenSchemeInstance1.value.issueTypeMappings[0] = { issueTypeId: 100, screenSchemeId: 111 }
+        projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }
+        projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 10 } }
+        const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        expect(Object.entries(res)).toHaveLength(1)
+        expect(res['11111']).toEqual({})
+      })
       it('should return the view screen and not the default screen if there is', async () => {
         issueTypeScreenSchemeInstance1.value.issueTypeMappings = [{ issueTypeId: 100, screenSchemeId: 333 }]
         projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }

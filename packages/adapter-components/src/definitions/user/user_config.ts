@@ -47,6 +47,7 @@ type ConfigTypeCreatorParams<TCustomNameMappingOptions extends string = never> =
   additionalClientFields?: Record<string, FieldDefinition>
   changeValidatorNames?: string[]
   omitElemID?: boolean
+  pathsToOmitFromDefaultConfig?: string[]
 }
 
 export type ConfigTypeCreator<TCustomNameMappingOptions extends string = never> = (
@@ -63,7 +64,8 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
   additionRateLimitFields,
   additionalClientFields,
   omitElemID,
-}: ConfigTypeCreatorParams<TCustomNameMappingOptions>): ObjectType =>
+  pathsToOmitFromDefaultConfig = [],
+}: ConfigTypeCreatorParams<TCustomNameMappingOptions>): ObjectType => (
   createMatchingObjectType<Partial<UserConfig<TCustomNameMappingOptions>>>({
     elemID: new ElemID(adapterName),
     fields: {
@@ -91,10 +93,16 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
       ...additionalFields,
     },
     annotations: {
-      [CORE_ANNOTATIONS.DEFAULT]: defaultConfig,
+      [CORE_ANNOTATIONS.DEFAULT]: _.omit(
+        defaultConfig,
+        'fetch.hideTypes',
+        'client',
+        ...pathsToOmitFromDefaultConfig
+      ),
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
-  })
+  }
+))
 
 export const mergeWithDefaultConfig = (defaultConfig: Values, config?: Values): Values =>
   _.mergeWith(_.cloneDeep(defaultConfig), config ?? {}, (_firstVal, secondValue) =>

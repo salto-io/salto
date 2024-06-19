@@ -102,6 +102,14 @@ export const createPriorityType = (typeName: string, defaultFieldName: string): 
     },
     path: [OKTA, adapterElements.TYPES_PATH, typeName],
   })
+const logDuplicatePriorities = (instances: InstanceElement[]): void => {
+  const duplicatePriorities = _.groupBy(instances, inst => inst.value.priority)
+  Object.entries(duplicatePriorities).forEach(([priority, insts]) => {
+    if (Array.isArray(insts) && insts.length > 1) {
+      log.error(`Duplicate priorities found for ${insts.map(inst => inst.elemID.getFullName())}`)
+    }
+  })
+}
 
 const createPolicyPriorityInstance = ({
   policies,
@@ -244,6 +252,7 @@ const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
       ),
     )
     policyAndRules.forEach(({ policy, rules }) => {
+      logDuplicatePriorities(rules)
       const type = priorityTypeNameToPriorityType[POLICY_NAME_TO_RULE_PRIORITY_NAME[policy.elemID.typeName]]
       const priorityInstance = createPolicyRulePriorityInstance({
         rules,
@@ -258,6 +267,7 @@ const filter: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
       instance => instance.elemID.typeName,
     )
     Object.entries(policyTypeNameToPolicies).forEach(([policyTypeName, policies]) => {
+      logDuplicatePriorities(policies)
       const type = priorityTypeNameToPriorityType[POLICY_NAME_TO_PRIORITY_NAME[policyTypeName]]
       const priorityInstance = createPolicyPriorityInstance({
         policies,

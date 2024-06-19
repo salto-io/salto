@@ -5,6 +5,9 @@ shopt -s extglob
 
 yarn workspaces focus salto-vscode
 
+sudo apt update && sudo apt install -y rsync
+
+rm -rf ./tmp_pkg
 mkdir -p ./tmp_pkg && cp ../../LICENSE . && vsce package --yarn -o ./tmp_pkg/salto.vsix && rm -f LICENSE
 
 pushd ./tmp_pkg 

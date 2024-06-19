@@ -61,28 +61,29 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
-
-
 const objectFieldType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'objectFieldType'),
   fields: {
-    stringField: { refType: BuiltinTypes.STRING, annotations: {[CORE_ANNOTATIONS.DESCRIPTION]: 'String Field'} },
-    numberField: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true, [CORE_ANNOTATIONS.ALIAS]: 'Number Field' } },
+    stringField: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.DESCRIPTION]: 'String Field' } },
+    numberField: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: { [CORE_ANNOTATIONS.REQUIRED]: true, [CORE_ANNOTATIONS.ALIAS]: 'Number Field' },
+    },
   },
 })
 
 const optionsType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'configOptionsType'),
   fields: {
-    listOfStrings: { 
+    listOfStrings: {
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.DESCRIPTION]: 'List of strings',
         [CORE_ANNOTATIONS.ALIAS]: 'List of strings',
-      }
+      },
     },
-    restrictedListOfStrings: { 
+    restrictedListOfStrings: {
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.DESCRIPTION]: 'Restricted List of strings',
@@ -93,7 +94,7 @@ const optionsType = new ObjectType({
         }),
       },
     },
-    enforcedRestrictedListOfStrings: { 
+    enforcedRestrictedListOfStrings: {
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.DESCRIPTION]: 'Enforced Restricted List of strings',
@@ -109,25 +110,21 @@ const optionsType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.DESCRIPTION]: 'Object Field',
         [CORE_ANNOTATIONS.ALIAS]: 'Object Field',
-      }
+      },
     },
     listOfObjectField: {
       refType: new ListType(objectFieldType),
       annotations: {
         [CORE_ANNOTATIONS.DESCRIPTION]: 'List of Object Field',
         [CORE_ANNOTATIONS.ALIAS]: 'List of Object Field',
-      }
-    }
+      },
+    },
   },
-
 })
-
 
 const configCreator: ConfigCreator = {
   optionsType,
-  getConfig: _options => (
-    createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  )
+  getConfig: _options => createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType),
 }
 
 export const adapter: Adapter = {

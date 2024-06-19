@@ -65,7 +65,7 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
   additionalClientFields,
   omitElemID,
   pathsToOmitFromDefaultConfig = [],
-}: ConfigTypeCreatorParams<TCustomNameMappingOptions>): ObjectType => (
+}: ConfigTypeCreatorParams<TCustomNameMappingOptions>): ObjectType =>
   createMatchingObjectType<Partial<UserConfig<TCustomNameMappingOptions>>>({
     elemID: new ElemID(adapterName),
     fields: {
@@ -93,16 +93,10 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
       ...additionalFields,
     },
     annotations: {
-      [CORE_ANNOTATIONS.DEFAULT]: _.omit(
-        defaultConfig,
-        'fetch.hideTypes',
-        'client',
-        ...pathsToOmitFromDefaultConfig
-      ),
+      [CORE_ANNOTATIONS.DEFAULT]: _.omit(defaultConfig, 'fetch.hideTypes', 'client', ...pathsToOmitFromDefaultConfig),
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
-  }
-))
+  })
 
 export const mergeWithDefaultConfig = (defaultConfig: Values, config?: Values): Values =>
   _.mergeWith(_.cloneDeep(defaultConfig), config ?? {}, (_firstVal, secondValue) =>

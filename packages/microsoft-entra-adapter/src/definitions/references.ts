@@ -19,7 +19,6 @@ import {
   APPLICATION_TYPE_NAME,
   AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME,
   CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
-  CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
   CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME,
   DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
   DIRECTORY_ROLE_TEMPLATE_TYPE_NAME,
@@ -121,13 +120,43 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     serializationStrategy: 'id',
   },
   {
-    src: { field: 'includeLocations', parentTypes: [`${CONDITIONAL_ACCESS_POLICY_TYPE_NAME}__conditions__locations`] },
+    src: { field: 'includeLocations' },
     target: { type: CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME },
     serializationStrategy: 'id',
   },
   {
-    src: { field: 'excludeLocations', parentTypes: [`${CONDITIONAL_ACCESS_POLICY_TYPE_NAME}__conditions__locations`] },
+    src: { field: 'excludeLocations' },
     target: { type: CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: { field: 'includeApplications' },
+    target: { type: SERVICE_PRINCIPAL_TYPE_NAME },
+    serializationStrategy: 'appId',
+  },
+  {
+    src: { field: 'excludeApplications' },
+    target: { type: SERVICE_PRINCIPAL_TYPE_NAME },
+    serializationStrategy: 'appId',
+  },
+  {
+    src: { field: 'includeRoles' },
+    target: { type: ROLE_DEFINITION_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: { field: 'excludeRoles' },
+    target: { type: ROLE_DEFINITION_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: { field: 'includeGroups' },
+    target: { type: GROUP_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: { field: 'excludeGroups' },
+    target: { type: GROUP_TYPE_NAME },
     serializationStrategy: 'id',
   },
 ]

@@ -43,6 +43,7 @@ import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { DeployCustomDefinitions, DeployRequestDefinition } from './types'
 import {
   adjustRoleDefinitionForDeployment,
+  createCustomConditionEmptyFields,
   createCustomizationsWithBasePathForDeploy,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
@@ -65,6 +66,16 @@ const APPLICATION_MODIFICATION_REQUEST: DeployRequestDefinition = {
     method: 'patch',
   },
 }
+
+// These fields cannot be specified when creating a group, but can be modified after creation
+const GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION = [
+  'allowExternalSenders',
+  'autoSubscribeNewMembers',
+  'hideFromAddressLists',
+  'hideFromOutlookClients',
+  'isSubscribedByMail',
+  'unseenCount',
+]
 
 const graphV1CustomDefinitions: DeployCustomDefinitions = {
   ...createDefinitionForAppRoleAssignment({
@@ -215,15 +226,31 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 path: '/groups',
                 method: 'post',
               },
+              transformation: {
+                omit: [...GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION, GROUP_LIFE_CYCLE_POLICY_FIELD_NAME],
+              },
+            },
+            copyFromResponse: {
+              toSharedContext: {
+                pick: ['id'],
+              },
             },
           },
           {
-            request: getGroupLifecyclePolicyGroupModificationRequest('add'),
-            condition: {
-              transformForCheck: {
-                pick: [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME],
+            request: {
+              endpoint: {
+                path: '/groups/{id}',
+                method: 'patch',
+              },
+              transformation: {
+                pick: GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION,
               },
             },
+            condition: createCustomConditionEmptyFields(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
+          },
+          {
+            request: getGroupLifecyclePolicyGroupModificationRequest('add'),
+            condition: createCustomConditionEmptyFields([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
           },
         ],
         modify: [
@@ -232,6 +259,9 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               endpoint: {
                 path: '/groups/{id}',
                 method: 'patch',
+              },
+              transformation: {
+                omit: [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME],
               },
             },
             condition: {

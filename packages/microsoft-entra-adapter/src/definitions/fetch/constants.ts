@@ -54,6 +54,15 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
   excludeUsers: {
     omit: true,
   },
+  securityIdentifier: {
+    omit: true,
+  },
+  onPremisesLastSyncDateTime: {
+    omit: true,
+  },
+  onPremisesSecurityIdentifier: {
+    omit: true,
+  },
   '_odata_context@mv': {
     omit: true,
   },

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import * as diff3 from '@salto-io/node-diff3'
 import { isBinary } from 'istextorbinary'
 import { logger } from '@salto-io/logging'
@@ -25,16 +26,59 @@ const { humanFileSize } = strings
 const MAX_MERGE_CONTENT_SIZE = 10 * 1024 * 1024
 const MERGE_TIMEOUT = 10 * 1000
 
-const isConflictChunk = (chunk: diff3.ICommResult<string>): boolean =>
+type LineWithTerminator = string & { terminator: string }
+
+const splitToLinesWithTerminators = (multilineString: string): LineWithTerminator[] => {
+  const linesWithTerminators: LineWithTerminator[] = []
+  let currentLine = ''
+
+  for (let i = 0; i < multilineString.length; i += 1) {
+    const char = multilineString[i]
+    const nextChar = multilineString[i + 1]
+
+    if (char === '\r' && nextChar === '\n') {
+      // Windows style \r\n
+      linesWithTerminators.push(Object.assign(currentLine, { terminator: '\r\n' }))
+      currentLine = ''
+      i += 1 // Skip the \n part
+    } else if (char === '\r' || char === '\n') {
+      // Other terminators: \r, \n. In general, \u2028 & \u2029 are considered line terminators too,
+      // but Monaco Editor doesn't treat them as so (shows an unknown char), so we can ignore them too.
+      linesWithTerminators.push(Object.assign(currentLine, { terminator: char }))
+      currentLine = ''
+    } else {
+      currentLine += char
+    }
+  }
+
+  // Add the last line if there is no terminator at the end
+  if (currentLine !== '') {
+    linesWithTerminators.push(Object.assign(currentLine, { terminator: '' }))
+  }
+
+  return linesWithTerminators
+}
+
+const joinLinesWithTerminators = (lines: LineWithTerminator[]): string =>
+  lines.reduce((res, line, i) => {
+    if (line.terminator === '' && i < lines.length - 1) {
+      // in case that it's the last line of current/base/incoming, but there are more lines in the merged version
+      // we want to use previous non-empty line terminator.
+      const terminator = _.findLast(lines, l => l.terminator !== '', i - 1)?.terminator ?? '\n'
+      return res.concat(line, terminator)
+    }
+    return res.concat(line, line.terminator ?? '\n')
+  }, '')
+
+const isConflictChunk = (chunk: diff3.ICommResult<LineWithTerminator>): boolean =>
   !('common' in chunk) && chunk.buffer1.length > 0 && chunk.buffer2.length > 0
 
 const mergeTwoStrings = (
-  first: string,
-  second: string,
-  { stringSeparator }: { stringSeparator: string },
+  first: LineWithTerminator[],
+  second: LineWithTerminator[],
   timeout: number,
-): { conflict: boolean; result: string[] } => {
-  const result = diff3.diffComm(first.split(stringSeparator), second.split(stringSeparator), timeout)
+): { conflict: boolean; result: LineWithTerminator[] } => {
+  const result = diff3.diffComm(first, second, timeout)
   if (result.some(isConflictChunk)) {
     return { conflict: true, result: [] }
   }
@@ -71,17 +115,27 @@ export const mergeStrings = (
         )
         return undefined
       }
-      const options = { excludeFalseConflicts: true, stringSeparator: '\n' }
+      const options = { excludeFalseConflicts: true }
       try {
         const { conflict, result } =
           base !== undefined
-            ? diff3.mergeDiff3(current, base, incoming, options, MERGE_TIMEOUT)
-            : mergeTwoStrings(current, incoming, options, MERGE_TIMEOUT)
+            ? diff3.mergeDiff3(
+                splitToLinesWithTerminators(current),
+                splitToLinesWithTerminators(base),
+                splitToLinesWithTerminators(incoming),
+                options,
+                MERGE_TIMEOUT,
+              )
+            : mergeTwoStrings(
+                splitToLinesWithTerminators(current),
+                splitToLinesWithTerminators(incoming),
+                MERGE_TIMEOUT,
+              )
         if (conflict) {
           log.debug('conflict found in %s', changeId)
         } else {
           log.debug('merged %s successfully', changeId)
-          return result.join(options.stringSeparator)
+          return joinLinesWithTerminators(result as LineWithTerminator[])
         }
       } catch (e) {
         if (e instanceof diff3.TimeoutError) {

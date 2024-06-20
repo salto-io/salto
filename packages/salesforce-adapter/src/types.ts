@@ -170,6 +170,7 @@ export type ChangeValidatorName =
   | 'taskOrEventFieldsModifications'
   | 'newFieldsAndObjectsFLS'
   | 'elementApiVersion'
+  | 'cpqBillingStartDate'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -907,6 +908,7 @@ const changeValidatorConfigType =
       taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
       newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
       elementApiVersion: { refType: BuiltinTypes.BOOLEAN },
+      cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard, resolvePath } from '@salto-io/adapter-utils'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementsUtils } from '@salto-io/adapter-components'
 import {
   ACCESS_POLICY_RULE_TYPE_NAME,
   AUTHORIZATION_POLICY_RULE,
@@ -28,14 +28,14 @@ import {
   MFA_RULE_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
   SIGN_ON_RULE_TYPE_NAME,
+  USER_TYPE_NAME,
 } from './constants'
+import { DEFAULT_CONVERT_USERS_IDS_VALUE, OktaUserConfig } from './user_config'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
-export const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
 export const OMIT_MISSING_USERS_CONFIGURATION_LINK =
   'https://help.salto.io/en/articles/8817969-element-references-users-which-don-t-exist-in-target-environment-okta'
 const USER_CHUNK_SIZE = 200
@@ -64,6 +64,12 @@ const USER_SCHEMA = Joi.object({
 const USERS_RESPONSE_SCHEMA = Joi.array().items(USER_SCHEMA).required()
 
 export const areUsers = createSchemeGuard<User[]>(USERS_RESPONSE_SCHEMA, 'Received an invalid response for the users')
+
+export const shouldConvertUserIds = (
+  fetchQuery: elementsUtils.query.ElementQuery,
+  userConfig: OktaUserConfig,
+): boolean =>
+  !fetchQuery.isTypeMatch(USER_TYPE_NAME) && (userConfig.fetch.convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)
 
 const EXCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'exclude']
 const INCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'include']
@@ -95,6 +101,11 @@ export const getUsersFromInstances = (instances: InstanceElement[]): string[] =>
 const getUsersQuery = (userIds: string[], property: SearchProperty): string =>
   userIds.map(userId => `${property} eq "${userId}"`).join(' or ')
 
+// the header omits credentials and other unnecessary fields from the response
+export const OMIT_CREDS_HEADER = {
+  'Content-Type': 'application/json; okta-response=omitCredentials,omitCredentialsLinks',
+}
+
 export const getUsers = async (
   paginator: clientUtils.Paginator,
   searchUsersParams?: SearchUsersParams,
@@ -103,8 +114,7 @@ export const getUsers = async (
     const paginationArgs = {
       url: '/api/v1/users',
       paginationField: 'after',
-      // omit credentials and other unnecessary fields from the response
-      headers: { 'Content-Type': 'application/json; okta-response=omitCredentials,omitCredentialsLinks' },
+      headers: OMIT_CREDS_HEADER,
     }
 
     if (searchUsersParams) {

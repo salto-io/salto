@@ -24,7 +24,7 @@ import { InvalidSingletonType, getReachableTypes, hideAndOmitFields, overrideFie
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 import { ConfigChangeSuggestion, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
-import { omitInstanceValues } from './instance_utils'
+import { omitAllInstancesValues } from './instance_utils'
 import { AbortFetchOnFailure } from '../errors'
 
 const log = logger(module)
@@ -149,10 +149,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
 
     overrideFieldTypes({ definedTypes, defQuery, finalTypeNames })
     // omit fields based on the adjusted types
-    instances.forEach(inst => {
-      inst.value = omitInstanceValues({ value: inst.value, type: inst.getTypeSync(), defQuery })
-    })
-
+    omitAllInstancesValues({ instances, defQuery })
     hideAndOmitFields({ definedTypes, defQuery, finalTypeNames })
 
     // only return types that are reachable from instances or definitions

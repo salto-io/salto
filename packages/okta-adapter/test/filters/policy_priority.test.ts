@@ -20,6 +20,7 @@ import {
   client as clientUtils,
   definitions as definitionsUtils,
 } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import {
   CORE_ANNOTATIONS,
   ElemID,
@@ -71,6 +72,9 @@ describe('policyPrioritiesFilter', () => {
   let client: OktaClient
   let elements: InstanceElement[]
   describe('fetch', () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
     it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
       'should add rule%sPriority instance and type to the elements',
       async (policyRuleName: string) => {
@@ -225,6 +229,105 @@ describe('policyPrioritiesFilter', () => {
           .filter(isInstanceElement)
           .filter(e => e.elemID.typeName === `${policyRuleName}Priority`)
         expect(priorityInstances).toHaveLength(0)
+      },
+    )
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+      'should log an error when there are duplicate priorities in %sPriority instance',
+      async (policyRuleName: string) => {
+        filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
+        const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
+        const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
+        const policyInstance = new InstanceElement(
+          `${policyRuleName}Instance`,
+          policyType,
+          {
+            name: `${policyRuleName}Instance`,
+            id: 4,
+          },
+          [
+            OKTA,
+            elementUtils.RECORDS_PATH,
+            policyRuleTypeNameToPolicyName(policyRuleName),
+            `${policyRuleName}_instance`,
+            `${policyRuleName}_instance`,
+          ],
+        )
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
+        policyRuleInstanceThree.value.priority = 2
+        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
+        elements = [
+          policyRuleInstanceOne,
+          policyRuleInstanceTwo,
+          policyRuleInstanceThree,
+          policyRuleInstanceFourDefault,
+        ]
+
+        const logging = logger('okta-adapter/src/filters/policy_priority')
+        const logErrorSpy = jest.spyOn(logging, 'error')
+        await filter.onFetch(elements)
+        expect(logErrorSpy).toHaveBeenCalledWith(
+          `Duplicate priorities found for ${policyRuleInstanceTwo.elemID.getFullName()},${policyRuleInstanceThree.elemID.getFullName()} with priority 2`,
+        )
+      },
+    )
+    it.each(ALL_SUPPORTED_POLICY_NAMES)(
+      'should log an error when there are duplicate priorities in %sPriority instance',
+      async (policyName: string) => {
+        filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
+        const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
+        const policyInstanceOne = createInstance(1, false, policyType)
+        const policyInstanceTwo = createInstance(2, false, policyType)
+        const policyInstanceThree = createInstance(3, false, policyType)
+        policyInstanceThree.value.priority = 2
+        const policyInstanceFourDefault = createInstance(4, true, policyType)
+        elements = [policyInstanceOne, policyInstanceTwo, policyInstanceThree, policyInstanceFourDefault]
+
+        const logging = logger('okta-adapter/src/filters/policy_priority')
+        const logErrorSpy = jest.spyOn(logging, 'error')
+        await filter.onFetch(elements)
+        expect(logErrorSpy).toHaveBeenCalledWith(
+          `Duplicate priorities found for ${policyInstanceTwo.elemID.getFullName()},${policyInstanceThree.elemID.getFullName()} with priority 2`,
+        )
+      },
+    )
+    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+      'should not log an error when there are no duplicate priorities in %sPriority instance',
+      async (policyRuleName: string) => {
+        filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
+        const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
+        const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
+        const policyInstance = new InstanceElement(
+          `${policyRuleName}Instance`,
+          policyType,
+          {
+            name: `${policyRuleName}Instance`,
+            id: 4,
+          },
+          [
+            OKTA,
+            elementUtils.RECORDS_PATH,
+            policyRuleTypeNameToPolicyName(policyRuleName),
+            `${policyRuleName}_instance`,
+            `${policyRuleName}_instance`,
+          ],
+        )
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
+        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
+        elements = [
+          policyRuleInstanceOne,
+          policyRuleInstanceTwo,
+          policyRuleInstanceThree,
+          policyRuleInstanceFourDefault,
+        ]
+
+        const logging = logger('okta-adapter/src/filters/policy_priority')
+        const logErrorSpy = jest.spyOn(logging, 'error')
+        await filter.onFetch(elements)
+        expect(logErrorSpy).not.toHaveBeenCalled()
       },
     )
   })

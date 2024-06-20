@@ -19,8 +19,7 @@ import { applyFunctionToChangeData, resolvePath, setPath } from '@salto-io/adapt
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { FETCH_CONFIG } from '../config'
-import { getUsers, USER_MAPPING, getUsersFromInstances, DEFAULT_CONVERT_USERS_IDS_VALUE } from '../user_utils'
+import { getUsers, USER_MAPPING, getUsersFromInstances, shouldConvertUserIds } from '../user_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -61,12 +60,12 @@ export const replaceValuesForChanges = async (
 /**
  * Replaces user ids with login name, when 'convertUsersIds' config flag is enabled
  */
-const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
+const filterCreator: FilterCreator = ({ paginator, config, usersPromise, fetchQuery }) => {
   let userIdToLogin: Record<string, string> = {}
   return {
     name: 'usersFilter',
     onFetch: async elements => {
-      if (!(config[FETCH_CONFIG].convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
+      if (!shouldConvertUserIds(fetchQuery, config)) {
         log.debug('Converting user ids was disabled (onFetch)')
         return
       }
@@ -82,8 +81,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       })
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
-      const { convertUsersIds } = config[FETCH_CONFIG]
-      if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
+      if (!shouldConvertUserIds(fetchQuery, config)) {
         log.debug('Converting user ids was disabled (preDeploy)')
         return
       }
@@ -112,7 +110,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       await replaceValuesForChanges(changes, loginToUserId)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
-      if (!(config[FETCH_CONFIG].convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
+      if (!shouldConvertUserIds(fetchQuery, config)) {
         log.debug('Converting user ids was disabled (onDeploy)')
         return
       }

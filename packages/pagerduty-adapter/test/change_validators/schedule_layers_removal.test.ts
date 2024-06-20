@@ -40,7 +40,6 @@ describe('scheduleLayerRemovalValidator', () => {
       schedule: 'uri',
       start: 'uri',
       end: 'uri',
-      _parent: 'uri',
     },
     undefined,
     {

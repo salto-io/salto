@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { getChangeData } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
+import { addTimeZone, shouldChangeLayer } from '../utils/schedule_layers'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   BUSINESS_SERVICE_TYPE_NAME,
@@ -237,23 +238,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     }),
                 },
                 transformation: {
-                  adjust: ({ value, context }) => ({
-                    value: {
-                      schedule: { schedule_layers: [value], time_zone: _.get(context, 'additionalContext.time_zone') },
-                    },
-                  }),
+                  adjust: addTimeZone,
                 },
               },
-              condition: {
-                custom:
-                  () =>
-                  ({ changeGroup, change }) =>
-                    !changeGroup.changes.some(
-                      changeFromGroup =>
-                        getChangeData(changeFromGroup).elemID.getFullName() ===
-                        getParent(getChangeData(change)).elemID.getFullName(),
-                    ),
-              },
+              condition: shouldChangeLayer,
             },
           ],
           modify: [
@@ -271,23 +259,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     }),
                 },
                 transformation: {
-                  adjust: ({ value, context }) => ({
-                    value: {
-                      schedule: { schedule_layers: [value], time_zone: _.get(context, 'additionalContext.time_zone') },
-                    },
-                  }),
+                  adjust: addTimeZone,
                 },
               },
-              condition: {
-                custom:
-                  () =>
-                  ({ changeGroup, change }) =>
-                    !changeGroup.changes.some(
-                      changeFromGroup =>
-                        getChangeData(changeFromGroup).elemID.getFullName() ===
-                        getParent(getChangeData(change)).elemID.getFullName(),
-                    ),
-              },
+              condition: shouldChangeLayer,
             },
           ],
           // We don't support removal of schedule layers, CV will throw an error if we try to remove a schedule layer without removing the schedule

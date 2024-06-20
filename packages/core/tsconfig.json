@@ -16,6 +16,7 @@
     { "path": "../file" },
     { "path": "../google-workspace-adapter" },
     { "path": "../intercom-adapter" },
+    { "path": "../jamf-adapter" },
     { "path": "../jira-adapter" },
     { "path": "../logging" },
     { "path": "../lowerdash" },

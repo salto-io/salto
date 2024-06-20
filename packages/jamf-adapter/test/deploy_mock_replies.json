@@ -1,0 +1,5 @@
+[
+	{"url":"/api/v1/buildings/4","method":"PUT","status":200,"response":{"id":"4","name":"This is a new name","streetAddress1":"","streetAddress2":"","city":"added a city also","stateProvince":"","zipPostalCode":"","country":""},"headers":{},"data":{"id":"4","name":"This is a new name","streetAddress1":"","streetAddress2":"","city":"added a city also","stateProvince":"","zipPostalCode":"","country":""}},
+	{"url":"/JSSResource/policies/id/19","method":"DELETE","status":200,"response":"<?xml version=\"1.0\" encoding=\"UTF-8\"?><policy><id>19</id></policy>","headers":{}},
+	{"url":"/JSSResource/classes/id/-1","method":"POST","status":201,"response":"<?xml version=\"1.0\" encoding=\"UTF-8\"?><class><id>20</id></class>","headers":{},"data":"<class><source>N/A</source><name>another class</name><description>yoyo</description><site>-1</site></class>"}
+]

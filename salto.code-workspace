@@ -45,6 +45,10 @@
       "path": "packages/e2e-credentials-store",
     },
     {
+      "name": "microsoft-entra-adapter",
+      "path": "packages/microsoft-entra-adapter",
+    },
+    {
       "name": "file",
       "path": "packages/file",
     },
@@ -136,6 +140,10 @@
       "name": "zuora-billing-adapter",
       "path": "packages/zuora-billing-adapter",
     },
+    {
+      "name": "jamf-adapter",
+      "path": "packages/jamf-adapter",
+    }
   ],
   "settings": {
     "files.exclude": {

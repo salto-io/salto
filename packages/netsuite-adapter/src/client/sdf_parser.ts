@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _, { Dictionary } from 'lodash'
+import _ from 'lodash'
 import os from 'os'
 import osPath from 'path'
 import he from 'he'
@@ -98,14 +98,14 @@ export const getDeployFilePath = (projectPath: string): string => osPath.resolve
 export const getFeaturesXmlPath = (projectPath: string): string =>
   osPath.resolve(projectPath, SRC_DIR, ACCOUNT_CONFIGURATION_DIR, FEATURES_XML)
 
-type XMLNode = Dictionary<XMLNode> | XMLNode[] | string
+type XMLNode = { [k: string]: XMLNode } | XMLNode[] | string
 
-const isComplexXMLNode = (node: XMLNode): node is Dictionary<XMLNode> => _.isPlainObject(node)
-const hasCDATAOnly = (values: Dictionary<XMLNode>): values is { [CDATA_TAG_NAME]: XMLNode } => {
+const isComplexXMLNode = (node: XMLNode): node is Record<string, XMLNode> => _.isPlainObject(node)
+const hasCDATAOnly = (values: Record<string, XMLNode>): values is { [CDATA_TAG_NAME]: XMLNode } => {
   const keys = Object.keys(values)
   return keys.length === 1 && keys[0] === CDATA_TAG_NAME
 }
-const hasStringCDATAOnly = (values: Dictionary<XMLNode>): values is { [CDATA_TAG_NAME]: string } =>
+const hasStringCDATAOnly = (values: Record<string, XMLNode>): values is { [CDATA_TAG_NAME]: string } =>
   hasCDATAOnly(values) && typeof values[CDATA_TAG_NAME] === 'string'
 
 const flattenCDATA = (values: XMLNode): XMLNode => {
@@ -126,7 +126,7 @@ const flattenCDATA = (values: XMLNode): XMLNode => {
 
 const convertToCustomizationInfo = (xmlContent: string): CustomizationInfo => {
   // We need to remove all CDATA tags we added to avoid decoding.
-  const parsedXmlValues = flattenCDATA(xmlParser.parse(xmlContent)) as Dictionary<Dictionary<XMLNode>>
+  const parsedXmlValues = flattenCDATA(xmlParser.parse(xmlContent)) as Record<string, Record<string, XMLNode>>
   const typeName = Object.keys(parsedXmlValues)[0]
   return { typeName, values: parsedXmlValues[typeName] }
 }

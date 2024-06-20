@@ -75,10 +75,71 @@ const objectFieldType = new ObjectType({
 const optionsType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'configOptionsType'),
   fields: {
+    min10Field: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 10 }),
+      },
+    },
+    max10Field: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max: 10 }),
+      },
+    },
+    between10And20Field: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 10, max: 20 }),
+      },
+    },
+    startsWithHelloField: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^Hello.*' }),
+      },
+    },
+    maxLength5List: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_list_length: 5 }),
+      },
+    },
+    maxLength5String: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 5 }),
+      },
+    },
+    requiredStringField: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Required String Field',
+        [CORE_ANNOTATIONS.ALIAS]: 'Required String Field',
+      },
+    },
+    booleanField: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Boolean Field',
+        [CORE_ANNOTATIONS.ALIAS]: 'Boolean Field',
+      },
+    },
+    numberField: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Number Field',
+        [CORE_ANNOTATIONS.ALIAS]: 'Number Field',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: [1, 2, 3],
+          enforce_value: true,
+        }),
+      },
+    },
     listOfStrings: {
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.DESCRIPTION]: 'List of strings',
         [CORE_ANNOTATIONS.ALIAS]: 'List of strings',
       },
@@ -117,25 +178,6 @@ const optionsType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.DESCRIPTION]: 'List of Object Field',
         [CORE_ANNOTATIONS.ALIAS]: 'List of Object Field',
-      },
-    },
-    booleanField: {
-      refType: BuiltinTypes.BOOLEAN,
-      annotations: {
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Boolean Field',
-        [CORE_ANNOTATIONS.ALIAS]: 'Boolean Field',
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
-    numberField: {
-      refType: BuiltinTypes.NUMBER,
-      annotations: {
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Number Field',
-        [CORE_ANNOTATIONS.ALIAS]: 'Number Field',
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: [1, 2, 3],
-          enforce_value: true,
-        }),
       },
     },
   },

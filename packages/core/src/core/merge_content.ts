@@ -41,8 +41,9 @@ const splitToLinesWithTerminators = (multilineString: string): LineWithTerminato
       linesWithTerminators.push(Object.assign(currentLine, { terminator: '\r\n' }))
       currentLine = ''
       i += 1 // Skip the \n part
-    } else if (char === '\r' || char === '\n' || char === '\u2028' || char === '\u2029') {
-      // Other terminators: \r, \n, \u2028, \u2029
+    } else if (char === '\r' || char === '\n') {
+      // Other terminators: \r, \n. In general, \u2028 & \u2029 are considered line terminators too,
+      // but Monaco Editor doesn't treat them as so (shows an unknown char), so we can ignore them too.
       linesWithTerminators.push(Object.assign(currentLine, { terminator: char }))
       currentLine = ''
     } else {

@@ -21,6 +21,7 @@ import {
   InstanceElement,
   Values,
   ObjectType,
+  Field,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -30,6 +31,8 @@ import { metadataType } from '../transformers/transformer'
 import { metadataTypesWithAttributes } from '../transformers/xml_transformer'
 
 const { awu } = collections.asynciterable
+const isAttributeField = (field?: Field): boolean =>
+  field?.annotations[IS_ATTRIBUTE] ?? false
 
 const handleAttributeValues = (value: Values, type: ObjectType): Values => {
   if (!_.isPlainObject(value)) {
@@ -37,22 +40,16 @@ const handleAttributeValues = (value: Values, type: ObjectType): Values => {
   }
 
   // We put the attributes first for backwards compatibility.
-  const [attrEntries, entries] = _(value)
-    .entries()
-    .partition(
-      ([key, _val]) =>
-        type.fields[key.replace(XML_ATTRIBUTE_PREFIX, '')]?.annotations[
-          IS_ATTRIBUTE
-        ],
-    )
-    .value()
-  return Object.fromEntries([
-    ...attrEntries.map(([key, val]) => [
-      key.slice(XML_ATTRIBUTE_PREFIX.length),
-      val,
-    ]),
-    ...entries,
-  ])
+  const [attrEntries, entries] = _.partition(
+    Object.entries(value),
+    ([key, _val]) =>
+      isAttributeField(type.fields[key.replace(XML_ATTRIBUTE_PREFIX, '')]),
+  )
+  return Object.fromEntries(
+    attrEntries.map(([key, val]) =>
+      [key.slice(XML_ATTRIBUTE_PREFIX.length), val].concat(entries),
+    ),
+  )
 }
 
 const removeAttributePrefix = async (

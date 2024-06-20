@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
+import _, { Dictionary } from 'lodash'
 import os from 'os'
 import osPath from 'path'
 import he from 'he'
@@ -77,6 +77,10 @@ const DEFAULT_FOLDER_ATTRIBUTES =
 
 const xmlParser = new XMLParser({
   ...XML_PARSER_DEFAULT_OPTIONS,
+  // CDATA sometimes includes inner XML which we don't want to decode here.
+  // Separating out CDATA content to its own tag causes the parser to not run
+  // the tag value processor on it due to an implementation quirk.
+  cdataPropName: CDATA_TAG_NAME,
   tagValueProcessor: (_name, val) => he.decode(val),
 })
 
@@ -94,8 +98,35 @@ export const getDeployFilePath = (projectPath: string): string => osPath.resolve
 export const getFeaturesXmlPath = (projectPath: string): string =>
   osPath.resolve(projectPath, SRC_DIR, ACCOUNT_CONFIGURATION_DIR, FEATURES_XML)
 
+type XMLNode = Dictionary<XMLNode> | XMLNode[] | string
+
+const isComplexXMLNode = (node: XMLNode): node is Dictionary<XMLNode> => _.isPlainObject(node)
+const hasCDATAOnly = (values: Dictionary<XMLNode>): values is { [CDATA_TAG_NAME]: XMLNode } => {
+  const keys = Object.keys(values)
+  return keys.length === 1 && keys[0] === CDATA_TAG_NAME
+}
+const hasStringCDATAOnly = (values: Dictionary<XMLNode>): values is { [CDATA_TAG_NAME]: string } =>
+  hasCDATAOnly(values) && typeof values[CDATA_TAG_NAME] === 'string'
+
+const flattenCDATA = (values: XMLNode): XMLNode => {
+  if (_.isArray(values)) {
+    return values.map(flattenCDATA)
+  }
+
+  if (isComplexXMLNode(values)) {
+    if (hasStringCDATAOnly(values)) {
+      return values[CDATA_TAG_NAME]
+    }
+
+    return _.mapValues(values, flattenCDATA)
+  }
+
+  return values
+}
+
 const convertToCustomizationInfo = (xmlContent: string): CustomizationInfo => {
-  const parsedXmlValues = xmlParser.parse(xmlContent)
+  // We need to remove all CDATA tags we added to avoid decoding.
+  const parsedXmlValues = flattenCDATA(xmlParser.parse(xmlContent)) as Dictionary<Dictionary<XMLNode>>
   const typeName = Object.keys(parsedXmlValues)[0]
   return { typeName, values: parsedXmlValues[typeName] }
 }

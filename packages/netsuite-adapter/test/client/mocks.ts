@@ -111,6 +111,21 @@ export const OBJECT_XML_WITH_HTML_CHARS =
   '<label>Golf &#x26; Co&#x2019;Co element&#x200B;Name</label>' +
   '</entitycustomfield>'
 
+export const OBJECT_XML_WITH_CDATA_AND_INNER_XML = `<workbook scriptid="my_workbook">
+  <name>My workbook</name>
+  <definition><![CDATA[<root>
+<pivots type="array">
+  <_ITEM_>
+    <_T_>pivot</_T_>
+    <scriptId>my_pivot</scriptId>
+    <definition>&lt;root>&lt;version>1&lt;/version>&lt;/root></definition>
+  </_ITEM_>
+</pivots>
+</root>]]></definition>
+  <definition>Another definition</definition>
+</workbook>
+`
+
 export const OBJECTS_DIR_FILES = ['a.xml', 'b.xml', 'a.template.html']
 
 export const readFileMockFunction = (filePath: string): string | Buffer => {

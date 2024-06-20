@@ -16,6 +16,11 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
   name: 'salesforce-adapter',
   displayName: 'salesforce-adapter',
   rootDir: `${__dirname}`,

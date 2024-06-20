@@ -19,11 +19,10 @@ import SalesforceAdapter, {
   UsernamePasswordCredentials,
   OauthAccessTokenCredentials,
 } from '@salto-io/salesforce-adapter'
-// eslint-disable-next-line no-restricted-imports
 import {
   testHelpers as salesforceTestHelpers,
   testTypes as salesforceTestTypes,
-} from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
+} from '@salto-io/salesforce-adapter/e2e_test/jest_environment'
 import _ from 'lodash'
 import {
   InstanceElement,

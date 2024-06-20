@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist/test"
+    "outDir": "dist/e2e_test"
   },
   "include": ["**/*"],
   "references": [{ "path": ".." }]

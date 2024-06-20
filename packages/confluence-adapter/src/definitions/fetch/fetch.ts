@@ -28,7 +28,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { adjustHomepageToId, spaceMergeAndTransformAdjust } from '../utils/space'
+import { spaceMergeAndTransformAdjust } from '../utils/space'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created_at: {
@@ -108,7 +108,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
-          adjust: adjustHomepageToId,
         },
       },
     ],

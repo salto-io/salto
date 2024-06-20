@@ -67,7 +67,16 @@ const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeA
   const value = validateValue(args.value)
   const version = _.get(value, 'version')
   if (!values.isPlainRecord(version) || !isNumber(version.number)) {
-    return { ...args, value }
+    return {
+      value: {
+        ...value,
+        version: {
+          // In case of homepage addition, we don't have a version number yet but it is "1" in the service
+          // It has been set to one when we created the space and the default homepage was created
+          number: 2,
+        },
+      },
+    }
   }
   return {
     value: {
@@ -78,6 +87,22 @@ const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeA
       },
     },
   }
+}
+
+/**
+ * custom context function that adds homepage id to additionContext in case it is a homepage of a new deployed space.
+ */
+export const putHomepageIdInAdditionContext = (args: definitions.deploy.ChangeAndContext): Record<string, unknown> => {
+  const spaceChange = args.changeGroup?.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
+  if (spaceChange === undefined) {
+    return {}
+  }
+  // If there is a space change on the same group as a page change, it means that the page is the space homepage
+  const homepageId = _.get(args.sharedContext?.[getChangeData(spaceChange).elemID.getFullName()], 'id')
+  if (homepageId !== undefined) {
+    return { id: homepageId }
+  }
+  return {}
 }
 
 /**

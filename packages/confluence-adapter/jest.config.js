@@ -16,6 +16,11 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
   name: 'confluence-adapter',
   displayName: 'confluence-adapter',
   rootDir: `${__dirname}`,

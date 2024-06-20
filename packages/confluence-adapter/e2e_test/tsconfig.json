@@ -3,6 +3,6 @@
   "compilerOptions": {
     "outDir": "dist/e2e_test"
   },
-  "include": ["**/*"],
+  "include": ["**/*", "**/*.json"],
   "references": [{ "path": ".." }]
 }

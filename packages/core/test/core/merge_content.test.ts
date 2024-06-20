@@ -15,12 +15,14 @@
  */
 import * as diff3 from '@salto-io/node-diff3'
 import { StaticFile } from '@salto-io/adapter-api'
-import { mergeStaticFiles, mergeStrings } from '../../src/core/merge_content'
+import { mergeStaticFiles, mergeStrings as merge } from '../../src/core/merge_content'
 
 jest.mock('@salto-io/node-diff3', () => ({
   __esModule: true,
   ...jest.requireActual<{}>('@salto-io/node-diff3'),
 }))
+
+const mergeStrings = (a: number, b: boolean): string => merge(a, b)
 
 describe('merge contents', () => {
   const changeId = 'salto.test'

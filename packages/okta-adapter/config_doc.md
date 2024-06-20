@@ -97,22 +97,22 @@ okta {
 | type   | .\*                    | A regex used to filter instances by matching the regex to their type value                                          |
 | status | .\*                    | A regex used to filter instances by matching the regex to their status value                                        |
 
+## Element ID customization
+
+| Name                                   | Default when undefined | Description                                                                                                                                       |
+| -------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [parts](#element-id-parts-definitions) | system's default       | All parts definitions will be concatenated to create the element ID                                                                               |
+| extendsParent                          | false                  | Whether to concatenate the parent element ID with the current element ID                                                                          |
+| delimiter                              | "\_"                   | The delimiter to use to concatenate Elem ID "parts"                                                                                               |
+| extendSystemPartsDefinition            | false                  | Set to true to append the user-defined parts with the default system definition. When false, the user definitions override the system definitions |
+
 ## Element ID parts definitions
 
 | Name        | Default when undefined | Description                                                                         |
 | ----------- | ---------------------- | ----------------------------------------------------------------------------------- |
-| fieldName   | system's default       | The instance's field name value will be used to create the element ID               |
+| fieldName   | system's default       | The instance's field name whose value will be used to create the element ID         |
 | isReference | false                  | Set to true if the fieldName is also a Salto reference                              |
 | mapping     | undefined              | Allows applying a specific function to fieldName. Options: 'uppercase', 'lowercase' |
-
-## Element ID customization
-
-| Name                                   | Default when undefined | Description                                                                  |
-| -------------------------------------- | ---------------------- | ---------------------------------------------------------------------------- |
-| [parts](#element-id-parts-definitions) | system's default       | All parts definitions will be concatenated to create the element ID          |
-| extendsParent                          | false                  | Whether to concat the parent element ID with the current element ID          |
-| delimiter                              | "\_"                   | The delimiter to use to concat Elem ID "parts"                               |
-| extendSystemPartsDefinition            | false                  | Set to true to combine system's parts definitions with user part definitions |
 
 ### Deploy configuration options
 

@@ -91,7 +91,7 @@ import {
   POLICY_RULE_PRIORITY_TYPE_NAMES,
   USER_TYPE_NAME,
 } from './constants'
-import { getLookUpNameCreator, OktaFieldReferenceResolver } from './reference_mapping'
+import { getLookUpNameCreator } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances, shouldConvertUserIds } from './user_utils'
 import { isClassicEngineOrg } from './utils'
 import { createFixElementFunctions } from './fix_elements'

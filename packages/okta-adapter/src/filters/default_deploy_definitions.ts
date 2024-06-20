@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 import { filters as filterUtils } from '@salto-io/adapter-components'
-import { FilterCreator, FilterResult } from '../filter'
+import { FilterAdditionalParams, FilterCreator, FilterResult } from '../filter'
 import { OktaOptions } from '../definitions/types'
 import { getOktaError } from '../deployment'
-import { getLookUpName, OktaFieldReferenceResolver } from '../reference_mapping'
+import { getLookUpNameCreator, OktaFieldReferenceResolver } from '../reference_mapping'
+import { USER_TYPE_NAME } from '../constants'
+import { OktaUserConfig } from '../user_config'
 
-const filterCreator: FilterCreator = filterUtils.defaultDeployFilterCreator<FilterResult, OktaOptions>({
+const filterCreator: FilterCreator = filterUtils.defaultDeployFilterCreator<
+  FilterResult,
+  OktaOptions,
+  OktaUserConfig,
+  FilterAdditionalParams
+>({
   convertError: getOktaError,
-  customLookupFunc: getLookUpName,
+  lookupFuncCreator: opts =>
+    getLookUpNameCreator({
+      enableMissingReferences: opts.config.fetch.enableMissingReferences,
+      isUserTypeIncluded: opts.fetchQuery.isTypeMatch(USER_TYPE_NAME),
+    }),
   fieldReferenceResolverCreator: OktaFieldReferenceResolver.create,
 })
 

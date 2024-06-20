@@ -187,6 +187,9 @@ export type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitio
   alias?: AliasData
 
   importantValues?: ImportantValues
+
+  // when true, empty arrays in instance values will not be omitted
+  allowEmptyArrays?: boolean
 }
 
 export type ElementFetchDefinition<Options extends ElementFetchDefinitionOptions = {}> = {

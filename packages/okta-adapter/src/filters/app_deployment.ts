@@ -196,11 +196,15 @@ const filterCreator: FilterCreator = ({ elementSource, definitions, oldApiDefini
       log.error('Could not create customName field for custom apps because subdomain was missing')
       return
     }
-    // create customName field for non custom apps and delete name field as its value is not multienv
     appInstances.forEach(app => {
+      // create customName field for non custom apps and delete name field as its value is not multienv
       if (isCustomApp(app.value, subdomain)) {
         app.value.customName = app.value.name
         delete app.value.name
+      }
+      // delete `features` array if it is empty as the field is not deployable
+      if (_.isEmpty(app.value.features)) {
+        delete app.value.features
       }
     })
 

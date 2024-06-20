@@ -249,8 +249,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   () =>
                   ({ changeGroup, change }) =>
                     !changeGroup.changes.some(
-                      scheduleChange =>
-                        getChangeData(scheduleChange).elemID.getFullName() ===
+                      changeFromGroup =>
+                        getChangeData(changeFromGroup).elemID.getFullName() ===
                         getParent(getChangeData(change)).elemID.getFullName(),
                     ),
               },
@@ -283,8 +283,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   () =>
                   ({ changeGroup, change }) =>
                     !changeGroup.changes.some(
-                      scheduleChange =>
-                        getChangeData(scheduleChange).elemID.getFullName() ===
+                      changeFromGroup =>
+                        getChangeData(changeFromGroup).elemID.getFullName() ===
                         getParent(getChangeData(change)).elemID.getFullName(),
                     ),
               },

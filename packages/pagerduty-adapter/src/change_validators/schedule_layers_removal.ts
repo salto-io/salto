@@ -26,7 +26,7 @@ export const scheduleLayerRemovalValidator: ChangeValidator = async changes => {
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === SCHEDULE_LAYERS_TYPE_NAME)
-  const schedulesRemoval = changes
+  const schedulesRemovalElemIds = changes
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(isInstanceElement)
@@ -34,7 +34,7 @@ export const scheduleLayerRemovalValidator: ChangeValidator = async changes => {
     .map(instance => instance.elemID.getFullName())
 
   return layersRemoval
-    .filter(layer => !schedulesRemoval.includes(getParent(layer).elemID.getFullName()))
+    .filter(layer => !schedulesRemovalElemIds.includes(getParent(layer).elemID.getFullName()))
     .map(
       ({ elemID }): ChangeError => ({
         elemID,

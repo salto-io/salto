@@ -54,6 +54,5 @@ export const reorderDeployXml = (deployContent: string, dependencyGraph: Graph<S
     objects.path.push(['~', OBJECTS_DIR, '*'].join(osPath.sep))
   }
 
-  // eslint-disable-next-line new-cap
   return xmlBuilder.build(deployXml)
 }

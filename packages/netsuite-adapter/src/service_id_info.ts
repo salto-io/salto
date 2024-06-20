@@ -15,10 +15,11 @@
  */
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { ElemID, Element, isElement, isInstanceElement, isType } from '@salto-io/adapter-api'
+import { ElemID, Element, isElement } from '@salto-io/adapter-api'
 import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
 import { SCRIPT_ID } from './constants'
 import { ServiceIdRecords } from './elements_source_index/types'
+import { getElementValueOrAnnotations } from './types'
 
 const CAPTURED_SERVICE_ID = 'serviceId'
 const CAPTURED_TYPE = 'type'
@@ -107,26 +108,24 @@ export const getServiceIdsToElemIds = (element: Element): ServiceIdRecords => {
   walkOnElement({
     element,
     func: ({ value, path }) => {
-      let container = value
-      let containerPath = path
-      if (isInstanceElement(value)) {
-        container = value.value
-      } else if (isElement(value)) {
-        container = value.annotations
-        if (isType(value)) {
-          containerPath = path.createNestedID('attr')
-        }
+      const container = isElement(value) ? getElementValueOrAnnotations(value) : value
+      if (!_.isPlainObject(container)) {
+        return WALK_NEXT_STEP.RECURSE
       }
-      if (_.isPlainObject(container) && typeof container[SCRIPT_ID] === 'string') {
-        const scriptID = container[SCRIPT_ID]
-        const parentServiceId = getClosestParentServiceId(path)
-        const resolvedServiceId = parentServiceId === undefined ? scriptID : `${parentServiceId}.${scriptID}`
-        parentElemIdFullNameToServiceId[path.getFullName()] = resolvedServiceId
-        serviceIdsToElemIds[resolvedServiceId] = {
-          elemID: containerPath.createNestedID(SCRIPT_ID),
-          serviceID: scriptID,
-        }
+
+      const serviceID = container[SCRIPT_ID]
+      if (typeof serviceID !== 'string') {
+        return WALK_NEXT_STEP.RECURSE
       }
+
+      const parentServiceId = getClosestParentServiceId(path)
+      const resolvedServiceId = parentServiceId === undefined ? serviceID : `${parentServiceId}.${serviceID}`
+      parentElemIdFullNameToServiceId[path.getFullName()] = resolvedServiceId
+      serviceIdsToElemIds[resolvedServiceId] = {
+        elemID: path.idType === 'type' ? path.createNestedID('attr', SCRIPT_ID) : path.createNestedID(SCRIPT_ID),
+        serviceID,
+      }
+
       return WALK_NEXT_STEP.RECURSE
     },
   })

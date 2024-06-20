@@ -42,6 +42,7 @@ import {
   GetLookupNameFunc,
   naclCase,
   pathNaclCase,
+  transformValuesSync,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -165,14 +166,10 @@ export const createInstanceElement = async (
     }
 
     // We put the attributes first for backwards compatibility.
-    const [attrEntries, entries] = _(value)
-      .entries()
-      .partition(([key, _val]) => key.startsWith(ATTRIBUTE_PREFIX))
-      .value()
-    return Object.fromEntries([
-      ...attrEntries.map(([key, val]) => [key.slice(ATTRIBUTE_PREFIX.length), val]),
-      ...entries,
-    ])
+    const [attrEntries, entries] = _.partition(Object.entries(value), ([key, _val]) => key.startsWith(ATTRIBUTE_PREFIX))
+    return Object.fromEntries(
+      attrEntries.map(([key, val]) => [key.slice(ATTRIBUTE_PREFIX.length), val]).concat(entries),
+    )
   }
 
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
@@ -198,12 +195,12 @@ export const createInstanceElement = async (
   }
 
   const valuesWithTransformedAttrs =
-    (await transformValues({
+    transformValuesSync({
       values: customizationInfo.values,
       type,
       transformFunc: transformAttributes,
       strict: false,
-    })) ?? {}
+    }) ?? {}
 
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] =

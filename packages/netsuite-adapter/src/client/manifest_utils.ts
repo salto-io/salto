@@ -228,6 +228,5 @@ export const fixManifest = (
   cleanInvalidDependencies(dependencies)
   addRequiredDependencies(dependencies, customizationInfos, additionalDependencies)
 
-  // eslint-disable-next-line new-cap
   return xmlBuilder.build(manifestXml)
 }

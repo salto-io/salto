@@ -13,12 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export const ADAPTER_NAME = 'pagerduty'
-export const SERVICE_TYPE_NAME = 'service'
-export const TEAM_TYPE_NAME = 'team'
-export const ESCALATION_POLICY_TYPE_NAME = 'escalationPolicy'
-export const SCHEDULE_TYPE_NAME = 'schedule'
-export const BUSINESS_SERVICE_TYPE_NAME = 'businessService'
-export const EVENT_ORCHESTRATION_TYPE_NAME = 'eventOrchestration'
-export const SCHEDULE_LAYERS_TYPE_NAME = 'scheduleLayer'
-export const USER_TYPE_NAME = 'user'
+import { USER_TYPE_NAME } from './constants'
+import { DEFAULT_ID_PARTS } from './definitions/fetch/fetch'
+
+export const USER_FETCH_DEFINITIONS = {
+  customizations: {
+    [USER_TYPE_NAME]: {
+      requests: [
+        {
+          endpoint: {
+            path: '/users',
+          },
+          transformation: {
+            root: 'users',
+          },
+        },
+      ],
+      resource: {
+        directFetch: true,
+        serviceIDFields: ['id'],
+      },
+      element: {
+        topLevel: {
+          isTopLevel: true,
+          elemID: { parts: DEFAULT_ID_PARTS },
+        },
+      },
+    },
+  },
+}

@@ -15,8 +15,7 @@
  */
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment, elements as elementsUtils,
-import {  definitions as definitionUtils } from '@salto-io/adapter-components'
+import { deployment, elements as elementsUtils, definitions as definitionUtils } from '@salto-io/adapter-components'
 import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'

@@ -153,7 +153,7 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}
 
   if (!elementDef?.topLevel?.isTopLevel) {
-    // should have already been tested in caller
+    // should have already been tested in caller, we should not get here if topLevel is undefined
     const error = `type ${adapterName}:${typeName} is not defined as top-level, cannot create instances`
     throw new Error(error)
   }

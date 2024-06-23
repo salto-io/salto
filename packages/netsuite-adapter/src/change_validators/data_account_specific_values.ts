@@ -50,11 +50,11 @@ const getPathsWithUnresolvedAccountSpecificValue = (instance: InstanceElement): 
 
 export const getResolvingErrors = ({
   instance,
-  unknownTypeReferencesMap,
+  unknownTypeReferencesMap = {},
   suiteQLNameToInternalIdsMap,
 }: {
   instance: InstanceElement
-  unknownTypeReferencesMap: Record<string, Record<string, string[]>>
+  unknownTypeReferencesMap?: Record<string, Record<string, string[]>>
   suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
 }): { changeErrors: ChangeError[]; missingInternalIds: MissingInternalId[] } => {
   const changeErrors: ChangeError[] = []

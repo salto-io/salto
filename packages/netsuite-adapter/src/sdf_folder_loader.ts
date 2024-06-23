@@ -35,7 +35,6 @@ const loadElementsFromFolder = async (
       elementsSource,
       isPartial,
       config: netsuiteConfigFromConfig(config),
-      suiteQLNameToInternalIdsMap: {},
     },
     filters,
   )

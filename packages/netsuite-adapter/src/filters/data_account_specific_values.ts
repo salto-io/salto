@@ -429,7 +429,7 @@ const filterCreator: RemoteFilterCreator = ({
   config,
   elementsSource,
   isPartial,
-  suiteQLNameToInternalIdsMap,
+  suiteQLNameToInternalIdsMap = {},
 }) => ({
   name: 'dataAccountSpecificValues',
   remote: true,

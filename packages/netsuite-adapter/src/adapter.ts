@@ -330,7 +330,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
               config,
               timeZoneAndFormat: params.timeZoneAndFormat,
               fetchTime: params.fetchTime,
-              suiteQLNameToInternalIdsMap: {},
             }
           case 'deploy':
             return {

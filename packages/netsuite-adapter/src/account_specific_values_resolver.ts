@@ -32,7 +32,6 @@ import {
 import NetsuiteClient from './client/client'
 import { WORKFLOW } from './constants'
 import { isDataObjectType } from './types'
-import { getUnknownTypeReferencesMap } from './filters/data_account_specific_values'
 import { getResolvedAccountSpecificValues as getWorkflowResolvedAccountSpecificValues } from './filters/workflow_account_specific_values'
 import { getResolvingErrors as getDataInstanceResolvingErrors } from './change_validators/data_account_specific_values'
 
@@ -74,8 +73,6 @@ export const getUpdatedSuiteQLNameToInternalIdsMap = async (
 
   const suiteQLNameToInternalIdsMap = toSuiteQLNameToInternalIdsMap(suiteQLTablesMap)
 
-  const unknownTypeReferencesMap = await getUnknownTypeReferencesMap(elementsSource)
-
   const missingInternalIdsFromWorkflows = workflowInstances.flatMap(
     instance => getWorkflowResolvedAccountSpecificValues(instance, suiteQLNameToInternalIdsMap).missingInternalIds,
   )
@@ -83,7 +80,6 @@ export const getUpdatedSuiteQLNameToInternalIdsMap = async (
     instance =>
       getDataInstanceResolvingErrors({
         instance,
-        unknownTypeReferencesMap,
         suiteQLNameToInternalIdsMap,
       }).missingInternalIds,
   )

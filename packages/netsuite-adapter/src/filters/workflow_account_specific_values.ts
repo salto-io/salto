@@ -631,7 +631,7 @@ const toMultipleInternalIdsWarning = (elemID: ElemID, name: string, internalId: 
 
 export const getResolvedAccountSpecificValues = (
   instance: InstanceElement,
-  suiteQLTablesMap: Record<string, Record<string, string[]>>,
+  suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>,
 ): ResolvedAccountSpecificValuesResult => {
   const resolvedAccountSpecificValues: ResolvedAccountSpecificValue[] = []
   const resolveWarnings: ChangeError[] = []
@@ -647,8 +647,8 @@ export const getResolvedAccountSpecificValues = (
       return
     }
     const name = getResolvedAccountSpecificValue(fieldValue)
-    const fieldType = getQueryRecordFieldType(instance, value, field, suiteQLTablesMap, {})
-    const internalIds = _.uniq(makeArray(fieldType).flatMap(type => suiteQLTablesMap[type][name] ?? []))
+    const fieldType = getQueryRecordFieldType(instance, value, field, suiteQLNameToInternalIdsMap, {})
+    const internalIds = _.uniq(makeArray(fieldType).flatMap(type => suiteQLNameToInternalIdsMap[type][name] ?? []))
     const internalId = internalIds[0]
     if (internalIds.length === 0) {
       log.warn(

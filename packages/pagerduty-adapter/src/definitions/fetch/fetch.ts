@@ -243,6 +243,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           omit: true,
         },
         schedule_layers: {
+          sort: { properties: [{ path: 'name' }, { path: 'end', order: 'desc' }] },
           standalone: {
             typeName: SCHEDULE_LAYERS_TYPE_NAME,
             addParentAnnotation: true,
@@ -264,6 +265,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
       fieldCustomizations: {
         id: {
+          hide: true,
+        },
+        start: {
           hide: true,
         },
       },

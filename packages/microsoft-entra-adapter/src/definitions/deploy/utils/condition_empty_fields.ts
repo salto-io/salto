@@ -30,7 +30,7 @@ export const createCustomConditionEmptyFieldsOnAddition = (
     () =>
     ({ change }) => {
       if (!isAdditionChange(change)) {
-        return true
+        return false
       }
       return _.some(fieldNames, fieldName => !_.isEmpty(_.get(getChangeData(change).value, fieldName)))
     },

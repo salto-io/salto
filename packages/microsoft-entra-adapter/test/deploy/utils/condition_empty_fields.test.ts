@@ -36,6 +36,6 @@ describe(`${createCustomConditionEmptyFieldsOnAddition.name}`, () => {
       Object.keys(getChangeData(contextMock.change).value)[0],
     ])
     contextMock.change.action = 'modify'
-    expect(custom?.({})(contextMock)).toEqual(true)
+    expect(custom?.({})(contextMock)).toEqual(false)
   })
 })

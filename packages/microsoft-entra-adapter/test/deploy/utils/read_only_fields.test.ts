@@ -19,7 +19,7 @@ import {
   TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
 } from '../../../src/change_validators'
 import { omitReadOnlyFields } from '../../../src/definitions/deploy/utils'
-import { contextMock, removalChangeMock } from '../../mocks'
+import { contextMock, modificationChangeMock, removalChangeMock } from '../../mocks'
 
 const typeNamesWithReadOnlyFieldsOnAddition = Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION)
 const readOnlyTypeNameAddition = typeNamesWithReadOnlyFieldsOnAddition[0]
@@ -60,7 +60,7 @@ describe(`${omitReadOnlyFields.name}`, () => {
       omitReadOnlyFields({
         typeName: readOnlyTypeNameModificationOnly,
         value,
-        context: { ...contextMock, action: 'add' },
+        context: contextMock,
       }),
     ).toEqual({ value })
   })
@@ -71,9 +71,9 @@ describe(`${omitReadOnlyFields.name}`, () => {
       b: '2',
       [TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION[readOnlyTypeNameAddition][0]]: 'read only',
     }
-    expect(
-      omitReadOnlyFields({ typeName: readOnlyTypeNameAddition, value, context: { ...contextMock, action: 'add' } }),
-    ).toEqual({ value: { a: 1, b: '2' } })
+    expect(omitReadOnlyFields({ typeName: readOnlyTypeNameAddition, value, context: contextMock })).toEqual({
+      value: { a: 1, b: '2' },
+    })
   })
 
   it('should omit the read only fields on modification', () => {
@@ -86,7 +86,7 @@ describe(`${omitReadOnlyFields.name}`, () => {
       omitReadOnlyFields({
         typeName: readOnlyTypeNameModificationOnly,
         value,
-        context: { ...contextMock, action: 'modify' },
+        context: { ...contextMock, change: modificationChangeMock },
       }),
     ).toEqual({ value: { a: 1, b: '2' } })
   })

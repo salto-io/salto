@@ -29,7 +29,7 @@ export const omitReadOnlyFields: AdjustFunction = ({ typeName, value, context })
   }
 
   const readOnlyFieldsToOmit =
-    context.action === 'add'
+    context.change.action === 'add'
       ? TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION[typeName]
       : TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION[typeName]
   if (readOnlyFieldsToOmit === undefined) {

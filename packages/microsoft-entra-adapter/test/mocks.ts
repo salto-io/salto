@@ -31,6 +31,11 @@ export const additionChangeMock: Change<InstanceElement> = toChange({
   after: instanceElementMock,
 })
 
+export const modificationChangeMock: Change<InstanceElement> = toChange({
+  before: instanceElementMock,
+  after: instanceElementMock,
+})
+
 export const removalChangeMock: Change<InstanceElement> = toChange({
   before: instanceElementMock,
 })

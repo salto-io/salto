@@ -82,7 +82,6 @@ export const createDeployDefinitions = (): DeployApiDefinitions => ({
       referenceResolution: {
         when: 'early',
       },
-      changeGroupId: deployment.grouping.selfGroup,
     },
     customizations: createCustomizations(),
   },

@@ -29,7 +29,6 @@ import {
   isInstanceElement,
   FixElementsFunc,
   TypeMap,
-  SaltoError,
 } from '@salto-io/adapter-api'
 import {
   elements as elementUtils,
@@ -425,7 +424,6 @@ export default class OktaAdapter implements AdapterOperations {
           : change,
       )
       .toArray()
-    const saltoErrors: SaltoError[] = []
     await runner.preDeploy(resolvedChanges)
 
     const { deployResult } = await runner.deploy(resolvedChanges, changeGroup)
@@ -437,7 +435,7 @@ export default class OktaAdapter implements AdapterOperations {
       .toArray()
     return {
       appliedChanges,
-      errors: deployResult.errors.concat(saltoErrors),
+      errors: deployResult.errors,
     }
   }
 

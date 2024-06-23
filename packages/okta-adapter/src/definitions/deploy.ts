@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from './types'
 import { GROUP_TYPE_NAME } from '../constants'
@@ -21,50 +22,18 @@ import { GROUP_TYPE_NAME } from '../constants'
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
 
-const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => ({
-  [GROUP_TYPE_NAME]: {
-    requestsByAction: {
-      customizations: {
-        add: [
-          {
-            request: {
-              endpoint: {
-                path: '/api/v1/groups',
-                method: 'post',
-              },
-            },
-          },
-        ],
-        modify: [
-          {
-            request: {
-              endpoint: {
-                path: '/api/v1/groups/{groupId}',
-                method: 'put',
-              },
-              context: {
-                groupId: '{id}',
-              },
-            },
-          },
-        ],
-        remove: [
-          {
-            request: {
-              endpoint: {
-                path: '/api/v1/groups/{groupId}',
-                method: 'delete',
-              },
-              context: {
-                groupId: '{id}',
-              },
-            },
-          },
-        ],
-      },
-    },
-  },
-})
+const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
+  const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
+    AdditionalAction,
+    ClientOptions
+  >({
+    [GROUP_TYPE_NAME]: { bulkPath: '/api/v1/groups' },
+  })
+
+  const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {}
+
+  return _.merge(standardRequestDefinitions, customDefinitions)
+}
 
 export const createDeployDefinitions = (): DeployApiDefinitions => ({
   instances: {

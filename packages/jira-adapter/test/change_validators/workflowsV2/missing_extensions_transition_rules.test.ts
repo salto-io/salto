@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import { toChange, InstanceElement } from '@salto-io/adapter-api'
 import { missingExtensionsTransitionRulesChangeValidator } from '../../../src/change_validators/workflowsV2/missing_extensions_transition_rules'
 import {

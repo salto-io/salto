@@ -36,6 +36,7 @@ export const createClientDefinitions = (
         },
         customizations: {
           '/api/v2/organizations': { get: { pagination: 'links' } },
+          '/api/v2/groups': { get: { pagination: 'links' } },
           '/api/v2/triggers': { get: { pagination: 'links' } },
           '/api/v2/trigger_categories': { get: { pagination: 'links' } },
           '/api/v2/automations': { get: { pagination: 'links' } },

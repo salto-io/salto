@@ -19,8 +19,10 @@ import NetsuiteClient from '../client/client'
 
 export type NetsuiteChangeValidator = (
   changes: ReadonlyArray<Change>,
-  deployReferencedElements?: boolean,
-  elementsSource?: ReadOnlyElementsSource,
-  config?: NetsuiteConfig,
-  client?: NetsuiteClient,
+  params: {
+    deployReferencedElements: boolean
+    elementsSource: ReadOnlyElementsSource
+    config: NetsuiteConfig
+    client: NetsuiteClient
+  },
 ) => Promise<ReadonlyArray<ChangeError>>

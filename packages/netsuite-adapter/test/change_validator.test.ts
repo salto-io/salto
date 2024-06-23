@@ -51,7 +51,7 @@ const DEFAULT_OPTIONS = {
     }) as unknown as Required<Filter>,
   elementsSource: jest.fn() as unknown as ReadOnlyElementsSource,
   fetchByQuery: jest.fn(),
-  userConfig: {
+  config: {
     fetch: fullFetchConfig(),
   },
 }

@@ -21,9 +21,19 @@ import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql
 import { fullFetchConfig } from '../../src/config/config_creator'
 import { NetsuiteConfig } from '../../src/config/types'
 import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../../src/filters/data_account_specific_values'
+import NetsuiteClient from '../../src/client/client'
+import mockSdfClient from '../client/sdf_client'
 
 describe('data account specific values validator', () => {
   let dataType: ObjectType
+  const baseParams = {
+    deployReferencedElements: false,
+    elementsSource: buildElementsSourceFromElements([]),
+    config: {
+      fetch: fullFetchConfig(),
+    },
+    client: new NetsuiteClient(mockSdfClient()),
+  }
 
   beforeEach(() => {
     dataType = new ObjectType({
@@ -33,9 +43,13 @@ describe('data account specific values validator', () => {
   })
 
   describe('when fetch.resolveAccountSpecificValues is false', () => {
+    const params = {
+      ...baseParams,
+      config: { fetch: { ...baseParams.config.fetch, resolveAccountSpecificValues: false } },
+    }
     it('should not have ChangeError when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
       const instance = new InstanceElement('instance', dataType)
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })])
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(0)
     })
     it('should not have ChangeError when deploying an instance with ACCOUNT_SPECIFIC_VALUE and internalId', async () => {
@@ -45,7 +59,7 @@ describe('data account specific values validator', () => {
           internalId: '2',
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })])
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(0)
     })
 
@@ -55,7 +69,7 @@ describe('data account specific values validator', () => {
           id: '[ACCOUNT_SPECIFIC_VALUE]',
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })])
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -69,7 +83,7 @@ describe('data account specific values validator', () => {
           internalId: '[ACCOUNT_SPECIFIC_VALUE]',
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })])
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -85,7 +99,7 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })])
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -102,7 +116,7 @@ describe('data account specific values validator', () => {
 
       const after = before.clone()
       after.value.field2 = 2
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ before, after })])
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ before, after })], params)
       expect(changeErrors).toHaveLength(0)
     })
   })
@@ -142,12 +156,11 @@ describe('data account specific values validator', () => {
 
     it('should not have errors when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
       const instance = new InstanceElement('instance', dataType)
-      const changeErrors = await dataAccountSpecificValueValidator(
-        [toChange({ after: instance })],
-        false,
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
+        ...baseParams,
         elementsSource,
         config,
-      )
+      })
       expect(changeErrors).toHaveLength(0)
     })
 
@@ -162,12 +175,11 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator(
-        [toChange({ after: instance })],
-        false,
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
+        ...baseParams,
         elementsSource,
         config,
-      )
+      })
       expect(changeErrors).toHaveLength(0)
     })
 
@@ -182,12 +194,11 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator(
-        [toChange({ after: instance })],
-        false,
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
+        ...baseParams,
         elementsSource,
         config,
-      )
+      })
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         severity: 'Error',
@@ -208,12 +219,11 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator(
-        [toChange({ after: instance })],
-        false,
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
+        ...baseParams,
         elementsSource,
         config,
-      )
+      })
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         severity: 'Error',
@@ -234,12 +244,11 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator(
-        [toChange({ after: instance })],
-        false,
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
+        ...baseParams,
         elementsSource,
         config,
-      )
+      })
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         severity: 'Warning',
@@ -264,12 +273,11 @@ describe('data account specific values validator', () => {
 
       const after = before.clone()
       after.value.strField = 2
-      const changeErrors = await dataAccountSpecificValueValidator(
-        [toChange({ before, after })],
-        false,
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ before, after })], {
+        ...baseParams,
         elementsSource,
         config,
-      )
+      })
       expect(changeErrors).toHaveLength(0)
     })
   })

@@ -170,7 +170,7 @@ const getChangeValidator: ({
   additionalDependencies: AdditionalDependencies
   filtersRunner: (groupID: string) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
-  userConfig: NetsuiteConfig
+  config: NetsuiteConfig
 }) => ChangeValidator =
   ({
     client,
@@ -182,7 +182,7 @@ const getChangeValidator: ({
     additionalDependencies,
     filtersRunner,
     elementsSource,
-    userConfig,
+    config,
   }) =>
   async (changes, elementSource) => {
     const netsuiteValidators = withSuiteApp
@@ -193,7 +193,7 @@ const getChangeValidator: ({
     const validators: Record<string, ChangeValidator> = _.mapValues(
       netsuiteValidators,
       validator => (innerChanges: ReadonlyArray<Change>) =>
-        validator(innerChanges, deployReferencedElements, elementsSource, userConfig, client),
+        validator(innerChanges, { deployReferencedElements, elementsSource, config, client }),
     )
     const safeDeploy = warnStaleData
       ? {
@@ -204,7 +204,7 @@ const getChangeValidator: ({
 
     const mergedValidator = createChangeValidator({
       validators: { ...defaultChangeValidators, ...validators, ...safeDeploy },
-      validatorsActivationConfig: userConfig.deploy?.changeValidators,
+      validatorsActivationConfig: config.deploy?.changeValidators,
     })
     const validatorChangeErrors = await mergedValidator(changes, elementSource)
 

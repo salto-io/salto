@@ -71,7 +71,7 @@ const getResolvingErrors = ({
   return changeErrors
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource, config) => {
+const changeValidator: NetsuiteChangeValidator = async (changes, { elementsSource, config }) => {
   const relevantChangedInstances = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -90,7 +90,7 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
     return []
   }
 
-  if (config?.fetch.resolveAccountSpecificValues !== false && elementsSource !== undefined) {
+  if (config.fetch.resolveAccountSpecificValues !== false) {
     const unknownTypeReferencesMap = await getUnknownTypeReferencesMap(elementsSource)
     const suiteQLTablesMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
     return relevantChangedInstances.flatMap(instance =>

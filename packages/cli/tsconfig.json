@@ -4,7 +4,7 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "jsforce": ["../../node_modules/@salto-io/jsforce-types"],
+      "@salto-io/jsforce": ["../../node_modules/@salto-io/jsforce-types"],
       "yargonaut": ["src/types/yargonaut"]
     }
   },

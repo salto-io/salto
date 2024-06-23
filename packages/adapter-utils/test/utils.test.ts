@@ -2805,6 +2805,7 @@ describe('Test utils.ts', () => {
     const fieldTypeWithAdditionalField = cloneAndAddField(fieldType)
     const annoType = new ObjectType({ elemID: new ElemID('ad', 'annoType') })
     const annoTypeWithAdditionalField = cloneAndAddField(annoType)
+    const metaType = new ObjectType({ elemID: new ElemID('ad', 'metaType') })
     const objWithResolved = new ObjectType({
       elemID: new ElemID('ad', 'withResolved'),
       fields: {
@@ -2813,6 +2814,7 @@ describe('Test utils.ts', () => {
       annotationRefsOrTypes: {
         annoA: annoType,
       },
+      metaType,
     })
     const objWithResolvedWithAdditionalField = cloneAndAddField(objWithResolved)
     const objWithUnresolved = new ObjectType({
@@ -2823,6 +2825,7 @@ describe('Test utils.ts', () => {
       annotationRefsOrTypes: {
         annoA: new TypeReference(annoType.elemID),
       },
+      metaType: new TypeReference(metaType.elemID),
     })
     const instWithResolvedType = new InstanceElement('resolved', objWithResolved, {
       a: 'does not matter',
@@ -2833,6 +2836,7 @@ describe('Test utils.ts', () => {
     const elementsSource = buildElementsSourceFromElements([
       fieldTypeWithAdditionalField,
       annoTypeWithAdditionalField,
+      metaType,
       instWithUnresolvedType,
       objWithResolvedWithAdditionalField,
       instWithResolvedType,
@@ -2850,6 +2854,7 @@ describe('Test utils.ts', () => {
       await resolveTypeShallow(clonedObj, elementsSource)
       expect(await clonedObj.fields.a.getType()).toEqual(fieldTypeWithAdditionalField)
       expect((await clonedObj.getAnnotationTypes()).annoA).toEqual(annoTypeWithAdditionalField)
+      expect(await clonedObj.getMetaType()).toEqual(metaType)
     })
 
     it('Should keep an InstanceElement with a resolved type as is', async () => {
@@ -2865,7 +2870,7 @@ describe('Test utils.ts', () => {
       expect(await clonedInst.getType()).toEqual(objWithResolvedWithAdditionalField)
     })
 
-    it('should resolve to PlaceholderObjectType if the type is not in the source', async () => {
+    it('Should resolve to PlaceholderObjectType if the type is not in the source', async () => {
       const instance = new InstanceElement('instance', new TypeReference(new ElemID('adapter', 'unknownType')))
       const source = buildElementsSourceFromElements([], [buildElementsSourceFromElements([instance])])
       expect(instance.refType.type).toBeUndefined()

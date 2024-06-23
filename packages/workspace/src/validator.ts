@@ -744,6 +744,12 @@ const validateField = (field: Field): ValidationError[] => {
 }
 
 const validateMetaType = (elemID: ElemID, metaType?: ObjectType): ValidationError[] => {
+  if (metaType === undefined) {
+    // Should never happen because we resolve the element before calling this
+    log.error(`Found unresolved meta type for ${elemID.getFullName()}.`)
+    return []
+  }
+
   if (!isObjectType(metaType)) {
     return [new InvalidMetaTypeTypeValidationError({ elemID, value: metaType })]
   }

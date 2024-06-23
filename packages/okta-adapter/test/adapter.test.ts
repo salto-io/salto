@@ -28,6 +28,7 @@ import {
   Change,
   getChangeData,
   ProgressReporter,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -445,7 +446,14 @@ describe('adapter', () => {
     let group1: InstanceElement
 
     beforeEach(() => {
-      groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
+      groupType = new ObjectType({
+        elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
       group1 = new InstanceElement('group1', groupType, {
         id: 'fakeid123',
         objectClass: ['okta:user_group'],
@@ -467,10 +475,12 @@ describe('adapter', () => {
     })
 
     it('should successfully add a group', async () => {
+      const groupWithoutId = group1.clone()
+      delete groupWithoutId.value.id
       const result = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [toChange({ after: group1 })],
+          changes: [toChange({ after: groupWithoutId })],
         },
         progressReporter: nullProgressReporter,
       })

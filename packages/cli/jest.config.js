@@ -16,11 +16,6 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-    },
-  },
   name: 'cli',
   displayName: 'cli',
   rootDir: `${__dirname}`,

@@ -38,7 +38,7 @@ import {
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployWithStatus } from '../deployment'
-import { OktaFetchOptions } from '../definitions/types'
+import { OktaOptions } from '../definitions/types'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -112,7 +112,7 @@ const getCreatedPolicyRuleInstance = (
 const deployDefaultPolicy = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-  defQuery: definitionsUtils.DefQuery<definitionsUtils.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>, string>,
+  defQuery: definitionsUtils.DefQuery<definitionsUtils.fetch.InstanceFetchApiDefinitions<OktaOptions>, string>,
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const defaultRuleInstance = getChangeData(change)

@@ -46,9 +46,9 @@ const handleAttributeValues = (value: Values, type: ObjectType): Values => {
       isAttributeField(type.fields[key.replace(XML_ATTRIBUTE_PREFIX, '')]),
   )
   return Object.fromEntries(
-    attrEntries.map(([key, val]) =>
-      [key.slice(XML_ATTRIBUTE_PREFIX.length), val].concat(entries),
-    ),
+    attrEntries
+      .map(([key, val]) => [key.slice(XML_ATTRIBUTE_PREFIX.length), val])
+      .concat(entries),
   )
 }
 

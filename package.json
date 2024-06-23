@@ -5,9 +5,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "installConfig": {
-    "hoistingLimits": "workspaces"
-  },
   "resolutions": {
     "typescript": "4.1.3"
   },

@@ -173,9 +173,7 @@ commands:
     steps:
       - aws-cli/install
       - aws-cli/setup
-
       - set_s3_pkg_urls
-
       - store_artifacts:
           path: packages/<< parameters.workspace_dir >>/pkg
           destination: pkg/<< parameters.out_filename >>
@@ -193,12 +191,17 @@ commands:
             description: name of executable (e.g. salto, salto.exe)
             type: string
     steps:
+      - aws-cli/install
+      - aws-cli/setup
       - set_s3_pkg_urls
       - aws-s3/copy:
-          from: ${S3_PKG_HASH_PREFIX}/cli/<< parameters.arch >>/salto
+          from: ${S3_PKG_HASH_PREFIX}/cli/<< parameters.arch >>/<< parameters.exe_name >>
           to: .
+      - run: echo << parameters.arch >>
       - when:
-          condition: << parameters.arch >> != 'win'
+          condition:
+            not: 
+              equal: [ win, << parameters.arch >> ]
           steps:
             - run: chmod +x ./<< parameters.exe_name >>
       - run:
@@ -429,12 +432,14 @@ jobs:
       - image: cimg/python:3.10
 
     steps:
+      - aws-cli/install
+      - aws-cli/setup
       - set_s3_pkg_urls
-
       - aws-s3/sync:
           from: ${S3_PKG_HASH_PREFIX}/
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
           arguments: '--delete --acl public-read'
+          profile_name: ''
 
       - run:
           name: Create a marker file with the git hash

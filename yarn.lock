@@ -4120,38 +4120,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@salto-io/aws-utils@workspace:packages/aws-utils"
   dependencies:
-<<<<<<< HEAD
-    lodash "^4.17.21"
-    moo "^0.5.2"
-||||||| parent of a2c9077a1 (bump typescript to 4.8.4 and align with saas)
-    "@aws-sdk/client-s3": 3.198.0
-    "@aws-sdk/middleware-retry": 3.198.0
-    "@salto-io/logging": 0.3.58
-    "@salto-io/test-utils": 0.3.58
-    "@types/jest": ^27.4.0
-    "@types/lodash": ^4.14.168
-    "@types/node": ^12.7.1
-    "@typescript-eslint/eslint-plugin": 4.22.1
-    "@typescript-eslint/parser": 4.22.1
-    eslint: ^7.3.2
-    eslint-config-airbnb: 18.0.1
-    eslint-config-prettier: 9.1.0
-    eslint-plugin-header: ^3.0.0
-    eslint-plugin-import: ^2.18.2
-    eslint-plugin-jest: ^22.6.4
-    eslint-plugin-jsx-a11y: ^6.2.1
-    eslint-plugin-react: ^7.14.3
-    eslint-plugin-react-hooks: ^1.7.0
-    jest: ^27.4.5
-    jest-circus: ^27.4.5
-    jest-junit: ^12.0.0
-    prettier: 3.2.5
-    ts-jest: ^27.1.2
-    tsc-watch: ^2.2.1
-    typescript: 4.1.3
-  languageName: unknown
-  linkType: soft
-=======
     "@aws-sdk/client-s3": 3.198.0
     "@aws-sdk/middleware-retry": 3.198.0
     "@salto-io/logging": 0.3.58
@@ -4179,89 +4147,11 @@ __metadata:
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
->>>>>>> a2c9077a1 (bump typescript to 4.8.4 and align with saas)
 
-"@salto-io/suitecloud-cli@1.8.0-salto-2":
-  version "1.8.0-salto-2"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.8.0-salto-2.tgz#faba9351b15b9caf13937fd39160d4c5c9b1945c"
-  integrity sha512-yXkmRJQLWlQUBXuW+GX7PtS0qE3BTGi9XaPvFAAe+yXamlK4I/AiywEpJ8ClLErta454wxRvLFlxJYmOy+YB+w==
+"@salto-io/cli@workspace:packages/cli":
+  version: 0.0.0-use.local
+  resolution: "@salto-io/cli@workspace:packages/cli"
   dependencies:
-<<<<<<< HEAD
-    "@salto-io/logging" "<0.4.0"
-    chalk "4.1.2"
-    cli-spinner "0.2.10"
-    commander "10.0.0"
-    inquirer "8.2.5"
-    xml2js "0.6.0"
-||||||| parent of a2c9077a1 (bump typescript to 4.8.4 and align with saas)
-    "@salto-io/adapter-api": 0.3.58
-    "@salto-io/adapter-utils": 0.3.58
-    "@salto-io/core": 0.3.58
-    "@salto-io/dag": 0.3.58
-    "@salto-io/e2e-credentials-store": 0.3.58
-    "@salto-io/file": 0.3.58
-    "@salto-io/logging": 0.3.58
-    "@salto-io/lowerdash": 0.3.58
-    "@salto-io/parser": 0.3.58
-    "@salto-io/salesforce-adapter": 0.3.58
-    "@salto-io/test-utils": 0.3.58
-    "@salto-io/workspace": 0.3.58
-    "@types/express": ^4.17.7
-    "@types/inquirer": 7.3.1
-    "@types/jest": ^27.4.0
-    "@types/semver": ^7.3.3
-    "@types/source-map-support": ^0.5.0
-    "@types/supertest": ^2.0.4
-    "@types/tmp": ^0.1.0
-    "@typescript-eslint/eslint-plugin": 4.22.1
-    "@typescript-eslint/parser": 4.22.1
-    chalk: ^2.4.2
-    commander: ^10.0.0
-    eslint: ^7.3.2
-    eslint-config-airbnb: 18.0.1
-    eslint-config-prettier: 9.1.0
-    eslint-plugin-header: ^3.0.0
-    eslint-plugin-import: ^2.18.2
-    eslint-plugin-jest: ^22.6.4
-    eslint-plugin-jsx-a11y: ^6.2.1
-    eslint-plugin-react: ^7.14.3
-    eslint-plugin-react-hooks: ^1.7.0
-    express: ^4.17.1
-    figlet: ^1.2.4
-    glob: ^7.1.6
-    inquirer: ^7.3.1
-    jest: ^27.4.5
-    jest-circus: ^27.4.5
-    jest-junit: ^12.0.0
-    lodash: ^4.17.21
-    memory-streams: ^0.1.3
-    moment: ^2.24.0
-    nexe: 4.0.0-rc.2
-    nexe-natives: ^1.0.2
-    null-loader: ^4.0.1
-    open: ^7.2.0
-    ora: ^4.0.3
-    package: ^1.0.1
-    pietile-eventemitter: ^1.0.0
-    prettier: 3.2.5
-    raw-loader: ^4.0.2
-    semver: ^7.3.2
-    sinon: ^9.0.3
-    source-map-loader: ^4.0.1
-    source-map-support: ^0.5.13
-    supertest: ^5.0.0
-    tmp-promise: ^2.0.2
-    ts-jest: ^27.1.2
-    typescript: 4.1.3
-    wait-for-expect: ^3.0.2
-    webpack: ^5.75.0
-    webpack-cli: ^4.3.0
-    wu: ^2.1.0
-  bin:
-    salto: ./bin/salto
-  languageName: unknown
-  linkType: soft
-=======
     "@salto-io/adapter-api": 0.3.58
     "@salto-io/adapter-utils": 0.3.58
     "@salto-io/core": 0.3.58
@@ -4329,12 +4219,10 @@ __metadata:
     salto: ./bin/salto
   languageName: unknown
   linkType: soft
->>>>>>> a2c9077a1 (bump typescript to 4.8.4 and align with saas)
 
-"@sideway/address@^4.1.3":
-  version "4.1.3"
-  resolved "https://registry.yarnpkg.com/@sideway/address/-/address-4.1.3.tgz#d93cce5d45c5daec92ad76db492cc2ee3c64ab27"
-  integrity sha512-8ncEUtmnTsMmL7z1YPB47kPUq7LpKWJNFPsRzHiIajGC5uXlWGn+AmkYPcHNl8S4tcEGx+cnORnNYaw2wvL+LQ==
+"@salto-io/confluence-adapter@0.3.58, @salto-io/confluence-adapter@workspace:packages/confluence-adapter":
+  version: 0.0.0-use.local
+  resolution: "@salto-io/confluence-adapter@workspace:packages/confluence-adapter"
   dependencies:
     "@salto-io/adapter-api": 0.3.58
     "@salto-io/adapter-components": 0.3.58
@@ -4923,7 +4811,7 @@ __metadata:
     "@salto-io/file": 0.3.58
     "@salto-io/logging": 0.3.58
     "@salto-io/lowerdash": 0.3.58
-    "@salto-io/suitecloud-cli": 1.8.0-salto-2
+    "@salto-io/suitecloud-cli": 1.9.0-salto-2
     "@salto-io/test-utils": 0.3.58
     "@types/async-lock": ^1.1.2
     "@types/he": ^1.1.1
@@ -4953,7 +4841,7 @@ __metadata:
     eslint-plugin-jsx-a11y: ^6.2.1
     eslint-plugin-react: ^7.14.3
     eslint-plugin-react-hooks: ^1.7.0
-    fast-xml-parser: ^3.15.0
+    fast-xml-parser: ^4.4.0
     he: ^1.2.0
     jest: ^27.5.1
     jest-circus: ^27.5.1
@@ -5188,8 +5076,7 @@ __metadata:
     eslint-plugin-jsx-a11y: ^6.2.1
     eslint-plugin-react: ^7.14.3
     eslint-plugin-react-hooks: ^1.7.0
-    fast-xml-parser: ^3.15.0
-    he: ^1.2.0
+    fast-xml-parser: ^4.4.0
     jest: ^27.5.1
     jest-circus: ^27.5.1
     jest-extended: ^1.2.1
@@ -5332,19 +5219,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/suitecloud-cli@npm:1.8.0-salto-2":
-  version: 1.8.0-salto-2
-  resolution: "@salto-io/suitecloud-cli@npm:1.8.0-salto-2"
+"@salto-io/suitecloud-cli@npm:1.9.0-salto-2":
+  version: 1.9.0-salto-2
+  resolution: "@salto-io/suitecloud-cli@npm:1.9.0-salto-2"
   dependencies:
     "@salto-io/logging": <0.4.0
     chalk: 4.1.2
     cli-spinner: 0.2.10
     commander: 10.0.0
-    inquirer: 8.2.5
-    xml2js: 0.6.0
+    inquirer: 8.2.6
+    xml2js: 0.6.2
   bin:
     suitecloud: src/suitecloud.js
-  checksum: 439d81d29d7ad46fd53ba192e425f1a4072c48b570902d6df1b2ea1c1146a2e5f0499c6f7658419d7ed8a66edff67252102e45d777c99b1a6dcd0c2571a66dcd
+  checksum: 46b4170aa1323361def39c90c8f1a8394d844f73431ad6f9cbb6c603c1026487de2038303767b3eea00efd19bd36a76b67b42bde75f089570c2798d0e7ac4ae5
   languageName: node
   linkType: hard
 
@@ -9699,9 +9586,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.4.796":
-  version: 1.4.803
-  resolution: "electron-to-chromium@npm:1.4.803"
-  checksum: ee308c3107f768947a43659e773c21477031ef4db8ad0202d78a51b547aff50c059ccd3641804435886220a6208019ef9128ed4499157321afaaa9ae91a1aca1
+  version: 1.4.810
+  resolution: "electron-to-chromium@npm:1.4.810"
+  checksum: a7c13bec90b6a617183bb5420538f6692b6e2aed83d023ef5815858b5a6008daeeca62c9a9809a52059c0e88eeaae87306b38e7b9ea7d0d7e0769e51af50022e
   languageName: node
   linkType: hard
 
@@ -10686,22 +10573,34 @@ __metadata:
   version: 4.0.11
   resolution: "fast-xml-parser@npm:4.0.11"
   dependencies:
-    strnum "^1.0.5"
+    strnum: ^1.0.5
+  bin:
+    fxparser: src/cli/cli.js
+  checksum: d8a08e4d5597e0fc00a86735195872eeb03008913e298830941516f3766e16ee555e2d431acc92e1dda887938edc445252ec5b59494aab60a8389888bd13719c
+  languageName: node
+  linkType: hard
 
-fast-xml-parser@^3.15.0:
-  version "3.17.1"
-  resolved "https://registry.yarnpkg.com/fast-xml-parser/-/fast-xml-parser-3.17.1.tgz#579fa64346cc891ce240d378268c6216e74aab10"
-  integrity sha512-jZ0EVn1iBuZtx/sbQnfvhSaaUltz+0+yfR+6QRyzrlt5yMiU+8ZfGj9i3/hoXJxm+aFri7dycBWbncox7frCAQ==
+"fast-xml-parser@npm:^4.4.0":
+  version: 4.4.0
+  resolution: "fast-xml-parser@npm:4.4.0"
+  dependencies:
+    strnum: ^1.0.5
+  bin:
+    fxparser: src/cli/cli.js
+  checksum: ad33a4b5165a0ffcb6e17ae78825bd4619a8298844a8a8408f2ea141a0d2d9439d18865dc5254162f09fe54d510ff18e5d5c0a190869cab21fc745ee66be816b
+  languageName: node
+  linkType: hard
 
-fastest-levenshtein@^1.0.12:
-  version "1.0.12"
-  resolved "https://registry.yarnpkg.com/fastest-levenshtein/-/fastest-levenshtein-1.0.12.tgz#9990f7d3a88cc5a9ffd1f1745745251700d497e2"
-  integrity sha512-On2N+BpYJ15xIC974QNVuYGMOlEVt4s0EOI3wwMqOmK1fdDY+FN/zltPV8vosq4ad4c/gJ1KHScUn/6AWIgiow==
+"fastest-levenshtein@npm:^1.0.12":
+  version: 1.0.12
+  resolution: "fastest-levenshtein@npm:1.0.12"
+  checksum: e1a013698dd1d302c7a78150130c7d50bb678c2c2f8839842a796d66cc7cdf50ea6b3d7ca930b0c8e7e8c2cd84fea8ab831023b382f7aab6922c318c1451beab
+  languageName: node
+  linkType: hard
 
-fastq@^1.6.0:
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/fastq/-/fastq-1.8.0.tgz#550e1f9f59bbc65fe185cb6a9b4d95357107f481"
-  integrity sha512-SMIZoZdLh/fgofivvIkmknUXyPnvxRE3DhtZ5Me3Mrsk5gyPL42F0xr51TdRXskBxHfMp+07bcYzfsYEsSQA9Q==
+"fastq@npm:^1.6.0":
+  version: 1.8.0
+  resolution: "fastq@npm:1.8.0"
   dependencies:
     reusify: ^1.0.4
   checksum: f9ece30617a42670048bb5f73ec67570944205973443292854392b0b2b90b02cc4452beb866999d95fdf5f08f06215418c4118aadef86173968200407d44f933
@@ -10942,12 +10841,12 @@ fastq@^1.6.0:
   linkType: hard
 
 "foreground-child@npm:^3.1.0":
-  version: 3.2.0
-  resolution: "foreground-child@npm:3.2.0"
+  version: 3.2.1
+  resolution: "foreground-child@npm:3.2.1"
   dependencies:
     cross-spawn: ^7.0.0
     signal-exit: ^4.0.1
-  checksum: 6a285b94c5a3cdaabbe230673889c1da0820a2da32366bcac6b9a165edcf390fdcc05d277e0674c4973d767c35e90f0866a4c275253790b60b9c372c346090e3
+  checksum: 3e2e844d6003c96d70affe8ae98d7eaaba269a868c14d997620c088340a8775cd5d2d9043e6ceebae1928d8d9a874911c4d664b9a267e8995945df20337aebc0
   languageName: node
   linkType: hard
 
@@ -11432,17 +11331,18 @@ fastq@^1.6.0:
   linkType: hard
 
 "glob@npm:^10.2.2, glob@npm:^10.3.10":
-  version: 10.4.1
-  resolution: "glob@npm:10.4.1"
+  version: 10.4.2
+  resolution: "glob@npm:10.4.2"
   dependencies:
     foreground-child: ^3.1.0
     jackspeak: ^3.1.2
     minimatch: ^9.0.4
     minipass: ^7.1.2
+    package-json-from-dist: ^1.0.0
     path-scurry: ^1.11.1
   bin:
     glob: dist/esm/bin.mjs
-  checksum: 5d33c686c80bf6877f4284adf99a8c3cbb2a6eccbc92342943fe5d4b42c01d78c1881f2223d950c92a938d0f857e12e37b86a8e5483ab2141822e053b67d0dde
+  checksum: bd7c0e30701136e936f414e5f6f82c7f04503f01df77408f177aa584927412f0bde0338e6ec541618cd21eacc57dde33e7b3c6c0a779cc1c6e6a0e14f3d15d9b
   languageName: node
   linkType: hard
 
@@ -12107,58 +12007,87 @@ fastq@^1.6.0:
   version: 3.0.2
   resolution: "init-package-json@npm:3.0.2"
   dependencies:
-    npm-package-arg "^9.0.1"
-    promzard "^0.3.0"
-    read "^1.0.7"
-    read-package-json "^5.0.0"
-    semver "^7.3.5"
-    validate-npm-package-license "^3.0.4"
-    validate-npm-package-name "^4.0.0"
+    npm-package-arg: ^9.0.1
+    promzard: ^0.3.0
+    read: ^1.0.7
+    read-package-json: ^5.0.0
+    semver: ^7.3.5
+    validate-npm-package-license: ^3.0.4
+    validate-npm-package-name: ^4.0.0
+  checksum: e027f60e4a1564809eee790d5a842341c784888fd7c7ace5f9a34ea76224c0adb6f3ab3bf205cf1c9c877a6e1a76c68b00847a984139f60813125d7b42a23a13
+  languageName: node
+  linkType: hard
 
-inquirer@8.2.5, inquirer@^8.2.4:
-  version "8.2.5"
-  resolved "https://registry.yarnpkg.com/inquirer/-/inquirer-8.2.5.tgz#d8654a7542c35a9b9e069d27e2df4858784d54f8"
-  integrity sha512-QAgPDQMEgrDssk1XiwwHoOGYF9BAbUcc1+j+FhEvaOt8/cKRqyLn0U5qA6F74fGhTMGxf92pOvPBeh29jQJDTQ==
+"inquirer@npm:8.2.6":
+  version: 8.2.6
+  resolution: "inquirer@npm:8.2.6"
   dependencies:
-    ansi-escapes "^4.2.1"
-    chalk "^4.1.1"
-    cli-cursor "^3.1.0"
-    cli-width "^3.0.0"
-    external-editor "^3.0.3"
-    figures "^3.0.0"
-    lodash "^4.17.21"
-    mute-stream "0.0.8"
-    ora "^5.4.1"
-    run-async "^2.4.0"
-    rxjs "^7.5.5"
-    string-width "^4.1.0"
-    strip-ansi "^6.0.0"
-    through "^2.3.6"
-    wrap-ansi "^7.0.0"
+    ansi-escapes: ^4.2.1
+    chalk: ^4.1.1
+    cli-cursor: ^3.1.0
+    cli-width: ^3.0.0
+    external-editor: ^3.0.3
+    figures: ^3.0.0
+    lodash: ^4.17.21
+    mute-stream: 0.0.8
+    ora: ^5.4.1
+    run-async: ^2.4.0
+    rxjs: ^7.5.5
+    string-width: ^4.1.0
+    strip-ansi: ^6.0.0
+    through: ^2.3.6
+    wrap-ansi: ^6.0.1
+  checksum: 387ffb0a513559cc7414eb42c57556a60e302f820d6960e89d376d092e257a919961cd485a1b4de693dbb5c0de8bc58320bfd6247dfd827a873aa82a4215a240
+  languageName: node
+  linkType: hard
 
-inquirer@^7.3.1:
-  version "7.3.3"
-  resolved "https://registry.yarnpkg.com/inquirer/-/inquirer-7.3.3.tgz#04d176b2af04afc157a83fd7c100e98ee0aad003"
-  integrity sha512-JG3eIAj5V9CwcGvuOmoo6LB9kbAYT8HXffUl6memuszlwDC/qvFAJw49XJ5NROSFNPxp3iQg1GqkFhaY/CR0IA==
+"inquirer@npm:^7.3.1":
+  version: 7.3.3
+  resolution: "inquirer@npm:7.3.3"
   dependencies:
-    ansi-escapes "^4.2.1"
-    chalk "^4.1.0"
-    cli-cursor "^3.1.0"
-    cli-width "^3.0.0"
-    external-editor "^3.0.3"
-    figures "^3.0.0"
-    lodash "^4.17.19"
-    mute-stream "0.0.8"
-    run-async "^2.4.0"
-    rxjs "^6.6.0"
-    string-width "^4.1.0"
-    strip-ansi "^6.0.0"
-    through "^2.3.6"
+    ansi-escapes: ^4.2.1
+    chalk: ^4.1.0
+    cli-cursor: ^3.1.0
+    cli-width: ^3.0.0
+    external-editor: ^3.0.3
+    figures: ^3.0.0
+    lodash: ^4.17.19
+    mute-stream: 0.0.8
+    run-async: ^2.4.0
+    rxjs: ^6.6.0
+    string-width: ^4.1.0
+    strip-ansi: ^6.0.0
+    through: ^2.3.6
+  checksum: 4d387fc1eb6126acbd58cbdb9ad99d2887d181df86ab0c2b9abdf734e751093e2d5882c2b6dc7144d9ab16b7ab30a78a1d7f01fb6a2850a44aeb175d1e3f8778
+  languageName: node
+  linkType: hard
 
-internal-slot@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/internal-slot/-/internal-slot-1.0.2.tgz#9c2e9fb3cd8e5e4256c6f45fe310067fcfa378a3"
-  integrity sha512-2cQNfwhAfJIkU4KZPkDI+Gj5yNNnbqi40W9Gge6dfnk4TocEVm00B3bdiL+JINrbGJil2TeHvM4rETGzk/f/0g==
+"inquirer@npm:^8.2.4":
+  version: 8.2.5
+  resolution: "inquirer@npm:8.2.5"
+  dependencies:
+    ansi-escapes: ^4.2.1
+    chalk: ^4.1.1
+    cli-cursor: ^3.1.0
+    cli-width: ^3.0.0
+    external-editor: ^3.0.3
+    figures: ^3.0.0
+    lodash: ^4.17.21
+    mute-stream: 0.0.8
+    ora: ^5.4.1
+    run-async: ^2.4.0
+    rxjs: ^7.5.5
+    string-width: ^4.1.0
+    strip-ansi: ^6.0.0
+    through: ^2.3.6
+    wrap-ansi: ^7.0.0
+  checksum: f13ee4c444187786fb393609dedf6b30870115a57b603f2e6424f29a99abc13446fd45ee22461c33c9c40a92a60a8df62d0d6b25d74fc6676fa4cb211de55b55
+  languageName: node
+  linkType: hard
+
+"internal-slot@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "internal-slot@npm:1.0.2"
   dependencies:
     es-abstract: ^1.17.0-next.1
     has: ^1.0.3
@@ -15935,6 +15864,13 @@ internal-slot@^1.0.2:
   languageName: node
   linkType: hard
 
+"package-json-from-dist@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "package-json-from-dist@npm:1.0.0"
+  checksum: ac706ec856a5a03f5261e4e48fa974f24feb044d51f84f8332e2af0af04fbdbdd5bbbfb9cbbe354190409bc8307c83a9e38c6672c3c8855f709afb0006a009ea
+  languageName: node
+  linkType: hard
+
 "package@npm:^1.0.1":
   version: 1.0.1
   resolution: "package@npm:1.0.1"
@@ -19028,58 +18964,58 @@ internal-slot@^1.0.2:
   languageName: node
   linkType: hard
 
-"turbo-darwin-64@npm:2.0.3":
-  version: 2.0.3
-  resolution: "turbo-darwin-64@npm:2.0.3"
+"turbo-darwin-64@npm:2.0.4":
+  version: 2.0.4
+  resolution: "turbo-darwin-64@npm:2.0.4"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-darwin-arm64@npm:2.0.3":
-  version: 2.0.3
-  resolution: "turbo-darwin-arm64@npm:2.0.3"
+"turbo-darwin-arm64@npm:2.0.4":
+  version: 2.0.4
+  resolution: "turbo-darwin-arm64@npm:2.0.4"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo-linux-64@npm:2.0.3":
-  version: 2.0.3
-  resolution: "turbo-linux-64@npm:2.0.3"
+"turbo-linux-64@npm:2.0.4":
+  version: 2.0.4
+  resolution: "turbo-linux-64@npm:2.0.4"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-linux-arm64@npm:2.0.3":
-  version: 2.0.3
-  resolution: "turbo-linux-arm64@npm:2.0.3"
+"turbo-linux-arm64@npm:2.0.4":
+  version: 2.0.4
+  resolution: "turbo-linux-arm64@npm:2.0.4"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo-windows-64@npm:2.0.3":
-  version: 2.0.3
-  resolution: "turbo-windows-64@npm:2.0.3"
+"turbo-windows-64@npm:2.0.4":
+  version: 2.0.4
+  resolution: "turbo-windows-64@npm:2.0.4"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-windows-arm64@npm:2.0.3":
-  version: 2.0.3
-  resolution: "turbo-windows-arm64@npm:2.0.3"
+"turbo-windows-arm64@npm:2.0.4":
+  version: 2.0.4
+  resolution: "turbo-windows-arm64@npm:2.0.4"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
 "turbo@npm:^2.0.1":
-  version: 2.0.3
-  resolution: "turbo@npm:2.0.3"
+  version: 2.0.4
+  resolution: "turbo@npm:2.0.4"
   dependencies:
-    turbo-darwin-64: 2.0.3
-    turbo-darwin-arm64: 2.0.3
-    turbo-linux-64: 2.0.3
-    turbo-linux-arm64: 2.0.3
-    turbo-windows-64: 2.0.3
-    turbo-windows-arm64: 2.0.3
+    turbo-darwin-64: 2.0.4
+    turbo-darwin-arm64: 2.0.4
+    turbo-linux-64: 2.0.4
+    turbo-linux-arm64: 2.0.4
+    turbo-windows-64: 2.0.4
+    turbo-windows-arm64: 2.0.4
   dependenciesMeta:
     turbo-darwin-64:
       optional: true
@@ -19095,7 +19031,7 @@ internal-slot@^1.0.2:
       optional: true
   bin:
     turbo: bin/turbo
-  checksum: deeddef5bbf1db454ebcc0d460f638506146f85724c5bb10c9b08009c3471798ce3594b4ef50fd03722313d9ef80552f9c93119e04c5859eac73225837caccac
+  checksum: eade7410cdd53f503c7038dbf6f56bda0fca8a0ac94c4889e1a514bad5b67df415ed1b3b28ea74a371a3b16b912f68083554a32784e729dc97aef4f9c580c0e9
   languageName: node
   linkType: hard
 
@@ -19869,19 +19805,32 @@ internal-slot@^1.0.2:
   version: 7.0.0
   resolution: "wrap-ansi@npm:7.0.0"
   dependencies:
-    ansi-styles "^3.2.0"
-    string-width "^3.0.0"
-    strip-ansi "^5.0.0"
+    ansi-styles: ^4.0.0
+    string-width: ^4.1.0
+    strip-ansi: ^6.0.0
+  checksum: a790b846fd4505de962ba728a21aaeda189b8ee1c7568ca5e817d85930e06ef8d1689d49dbf0e881e8ef84436af3a88bc49115c2e2788d841ff1b8b5b51a608b
+  languageName: node
+  linkType: hard
 
-wrap-ansi@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
-  integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
+"wrap-ansi@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "wrap-ansi@npm:5.1.0"
   dependencies:
     ansi-styles: ^3.2.0
     string-width: ^3.0.0
     strip-ansi: ^5.0.0
   checksum: 9b48c862220e541eb0daa22661b38b947973fc57054e91be5b0f2dcc77741a6875ccab4ebe970a394b4682c8dfc17e888266a105fb8b0a9b23c19245e781ceae
+  languageName: node
+  linkType: hard
+
+"wrap-ansi@npm:^6.0.1":
+  version: 6.2.0
+  resolution: "wrap-ansi@npm:6.2.0"
+  dependencies:
+    ansi-styles: ^4.0.0
+    string-width: ^4.1.0
+    strip-ansi: ^6.0.0
+  checksum: 6cd96a410161ff617b63581a08376f0cb9162375adeb7956e10c8cd397821f7eb2a6de24eb22a0b28401300bf228c86e50617cd568209b5f6775b93c97d2fe3a
   languageName: node
   linkType: hard
 
@@ -20021,21 +19970,27 @@ wrap-ansi@^7.0.0:
   version: 1.6.11
   resolution: "xml-js@npm:1.6.11"
   dependencies:
-    sax "^1.2.4"
+    sax: ^1.2.4
+  bin:
+    xml-js: ./bin/cli.js
+  checksum: 24a55479919413687105fc2d8ab05e613ebedb1c1bc12258a108e07cff5ef793779297db854800a4edf0281303ebd1f177bc4a588442f5344e62b3dddda26c2b
+  languageName: node
+  linkType: hard
 
-xml-name-validator@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/xml-name-validator/-/xml-name-validator-3.0.0.tgz#6ae73e06de4d8c6e47f9fb181f78d648ad457c6a"
-  integrity sha512-A5CUptxDsvxKJEU3yO6DuWBSJz/qizqzJKOMIfUJHETbBw/sFaDxgd6fxm1ewUaM0jZ444Fc5vC5ROYurg/4Pw==
+"xml-name-validator@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "xml-name-validator@npm:3.0.0"
+  checksum: b3ac459afed783c285bb98e4960bd1f3ba12754fd4f2320efa0f9181ca28928c53cc75ca660d15d205e81f92304419afe94c531c7cfb3e0649aa6d140d53ecb0
+  languageName: node
+  linkType: hard
 
-xml2js@0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/xml2js/-/xml2js-0.6.0.tgz#07afc447a97d2bd6507a1f76eeadddb09f7a8282"
-  integrity sha512-eLTh0kA8uHceqesPqSE+VvO1CDDJWMwlQfB6LuN6T8w6MaDJ8Txm8P7s5cHD0miF0V+GGTZrDQfxPZQVsur33w==
+"xml2js@npm:0.6.2":
+  version: 0.6.2
+  resolution: "xml2js@npm:0.6.2"
   dependencies:
     sax: ">=0.6.0"
     xmlbuilder: ~11.0.0
-  checksum: 437f353fd66d367bf158e9555a0625df9965d944e499728a5c6bc92a54a2763179b144f14b7e1c725040f56bbd22b0fa6cfcb09ec4faf39c45ce01efe631f40b
+  checksum: 458a83806193008edff44562c0bdb982801d61ee7867ae58fd35fab781e69e17f40dfeb8fc05391a4648c9c54012066d3955fe5d993ffbe4dc63399023f32ac2
   languageName: node
   linkType: hard
 

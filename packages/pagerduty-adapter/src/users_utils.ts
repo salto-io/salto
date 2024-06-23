@@ -43,5 +43,7 @@ export const USER_FETCH_DEFINITIONS = {
     },
   },
 }
-export const isRelevantInstance = (instance: InstanceElement): boolean =>
+export const isRelevantInstance = (instance: InstanceElement): boolean => {
+  if(instance.elemID.typeName === USER_TYPE_NAME) {
+}
   Object.keys(USER_MAPPING).includes(instance.elemID.typeName)

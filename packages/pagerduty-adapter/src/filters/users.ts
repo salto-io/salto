@@ -28,9 +28,6 @@ const log = logger(module)
 // const { awu } = collections.asynciterable
 // const { makeArray } = collections.array
 
-// const isRelevantInstance = (instance: InstanceElement): boolean =>
-//   Object.keys(USER_MAPPING).includes(instance.elemID.typeName)
-
 // const replaceValues = (instance: InstanceElement, mapping: Record<string, string>): void => {
 //   const paths = USER_MAPPING[instance.elemID.typeName]
 //   paths.forEach(path => {

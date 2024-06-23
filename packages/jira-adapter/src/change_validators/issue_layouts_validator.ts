@@ -145,8 +145,10 @@ export const issueLayoutsValidator: (client: JiraClient, config: JiraConfig) => 
             errors.push({
               elemID: issueLayoutInstance.elemID,
               severity: 'Error',
-              message: 'Invalid screen in Issue Layout',
-              detailedMessage: 'This issue layout references an invalid or non-existing screen.',
+              message: 'Invalid screen for Issue Layout',
+              detailedMessage:
+                `This issue layout references a screen (${issueLayoutInstance.value.extraDefinerId?.elemID?.getFullName()})` +
+                ` that is not associated with its project (${parentElemID(issueLayoutInstance)?.getFullName()}). Learn more at https://help.salto.io/en/articles/9306685-deploying-issue-layouts`,
             })
           })
       }),

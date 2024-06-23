@@ -30,6 +30,7 @@ import { resolveValues } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
+import { constants as bufferConstants } from 'buffer'
 import { logger } from '@salto-io/logging'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
@@ -148,7 +149,17 @@ const getSuiteScriptReferences = async (
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
 ): Promise<ElemID[]> => {
-  const content = (await getContent(element.value.content)).toString()
+  const fileContent = await getContent(element.value.content)
+
+  if (fileContent.length > bufferConstants.MAX_STRING_LENGTH) {
+    log.warn('skip parsing file with size larger than MAX_STRING_LENGTH: %o', {
+      fileSize: fileContent.length,
+      MAX_STRING_LENGTH: bufferConstants.MAX_STRING_LENGTH,
+    })
+    return []
+  }
+
+  const content = fileContent.toString()
 
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
   const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)

@@ -21,6 +21,7 @@ import {
   BUSINESS_SERVICE_TYPE_NAME,
   ESCALATION_POLICY_TYPE_NAME,
   EVENT_ORCHESTRATION_TYPE_NAME,
+  SCHEDULE_LAYERS_TYPE_NAME,
   SCHEDULE_TYPE_NAME,
   SERVICE_TYPE_NAME,
   TEAM_TYPE_NAME,
@@ -47,6 +48,9 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
     omit: true,
   },
   updated_by: {
+    omit: true,
+  },
+  version: {
     omit: true,
   },
 }
@@ -232,6 +236,33 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         escalation_policies: {
           omit: true,
         },
+        id: {
+          hide: true,
+        },
+        users: {
+          omit: true,
+        },
+        schedule_layers: {
+          standalone: {
+            typeName: SCHEDULE_LAYERS_TYPE_NAME,
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  [SCHEDULE_LAYERS_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { extendsParent: true },
+      },
+      fieldCustomizations: {
         id: {
           hide: true,
         },

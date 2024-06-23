@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 import { ChangeValidator } from '@salto-io/adapter-api'
+import { builtInInstancesValidator, readOnlyFieldsValidator, requiredFieldsValidator } from './change_validators'
 
 export default (): Record<string, ChangeValidator> => ({
-  // TODO: Implement change validators
+  builtInInstances: builtInInstancesValidator,
+  requiredFields: requiredFieldsValidator,
+  readOnlyFields: readOnlyFieldsValidator,
 })

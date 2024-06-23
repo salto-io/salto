@@ -15,9 +15,11 @@
  */
 import wu from 'wu'
 import { collections, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 
 const { difference } = collections.set
 type DFS_STATUS = 'in_progress' | 'done'
+const log = logger(module)
 
 export type NodeId = collections.set.SetId
 export type Edge = [NodeId, NodeId]
@@ -88,6 +90,7 @@ class WalkErrors<T> extends Map<NodeId, Error> {
   }
 
   set(nodeId: NodeId, value: Error, visited: Set<string> = new Set()): this {
+    log.error('Error encountered while walking on node %s: %s\n stack: %s', nodeId, value, value.stack)
     const idAsString = nodeId.toString()
     if (visited.has(idAsString)) {
       return this

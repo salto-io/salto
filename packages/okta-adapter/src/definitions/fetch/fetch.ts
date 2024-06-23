@@ -35,6 +35,7 @@ import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
+import { OMIT_CREDS_HEADER } from '../../user_utils'
 
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created: { omit: true },
@@ -348,6 +349,7 @@ const createCustomizations = ({
         isTopLevel: true,
         serviceUrl: { path: '/admin/app/{name}/instance/{id}/#tab-general' },
         elemID: { parts: [{ fieldName: 'label' }] },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: {
         name: { fieldType: 'string' },
@@ -981,6 +983,40 @@ const createCustomizations = ({
     element: {
       topLevel: { isTopLevel: true },
       fieldCustomizations: { id: { hide: true }, _links: { omit: true } },
+    },
+  },
+  User: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/users',
+          headers: OMIT_CREDS_HEADER,
+        },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'profile.login' }] },
+        serviceUrl: { path: '/admin/user/profile/view/{id}#tab-account' },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        statusChanged: { omit: true },
+        lastLogin: { omit: true },
+        passwordChanged: { omit: true },
+        activated: { omit: true },
+        _links: { omit: true },
+        type: { fieldType: 'UserTypeRef' },
+      },
+    },
+  },
+  UserTypeRef: {
+    element: {
+      fieldCustomizations: {
+        id: { hide: false },
+      },
     },
   },
   // singleton types

@@ -30,6 +30,7 @@ import moment from 'moment-timezone'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import { SUITEQL_TABLE, getSuiteQLTableInternalIdsMap } from '../../data_elements/suiteql_table_elements'
 import NetsuiteClient from '../../client/client'
+import { SuiteQLQueryArgs } from '../../client/suiteapp_client/types'
 import { RemoteFilterCreator } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import {
@@ -87,24 +88,22 @@ const toDateQuery = (lastFetchTime: Date): string => `date >= ${toSuiteQLWhereDa
 const toFieldWhereQuery = (recordType: string): string =>
   recordType === FILE_TYPE ? `field LIKE '${FILE_FIELD_IDENTIFIER}%'` : `field LIKE '${FOLDER_FIELD_IDENTIFIER}%'`
 
-const buildRecordTypeSystemNotesQuery = (recordTypeIds: string[], lastFetchTime: Date): string => {
-  const recordTypeMatchClause = `recordtypeid IN (${recordTypeIds.join(', ')})`
-  return (
-    'SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid,' +
-    ` ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND ${recordTypeMatchClause}` +
-    ' GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC'
-  )
-}
+const buildRecordTypeSystemNotesQuery = (recordTypeIds: string[], lastFetchTime: Date): SuiteQLQueryArgs => ({
+  select: 'name, recordid, recordtypeid, date',
+  from:
+    `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date` +
+    ` FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND recordtypeid IN (${recordTypeIds.join(', ')})` +
+    ' GROUP BY name, recordid, recordtypeid)',
+  orderBy: 'name, recordid, recordtypeid',
+})
 
-const buildFieldSystemNotesQuery = (fieldIds: string[], lastFetchTime: Date): string => {
-  const whereQuery = fieldIds.map(toFieldWhereQuery).join(' OR ')
-  return (
-    `SELECT name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date` +
-    ` FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})` +
-    ' GROUP BY name, field, recordid' +
-    ' ORDER BY name, field, recordid ASC'
-  )
-}
+const buildFieldSystemNotesQuery = (fieldIds: string[], lastFetchTime: Date): SuiteQLQueryArgs => ({
+  select: `name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date`,
+  from: 'systemnote',
+  where: `${toDateQuery(lastFetchTime)} AND (${fieldIds.map(toFieldWhereQuery).join(' OR ')})`,
+  groupBy: 'name, field, recordid',
+  orderBy: 'name, field, recordid',
+})
 
 const querySystemNotesByField = async (
   client: NetsuiteClient,

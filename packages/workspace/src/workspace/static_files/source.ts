@@ -256,7 +256,7 @@ export const buildStaticFilesSource = (
     clone: (): StaticFilesSource =>
       buildStaticFilesSource(staticFilesDirStore.clone() as DirectoryStore<Buffer>, staticFilesCache.clone()),
     delete: async (staticFile: StaticFile): Promise<void> => staticFilesDirStore.delete(staticFile.filepath),
-    isPathIncluded: filePath => staticFilesSource.isPathIncluded(filePath),
+    isPathIncluded: filePath => staticFilesDirStore.isPathIncluded(filePath),
   }
   return staticFilesSource
 }

@@ -30,8 +30,8 @@ import {
   generateReferenceResolverFinder,
   ReferenceContextStrategyName,
   FieldReferenceDefinition,
+  fieldNameToTypeMappingDefs,
   getLookUpName,
-  getReferenceMappingDefs,
 } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -45,11 +45,14 @@ import {
   GROUP_METADATA_TYPE,
   ROLE_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
 import {
   buildElementsSourceForFetch,
   extractFlatCustomObjectFields,
   hasApiName,
+  isInstanceOfTypeSync,
 } from './utils'
 
 const { awu } = collections.asynciterable
@@ -173,6 +176,7 @@ export const addReferences = async (
   elements: Element[],
   referenceElements: ReadOnlyElementsSource,
   defs: FieldReferenceDefinition[],
+  typesToIgnore: string[],
 ): Promise<void> => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
@@ -180,8 +184,6 @@ export const addReferences = async (
     await referenceElements.getAll(),
     extractFlatCustomObjectFields,
   )
-  // TODO - when transformValues becomes async the first index can be to elemID and not the whole
-  // element and we can use the element source directly instead of creating the second index
   const { elemLookup, elemByElemID } = await multiIndex
     .buildMultiIndex<Element>()
     .addIndex({
@@ -197,18 +199,21 @@ export const addReferences = async (
     .process(elementsWithFields)
 
   const fieldsWithResolvedReferences = new Set<string>()
-  await awu(elements)
-    .filter(isInstanceElement)
-    .forEach(async (instance) => {
-      instance.value = await replaceReferenceValues({
-        instance,
-        resolverFinder,
-        elemLookupMaps: { elemLookup },
-        fieldsWithResolvedReferences,
-        elemByElemID,
-        contextStrategyLookup,
-      })
+  let instances = elements.filter(isInstanceElement)
+  if (typesToIgnore.length > 0) {
+    const isIgnoredInstance = isInstanceOfTypeSync(...typesToIgnore)
+    instances = instances.filter((instance) => !isIgnoredInstance(instance))
+  }
+  await awu(instances).forEach(async (instance) => {
+    instance.value = await replaceReferenceValues({
+      instance,
+      resolverFinder,
+      elemLookupMaps: { elemLookup },
+      fieldsWithResolvedReferences,
+      elemByElemID,
+      contextStrategyLookup,
     })
+  })
   log.debug('added references in the following fields: %s', [
     ...fieldsWithResolvedReferences,
   ])
@@ -221,18 +226,20 @@ export const addReferences = async (
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async (elements) => {
-    const refDef = getReferenceMappingDefs({
-      enumFieldPermissions: config.enumFieldPermissions ?? false,
-      otherProfileRefs: config.fetchProfile.isFeatureEnabled(
-        'generateRefsInProfiles',
-      ),
-      permissionsSetRefs:
-        !config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets'),
-    })
+    const typesToIgnore: string[] = []
+    if (!config.fetchProfile.isFeatureEnabled('generateRefsInProfiles')) {
+      typesToIgnore.push(PROFILE_METADATA_TYPE)
+    }
+    if (
+      config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets')
+    ) {
+      typesToIgnore.push(PERMISSION_SET_METADATA_TYPE)
+    }
     await addReferences(
       elements,
       buildElementsSourceForFetch(elements, config),
-      refDef,
+      fieldNameToTypeMappingDefs,
+      typesToIgnore,
     )
   },
 })

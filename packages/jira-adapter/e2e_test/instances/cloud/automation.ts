@@ -34,7 +34,6 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
   },
   trigger: {
     component: 'TRIGGER',
-    schemaVersion: 2,
     type: 'jira.manual.trigger.issue',
     value: {
       groups: [],
@@ -43,7 +42,6 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
   components: [
     {
       component: 'BRANCH',
-      schemaVersion: 1,
       type: 'jira.issue.related',
       value: {
         relatedType: 'parent',
@@ -55,7 +53,6 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
       children: [
         {
           component: 'CONDITION',
-          schemaVersion: 3,
           type: 'jira.issue.condition',
           value: {
             selectedField: {
@@ -73,7 +70,6 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
         },
         {
           component: 'CONDITION',
-          schemaVersion: 1,
           type: 'jira.jql.condition',
           rawValue: new TemplateExpression({
             parts: [
@@ -85,7 +81,6 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
         },
         {
           component: 'ACTION',
-          schemaVersion: 10,
           type: 'jira.issue.create',
           value: {
             operations: [
@@ -139,7 +134,6 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
     },
     {
       component: 'ACTION',
-      schemaVersion: 10,
       type: 'jira.issue.create',
       value: {
         operations: [
@@ -191,7 +185,6 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
     },
     {
       component: 'ACTION',
-      schemaVersion: 1,
       type: 'jira.lookup.issues',
       value: {
         name: {

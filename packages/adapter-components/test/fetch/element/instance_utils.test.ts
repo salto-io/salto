@@ -130,11 +130,11 @@ describe('instance utils', () => {
     })
   })
   describe('omitInstanceValues', () => {
+    const objType = new ObjectType({
+      elemID: new ElemID('myAdapter', 'myType'),
+      fields: { omitThis: { refType: BuiltinTypes.UNKNOWN } },
+    })
     it('should omit nulls, undefined values, and omitted fields from instances', () => {
-      const objType = new ObjectType({
-        elemID: new ElemID('myAdapter', 'myType'),
-        fields: { omitThis: { refType: BuiltinTypes.UNKNOWN } },
-      })
       const defQuery = queryWithDefault<InstanceFetchApiDefinitions, string>({
         customizations: {
           myType: { element: { topLevel: { isTopLevel: true }, fieldCustomizations: { omitThis: { omit: true } } } },
@@ -160,6 +160,84 @@ describe('instance utils', () => {
           defQuery,
         }),
       ).toEqual({ str: 'A', something: 'a' })
+    })
+    it('should omit empty arrays and objects by default', () => {
+      const defQuery = queryWithDefault<InstanceFetchApiDefinitions, string>({
+        customizations: {
+          myType: { element: { topLevel: { isTopLevel: true }, fieldCustomizations: { omitThis: { omit: true } } } },
+        },
+      })
+      expect(
+        omitInstanceValues({
+          value: {
+            str: 'A',
+            nullVal: null,
+            missing: undefined,
+            something: 'a',
+            omitThis: 'abc',
+            emptyArr: [],
+            obj: {
+              emptyObj: {},
+            },
+          },
+          type: objType,
+          defQuery,
+        }),
+      ).toEqual({ str: 'A', something: 'a' })
+    })
+    it('should not omit empty arrays when allowEmptyArrays is true', () => {
+      const defQuery = queryWithDefault<InstanceFetchApiDefinitions, string>({
+        customizations: {
+          myType: {
+            element: {
+              topLevel: { isTopLevel: true, allowEmptyArrays: true },
+              fieldCustomizations: { omitThis: { omit: true } },
+            },
+          },
+        },
+      })
+      expect(
+        omitInstanceValues({
+          value: {
+            str: 'A',
+            nullVal: null,
+            missing: undefined,
+            something: 'a',
+            omitThis: 'abc',
+            emptyArr: [],
+            obj: {
+              emptyObj: {},
+            },
+          },
+          type: objType,
+          defQuery,
+        }),
+      ).toEqual({ str: 'A', something: 'a', emptyArr: [] })
+    })
+  })
+  describe('createInstance', () => {
+    describe('with allowEmptyArrays', () => {
+      it('should not omit empty arrays when allowEmptyArrays is true', () => {
+        const createdInstance = createInstance({
+          entry: { str: 'A', emptyArr: [] },
+          type,
+          toElemName: () => 'test',
+          toPath: () => ['myAdapter', 'Records', 'myType', 'test'],
+          defaultName: 'unnamed',
+          allowEmptyArrays: true,
+        })
+        expect(createdInstance?.value).toEqual({ str: 'A', emptyArr: [] })
+      })
+      it('should omit empty arrays when allowEmptyArrays is not provided', () => {
+        const createdInstance = createInstance({
+          entry: { str: 'A', emptyArr: [] },
+          type,
+          toElemName: () => 'test',
+          toPath: () => ['myAdapter', 'Records', 'myType', 'test'],
+          defaultName: 'unnamed',
+        })
+        expect(createdInstance?.value).toEqual({ str: 'A' })
+      })
     })
   })
   describe('recursiveNaclCase', () => {

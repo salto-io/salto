@@ -97,6 +97,13 @@ describe('appDeploymentFilter', () => {
       expect(app?.value.name).toEqual('salesforce')
       expect(app?.value.customName).toBeUndefined()
     })
+    it('should remove "features" field if it is empty', async () => {
+      const emptyFeaturesApp = new InstanceElement('empty features app', appType, { features: [] })
+      const elements = [appType, orgSettingType, orgSettingInstance, emptyFeaturesApp]
+      await filter.onFetch(elements)
+      const app = elements.filter(isInstanceElement).find(e => e.elemID.name === 'empty features app')
+      expect(app?.value.features).toBeUndefined()
+    })
     it('should add deployment annotations for "features" field', async () => {
       const elements = [appType, orgSettingType, orgSettingInstance, customSamlAppInstance, customSwaInstance]
       await filter.onFetch(elements)

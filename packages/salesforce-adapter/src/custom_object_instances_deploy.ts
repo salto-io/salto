@@ -85,6 +85,10 @@ import {
   CPQ_PRICE_CONDITION,
   CPQ_CONDITIONS_MET,
   CPQ_PRICE_CONDITION_RULE_FIELD,
+  CPQ_PRODUCT_RULE,
+  CPQ_ERROR_CONDITION,
+  CPQ_ERROR_CONDITION_RULE_FIELD,
+  ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
 } from './constants'
 import {
   getIdFields,
@@ -1179,6 +1183,22 @@ const deployAddCustomPriceRulesAndConditions = async (
     dataManagement,
   )
 
+const deployAddCustomProductRulesAndConditions = async (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  client: SalesforceClient,
+  dataManagement: DataManagement | undefined,
+): Promise<DeployResult> =>
+  deployRulesAndConditionsGroup(
+    CPQ_PRODUCT_RULE,
+    CPQ_CONDITIONS_MET,
+    CPQ_ERROR_CONDITION,
+    CPQ_ERROR_CONDITION_RULE_FIELD,
+    changes,
+    ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+    client,
+    dataManagement,
+  )
+
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
@@ -1195,6 +1215,13 @@ export const deployCustomObjectInstancesGroup = async (
     }
     case ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP: {
       return deployAddCustomPriceRulesAndConditions(
+        changes,
+        client,
+        dataManagement,
+      )
+    }
+    case ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP: {
+      return deployAddCustomProductRulesAndConditions(
         changes,
         client,
         dataManagement,

@@ -35,10 +35,16 @@ export const hasMember = <T, M extends keyof T>(m: M, o: T): o is HasMember<T, M
 export const filterHasMember = <T, M extends keyof T>(m: M, objs: T[]): HasMember<T, M>[] =>
   objs.filter(f => hasMember(m, f)) as HasMember<T, M>[]
 
+// Ensures an object contains a specific key K of type T
+export type HasKeyOfType<K extends string, T> = { [P in K]: T }
+// Extracts keys from type T whose values are assignable to type U.
 export type KeysOfType<T, U> = { [K in keyof T]: T[K] extends U ? K : never }[keyof T]
+// Extracts keys from type T whose values extend type U.
 export type KeysOfExtendingType<T, U> = { [K in keyof T]: U extends T[K] ? K : never }[keyof T]
+// Converts the keys of type T into an enum-like type where each key is a required property.
 export type TypeKeysEnum<T> = Required<{ [k in keyof T]: k }>
 
+// Extracts the union of all possible values of the properties of type `T`.
 export type ValueOf<T> = T[keyof T]
 
 // makes specific fields required

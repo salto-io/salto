@@ -96,7 +96,7 @@ export type WorkflowV2TransitionRule = {
 export type WorkflowV2TransitionConditionGroup = {
   operation: string
   conditionGroups?: WorkflowV2TransitionConditionGroup[]
-  conditions: WorkflowV2TransitionRule[]
+  conditions?: WorkflowV2TransitionRule[]
 }
 
 export type WorkflowV2Transition = {
@@ -148,7 +148,7 @@ const TRANSITION_RULE_SCHEME = Joi.object({
 
 const TRANSITION_CONDITION_GROUP_SCHEME = Joi.object({
   operation: Joi.string().required(),
-  conditions: Joi.array().items(TRANSITION_RULE_SCHEME).required(),
+  conditions: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
   conditionGroups: Joi.array().items(Joi.link('#conditionGroup')).optional(),
 }).id('conditionGroup')
 

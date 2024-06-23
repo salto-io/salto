@@ -71,16 +71,23 @@ describe('Microsoft Entra adapter', () => {
           .fetch({ progressReporter: { reportProgress: () => null } })
 
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
+          'administrativeUnit',
           'application',
           'authenticationMethodPolicy',
           'authenticationMethodPolicy__authenticationMethodConfigurations',
           'authenticationStrengthPolicy',
           'conditionalAccessPolicy',
+          'conditionalAccessPolicyNamedLocation',
           'crossTenantAccessPolicy',
+          'customSecurityAttributeDefinition',
+          'customSecurityAttributeDefinition__allowedValues',
+          'customSecurityAttributeSet',
+          'directoryRoleTemplate',
           'domain',
           'group',
           'groupLifeCyclePolicy',
           'group__appRoleAssignments',
+          'oauth2PermissionGrant',
           'permissionGrantPolicy',
           'roleDefinition',
           'servicePrincipal',

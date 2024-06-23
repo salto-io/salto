@@ -16,7 +16,6 @@
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import {
-  adjustHomepageToId,
   createPermissionUniqueKey,
   isPermissionObject,
   restructurePermissionsAndCreateInternalIdMap,
@@ -224,17 +223,6 @@ describe('space definitions utils', () => {
     })
   })
 
-  describe('adjustHomepageToId', () => {
-    it('should convert homepage object to id', () => {
-      const item = {
-        typeName: 'mockType',
-        value: { homepage: { someField: 'yay', id: 'mockId' } },
-        context: {},
-      }
-      expect(adjustHomepageToId(item).value).toEqual({ homepage: 'mockId' })
-    })
-  })
-
   describe('spaceChangeGroupWithItsHomepage', () => {
     const pageObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'page') })
     const homepageInstance = new InstanceElement('mockPageName', pageObjectType, { id: 'homepageId' })
@@ -245,14 +233,14 @@ describe('space definitions utils', () => {
 
     it('should return element full name when change is not addition change', async () => {
       const spaceInstance = new InstanceElement('mockSpaceName', spaceObjectType, {
-        homepage: new ReferenceExpression(homepageInstance.elemID),
+        homepageId: new ReferenceExpression(homepageInstance.elemID),
       })
       const change = toChange({ before: spaceInstance })
       expect(await spaceChangeGroupWithItsHomepage(change)).toEqual('confluence.space.instance.mockSpaceName')
     })
     it('should return homepage full name when change is addition', async () => {
       const spaceInstance = new InstanceElement('mockName', spaceObjectType, {
-        homepage: new ReferenceExpression(homepageInstance.elemID),
+        homepageId: new ReferenceExpression(homepageInstance.elemID),
       })
       const change = toChange({ after: spaceInstance })
       expect(await spaceChangeGroupWithItsHomepage(change)).toEqual('confluence.page.instance.mockPageName')

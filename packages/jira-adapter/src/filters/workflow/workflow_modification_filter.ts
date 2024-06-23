@@ -56,7 +56,8 @@ const replaceWorkflowInScheme = async (
   const instance = await transformElement({
     element: scheme,
     strict: false,
-    allowEmpty: true,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
     elementsSource,
     transformFunc: ({ value }) => {
       if (isReferenceExpression(value) && value.elemID.isEqual(beforeWorkflow.elemID)) {

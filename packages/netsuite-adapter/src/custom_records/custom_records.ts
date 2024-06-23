@@ -50,7 +50,7 @@ const queryCustomRecordsTable = async (
   type: string,
 ): Promise<Record<string, SuiteQLRecord>> => {
   log.debug("querying custom record type '%s' SuiteQL table", type)
-  const result = await client.runSuiteQL(`SELECT id, scriptid FROM ${type} ORDER BY id ASC`)
+  const result = await client.runSuiteQL({ select: 'id, scriptid', from: type, orderBy: 'id' })
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<SuiteQLRecord[]>(SUITE_QL_RESULTS_SCHEMA, result)) {
     log.error(`Got invalid results from listing ${type} table: ${ajv.errorsText()}`)

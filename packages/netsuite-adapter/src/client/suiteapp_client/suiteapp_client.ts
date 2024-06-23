@@ -47,6 +47,7 @@ import {
   SavedSearchResults,
   SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters,
+  SuiteQLQueryArgs,
   SuiteQLResults,
   SUITE_QL_RESULTS_SCHEMA,
   SystemInformation,
@@ -86,6 +87,7 @@ const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
+export const LAST_PAGE_OFFSET = 99000
 
 const log = logger(module)
 
@@ -235,10 +237,16 @@ export default class SuiteAppClient {
       nextOffset,
       lastOffset,
     })
+    if (lastOffset !== undefined && lastOffset > LAST_PAGE_OFFSET) {
+      log.warn('lastOffset is larger than LAST_PAGE_OFFSET, using LAST_PAGE_OFFSET. %o', {
+        lastOffset,
+        LAST_PAGE_OFFSET,
+      })
+    }
     return {
       items: results.items,
       nextOffset,
-      lastOffset,
+      lastOffset: lastOffset !== undefined ? Math.min(lastOffset, LAST_PAGE_OFFSET) : undefined,
     }
   }
 
@@ -249,9 +257,19 @@ export default class SuiteAppClient {
    * Otherwise, you might not get all the results.
    */
   public async runSuiteQL(
-    query: string,
+    queryArgs: SuiteQLQueryArgs,
     throwOnErrors: Record<string, string> = {},
+    updatedWhere?: string,
   ): Promise<Record<string, unknown>[] | undefined> {
+    const { select, from, join, where, groupBy, orderBy } = queryArgs
+    const whereClause = updatedWhere ?? where
+    const query =
+      `SELECT ${select} FROM ${from}` +
+      `${join !== undefined ? ` JOIN ${join}` : ''}` +
+      `${whereClause !== undefined ? ` WHERE ${whereClause}` : ''}` +
+      `${groupBy !== undefined ? ` GROUP BY ${groupBy}` : ''}` +
+      `${orderBy !== undefined ? ` ORDER BY ${orderBy} ASC` : ''}`
+
     log.debug('Running SuiteQL query: %s', query)
     if (!/ORDER BY .* (ASC|DESC)/.test(query) && !/count\(\*\)/i.test(query)) {
       log.warn(
@@ -274,7 +292,22 @@ export default class SuiteAppClient {
       const items = firstPageItems.concat(restOfItems)
       log.debug('Finished running SuiteQL query with %d results: %s', items.length, query)
 
-      return items
+      if (items.length < PAGE_SIZE + LAST_PAGE_OFFSET) {
+        return items
+      }
+      log.debug('result reached limit of %d items - running offset query', items.length)
+      if (orderBy === undefined) {
+        log.warn('orderBy is undefined - skip running offset query')
+        return items
+      }
+      const lastOrderByValue = items.slice(-1)[0][orderBy]
+      if (lastOrderByValue === undefined) {
+        log.warn('lastOrderByValue is undefined - skip running offset query')
+        return items
+      }
+      const whereWithOffset = `${where !== undefined ? `(${where}) AND ` : ''}${orderBy} > ${lastOrderByValue}`
+      const nextOffsetItems = await this.runSuiteQL(queryArgs, throwOnErrors, whereWithOffset)
+      return items.concat(nextOffsetItems ?? [])
     } catch (error) {
       log.warn('SuiteQL query error - %s', query, { error })
       if (error instanceof InvalidSuiteAppCredentialsError) {

@@ -118,7 +118,8 @@ const getMapKeyErrors = async (
         type: fieldType,
         transformFunc: findInvalidPaths,
         strict: false,
-        allowEmpty: true,
+        allowEmptyArrays: true,
+        allowEmptyObjects: true,
         pathID: after.elemID.createNestedID(fieldName),
       })
     })

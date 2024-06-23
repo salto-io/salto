@@ -23,3 +23,4 @@ export {
 } from './type_utils'
 export { generateInstancesWithInitialTypes } from './instance_element'
 export { generateType } from './type_element'
+export { getFieldsToOmit } from './instance_utils'

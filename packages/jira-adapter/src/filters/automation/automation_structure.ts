@@ -378,7 +378,8 @@ const filter: FilterCreator = ({ client }) => {
             await transformElement({
               element: instance,
               strict: false,
-              allowEmpty: true,
+              allowEmptyArrays: true,
+              allowEmptyObjects: true,
               transformFunc: automationTransformFunc,
             })
           ).value
@@ -413,7 +414,8 @@ const filter: FilterCreator = ({ client }) => {
               await transformElement({
                 element: resolvedInstance,
                 strict: false,
-                allowEmpty: true,
+                allowEmptyArrays: true,
+                allowEmptyObjects: true,
                 transformFunc: automationTransformFunc,
               })
             ).value
@@ -439,7 +441,8 @@ const filter: FilterCreator = ({ client }) => {
               await transformElement({
                 element: instance,
                 strict: false,
-                allowEmpty: true,
+                allowEmptyArrays: true,
+                allowEmptyObjects: true,
                 transformFunc: automationTransformFunc,
               })
             ).value

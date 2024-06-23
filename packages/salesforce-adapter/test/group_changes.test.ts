@@ -41,6 +41,10 @@ import {
   CPQ_PRICE_CONDITION,
   CPQ_PRICE_CONDITION_RULE_FIELD,
   ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+  CPQ_PRODUCT_RULE,
+  CPQ_ERROR_CONDITION,
+  ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+  CPQ_ERROR_CONDITION_RULE_FIELD,
 } from '../src/constants'
 import { getChangeGroupIds } from '../src/group_changes'
 import { createInstanceElement } from '../src/transformers/transformer'
@@ -388,6 +392,70 @@ describe('Group changes function', () => {
       )
       expect(result.changeGroupIdMap.get('PriceCondition')).toEqual(
         "Addition of data instances of type 'SBQQ__PriceCondition__c'",
+      )
+    })
+  })
+  describe('when changes are additions of SBQQ__ProductRule__c and SBQQ__ProductCondition__c', () => {
+    let result: ChangeGroupIdFunctionReturn
+    beforeEach(async () => {
+      const customProductRule = new InstanceElement(
+        'CustomProductRule',
+        mockTypes[CPQ_PRODUCT_RULE],
+        {
+          [CPQ_CONDITIONS_MET]: 'Custom',
+        },
+      )
+      const productRule = new InstanceElement(
+        'ProductRule',
+        mockTypes[CPQ_PRODUCT_RULE],
+        {
+          [CPQ_CONDITIONS_MET]: 'All',
+        },
+      )
+      const customProductCondition = new InstanceElement(
+        'CustomErrorCondition',
+        mockTypes[CPQ_ERROR_CONDITION],
+        {
+          [CPQ_ERROR_CONDITION_RULE_FIELD]: new ReferenceExpression(
+            customProductRule.elemID,
+            customProductRule,
+          ),
+        },
+      )
+      const productCondition = new InstanceElement(
+        'ErrorCondition',
+        mockTypes[CPQ_ERROR_CONDITION],
+        {
+          [CPQ_ERROR_CONDITION_RULE_FIELD]: new ReferenceExpression(
+            productRule.elemID,
+            productRule,
+          ),
+        },
+      )
+      const addedInstances = [
+        customProductRule,
+        productRule,
+        customProductCondition,
+        productCondition,
+      ]
+      const changeMap = new Map<string, Change>()
+      addedInstances.forEach((instance) => {
+        changeMap.set(instance.elemID.name, toChange({ after: instance }))
+      })
+      result = await getChangeGroupIds(changeMap)
+    })
+    it('should create correct groups', () => {
+      expect(result.changeGroupIdMap.get('CustomProductRule')).toEqual(
+        ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+      )
+      expect(result.changeGroupIdMap.get('CustomErrorCondition')).toEqual(
+        ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+      )
+      expect(result.changeGroupIdMap.get('ProductRule')).toEqual(
+        "Addition of data instances of type 'SBQQ__ProductRule__c'",
+      )
+      expect(result.changeGroupIdMap.get('ErrorCondition')).toEqual(
+        "Addition of data instances of type 'SBQQ__ErrorCondition__c'",
       )
     })
   })

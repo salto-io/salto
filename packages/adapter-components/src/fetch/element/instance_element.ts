@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { logger } from '@salto-io/logging'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementsAndErrors } from '../../definitions/system/fetch/element'
 import { generateType } from './type_element'
 import { createInstance, getInstanceCreationFunctions, recursiveNaclCase } from './instance_utils'
@@ -22,6 +23,7 @@ import { GenerateTypeArgs } from '../../definitions/system/fetch/types'
 import { InvalidSingletonType } from './type_utils'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 
+const { isDefined } = lowerdashValues
 const log = logger(module)
 
 /**
@@ -31,61 +33,73 @@ const log = logger(module)
  */
 export const generateInstancesWithInitialTypes = <Options extends FetchApiDefinitionsOptions>(
   args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>,
-): ElementsAndErrors => {
-  const { defQuery, entries, adapterName, typeName, getElemIdFunc, customNameMappingFunctions, definedTypes } = args
-  const { element: elementDef } = defQuery.query(typeName) ?? {}
-  if (elementDef === undefined) {
-    log.error('could not find any element definitions for type %s:%s', adapterName, typeName)
-  }
-  if (!elementDef?.topLevel?.isTopLevel) {
-    const error = `type ${adapterName}:${typeName} is not defined as top-level, cannot create instances`
-    throw new Error(error)
-  }
-  if (elementDef.topLevel?.custom !== undefined) {
-    log.info('found custom override for type %s:%s, using it to generate instances and types', adapterName, typeName)
-    return elementDef?.topLevel?.custom(elementDef)(args)
-  }
+): ElementsAndErrors =>
+  log.timeDebug(
+    () => {
+      const { defQuery, entries, adapterName, typeName, getElemIdFunc, customNameMappingFunctions, definedTypes } = args
+      const { element: elementDef } = defQuery.query(typeName) ?? {}
+      if (elementDef === undefined) {
+        log.error('could not find any element definitions for type %s:%s', adapterName, typeName)
+      }
+      if (!elementDef?.topLevel?.isTopLevel) {
+        const error = `type ${adapterName}:${typeName} is not defined as top-level, cannot create instances`
+        throw new Error(error)
+      }
+      if (elementDef.topLevel?.custom !== undefined) {
+        log.info(
+          'found custom override for type %s:%s, using it to generate instances and types',
+          adapterName,
+          typeName,
+        )
+        return elementDef?.topLevel?.custom(elementDef)(args)
+      }
 
-  if (elementDef.topLevel.singleton && entries.length > 1) {
-    log.warn(`Expected one instance for singleton type: ${typeName} but received: ${entries.length}`)
-    throw new InvalidSingletonType(
-      `Could not fetch type ${typeName}, singleton types should not have more than one instance`,
-    )
-  }
+      if (elementDef.topLevel.singleton && entries.length > 1) {
+        log.warn(`Expected one instance for singleton type: ${typeName} but received: ${entries.length}`)
+        throw new InvalidSingletonType(
+          `Could not fetch type ${typeName}, singleton types should not have more than one instance`,
+        )
+      }
 
-  // create a temporary type recursively so we can correctly extract standalone instances
-  // note that all types should be re-generated at the end once instance values have been finalized
-  const { type, nestedTypes } = generateType(args)
-  const { toElemName, toPath } = getInstanceCreationFunctions({
-    defQuery,
-    type,
-    getElemIdFunc,
-    customNameMappingFunctions,
-  })
-
-  const instances = entries
-    .map(value => recursiveNaclCase(value))
-    .map((entry, index) =>
-      createInstance({
-        entry,
+      // create a temporary type recursively so we can correctly extract standalone instances
+      // note that all types should be re-generated at the end once instance values have been finalized
+      const { type, nestedTypes } = generateType(args)
+      const { toElemName, toPath } = getInstanceCreationFunctions({
+        defQuery,
         type,
-        toElemName,
-        toPath,
-        // TODO pick better default name, include service id
-        defaultName: `unnamed_${index}`,
-      }),
-    )
+        getElemIdFunc,
+        customNameMappingFunctions,
+      })
 
-  // TODO filter instances by fetch query before extracting standalone fields (SALTO-5425)
+      const instances = entries
+        .map(value => recursiveNaclCase(value))
+        .map((entry, index) =>
+          createInstance({
+            entry,
+            type,
+            toElemName,
+            toPath,
+            // TODO pick better default name, include service id
+            defaultName: `unnamed_${index}`,
+            allowEmptyArrays: elementDef.topLevel?.allowEmptyArrays,
+          }),
+        )
+        .filter(isDefined)
 
-  const instancesWithStandalone = extractStandaloneInstances({
-    adapterName,
-    instances,
-    defQuery,
-    getElemIdFunc,
-    customNameMappingFunctions,
-    definedTypes,
-  })
+      // TODO filter instances by fetch query before extracting standalone fields (SALTO-5425)
 
-  return { types: [type, ...nestedTypes], instances: instancesWithStandalone }
-}
+      const instancesWithStandalone = extractStandaloneInstances({
+        adapterName,
+        instances,
+        defQuery,
+        getElemIdFunc,
+        customNameMappingFunctions,
+        definedTypes,
+      })
+
+      return { types: [type, ...nestedTypes], instances: instancesWithStandalone }
+    },
+    'generateInstancesWithInitialTypes for %s.%s',
+    args.adapterName,
+    args.typeName,
+  )

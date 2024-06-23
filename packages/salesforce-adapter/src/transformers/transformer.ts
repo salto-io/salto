@@ -1589,7 +1589,8 @@ export const toDeployableInstance = async (
     element,
     transformFunc: removeNonDeployableValues,
     strict: false,
-    allowEmpty: true,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
   })
 }
 

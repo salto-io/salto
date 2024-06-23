@@ -67,71 +67,79 @@ export const createResourceManager = <ClientOptions extends string>({
   initialRequestContext?: Record<string, unknown>
   customItemFilter?: (item: ValueGeneratedItem) => boolean
 }): ResourceManager => ({
-  fetch: log.timeDebug(
-    () => async query => {
-      const createTypeFetcher: TypeFetcherCreator = ({ typeName, context }) =>
-        createTypeResourceFetcher({
-          adapterName,
-          typeName,
-          resourceDefQuery,
-          query,
-          requester,
-          handleError: elementGenerator.handleError,
-          initialRequestContext: _.defaults({}, initialRequestContext, context),
-          customItemFilter,
-        })
-      const directFetchResourceDefs = _.pickBy(resourceDefQuery.getAll(), def => def.directFetch)
-      const resourceFetchers = _.pickBy(
-        _.mapValues(directFetchResourceDefs, (_def, typeName) => createTypeFetcher({ typeName })),
-        lowerdashValues.isDefined,
-      )
-      const graph = createDependencyGraph(resourceDefQuery.getAll())
-      try {
-        await graph.walkAsync(async typeName => {
-          const resourceFetcher = resourceFetchers[typeName]
-          if (resourceFetcher === undefined) {
-            log.debug('no resource fetcher defined for type %s:%s', adapterName, typeName)
-            return
-          }
-          const availableResources = _.mapValues(
-            _.pickBy(resourceFetchers, fetcher => fetcher.done()),
-            fetcher => fetcher.getItems(),
+  fetch: query =>
+    log.timeDebug(
+      async () => {
+        const createTypeFetcher: TypeFetcherCreator = ({ typeName, context }) =>
+          createTypeResourceFetcher({
+            adapterName,
+            typeName,
+            resourceDefQuery,
+            query,
+            requester,
+            handleError: elementGenerator.handleError,
+            initialRequestContext: _.defaults({}, initialRequestContext, context),
+            customItemFilter,
+          })
+        const directFetchResourceDefs = _.pickBy(resourceDefQuery.getAll(), def => def.directFetch)
+        const resourceFetchers = _.pickBy(
+          _.mapValues(directFetchResourceDefs, (_def, typeName) => createTypeFetcher({ typeName })),
+          lowerdashValues.isDefined,
+        )
+        const graph = createDependencyGraph(resourceDefQuery.getAll())
+        try {
+          await graph.walkAsync(typeName =>
+            log.timeDebug(
+              async () => {
+                const resourceFetcher = resourceFetchers[typeName]
+                if (resourceFetcher === undefined) {
+                  log.debug('no resource fetcher defined for type %s:%s', adapterName, typeName)
+                  return
+                }
+                const availableResources = _.mapValues(
+                  _.pickBy(resourceFetchers, fetcher => fetcher.done()),
+                  fetcher => fetcher.getItems(),
+                )
+
+                const res = await resourceFetcher.fetch({
+                  contextResources: availableResources, // used to construct the possible context args for the request
+                  typeFetcherCreator: createTypeFetcher, // used for recurseInto calls
+                })
+
+                const typeNameAsStr = String(typeName)
+                if (!res.success) {
+                  elementGenerator.handleError({ typeName: typeNameAsStr, error: res.error })
+                  return
+                }
+
+                elementGenerator.pushEntries({
+                  typeName: typeNameAsStr,
+                  entries: resourceFetcher.getItems()?.map(item => item.value) ?? [],
+                })
+              },
+              'fetching resources for type %s.%s',
+              adapterName,
+              typeName,
+            ),
           )
-
-          const res = await resourceFetcher.fetch({
-            contextResources: availableResources, // used to construct the possible context args for the request
-            typeFetcherCreator: createTypeFetcher, // used for recurseInto calls
-          })
-
-          const typeNameAsStr = String(typeName)
-          if (!res.success) {
-            elementGenerator.handleError({ typeName: typeNameAsStr, error: res.error })
-            return
+        } catch (e) {
+          if (e instanceof WalkError) {
+            // In case we decided to fail the entire fetch we don't want the error to be wrapped in a WalkError
+            const failFetchError = wu(e.handlerErrors.values()).find(err => err instanceof AbortFetchOnFailure)
+            if (failFetchError !== undefined) {
+              // Since there may be other errors in the handlerErrors, we log them all
+              log.error(
+                `Received at least one AbortFetchOnFailure error, failing the entire fetch. Full error: ${e}, stack: ${e.stack}`,
+              )
+              throw failFetchError
+            }
           }
-
-          elementGenerator.pushEntries({
-            typeName: typeNameAsStr,
-            entries: resourceFetcher.getItems()?.map(item => item.value) ?? [],
-          })
-        })
-      } catch (e) {
-        if (e instanceof WalkError) {
-          // In case we decided to fail the entire fetch we don't want the error to be wrapped in a WalkError
-          const failFetchError = wu(e.handlerErrors.values()).find(err => err instanceof AbortFetchOnFailure)
-          if (failFetchError !== undefined) {
-            // Since there may be other errors in the handlerErrors, we log them all
-            log.error(
-              `Received at least one AbortFetchOnFailure error, failing the entire fetch. Full error: ${e}, stack: ${e.stack}`,
-            )
-            throw failFetchError
-          }
+          // If we got here, it means that the error is not an AbortFetchOnFailure error, so we throw the error as is
+          // and let the caller decide how to handle it
+          throw e
         }
-        // If we got here, it means that the error is not an AbortFetchOnFailure error, so we throw the error as is
-        // and let the caller decide how to handle it
-        throw e
-      }
-    },
-    '[%s] fetching resources for account',
-    adapterName,
-  ),
+      },
+      'fetching resources for account %s',
+      adapterName,
+    ),
 })

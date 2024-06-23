@@ -43,6 +43,10 @@ import {
   CPQ_PRICE_CONDITION,
   ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
   CPQ_PRICE_CONDITION_RULE_FIELD,
+  CPQ_ERROR_CONDITION_RULE_FIELD,
+  ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+  CPQ_PRODUCT_RULE,
+  CPQ_ERROR_CONDITION,
 } from './constants'
 
 const getGroupId = (change: Change): string => {
@@ -134,18 +138,37 @@ const getAddCpqCustomPriceRuleAndConditionGroupChangeIds = (
     CPQ_PRICE_CONDITION_RULE_FIELD,
   )
 
+/**
+ * Returns the changes that should be part of the special deploy group for adding SBQQ__ProductRule
+ * instances with SBQQ__ConditionsMet = 'Custom' and their corresponding SBQQ__ProductCondition instances.
+ */
+const getAddCpqCustomProductRuleAndConditionGroupChangeIds = (
+  changes: Map<ChangeId, Change>,
+): Set<ChangeId> =>
+  getAddCustomRuleAndConditionGroupChangeIds(
+    changes,
+    CPQ_PRODUCT_RULE,
+    CPQ_CONDITIONS_MET,
+    CPQ_ERROR_CONDITION,
+    CPQ_ERROR_CONDITION_RULE_FIELD,
+  )
+
 export const getChangeGroupIds: ChangeGroupIdFunction = async (changes) => {
   const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
   const customApprovalRuleAndConditionChangeIds =
     getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds(changes)
   const customPriceRuleAndConditionChangeIds =
     getAddCpqCustomPriceRuleAndConditionGroupChangeIds(changes)
+  const customProductRuleAndConditionChangeIds =
+    getAddCpqCustomProductRuleAndConditionGroupChangeIds(changes)
   wu(changes.entries()).forEach(([changeId, change]) => {
     let groupId: string
     if (customApprovalRuleAndConditionChangeIds.has(changeId)) {
       groupId = ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
     } else if (customPriceRuleAndConditionChangeIds.has(changeId)) {
       groupId = ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP
+    } else if (customProductRuleAndConditionChangeIds.has(changeId)) {
+      groupId = ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP
     } else {
       groupId = getGroupId(change)
     }

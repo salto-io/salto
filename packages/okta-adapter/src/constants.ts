@@ -88,6 +88,8 @@ export const POLICY_PRIORITY_TYPE_NAMES = [
 ]
 export const CUSTOM_NAME_FIELD = 'customName'
 export const LINKS_FIELD = '_links'
+export const DEFINITIONS_FIELD = 'definitions'
+export const BASE_FIELD = 'base'
 export const SAML_2_0_APP = 'SAML_2_0'
 export const GROUP_SCHEMA_TYPE_NAME = 'GroupSchema'
 export const APP_USER_SCHEMA_TYPE_NAME = 'AppUserSchema'
@@ -103,3 +105,4 @@ export const EVENT_HOOK = 'EventHook'
 export const GROUP_PUSH_TYPE_NAME = 'GroupPush'
 export const GROUP_PUSH_RULE_TYPE_NAME = 'GroupPushRule'
 export const DOMAIN_TYPE_NAME = 'Domain'
+export const USER_TYPE_NAME = 'User'

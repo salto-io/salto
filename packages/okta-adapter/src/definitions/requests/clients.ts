@@ -61,6 +61,11 @@ export const createClientDefinitions = (
               queryArgs: { limit: '200' }, // maximum page size allowed
             },
           },
+          User: {
+            get: {
+              queryArgs: { limit: '200' }, // maximum page size allowed
+            },
+          },
         },
       },
     },

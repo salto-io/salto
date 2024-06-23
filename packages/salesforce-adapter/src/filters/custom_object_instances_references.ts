@@ -326,7 +326,8 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
         type: await instance.getType(),
         transformFunc,
         strict: false,
-        allowEmpty: true,
+        allowEmptyArrays: true,
+        allowEmptyObjects: true,
       })) ?? instance.value
     )
   }

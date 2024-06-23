@@ -110,8 +110,21 @@ describe('netsuite system note author information', () => {
 
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    const recordTypeSystemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
-    const fieldSystemNotesQuery = `SELECT name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date FROM systemnote WHERE date >= TO_DATE('2022-1-1', 'YYYY-MM-DD') AND (field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%') GROUP BY name, field, recordid ORDER BY name, field, recordid ASC`
+    const recordTypeSystemNotesQuery = {
+      select: 'name, recordid, recordtypeid, date',
+      from: `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid)`,
+      orderBy: 'name, recordid, recordtypeid',
+    }
+
+    const fieldSystemNotesQuery = {
+      select: `name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date`,
+      from: 'systemnote',
+      where:
+        "date >= TO_DATE('2022-1-1', 'YYYY-MM-DD') AND (field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%')",
+      groupBy: 'name, field, recordid',
+      orderBy: 'name, field, recordid',
+    }
+
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, fieldSystemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, recordTypeSystemNotesQuery)
@@ -126,7 +139,11 @@ describe('netsuite system note author information', () => {
       customRecordTypeWithNoInstances,
       missingInstance,
     ])
-    const systemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
+    const systemNotesQuery = {
+      select: 'name, recordid, recordtypeid, date',
+      from: `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid)`,
+      orderBy: 'name, recordid, recordtypeid',
+    }
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)

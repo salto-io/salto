@@ -49,6 +49,7 @@ import {
   SavedSearchQuery,
   SystemInformation,
   SuiteAppType,
+  SuiteQLQueryArgs,
 } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
 import {
@@ -236,9 +237,10 @@ export default class NetsuiteClient {
   async importFileCabinetContent(
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
+    extensionsToExclude: string[],
   ): Promise<ImportFileCabinetResult> {
     if (this.suiteAppFileCabinet !== undefined) {
-      return this.suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB)
+      return this.suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB, extensionsToExclude)
     }
 
     return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)
@@ -590,8 +592,8 @@ export default class NetsuiteClient {
     throw new Error(`Cannot deploy group ID: ${groupID}`)
   }
 
-  public async runSuiteQL(query: string): Promise<Record<string, unknown>[] | undefined> {
-    return this.suiteAppClient?.runSuiteQL(query)
+  public async runSuiteQL(args: SuiteQLQueryArgs): Promise<Record<string, unknown>[] | undefined> {
+    return this.suiteAppClient?.runSuiteQL(args)
   }
 
   public async runSavedSearchQuery(

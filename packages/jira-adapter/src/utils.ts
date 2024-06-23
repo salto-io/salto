@@ -25,6 +25,7 @@ import {
   Value,
   Values,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
@@ -41,7 +42,7 @@ type appInfo = {
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-const MAX_RETRIES = 3
+const MAX_RETRIES = 5
 
 export const setFieldDeploymentAnnotations = (type: ObjectType, fieldName: string): void => {
   if (type.fields[fieldName] !== undefined) {
@@ -210,9 +211,23 @@ export const convertPropertiesToMap = (fields: Values[]): void => {
   })
 }
 
+export const jitterWait = async (delay: number): Promise<void> => {
+  const jitter = Math.random() * 3000 // random delay between 0 and 3 seconds
+  log.debug(`Waiting for ${delay + jitter}ms`)
+  await new Promise(resolve => setTimeout(resolve, delay + jitter))
+}
+
 // Some requests should be performed in batches and are executed in parallel.
 // This may result in a "Failed to acquire lock" error, so we want to retry in such cases.
-export const acquireLockRetry = async <T>(fn: () => Promise<T>, retries: number = MAX_RETRIES): Promise<T> => {
+export const acquireLockRetry = async <T>({
+  fn,
+  delays,
+  retries = MAX_RETRIES,
+}: {
+  fn: () => Promise<T>
+  delays?: number[]
+  retries?: number
+}): Promise<T> => {
   try {
     return await fn()
   } catch (error) {
@@ -225,7 +240,10 @@ export const acquireLockRetry = async <T>(fn: () => Promise<T>, retries: number 
         throw error
       }
       log.debug(`Request failed due to 'Failed to acquire lock', retrying ${retries - 1} more times.`)
-      return acquireLockRetry(fn, retries - 1)
+      if (delays !== undefined && delays.length > 0) {
+        await jitterWait(delays[0])
+      }
+      return acquireLockRetry({ fn, delays: _.tail(delays), retries: retries - 1 })
     }
     throw error
   }

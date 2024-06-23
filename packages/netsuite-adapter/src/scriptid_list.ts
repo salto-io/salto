@@ -31,10 +31,11 @@ import { ObjectID } from './config/types'
 
 const log = logger(module)
 
+export const OBJECT_ID_TYPE_NAME = 'objectid'
 export const OBJECT_ID_LIST_TYPE_NAME = 'objectid_list'
 export const OBJECT_ID_LIST_FIELD_NAME = 'objectid_list'
 
-const OBJECT_ID_TYPE_ID = new ElemID(NETSUITE, OBJECT_ID_LIST_TYPE_NAME)
+const OBJECT_ID_TYPE_ID = new ElemID(NETSUITE, OBJECT_ID_TYPE_NAME)
 const OBJECT_ID_LIST_TYPE_ID = new ElemID(NETSUITE, OBJECT_ID_LIST_TYPE_NAME)
 const OBJECT_ID_LIST_INSTANCE_ID = new ElemID(NETSUITE, OBJECT_ID_LIST_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
 

@@ -30,13 +30,14 @@ import {
   PrimitiveType,
   PrimitiveTypes,
   TypeElement,
+  Values,
   createRefToElmWithValue,
   createRestriction,
   isEqualElements,
   isPrimitiveType,
   isTypeReference,
 } from '@salto-io/adapter-api'
-import { getSubtypes } from '@salto-io/adapter-utils'
+import { TransformFuncSync, getSubtypes, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
@@ -234,35 +235,36 @@ export const overrideFieldTypes = <Options extends FetchApiDefinitionsOptions>({
   definedTypes: Record<string, ObjectType>
   defQuery: ElementAndResourceDefFinder<Options>
   finalTypeNames?: Set<string>
-}): void => {
-  Object.entries(definedTypes).forEach(([typeName, type]) => {
-    if (finalTypeNames?.has(typeName)) {
-      log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
-      return
-    }
-
-    const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}
-
-    Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
-      const { fieldType, restrictions } = customization
-      if (fieldType !== undefined) {
-        overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: fieldType })
-      }
-      const field = type.fields[fieldName]
-      if (field === undefined) {
-        log.debug('field %s.%s is undefined, not applying customizations', typeName, fieldName)
+}): void =>
+  log.timeDebug(() => {
+    Object.entries(definedTypes).forEach(([typeName, type]) => {
+      if (finalTypeNames?.has(typeName)) {
+        log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
         return
       }
-      if (restrictions) {
-        log.debug('applying restrictions to field %s.%s', type.elemID.name, fieldName)
-        field.annotate({ [CORE_ANNOTATIONS.RESTRICTION]: createRestriction(restrictions) })
-      }
+
+      const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}
+
+      Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
+        const { fieldType, restrictions } = customization
+        if (fieldType !== undefined) {
+          overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: fieldType })
+        }
+        const field = type.fields[fieldName]
+        if (field === undefined) {
+          log.debug('field %s.%s is undefined, not applying customizations', typeName, fieldName)
+          return
+        }
+        if (restrictions) {
+          log.debug('applying restrictions to field %s.%s', type.elemID.name, fieldName)
+          field.annotate({ [CORE_ANNOTATIONS.RESTRICTION]: createRestriction(restrictions) })
+        }
+      })
+      // mark service ids after applying field customizations, in order to set the right type
+      // (serviceid for strings / serviceid_number for numbers)
+      resourceDef?.serviceIDFields?.forEach(fieldName => markServiceIdField(fieldName, type.fields, typeName))
     })
-    // mark service ids after applying field customizations, in order to set the right type
-    // (serviceid for strings / serviceid_number for numbers)
-    resourceDef?.serviceIDFields?.forEach(fieldName => markServiceIdField(fieldName, type.fields, typeName))
-  })
-}
+  }, 'overrideFieldTypes')
 
 /**
  * Hide and omit fields based on the defined customization.
@@ -275,35 +277,36 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
   definedTypes: Record<string, ObjectType>
   defQuery: ElementAndResourceDefFinder<Options>
   finalTypeNames?: Set<string>
-}): void => {
-  Object.entries(definedTypes).forEach(([typeName, type]) => {
-    if (finalTypeNames?.has(typeName)) {
-      log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
-      return
-    }
-
-    const { element: elementDef } = defQuery.query(typeName) ?? {}
-
-    Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
-      const field = type.fields[fieldName]
-      if (field === undefined) {
-        log.debug('field %s.%s is undefined, not applying customizations', typeName, fieldName)
+}): void =>
+  log.timeDebug(() => {
+    Object.entries(definedTypes).forEach(([typeName, type]) => {
+      if (finalTypeNames?.has(typeName)) {
+        log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
         return
       }
-      const { hide, standalone, omit } = customization
-      if (hide) {
-        log.debug('hiding field %s.%s', type.elemID.name, fieldName)
 
-        field.annotate({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
-      }
-      if (omit || standalone?.referenceFromParent === false) {
-        log.debug('omitting field %s.%s from type', type.elemID.name, fieldName)
-        // the field's value is removed when constructing the value in extractStandaloneInstances
-        delete type.fields[fieldName]
-      }
+      const { element: elementDef } = defQuery.query(typeName) ?? {}
+
+      Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
+        const field = type.fields[fieldName]
+        if (field === undefined) {
+          log.debug('field %s.%s is undefined, not applying customizations', typeName, fieldName)
+          return
+        }
+        const { hide, standalone, omit } = customization
+        if (hide) {
+          log.debug('hiding field %s.%s', type.elemID.name, fieldName)
+
+          field.annotate({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
+        }
+        if (omit || standalone?.referenceFromParent === false) {
+          log.debug('omitting field %s.%s from type', type.elemID.name, fieldName)
+          // the field's value is removed when constructing the value in extractStandaloneInstances
+          delete type.fields[fieldName]
+        }
+      })
     })
-  })
-}
+  }, 'hideAndOmitFields')
 
 /**
  * Filter for types that are either used by instance or defined in fetch definitions
@@ -323,3 +326,25 @@ export const getReachableTypes = <Options extends FetchApiDefinitionsOptions>({
 
   return types.filter(type => rootTypeNames.has(type.elemID.name) || rootTypesSubtypes.has(type.elemID.name))
 }
+
+export const removeNullValuesTransformFunc: TransformFuncSync = ({ value }) => (value === null ? undefined : value)
+
+export const removeNullValues = ({
+  values,
+  type,
+  allowEmptyArrays = false,
+  allowEmptyObjects = false,
+}: {
+  values: Values
+  type: ObjectType
+  allowEmptyArrays?: boolean
+  allowEmptyObjects?: boolean
+}): Values =>
+  transformValuesSync({
+    values,
+    type,
+    transformFunc: removeNullValuesTransformFunc,
+    strict: false,
+    allowEmptyArrays,
+    allowEmptyObjects,
+  }) ?? {}

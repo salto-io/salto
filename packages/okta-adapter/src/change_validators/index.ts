@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
+import { deployment, elements as elementsUtils } from '@salto-io/adapter-components'
 import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
@@ -31,6 +31,7 @@ import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { usersValidator } from './user'
 import { appWithGroupPushValidator } from './app_with_group_push'
 import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
+import { appUserSchemaBaseChangesValidator } from './app_user_schema_base_properties'
 import { appGroupAssignmentValidator } from './app_group_assignments'
 import { appUrlsValidator } from './app_urls'
 import { profileMappingRemovalValidator } from './profile_mapping_removal'
@@ -55,10 +56,12 @@ const { createCheckDeploymentBasedOnConfigValidator, getDefaultChangeValidators,
 export default ({
   client,
   userConfig,
+  fetchQuery,
   oldApiDefsConfig,
 }: {
   client: OktaClient
   userConfig: OktaUserConfig
+  fetchQuery: elementsUtils.query.ElementQuery
   oldApiDefsConfig: OldOktaDefinitionsConfig
 }): ChangeValidator => {
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
@@ -80,8 +83,9 @@ export default ({
     assignedAccessPolicies: assignedAccessPoliciesValidator,
     groupSchemaModifyBase: groupSchemaModifyBaseValidator,
     enabledAuthenticators: enabledAuthenticatorsValidator,
-    users: usersValidator(client, userConfig),
+    users: usersValidator(client, userConfig, fetchQuery),
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
+    appUserSchemaBaseChanges: appUserSchemaBaseChangesValidator,
     appWithGroupPush: appWithGroupPushValidator,
     groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
     appGroupAssignment: appGroupAssignmentValidator,

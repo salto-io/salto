@@ -20,6 +20,9 @@ import {
   createSkeletonWorkflowV2Instance,
   createSkeletonWorkflowV2TransitionConditionGroup,
   mockClient,
+  createConnectTransitionRule,
+  createForgeTransitionRule,
+  createSystemTransitionRule,
 } from '../../utils'
 import JiraClient from '../../../src/client/client'
 import {
@@ -28,19 +31,6 @@ import {
   EXTENSION_ID_LENGTH,
   UPM_INSTALLED_APPS_URL,
 } from '../../../src/common/extensions'
-import { WorkflowV2TransitionRule } from '../../../src/filters/workflowV2/types'
-
-const createConnectTransitionRule = (extensionId: string): WorkflowV2TransitionRule => ({
-  ruleKey: 'connect:some-rule',
-  parameters: { appKey: `${extensionId}` },
-})
-
-const createForgeTransitionRule = (extensionId: string): WorkflowV2TransitionRule => ({
-  ruleKey: 'forge:some-rule',
-  parameters: { key: `${EXTENSION_ID_ARI_PREFIX}${extensionId}/some-suffix` },
-})
-
-const createSystemTransitionRule = (): WorkflowV2TransitionRule => ({ ruleKey: 'system:some-rule' })
 
 const CONNECT_EXTENSION: ExtensionType = {
   id: 'some-random-id',

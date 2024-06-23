@@ -18,7 +18,7 @@ import { definitions } from '@salto-io/adapter-components'
 export type AdditionalAction = never
 export type ClientOptions = 'main'
 export type PaginationOptions = 'cursor'
-export type ReferenceContextStrategies = never
+export type ReferenceContextStrategies = 'ODataType'
 export type CustomReferenceSerializationStrategyName = 'appId'
 export type CustomIndexField = CustomReferenceSerializationStrategyName
 
@@ -30,3 +30,5 @@ export type Options = definitions.APIDefinitionsOptions & {
   referenceSerializationStrategies: CustomReferenceSerializationStrategyName
   referenceIndexNames: CustomIndexField
 }
+
+export type EndpointPath = definitions.EndpointPath

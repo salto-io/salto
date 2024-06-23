@@ -88,6 +88,8 @@ import {
   TransformFuncSync,
   getIndependentElemIDs,
   getInstancesFromElementSource,
+  validatePlainObject,
+  validateArray,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -862,27 +864,110 @@ describe('Test utils.ts', () => {
       })
     })
 
-    describe('with allowEmpty', () => {
-      it('should not remove empty list', async () => {
-        const result = await transformValues({
-          values: [],
-          type: new ListType(BuiltinTypes.NUMBER),
-          transformFunc: ({ value }) => value,
-          allowEmpty: true,
-        })
+    describe('allowEmpty', () => {
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          arr: { refType: new ListType(BuiltinTypes.NUMBER) },
+          obj: {
+            refType: new ObjectType({
+              elemID: new ElemID('adapter', 'nestedType'),
+              fields: {
+                nestedArr: { refType: new ListType(BuiltinTypes.STRING) },
+                val: { refType: BuiltinTypes.STRING },
+              },
+            }),
+          },
+          emptyObj: { refType: new ObjectType({ elemID: new ElemID('adapter', 'emptyType') }) },
+        },
+      })
+      describe('with allowEmptyArrays', () => {
+        it('should remove empty objects and not remove empty list', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyArrays: true,
+          })
 
-        expect(result).toEqual([])
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+          })
+        })
       })
 
-      it('should not remove empty object', async () => {
-        const result = await transformValues({
-          values: {},
-          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
-          transformFunc: ({ value }) => value,
-          allowEmpty: true,
-        })
+      describe('with allowEmptyObjects', () => {
+        it('should remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+          })
 
-        expect(result).toEqual({})
+          expect(result).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
+      })
+
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+            allowEmptyArrays: true,
+          })
+
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
       })
     })
   })
@@ -1418,27 +1503,110 @@ describe('Test utils.ts', () => {
       })
     })
 
-    describe('with allowEmpty', () => {
-      it('should not remove empty list', async () => {
-        const result = transformValuesSync({
-          values: [],
-          type: new ListType(BuiltinTypes.NUMBER),
-          transformFunc: ({ value }) => value,
-          allowEmpty: true,
-        })
+    describe('allowEmpty', () => {
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          arr: { refType: new ListType(BuiltinTypes.NUMBER) },
+          obj: {
+            refType: new ObjectType({
+              elemID: new ElemID('adapter', 'nestedType'),
+              fields: {
+                nestedArr: { refType: new ListType(BuiltinTypes.STRING) },
+                val: { refType: BuiltinTypes.STRING },
+              },
+            }),
+          },
+          emptyObj: { refType: new ObjectType({ elemID: new ElemID('adapter', 'emptyType') }) },
+        },
+      })
+      describe('with allowEmptyArrays', () => {
+        it('should remove empty objects and not remove empty lists', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyArrays: true,
+          })
 
-        expect(result).toEqual([])
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+          })
+        })
       })
 
-      it('should not remove empty object', async () => {
-        const result = transformValuesSync({
-          values: {},
-          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
-          transformFunc: ({ value }) => value,
-          allowEmpty: true,
-        })
+      describe('with allowEmptyObjects', () => {
+        it('should not remove empty objects and remove empty list', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+          })
 
-        expect(result).toEqual({})
+          expect(result).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
+      })
+
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+            allowEmptyArrays: true,
+          })
+
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
       })
     })
   })
@@ -1731,6 +1899,67 @@ describe('Test utils.ts', () => {
           transformFunc: ({ value }) => value,
           strict: false,
           allowEmpty: false,
+        })
+        expect(transformedElement.value).toEqual({})
+      })
+    })
+    describe('allowEmptyArrays', () => {
+      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
+        val1: [],
+        val2: undefined,
+        val3: {
+          emptyObj: {},
+          nestedArray: [],
+        },
+      })
+
+      it('allowEmptyArrays = true should not remove empty arrays', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmptyArrays: true,
+        })
+        expect(transformedElement.value).toEqual({ val1: [], val3: { nestedArray: [] } })
+      })
+
+      it('allowEmptyArrays = false should remove empty arrays', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmptyArrays: false,
+        })
+        expect(transformedElement.value).toEqual({})
+      })
+    })
+    describe('allowEmptyObjects', () => {
+      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
+        val1: [],
+        val2: undefined,
+        val3: {
+          emptyObj: {},
+          nestedArray: [],
+        },
+        obj: {},
+      })
+
+      it('allowEmptyObjects = true should not remove empty objects', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmptyObjects: true,
+        })
+        expect(transformedElement.value).toEqual({ val3: { emptyObj: {} }, obj: {} })
+      })
+
+      it('allowEmptyObjects = false should remove empty objects', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmptyObjects: false,
         })
         expect(transformedElement.value).toEqual({})
       })
@@ -2655,6 +2884,53 @@ describe('Test utils.ts', () => {
       expect(schemeGuard({ a: 2 })).toBeFalsy()
     })
   })
+
+  describe(`${validatePlainObject.name}`, () => {
+    it('should throw an error if value is not a plain object', () => {
+      expect(() => validatePlainObject('lala', 'fieldName')).toThrow(
+        new Error("Expected fieldName to be a plain object, but got 'lala'"),
+      )
+      expect(() => validatePlainObject(123, 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got 123'),
+      )
+      expect(() => validatePlainObject([], 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got []'),
+      )
+      expect(() => validatePlainObject(new Map(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got Map(0) {}'),
+      )
+      expect(() => validatePlainObject(new Set(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got Set(0) {}'),
+      )
+    })
+
+    it('should not throw an error if value is a plain object', () => {
+      expect(() => validatePlainObject({}, 'fieldName')).not.toThrow()
+      expect(() => validatePlainObject({ a: 1 }, 'fieldName')).not.toThrow()
+    })
+  })
+
+  describe(`${validateArray.name}`, () => {
+    it('should throw an error if value is not an array', () => {
+      expect(() => validateArray('lala', 'fieldName')).toThrow(
+        new Error("Expected fieldName to be an array, but got 'lala'"),
+      )
+      expect(() => validateArray(123, 'fieldName')).toThrow(new Error('Expected fieldName to be an array, but got 123'))
+      expect(() => validateArray({}, 'fieldName')).toThrow(new Error('Expected fieldName to be an array, but got {}'))
+      expect(() => validateArray(new Map(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be an array, but got Map(0) {}'),
+      )
+      expect(() => validateArray(new Set(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be an array, but got Set(0) {}'),
+      )
+    })
+
+    it('should not throw an error if value is an array', () => {
+      expect(() => validateArray([], 'fieldName')).not.toThrow()
+      expect(() => validateArray([1], 'fieldName')).not.toThrow()
+    })
+  })
+
   describe('getSubtypes', () => {
     it('should return the expected subtypes', () => {
       const typeA = new ObjectType({ elemID: new ElemID('adapter', 'A') })

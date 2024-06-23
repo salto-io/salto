@@ -45,17 +45,17 @@ okta {
 | ------------------------------------------------ | ---------------------- | ------------------------------------------------------------------- |
 | [retry](#retry-configuration-options)            | `{}` (no overrides)    | Configuration for retrying on errors                                |
 | [rateLimit](#rate-limit-configuration-options)   | `{}` (no overrides)    | Limits on the number of concurrent requests of different types      |
-| [maxRequestsPerMinute]                           | 700                    | Limits on the number of requests per minute                         |
+| maxRequestsPerMinute                             | 700                    | Limits on the number of requests per minute                         |
 | usePrivateAPI                                    | true                   | Whether to use Okta Private API when fetching and deploying changes |
 | [timeout](#client-timeout-configuration-options) | `{}` (no overrides)    | Configuration for setting request timeouts                          |
 
 #### Client timeout configuration options
 
-| Name                 | Default when undefined | Description                                                                                                            |
-| -------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| [maxDuration]        | `0` (unlimited)        | Set a timeout (in milliseconds) on requests                                                                            |
-| [retryOnTimeout]     | true                   | Whether to retry requests that returned a timeout response                                                             |
-| [lastRetryNoTimeout] | true                   | Whether to disable the timeout duration on the last retry (if we assume the service will eventually return a response) |
+| Name               | Default when undefined | Description                                                                                                            |
+| ------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| maxDuration        | `0` (unlimited)        | Set a timeout (in milliseconds) on requests                                                                            |
+| retryOnTimeout     | true                   | Whether to retry requests that returned a timeout response                                                             |
+| lastRetryNoTimeout | true                   | Whether to disable the timeout duration on the last retry (if we assume the service will eventually return a response) |
 
 #### Client retry options
 
@@ -73,13 +73,14 @@ okta {
 
 ## Fetch configuration options
 
-| Name                            | Default when undefined | Description                                                         |
-| ------------------------------- | ---------------------- | ------------------------------------------------------------------- |
-| [include](#fetch-entry-options) | [{ type = ".*" }]      | List of entries to determine what instances to include in the fetch |
-| [exclude](#fetch-entry-options) | []                     | List of entries to determine what instances to exclude in the fetch |
-| convertUsersIds                 | true                   | When enabled, user IDs will be replaced with user login names       |
-| includeGroupMemberships         | false                  | Include group assignments                                           |
-| includeProfileMappingProperties | true                   | Include profile mapping properties for profile mapping instances    |
+| Name                                | Default when undefined | Description                                                         |
+| ----------------------------------- | ---------------------- | ------------------------------------------------------------------- |
+| [include](#fetch-entry-options)     | [{ type = ".*" }]      | List of entries to determine what instances to include in the fetch |
+| [exclude](#fetch-entry-options)     | []                     | List of entries to determine what instances to exclude in the fetch |
+| [elemID](#element-id-customization) | {}                     | Allows customizing element IDs for specific types                   |
+| convertUsersIds                     | true                   | When enabled, user IDs will be replaced with user login names       |
+| includeGroupMemberships             | false                  | Include group assignments                                           |
+| includeProfileMappingProperties     | true                   | Include profile mapping properties for profile mapping instances    |
 
 ## Fetch entry options
 
@@ -96,8 +97,25 @@ okta {
 | type   | .\*                    | A regex used to filter instances by matching the regex to their type value                                          |
 | status | .\*                    | A regex used to filter instances by matching the regex to their status value                                        |
 
+## Element ID customization
+
+| Name                                   | Default when undefined | Description                                                                                                                                       |
+| -------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [parts](#element-id-parts-definitions) | system's default       | All parts definitions will be concatenated to create the element ID                                                                               |
+| extendsParent                          | false                  | Whether to concatenate the parent element ID with the current element ID                                                                          |
+| delimiter                              | "\_"                   | The delimiter to use to concatenate Elem ID "parts"                                                                                               |
+| extendSystemPartsDefinition            | false                  | Set to true to append the user-defined parts with the default system definition. When false, the user definitions override the system definitions |
+
+## Element ID parts definitions
+
+| Name        | Default when undefined | Description                                                                         |
+| ----------- | ---------------------- | ----------------------------------------------------------------------------------- |
+| fieldName   | system's default       | The instance's field name whose value will be used to create the element ID         |
+| isReference | false                  | Set to true if the fieldName is also a Salto reference                              |
+| mapping     | undefined              | Allows applying a specific function to fieldName. Options: 'uppercase', 'lowercase' |
+
 ### Deploy configuration options
 
-| Name               | Default when undefined | Description                                                     |
-| ------------------ | ---------------------- | --------------------------------------------------------------- |
-| [omitMissingUsers] | false                  | Configure if to omit users during deploy on types that allow it |
+| Name             | Default when undefined | Description                                                     |
+| ---------------- | ---------------------- | --------------------------------------------------------------- |
+| omitMissingUsers | false                  | Configure if to omit users during deploy on types that allow it |

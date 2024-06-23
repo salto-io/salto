@@ -79,28 +79,30 @@ const modifyStatus = async (
   modificationChange: ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  await acquireLockRetry(async () =>
-    client.put({
-      url: '/rest/api/3/statuses',
-      data: {
-        statuses: [createDeployableStatusValues(modificationChange)],
-      },
-    }),
-  )
+  await acquireLockRetry({
+    fn: async () =>
+      client.put({
+        url: '/rest/api/3/statuses',
+        data: {
+          statuses: [createDeployableStatusValues(modificationChange)],
+        },
+      }),
+  })
 }
 
 const addStatus = async (additionChange: AdditionChange<InstanceElement>, client: JiraClient): Promise<void> => {
-  const response = await acquireLockRetry(async () =>
-    client.post({
-      url: '/rest/api/3/statuses',
-      data: {
-        scope: {
-          type: 'GLOBAL',
+  const response = await acquireLockRetry({
+    fn: async () =>
+      client.post({
+        url: '/rest/api/3/statuses',
+        data: {
+          scope: {
+            type: 'GLOBAL',
+          },
+          statuses: [createDeployableStatusValues(additionChange)],
         },
-        statuses: [createDeployableStatusValues(additionChange)],
-      },
-    }),
-  )
+      }),
+  })
 
   if (!isStatusResponse(response.data)) {
     throw new Error(

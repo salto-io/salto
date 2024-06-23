@@ -36,6 +36,7 @@ import {
   DATA_FILE_TYPES,
   DEFAULT_MAX_INSTANCES_PER_TYPE,
   DEFAULT_MAX_INSTANCES_VALUE,
+  EXTENSION_REGEX,
   FILE_CABINET,
   GROUPS_TO_DATA_FILE_TYPES,
   INCLUDE_ALL,
@@ -143,7 +144,7 @@ const excludeDataFileTypes = (config: NetsuiteConfig): string[] => {
   if (dataFileTypesToExclude.length === 0) {
     return []
   }
-  const dataFileTypesToExcludeRegex = `.*\\.(${dataFileTypesToExclude.join('|')})`
+  const dataFileTypesToExcludeRegex = `${EXTENSION_REGEX}(${dataFileTypesToExclude.join('|')})`
   return [dataFileTypesToExcludeRegex.toLowerCase(), dataFileTypesToExcludeRegex.toUpperCase()]
 }
 

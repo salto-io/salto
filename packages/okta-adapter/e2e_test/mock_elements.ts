@@ -108,6 +108,9 @@ export const mockDefaultValues: Record<string, Values> = {
         honorForceAuthn: true,
         authnContextClassRef: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
         requestCompressed: false,
+        attributeStatements: [],
+        inlineHooks: [],
+        acsEndpoints: [],
         allowMultipleAcsEndpoints: false,
         samlSignedRequestEnabled: false,
         slo: {

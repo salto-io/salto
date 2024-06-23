@@ -16,13 +16,31 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, Element, isInstanceElement, ObjectType, FetchResult } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  Element,
+  isInstanceElement,
+  ObjectType,
+  FetchResult,
+  AdapterOperations,
+  ElemID,
+  toChange,
+  Change,
+  getChangeData,
+  ProgressReporter,
+} from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/user_config'
 import fetchMockReplies from './fetch_mock_replies.json'
+import deployMockReplies from './deploy_mock_replies.json'
+import { GROUP_TYPE_NAME, OKTA } from '../src/constants'
+
+const nullProgressReporter: ProgressReporter = {
+  reportProgress: () => null,
+}
 
 type MockReply = {
   url: string
@@ -63,7 +81,7 @@ describe('adapter', () => {
       .replyOnce(200, { id: 'accountId' })
       .onGet('/api/v1/org')
       .replyOnce(200, { id: 'accountId' })
-    ;([...fetchMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
+    ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
       handler.replyOnce(200, response)
@@ -92,7 +110,7 @@ describe('adapter', () => {
               config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
               elementsSource: buildElementsSourceFromElements([]),
             })
-            .fetch({ progressReporter: { reportProgress: () => null } })
+            .fetch({ progressReporter: nullProgressReporter })
         ).elements
       })
       it('should generate the right types on fetch', async () => {
@@ -341,7 +359,7 @@ describe('adapter', () => {
             config,
             elementsSource: buildElementsSourceFromElements([]),
           })
-          .fetch({ progressReporter: { reportProgress: () => null } })
+          .fetch({ progressReporter: nullProgressReporter })
         const instanceWithUser = elements
           .filter(isInstanceElement)
           .find(inst => inst.elemID.typeName === 'EndUserSupport')
@@ -367,7 +385,7 @@ describe('adapter', () => {
             config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
             elementsSource: buildElementsSourceFromElements([]),
           })
-          .fetch({ progressReporter: { reportProgress: () => null } })
+          .fetch({ progressReporter: nullProgressReporter })
       })
       it('should not fetch any privateApi types', () => {
         const instances = fetchRes.elements.filter(isInstanceElement)
@@ -408,7 +426,7 @@ describe('adapter', () => {
             config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
             elementsSource: buildElementsSourceFromElements([]),
           })
-          .fetch({ progressReporter: { reportProgress: () => null } })
+          .fetch({ progressReporter: nullProgressReporter })
       })
       it('should create config suggestion to set isClassicOrg to true', () => {
         expect(fetchRes.updatedConfig?.config[0].value.fetch).toEqual({
@@ -420,49 +438,77 @@ describe('adapter', () => {
         )
       })
     })
+  })
+  describe('deploy', () => {
+    let operations: AdapterOperations
+    let groupType: ObjectType
+    let group1: InstanceElement
 
-    describe('with deprecated user config', () => {
-      it('should return updated config after migation', async () => {
-        const deprecatedConfig = new InstanceElement('config', adapter.configType as ObjectType, {
-          ...DEFAULT_CONFIG,
-          fetch: {
-            ...DEFAULT_CONFIG.fetch,
-            include: [{ type: 'Application' }],
-          },
-          apiDefinitions: {
-            types: {
-              Application: {
-                transformation: { idFields: ['label', 'status'] },
-              },
-            },
-          },
-        })
-        const { updatedConfig } = await adapter
-          .operations({
-            credentials: new InstanceElement('config', accessTokenCredentialsType, {
-              baseUrl: 'https://test.okta.com',
-              token: 't',
-            }),
-            config: deprecatedConfig,
-            elementsSource: buildElementsSourceFromElements([]),
-          })
-          .fetch({ progressReporter: { reportProgress: () => null } })
-        expect(updatedConfig?.config[0].value).toEqual({
-          ...DEFAULT_CONFIG,
-          fetch: {
-            ...DEFAULT_CONFIG.fetch,
-            include: [{ type: 'Application' }],
-            elemID: {
-              Application: {
-                parts: [{ fieldName: 'label' }, { fieldName: 'status' }],
-              },
-            },
-          },
-        })
-        expect(updatedConfig?.message).toEqual(
-          'Elem ID customizations are now under `fetch.elemID`. The following changes will upgrade the deprecated definitions from `apiDefinitions` to the new location.',
-        )
+    beforeEach(() => {
+      groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
+      group1 = new InstanceElement('group1', groupType, {
+        id: 'fakeid123',
+        objectClass: ['okta:user_group'],
+        type: 'OKTA_GROUP',
+        profile: {
+          name: 'Engineers',
+          description: 'all the engineers',
+        },
       })
+
+      operations = adapter.operations({
+        credentials: new InstanceElement('config', accessTokenCredentialsType, {
+          baseUrl: 'https://test.okta.com',
+          token: 't',
+        }),
+        config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+        elementsSource: buildElementsSourceFromElements([]),
+      })
+    })
+
+    it('should successfully add a group', async () => {
+      const result = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [toChange({ after: group1 })],
+        },
+        progressReporter: nullProgressReporter,
+      })
+      expect(result.errors).toHaveLength(0)
+      expect(result.appliedChanges).toHaveLength(1)
+      expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('fakeid123')
+    })
+
+    it('should successfully modify a group', async () => {
+      const updatedGroup1 = group1.clone()
+      updatedGroup1.value.name = 'Programmers'
+      const result = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({
+              before: group1,
+              after: updatedGroup1,
+            }),
+          ],
+        },
+        progressReporter: nullProgressReporter,
+      })
+
+      expect(result.errors).toHaveLength(0)
+      expect(result.appliedChanges).toHaveLength(1)
+    })
+
+    it('should successfully remove a group', async () => {
+      const result = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [toChange({ before: group1 })],
+        },
+        progressReporter: nullProgressReporter,
+      })
+      expect(result.errors).toHaveLength(0)
+      expect(result.appliedChanges).toHaveLength(1)
     })
   })
 })

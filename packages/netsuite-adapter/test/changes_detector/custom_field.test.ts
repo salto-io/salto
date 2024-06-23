@@ -49,12 +49,12 @@ describe('custom_field', () => {
     })
 
     it('should make the right query', () => {
-      expect(runSuiteQLMock).toHaveBeenCalledWith(`
-      SELECT scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time
-      FROM customfield
-      WHERE lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
-      ORDER BY scriptid ASC
-    `)
+      expect(runSuiteQLMock).toHaveBeenCalledWith({
+        select: `internalid, scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time`,
+        from: 'customfield',
+        where: "lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')",
+        orderBy: 'internalid',
+      })
     })
   })
 

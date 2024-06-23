@@ -19,14 +19,9 @@ import * as query from '../fetch/query'
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH } from '../fetch/element/constants'
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
-import {
-  getInstanceName,
-  generateInstanceNameFromConfig,
-  removeNullValues,
-  removeNullValuesTransformFunc,
-  toBasicInstance,
-} from './instance_elements'
+import { getInstanceName, generateInstanceNameFromConfig, toBasicInstance } from './instance_elements'
 import { createServiceIDs as createServiceIds } from '../fetch/element/id_utils'
+import { removeNullValues, removeNullValuesTransformFunc } from '../fetch/element/type_utils'
 
 export {
   ducktype,

@@ -28,7 +28,6 @@ export const createAutomationValues = (name: string): Values => ({
   },
   trigger: {
     component: 'TRIGGER',
-    schemaVersion: 1,
     type: 'jira.manual.trigger.issue',
     value: {
       groups: [],
@@ -41,7 +40,6 @@ export const createAutomationValues = (name: string): Values => ({
   components: [
     {
       component: 'ACTION',
-      schemaVersion: 6,
       type: 'jira.issue.create',
       value: {
         operations: [

@@ -30,6 +30,7 @@ export const mockDefaultValues: Record<string, Values> = {
       allowExternalMembers: 'false',
       whoCanPostMessage: 'ANYONE_CAN_POST',
       allowWebPosting: 'true',
+      primaryLanguage: 'en_US',
       maxMessageBytes: 26214400,
       isArchived: 'false',
       archiveOnly: 'false',

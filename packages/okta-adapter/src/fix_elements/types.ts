@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import OktaClient from '../client/client'
 import { OktaUserConfig } from '../user_config'
 
@@ -21,6 +22,7 @@ export type FixElementsArgs = {
   client: OktaClient
   config: OktaUserConfig
   elementsSource: ReadOnlyElementsSource
+  fetchQuery: elementUtils.query.ElementQuery
 }
 
 export type FixElementsHandler = (args: FixElementsArgs) => FixElementsFunc

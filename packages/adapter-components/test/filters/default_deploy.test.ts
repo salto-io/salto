@@ -220,14 +220,16 @@ describe('default deploy filter', () => {
                 myType: {
                   requestsByAction: {
                     customizations: {
-                      add: [{
-                        request: {
-                          endpoint: {
-                            path: 'http://example.com',
-                            method: 'get',
+                      add: [
+                        {
+                          request: {
+                            endpoint: {
+                              path: 'http://example.com',
+                              method: 'get',
+                            },
                           },
                         },
-                      }],
+                      ],
                     },
                   },
                 },
@@ -239,15 +241,15 @@ describe('default deploy filter', () => {
       }) as FilterType
       const changes = [
         toChange({
-          after: new InstanceElement('name1', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') }),
-            { refField: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name2')) }),
+          after: new InstanceElement('name1', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') }), {
+            refField: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name2')),
+          }),
         }),
         toChange({
-          after: new InstanceElement('name2', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') }),
-            {
-              refField1: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name1')),
-              refField2: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name1')),
-            }),
+          after: new InstanceElement('name2', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') }), {
+            refField1: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name1')),
+            refField2: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name1')),
+          }),
         }),
       ]
       const res = await filter.deploy(changes, { changes, groupID: 'a' })

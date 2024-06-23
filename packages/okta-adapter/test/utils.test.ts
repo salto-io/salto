@@ -86,7 +86,7 @@ describe('okta utils', () => {
         profile: { name: 'Everyone' },
       }),
     ]
-  
+
     beforeEach(() => {
       jest.clearAllMocks()
       const { client: cli, connection } = mockClient()

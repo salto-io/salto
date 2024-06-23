@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { InstanceElement } from '@salto-io/adapter-api'
 import { USER_TYPE_NAME } from './constants'
 import { DEFAULT_ID_PARTS } from './definitions/fetch/fetch'
 
@@ -42,3 +43,5 @@ export const USER_FETCH_DEFINITIONS = {
     },
   },
 }
+export const isRelevantInstance = (instance: InstanceElement): boolean =>
+  Object.keys(USER_MAPPING).includes(instance.elemID.typeName)

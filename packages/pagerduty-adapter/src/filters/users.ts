@@ -85,10 +85,10 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         definitions: userDefinition as definitionsUtils.RequiredDefinitions<Options>,
       })
       userIdToLogin = {}
-      if (!users || (_.isEmpty(users) && elements.length === 0 && userIdToLogin)) {
+      if (!users || (_.isEmpty(users) && elements.length === 0 && userIdToLogin === undefined)) {
         log.warn('Could not find any users (onFetch)')
       }
-      // const mapping = Object.fromEntries(users.map(user => [user.id, user.profile.login]))
+      // const mapping = Object.fromEntries(users.elements.map(user => [user.value.id, user.profile.login]))
       // const instances = elements.filter(isInstanceElement).filter(isRelevantInstance)
       // instances.forEach(instance => {
       //   replaceValues(instance, mapping)

@@ -20,7 +20,7 @@ import {
   toChange,
   getChangeData,
   isEqualElements,
-  Change, ReferenceExpression,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
@@ -30,7 +30,6 @@ import { defaultDeployFilterCreator } from '../../src/filters/default_deploy'
 import { createElementQuery } from '../../src/fetch/query'
 import { noPagination } from '../../src/fetch/request/pagination'
 import { ChangeAndContext } from '../../src/definitions/system/deploy'
-import { ApiDefinitions, APIDefinitionsOptions } from '../../src/definitions'
 
 describe('default deploy filter', () => {
   type FilterType = FilterWith<'deploy'>

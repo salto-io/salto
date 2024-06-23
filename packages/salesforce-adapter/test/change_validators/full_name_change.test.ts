@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import { Change, getAllChangeData, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/full_name_changed'
 import { mockTypes } from '../mock_elements'

@@ -18,11 +18,11 @@ import {
   ChangeError,
   ChangeValidator,
   isAdditionOrModificationChange,
+  isEqualValues,
   isInstanceChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { resolveValues, references as referenceUtils } from '@salto-io/adapter-components'
-import { values, collections } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import {
   APPLICATION_TYPE_NAME,
   CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_TYPE_NAME,
@@ -36,10 +36,8 @@ import {
   ROLE_DEFINITION_TYPE_NAME,
   SERVICE_PRINCIPAL_TYPE_NAME,
 } from '../constants'
-import { REFERENCES } from '../definitions/references'
 
 const { isDefined } = values
-const { awu } = collections.asynciterable
 
 type ReadOnlyFieldDefinition = {
   fieldName: string
@@ -103,7 +101,7 @@ export const TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION: _.Dictionary<string[]> = _.
 
 // TODO SALTO-6046: Generalize as an infra capability
 /*
- * Checks if any read-only fields were modified and returns a warning for each such change.
+ * Checks if any read-only fields were added or modified and returns a warning for each such change.
  * We're also using the read-only fields definition to remove these fields from the changes on deploy.
  */
 export const readOnlyFieldsValidator: ChangeValidator = async changes => {
@@ -113,18 +111,16 @@ export const readOnlyFieldsValidator: ChangeValidator = async changes => {
     .filter(isInstanceChange)
     .filter(change => relevantTypes.includes(change.data.after.elemID.typeName))
 
-  const lookupFunc = referenceUtils.generateLookupFunc(REFERENCES?.rules ?? [])
-
-  return awu(changesWithReadOnlyFields)
-    .map(async (change): Promise<ChangeError | undefined> => {
+  return changesWithReadOnlyFields
+    .map((change): ChangeError | undefined => {
       const readOnlyFields =
         change.action === 'add'
           ? TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION[change.data.after.elemID.typeName]
           : TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION[change.data.after.elemID.typeName]
-      const before = isModificationChange(change) ? await resolveValues(change.data.before, lookupFunc) : { value: {} }
-      const after = await resolveValues(change.data.after, lookupFunc)
+      const before = isModificationChange(change) ? change.data.before : { value: {} }
+      const { after } = change.data
       const modifiedFields = readOnlyFields?.filter(
-        fieldName => !_.isEqual(_.get(before.value, fieldName), _.get(after.value, fieldName)),
+        fieldName => !isEqualValues(_.get(before.value, fieldName), _.get(after.value, fieldName)),
       )
       return _.isEmpty(modifiedFields)
         ? undefined
@@ -136,5 +132,4 @@ export const readOnlyFieldsValidator: ChangeValidator = async changes => {
           }
     })
     .filter(isDefined)
-    .toArray()
 }

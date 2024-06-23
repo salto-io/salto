@@ -19,7 +19,7 @@ import {
   TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
 } from '../../../src/change_validators'
 import { omitReadOnlyFields } from '../../../src/definitions/deploy/utils'
-import { contextMock } from '../../mocks'
+import { contextMock, removalChangeMock } from '../../mocks'
 
 const typeNamesWithReadOnlyFieldsOnAddition = Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION)
 const readOnlyTypeNameAddition = typeNamesWithReadOnlyFieldsOnAddition[0]
@@ -46,7 +46,7 @@ describe(`${omitReadOnlyFields.name}`, () => {
       omitReadOnlyFields({
         typeName: readOnlyTypeNameModificationOnly,
         value,
-        context: { ...contextMock, action: 'remove' },
+        context: { ...contextMock, change: removalChangeMock },
       }),
     ).toEqual({ value })
   })

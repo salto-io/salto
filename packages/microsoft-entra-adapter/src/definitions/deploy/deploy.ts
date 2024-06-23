@@ -43,7 +43,7 @@ import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { DeployCustomDefinitions, DeployRequestDefinition } from './types'
 import {
   adjustRoleDefinitionForDeployment,
-  createCustomConditionEmptyFields,
+  createCustomConditionEmptyFieldsOnAddition,
   createCustomizationsWithBasePathForDeploy,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
@@ -246,11 +246,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 pick: GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION,
               },
             },
-            condition: createCustomConditionEmptyFields(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
+            condition: createCustomConditionEmptyFieldsOnAddition(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
           },
           {
             request: getGroupLifecyclePolicyGroupModificationRequest('add'),
-            condition: createCustomConditionEmptyFields([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
+            condition: createCustomConditionEmptyFieldsOnAddition([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
           },
         ],
         modify: [

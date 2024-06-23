@@ -15,17 +15,27 @@
  */
 
 import { getChangeData } from '@salto-io/adapter-api'
-import { createCustomConditionEmptyFields } from '../../../src/definitions/deploy/utils'
+import { createCustomConditionEmptyFieldsOnAddition } from '../../../src/definitions/deploy/utils'
 import { contextMock } from '../../mocks'
 
-describe(`${createCustomConditionEmptyFields.name}`, () => {
+describe(`${createCustomConditionEmptyFieldsOnAddition.name}`, () => {
   it('should return a condition with a custom function that returns false when all fields are empty', () => {
-    const { custom } = createCustomConditionEmptyFields(['randomField1', 'randomField2'])
+    const { custom } = createCustomConditionEmptyFieldsOnAddition(['randomField1', 'randomField2'])
     expect(custom?.({})(contextMock)).toEqual(false)
   })
 
   it('should return a condition with a custom function that returns true when at least one field is not empty', () => {
-    const { custom } = createCustomConditionEmptyFields([Object.keys(getChangeData(contextMock.change).value)[0]])
+    const { custom } = createCustomConditionEmptyFieldsOnAddition([
+      Object.keys(getChangeData(contextMock.change).value)[0],
+    ])
+    expect(custom?.({})(contextMock)).toEqual(true)
+  })
+
+  it('should return true for non-addition changes', () => {
+    const { custom } = createCustomConditionEmptyFieldsOnAddition([
+      Object.keys(getChangeData(contextMock.change).value)[0],
+    ])
+    contextMock.change.action = 'modify'
     expect(custom?.({})(contextMock)).toEqual(true)
   })
 })

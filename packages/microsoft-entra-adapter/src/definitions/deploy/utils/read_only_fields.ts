@@ -24,7 +24,7 @@ import { AdjustFunction } from '../types'
 
 export const omitReadOnlyFields: AdjustFunction = ({ typeName, value, context }) => {
   validatePlainObject(value, typeName)
-  if (context.action === 'remove') {
+  if (context.change.action === 'remove') {
     return { value }
   }
 

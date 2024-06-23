@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { getChangeData } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 
@@ -23,9 +23,15 @@ import _ from 'lodash'
  * This custom condition is used to filter out changes that are not relevant for *addition* deploy requests,
  * since the transformForCheck field is irrelevant for addition changes
  */
-export const createCustomConditionEmptyFields = (fieldNames: string[]): definitions.deploy.DeployRequestCondition => ({
+export const createCustomConditionEmptyFieldsOnAddition = (
+  fieldNames: string[],
+): definitions.deploy.DeployRequestCondition => ({
   custom:
     () =>
-    ({ change }) =>
-      _.some(fieldNames, fieldName => !_.isEmpty(_.get(getChangeData(change).value, fieldName))),
+    ({ change }) => {
+      if (!isAdditionChange(change)) {
+        return true
+      }
+      return _.some(fieldNames, fieldName => !_.isEmpty(_.get(getChangeData(change).value, fieldName)))
+    },
 })

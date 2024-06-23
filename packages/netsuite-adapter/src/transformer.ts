@@ -42,6 +42,7 @@ import {
   GetLookupNameFunc,
   naclCase,
   pathNaclCase,
+  transformValuesSync,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -159,6 +160,18 @@ export const createInstanceElement = async (
     return [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName]
   }
 
+  const transformAttributes: TransformFunc = ({ value }) => {
+    if (!_.isPlainObject(value)) {
+      return value
+    }
+
+    // We put the attributes first for backwards compatibility.
+    const [attrEntries, entries] = _.partition(Object.entries(value), ([key, _val]) => key.startsWith(ATTRIBUTE_PREFIX))
+    return Object.fromEntries(
+      attrEntries.map(([key, val]) => [key.slice(ATTRIBUTE_PREFIX.length), val]).concat(entries),
+    )
+  }
+
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
     const fieldType = await field?.getType()
     if (value === '' || value === null) {
@@ -181,10 +194,13 @@ export const createInstanceElement = async (
     }
   }
 
-  const transformAttributeKey: MapKeyFunc = ({ key }) =>
-    key.startsWith(ATTRIBUTE_PREFIX) ? key.slice(ATTRIBUTE_PREFIX.length) : key
-
-  const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values, transformAttributeKey)
+  const valuesWithTransformedAttrs =
+    transformValuesSync({
+      values: customizationInfo.values,
+      type,
+      transformFunc: transformAttributes,
+      strict: false,
+    }) ?? {}
 
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] =

@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import { logger } from '@salto-io/logging'
 import { Graph } from './graph_utils'
 import { SDFObjectNode } from './types'
-import { isCustomTypeInfo } from './utils'
+import { isCustomTypeInfo, xmlParser, xmlBuilder } from './utils'
 import { OBJECTS_DIR, getCustomTypeInfoPath } from './sdf_parser'
 
 const log = logger(module)
@@ -40,7 +39,7 @@ export const reorderDeployXml = (deployContent: string, dependencyGraph: Graph<S
     .map(node => node.value.customizationInfo)
 
   const customTypeInfos = custInfosInTopologicalOrder.filter(isCustomTypeInfo)
-  const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })
+  const deployXml = xmlParser.parse(deployContent)
   const { objects } = deployXml.deploy
 
   if (customTypeInfos.length > 0) {
@@ -55,9 +54,5 @@ export const reorderDeployXml = (deployContent: string, dependencyGraph: Graph<S
     objects.path.push(['~', OBJECTS_DIR, '*'].join(osPath.sep))
   }
 
-  // eslint-disable-next-line new-cap
-  return new xmlParser.j2xParser({
-    ignoreAttributes: false,
-    format: true,
-  }).parse(deployXml)
+  return xmlBuilder.build(deployXml)
 }

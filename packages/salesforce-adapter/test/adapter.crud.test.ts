@@ -57,12 +57,11 @@ import Connection from '../src/client/jsforce'
 import { CustomObject } from '../src/client/types'
 import mockAdapter from './adapter'
 import {
-  createElement,
   createValueSetEntry,
   createCustomObjectType,
   nullProgressReporter,
-  removeElement,
 } from './utils'
+import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import {
   mockDeployResult,

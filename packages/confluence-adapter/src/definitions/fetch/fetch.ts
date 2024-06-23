@@ -216,11 +216,16 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: {
           extendsParent: true,
+          parts: [],
         },
         alias: {
           aliasComponents: [{ fieldName: '_parent.0', referenceFieldName: '_alias' }],
         },
       },
+    },
+    resource: {
+      directFetch: false,
+      serviceIDFields: [],
     },
   },
   [PAGE_TYPE_NAME]: {
@@ -285,6 +290,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     ],
     resource: {
       directFetch: true,
+      serviceIDFields: [],
     },
     element: {
       topLevel: {
@@ -339,6 +345,10 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
+    resource: {
+      directFetch: false,
+      serviceIDFields: [],
+    },
   },
   [TEMPLATE_TYPE_NAME]: {
     requests: [

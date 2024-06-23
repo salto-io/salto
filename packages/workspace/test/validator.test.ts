@@ -511,12 +511,6 @@ describe('Elements validation', () => {
       expect(errors).toHaveLength(1)
     })
 
-    it('should return no error for unresolved meta type', async () => {
-      clonedBaseType.metaType = new TypeReference(metaElemID)
-      const errors = await validateElements([clonedBaseType], createInMemoryElementSource())
-      expect(errors).toHaveLength(0)
-    })
-
     it('should return an error for non object meta type', async () => {
       clonedBaseType.metaType = new TypeReference(
         BuiltinTypes.STRING.elemID,

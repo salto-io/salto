@@ -184,11 +184,11 @@ const sortConditions = (
       conditions.map(a => console.log(a.value))
       form.value[conditionType] = _.sortBy(
         conditions,
+        condition => condition.parent_field_id?.elemID?.getFullName(),
         condition =>
           _.isString(condition.value) || _.isBoolean(condition.value)
             ? condition.value
             : [customFieldById[condition.value.elemID.getFullName()].value.value],
-        condition => condition.parent_field_id?.elemID?.getFullName(),
       )
       console.log('after')
       form.value[conditionType].map((a: Condition) => console.log(a.value))

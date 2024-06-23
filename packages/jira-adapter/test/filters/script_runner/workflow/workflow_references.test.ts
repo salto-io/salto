@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import { filterUtils } from '@salto-io/adapter-components'
 import { Change, ElemID, InstanceElement, ReferenceExpression, Value, toChange } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'

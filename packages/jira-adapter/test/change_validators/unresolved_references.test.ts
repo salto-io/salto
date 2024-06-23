@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'jest-extended'
 import { ElemID } from '@salto-io/adapter-api'
 import { automationProjectReferenceDetector } from '../../src/change_validators/unresolved_references'
 import { AUTOMATION_TYPE, JIRA } from '../../src/constants'

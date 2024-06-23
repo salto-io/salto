@@ -15,9 +15,12 @@
  */
 import { MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { mockClient } from './utils'
 import OktaClient from '../src/client/client'
-import { extractIdFromUrl, isClassicEngineOrg, validateOktaBaseUrl } from '../src/utils'
+import { extractIdFromUrl, isClassicEngineOrg, logUsersCount, validateOktaBaseUrl } from '../src/utils'
+import { GROUP_TYPE_NAME, OKTA } from '../src/constants'
 
 describe('okta utils', () => {
   describe('extractIdFromUrl', () => {
@@ -66,6 +69,41 @@ describe('okta utils', () => {
     it('should not throw error for valid url', () => {
       expect(() => validateOktaBaseUrl('https://oktaDomain.okta.com/')).not.toThrow()
       expect(() => validateOktaBaseUrl('https://o-k-t-a.oktapreview.com')).not.toThrow()
+    })
+  })
+  describe('logUsersCount', () => {
+    let mockConnection: MockInterface<clientUtils.APIConnection>
+    let client: OktaClient
+    const elements = [
+      new InstanceElement('everyone', new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) }), {
+        id: '1',
+        type: 'BUILT_IN',
+        profile: { name: 'Everyone' },
+      }),
+      new InstanceElement('foo', new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) }), {
+        id: '2',
+        type: 'APP_GROUP',
+        profile: { name: 'Everyone' },
+      }),
+    ]
+  
+    beforeEach(() => {
+      jest.clearAllMocks()
+      const { client: cli, connection } = mockClient()
+      mockConnection = connection
+      client = cli
+    })
+    it('should log users count', async () => {
+      mockConnection.get.mockResolvedValue({ status: 200, data: { usersCount: 400 } })
+      const logging = logger('okta-adapter/src/utils')
+      const logSpy = jest.spyOn(logging, 'info')
+      await logUsersCount(elements, client)
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/groups/1/stats', undefined)
+      expect(logSpy).toHaveBeenCalledWith('Users count: %d', 400)
+    })
+    it('should not throw error if failed to get stats for group', async () => {
+      mockConnection.get.mockRejectedValue(new Error('error'))
+      await expect(logUsersCount(elements, client)).resolves.not.toThrow()
     })
   })
 })

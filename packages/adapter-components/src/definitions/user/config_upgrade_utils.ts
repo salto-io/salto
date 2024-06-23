@@ -29,7 +29,7 @@ const log = logger(module)
  * 1. config is changed in place
  * 2. only elemID related definitions are converted
  */
-const updateElemIDDefinitions = <TCustomNameMappingOptions extends string>(
+export const updateElemIDDefinitions = <TCustomNameMappingOptions extends string>(
   apiDefinitions: AdapterApiConfig,
 ): Record<string, ElemIDCustomization<TCustomNameMappingOptions>> => {
   const { types } = apiDefinitions

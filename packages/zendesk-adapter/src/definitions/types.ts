@@ -18,10 +18,14 @@ import { definitions } from '@salto-io/adapter-components'
 export type AdditionalAction = never
 export type ClientOptions = 'main'
 export type PaginationOptions = 'basic_cursor' | 'basic_cursor_with_args' | 'links' | 'settings'
-export type ReferenceContextStrategies = 'never'
-export type CustomReferenceSerializationStrategyName = 'never'
+export type ReferenceContextStrategies = 'string'
+export type CustomReferenceSerializationStrategyName = 'string'
 export type CustomIndexField = CustomReferenceSerializationStrategyName
-export type ZendeskFetchOptions = { clientOptions: ClientOptions; paginationOptions: PaginationOptions }
+export type ZendeskFetchOptions = {
+  clientOptions: ClientOptions
+  paginationOptions: PaginationOptions
+  customNameMappingOptions: string
+}
 
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions

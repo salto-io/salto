@@ -168,7 +168,6 @@ import guideThemeSettingFilter from './filters/guide_theme_settings'
 import { ZendeskFetchOptions } from './definitions/types'
 import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
-import { ZendeskFetchConfig } from './user_config'
 import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
 
 const { makeArray } = collections.array
@@ -513,7 +512,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       clients: createClientDefinitions({ main: this.client }),
       pagination: PAGINATION,
       fetch: definitions.mergeWithUserElemIDDefinitions({
-        userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
+        userElemID: this.userConfig.fetch.elemID,
         fetchConfig: createFetchDefinitions(this.userConfig, this.getNonSupportedTypesToOmit()),
       }),
     }
@@ -524,8 +523,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       }
       return clientsBySubdomain[subdomain]
     }
-
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG], fetchCriteria)
+    // eslint-disable-next-line no-console
+    console.log(this.userConfig?.fetch?.elemID?.sharing_agreement)
+    this.fetchQuery = elementUtils.query.createElementQuery<{ customNameMappingOptions: string }>(
+      this.userConfig.fetch,
+      fetchCriteria,
+    )
 
     this.createFiltersRunner = async ({
       filterRunnerClient,

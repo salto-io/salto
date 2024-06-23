@@ -334,6 +334,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   [RESTRICTION_TYPE_NAME]: {
+    // make topLevel undefined after merging with default definitions
+    element: {},
     requests: [
       {
         endpoint: {

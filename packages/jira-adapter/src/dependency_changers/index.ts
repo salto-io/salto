@@ -27,7 +27,7 @@ import { fieldConfigurationDependencyChanger } from './field_configuration'
 import { jsmProjectToJsmFieldDependencyChanger } from './jsm_project_to_jsm_field'
 import { rootObjectTypeToObjectSchemaDependencyChanger } from './root_object_type_to_schema'
 import { issueLayoutDependencyChanger } from './issue_layout_dependency'
-import { objectTypeParentReversalDependencyChanger } from './object_type_parent_reversal'
+import { objectTypeParentDependencyChanger } from './object_type_parent'
 
 const { awu } = collections.asynciterable
 
@@ -37,7 +37,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   workflowDependencyChanger,
   dashboardGadgetsDependencyChanger,
   rootObjectTypeToObjectSchemaDependencyChanger, // Must run before removalsDependencyChanger
-  objectTypeParentReversalDependencyChanger,
+  objectTypeParentDependencyChanger,
   removalsDependencyChanger,
   globalFieldContextsDependencyChanger,
   projectContextsDependencyChanger,

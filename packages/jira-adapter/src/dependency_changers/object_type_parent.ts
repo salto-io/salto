@@ -34,7 +34,7 @@ type RemovalInstanceChangeWithKey = deployment.dependency.ChangeWithKey<RemovalC
  * This dependency changer is used to reverse the dependency between object types and their non salto parent on removal.
  * This way the behavior will be the same as in salto's parents. Without it a cycle will be created with the order object
  */
-export const objectTypeParentReversalDependencyChanger: DependencyChanger = async changes => {
+export const objectTypeParentDependencyChanger: DependencyChanger = async changes => {
   const objectTypeChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(({ change }) => isRemovalChange(change))

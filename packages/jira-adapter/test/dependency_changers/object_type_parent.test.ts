@@ -16,7 +16,7 @@
 import { ObjectType, InstanceElement, ElemID, toChange, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { JIRA, OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../src/constants'
-import { objectTypeParentReversalDependencyChanger } from '../../src/dependency_changers/object_type_parent_reversal'
+import { objectTypeParentDependencyChanger } from '../../src/dependency_changers/object_type_parent'
 
 describe('objectTypeParentReversal', () => {
   let objectTypeInstance: InstanceElement
@@ -56,7 +56,7 @@ describe('objectTypeParentReversal', () => {
       [0, toChange({ before: noRefObjectTypeInstance })],
     ])
 
-    const dependencyChanges = [...(await objectTypeParentReversalDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await objectTypeParentDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges).toHaveLength(4)
     expect(dependencyChanges).toContainEqual({ action: 'add', dependency: { source: 2, target: 1 } })
     expect(dependencyChanges).toContainEqual({ action: 'remove', dependency: { source: 1, target: 2 } })
@@ -69,7 +69,7 @@ describe('objectTypeParentReversal', () => {
       [1, toChange({ before: objectTypeInstance })],
     ])
 
-    const dependencyChanges = [...(await objectTypeParentReversalDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await objectTypeParentDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges).toHaveLength(2)
     expect(dependencyChanges).toContainEqual({ action: 'add', dependency: { source: 2, target: 1 } })
     expect(dependencyChanges).toContainEqual({ action: 'remove', dependency: { source: 1, target: 2 } })
@@ -80,7 +80,7 @@ describe('objectTypeParentReversal', () => {
       [2, toChange({ before: objectTypeInstance })],
       [1, toChange({ before: schemaTypeInstance })],
     ])
-    const dependencyChanges = [...(await objectTypeParentReversalDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await objectTypeParentDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges).toHaveLength(0)
   })
   it('should return empty list when parent is not a reference', async () => {
@@ -89,7 +89,7 @@ describe('objectTypeParentReversal', () => {
       [2, toChange({ before: objectTypeInstance })],
       [1, toChange({ before: noRefObjectTypeInstance })],
     ])
-    const dependencyChanges = [...(await objectTypeParentReversalDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await objectTypeParentDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges).toHaveLength(0)
   })
   it('should return empty list when there are no removals', async () => {
@@ -97,12 +97,12 @@ describe('objectTypeParentReversal', () => {
       [2, toChange({ after: objectTypeInstance2 })],
       [1, toChange({ after: objectTypeInstance })],
     ])
-    const dependencyChanges = [...(await objectTypeParentReversalDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await objectTypeParentDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges).toHaveLength(0)
   })
   it('should return empty list when there are no changes', async () => {
     const inputChanges = new Map()
-    const dependencyChanges = [...(await objectTypeParentReversalDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await objectTypeParentDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges).toHaveLength(0)
   })
   it('should not create a dependency from an instance that is not object type', async () => {
@@ -114,7 +114,7 @@ describe('objectTypeParentReversal', () => {
       [1, toChange({ before: schemaTypeInstance })],
       [0, toChange({ before: noRefObjectTypeInstance })],
     ])
-    const dependencyChanges = [...(await objectTypeParentReversalDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await objectTypeParentDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges).toHaveLength(0)
   })
 })

@@ -88,7 +88,7 @@ describe('instance utils', () => {
           toElemName,
           defaultName: 'test',
         })
-        expect(instance.path).toEqual(['myAdapter', 'Records', 'myType', 'A', 'A'])
+        expect(instance?.path).toEqual(['myAdapter', 'Records', 'myType', 'A', 'A'])
       })
       it('should not create self folder for instance if its has no standalone fields', () => {
         const clonedCustomizations = _.cloneDeep(customizations)
@@ -104,7 +104,7 @@ describe('instance utils', () => {
           toElemName,
           defaultName: 'test',
         })
-        expect(instance.path).toEqual(['myAdapter', 'Records', 'myType', 'A'])
+        expect(instance?.path).toEqual(['myAdapter', 'Records', 'myType', 'A'])
       })
       it('should not create self folder for instance all its standalone fields disabled nestPathUnderParent', () => {
         const clonedCustomizations = _.cloneDeep(customizations)
@@ -125,7 +125,7 @@ describe('instance utils', () => {
           toElemName,
           defaultName: 'test',
         })
-        expect(instance.path).toEqual(['myAdapter', 'Records', 'myType', 'A'])
+        expect(instance?.path).toEqual(['myAdapter', 'Records', 'myType', 'A'])
       })
     })
   })

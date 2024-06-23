@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import { BuiltinTypes, ElemID, ElemIdGetter, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'

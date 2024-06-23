@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'jest-extended'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import {

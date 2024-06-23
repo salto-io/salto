@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import { ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'

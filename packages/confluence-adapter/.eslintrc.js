@@ -16,7 +16,7 @@
 const path = require('path')
 const deepMerge = require('../../build_utils/deep_merge')
 
-const configs = ['./tsconfig.json', './test/tsconfig.json']
+const configs = ['./tsconfig.json', './test/tsconfig.json', './e2e_test/tsconfig.json']
 
 module.exports = deepMerge(require('../../eslintrc.js'), require('../../eslint/adapter-api.rules.js'), {
   parserOptions: {

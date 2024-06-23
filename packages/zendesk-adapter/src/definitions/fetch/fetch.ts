@@ -59,6 +59,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/people/team/groups/{id}' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -79,6 +80,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/people/team/roles/{id}' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -102,6 +104,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/agent/organizations/{id}/tickets' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -273,6 +276,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/apps-integrations/targets/targets' },
         elemID: { parts: [{ fieldName: 'title' }, { fieldName: 'type' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }, { fieldName: 'type' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -321,6 +325,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         singleton: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: { id: { hide: true } },
     },
@@ -356,6 +361,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'fileName' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'fileName' }] }] },
       },
       fieldCustomizations: { id: { fieldType: 'number', hide: true } },
     },
@@ -373,6 +379,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         singleton: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -399,6 +406,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/tickets/ticket-forms/edit/{id}' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         name: { hide: true },
@@ -528,6 +536,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/agent/admin/user_fields/{id}' },
         elemID: { parts: [{ fieldName: 'key' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'key' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -587,6 +596,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/agent/admin/organization_fields/{id}' },
         elemID: { parts: [{ fieldName: 'key' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'key' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -638,6 +648,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/account/brand_management/brands' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         ticket_form_ids: { omit: true },
@@ -714,6 +725,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -725,7 +737,7 @@ const createCustomizations = (): Record<
   app_owned__parameters: {
     resource: { directFetch: true },
     element: {
-      topLevel: { isTopLevel: true },
+      topLevel: { isTopLevel: true, path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] } },
       fieldCustomizations: { id: { hide: true }, app_id: { hide: true } },
     },
   },
@@ -768,6 +780,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -787,6 +800,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -822,6 +836,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'email', isReference: true }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }, { fieldName: 'email', isReference: true }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -879,6 +894,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         singleton: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -907,6 +923,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -927,6 +944,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -939,6 +957,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -960,6 +979,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/workspaces/agent-workspace/dynamic_content' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -1006,6 +1026,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/apps-integrations/webhooks/webhooks/{id}/details' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         meta: { omit: true },
@@ -1032,6 +1053,7 @@ const createCustomizations = (): Record<
         serviceUrl: { path: '/admin/apps-integrations/apis/zendesk-api/oauth_clients' },
         // note: requires oauth_global_client to be included in the config
         elemID: { parts: [{ fieldName: 'client_id', isReference: true }, { fieldName: 'token' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'client_id', isReference: true }, { fieldName: 'token' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -1056,6 +1078,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/apps-integrations/apis/zendesk-api/settings/tokens/' },
         elemID: { parts: [{ fieldName: 'description' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'description' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -1085,6 +1108,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'key' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'key' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number' },
@@ -1154,7 +1178,9 @@ const createCustomizations = (): Record<
   account_features: {
     requests: [{ endpoint: { path: '/api/v2/account/features' }, transformation: { root: 'features' } }],
     resource: { directFetch: true },
-    element: { topLevel: { isTopLevel: true, singleton: true } },
+    element: {
+      topLevel: { isTopLevel: true, singleton: true, path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] } },
+    },
   },
 
   routing_attribute: {
@@ -1177,6 +1203,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/rules/routing' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'string' },
@@ -1261,6 +1288,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/knowledge/permissions/{id}' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: { id: { hide: true, fieldType: 'number' } },
     },
@@ -1278,6 +1306,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/knowledge/user_segments/edit/{id}' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },

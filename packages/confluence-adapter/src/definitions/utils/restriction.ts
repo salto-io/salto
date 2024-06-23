@@ -19,6 +19,9 @@ import { getChangeData, isEqualValues, isModificationChange } from '@salto-io/ad
 
 export const DEFAULT_RESTRICTION = [
   {
+    operation: 'read',
+  },
+  {
     operation: 'update',
   },
 ]

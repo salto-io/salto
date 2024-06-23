@@ -340,6 +340,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       {
         endpoint: {
           path: '/wiki/rest/api/content/{id}/restriction',
+          queryArgs: {
+            expand: 'restrictions.user,restrictions.group',
+          }
         },
         transformation: {
           root: 'results',

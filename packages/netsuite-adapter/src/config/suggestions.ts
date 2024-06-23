@@ -42,11 +42,6 @@ export const toLargeTypesExcludedMessage = (updatedLargeTypes: string[]): string
   `The following types were excluded from the fetch as the elements of that type were too numerous: ${updatedLargeTypes.join(', ')}.` +
   " To include them, increase the types elements' size limitations and remove their exclusion rules."
 
-export const toLargeSuiteQLTablesExcludedMessage = (largeSuiteQLTables: string[]): string =>
-  `The following SuiteQL tables were excluded from the fetch as the records of that table were too numerous: ${largeSuiteQLTables.join(', ')}.` +
-  " Those tables are used to resolve ACCOUNT_SPECIFIC_VALUEs, and without them Salto won't be able to resolve ACCOUNT_SPECIFIC_VALUEs of those types." +
-  " To include them, increase the table records' size limitations and remove their exclusion rules."
-
 export const ALIGNED_INACTIVE_CRITERIAS = 'The exclusion criteria of inactive elements was modified.'
 
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
@@ -206,21 +201,6 @@ const updateConfigFromLargeTypes = (
   return []
 }
 
-const updateConfigFromLargeSuiteQLTables = (
-  config: NetsuiteConfig,
-  { largeSuiteQLTables }: FetchByQueryFailures,
-): string[] => {
-  if (largeSuiteQLTables.length > 0) {
-    config.fetch = {
-      ...config.fetch,
-      skipResolvingAccountSpecificValuesToTypes: (config.fetch.skipResolvingAccountSpecificValuesToTypes ?? []).concat(
-        largeSuiteQLTables,
-      ),
-    }
-  }
-  return largeSuiteQLTables
-}
-
 // TODO: remove at May 24.
 const alignInactiveExclusionCriterias = (config: NetsuiteConfig): boolean => {
   let isUpdated = false
@@ -265,14 +245,12 @@ export const getConfigFromConfigChanges = (
   const didUpdateFromFailures = updateConfigFromFailedFetch(config, failures)
   const updatedLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
   const updatedLargeTypes = updateConfigFromLargeTypes(config, failures)
-  const updatedLargeSuiteQLTables = updateConfigFromLargeSuiteQLTables(config, failures)
   const alignedInactiveCriterias = alignInactiveExclusionCriterias(config)
 
   const messages = [
     didUpdateFromFailures ? STOP_MANAGING_ITEMS_MSG : undefined,
     updatedLargeFolders.length > 0 ? toLargeFoldersExcludedMessage(updatedLargeFolders) : undefined,
     updatedLargeTypes.length > 0 ? toLargeTypesExcludedMessage(updatedLargeTypes) : undefined,
-    updatedLargeSuiteQLTables.length > 0 ? toLargeSuiteQLTablesExcludedMessage(updatedLargeSuiteQLTables) : undefined,
     alignedInactiveCriterias ? ALIGNED_INACTIVE_CRITERIAS : undefined,
   ].filter(values.isDefined)
 

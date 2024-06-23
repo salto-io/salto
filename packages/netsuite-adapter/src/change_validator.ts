@@ -73,6 +73,7 @@ import {
 import { Filter } from './filter'
 import { NetsuiteChangeValidator } from './change_validators/types'
 import { FetchByQueryFunc } from './config/query'
+import { getUpdatedSuiteQLNameToInternalIdsMap } from './account_specific_values_resolver'
 
 const { createChangeValidator } = deployment.changeValidators
 
@@ -168,7 +169,10 @@ const getChangeValidator: ({
   fetchByQuery: FetchByQueryFunc
   deployReferencedElements: boolean
   additionalDependencies: AdditionalDependencies
-  filtersRunner: (groupID: string) => Required<Filter>
+  filtersRunner: (
+    groupID: string,
+    suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>,
+  ) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
   config: NetsuiteConfig
 }) => ChangeValidator =
@@ -189,11 +193,19 @@ const getChangeValidator: ({
       ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators }
       : { ...netsuiteChangeValidators, ...nonSuiteAppValidators }
 
+    const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(client, elementsSource, changes)
+
     // Converts NetsuiteChangeValidator to ChangeValidator
     const validators: Record<string, ChangeValidator> = _.mapValues(
       netsuiteValidators,
       validator => (innerChanges: ReadonlyArray<Change>) =>
-        validator(innerChanges, { deployReferencedElements, elementsSource, config, client }),
+        validator(innerChanges, {
+          deployReferencedElements,
+          elementsSource,
+          config,
+          client,
+          suiteQLNameToInternalIdsMap,
+        }),
     )
     const safeDeploy = warnStaleData
       ? {
@@ -221,7 +233,9 @@ const getChangeValidator: ({
     const validChanges = changes.filter(change => !invalidElementIds.has(getChangeData(change).elemID.getFullName()))
 
     const netsuiteValidatorErrors = validate
-      ? await netsuiteClientValidation(validChanges, client, additionalDependencies, filtersRunner)
+      ? await netsuiteClientValidation(validChanges, client, additionalDependencies, groupID =>
+          filtersRunner(groupID, suiteQLNameToInternalIdsMap),
+        )
       : []
 
     return changeErrors.concat(netsuiteValidatorErrors)

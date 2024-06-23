@@ -28,7 +28,11 @@ import { collections } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import moment from 'moment-timezone'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
-import { SUITEQL_TABLE, getSuiteQLTableInternalIdsMap } from '../../data_elements/suiteql_table_elements'
+import {
+  SUITEQL_TABLE,
+  getSuiteQLTableInternalIdsMap,
+  updateSuiteQLTableInstances,
+} from '../../data_elements/suiteql_table_elements'
 import NetsuiteClient from '../../client/client'
 import { SuiteQLQueryArgs } from '../../client/suiteapp_client/types'
 import { RemoteFilterCreator } from '../../filter'
@@ -150,11 +154,6 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
   return {}
 }
 
-const getEmployeeNamesFromEmployeeSuiteQLTableInstance = (instance: InstanceElement): Record<string, string> => {
-  const internalIdsMap = getSuiteQLTableInternalIdsMap(instance)
-  return _.mapValues(internalIdsMap, row => row.name)
-}
-
 const getKeyForNote = (systemNote: SystemNoteResult): string => {
   if ('recordtypeid' in systemNote) {
     return getRecordIdAndTypeStringKey(systemNote.recordid, systemNote.recordtypeid)
@@ -179,19 +178,43 @@ const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, Modif
     ]),
   )
 
+const getEmployeeInternalIdsMap = async (
+  client: NetsuiteClient,
+  employeeSuiteQLTableInstance: InstanceElement | undefined,
+  systemNotes: SystemNoteResult[],
+): Promise<Record<string, string>> => {
+  if (employeeSuiteQLTableInstance === undefined) {
+    return fetchEmployeeNames(client)
+  }
+  const existingEmployeeInternalIdsMap = getSuiteQLTableInternalIdsMap(employeeSuiteQLTableInstance)
+  const employeeInternalIdsToQuery = systemNotes
+    .map(row => row.name)
+    .filter(name => existingEmployeeInternalIdsMap[name] === undefined)
+    .map(internalId => ({ tableName: EMPLOYEE, item: internalId }))
+
+  if (employeeInternalIdsToQuery.length > 0) {
+    await updateSuiteQLTableInstances({
+      client,
+      queryBy: 'internalId',
+      itemsToQuery: employeeInternalIdsToQuery,
+      suiteQLTablesMap: {
+        [EMPLOYEE]: employeeSuiteQLTableInstance,
+      },
+    })
+  }
+  return _.mapValues(getSuiteQLTableInternalIdsMap(employeeSuiteQLTableInstance), row => row.name)
+}
+
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   queryIds: string[],
   lastFetchTime: Date,
-  employeeNames: Record<string, string>,
+  employeeSuiteQLTableInstance: InstanceElement | undefined,
   timeZone: string | undefined,
 ): Promise<Record<string, ModificationInformation>> => {
-  const systemNotes = await log.timeDebug(() => querySystemNotes(client, queryIds, lastFetchTime), 'querySystemNotes')
-  if (_.isEmpty(systemNotes)) {
-    log.warn('System note query failed')
-    return {}
-  }
   const now = timeZone ? moment.tz(timeZone).utc() : moment().utc()
+  const systemNotes = await log.timeDebug(() => querySystemNotes(client, queryIds, lastFetchTime), 'querySystemNotes')
+  const employeeNames = await getEmployeeInternalIdsMap(client, employeeSuiteQLTableInstance, systemNotes)
   return indexSystemNotes(
     distinctSortedSystemNotes(
       systemNotes
@@ -285,15 +308,9 @@ const filterCreator: RemoteFilterCreator = ({
     const employeeSuiteQLTableInstance = elements
       .filter(isInstanceElement)
       .find(instance => instance.elemID.typeName === SUITEQL_TABLE && instance.elemID.name === EMPLOYEE)
-    const employeeNames =
-      employeeSuiteQLTableInstance !== undefined
-        ? getEmployeeNamesFromEmployeeSuiteQLTableInstance(employeeSuiteQLTableInstance)
-        : await fetchEmployeeNames(client)
 
     const timeZone = timeZoneAndFormat?.timeZone
-    const systemNotes = !_.isEmpty(employeeNames)
-      ? await fetchSystemNotes(client, queryIds, lastFetchTime, employeeNames, timeZone)
-      : {}
+    const systemNotes = await fetchSystemNotes(client, queryIds, lastFetchTime, employeeSuiteQLTableInstance, timeZone)
     const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
     if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex) && _.isEmpty(elemIdToChangeAtIndex)) {
       return

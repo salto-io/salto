@@ -21,3 +21,4 @@ export {
   getGroupLifecyclePolicyGroupModificationRequest,
   createDefinitionForGroupLifecyclePolicyGroupModification,
 } from './group_deployment_life_cycle_policy'
+export { createCustomConditionEmptyFieldsOnAddition } from './condition_empty_fields'

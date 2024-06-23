@@ -138,6 +138,12 @@ const graphV1Customizations: FetchCustomizations = {
       },
       fieldCustomizations: {
         ...ID_FIELD_TO_HIDE,
+        groupTypes: {
+          sort: {
+            // This field is an array of strings, so we don't need to specify a path
+            properties: [],
+          },
+        },
         [APP_ROLE_ASSIGNMENT_FIELD_NAME]: {
           standalone: {
             typeName: GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME,
@@ -245,7 +251,7 @@ const graphV1Customizations: FetchCustomizations = {
         },
         [APP_ROLES_FIELD_NAME]: {
           sort: {
-            properties: [{ path: 'displayName' }],
+            properties: [{ path: 'displayName' }, { path: 'value' }],
           },
         },
       },

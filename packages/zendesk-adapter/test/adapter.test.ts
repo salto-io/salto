@@ -77,11 +77,12 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
   const { baseURL, url, params } = config
   const requestParams = !_.isEmpty(params) ? { params } : undefined
   if (baseURL?.toLowerCase() === 'https://mybrand.zendesk.com') {
-    const test =
+    return [
+      200,
       (defaultBrandMockReplies as MockReply[]).find(
         reply => reply.url === url && _.isEqual(reply.params, requestParams?.params),
-      )?.response || []
-    return [200, test]
+      )?.response || [],
+    ]
   }
   if (baseURL?.toLowerCase() === 'https://brandwithguide.zendesk.com') {
     return [200, (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response || []]

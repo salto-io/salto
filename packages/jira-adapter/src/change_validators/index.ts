@@ -73,10 +73,15 @@ import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
 import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
-import { TYPE_TO_UNIQUE_FIELD } from '../constants'
+import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE } from '../constants'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator } =
   deployment.changeValidators
+
+const TYPE_TO_UNIQUE_FIELD = {
+  [ISSUE_TYPE_NAME]: 'name',
+  [PORTAL_GROUP_TYPE]: 'name',
+}
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {
   const validators: Record<ChangeValidatorName, ChangeValidator> = {

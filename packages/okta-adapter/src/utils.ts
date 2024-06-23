@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { isInstanceElement, Element } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import OktaClient from './client/client'
+import { GROUP_TYPE_NAME } from './constants'
 
 const log = logger(module)
 
@@ -66,5 +69,24 @@ export const validateOktaBaseUrl = (baseUrl: string): void => {
   if (!/^https:\/\/([a-zA-Z0-9.-]+\.(okta\.com|oktapreview\.com|okta-emea\.com|trexcloud\.com))(\/)?$/.test(baseUrl)) {
     log.error(`${baseUrl} is not a valid account url`)
     throw new Error('baseUrl is invalid')
+  }
+}
+
+export const logUsersCount = async (elements: Element[], oktaClient: OktaClient): Promise<void> => {
+  const everyoneUserGroup = elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
+    .find(group => group.value.type === 'BUILT_IN' && group.value.profile?.name === 'Everyone')
+  const everyoneGroupId = everyoneUserGroup?.value.id
+  if (!_.isString(everyoneGroupId)) {
+    log.warn('failed to find Everyone group id, skipping logging users count')
+    return
+  }
+  try {
+    const res = await oktaClient.get({ url: `/api/v1/groups/${everyoneGroupId}/stats` })
+    const usersCount = _.get(res, 'data.usersCount')
+    log.info('Users count: %d', usersCount)
+  } catch (error) {
+    log.warn('failed to get users count with error %s', safeJsonStringify(error))
   }
 }

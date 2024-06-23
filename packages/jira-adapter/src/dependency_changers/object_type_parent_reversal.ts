@@ -23,7 +23,6 @@ import {
   isInstanceChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { deployment } from '@salto-io/adapter-components'
 import { OBJECT_TYPE_TYPE } from '../constants'
@@ -42,9 +41,6 @@ export const objectTypeParentReversalDependencyChanger: DependencyChanger = asyn
     .filter(({ change }) => getChangeData(change).elemID.typeName === OBJECT_TYPE_TYPE)
     .filter((change): change is RemovalInstanceChangeWithKey => isInstanceChange(change.change))
 
-  if (_.isEmpty(objectTypeChanges)) {
-    return []
-  }
   const fullNameToChangeKey = Object.fromEntries(
     objectTypeChanges.map(({ key, change }) => [getChangeData(change).elemID.getFullName(), key]),
   )

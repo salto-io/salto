@@ -365,13 +365,12 @@ const validateMetaType = (metaType?: ObjectType): ObjectType | undefined => {
   }
 
   if (!isObjectType(metaType)) {
-    log.error(`Got an invalid meta type which is not an object type with ID ${(metaType as Element).elemID}.`)
+    log.error(`Got an invalid meta type which is not an object type with ${(metaType as Element).elemID}.`)
     return undefined
   }
 
   if (isPlaceholderObjectType(metaType)) {
     log.warn(`Meta type with ID ${metaType.elemID.getFullName()} not found in elements source.`)
-    return undefined
   }
 
   return metaType

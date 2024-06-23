@@ -36,6 +36,7 @@ import {
   createRefToElmWithValue,
   PlaceholderObjectType,
   placeholderReadonlyElementsSource,
+  isPlaceholderObjectType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 import { TypeReference } from '../src/values'
@@ -161,12 +162,12 @@ describe('Test elements.ts', () => {
         expect(objectTypeInvalidMeta.getMetaTypeSync()).toBeUndefined()
       })
 
-      it('should return undefined when meta type is placeholder', () => {
+      it('should return placeholder when meta type is placeholder', () => {
         const objectTypeInvalidMeta = new ObjectType({
           elemID: otID,
           metaType: new PlaceholderObjectType({ elemID: metaTypeID }),
         })
-        expect(objectTypeInvalidMeta.getMetaTypeSync()).toBeUndefined()
+        expect(objectTypeInvalidMeta.getMetaTypeSync()).toBeInstanceOf(PlaceholderObjectType)
       })
     })
   })
@@ -211,7 +212,7 @@ describe('Test elements.ts', () => {
       otDiff2.metaType = undefined
 
       expect(isEqualElements(ot, otDiff1)).toBeFalsy()
-      expect(isEqualElements(otDiff1, otDiff2)).toBeFalsy()
+      expect(isEqualElements(ot, otDiff2)).toBeFalsy()
       expect(isEqualElements(otDiff2, otDiff2)).toBeTruthy()
     })
 
@@ -1240,6 +1241,22 @@ describe('Test elements.ts', () => {
     it('should return placeholder type if type is not ObjectType', async () => {
       instance = new InstanceElement('instance', BuiltinTypes.STRING as unknown as ObjectType)
       expect(await instance.getType()).toBeInstanceOf(PlaceholderObjectType)
+    })
+  })
+
+  describe('placeholder object type', () => {
+    it('should pass isPlaceholderObjectType', () => {
+      const placeholder = new PlaceholderObjectType({ elemID: new ElemID('salto', 'placeholder') })
+      expect(isPlaceholderObjectType(placeholder)).toBeTruthy()
+    })
+
+    it('should be discernable from other object types', () => {
+      const objectType = new ObjectType({ elemID: new ElemID('salto', 'object') })
+      if (isPlaceholderObjectType(objectType)) {
+        throw new Error('Not a placeholder object type.')
+      }
+      // If PlaceholderObjectTypes cannot be differentiated from ObjectTypes by TS this will not transpile.
+      expect(objectType.elemID).toBeDefined()
     })
   })
 })

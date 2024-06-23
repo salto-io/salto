@@ -70,7 +70,17 @@ const consumeType = (
 
   const elemID = parseTopLevelID(context, typeName, range)
   const consumedBlock = consumeBlockBody(context, elemID)
-  if (baseType === Keywords.TYPE_OBJECT) {
+  if (baseType === Keywords.TYPE_OBJECT || baseType.includes(ElemID.NAMESPACE_SEPARATOR)) {
+    let metaTypeRef: TypeReference<ObjectType> | undefined
+    if (baseType !== Keywords.TYPE_OBJECT) {
+      const metaElemID = ElemID.fromFullName(baseType)
+      if (metaElemID.idType !== 'type') {
+        context.errors.push(invalidMetaTypeError(range, baseType))
+        return { value: undefined, range: consumedBlock.range }
+      }
+      metaTypeRef = new TypeReference(metaElemID)
+    }
+
     return {
       value: getElementIfValid(
         new ObjectType({
@@ -78,6 +88,7 @@ const consumeType = (
           fields: consumedBlock.value.fields,
           annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
           annotations: consumedBlock.value.attrs,
+          metaType: metaTypeRef,
           isSettings,
         }),
       ),
@@ -86,34 +97,9 @@ const consumeType = (
   }
 
   let primitive = primitiveType(baseType)
-
-  // If the base type token can't be resolved to a specific primitive type, we will
-  // try to parse it into a meta type element ID.
-  // If it doesn't look like an element ID, we'll treat the type as unknown and add an error.
   if (primitive === undefined) {
-    if (!baseType.includes(ElemID.NAMESPACE_SEPARATOR)) {
-      context.errors.push(unknownPrimitiveTypeError(range, baseType))
-      primitive = PrimitiveTypes.UNKNOWN
-    } else {
-      const metaElemID = ElemID.fromFullName(baseType)
-      if (metaElemID.idType !== 'type') {
-        context.errors.push(invalidMetaTypeError(range, baseType))
-        return { value: undefined, range: consumedBlock.range }
-      }
-
-      return {
-        value: getElementIfValid(
-          new ObjectType({
-            elemID,
-            fields: consumedBlock.value.fields,
-            annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
-            annotations: consumedBlock.value.attrs,
-            metaType: new TypeReference(metaElemID),
-          }),
-        ),
-        range: consumedBlock.range,
-      }
-    }
+    context.errors.push(unknownPrimitiveTypeError(range, baseType))
+    primitive = PrimitiveTypes.UNKNOWN
   }
 
   // You can't define fields on a primitive type. But no need to recover

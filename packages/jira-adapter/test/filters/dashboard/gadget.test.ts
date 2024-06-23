@@ -342,7 +342,6 @@ describe('gadgetFilter', () => {
   describe('onFetch', () => {
     it('should add deployment annotations to properties field', async () => {
       elements = [dashboardGadgetType]
-      adapterContext.dashboardPropertiesPromise = []
       await filter.onFetch?.(elements)
       expect(dashboardGadgetType.fields.properties.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,

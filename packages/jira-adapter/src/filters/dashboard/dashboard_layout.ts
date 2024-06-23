@@ -33,9 +33,13 @@ import { JiraConfig } from '../../config/config'
 
 const log = logger(module)
 
+type PromiseClientResponse = Promise<
+  clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]> | undefined
+>
+
 export type InstanceToResponse = {
   instance: InstanceElement
-  PromiseResponse: Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]> | undefined>
+  PromiseResponse: PromiseClientResponse
 }
 
 export const deployLayout = async (
@@ -81,10 +85,7 @@ export const deployLayout = async (
   })
 }
 
-const getAPIResponse = async (
-  client: JiraClient,
-  instance: InstanceElement,
-): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]> | undefined> => {
+const getAPIResponse = async (client: JiraClient, instance: InstanceElement): PromiseClientResponse => {
   try {
     return await client.get({ url: `/rest/dashboards/1.0/${instance.value.id}` })
   } catch (err) {
@@ -99,10 +100,10 @@ export const getDashboardLayoutsAsync = (
   client: JiraClient,
   config: JiraConfig,
   elements: Element[],
-): InstanceToResponse[] | undefined => {
+): InstanceToResponse[] => {
   if (!config.client.usePrivateAPI) {
     log.debug('Skipping dashboard layout filter because private API is not enabled')
-    return undefined
+    return []
   }
   return elements
     .filter(isInstanceElement)
@@ -116,10 +117,7 @@ export const getDashboardLayoutsAsync = (
 const filter: FilterCreator = ({ adapterContext }) => ({
   name: 'dashboardLayoutFilter',
   onFetch: async () => {
-    const instanceToResponse: InstanceToResponse[] | undefined = adapterContext.dashboardLayoutPromise
-    if (instanceToResponse === undefined) {
-      return
-    }
+    const instanceToResponse: InstanceToResponse[] = adapterContext.dashboardLayoutPromise
     await Promise.all(
       instanceToResponse.map(async ({ instance, PromiseResponse }) => {
         const response = await PromiseResponse

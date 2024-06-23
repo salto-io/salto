@@ -25,6 +25,7 @@ import {
   isRemovalChange,
   ObjectType,
   Element,
+  Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -46,7 +47,7 @@ const log = logger(module)
 
 export type InstantToPropertiesResponse = {
   instance: InstanceElement
-  promisePropertyValue: Promise<[string, unknown][]>
+  promisePropertyValue: Promise<[string, Value][]>
 }
 
 const getSubTypes = (): {
@@ -113,7 +114,7 @@ const getPropertiesKeys = async (instance: InstanceElement, client: JiraClient):
   }
 }
 
-const getPropertyValue = async (instance: InstanceElement, key: string, client: JiraClient): Promise<unknown> => {
+const getPropertyValue = async (instance: InstanceElement, key: string, client: JiraClient): Promise<Value> => {
   const dashboardId = getParents(instance)[0].value.value.id
 
   try {
@@ -135,10 +136,10 @@ const getPropertyValue = async (instance: InstanceElement, key: string, client: 
   }
 }
 
-const getAPIResponse = async (client: JiraClient, instance: InstanceElement): Promise<[string, unknown][]> => {
+const getAPIResponse = async (client: JiraClient, instance: InstanceElement): Promise<[string, Value][]> => {
   const keys = await getPropertiesKeys(instance, client)
   return Promise.all(keys.map(async key => [key, await getPropertyValue(instance, key, client)])) as Promise<
-    [string, unknown][]
+    [string, Value][]
   >
 }
 

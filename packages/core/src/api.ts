@@ -37,6 +37,7 @@ import {
   ObjectType,
   ReferenceMapping,
   SaltoError,
+  toChange,
   TopLevelElement,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -47,6 +48,7 @@ import {
   ElementSelector,
   elementSource,
   expressions,
+  hiddenValues,
   isTopLevelSelector,
   merger,
   pathIndex as pathIndexModule,
@@ -56,7 +58,6 @@ import {
 import { EOL } from 'os'
 import {
   buildElementsSourceFromElements,
-  detailedCompare,
   getDetailedChanges as getDetailedChangesFromChange,
 } from '@salto-io/adapter-utils'
 import { deployActions, ItemStatus } from './core/deploy'
@@ -732,7 +733,6 @@ const getFixedElements = (elements: Element[], fixedElements: Element[]): Elemen
 }
 
 const fixElementsContinuously = async (
-  workspace: Workspace,
   elements: Element[],
   adapters: Record<string, AdapterOperations>,
   runsLeft: number,
@@ -760,7 +760,7 @@ const fixElementsContinuously = async (
   log.trace('FixElements returned the object %o', fixes)
 
   if (fixes.errors.length > 0 && runsLeft > 0) {
-    const elementFixes = await fixElementsContinuously(workspace, fixedElements, adapters, runsLeft - 1)
+    const elementFixes = await fixElementsContinuously(fixedElements, adapters, runsLeft - 1)
 
     const ids = new Set(elementFixes.fixedElements.map(element => element.elemID.getFullName()))
 
@@ -810,33 +810,55 @@ export const fixElements = async (
     )
   }
 
+  const wsElements = await workspace.elements()
   const relevantIds = await selectElementIdsByTraversal({
     selectors,
-    source: await workspace.elements(),
+    source: wsElements,
     referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
   })
 
-  const elements = await awu(relevantIds)
-    .map(id => workspace.getValue(id))
+  const elementsToFix = await awu(relevantIds)
+    .map(id => wsElements.get(id))
     .filter(values.isDefined)
     .toArray()
 
   log.debug(
     'about to fixElements: %o, found by selectors: %o',
-    elements.map(element => element.elemID.getFullName()),
+    elementsToFix.map(element => element.elemID.getFullName()),
     selectors.map(selector => selector.origin),
   )
 
-  if (_.isEmpty(elements)) {
+  if (elementsToFix.length === 0) {
     log.debug('fixElements found no elements to fix')
     return { errors: [], changes: [] }
   }
 
-  const idToElement = _.keyBy(elements, e => e.elemID.getFullName())
+  const { fixedElements, errors } = await fixElementsContinuously(elementsToFix, adapters, MAX_FIX_RUNS)
 
-  const fixes = await fixElementsContinuously(workspace, elements, adapters, MAX_FIX_RUNS)
-  const changes = fixes.fixedElements.flatMap(element =>
-    detailedCompare(idToElement[element.elemID.getFullName()], element),
-  )
-  return { errors: fixes.errors, changes }
+  const loadedElementsSource = buildElementsSourceFromElements(elementsToFix, [wsElements])
+  const changes = await Promise.all(
+    fixedElements.map(async element =>
+      getDetailedChangesFromChange(
+        toChange({
+          before: await loadedElementsSource.get(element.elemID),
+          after: element,
+        }),
+      ),
+    ),
+  ).then(result => result.flat())
+
+  if (changes.length === 0) {
+    return { errors, changes }
+  }
+
+  const { hidden } = await hiddenValues.handleHiddenChanges(changes, workspace.state(), await workspace.elements(false))
+  if (hidden.length > 0) {
+    log.debug(
+      'going to apply the following hidden changes - ids: %s',
+      hidden.map(change => change.id.getFullName()).join(', '),
+    )
+    await workspace.state().updateStateFromChanges({ changes: hidden })
+  }
+
+  return { errors, changes }
 }

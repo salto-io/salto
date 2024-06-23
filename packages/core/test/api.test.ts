@@ -1446,11 +1446,21 @@ describe('api.ts', () => {
   describe('fixElements', () => {
     let ws: workspace.Workspace
     let type: ObjectType
+    let visibleInstance: InstanceElement
+    let hiddenInstance: InstanceElement
     let mockFixElements: jest.MockedFunction<FixElementsFunc>
 
     beforeEach(() => {
       type = new ObjectType({
         elemID: new ElemID('test1', 'test'),
+        fields: {
+          hiddenField: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
+        },
+      })
+
+      visibleInstance = new InstanceElement('visibleInst', type, { test: 'original' })
+      hiddenInstance = new InstanceElement('hiddenInst', type, { test: 'original' }, undefined, {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       })
 
       ws = mockWorkspace({
@@ -1458,7 +1468,7 @@ describe('api.ts', () => {
         accountToServiceName: {
           test1: 'test',
         },
-        elements: [type],
+        elements: [type, visibleInstance, hiddenInstance],
       })
       ;(ws.accountCredentials as jest.MockedFunction<workspace.Workspace['accountCredentials']>).mockResolvedValue({
         test1: mockConfigInstance,
@@ -1568,24 +1578,108 @@ describe('api.ts', () => {
         ],
       })
 
-      expect(mockFixElements).toHaveBeenCalledWith([
-        new ObjectType({
-          elemID: new ElemID('test1', 'test'),
-          annotations: {
-            a: 1,
-            b: 2,
-          },
-        }),
-      ])
-      expect(mockFixElements).toHaveBeenCalledWith([
-        new ObjectType({
-          elemID: new ElemID('test1', 'test'),
-          annotations: {
-            a: 1,
-            b: 2,
-          },
-        }),
-      ])
+      const fixedType = type.clone()
+      fixedType.annotations = {
+        a: 1,
+        b: 2,
+      }
+
+      expect(mockFixElements).toHaveBeenCalledWith([fixedType])
+      expect(mockFixElements).toHaveBeenCalledWith([fixedType])
+    })
+
+    it('should update state with hidden changes', async () => {
+      const stateUpdateElements = jest.spyOn(ws.state(), 'updateStateFromChanges')
+
+      const clonedVisibleInstance = visibleInstance.clone()
+      clonedVisibleInstance.value.test = 'fixed'
+      clonedVisibleInstance.value.hiddenField = 'fixed'
+
+      const clonedHiddenInstance = hiddenInstance.clone()
+      clonedHiddenInstance.value.test = 'fixed'
+      clonedHiddenInstance.value.addedField = 'fixed'
+
+      const newHiddenInstance = new InstanceElement('newHiddenInst', type, { test: 'fixed' }, undefined, {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      })
+
+      mockFixElements.mockImplementationOnce(async () => ({
+        fixedElements: [clonedVisibleInstance, clonedHiddenInstance, newHiddenInstance],
+        errors: [],
+      }))
+
+      const res = await api.fixElements(ws, [workspace.createElementSelector(visibleInstance.elemID.getFullName())])
+
+      const visibleInstanceVisibleChange = {
+        id: visibleInstance.elemID.createNestedID('test'),
+        elemIDs: {
+          before: visibleInstance.elemID.createNestedID('test'),
+          after: visibleInstance.elemID.createNestedID('test'),
+        },
+        action: 'modify',
+        baseChange: toChange({ before: visibleInstance, after: clonedVisibleInstance }),
+        data: { before: 'original', after: 'fixed' },
+      }
+
+      const visibleInstanceHiddenChange = {
+        id: visibleInstance.elemID.createNestedID('hiddenField'),
+        elemIDs: {
+          before: visibleInstance.elemID.createNestedID('hiddenField'),
+          after: visibleInstance.elemID.createNestedID('hiddenField'),
+        },
+        action: 'add',
+        baseChange: toChange({ before: visibleInstance, after: clonedVisibleInstance }),
+        data: { after: 'fixed' },
+      }
+
+      const hiddenInstanceModifyChange = {
+        id: hiddenInstance.elemID.createNestedID('test'),
+        elemIDs: {
+          before: hiddenInstance.elemID.createNestedID('test'),
+          after: hiddenInstance.elemID.createNestedID('test'),
+        },
+        action: 'modify',
+        baseChange: toChange({ before: hiddenInstance, after: clonedHiddenInstance }),
+        data: { before: 'original', after: 'fixed' },
+      }
+
+      const hiddenInstanceAddChange = {
+        id: hiddenInstance.elemID.createNestedID('addedField'),
+        elemIDs: {
+          before: hiddenInstance.elemID.createNestedID('addedField'),
+          after: hiddenInstance.elemID.createNestedID('addedField'),
+        },
+        action: 'add',
+        baseChange: toChange({ before: hiddenInstance, after: clonedHiddenInstance }),
+        data: { after: 'fixed' },
+      }
+
+      const newHiddenInstanceChange = {
+        id: newHiddenInstance.elemID,
+        action: 'add',
+        baseChange: toChange({ after: newHiddenInstance }),
+        data: { after: newHiddenInstance },
+      }
+
+      const expectedChanges = [
+        visibleInstanceVisibleChange,
+        visibleInstanceHiddenChange,
+        hiddenInstanceModifyChange,
+        hiddenInstanceAddChange,
+        newHiddenInstanceChange,
+      ]
+
+      expect(res.changes).toHaveLength(expectedChanges.length)
+      expect(res.changes).toEqual(expect.arrayContaining(expectedChanges))
+
+      expect(stateUpdateElements).toHaveBeenCalledWith({
+        changes: [
+          visibleInstanceHiddenChange,
+          hiddenInstanceModifyChange,
+          hiddenInstanceAddChange,
+          newHiddenInstanceChange,
+        ],
+      })
     })
 
     it('should stop after max 11 times', async () => {

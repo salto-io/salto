@@ -30,8 +30,11 @@ const log = logger(module)
  * 2. only elemID related definitions are converted
  */
 export const updateElemIDDefinitions = <TCustomNameMappingOptions extends string>(
-  apiDefinitions: AdapterApiConfig,
+  apiDefinitions: AdapterApiConfig | undefined,
 ): Record<string, ElemIDCustomization<TCustomNameMappingOptions>> => {
+  if (apiDefinitions === undefined) {
+    return {}
+  }
   const { types } = apiDefinitions
   if (_.isEmpty(types)) {
     return {}

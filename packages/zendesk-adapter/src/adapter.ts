@@ -523,8 +523,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       }
       return clientsBySubdomain[subdomain]
     }
-    // eslint-disable-next-line no-console
-    console.log(this.userConfig?.fetch?.elemID?.sharing_agreement)
+
     this.fetchQuery = elementUtils.query.createElementQuery<{ customNameMappingOptions: string }>(
       this.userConfig.fetch,
       fetchCriteria,

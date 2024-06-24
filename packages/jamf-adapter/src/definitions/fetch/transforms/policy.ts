@@ -39,7 +39,7 @@ const adjustSiteObjectToSiteId = (value: Record<string, unknown>): void => {
 const adjustCategoryObjectToCategoryId = (value: Record<string, unknown>): void => {
   const category = _.get(value, 'general.category')
   if (isHasIdType(category)) {
-_.set(value, 'general.category', category.id === -1 ? _.get(value, 'general.category.name') : category.id)
+    _.set(value, 'general.category', category.id === -1 ? _.get(value, 'general.category.name') : category.id)
   }
 }
 

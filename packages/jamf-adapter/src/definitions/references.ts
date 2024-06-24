@@ -15,7 +15,14 @@
  */
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
 import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } from './types'
-import { CATEGORY_TYPE_NAME, CLASS_TYPE_NAME, PACKAGE_TYPE_NAME, POLICY_TYPE_NAME, SCRIPT_TYPE_NAME, SITE_TYPE_NAME } from '../constants'
+import {
+  CATEGORY_TYPE_NAME,
+  CLASS_TYPE_NAME,
+  PACKAGE_TYPE_NAME,
+  POLICY_TYPE_NAME,
+  SCRIPT_TYPE_NAME,
+  SITE_TYPE_NAME,
+} from '../constants'
 
 const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategies,

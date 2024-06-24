@@ -87,7 +87,7 @@ describe('adapter', () => {
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter.onPost('baseUrl/api/oauth/token').reply(200, { access_token: 'mock_token', token_type: 'Bearer' })
-    mockAxiosAdapter.onGet('/api/v1/api-integrations').replyOnce(200)
+    mockAxiosAdapter.onGet('/api/v1/api-integrations').reply(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)

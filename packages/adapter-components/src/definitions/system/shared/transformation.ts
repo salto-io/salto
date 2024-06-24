@@ -53,7 +53,7 @@ export type SingleValueTransformationFunction<
 
 export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTargetVal extends unknown = Values> = (
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,
-) => types.PickyRequired<Partial<GeneratedItem<TContext, TTargetVal>>, 'value'>
+) => Promise<types.PickyRequired<Partial<GeneratedItem<TContext, TTargetVal>>, 'value'>>
 
 /**
  * transformation steps:

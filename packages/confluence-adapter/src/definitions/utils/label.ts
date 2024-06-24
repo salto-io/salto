@@ -21,7 +21,7 @@ import { validateValue } from './generic'
 /**
  * AdjustFunction that converts labels object array to ids array.
  */
-export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
+export const adjustLabelsToIdsFunc: definitions.AdjustFunction = async item => {
   const value = validateValue(item.value)
   const labels = _.get(value, 'labels')
   if (_.isEmpty(labels) || !Array.isArray(labels)) {

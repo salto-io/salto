@@ -55,7 +55,7 @@ const getUserSchemaId = (value: UserType): string => {
   throw new Error('Could not find id for UserSchema value')
 }
 
-export const extractSchemaIdFromUserType: definitions.AdjustFunction<definitions.ContextParams, unknown, string> = ({
+export const extractSchemaIdFromUserType: definitions.AdjustFunction<definitions.ContextParams, unknown, string> = async ({
   value,
 }) => {
   if (!isUserType(value)) {

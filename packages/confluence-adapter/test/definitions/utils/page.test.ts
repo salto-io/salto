@@ -39,7 +39,7 @@ describe('page definitions utils', () => {
   })
   describe('adjustPageOnModification', () => {
     describe('increasePageVersion', () => {
-      it('should increase the page version number', () => {
+      it('should increase the page version number', async () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -53,10 +53,10 @@ describe('page definitions utils', () => {
           },
           value: { version: { number: 1 } },
         }
-        expect(adjustPageOnModification(args).value.version.number).toEqual(2)
+        expect((await adjustPageOnModification(args)).value.version.number).toEqual(2)
       })
 
-      it('should return version = 2 if the version number is not a number (homepage addition case)', () => {
+      it('should return version = 2 if the version number is not a number (homepage addition case)', async () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -70,11 +70,11 @@ describe('page definitions utils', () => {
           },
           value: { version: { number: 'not a number' } },
         }
-        expect(adjustPageOnModification(args).value.version).toEqual({ number: 2 })
+        expect((await adjustPageOnModification(args)).value.version).toEqual({ number: 2 })
       })
     })
-    describe('updateHomepageId', () => {
-      it('should do nothing if there is no space change in the change group', () => {
+    describe('updateHomepageId', async () => {
+      it('should do nothing if there is no space change in the change group', async () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -88,9 +88,9 @@ describe('page definitions utils', () => {
           },
           value: getChangeData(pageChange).value,
         }
-        expect(adjustPageOnModification(args).value.id).toEqual('mockPageId')
+        expect((await adjustPageOnModification(args)).value.id).toEqual('mockPageId')
       })
-      it('should do nothing if there is no homepageId in the shared context', () => {
+      it('should do nothing if there is no homepageId in the shared context',  async() => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -104,9 +104,9 @@ describe('page definitions utils', () => {
           },
           value: getChangeData(pageChange).value,
         }
-        expect(adjustPageOnModification(args).value.id).toEqual('mockPageId')
+        expect((await adjustPageOnModification(args)).value.id).toEqual('mockPageId')
       })
-      it('should modify id when homepage id is found in the shared context', () => {
+      it('should modify id when homepage id is found in the shared context', async () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -122,7 +122,7 @@ describe('page definitions utils', () => {
           },
           value: getChangeData(pageChange).value,
         }
-        expect(adjustPageOnModification(args).value.id).toEqual('homepageId')
+        expect((await adjustPageOnModification(args)).value.id).toEqual('homepageId')
       })
     })
   })

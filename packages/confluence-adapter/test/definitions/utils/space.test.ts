@@ -197,9 +197,9 @@ describe('space definitions utils', () => {
   })
 
   describe('spaceMergeAndTransformAdjust', () => {
-    it('should adjust a space instance upon fetch', () => {
+    it('should adjust a space instance upon fetch', async () => {
       const space = new InstanceElement('mock', spaceObjectType, { permissions })
-      spaceMergeAndTransformAdjust({ value: space.value, context: { fragments: [] }, typeName: SPACE_TYPE_NAME })
+      await spaceMergeAndTransformAdjust({ value: space.value, context: { fragments: [] }, typeName: SPACE_TYPE_NAME })
       expect(space.value).toEqual({
         permissions: [
           {

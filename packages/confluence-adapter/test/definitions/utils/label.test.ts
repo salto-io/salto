@@ -18,31 +18,31 @@ import { adjustLabelsToIdsFunc } from '../../../src/definitions/utils'
 
 describe('label definitions utils', () => {
   describe('adjustLabelsToIdsFunc', () => {
-    it('should return the same value if labels is not an array', () => {
+    it('should return the same value if labels is not an array', async () => {
       const item = {
         typeName: 'mockType',
         context: {},
         value: { labels: 'not an array' },
       }
-      expect(adjustLabelsToIdsFunc(item).value).toEqual(item.value)
+      expect((await adjustLabelsToIdsFunc(item)).value).toEqual(item.value)
     })
 
-    it('should return the same value if labels is empty', () => {
+    it('should return the same value if labels is empty', async () => {
       const item = {
         typeName: 'mockType',
         context: {},
         value: { labels: [] },
       }
-      expect(adjustLabelsToIdsFunc(item).value).toEqual(item.value)
+      expect((await adjustLabelsToIdsFunc(item)).value).toEqual(item.value)
     })
 
-    it('should return the value with labels as ids', () => {
+    it('should return the value with labels as ids', async () => {
       const item = {
         typeName: 'mockType',
         context: {},
         value: { labels: [{ id: 'label1' }, { id: 'label2' }] },
       }
-      expect(adjustLabelsToIdsFunc(item).value).toEqual({ labels: ['label1', 'label2'] })
+      expect((await adjustLabelsToIdsFunc(item)).value).toEqual({ labels: ['label1', 'label2'] })
     })
   })
 })

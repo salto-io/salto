@@ -45,12 +45,12 @@ describe('template definitions utils', () => {
         value: { something: 'else' },
       }
     })
-    it('should add space key from additionalContext', () => {
-      expect(addSpaceKey(item).value).toEqual({ something: 'else', space: { key: 'KEY' } })
+    it('should add space key from additionalContext', async () => {
+      expect((await addSpaceKey(item)).value).toEqual({ something: 'else', space: { key: 'KEY' } })
     })
-    it('should add an empty object if space key does not exist', () => {
+    it('should add an empty object if space key does not exist', async () => {
       item.context.additionalContext = {}
-      expect(addSpaceKey(item).value).toEqual({ something: 'else', space: { key: undefined } })
+      expect((await addSpaceKey(item)).value).toEqual({ something: 'else', space: { key: undefined } })
     })
   })
 })

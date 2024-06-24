@@ -37,10 +37,13 @@ const log = logger(module)
  * This function will switch the action from 'add' to 'modify' in case of homepage addition.
  */
 export const homepageAdditionToModification: ({
-  change,
-  changeGroup,
-  elementSource,
-}: definitions.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({ change, changeGroup }) => {
+                                                change,
+                                                changeGroup,
+                                                elementSource,
+                                              }: definitions.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({
+                                                                                                                                change,
+                                                                                                                                changeGroup,
+                                                                                                                              }) => {
   const spaceChange = changeGroup.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
   if (isAdditionChange(change) && spaceChange !== undefined && isInstanceChange(spaceChange)) {
     const changeData = getChangeData(change)
@@ -63,7 +66,7 @@ const isNumber = (value: unknown): value is number => typeof value === 'number'
 /**
  * AdjustFunction that increases the version number of a page for deploy modification change.
  */
-const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = args => {
+const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async args => {
   const value = validateValue(args.value)
   const version = _.get(value, 'version')
   if (!values.isPlainRecord(version) || !isNumber(version.number)) {
@@ -108,7 +111,7 @@ export const putHomepageIdInAdditionContext = (args: definitions.deploy.ChangeAn
 /**
  * AdjustFunction that update the page id in case it is a homepage of a new deployed space.
  */
-const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = args => {
+const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async args => {
   const value = validateValue(args.value)
   const spaceChange = args.context.changeGroup.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
   if (spaceChange === undefined) {
@@ -125,7 +128,7 @@ const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndC
 /**
  * AdjustFunction that runs all page modification adjust functions.
  */
-export const adjustPageOnModification: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = args => {
+export const adjustPageOnModification: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async args => {
   const value = validateValue(args.value)
   const argsWithValidatedValue = { ...args, value }
   return [increasePageVersion, updateHomepageId].reduce(

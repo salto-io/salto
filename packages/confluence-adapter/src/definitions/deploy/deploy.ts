@@ -108,7 +108,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   pick: ['restriction'],
-                  adjust: ({ value }) => ({ value: { results: _.get(value, 'restriction') } }),
+                  adjust: async ({ value }) => ({ value: { results: _.get(value, 'restriction') } }),
                 },
               },
             },
@@ -172,7 +172,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   pick: ['restriction'],
-                  adjust: ({ value }) => ({ value: { results: _.get(value, 'restriction') } }),
+                  adjust: async ({ value }) => ({ value: { results: _.get(value, 'restriction') } }),
                 },
               },
             },
@@ -281,7 +281,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 transformation: {
                   pick: ['custom'],
-                  adjust: ({ value }) => ({ value: { ..._.get(value, 'custom') } }),
+                  adjust: async ({ value }) => ({ value: { ..._.get(value, 'custom') } }),
                 },
                 endpoint: {
                   path: '/wiki/rest/api/settings/lookandfeel/custom',

@@ -312,7 +312,7 @@ export const updateReferenceIndexes = async (
       initialIndex = true
     }
 
-    const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
+    const customReferences = await getIdToCustomReferences(getCustomReferences, relevantChanges)
 
     const changeToReferences = Object.fromEntries(
       await awu(relevantChanges)

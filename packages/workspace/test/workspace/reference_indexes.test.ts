@@ -21,6 +21,7 @@ import {
   ReferenceExpression,
   TemplateExpression,
   toChange,
+  Element,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -515,7 +516,10 @@ describe('updateReferenceIndexes', () => {
     })
 
     describe('When indexes are out of date', () => {
+      let inputElements: Element[]
+
       beforeEach(async () => {
+        inputElements = []
         await elementsSource.set(instance)
         mapVersions.get.mockResolvedValue(0)
         await updateReferenceIndexes(
@@ -525,9 +529,17 @@ describe('updateReferenceIndexes', () => {
           mapVersions,
           elementsSource,
           true,
-          async () => [],
+          async elements => {
+            elements.forEach(e => inputElements.push(e))
+            return []
+          },
         )
       })
+
+      it('should invoke getCustomReferences function with all the Elements from the elementsSource', () => {
+        expect(inputElements).toEqual([instance])
+      })
+
       it('should update referenceTargets index using the element source', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([

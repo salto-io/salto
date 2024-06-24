@@ -21,6 +21,7 @@ import {
   ObjectType,
   ListType,
   GetCustomReferencesFunc,
+  InstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
@@ -44,6 +45,7 @@ export const configType = new ObjectType({
     importantValuesFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
     templateExpressionFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
     templateStaticFileFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
+    updatedConfig: { refType: BuiltinTypes.JSON },
   },
 })
 
@@ -59,7 +61,13 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
     : []
 
 export const adapter: Adapter = {
-  operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
+  operations: context => {
+    const genParams = context.config?.value as GeneratorParams
+    const updatedConfig = genParams.updatedConfig
+      ? new InstanceElement(ElemID.CONFIG_NAME, configType, genParams.updatedConfig)
+      : undefined
+    return new DummyAdapter(genParams, updatedConfig)
+  },
   validateCredentials: async () => ({ accountId: '' }),
   authenticationMethods: {
     basic: {

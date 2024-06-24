@@ -52,7 +52,7 @@ const nullProgressReporter: ProgressReporter = {
 }
 
 describe('dummy adapter', () => {
-  const adapter = new DummyAdapter(testParams)
+  const adapter = new DummyAdapter(testParams, undefined)
   describe('deploy', () => {
     it('should be defined', () => {
       expect(adapter.deploy).toBeDefined()
@@ -100,7 +100,7 @@ describe('dummy adapter', () => {
     const progressReportMock = {
       reportProgress: jest.fn(),
     }
-    it('should return the result of the generateElement command withuot modifications', async () => {
+    it('should return the result of the generateElement command without modifications', async () => {
       const mockReporter = { reportProgress: jest.fn() }
       const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
       expect(fetchResult).toEqual({ elements: await generator.generateElements(testParams, mockReporter) })
@@ -130,10 +130,23 @@ describe('dummy adapter', () => {
         }
       })
     })
+    it('should replace the config with the updatedConfig', async () => {
+      const updatedConfig = new InstanceElement(
+        'updatedConfig',
+        new ObjectType({ elemID: new ElemID('updatedConfig') }),
+        {
+          some: 'value',
+        },
+      )
+      const mockReporter = { reportProgress: jest.fn() }
+      const adapterWithUpdatedConfig = new DummyAdapter(testParams, updatedConfig)
+      const fetchResult = await adapterWithUpdatedConfig.fetch({ progressReporter: mockReporter })
+      expect(fetchResult.updatedConfig).toEqual({ config: [updatedConfig], message: 'Fetched config' })
+    })
   })
 
   describe('deployModifier', () => {
-    const adapterWithDeployModifiers = new DummyAdapter({ ...testParams, changeErrors: [mockChangeError] })
+    const adapterWithDeployModifiers = new DummyAdapter({ ...testParams, changeErrors: [mockChangeError] }, undefined)
     it('should be defined', () => {
       expect(adapterWithDeployModifiers.deployModifiers).toBeDefined()
     })

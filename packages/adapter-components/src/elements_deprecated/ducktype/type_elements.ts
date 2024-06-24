@@ -24,6 +24,7 @@ import {
   ListType,
   isObjectType,
   FieldDefinition,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import {

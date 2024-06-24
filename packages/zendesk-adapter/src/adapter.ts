@@ -365,19 +365,22 @@ const getBrandsFromElementsSourceNoCache = async (elementsSource: ReadOnlyElemen
 const getGuideElements = async ({
   brandsList,
   brandToPaginator,
+  brandToFetchDefinitions,
   apiDefinitions,
   fetchQuery,
   getElemIdFunc,
+  useNewInfra,
 }: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
+  brandToFetchDefinitions: Record<string, definitions.RequiredDefinitions<ZendeskFetchOptions>>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
+  useNewInfra: boolean | undefined
 }): Promise<fetchUtils.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
-
   // Omit standaloneFields from config to avoid creating types from references
   const typesConfigWithNoStandaloneFields = _.mapValues(apiDefinitions.types, config =>
     _.omit(config, ['transformation.standaloneFields']),
@@ -386,18 +389,30 @@ const getGuideElements = async ({
     brandsList.map(async brandInstance => {
       const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
       log.debug(`Fetching elements for brand ${brandInstance.elemID.name}`)
-      return getAllElements({
+
+      if (useNewInfra !== true) {
+        return getAllElements({
+          adapterName: ZENDESK,
+          types: typesConfigWithNoStandaloneFields,
+          shouldAddRemainingTypes: false,
+          supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
+          fetchQuery,
+          paginator: brandsPaginator,
+          nestedFieldFinder: findDataField,
+          computeGetArgs,
+          typeDefaults: apiDefinitions.typeDefaults,
+          getElemIdFunc,
+          getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandInstance),
+        })
+      }
+      const brandFetchDefinitions = brandToFetchDefinitions[brandInstance.elemID.name]
+
+      return fetchUtils.getElements({
         adapterName: ZENDESK,
-        types: typesConfigWithNoStandaloneFields,
-        shouldAddRemainingTypes: false,
-        supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
         fetchQuery,
-        paginator: brandsPaginator,
-        nestedFieldFinder: findDataField,
-        computeGetArgs,
-        typeDefaults: apiDefinitions.typeDefaults,
+        additionalRequestContext: { brand: brandInstance },
         getElemIdFunc,
-        getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandInstance),
+        definitions: brandFetchDefinitions,
       })
     }),
   )
@@ -406,6 +421,7 @@ const getGuideElements = async ({
     fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
     instance => instance.elemID.typeName,
   )
+
   // Create new types based on the created instances from all brands,
   // then create new instances with the corresponding type as refType
   const zendeskGuideElements = Object.entries(typeNameToGuideInstances).flatMap(([typeName, instances]) => {
@@ -658,12 +674,36 @@ export default class ZendeskAdapter implements AdapterOperations {
         ]),
       )
 
+      const brandToFetchDefinitions = Object.fromEntries(
+        brandsList.map(brandInstance => [
+          brandInstance.elemID.name,
+          {
+            clients: createClientDefinitions({ main: this.createClientBySubdomain(brandInstance.value.subdomain) }),
+            pagination: PAGINATION,
+            fetch: definitions.mergeWithUserElemIDDefinitions({
+              userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
+              fetchConfig: createFetchDefinitions(
+                this.userConfig,
+                undefined,
+                GUIDE_TYPES_TO_HANDLE_BY_BRAND.concat([
+                  'guide_settings__help_center',
+                  'guide_settings__help_center__settings',
+                  'guide_settings__help_center__text_filter',
+                ]),
+              ),
+            }),
+          },
+        ]),
+      )
+
       const zendeskGuideElements = await getGuideElements({
         brandsList,
         brandToPaginator,
+        brandToFetchDefinitions,
         apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
+        useNewInfra,
       })
 
       combinedRes.configChanges = combinedRes.configChanges.concat(zendeskGuideElements.configChanges ?? [])

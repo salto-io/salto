@@ -79,7 +79,7 @@ const getUnreferencedDatasetsDeploymentAndEnvironment = async (
   }
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => {
+const changeValidator: NetsuiteChangeValidator = async (changes, { elementsSource }) => {
   const instancesFromAdditionOrModificationChanges = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -87,7 +87,7 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
 
   const changedDatasets = instancesFromAdditionOrModificationChanges.filter(inst => inst.elemID.typeName === DATASET)
 
-  if (elementsSource === undefined || changedDatasets.length === 0) {
+  if (changedDatasets.length === 0) {
     return []
   }
 

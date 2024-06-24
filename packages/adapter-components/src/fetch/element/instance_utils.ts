@@ -101,6 +101,7 @@ export const omitInstanceValues = <Options extends FetchApiDefinitionsOptions>({
     type,
     transformFunc: omitValues(defQuery),
     strict: false,
+    allowEmptyArrays: defQuery.query(type.elemID.name)?.element?.topLevel?.allowEmptyArrays,
   })
 
 /**
@@ -126,6 +127,7 @@ export type InstanceCreationParams = {
   parent?: InstanceElement
   toElemName: ElemIDCreator
   toPath: PartsCreator
+  allowEmptyArrays?: boolean
 }
 
 /**
@@ -153,7 +155,7 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}
 
   if (!elementDef?.topLevel?.isTopLevel) {
-    // should have already been tested in caller
+    // should have already been tested in caller, we should not get here if topLevel is undefined
     const error = `type ${adapterName}:${typeName} is not defined as top-level, cannot create instances`
     throw new Error(error)
   }
@@ -200,10 +202,11 @@ export const createInstance = ({
   toPath,
   defaultName,
   parent,
+  allowEmptyArrays = false,
 }: InstanceCreationParams): InstanceElement | undefined => {
   const annotations = _.pick(entry, Object.keys(INSTANCE_ANNOTATIONS))
   const value = _.omit(entry, Object.keys(INSTANCE_ANNOTATIONS))
-  const refinedValue = value !== undefined ? removeNullValues(value, type) : {}
+  const refinedValue = value !== undefined ? removeNullValues({ values: value, type, allowEmptyArrays }) : {}
 
   if (_.isEmpty(refinedValue)) {
     return undefined

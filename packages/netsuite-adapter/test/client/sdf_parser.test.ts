@@ -30,6 +30,7 @@ import {
   MOCK_FOLDER_ATTRS_PATH,
   MOCK_TEMPLATE_CONTENT,
   OBJECTS_DIR_FILES,
+  OBJECT_XML_WITH_CDATA_AND_INNER_XML,
   OBJECT_XML_WITH_HTML_CHARS,
   readFileMockFunction,
 } from './mocks'
@@ -88,7 +89,8 @@ describe('sdf parser', () => {
     it('should decode html chars', async () => {
       readdirpMock.mockResolvedValue([{ path: 'custentity_my_script_id.xml' }])
       readFileMock.mockResolvedValue(OBJECT_XML_WITH_HTML_CHARS)
-      await expect(parseObjectsDir('objectsDir')).resolves.toEqual([
+      const parsed = await parseObjectsDir('objectsDir')
+      expect(parsed).toEqual([
         {
           typeName: 'entitycustomfield',
           values: {
@@ -97,6 +99,33 @@ describe('sdf parser', () => {
             label: 'Golf & Co’Co element​Name',
           },
           scriptId: 'custentity_my_script_id',
+        },
+      ])
+    })
+    it('should parse CDATA', async () => {
+      readdirpMock.mockResolvedValue([{ path: 'custworkbook_my_workbook.xml' }])
+      readFileMock.mockResolvedValue(OBJECT_XML_WITH_CDATA_AND_INNER_XML)
+      const parsed = await parseObjectsDir('objectsDir')
+      expect(parsed).toEqual([
+        {
+          typeName: 'workbook',
+          values: {
+            '@_scriptid': 'my_workbook',
+            name: 'My workbook',
+            definition: [
+              `<root>
+<pivots type="array">
+  <_ITEM_>
+    <_T_>pivot</_T_>
+    <scriptId>my_pivot</scriptId>
+    <definition>&lt;root>&lt;version>1&lt;/version>&lt;/root></definition>
+  </_ITEM_>
+</pivots>
+</root>`,
+              'Another definition',
+            ],
+          },
+          scriptId: 'custworkbook_my_workbook',
         },
       ])
     })
@@ -273,7 +302,7 @@ describe('sdf parser', () => {
     })
   })
   describe('convertToXmlContent', () => {
-    it('should encode to html chars', async () => {
+    it('should encode html chars', async () => {
       const custInfo = {
         typeName: 'entitycustomfield',
         values: {
@@ -283,9 +312,10 @@ describe('sdf parser', () => {
         },
         scriptId: 'custentity_my_script_id',
       }
+      const xmlContent = convertToXmlContent(custInfo)
       // We use here === instead of expect.toEqual() since jest treats html encoding as equal to
       // the decoded value
-      expect(convertToXmlContent(custInfo) === OBJECT_XML_WITH_HTML_CHARS).toBeTruthy()
+      expect(xmlContent === OBJECT_XML_WITH_HTML_CHARS).toBeTruthy()
     })
   })
   describe('convertToFeaturesXmlContent', () => {

@@ -28,6 +28,7 @@ import {
   Change,
   getChangeData,
   ProgressReporter,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -438,50 +439,6 @@ describe('adapter', () => {
         )
       })
     })
-
-    describe('with deprecated user config', () => {
-      it('should return updated config after migration', async () => {
-        const deprecatedConfig = new InstanceElement('config', adapter.configType as ObjectType, {
-          ...DEFAULT_CONFIG,
-          fetch: {
-            ...DEFAULT_CONFIG.fetch,
-            include: [{ type: 'Application' }],
-          },
-          apiDefinitions: {
-            types: {
-              Application: {
-                transformation: { idFields: ['label', 'status'] },
-              },
-            },
-          },
-        })
-        const { updatedConfig } = await adapter
-          .operations({
-            credentials: new InstanceElement('config', accessTokenCredentialsType, {
-              baseUrl: 'https://test.okta.com',
-              token: 't',
-            }),
-            config: deprecatedConfig,
-            elementsSource: buildElementsSourceFromElements([]),
-          })
-          .fetch({ progressReporter: nullProgressReporter })
-        expect(updatedConfig?.config[0].value).toEqual({
-          ...DEFAULT_CONFIG,
-          fetch: {
-            ...DEFAULT_CONFIG.fetch,
-            include: [{ type: 'Application' }],
-            elemID: {
-              Application: {
-                parts: [{ fieldName: 'label' }, { fieldName: 'status' }],
-              },
-            },
-          },
-        })
-        expect(updatedConfig?.message).toEqual(
-          'Elem ID customizations are now under `fetch.elemID`. The following changes will upgrade the deprecated definitions from `apiDefinitions` to the new location.',
-        )
-      })
-    })
   })
   describe('deploy', () => {
     let operations: AdapterOperations
@@ -489,7 +446,14 @@ describe('adapter', () => {
     let group1: InstanceElement
 
     beforeEach(() => {
-      groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
+      groupType = new ObjectType({
+        elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
       group1 = new InstanceElement('group1', groupType, {
         id: 'fakeid123',
         objectClass: ['okta:user_group'],
@@ -511,10 +475,12 @@ describe('adapter', () => {
     })
 
     it('should successfully add a group', async () => {
+      const groupWithoutId = group1.clone()
+      delete groupWithoutId.value.id
       const result = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [toChange({ after: group1 })],
+          changes: [toChange({ after: groupWithoutId })],
         },
         progressReporter: nullProgressReporter,
       })

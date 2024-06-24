@@ -43,7 +43,7 @@ import {
   DeployResult as JSForceDeployResult,
 } from '@salto-io/jsforce'
 import JSZip from 'jszip'
-import xmlParser from 'fast-xml-parser'
+import { XMLParser } from 'fast-xml-parser'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import {
@@ -86,6 +86,8 @@ describe('SalesforceAdapter CRUD', () => {
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const instanceName = 'Instance'
+
+  const xmlParser = new XMLParser()
 
   type DeployedPackage = {
     manifest?: Package

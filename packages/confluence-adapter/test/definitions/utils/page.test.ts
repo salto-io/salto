@@ -24,7 +24,11 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
-import { adjustPageOnModification, homepageAdditionToModification } from '../../../src/definitions/utils'
+import {
+  adjustPageOnModification,
+  homepageAdditionToModification,
+  putHomepageIdInAdditionContext,
+} from '../../../src/definitions/utils'
 
 describe('page definitions utils', () => {
   const pageObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, PAGE_TYPE_NAME) })
@@ -52,7 +56,7 @@ describe('page definitions utils', () => {
         expect(adjustPageOnModification(args).value.version.number).toEqual(2)
       })
 
-      it('should return the same value if the version number is not a number (should not happen)', () => {
+      it('should return version = 2 if the version number is not a number (homepage addition case)', () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -66,7 +70,7 @@ describe('page definitions utils', () => {
           },
           value: { version: { number: 'not a number' } },
         }
-        expect(adjustPageOnModification(args).value).toEqual(args.value)
+        expect(adjustPageOnModification(args).value.version).toEqual({ number: 2 })
       })
     })
     describe('updateHomepageId', () => {
@@ -196,6 +200,48 @@ describe('page definitions utils', () => {
         sharedContext: {},
       }
       expect(homepageAdditionToModification(args)).toEqual(['modify'])
+    })
+  })
+  describe('putHomepageIdInAdditionContext', () => {
+    it('should return empty object if there is no space change in the change group', () => {
+      const args = {
+        change: pageChange,
+        changeGroup: {
+          changes: [pageChange],
+          groupID: 'group-id',
+        },
+        elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {
+          [getChangeData(spaceChange).elemID.getFullName()]: { id: 'homepageId' },
+        },
+      }
+      expect(putHomepageIdInAdditionContext(args)).toEqual({})
+    })
+    it('should return empty object if there is no homepageId in the shared context', () => {
+      const args = {
+        change: pageChange,
+        changeGroup: {
+          changes: [spaceChange],
+          groupID: 'group-id',
+        },
+        elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
+      }
+      expect(putHomepageIdInAdditionContext(args)).toEqual({})
+    })
+    it('should return homepageId in the shared context', () => {
+      const args = {
+        change: pageChange,
+        changeGroup: {
+          changes: [spaceChange],
+          groupID: 'group-id',
+        },
+        elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {
+          [getChangeData(spaceChange).elemID.getFullName()]: { id: 'homepageId' },
+        },
+      }
+      expect(putHomepageIdInAdditionContext(args)).toEqual({ id: 'homepageId' })
     })
   })
 })

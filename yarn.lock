@@ -3114,15 +3114,15 @@
     lodash "^4.17.21"
     moo "^0.5.2"
 
-"@salto-io/suitecloud-cli@1.9.0-salto-1":
-  version "1.9.0-salto-1"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.9.0-salto-1.tgz#f2bf56d5da743888058d5bf76f317603a0c7242e"
-  integrity sha512-WDqjOaoNtd67JOMXfuSRAaxwbIV8u8BUHGSAkSCDtXNgUIhp6y4W2SyV5AC7Ng/Gmu83XBC8fLaU2pp3k5CtPg==
+"@salto-io/suitecloud-cli@1.9.0-salto-2":
+  version "1.9.0-salto-2"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.9.0-salto-2.tgz#f2f85f7148871647dbf1ddbbb68440f0183bf9da"
+  integrity sha512-4MVOfJLXkKOb7mDQ/fEJM6tTnwE63eb8+TPFvgqik2n0JVI5q53fCw1+i0+SYTRsKYP1oMmixgagsMyd12WPmg==
   dependencies:
     "@salto-io/logging" "<0.4.0"
     chalk "4.1.2"
     cli-spinner "0.2.10"
-    commander "11.1.0"
+    commander "10.0.0"
     inquirer "8.2.6"
     xml2js "0.6.2"
 
@@ -5340,12 +5340,7 @@ combined-stream@^1.0.6, combined-stream@^1.0.8, combined-stream@~1.0.6:
   dependencies:
     delayed-stream "~1.0.0"
 
-commander@11.1.0:
-  version "11.1.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-11.1.0.tgz#62fdce76006a68e5c1ab3314dc92e800eb83d906"
-  integrity sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==
-
-commander@^10.0.0:
+commander@10.0.0, commander@^10.0.0:
   version "10.0.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-10.0.0.tgz#71797971162cd3cf65f0b9d24eb28f8d303acdf1"
   integrity sha512-zS5PnTI22FIRM6ylNW8G4Ap0IEOyk62fhLSD0+uHRT9McRCLGpkVNvao4bjimpK/GShynyQkFFxHhwMcETmduA==
@@ -6937,10 +6932,12 @@ fast-xml-parser@4.0.11:
   dependencies:
     strnum "^1.0.5"
 
-fast-xml-parser@^3.15.0:
-  version "3.17.1"
-  resolved "https://registry.yarnpkg.com/fast-xml-parser/-/fast-xml-parser-3.17.1.tgz#579fa64346cc891ce240d378268c6216e74aab10"
-  integrity sha512-jZ0EVn1iBuZtx/sbQnfvhSaaUltz+0+yfR+6QRyzrlt5yMiU+8ZfGj9i3/hoXJxm+aFri7dycBWbncox7frCAQ==
+fast-xml-parser@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/fast-xml-parser/-/fast-xml-parser-4.4.0.tgz#341cc98de71e9ba9e651a67f41f1752d1441a501"
+  integrity sha512-kLY3jFlwIYwBNDojclKsNAC12sfD6NwW74QB2CoNGPvtVxjliYehVunB3HYyNi+n4Tt1dAcgwYvmKF/Z18flqg==
+  dependencies:
+    strnum "^1.0.5"
 
 fastest-levenshtein@^1.0.12:
   version "1.0.12"

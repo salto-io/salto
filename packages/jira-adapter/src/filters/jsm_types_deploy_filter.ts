@@ -36,8 +36,8 @@ const ASSETS_SUPPORTED_TYPES = [
   OBJECT_TYPE_TYPE,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
   OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
-  OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
   OBJECT_TYPE_ICON_TYPE,
+  OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
 ]
 const SUPPORTED_TYPES = new Set(Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).concat(ASSETS_SUPPORTED_TYPES))
 
@@ -83,6 +83,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         apiDefinitions: jsmApiDefinitions,
         fieldsToIgnore,
         additionalUrlVars,
+        allowedStatusCodesOnRemoval: [404],
       })
     })
     return { deployResult, leftoverChanges }

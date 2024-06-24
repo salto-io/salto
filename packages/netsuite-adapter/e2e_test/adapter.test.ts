@@ -739,17 +739,12 @@ describe('Netsuite adapter E2E with real account', () => {
           fetchedWorkflow.value.workflowstates?.workflowstate?.workflowstate_state1?.workflowtransitions
             ?.workflowtransition?.workflowtransition_transition1?.tostate
         expect(toStateReference).toBeDefined()
-        expect(
-          isReferenceExpression(toStateReference) &&
-            toStateReference.elemID.isEqual(
-              fetchedWorkflow.elemID.createNestedID(
-                'workflowstates',
-                'workflowstate',
-                'workflowstate_state2',
-                SCRIPT_ID,
-              ),
-            ),
-        ).toBe(true)
+        expect(isReferenceExpression(toStateReference)).toBe(true)
+        expect(toStateReference.elemID.getFullName()).toEqual(
+          fetchedWorkflow.elemID
+            .createNestedID('workflowstates', 'workflowstate', 'workflowstate_state2', SCRIPT_ID)
+            .getFullName(),
+        )
       })
 
       it('should fetch the created email template', async () => {

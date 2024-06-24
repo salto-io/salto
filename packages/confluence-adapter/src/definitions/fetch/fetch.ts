@@ -28,7 +28,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { adjustHomepageToId, spaceMergeAndTransformAdjust } from '../utils/space'
+import { spaceMergeAndTransformAdjust } from '../utils/space'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created_at: {
@@ -108,7 +108,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
-          adjust: adjustHomepageToId,
         },
       },
     ],
@@ -216,11 +215,16 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: {
           extendsParent: true,
+          parts: [],
         },
         alias: {
           aliasComponents: [{ fieldName: '_parent.0', referenceFieldName: '_alias' }],
         },
       },
+    },
+    resource: {
+      directFetch: false,
+      serviceIDFields: [],
     },
   },
   [PAGE_TYPE_NAME]: {
@@ -285,6 +289,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     ],
     resource: {
       directFetch: true,
+      serviceIDFields: [],
     },
     element: {
       topLevel: {
@@ -328,10 +333,15 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   [RESTRICTION_TYPE_NAME]: {
+    // make topLevel undefined after merging with default definitions
+    element: {},
     requests: [
       {
         endpoint: {
           path: '/wiki/rest/api/content/{id}/restriction',
+          queryArgs: {
+            expand: 'restrictions.user,restrictions.group',
+          },
         },
         transformation: {
           root: 'results',
@@ -339,6 +349,10 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
+    resource: {
+      directFetch: false,
+      serviceIDFields: [],
+    },
   },
   [TEMPLATE_TYPE_NAME]: {
     requests: [

@@ -24,10 +24,13 @@ import {
   ConfigCreator,
   createRestriction,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
+
+const log = logger(module)
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
@@ -185,7 +188,10 @@ const optionsType = new ObjectType({
 
 const configCreator: ConfigCreator = {
   optionsType,
-  getConfig: _options => createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType),
+  getConfig: options => {
+    log.debug('Invoked dummy configCreator with options %s', inspectValue(options))
+    return createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  },
 }
 
 export const adapter: Adapter = {

@@ -244,7 +244,7 @@ export const toBasicInstance = async ({
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : naclName,
     type,
-    entryData !== undefined ? removeNullValues(entryData, type) : {},
+    entryData !== undefined ? removeNullValues({ values: entryData, type }) : {},
     filePath,
     parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] } : undefined,
   )

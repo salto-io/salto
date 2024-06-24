@@ -81,6 +81,7 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
             toPath,
             // TODO pick better default name, include service id
             defaultName: `unnamed_${index}`,
+            allowEmptyArrays: elementDef.topLevel?.allowEmptyArrays,
           }),
         )
         .filter(isDefined)

@@ -249,7 +249,7 @@ const validateDuplication = (
     .toArray()
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => {
+const changeValidator: NetsuiteChangeValidator = async (changes, { elementsSource }) => {
   const changeElements = changes.filter(isAdditionOrModificationChange).map(getChangeData)
 
   const typesToChanges = getTypeToDataRecord(changeElements, element => element.elemID)
@@ -257,7 +257,7 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
     Object.keys(_.pickBy(typesToChanges, mappedChanges => mappedChanges.length > 0)) as RestrictedType[],
   )
 
-  if (!elementsSource || relevantTypes.size === 0) {
+  if (relevantTypes.size === 0) {
     return []
   }
 

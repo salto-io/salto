@@ -38,11 +38,12 @@ import { createCustomObjectType, createMetadataTypeElement } from '../utils'
 import { profilesHandler } from '../../src/custom_references/profiles'
 
 describe('profiles', () => {
+  let profileInstance: InstanceElement
+  const createTestInstance = (fields: Values): InstanceElement =>
+    new InstanceElement('test', mockTypes.Profile, fields)
+
   describe('weak references handler', () => {
     let refs: ReferenceInfo[]
-    let profileInstance: InstanceElement
-    const createTestInstance = (fields: Values): InstanceElement =>
-      new InstanceElement('test', mockTypes.Profile, fields)
 
     describe('fields', () => {
       describe('when the fields are inaccessible', () => {
@@ -814,69 +815,70 @@ describe('profiles', () => {
   })
 
   describe('fix elements', () => {
-    const profileInstance = new InstanceElement('test', mockTypes.Profile, {
-      fieldPermissions: {
-        Account: {
-          testField__c: 'ReadWrite',
-        },
-      },
-      applicationVisibilities: {
-        SomeApplication: {
-          application: 'SomeApplication',
-          default: true,
-          visible: true,
-        },
-      },
-      classAccesses: {
-        SomeApexClass: {
-          apexClass: 'SomeApexClass',
-          enabled: true,
-        },
-      },
-      flowAccesses: {
-        SomeFlow: {
-          enabled: true,
-          flow: 'SomeFlow',
-        },
-      },
-      layoutAssignments: {
-        'Account_Account_Layout@bs': [
-          {
-            layout: 'Account-Account Layout',
-          },
-        ],
-      },
-      objectPermissions: {
-        Account: {
-          allowCreate: true,
-          allowDelete: true,
-          allowEdit: true,
-          allowRead: true,
-          modifyAllRecords: false,
-          object: 'Account',
-          viewAllRecords: false,
-        },
-      },
-      pageAccesses: {
-        SomeApexPage: {
-          apexPage: 'SomeApexPage',
-          enabled: true,
-        },
-      },
-      recordTypeVisibilities: {
-        Case: {
-          SomeCaseRecordType: {
-            default: true,
-            recordType: 'Case.SomeCaseRecordType',
-            visible: false,
-          },
-        },
-      },
-    })
     let fixElementsFunc: FixElementsFunc
 
     describe('when references are missing', () => {
       beforeEach(() => {
+        profileInstance = createTestInstance({
+          fieldPermissions: {
+            Account: {
+              testField__c: 'ReadWrite',
+            },
+          },
+          applicationVisibilities: {
+            SomeApplication: {
+              application: 'SomeApplication',
+              default: true,
+              visible: true,
+            },
+          },
+          classAccesses: {
+            SomeApexClass: {
+              apexClass: 'SomeApexClass',
+              enabled: true,
+            },
+          },
+          flowAccesses: {
+            SomeFlow: {
+              enabled: true,
+              flow: 'SomeFlow',
+            },
+          },
+          layoutAssignments: {
+            'Account_Account_Layout@bs': [
+              {
+                layout: 'Account-Account Layout',
+              },
+            ],
+          },
+          objectPermissions: {
+            Account: {
+              allowCreate: true,
+              allowDelete: true,
+              allowEdit: true,
+              allowRead: true,
+              modifyAllRecords: false,
+              object: 'Account',
+              viewAllRecords: false,
+            },
+          },
+          pageAccesses: {
+            SomeApexPage: {
+              apexPage: 'SomeApexPage',
+              enabled: true,
+            },
+          },
+          recordTypeVisibilities: {
+            Case: {
+              SomeCaseRecordType: {
+                default: true,
+                recordType: 'Case.SomeCaseRecordType',
+                visible: false,
+              },
+            },
+          },
+        })
+
         const elementsSource = buildElementsSourceFromElements([])
         fixElementsFunc = profilesHandler.removeWeakReferences({
           elementsSource,
@@ -983,7 +985,7 @@ describe('profiles', () => {
           profileInstance,
         ])
         expect(fixedElements).toEqual([
-          new InstanceElement('test', mockTypes.Profile, {
+          createTestInstance({
             fieldPermissions: {
               Account: {},
             },

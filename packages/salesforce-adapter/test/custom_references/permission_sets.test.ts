@@ -19,7 +19,10 @@ import {
   Values,
   ElemID,
   ReferenceExpression,
+  FixElementsFunc,
+  Field,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
@@ -37,413 +40,21 @@ import { permissionSetsHandler } from '../../src/custom_references/permission_se
 const { findWeakReferences } = permissionSetsHandler
 
 describe('permission sets custom references', () => {
-  let refs: ReferenceInfo[]
   let permissionSetInstance: InstanceElement
-  const createTestInstances = (fields: Values): InstanceElement =>
+  const createTestInstance = (fields: Values): InstanceElement =>
     new InstanceElement('test', mockTypes.PermissionSet, fields)
 
-  describe('fields', () => {
-    describe('when the fields are inaccessible', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField__c: 'NoAccess',
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should not create references', async () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-    describe('when the fields are accessible', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField__c: 'ReadWrite',
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should create references', async () => {
-        const expectedSource = ['fieldPermissions', 'Account', 'testField__c']
-        const expectedTarget = mockTypes.Account.elemID.createNestedID(
-          'field',
-          'testField__c',
-        )
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              ...expectedSource,
-            ),
-            target: expectedTarget,
-            type: 'weak',
-          },
-        ])
-      })
-    })
-  })
-  describe('custom apps', () => {
-    const customApp = new InstanceElement(
-      'SomeApplication',
-      createMetadataTypeElement('CustomApplication', {}),
-      { [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication' },
-    )
+  describe('weak references handler', () => {
+    let refs: ReferenceInfo[]
 
-    describe('if neither default or visible', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: 'SomeApplication',
-              default: false,
-              visible: false,
-            },
-          },
-        })
-
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should not create a reference', () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-
-    describe('if default', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: 'SomeApplication',
-              default: true,
-              visible: false,
-            },
-          },
-        })
-
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should create a reference', () => {
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'applicationVisibilities',
-              'SomeApplication',
-            ),
-            target: customApp.elemID,
-            type: 'weak',
-          },
-        ])
-      })
-    })
-
-    describe('if visible', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: 'SomeApplication',
-              default: false,
-              visible: true,
-            },
-          },
-        })
-
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should create a reference', () => {
-        expect(refs).toIncludeAllPartialMembers([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'applicationVisibilities',
-              'SomeApplication',
-            ),
-            target: customApp.elemID,
-            type: 'weak',
-          },
-        ])
-      })
-    })
-    describe('if a reference already exists', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  CUSTOM_APPLICATION_METADATA_TYPE,
-                  'instance',
-                  'SomeApplication',
-                ),
-              ),
-              default: false,
-              visible: true,
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should not create references', async () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-  })
-  describe('apex classes', () => {
-    const apexClass = new InstanceElement(
-      'SomeApexClass',
-      mockTypes.ApexClass,
-      { [INSTANCE_FULL_NAME_FIELD]: 'SomeApexClass' },
-    )
-
-    describe('when disabled', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          classAccesses: {
-            SomeApexClass: {
-              apexClass: 'SomeApexClass',
-              enabled: false,
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should not create a reference', () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-
-    describe('when enabled', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          classAccesses: {
-            SomeApexClass: {
-              apexClass: 'SomeApexClass',
-              enabled: true,
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should create a reference', () => {
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'classAccesses',
-              'SomeApexClass',
-            ),
-            target: apexClass.elemID,
-            type: 'weak',
-          },
-        ])
-      })
-    })
-    describe('if a reference already exists', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          classAccesses: {
-            SomeApexClass: {
-              apexClass: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  APEX_CLASS_METADATA_TYPE,
-                  'instance',
-                  'SomeApexClass',
-                ),
-              ),
-              enabled: true,
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should not create references', async () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-  })
-  describe('flows', () => {
-    const flow = new InstanceElement('SomeFlow', mockTypes.Flow, {
-      [INSTANCE_FULL_NAME_FIELD]: 'SomeFlow',
-    })
-
-    describe('when disabled', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          flowAccesses: {
-            SomeFlow: {
-              enabled: false,
-              flow: 'SomeFlow',
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should not create a reference', () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-    describe('when enabled', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          flowAccesses: {
-            SomeFlow: {
-              enabled: true,
-              flow: 'SomeFlow',
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should create a reference', () => {
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'flowAccesses',
-              'SomeFlow',
-            ),
-            target: flow.elemID,
-            type: 'weak',
-          },
-        ])
-      })
-    })
-    describe('if a reference already exists', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          flowAccesses: {
-            SomeFlow: {
-              enabled: true,
-              flow: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  FLOW_METADATA_TYPE,
-                  'instance',
-                  'SomeFlow',
-                ),
-              ),
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should not create references', async () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-  })
-  describe('layouts', () => {
-    const layout = new InstanceElement(
-      'Account_Account_Layout@bs',
-      mockTypes.Layout,
-      { [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout' },
-    )
-
-    describe('when there is a reference to a layout', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          layoutAssignments: {
-            'Account_Account_Layout@bs': [
-              {
-                layout: 'Account-Account Layout',
-              },
-            ],
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should create a reference', () => {
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
-            target: layout.elemID,
-            type: 'weak',
-          },
-        ])
-      })
-    })
-    describe('when there is a reference to a recordType', () => {
-      const recordTypes = [
-        new InstanceElement('SomeRecordType', mockTypes.RecordType, {
-          [INSTANCE_FULL_NAME_FIELD]: 'SomeRecordType',
-        }),
-        new InstanceElement('SomeOtherRecordType', mockTypes.RecordType, {
-          [INSTANCE_FULL_NAME_FIELD]: 'SomeOtherRecordType',
-        }),
-      ]
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          layoutAssignments: {
-            'Account_Account_Layout@bs': [
-              {
-                layout: 'Account-Account Layout',
-                recordType: 'SomeRecordType',
-              },
-              {
-                layout: 'Account-Account Layout',
-                recordType: 'SomeOtherRecordType',
-              },
-            ],
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should create a reference', () => {
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
-            target: layout.elemID,
-            type: 'weak',
-          },
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
-            target: recordTypes[0].elemID,
-            type: 'weak',
-          },
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
-            target: recordTypes[1].elemID,
-            type: 'weak',
-          },
-        ])
-      })
-      describe('if a reference already exists to a layout', () => {
+    describe('fields', () => {
+      describe('when the fields are inaccessible', () => {
         beforeEach(async () => {
-          permissionSetInstance = createTestInstances({
-            layoutAssignments: {
-              'Account_Account_Layout@bs': [
-                {
-                  layout: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      LAYOUT_TYPE_ID_METADATA_TYPE,
-                      'instance',
-                      'Account-Account Layout',
-                    ),
-                  ),
-                },
-              ],
+          permissionSetInstance = createTestInstance({
+            fieldPermissions: {
+              Account: {
+                testField__c: 'NoAccess',
+              },
             },
           })
           refs = await findWeakReferences([permissionSetInstance], undefined)
@@ -452,39 +63,310 @@ describe('permission sets custom references', () => {
           expect(refs).toBeEmpty()
         })
       })
-      describe('if a reference already exists to a recordType', () => {
+      describe('when the fields are accessible', () => {
         beforeEach(async () => {
-          permissionSetInstance = createTestInstances({
+          permissionSetInstance = createTestInstance({
+            fieldPermissions: {
+              Account: {
+                testField__c: 'ReadWrite',
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should create references', async () => {
+          const expectedSource = ['fieldPermissions', 'Account', 'testField__c']
+          const expectedTarget = mockTypes.Account.elemID.createNestedID(
+            'field',
+            'testField__c',
+          )
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                ...expectedSource,
+              ),
+              target: expectedTarget,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+    })
+    describe('custom apps', () => {
+      const customApp = new InstanceElement(
+        'SomeApplication',
+        createMetadataTypeElement('CustomApplication', {}),
+        { [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication' },
+      )
+
+      describe('if neither default or visible', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            applicationVisibilities: {
+              SomeApplication: {
+                application: 'SomeApplication',
+                default: false,
+                visible: false,
+              },
+            },
+          })
+
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+
+      describe('if default', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            applicationVisibilities: {
+              SomeApplication: {
+                application: 'SomeApplication',
+                default: true,
+                visible: false,
+              },
+            },
+          })
+
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'applicationVisibilities',
+                'SomeApplication',
+              ),
+              target: customApp.elemID,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+
+      describe('if visible', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            applicationVisibilities: {
+              SomeApplication: {
+                application: 'SomeApplication',
+                default: false,
+                visible: true,
+              },
+            },
+          })
+
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toIncludeAllPartialMembers([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'applicationVisibilities',
+                'SomeApplication',
+              ),
+              target: customApp.elemID,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+      describe('if a reference already exists', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            applicationVisibilities: {
+              SomeApplication: {
+                application: new ReferenceExpression(
+                  new ElemID(
+                    SALESFORCE,
+                    CUSTOM_APPLICATION_METADATA_TYPE,
+                    'instance',
+                    'SomeApplication',
+                  ),
+                ),
+                default: false,
+                visible: true,
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should not create references', async () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+    })
+    describe('apex classes', () => {
+      const apexClass = new InstanceElement(
+        'SomeApexClass',
+        mockTypes.ApexClass,
+        { [INSTANCE_FULL_NAME_FIELD]: 'SomeApexClass' },
+      )
+
+      describe('when disabled', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            classAccesses: {
+              SomeApexClass: {
+                apexClass: 'SomeApexClass',
+                enabled: false,
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+
+      describe('when enabled', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            classAccesses: {
+              SomeApexClass: {
+                apexClass: 'SomeApexClass',
+                enabled: true,
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'classAccesses',
+                'SomeApexClass',
+              ),
+              target: apexClass.elemID,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+      describe('if a reference already exists', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            classAccesses: {
+              SomeApexClass: {
+                apexClass: new ReferenceExpression(
+                  new ElemID(
+                    SALESFORCE,
+                    APEX_CLASS_METADATA_TYPE,
+                    'instance',
+                    'SomeApexClass',
+                  ),
+                ),
+                enabled: true,
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should not create references', async () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+    })
+    describe('flows', () => {
+      const flow = new InstanceElement('SomeFlow', mockTypes.Flow, {
+        [INSTANCE_FULL_NAME_FIELD]: 'SomeFlow',
+      })
+
+      describe('when disabled', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            flowAccesses: {
+              SomeFlow: {
+                enabled: false,
+                flow: 'SomeFlow',
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+      describe('when enabled', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            flowAccesses: {
+              SomeFlow: {
+                enabled: true,
+                flow: 'SomeFlow',
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'flowAccesses',
+                'SomeFlow',
+              ),
+              target: flow.elemID,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+      describe('if a reference already exists', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            flowAccesses: {
+              SomeFlow: {
+                enabled: true,
+                flow: new ReferenceExpression(
+                  new ElemID(
+                    SALESFORCE,
+                    FLOW_METADATA_TYPE,
+                    'instance',
+                    'SomeFlow',
+                  ),
+                ),
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should not create references', async () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+    })
+    describe('layouts', () => {
+      const layout = new InstanceElement(
+        'Account_Account_Layout@bs',
+        mockTypes.Layout,
+        { [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout' },
+      )
+
+      describe('when there is a reference to a layout', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
             layoutAssignments: {
               'Account_Account_Layout@bs': [
                 {
                   layout: 'Account-Account Layout',
-                  recordType: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      RECORD_TYPE_METADATA_TYPE,
-                      'instance',
-                      'SomeRecordType',
-                    ),
-                  ),
-                },
-                {
-                  layout: 'Account-Account Layout',
-                  recordType: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      RECORD_TYPE_METADATA_TYPE,
-                      'instance',
-                      'SomeOtherRecordType',
-                    ),
-                  ),
                 },
               ],
             },
           })
           refs = await findWeakReferences([permissionSetInstance], undefined)
         })
-        it('should only create references to layout', () => {
+        it('should create a reference', () => {
           expect(refs).toEqual([
             {
               source: permissionSetInstance.elemID.createNestedID(
@@ -497,194 +379,454 @@ describe('permission sets custom references', () => {
           ])
         })
       })
-    })
-  })
-  describe('objects', () => {
-    const customObject = createCustomObjectType('Account', {})
-
-    describe('when all permissions are disabled', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          objectPermissions: {
-            Account: {
-              allowCreate: false,
-              allowDelete: false,
-              allowEdit: false,
-              allowRead: false,
-              modifyAllRecords: false,
-              object: 'Account',
-              viewAllRecords: false,
+      describe('when there is a reference to a recordType', () => {
+        const recordTypes = [
+          new InstanceElement('SomeRecordType', mockTypes.RecordType, {
+            [INSTANCE_FULL_NAME_FIELD]: 'SomeRecordType',
+          }),
+          new InstanceElement('SomeOtherRecordType', mockTypes.RecordType, {
+            [INSTANCE_FULL_NAME_FIELD]: 'SomeOtherRecordType',
+          }),
+        ]
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            layoutAssignments: {
+              'Account_Account_Layout@bs': [
+                {
+                  layout: 'Account-Account Layout',
+                  recordType: 'SomeRecordType',
+                },
+                {
+                  layout: 'Account-Account Layout',
+                  recordType: 'SomeOtherRecordType',
+                },
+              ],
             },
-          },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
         })
-
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should not create references', () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-
-    describe('when some permissions are enabled', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          objectPermissions: {
-            Account: {
-              allowCreate: true,
-              allowDelete: true,
-              allowEdit: true,
-              allowRead: true,
-              modifyAllRecords: false,
-              object: 'Account',
-              viewAllRecords: false,
-            },
-          },
-        })
-
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should create a reference', () => {
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'objectPermissions',
-              'Account',
-            ),
-            target: customObject.elemID,
-            type: 'weak',
-          },
-        ])
-      })
-    })
-    describe('when a reference already exists', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          objectPermissions: {
-            Account: {
-              allowCreate: true,
-              allowDelete: true,
-              allowEdit: true,
-              allowRead: true,
-              modifyAllRecords: false,
-              object: new ReferenceExpression(
-                new ElemID(SALESFORCE, 'Account'),
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
               ),
-              viewAllRecords: false,
+              target: layout.elemID,
+              type: 'weak',
             },
-          },
-        })
-
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should not create a reference', () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-  })
-  describe('Apex pages', () => {
-    const apexPage = new InstanceElement('SomeApexPage', mockTypes.ApexPage, {
-      [INSTANCE_FULL_NAME_FIELD]: 'SomeApexPage',
-    })
-
-    describe('when disabled', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          pageAccesses: {
-            SomeApexPage: {
-              apexPage: 'SomeApexPage',
-              enabled: false,
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
+              target: recordTypes[0].elemID,
+              type: 'weak',
             },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should not create a reference', () => {
-        expect(refs).toBeEmpty()
-      })
-    })
-
-    describe('when enabled', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          pageAccesses: {
-            SomeApexPage: {
-              apexPage: 'SomeApexPage',
-              enabled: true,
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
+              target: recordTypes[1].elemID,
+              type: 'weak',
             },
-          },
+          ])
         })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should create a reference', () => {
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'pageAccesses',
-              'SomeApexPage',
-            ),
-            target: apexPage.elemID,
-            type: 'weak',
-          },
-        ])
-      })
-    })
-    describe('when a reference already exists', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          pageAccesses: {
-            SomeApexPage: {
-              apexPage: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  APEX_PAGE_METADATA_TYPE,
-                  'instance',
-                  'SomeApexPage',
+        describe('if a reference already exists to a layout', () => {
+          beforeEach(async () => {
+            permissionSetInstance = createTestInstance({
+              layoutAssignments: {
+                'Account_Account_Layout@bs': [
+                  {
+                    layout: new ReferenceExpression(
+                      new ElemID(
+                        SALESFORCE,
+                        LAYOUT_TYPE_ID_METADATA_TYPE,
+                        'instance',
+                        'Account-Account Layout',
+                      ),
+                    ),
+                  },
+                ],
+              },
+            })
+            refs = await findWeakReferences([permissionSetInstance], undefined)
+          })
+          it('should not create references', async () => {
+            expect(refs).toBeEmpty()
+          })
+        })
+        describe('if a reference already exists to a recordType', () => {
+          beforeEach(async () => {
+            permissionSetInstance = createTestInstance({
+              layoutAssignments: {
+                'Account_Account_Layout@bs': [
+                  {
+                    layout: 'Account-Account Layout',
+                    recordType: new ReferenceExpression(
+                      new ElemID(
+                        SALESFORCE,
+                        RECORD_TYPE_METADATA_TYPE,
+                        'instance',
+                        'SomeRecordType',
+                      ),
+                    ),
+                  },
+                  {
+                    layout: 'Account-Account Layout',
+                    recordType: new ReferenceExpression(
+                      new ElemID(
+                        SALESFORCE,
+                        RECORD_TYPE_METADATA_TYPE,
+                        'instance',
+                        'SomeOtherRecordType',
+                      ),
+                    ),
+                  },
+                ],
+              },
+            })
+            refs = await findWeakReferences([permissionSetInstance], undefined)
+          })
+          it('should only create references to layout', () => {
+            expect(refs).toEqual([
+              {
+                source: permissionSetInstance.elemID.createNestedID(
+                  'layoutAssignments',
+                  'Account_Account_Layout@bs',
                 ),
-              ),
-              enabled: true,
-            },
-          },
+                target: layout.elemID,
+                type: 'weak',
+              },
+            ])
+          })
         })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-
-      it('should not create a reference', () => {
-        expect(refs).toBeEmpty()
       })
     })
-  })
-  describe('record types', () => {
-    const recordType = new InstanceElement(
-      'Case_SomeCaseRecordType',
-      mockTypes.RecordType,
-      { [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType' },
-    )
-    describe('when neither default nor visible', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          recordTypeVisibilities: {
-            Case: {
-              SomeCaseRecordType: {
-                default: false,
-                recordType: 'Case.SomeCaseRecordType',
-                visible: false,
+    describe('objects', () => {
+      const customObject = createCustomObjectType('Account', {})
+
+      describe('when all permissions are disabled', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            objectPermissions: {
+              Account: {
+                allowCreate: false,
+                allowDelete: false,
+                allowEdit: false,
+                allowRead: false,
+                modifyAllRecords: false,
+                object: 'Account',
+                viewAllRecords: false,
               },
             },
-          },
+          })
+
+          refs = await findWeakReferences([permissionSetInstance], undefined)
         })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
+
+        it('should not create references', () => {
+          expect(refs).toBeEmpty()
+        })
       })
-      it('should not create a reference', () => {
-        expect(refs).toBeEmpty()
+
+      describe('when some permissions are enabled', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            objectPermissions: {
+              Account: {
+                allowCreate: true,
+                allowDelete: true,
+                allowEdit: true,
+                allowRead: true,
+                modifyAllRecords: false,
+                object: 'Account',
+                viewAllRecords: false,
+              },
+            },
+          })
+
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'objectPermissions',
+                'Account',
+              ),
+              target: customObject.elemID,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+      describe('when a reference already exists', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            objectPermissions: {
+              Account: {
+                allowCreate: true,
+                allowDelete: true,
+                allowEdit: true,
+                allowRead: true,
+                modifyAllRecords: false,
+                object: new ReferenceExpression(
+                  new ElemID(SALESFORCE, 'Account'),
+                ),
+                viewAllRecords: false,
+              },
+            },
+          })
+
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
       })
     })
-    describe('when default', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
+    describe('Apex pages', () => {
+      const apexPage = new InstanceElement('SomeApexPage', mockTypes.ApexPage, {
+        [INSTANCE_FULL_NAME_FIELD]: 'SomeApexPage',
+      })
+
+      describe('when disabled', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            pageAccesses: {
+              SomeApexPage: {
+                apexPage: 'SomeApexPage',
+                enabled: false,
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+
+      describe('when enabled', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            pageAccesses: {
+              SomeApexPage: {
+                apexPage: 'SomeApexPage',
+                enabled: true,
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'pageAccesses',
+                'SomeApexPage',
+              ),
+              target: apexPage.elemID,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+      describe('when a reference already exists', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            pageAccesses: {
+              SomeApexPage: {
+                apexPage: new ReferenceExpression(
+                  new ElemID(
+                    SALESFORCE,
+                    APEX_PAGE_METADATA_TYPE,
+                    'instance',
+                    'SomeApexPage',
+                  ),
+                ),
+                enabled: true,
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+    })
+    describe('record types', () => {
+      const recordType = new InstanceElement(
+        'Case_SomeCaseRecordType',
+        mockTypes.RecordType,
+        { [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType' },
+      )
+      describe('when neither default nor visible', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            recordTypeVisibilities: {
+              Case: {
+                SomeCaseRecordType: {
+                  default: false,
+                  recordType: 'Case.SomeCaseRecordType',
+                  visible: false,
+                },
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+      describe('when default', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            recordTypeVisibilities: {
+              Case: {
+                SomeCaseRecordType: {
+                  default: true,
+                  recordType: 'Case.SomeCaseRecordType',
+                  visible: false,
+                },
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'recordTypeVisibilities',
+                'Case',
+                'SomeCaseRecordType',
+              ),
+              target: recordType.elemID,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+      describe('when visible', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            recordTypeVisibilities: {
+              Case: {
+                SomeCaseRecordType: {
+                  default: false,
+                  recordType: 'Case.SomeCaseRecordType',
+                  visible: true,
+                },
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should create a reference', () => {
+          expect(refs).toEqual([
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'recordTypeVisibilities',
+                'Case',
+                'SomeCaseRecordType',
+              ),
+              target: recordType.elemID,
+              type: 'weak',
+            },
+          ])
+        })
+      })
+      describe('when visible and a reference already exists', () => {
+        beforeEach(async () => {
+          permissionSetInstance = createTestInstance({
+            recordTypeVisibilities: {
+              Case: {
+                SomeCaseRecordType: {
+                  default: false,
+                  recordType: new ReferenceExpression(
+                    new ElemID(
+                      SALESFORCE,
+                      RECORD_TYPE_METADATA_TYPE,
+                      'instance',
+                      'Case.SomeCaseRecordType',
+                    ),
+                  ),
+                  visible: true,
+                },
+              },
+            },
+          })
+          refs = await findWeakReferences([permissionSetInstance], undefined)
+        })
+        it('should not create a reference', () => {
+          expect(refs).toBeEmpty()
+        })
+      })
+    })
+  })
+  describe('fix elements', () => {
+    let fixElementsFunc: FixElementsFunc
+
+    describe('when references are missing', () => {
+      beforeEach(() => {
+        permissionSetInstance = createTestInstance({
+          fieldPermissions: {
+            Account: {
+              testField__c: 'ReadWrite',
+            },
+          },
+          applicationVisibilities: {
+            SomeApplication: {
+              application: 'SomeApplication',
+              default: true,
+              visible: true,
+            },
+          },
+          classAccesses: {
+            SomeApexClass: {
+              apexClass: 'SomeApexClass',
+              enabled: true,
+            },
+          },
+          flowAccesses: {
+            SomeFlow: {
+              enabled: true,
+              flow: 'SomeFlow',
+            },
+          },
+          layoutAssignments: {
+            'Account_Account_Layout@bs': [
+              {
+                layout: 'Account-Account Layout',
+              },
+            ],
+          },
+          objectPermissions: {
+            Account: {
+              allowCreate: true,
+              allowDelete: true,
+              allowEdit: true,
+              allowRead: true,
+              modifyAllRecords: false,
+              object: 'Account',
+              viewAllRecords: false,
+            },
+          },
+          pageAccesses: {
+            SomeApexPage: {
+              apexPage: 'SomeApexPage',
+              enabled: true,
+            },
+          },
           recordTypeVisibilities: {
             Case: {
               SomeCaseRecordType: {
@@ -695,75 +837,164 @@ describe('permission sets custom references', () => {
             },
           },
         })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
+
+        const elementsSource = buildElementsSourceFromElements([])
+        fixElementsFunc = permissionSetsHandler.removeWeakReferences({
+          elementsSource,
+        })
       })
-      it('should create a reference', () => {
-        expect(refs).toEqual([
+
+      it('should drop fields', async () => {
+        const { fixedElements, errors } = await fixElementsFunc([
+          permissionSetInstance,
+        ])
+        expect(fixedElements).toEqual([
+          createTestInstance({
+            fieldPermissions: {
+              Account: {},
+            },
+            applicationVisibilities: {},
+            classAccesses: {},
+            flowAccesses: {},
+            layoutAssignments: {},
+            objectPermissions: {},
+            pageAccesses: {},
+            recordTypeVisibilities: {
+              Case: {},
+            },
+          }),
+        ])
+        expect(errors).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'recordTypeVisibilities',
-              'Case',
-              'SomeCaseRecordType',
-            ),
-            target: recordType.elemID,
-            type: 'weak',
+            elemID: permissionSetInstance.elemID,
+            severity: 'Info',
+            message: 'Dropping profile fields which reference missing types',
+            detailedMessage:
+              'The profile has 8 fields which reference types which are not available in the workspace.',
           },
         ])
       })
     })
-    describe('when visible', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          recordTypeVisibilities: {
-            Case: {
-              SomeCaseRecordType: {
-                default: false,
-                recordType: 'Case.SomeCaseRecordType',
-                visible: true,
-              },
-            },
-          },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should create a reference', () => {
-        expect(refs).toEqual([
-          {
-            source: permissionSetInstance.elemID.createNestedID(
-              'recordTypeVisibilities',
-              'Case',
-              'SomeCaseRecordType',
-            ),
-            target: recordType.elemID,
-            type: 'weak',
-          },
+
+    describe('when references are resolved', () => {
+      beforeEach(() => {
+        const elementsSource = buildElementsSourceFromElements([
+          new Field(
+            mockTypes.Account,
+            'testField__c',
+            mockTypes.AccountSettings,
+          ),
+          new InstanceElement(
+            'SomeApplication',
+            mockTypes.CustomApplication,
+            {},
+          ),
+          new InstanceElement('SomeApexClass', mockTypes.ApexClass, {}),
+          new InstanceElement('SomeFlow', mockTypes.Flow, {}),
+          new InstanceElement(
+            'Account_Account_Layout@bs',
+            mockTypes.Layout,
+            {},
+          ),
+          mockTypes.Account,
+          new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
+          new InstanceElement(
+            'Case_SomeCaseRecordType',
+            mockTypes.RecordType,
+            {},
+          ),
         ])
+        fixElementsFunc = permissionSetsHandler.removeWeakReferences({
+          elementsSource,
+        })
+      })
+
+      it('should drop fields', async () => {
+        const { fixedElements, errors } = await fixElementsFunc([
+          permissionSetInstance,
+        ])
+        expect(fixedElements).toBeEmpty()
+        expect(errors).toBeEmpty()
       })
     })
-    describe('when visible and a reference already exists', () => {
-      beforeEach(async () => {
-        permissionSetInstance = createTestInstances({
-          recordTypeVisibilities: {
-            Case: {
-              SomeCaseRecordType: {
-                default: false,
-                recordType: new ReferenceExpression(
-                  new ElemID(
-                    SALESFORCE,
-                    RECORD_TYPE_METADATA_TYPE,
-                    'instance',
-                    'Case.SomeCaseRecordType',
-                  ),
-                ),
-                visible: true,
+
+    describe('when some references are resolved', () => {
+      beforeEach(() => {
+        const elementsSource = buildElementsSourceFromElements([
+          new InstanceElement(
+            'Account_Account_Layout@bs',
+            mockTypes.Layout,
+            {},
+          ),
+          mockTypes.Account,
+          new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
+          new InstanceElement(
+            'Case_SomeCaseRecordType',
+            mockTypes.RecordType,
+            {},
+          ),
+        ])
+        fixElementsFunc = permissionSetsHandler.removeWeakReferences({
+          elementsSource,
+        })
+      })
+
+      it('should drop fields', async () => {
+        const { fixedElements, errors } = await fixElementsFunc([
+          permissionSetInstance,
+        ])
+        expect(fixedElements).toEqual([
+          createTestInstance({
+            fieldPermissions: {
+              Account: {},
+            },
+            applicationVisibilities: {},
+            classAccesses: {},
+            flowAccesses: {},
+            layoutAssignments: {
+              'Account_Account_Layout@bs': [
+                {
+                  layout: 'Account-Account Layout',
+                },
+              ],
+            },
+            objectPermissions: {
+              Account: {
+                allowCreate: true,
+                allowDelete: true,
+                allowEdit: true,
+                allowRead: true,
+                modifyAllRecords: false,
+                object: 'Account',
+                viewAllRecords: false,
               },
             },
+            pageAccesses: {
+              SomeApexPage: {
+                apexPage: 'SomeApexPage',
+                enabled: true,
+              },
+            },
+            recordTypeVisibilities: {
+              Case: {
+                SomeCaseRecordType: {
+                  default: true,
+                  recordType: 'Case.SomeCaseRecordType',
+                  visible: false,
+                },
+              },
+            },
+          }),
+        ])
+        expect(errors).toEqual([
+          {
+            elemID: permissionSetInstance.elemID,
+            severity: 'Info',
+            message: 'Dropping profile fields which reference missing types',
+            detailedMessage:
+              'The profile has 4 fields which reference types which are not available in the workspace.',
           },
-        })
-        refs = await findWeakReferences([permissionSetInstance], undefined)
-      })
-      it('should not create a reference', () => {
-        expect(refs).toBeEmpty()
+        ])
       })
     })
   })

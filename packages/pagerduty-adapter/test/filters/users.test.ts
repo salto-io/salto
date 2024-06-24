@@ -15,7 +15,7 @@
  */
 import { fetch as fetchUtils, definitions as def, filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import {
   ADAPTER_NAME,
   ESCALATION_POLICY_TYPE_NAME,
@@ -78,10 +78,15 @@ describe('users filter', () => {
     })
 
     mockedGetElements.mockResolvedValue({
-      elements: [new InstanceElement('user', userType, { id: '11111', email: 'uri1@salto.io' })],
+      elements: [
+        new InstanceElement('user', userType, { id: '11111', email: 'uri1@salto.io' }),
+        new InstanceElement('user', userType, { id: '22222', email: 'uri2@salto.io' }),
+        new InstanceElement('user', userType, { id: '33333', email: 'uri3@salto.io' }),
+        new InstanceElement('user', userType, { id: '44444', email: 'uri4@salto.io' }),
+      ],
     })
   })
-  describe('on fetch', () => {
+  describe('onFetch', () => {
     it('should convert user ids into emails', async () => {
       const elements = generateElements(true)
       await filter.onFetch?.(elements)
@@ -93,28 +98,28 @@ describe('users filter', () => {
       expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
     })
   })
-  // describe('pre deploy', () => {
-  //   it('should convert emails into user ids', async () => {
-  //     const elements = generateElements(false)
-  //     await filter.preDeploy?.([elements.map(e => toChange({ after: e }))])
-  //     expect(elements[0].value.users[0].user.id).toEqual('11111')
-  //     expect(elements[0].value.users[1].user.id).toEqual('22222')
-  //     expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('22222')
-  //     expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('33333')
-  //     expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('44444')
-  //     expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
-  //   })
-  // })
-  // describe('on deploy', () => {
-  //   it('should convert user ids into emails', async () => {
-  //     const elements = generateElements(true)
-  //     await filter.preDeploy?.([elements.map(e => toChange({ after: e }))])
-  //     expect(elements[0].value.users[0].user.id).toEqual('uri1@salto.io')
-  //     expect(elements[0].value.users[1].user.id).toEqual('uri2@salto.io')
-  //     expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('uri2@salto.io')
-  //     expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('uri3@salto.io')
-  //     expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('uri4@salto.io')
-  //     expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
-  //   })
-  // })
+  describe('preDeploy', () => {
+    it('should convert emails into user ids', async () => {
+      const elements = generateElements(false)
+      await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
+      expect(elements[0].value.users[0].user.id).toEqual('11111')
+      expect(elements[0].value.users[1].user.id).toEqual('22222')
+      expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('22222')
+      expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('33333')
+      expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('44444')
+    })
+  })
+  describe('onDeploy', () => {
+    it('should convert user ids into emails', async () => {
+      const elements = generateElements(true)
+      await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
+      await filter.onDeploy?.(elements.map(e => toChange({ after: e })))
+      expect(elements[0].value.users[0].user.id).toEqual('uri1@salto.io')
+      expect(elements[0].value.users[1].user.id).toEqual('uri2@salto.io')
+      expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('uri2@salto.io')
+      expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('uri3@salto.io')
+      expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('uri4@salto.io')
+      expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
+    })
+  })
 })

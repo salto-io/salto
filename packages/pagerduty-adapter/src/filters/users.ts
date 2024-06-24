@@ -138,6 +138,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       if (_.isEmpty(relevantChanges)) {
         return
       }
+      // TODO - SALTO-6074 - We will apply chance here to avoid querying the same users in every change group
       const users = await fetchUtils.getElements({
         adapterName: ADAPTER_NAME,
         fetchQuery,

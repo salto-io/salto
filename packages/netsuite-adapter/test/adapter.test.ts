@@ -454,7 +454,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
           failedTypes: expect.anything(),
           failedCustomRecords: expect.anything(),
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -476,7 +475,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -538,7 +536,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -560,7 +557,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -585,7 +581,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -609,7 +604,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -1593,7 +1587,6 @@ describe('Adapter', () => {
               excludedTypes: ['excludedTypeDataElements'],
             },
             failedCustomRecords: ['excludedTypeCustomRecord'],
-            largeSuiteQLTables: [],
           },
           config,
         )

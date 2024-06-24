@@ -23,6 +23,7 @@ import {
   STOP_MANAGING_ITEMS_MSG,
   getConfigFromConfigChanges,
   ALIGNED_INACTIVE_CRITERIAS,
+  toRemovedDeprecatedConfigsMessage,
 } from '../../src/config/suggestions'
 import { NetsuiteQueryParameters, fetchDefault, configType, NetsuiteConfig } from '../../src/config/types'
 import { INACTIVE_FIELDS } from '../../src/constants'
@@ -241,5 +242,35 @@ describe('netsuite config suggestions', () => {
       },
     })
     expect(configChange?.message).toMatch(ALIGNED_INACTIVE_CRITERIAS)
+  })
+
+  it('should remove deprecated configs', () => {
+    const config: NetsuiteConfig = {
+      fetch: fullFetchConfig(),
+      suiteAppClient: {},
+    }
+    Object.assign(config.fetch, { skipResolvingAccountSpecificValuesToTypes: [] })
+    Object.assign(config.suiteAppClient ?? {}, { maxRecordsPerSuiteQLTable: [] })
+
+    const configChange = getConfigFromConfigChanges(
+      {
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        failedCustomRecords: [],
+      },
+      config,
+    )
+
+    expect(configChange?.config[0].value).toEqual({
+      fetch: fullFetchConfig(),
+      suiteAppClient: {},
+    })
+    expect(configChange?.message).toMatch(
+      toRemovedDeprecatedConfigsMessage([
+        'fetch.skipResolvingAccountSpecificValuesToTypes',
+        'suiteAppClient.maxRecordsPerSuiteQLTable',
+      ]),
+    )
   })
 })

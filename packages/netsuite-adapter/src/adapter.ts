@@ -348,9 +348,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return filter.filtersRunner(getFilterOpts(), filtersCreators)
     }
 
-    this.fixElementsFunc = combineElementFixers({
-      ..._.mapValues(customReferenceHandlers, handler => handler.removeWeakReferences({ elementsSource })),
-    })
+    this.fixElementsFunc = combineElementFixers(
+      _.mapValues(customReferenceHandlers, handler => handler.removeWeakReferences({ elementsSource })),
+    )
   }
 
   public fetchByQuery: FetchByQueryFunc = async (

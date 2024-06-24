@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import workflowAccountSpecificValidator from '../../src/change_validators/workflow_account_specific_values'
-import { NETSUITE, SCRIPT_ID } from '../../src/constants'
-import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
+import { EMPLOYEE, SCRIPT_ID } from '../../src/constants'
 import { fullFetchConfig } from '../../src/config/config_creator'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
 
 describe('workflow account specific values', () => {
   let instance: InstanceElement
-  let suiteqlTableInstance: InstanceElement
+  let suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
 
   const baseParams = {
     deployReferencedElements: false,
@@ -34,6 +33,7 @@ describe('workflow account specific values', () => {
       fetch: fullFetchConfig(),
     },
     client: new NetsuiteClient(mockSdfClient()),
+    suiteQLNameToInternalIdsMap: {},
   }
 
   beforeEach(() => {
@@ -100,15 +100,13 @@ describe('workflow account specific values', () => {
         },
       },
     })
-    const suiteqlTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
-    suiteqlTableInstance = new InstanceElement('employee', suiteqlTableType, {
-      [INTERNAL_IDS_MAP]: {
-        1: { name: 'Salto user 1' },
-        2: { name: 'Salto user 2' },
-        3: { name: 'Salto user 3' },
-        4: { name: 'Salto user 3' },
+    suiteQLNameToInternalIdsMap = {
+      [EMPLOYEE]: {
+        'Salto user 1': ['1'],
+        'Salto user 2': ['2'],
+        'Salto user 3': ['3', '4'],
       },
-    })
+    }
   })
 
   it('should not have changeError when deploying an instance without ACCOUNT_SPECIFIC_VALUES', async () => {
@@ -208,7 +206,7 @@ describe('workflow account specific values', () => {
         'SPECIFIC'
       const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
         ...baseParams,
-        elementsSource: buildElementsSourceFromElements([suiteqlTableInstance]),
+        suiteQLNameToInternalIdsMap,
       })
       expect(changeErrors).toHaveLength(0)
     })
@@ -224,7 +222,7 @@ describe('workflow account specific values', () => {
         'SPECIFIC'
       const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
         ...baseParams,
-        elementsSource: buildElementsSourceFromElements([suiteqlTableInstance]),
+        suiteQLNameToInternalIdsMap,
       })
       expect(changeErrors).toHaveLength(4)
       expect(changeErrors).toEqual(
@@ -362,7 +360,7 @@ describe('workflow account specific values', () => {
       after.value.initcondition.formula = '"Account1" EQUALS "Account2"'
       const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
         ...baseParams,
-        elementsSource: buildElementsSourceFromElements([suiteqlTableInstance]),
+        suiteQLNameToInternalIdsMap,
       })
       expect(changeErrors).toHaveLength(0)
     })
@@ -373,7 +371,7 @@ describe('workflow account specific values', () => {
       after.value.initcondition.formula = '"Account1" EQUALS "Account2"'
       const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
         ...baseParams,
-        elementsSource: buildElementsSourceFromElements([suiteqlTableInstance]),
+        suiteQLNameToInternalIdsMap,
       })
       expect(changeErrors).toHaveLength(2)
       expect(changeErrors).toEqual(
@@ -404,7 +402,7 @@ describe('workflow account specific values', () => {
       after.value.initcondition.formula = '"Account1" EQUALS "Account2"'
       const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
         ...baseParams,
-        elementsSource: buildElementsSourceFromElements([suiteqlTableInstance]),
+        suiteQLNameToInternalIdsMap,
       })
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors).toEqual(

@@ -213,10 +213,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     this.reverseNeighbors.get(dependsOn).delete(id)
   }
 
-  addEdge(from: NodeId, to: NodeId, params?: { createMissingNodes: boolean }): void {
-    if (!(params?.createMissingNodes ?? true) && (!this.has(from) || !this.has(to))) {
-      return
-    }
+  addEdge(from: NodeId, to: NodeId): void {
     this.get(from).add(to)
     this.reverseNeighbors.get(to).add(from)
     // create "to" node if missing

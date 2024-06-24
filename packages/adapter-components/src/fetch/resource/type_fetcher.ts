@@ -138,7 +138,6 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
       initialRequestContext,
       contextResources,
     })
-
     try {
       const itemsWithContext = await requester.requestAllForResource({
         callerIdentifier: { typeName },

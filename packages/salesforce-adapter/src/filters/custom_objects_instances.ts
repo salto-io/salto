@@ -158,6 +158,7 @@ type recordToInstanceParams = {
   record: SalesforceRecord
   instanceSaltoName: string
   instanceAlias?: string
+  regenerateSaltoIds: boolean
 }
 
 const transformCompoundNameValues = async (
@@ -200,6 +201,7 @@ const recordToInstance = async ({
   record,
   instanceSaltoName,
   instanceAlias,
+  regenerateSaltoIds,
 }: recordToInstanceParams): Promise<InstanceElement> => {
   const getInstancePath = async (instanceName: string): Promise<string[]> => {
     const typeNamespace = await getNamespace(type)
@@ -219,7 +221,9 @@ const recordToInstance = async ({
   const { name } = Types.getElemId(
     instanceSaltoName,
     true,
-    createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), type),
+    regenerateSaltoIds
+      ? undefined
+      : createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), type),
   )
   return new InstanceElement(
     name,
@@ -235,6 +239,7 @@ const recordToInstance = async ({
 const typesRecordsToInstances = async (
   recordByIdAndType: RecordsByTypeAndId,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
+  regenerateSaltoIds: boolean,
 ): Promise<{
   instances: InstanceElement[]
   configChangeSuggestions: ConfigChangeSuggestion[]
@@ -373,6 +378,7 @@ const typesRecordsToInstances = async (
           record,
           instanceSaltoName: await getRecordSaltoName(typeName, record),
           instanceAlias: await getRecordAlias(typeName, record),
+          regenerateSaltoIds,
         }))
         .filter(
           async (recToInstanceParams) =>
@@ -494,6 +500,7 @@ export const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
   config: FilterContext,
+  regenerateSaltoIds: boolean,
 ): Promise<{
   instances: InstanceElement[]
   configChangeSuggestions: ConfigChangeSuggestion[]
@@ -601,7 +608,11 @@ export const getAllInstances = async (
     ...referencedRecordsByTypeAndIdFromFetchedRecords,
     ...fetchedBaseRecordByTypeAndId,
   }
-  return typesRecordsToInstances(mergedRecords, customObjectFetchSetting)
+  return typesRecordsToInstances(
+    mergedRecords,
+    customObjectFetchSetting,
+    regenerateSaltoIds,
+  )
 }
 
 const getParentFieldNames = (fields: Field[]): string[] =>
@@ -951,6 +962,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       client,
       filteredChangesFetchSettings,
       config,
+      dataManagement.regenerateSaltoIds,
     )
     instances.forEach((instance) => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)

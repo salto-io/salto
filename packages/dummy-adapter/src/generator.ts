@@ -283,6 +283,55 @@ const profileType = new ObjectType({
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
 
+export const loadElementsFromDirs = async (naclDirs: string[]): Promise<Element[]> => {
+  const allNaclMocks = (
+    await Promise.all(
+      naclDirs.map(naclDir =>
+        readdirp.promise(naclDir, {
+          fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
+        }),
+      ),
+    )
+  ).flatMap(list => list)
+  log.debug('the list of files read in loadElementsFromDirs is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
+  const elements = await awu(
+    allNaclMocks.map(async file => {
+      const content = fs.readFileSync(file.fullPath, 'utf8')
+      log.debug('content of file %s is %s', file.path, content)
+      const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
+        file: {
+          parse: async funcParams => {
+            const [filepath] = funcParams
+            let fileContent: Buffer
+            try {
+              fileContent = fs.readFileSync(`${file.fullPath.replace(file.basename, '')}${filepath}`)
+            } catch {
+              fileContent = Buffer.from('THIS IS STATIC FILE')
+            }
+            return new StaticFile({
+              content: fileContent,
+              filepath,
+            })
+          },
+          dump: async () => ({ funcName: 'file', parameters: [] }),
+          isSerializedAsFunction: () => true,
+        },
+      })
+      log.debug(`parsedNaclFile of file ${file.fullPath} is equal ${inspectValue(parsedNaclFile)}`)
+      await awu(parsedNaclFile.elements).forEach(elem => {
+        elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
+      })
+      return parsedNaclFile.elements
+    }),
+  )
+    .flat()
+    .toArray()
+  const mergedElements = await merger.mergeElements(awu(elements))
+  log.debug(`mergedElements is equal ${inspectValue(mergedElements)}`)
+  const inMemElemSource = elementSource.createInMemoryElementSource(await awu(mergedElements.merged.values()).toArray())
+  return (await Promise.all(elements.map(async elem => expressions.resolve([elem], inMemElemSource)))).flat()
+}
+
 export const generateElements = async (
   params: GeneratorParams,
   progressReporter: ProgressReporter,
@@ -751,56 +800,6 @@ export const generateElements = async (
       ]
     }).flat()
   }
-  const generateExtraElements = async (naclDirs: string[]): Promise<Element[]> => {
-    const allNaclMocks = (
-      await Promise.all(
-        naclDirs.map(naclDir =>
-          readdirp.promise(naclDir, {
-            fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
-          }),
-        ),
-      )
-    ).flatMap(list => list)
-    log.debug('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
-    const elements = await awu(
-      allNaclMocks.map(async file => {
-        const content = fs.readFileSync(file.fullPath, 'utf8')
-        log.debug('content of file %s is %s', file.path, content)
-        const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
-          file: {
-            parse: async funcParams => {
-              const [filepath] = funcParams
-              let fileContent: Buffer
-              try {
-                fileContent = fs.readFileSync(`${file.fullPath.replace(file.basename, '')}${filepath}`)
-              } catch {
-                fileContent = Buffer.from('THIS IS STATIC FILE')
-              }
-              return new StaticFile({
-                content: fileContent,
-                filepath,
-              })
-            },
-            dump: async () => ({ funcName: 'file', parameters: [] }),
-            isSerializedAsFunction: () => true,
-          },
-        })
-        log.debug(`parsedNaclFile of file ${file.fullPath} is equal ${inspectValue(parsedNaclFile)}`)
-        await awu(parsedNaclFile.elements).forEach(elem => {
-          elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
-        })
-        return parsedNaclFile.elements
-      }),
-    )
-      .flat()
-      .toArray()
-    const mergedElements = await merger.mergeElements(awu(elements))
-    log.debug(`mergedElements is equal ${inspectValue(mergedElements)}`)
-    const inMemElemSource = elementSource.createInMemoryElementSource(
-      await awu(mergedElements.merged.values()).toArray(),
-    )
-    return (await Promise.all(elements.map(async elem => expressions.resolve([elem], inMemElemSource)))).flat()
-  }
 
   const generateEnvElements = (): Element[] => {
     const envID = params.generateEnvName ?? process.env.SALTO_ENV
@@ -971,8 +970,8 @@ export const generateElements = async (
   progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike()
   progressReporter.reportProgress({ message: 'Generating extra elements' })
-  const extraElements = params.extraNaclPaths ? await generateExtraElements(params.extraNaclPaths) : []
-  const defaultExtraElements = await generateExtraElements([path.join(dataPath, 'fixtures')])
+  const extraElements = params.extraNaclPaths ? await loadElementsFromDirs(params.extraNaclPaths) : []
+  const defaultExtraElements = await loadElementsFromDirs([path.join(dataPath, 'fixtures')])
   log.debug('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   progressReporter.reportProgress({ message: 'Generating conflicted elements' })
   const envObjects = generateEnvElements()

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import {
   Adapter,
   ElemID,
@@ -21,10 +22,11 @@ import {
   ObjectType,
   ListType,
   GetCustomReferencesFunc,
+  FetchResult,
+  LoadElementsFromFolderArgs,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import DummyAdapter from './adapter'
-import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
+import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType, loadElementsFromDirs } from './generator'
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
@@ -58,6 +60,10 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
+const loadElementsFromFolder = async ({ baseDir }: LoadElementsFromFolderArgs): Promise<FetchResult> => ({
+  elements: await loadElementsFromDirs([baseDir]),
+})
+
 export const adapter: Adapter = {
   operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
   validateCredentials: async () => ({ accountId: '' }),
@@ -67,5 +73,6 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  loadElementsFromFolder,
   getCustomReferences,
 }

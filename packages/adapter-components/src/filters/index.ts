@@ -29,9 +29,3 @@ export { referencedInstanceNamesFilterCreator } from './referenced_instance_name
 export { sortListsFilterCreator } from './sort_lists'
 export { createCommonFilters, FilterCreationArgs } from './common_filters'
 export { customPathsFilterCreator, PathMapperFunc } from './custom_paths'
-export {
-  deployArrayFieldsFilterCreator,
-  DeployArrayFieldFilterParams,
-  ArrayElementChangeData,
-  MapArrayValueToChangeData,
-} from './array_fields'

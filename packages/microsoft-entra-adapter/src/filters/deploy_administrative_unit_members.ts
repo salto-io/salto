@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-import { filters, filterUtils } from '@salto-io/adapter-components'
-import { Options } from '../definitions/types'
 import {
   ADMINISTRATIVE_UNIT_TYPE_NAME,
   MEMBERS_FIELD_NAME,
   ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
   ADAPTER_NAME,
 } from '../constants'
-import { UserConfig } from '../config'
 import { mapMemberRefToChangeData } from './utils'
+import { deployArrayFieldsFilterCreator } from './array_fields_deployment'
 
-export const deployAdministrativeUnitMembersFilter: filterUtils.AdapterFilterCreator<
-  {},
-  filterUtils.FilterResult,
-  {},
-  Options
-> = filters.deployArrayFieldsFilterCreator<Options, UserConfig>({
+export const deployAdministrativeUnitMembersFilter = deployArrayFieldsFilterCreator({
   adapterName: ADAPTER_NAME,
-  parentTypeName: ADMINISTRATIVE_UNIT_TYPE_NAME,
-  arrayFields: [
-    {
-      fieldName: MEMBERS_FIELD_NAME,
-      fieldTypeName: ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
-      valueMapper: mapMemberRefToChangeData,
-    },
-  ],
+  topLevelTypeName: ADMINISTRATIVE_UNIT_TYPE_NAME,
+  fieldName: MEMBERS_FIELD_NAME,
+  fieldTypeName: ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
+  valueMapper: mapMemberRefToChangeData,
 })

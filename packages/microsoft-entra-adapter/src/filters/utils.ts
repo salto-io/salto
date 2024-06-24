@@ -17,11 +17,11 @@
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
-import { filters } from '@salto-io/adapter-components'
 import { ODATA_TYPE_FIELD_NACL_CASE, ODATA_ID_FIELD_NACL_CASE } from '../constants'
 import { NAME_ID_FIELD } from '../definitions/fetch/constants'
+import { MapArrayValueToChangeData } from './array_fields_deployment'
 
-export const mapMemberRefToChangeData: filters.MapArrayValueToChangeData = value => {
+export const mapMemberRefToChangeData: MapArrayValueToChangeData = value => {
   validatePlainObject(value, 'member reference')
 
   const memberRef = _.get(value, 'id')

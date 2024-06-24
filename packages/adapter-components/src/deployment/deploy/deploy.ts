@@ -52,7 +52,7 @@ export const defaultConvertError: ConvertError = (elemID, error) => {
 /**
  * Deploy a change with standard (add / modify / remove) and custom-defined actions based on the provided deploy definitions
  */
-const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
+export const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
   definitions,
   convertError,
   changeResolver,

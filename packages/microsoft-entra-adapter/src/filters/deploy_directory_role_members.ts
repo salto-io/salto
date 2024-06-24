@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-import { filters, filterUtils } from '@salto-io/adapter-components'
-import { Options } from '../definitions/types'
 import {
   MEMBERS_FIELD_NAME,
   ADAPTER_NAME,
   DIRECTORY_ROLE_TYPE_NAME,
   DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
 } from '../constants'
-import { UserConfig } from '../config'
 import { mapMemberRefToChangeData } from './utils'
+import { deployArrayFieldsFilterCreator } from './array_fields_deployment'
 
-export const deployDirectoryRoleMembersFilter: filterUtils.AdapterFilterCreator<
-  {},
-  filterUtils.FilterResult,
-  {},
-  Options
-> = filters.deployArrayFieldsFilterCreator<Options, UserConfig>({
+export const deployDirectoryRoleMembersFilter = deployArrayFieldsFilterCreator({
   adapterName: ADAPTER_NAME,
-  parentTypeName: DIRECTORY_ROLE_TYPE_NAME,
-  arrayFields: [
-    {
-      fieldName: MEMBERS_FIELD_NAME,
-      fieldTypeName: DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
-      valueMapper: mapMemberRefToChangeData,
-    },
-  ],
+  topLevelTypeName: DIRECTORY_ROLE_TYPE_NAME,
+  fieldName: MEMBERS_FIELD_NAME,
+  fieldTypeName: DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
+  valueMapper: mapMemberRefToChangeData,
 })

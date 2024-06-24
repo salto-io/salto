@@ -22,6 +22,7 @@ import {
   CATEGORY_TYPE_NAME,
   CLASS_TYPE_NAME,
   DEPARTMENT_TYPE_NAME,
+  OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
   PACKAGE_TYPE_NAME,
   POLICY_TYPE_NAME,
   SCRIPT_TYPE_NAME,
@@ -44,6 +45,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
     [CLASS_TYPE_NAME]: createClassicApiDefinitionsForType(CLASS_TYPE_NAME, `${CLASS_TYPE_NAME}es`),
     [POLICY_TYPE_NAME]: createClassicApiDefinitionsForType(POLICY_TYPE_NAME, 'policies'),
+    [OS_X_CONFIGURATION_PROFILE_TYPE_NAME]: createClassicApiDefinitionsForType(
+      OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
+      'osxconfigurationprofiles',
+      true
+    ),
     [API_ROLE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {

@@ -13,7 +13,7 @@
     "test/**/*.json",
     "index.ts",
     "../adapter-components/src/definitions/system/helpers/utils.ts"
-  ],
+, "src/definitions/fetch/transforms/.ts"  ],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },

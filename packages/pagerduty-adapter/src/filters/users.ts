@@ -127,7 +127,6 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       instances.forEach(instance => {
         replaceValues(instance, mapping)
       })
-      log.debug('Replaced user ids with login name')
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       if (!(config.fetch.convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
@@ -138,7 +137,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       if (_.isEmpty(relevantChanges)) {
         return
       }
-      // TODO - SALTO-6074 - We will apply chance here to avoid querying the same users in every change group
+      // TODO - SALTO-6074 - We will implement cache to avoid querying the same users in every change group
       const users = await fetchUtils.getElements({
         adapterName: ADAPTER_NAME,
         fetchQuery,

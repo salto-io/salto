@@ -2986,6 +2986,7 @@ export type ChangeValidatorName =
   | 'inactiveTicketFormInView'
   | 'immutableTypeAndKeyForUserFields'
   | 'localeModification'
+  | 'guideDefaultTranslationChange'
   | 'emptyAutomationOrder'
   | 'viewCustomStatusConditions'
 
@@ -3064,6 +3065,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
     immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
     localeModification: { refType: BuiltinTypes.BOOLEAN },
+    guideDefaultTranslationChange: { refType: BuiltinTypes.BOOLEAN },
     emptyAutomationOrder: { refType: BuiltinTypes.BOOLEAN },
     viewCustomStatusConditions: { refType: BuiltinTypes.BOOLEAN },
   },

@@ -84,6 +84,7 @@ import {
   inactiveTicketFormInViewValidator,
   immutableTypeAndKeyForUserFieldsValidator,
   localeModificationValidator,
+  guideDefaultTranslationChangeValidator,
   emptyAutomationOrderValidator,
   viewCustomStatusConditionsValidator,
 } from './change_validators'
@@ -186,6 +187,7 @@ export default ({
     inactiveTicketFormInView: inactiveTicketFormInViewValidator,
     immutableTypeAndKeyForUserFields: immutableTypeAndKeyForUserFieldsValidator,
     localeModification: localeModificationValidator,
+    guideDefaultTranslationChange: guideDefaultTranslationChangeValidator,
     emptyAutomationOrder: emptyAutomationOrderValidator,
     viewCustomStatusConditions: viewCustomStatusConditionsValidator,
     // *** Guide Order Validators ***

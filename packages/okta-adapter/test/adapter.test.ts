@@ -448,26 +448,24 @@ describe('adapter', () => {
     let brand1: InstanceElement
 
     beforeEach(() => {
-      const types = [
-        groupType = new ObjectType({
-          elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
-          fields: {
+      groupType = new ObjectType({
+        elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      brandType = new ObjectType({
+        elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
+        fields:
+          {
             id: {
               refType: BuiltinTypes.SERVICE_ID,
-            },
+            }
+            ,
           },
-        }),
-        brandType = new ObjectType({
-          elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
-          fields:
-            {
-              id: {
-                refType: BuiltinTypes.SERVICE_ID,
-              }
-              ,
-            },
-        }),
-      ]
+      })
       group1 = new InstanceElement('group1', groupType, {
         id: 'group-fakeid1',
         objectClass: ['okta:user_group'],
@@ -493,51 +491,53 @@ describe('adapter', () => {
       })
     })
 
-    it('should successfully add a group', async () => {
-      const groupWithoutId = group1.clone()
-      delete groupWithoutId.value.id
-      const result = await operations.deploy({
-        changeGroup: {
-          groupID: 'group',
-          changes: [toChange({ after: groupWithoutId })],
-        },
-        progressReporter: nullProgressReporter,
-      })
-      expect(result.errors).toHaveLength(0)
-      expect(result.appliedChanges).toHaveLength(1)
-      expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('group-fakeid1')
-    })
-
-    it('should successfully modify a group', async () => {
-      const updatedGroup1 = group1.clone()
-      updatedGroup1.value.name = 'Programmers'
-      const result = await operations.deploy({
-        changeGroup: {
-          groupID: 'group',
-          changes: [
-            toChange({
-              before: group1,
-              after: updatedGroup1,
-            }),
-          ],
-        },
-        progressReporter: nullProgressReporter,
+    describe('deploy group', () => {
+      it('should successfully add a group', async () => {
+        const groupWithoutId = group1.clone()
+        delete groupWithoutId.value.id
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [toChange({ after: groupWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('group-fakeid1')
       })
 
-      expect(result.errors).toHaveLength(0)
-      expect(result.appliedChanges).toHaveLength(1)
-    })
+      it('should successfully modify a group', async () => {
+        const updatedGroup1 = group1.clone()
+        updatedGroup1.value.name = 'Programmers'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [
+              toChange({
+                before: group1,
+                after: updatedGroup1,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
 
-    it('should successfully remove a group', async () => {
-      const result = await operations.deploy({
-        changeGroup: {
-          groupID: 'group',
-          changes: [toChange({ before: group1 })],
-        },
-        progressReporter: nullProgressReporter,
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
       })
-      expect(result.errors).toHaveLength(0)
-      expect(result.appliedChanges).toHaveLength(1)
+
+      it('should successfully remove a group', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [toChange({ before: group1 })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
     })
 
     describe('deploy brand', () => {
@@ -555,7 +555,6 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        //expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>)).toBeUndefined()
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('brand-fakeid1')
       })
 

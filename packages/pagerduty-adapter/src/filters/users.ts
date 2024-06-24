@@ -111,7 +111,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         return
       }
 
-      // using casting as the difference between definitions type and RequiredDefinitions is that the definitions has not required fetch definitions, but I override it
+      // Using casting as the difference between definitions type and RequiredDefinitions is that the fetch is not mandatory in  the definitions, but I override it.
       const users = await fetchUtils.getElements({
         adapterName: ADAPTER_NAME,
         fetchQuery,
@@ -155,7 +155,6 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         users.elements.filter(isInstanceElement).map(user => [user.value.email, user.value.id]),
       )
       await replaceValuesForChanges(relevantChanges, loginToUserId)
-      log.debug('Replaced user ids with login name (preDeploy)')
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
       if (!(config.fetch.convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {

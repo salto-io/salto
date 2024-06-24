@@ -458,13 +458,11 @@ describe('adapter', () => {
       })
       brandType = new ObjectType({
         elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
-        fields:
-          {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            }
-            ,
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
           },
+        },
       })
       group1 = new InstanceElement('group1', groupType, {
         id: 'group-fakeid1',
@@ -576,7 +574,9 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(true)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
+          true,
+        )
       })
 
       it('should successfully remove a brand', async () => {
@@ -591,6 +591,5 @@ describe('adapter', () => {
         expect(result.appliedChanges).toHaveLength(1)
       })
     })
-
   })
 })

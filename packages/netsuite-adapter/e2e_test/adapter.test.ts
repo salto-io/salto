@@ -92,7 +92,6 @@ import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_
 import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
 import { bundleType as bundle } from '../src/types/bundle_type'
 import { addApplicationIdToType } from '../src/transformer'
-import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../src/filters/data_account_specific_values'
 
 const log = logger(module)
 const { awu } = collections.asynciterable

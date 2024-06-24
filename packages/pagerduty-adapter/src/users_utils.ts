@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { USER_TYPE_NAME } from './constants'
+import { ESCALATION_POLICY_TYPE_NAME, SCHEDULE_LAYERS_TYPE_NAME, USER_TYPE_NAME } from './constants'
 import { DEFAULT_ID_PARTS } from './definitions/fetch/fetch'
 
 export const USER_FETCH_DEFINITIONS = {
@@ -43,7 +43,13 @@ export const USER_FETCH_DEFINITIONS = {
     },
   },
 }
+
 export const isRelevantInstance = (instance: InstanceElement): boolean => {
-  if(instance.elemID.typeName === USER_TYPE_NAME) {
+  if (
+    instance.elemID.typeName === SCHEDULE_LAYERS_TYPE_NAME ||
+    instance.elemID.typeName === ESCALATION_POLICY_TYPE_NAME
+  ) {
+    return true
+  }
+  return false
 }
-  Object.keys(USER_MAPPING).includes(instance.elemID.typeName)

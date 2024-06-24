@@ -19,6 +19,7 @@ import {
   credentials as defaultCredentials,
   filters,
 } from '@salto-io/adapter-components'
+import { BuiltinTypes } from '@salto-io/adapter-api'
 import { Credentials, credentialsType } from './auth'
 import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
@@ -52,6 +53,11 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     },
   },
   defaultConfig: DEFAULT_CONFIG,
+  additionalConfigFields: {
+    fetch: {
+      convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
+    },
+  },
   definitionsCreator: ({ clients, credentials }) => ({
     clients: createClientDefinitions(clients),
     pagination: PAGINATION,

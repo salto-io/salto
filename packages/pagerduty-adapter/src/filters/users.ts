@@ -15,47 +15,82 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-// import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-// import { collections } from '@salto-io/lowerdash'
-// import { Change, InstanceElement } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { filterUtils, fetch as fetchUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
-import { ADAPTER_NAME } from '../constants'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME, SCHEDULE_LAYERS_TYPE_NAME } from '../constants'
 import { Options } from '../definitions/types'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, UserConfig } from '../config'
-import { USER_FETCH_DEFINITIONS } from '../users_utils'
+import { USER_FETCH_DEFINITIONS, isRelevantInstance } from '../users_utils'
 
 const log = logger(module)
-// const { awu } = collections.asynciterable
-// const { makeArray } = collections.array
+const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
-// const replaceValues = (instance: InstanceElement, mapping: Record<string, string>): void => {
-//   const paths = USER_MAPPING[instance.elemID.typeName]
-//   paths.forEach(path => {
-//     const usersPath = instance.elemID.createNestedID(...path)
-//     const resolvedPath = resolvePath(instance, usersPath)
-//     const userValues = makeArray(resolvedPath)
-//     if (resolvedPath === undefined) {
-//       return
-//     }
-//     const newValues = userValues.map(value => {
-//       const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
-//       return newValue ?? value
-//     })
-//     setPath(instance, usersPath, _.isArray(resolvedPath) ? newValues : newValues[0])
-//   })
-// }
+type UserReference = { type: string; id: string }
 
-// export const replaceValuesForChanges = async (
-//   changes: Change<InstanceElement>[],
-//   mapping: Record<string, string>,
-// ): Promise<void> => {
-//   await awu(changes).forEach(async change => {
-//     await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
-//       replaceValues(instance, mapping)
-//       return instance
-//     })
-//   })
-// }
+type EscalationRule = {
+  targets: UserReference[]
+}
+
+type ScheduleLayerUser = {
+  user: UserReference
+}
+
+const isEscalationRule = (value: unknown): value is EscalationRule => {
+  const targets = _.get(value, 'targets')
+  return Array.isArray(targets) && targets.every(target => _.isString(target.id) && _.isString(target.type))
+}
+
+const isScheduleLayerUser = (value: unknown): value is ScheduleLayerUser => {
+  const user = _.get(value, 'user')
+  return _.isPlainObject(user) && _.isString(user.id) && _.isString(user.type)
+}
+
+const replaceValues = (instance: InstanceElement, mapping: Record<string, string>): void => {
+  switch (instance.elemID.typeName) {
+    case ESCALATION_POLICY_TYPE_NAME:
+      makeArray(instance.value.escalation_rules)
+        .filter(isEscalationRule)
+        .forEach(rule => {
+          rule.targets.forEach(target => {
+            if (target.type === 'user_reference') {
+              const userIdentifier = target.id
+              if (mapping[userIdentifier]) {
+                _.set(target, 'id', mapping[userIdentifier])
+              }
+            }
+          })
+        })
+      break
+
+    case SCHEDULE_LAYERS_TYPE_NAME:
+      makeArray(instance.value.users)
+        .filter(isScheduleLayerUser)
+        .forEach(userObj => {
+          const userIdentifier = _.get(userObj, 'user.id')
+          if (mapping[userIdentifier]) {
+            _.set(userObj, 'user.id', mapping[userIdentifier])
+          }
+        })
+      break
+    default:
+      break
+  }
+}
+
+export const replaceValuesForChanges = async (
+  changes: Change<InstanceElement>[],
+  mapping: Record<string, string>,
+): Promise<void> => {
+  await awu(changes).forEach(async change => {
+    await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
+      replaceValues(instance, mapping)
+      return instance
+    })
+  })
+}
 
 /**
  * Replaces user ids with login name, when 'convertUsersIds' config flag is enabled
@@ -66,6 +101,8 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
   fetchQuery,
 }) => {
   let userIdToLogin: Record<string, string> = {}
+  const userDefinition = { ...definitions, fetch: { instances: USER_FETCH_DEFINITIONS } }
+
   return {
     name: 'usersFilter',
     onFetch: async elements => {
@@ -73,7 +110,6 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         log.debug('Converting user ids was disabled (onFetch)')
         return
       }
-      const userDefinition = { ...definitions, fetch: { instances: USER_FETCH_DEFINITIONS } }
 
       // using casting as the difference between definitions type and RequiredDefinitions is that the definitions has not required fetch definitions, but I override it
       const users = await fetchUtils.getElements({
@@ -81,56 +117,56 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         fetchQuery,
         definitions: userDefinition as definitionsUtils.RequiredDefinitions<Options>,
       })
-      userIdToLogin = {}
-      if (!users || (_.isEmpty(users) && elements.length === 0 && userIdToLogin === undefined)) {
+      if (!users || _.isEmpty(users)) {
         log.warn('Could not find any users (onFetch)')
       }
-      // const mapping = Object.fromEntries(users.elements.map(user => [user.value.id, user.profile.login]))
-      // const instances = elements.filter(isInstanceElement).filter(isRelevantInstance)
-      // instances.forEach(instance => {
-      //   replaceValues(instance, mapping)
-      // })
+      const mapping = Object.fromEntries(
+        users.elements.filter(isInstanceElement).map(user => [user.value.id, user.value.email]),
+      )
+      const instances = elements.filter(isInstanceElement).filter(isRelevantInstance)
+      instances.forEach(instance => {
+        replaceValues(instance, mapping)
+      })
+      log.debug('Replaced user ids with login name')
     },
-    // preDeploy: async (changes: Change<InstanceElement>[]) => {
-    //   if (!shouldConvertUserIds(fetchQuery, config)) {
-    //     log.debug('Converting user ids was disabled (preDeploy)')
-    //     return
-    //   }
+    preDeploy: async (changes: Change<InstanceElement>[]) => {
+      if (!(config.fetch.convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
+        log.debug('Converting user ids was disabled (preDeploy)')
+        return
+      }
+      const relevantChanges = changes.filter(change => isRelevantInstance(getChangeData(change)))
+      if (_.isEmpty(relevantChanges)) {
+        return
+      }
+      const users = await fetchUtils.getElements({
+        adapterName: ADAPTER_NAME,
+        fetchQuery,
+        definitions: userDefinition as definitionsUtils.RequiredDefinitions<Options>,
+      })
+      if (!users || _.isEmpty(users)) {
+        log.warn('Could not find any users (onFetch)')
+      }
 
-    //   // for modification change, get users from both before and after values
-    //   const usersToReplace = getUsersFromInstances(
-    //     changes.flatMap(change =>
-    //       isModificationChange(change) ? [change.data.before, change.data.after] : [getChangeData(change)],
-    //     ),
-    //   )
-
-    //   if (_.isEmpty(usersToReplace)) {
-    //     return
-    //   }
-    //   const users = await getUsers(paginator, { userIds: usersToReplace, property: 'profile.login' })
-    //   if (_.isEmpty(users)) {
-    //     log.warn('Could not find any users (preDeploy)')
-    //     return
-    //   }
-
-    //   userIdToLogin = Object.fromEntries(users.map(user => [user.id, user.profile.login]))
-    //   const loginToUserId = Object.fromEntries(users.map(user => [user.profile.login, user.id])) as Record<
-    //     string,
-    //     string
-    //   >
-    //   await replaceValuesForChanges(changes, loginToUserId)
-    // },
-    // onDeploy: async (changes: Change<InstanceElement>[]) => {
-    //   if (!shouldConvertUserIds(fetchQuery, config)) {
-    //     log.debug('Converting user ids was disabled (onDeploy)')
-    //     return
-    //   }
-    //   const relevantChanges = changes.filter(change => isRelevantInstance(getChangeData(change)))
-    //   if (_.isEmpty(relevantChanges)) {
-    //     return
-    //   }
-    //   await replaceValuesForChanges(changes, userIdToLogin)
-    // },
+      userIdToLogin = Object.fromEntries(
+        users.elements.filter(isInstanceElement).map(user => [user.value.id, user.value.email]),
+      )
+      const loginToUserId = Object.fromEntries(
+        users.elements.filter(isInstanceElement).map(user => [user.value.email, user.value.id]),
+      )
+      await replaceValuesForChanges(relevantChanges, loginToUserId)
+      log.debug('Replaced user ids with login name (preDeploy)')
+    },
+    onDeploy: async (changes: Change<InstanceElement>[]) => {
+      if (!(config.fetch.convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
+        log.debug('Converting user ids was disabled (preDeploy)')
+        return
+      }
+      const relevantChanges = changes.filter(change => isRelevantInstance(getChangeData(change)))
+      if (_.isEmpty(relevantChanges)) {
+        return
+      }
+      await replaceValuesForChanges(relevantChanges, userIdToLogin)
+    },
   }
 }
 

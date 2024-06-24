@@ -226,9 +226,8 @@ export const generateType = ({
         },
       }
     : Object.fromEntries(
-        _.uniq(
-          _.uniq(entries.flatMap(e => Object.keys(e))).map(fieldName => [
-            fieldName,
+        _.uniq(entries.flatMap(e => Object.keys(e))).map(fieldName => [
+          fieldName,
           {
             refType: addNestedType(
               generateNestedType({

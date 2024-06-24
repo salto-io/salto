@@ -449,7 +449,7 @@ const getGuideElements = async ({
   )
   const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
-    elements: useNewInfra ? zendeskGuideElements : zendeskGuideElements,
+    elements: zendeskGuideElements,
     configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
     errors: guideErrors,
   }

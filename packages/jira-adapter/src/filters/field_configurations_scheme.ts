@@ -1,20 +1,27 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isModificationChange,
+} from '@salto-io/adapter-api'
+import { resolveChangeElement } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { getLookUpName } from '../reference_mapping'
 import JiraClient from '../client/client'
@@ -27,20 +34,13 @@ import { getDiffObjects } from '../diff'
 const FIELD_CONFIG_SCHEME_NAME = 'FieldConfigurationScheme'
 const FIELD_CONFIG_SCHEME_ITEM_NAME = 'FieldConfigurationIssueTypeItem'
 
-const deployFieldConfigSchemeItems = async (
-  change: Change<InstanceElement>,
-  client: JiraClient,
-): Promise<void> => {
+const deployFieldConfigSchemeItems = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
 
   const { addedObjects, modifiedObjects, removedObjects } = getDiffObjects(
-    isModificationChange(resolvedChange)
-      ? resolvedChange.data.before.value.items ?? []
-      : [],
-    isAdditionOrModificationChange(resolvedChange)
-      ? resolvedChange.data.after.value.items ?? []
-      : [],
-    'issueTypeId'
+    isModificationChange(resolvedChange) ? resolvedChange.data.before.value.items ?? [] : [],
+    isAdditionOrModificationChange(resolvedChange) ? resolvedChange.data.after.value.items ?? [] : [],
+    'issueTypeId',
   )
 
   const itemsToUpdate = [...modifiedObjects, ...addedObjects]
@@ -98,18 +98,14 @@ const filter: FilterCreator = ({ config, client }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && isAdditionOrModificationChange(change)
-        && getChangeData(change).elemID.typeName === FIELD_CONFIG_SCHEME_NAME
+      change =>
+        isInstanceChange(change) &&
+        isAdditionOrModificationChange(change) &&
+        getChangeData(change).elemID.typeName === FIELD_CONFIG_SCHEME_NAME,
     )
 
-    const deployResult = await deployChanges(
-      relevantChanges.filter(isInstanceChange),
-      async change => deployFieldConfigScheme(
-        change,
-        client,
-        config
-      )
+    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
+      deployFieldConfigScheme(change, client, config),
     )
 
     return {

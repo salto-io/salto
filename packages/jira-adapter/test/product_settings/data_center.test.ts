@@ -1,29 +1,31 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { client } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { DATA_CENTER_SETTINGS } from '../../src/product_settings/data_center/data_center'
 
 describe('dataCenter settings', () => {
   describe('wrapConnection', () => {
-    let apiConnection : MockInterface<client.APIConnection>
-    let wrappedApiConnection : client.APIConnection
+    let apiConnection: MockInterface<client.APIConnection>
+    let wrappedApiConnection: client.APIConnection
     beforeEach(() => {
       apiConnection = {
         get: mockFunction<client.APIConnection['get']>(),
+        head: mockFunction<client.APIConnection['head']>(),
+        options: mockFunction<client.APIConnection['options']>(),
         post: mockFunction<client.APIConnection['post']>(),
         put: mockFunction<client.APIConnection['put']>(),
         delete: mockFunction<client.APIConnection['delete']>(),

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Joi from 'joi'
 import objectHash from 'object-hash'
@@ -21,11 +21,16 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ResponseValue, Response } from '../http_connection'
 import { HTTPReadClientInterface } from '../http_client'
-import { ClientGetWithPaginationParams, GetAllItemsFunc, PageEntriesExtractor, PaginationFunc, computeRecursiveArgs } from './common'
+import {
+  ClientGetWithPaginationParams,
+  GetAllItemsFunc,
+  PageEntriesExtractor,
+  PaginationFunc,
+  computeRecursiveArgs,
+} from './common'
 
 const { makeArray } = collections.array
 const log = logger(module)
-
 
 const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<void> => {
   await Promise.all(Array.from(promises).map(p => p.catch(() => undefined)))
@@ -33,7 +38,7 @@ const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<vo
 
 type PaginationResult = {
   page: ResponseValue[]
-  response: Response<ResponseValue| ResponseValue[]>
+  response: Response<ResponseValue | ResponseValue[]>
   additionalArgs: Record<string, string>
   yieldResult: boolean
 }
@@ -52,13 +57,13 @@ type GetPageArgs = {
 
 const singlePagePagination = async (
   pageArgs: GetPageArgs,
-  additionalArgs: Record<string, string>
-):Promise<PaginationResult> => {
+  additionalArgs: Record<string, string>,
+): Promise<PaginationResult> => {
   const { client, extractPageEntries, customEntryExtractor, getParams } = pageArgs
   const { url, queryParams, headers } = getParams
   const params = { ...queryParams, ...additionalArgs }
 
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url,
     queryParams: Object.keys(params).length > 0 ? params : undefined,
     headers,
@@ -68,9 +73,7 @@ const singlePagePagination = async (
     return { response, page: [], additionalArgs, yieldResult: false }
   }
   const entries = (
-    (!Array.isArray(response.data) && Array.isArray(response.data.items))
-      ? response.data.items
-      : makeArray(response.data)
+    !Array.isArray(response.data) && Array.isArray(response.data.items) ? response.data.items : makeArray(response.data)
   ).flatMap(extractPageEntries)
 
   // checking original entries and not the ones that passed the custom extractor, because even if all entries are
@@ -89,7 +92,6 @@ const singlePagePagination = async (
   return { response, page, additionalArgs, yieldResult: true }
 }
 
-
 class PromisesQueue {
   private readonly promises: Promise<PaginationResult>[]
   private shouldContinue: boolean
@@ -104,7 +106,7 @@ class PromisesQueue {
     }
     const promise = singlePagePagination(pageArgs, additionalArgs)
     this.promises.push(promise)
-    log.debug(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
+    log.trace(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
   }
 
   async dequeue(): Promise<PaginationResult> {
@@ -114,7 +116,7 @@ class PromisesQueue {
       log.error('No promises to dequeue from pagination queue')
       throw new Error('No promises to dequeue from pagination queue')
     }
-    log.debug(`Removed promise from pagination queue. Queue size: ${this.promises.length}`)
+    log.trace(`Removed promise from pagination queue. Queue size: ${this.promises.length}`)
     return settledPromise
   }
 
@@ -128,7 +130,7 @@ class PromisesQueue {
   }
 }
 
-const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>):void => {
+const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>): void => {
   const argsHash = objectHash(additionalArgs)
   if (pageArgs.usedParams.has(argsHash)) {
     return
@@ -137,11 +139,16 @@ const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>)
   pageArgs.promisesQueue.enqueue(pageArgs, additionalArgs)
 }
 
-const addNextPages = ({ pageArgs, page, response, additionalArgs } :{
-    pageArgs: GetPageArgs
-    response: Response<ResponseValue | ResponseValue[]>
-    page: ResponseValue[]
-    additionalArgs: Record<string, string>
+const addNextPages = ({
+  pageArgs,
+  page,
+  response,
+  additionalArgs,
+}: {
+  pageArgs: GetPageArgs
+  response: Response<ResponseValue | ResponseValue[]>
+  page: ResponseValue[]
+  additionalArgs: Record<string, string>
 }): void => {
   const { getParams, paginationFunc, pageSize } = pageArgs
   const { recursiveQueryParams } = getParams
@@ -160,59 +167,54 @@ const addNextPages = ({ pageArgs, page, response, additionalArgs } :{
   }
 }
 /**
-* The traverseRequests function is a generator that yields pages of results from a paginated
-* endpoint.
-* the function processes all existing pages simultaneously, and yields the pages as they arrive.
-* Its primary priority is to keep the number of concurrent requests to a maximum, and deal with results only
-* when there are no requests to send
-* @param paginationFunc a function that is responsible for extracting the next pages of results
-* from the response
-* @param extractPageEntries a function that is responsible for extracting the
-* entries from the page.
-*/
+ * The traverseRequests function is a generator that yields pages of results from a paginated
+ * endpoint.
+ * the function processes all existing pages simultaneously, and yields the pages as they arrive.
+ * Its primary priority is to keep the number of concurrent requests to a maximum, and deal with results only
+ * when there are no requests to send
+ * @param paginationFunc a function that is responsible for extracting the next pages of results
+ * from the response
+ * @param extractPageEntries a function that is responsible for extracting the
+ * entries from the page.
+ */
 export const traverseRequestsAsync: (
   paginationFunc: PaginationFunc,
   extractPageEntries: PageEntriesExtractor,
   customEntryExtractor?: PageEntriesExtractor,
-) => GetAllItemsFunc = (
-  paginationFunc, extractPageEntries, customEntryExtractor,
-) => async function *getPages({
-  client,
-  pageSize,
-  getParams,
-}) {
-  const usedParams = new Set<string>()
-  const promisesQueue: PromisesQueue = new PromisesQueue()
-  let numResults = 0
-  const pageArgs = {
-    promisesQueue,
-    getParams,
-    paginationFunc,
-    client,
-    extractPageEntries,
-    customEntryExtractor,
-    pageSize,
-    usedParams,
-  }
-  pushPage(pageArgs, {})
-  while (promisesQueue.size() > 0) {
-    try {
-      // eslint-disable-next-line no-await-in-loop
-      const result = await promisesQueue.dequeue()
-      if (result.yieldResult) {
-        yield result.page
-        numResults += result.page.length
-      }
-    } catch (e) {
-      // avoid leaking promises
-      // eslint-disable-next-line no-await-in-loop
-      await promisesQueue.clear()
-      throw e
+) => GetAllItemsFunc = (paginationFunc, extractPageEntries, customEntryExtractor) =>
+  async function* getPages({ client, pageSize, getParams }) {
+    const usedParams = new Set<string>()
+    const promisesQueue: PromisesQueue = new PromisesQueue()
+    let numResults = 0
+    const pageArgs = {
+      promisesQueue,
+      getParams,
+      paginationFunc,
+      client,
+      extractPageEntries,
+      customEntryExtractor,
+      pageSize,
+      usedParams,
     }
+    pushPage(pageArgs, {})
+    while (promisesQueue.size() > 0) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const result = await promisesQueue.dequeue()
+        if (result.yieldResult) {
+          yield result.page
+          numResults += result.page.length
+        }
+      } catch (e) {
+        // avoid leaking promises
+        // eslint-disable-next-line no-await-in-loop
+        await promisesQueue.clear()
+        throw e
+      }
+    }
+    // the number of results may be lower than actual if the instances are under a nested field
+    log.info('Received %d results for endpoint %s', numResults, getParams.url)
   }
-  // the number of results may be lower than actual if the instances are under a nested field
-  log.info('Received %d results for endpoint %s', numResults, getParams.url)
-}
 
 type PageResponse = {
   total: number
@@ -224,24 +226,32 @@ const PAGE_RESPONSE_SCHEME = Joi.object({
   values: Joi.array().required(),
 }).unknown(true)
 
-const isPageResponse = createSchemeGuard<PageResponse>(PAGE_RESPONSE_SCHEME, 'Expected a response with a total and values')
+const isPageResponse = createSchemeGuard<PageResponse>(
+  PAGE_RESPONSE_SCHEME,
+  'Expected a response with a total and values',
+)
 
 // pagination for pages that have a total, and can be brought simultaneously
 // after the first call all the rest of the pages will be returned. In the rest of the calls return nothing
-export const getAllPagesWithOffsetAndTotal = (): PaginationFunc =>
+export const getAllPagesWithOffsetAndTotal =
+  (): PaginationFunc =>
   ({ responseData, getParams, currentParams }) => {
     const { paginationField } = getParams
     if (paginationField === undefined) {
       return []
     }
     if (!isPageResponse(responseData) || !_.isNumber(_.get(responseData, paginationField))) {
-      throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`)
+      throw new Error(
+        `Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`,
+      )
     }
     const currentPageStart = _.get(responseData, paginationField) as number
     if (currentPageStart !== 0 || responseData.total === responseData.values.length) {
       // bring only in the first call
       return []
     }
-    return _.range(responseData.values.length, responseData.total, responseData.values.length)
-      .map(nextPageStart => ({ ...currentParams, [paginationField]: nextPageStart.toString() }))
+    return _.range(responseData.values.length, responseData.total, responseData.values.length).map(nextPageStart => ({
+      ...currentParams,
+      [paginationField]: nextPageStart.toString(),
+    }))
   }

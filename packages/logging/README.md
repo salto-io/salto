@@ -13,11 +13,11 @@
 
 ## Installing
 
-```yarn add @salto/logging```
+`yarn add @salto/logging`
 
 or
 
-```npm install @salto/logging```
+`npm install @salto/logging`
 
 ## Logging
 
@@ -26,8 +26,8 @@ or
 ```typescript
 import { logger } from '@salto/logging'
 
-const log = logger(module)           // namespace taken from module filename
-const log = logger('my.namespace')   // namespace set explicitly
+const log = logger(module) // namespace taken from module filename
+const log = logger('my.namespace') // namespace set explicitly
 ```
 
 ### Using the logger
@@ -98,7 +98,7 @@ log.globalAssignTags(undefined) // Empties all assigned tags
 Assigning logTime decorator will allow to add a custom hook to all logTime calls.
 
 ```typescript
-log.assignGlobalLogTimeDecorator((timedFunc, description) => { 
+log.assignGlobalLogTimeDecorator((timedFunc, description) => {
   // some tracing logic
   return timedFunc
 })
@@ -206,7 +206,7 @@ SALTO_LOG_MAX_JSON_LOG_CHUNK_SIZE=3072 # 3K
 
 Configure the max chunk size for the formatted json log message.
 
-Default: 200 * 1024 - 200K
+Default: 200 \* 1024 - 200K
 
 Supported formatting: Receives only number which signifies the allowed bytes amount
 

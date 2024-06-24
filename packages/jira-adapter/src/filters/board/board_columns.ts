@@ -1,21 +1,34 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { AdditionChange, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  AdditionChange,
+  CORE_ANNOTATIONS,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isInstanceElement,
+  isModificationChange,
+  ModificationChange,
+  Values,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard, resolveChangeElement } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
+
 import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
@@ -42,16 +55,25 @@ type BoardConfigResponse = {
 
 const BOARD_CONFIG_RESPONSE_SCHEME = Joi.object({
   [COLUMNS_CONFIG_FIELD]: Joi.object({
-    columns: Joi.array().items(Joi.object({
-      name: Joi.string().required(),
-    }).unknown(true)),
-  }).unknown(true).required(),
-}).unknown(true).required()
+    columns: Joi.array().items(
+      Joi.object({
+        name: Joi.string().required(),
+      }).unknown(true),
+    ),
+  })
+    .unknown(true)
+    .required(),
+})
+  .unknown(true)
+  .required()
 
-const isBoardConfigResponse = createSchemeGuard<BoardConfigResponse>(BOARD_CONFIG_RESPONSE_SCHEME, 'Received an invalid board config response')
+const isBoardConfigResponse = createSchemeGuard<BoardConfigResponse>(
+  BOARD_CONFIG_RESPONSE_SCHEME,
+  'Received an invalid board config response',
+)
 
 const getColumnsName = async (id: string, client: JiraClient): Promise<string[] | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/agile/1.0/board/${id}/configuration`,
   })
 
@@ -76,16 +98,17 @@ export const deployColumns = async (
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
 
-  if (isModificationChange(resolvedChange)
-  && _.isEqual(
-    resolvedChange.data.before.value[COLUMNS_CONFIG_FIELD],
-    resolvedChange.data.after.value[COLUMNS_CONFIG_FIELD]
-  )) {
+  if (
+    isModificationChange(resolvedChange) &&
+    _.isEqual(
+      resolvedChange.data.before.value[COLUMNS_CONFIG_FIELD],
+      resolvedChange.data.after.value[COLUMNS_CONFIG_FIELD],
+    )
+  ) {
     return
   }
 
-  if (isAdditionChange(resolvedChange)
-    && resolvedChange.data.after.value[COLUMNS_CONFIG_FIELD] === undefined) {
+  if (isAdditionChange(resolvedChange) && resolvedChange.data.after.value[COLUMNS_CONFIG_FIELD] === undefined) {
     return
   }
 
@@ -95,27 +118,31 @@ export const deployColumns = async (
     url: '/rest/greenhopper/1.0/rapidviewconfig/columns',
     data: {
       currentStatisticsField: {
-        id: instance.value[COLUMNS_CONFIG_FIELD].constraintType !== undefined
-          ? `${instance.value[COLUMNS_CONFIG_FIELD].constraintType}_`
-          : 'none_',
+        id:
+          instance.value[COLUMNS_CONFIG_FIELD].constraintType !== undefined
+            ? `${instance.value[COLUMNS_CONFIG_FIELD].constraintType}_`
+            : 'none_',
       },
       rapidViewId: instance.value.id,
       mappedColumns: instance.value[COLUMNS_CONFIG_FIELD].columns.map(convertColumn),
     },
   })
 
-  const columnsToUpdate = instance.value[COLUMNS_CONFIG_FIELD].columns
-    .map(({ name }: Values) => name)
+  const columnsToUpdate = instance.value[COLUMNS_CONFIG_FIELD].columns.map(({ name }: Values) => name)
 
   const updatedColumns = await getColumnsName(instance.value.id, client)
   if (instance.value.type === KANBAN_TYPE) {
-    log.info(`Columns of ${getChangeData(change).elemID.getFullName()} are ${updatedColumns?.join(', ')}, and the columnsToUpdate are ${columnsToUpdate.join(', ')}`)
+    log.info(
+      `Columns of ${getChangeData(change).elemID.getFullName()} are ${updatedColumns?.join(', ')}, and the columnsToUpdate are ${columnsToUpdate.join(', ')}`,
+    )
     // In Kanban boards, the first column is always backlog, which is non-editable.
     updatedColumns?.shift()
   }
 
   if (updatedColumns !== undefined && !_.isEqual(columnsToUpdate, updatedColumns)) {
-    log.warn(`Failed to update columns of ${instance.elemID.getFullName()} - ${updatedColumns.join(', ')}, retries left - ${retriesLeft}`)
+    log.warn(
+      `Failed to update columns of ${instance.elemID.getFullName()} - ${updatedColumns.join(', ')}, retries left - ${retriesLeft}`,
+    )
     if (retriesLeft > 0) {
       await deployColumns(change, client, retriesLeft - 1)
     } else {
@@ -124,15 +151,14 @@ export const deployColumns = async (
   }
 }
 
-const removeRedundantColumns = async (
-  instance: InstanceElement,
-  client: JiraClient,
-): Promise<void> => {
+const removeRedundantColumns = async (instance: InstanceElement, client: JiraClient): Promise<void> => {
   if (instance.value.type !== KANBAN_TYPE) {
     return
   }
 
-  log.info(`Removing first column from ${instance.elemID.getFullName()} with ${instance.value[COLUMNS_CONFIG_FIELD].columns.map((col: Values) => col.name).join(', ')}`)
+  log.info(
+    `Removing first column from ${instance.elemID.getFullName()} with ${instance.value[COLUMNS_CONFIG_FIELD].columns.map((col: Values) => col.name).join(', ')}`,
+  )
   // In Kanban boards, the first column is always backlog, which is non-editable.
   // Not removing it will make us create another backlog column.
   instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
@@ -192,6 +218,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     }
 
     setFieldDeploymentAnnotations(boardType, COLUMNS_CONFIG_FIELD)
+    boardType.fields.columnConfig.annotations[CORE_ANNOTATIONS.REQUIRED] = true
     await addAnnotationRecursively(columnConfigType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(columnConfigType, CORE_ANNOTATIONS.UPDATABLE)
   },

@@ -1,19 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import {
   InstanceElement,
@@ -24,8 +23,11 @@ import {
   Change,
   toChange,
   isInstanceChange,
-  Field, getChangeData, CORE_ANNOTATIONS,
+  Field,
+  getChangeData,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import filterCreator from '../../src/filters/custom_metadata_to_object_type'
 import { defaultFilterContext } from '../utils'
@@ -35,12 +37,14 @@ import {
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
   INSTANCE_FULL_NAME_FIELD,
-  INTERNAL_ID_FIELD, LABEL,
-  METADATA_TYPE, PLURAL_LABEL,
+  INTERNAL_ID_FIELD,
+  LABEL,
+  METADATA_TYPE,
+  PLURAL_LABEL,
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { apiName, Types } from '../../src/transformers/transformer'
-import { isInstanceOfTypeChange } from '../../src/filters/utils'
+import { apiNameSync, isInstanceOfTypeChange } from '../../src/filters/utils'
 import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
@@ -52,20 +56,24 @@ describe('customMetadataToObjectTypeFilter', () => {
   const CUSTOM_METADATA_RECORD_TYPE_NAME = 'MDType__mdt'
   const CHECKBOX_FIELD_NAME = 'checkBox__c'
   const PICKLIST_FIELD_NAME = 'picklist__c'
-  const filter = filterCreator({
-    config: {
-      ...defaultFilterContext,
-      fetchProfile: buildFetchProfile({
-        optionalFeatures: { skipAliases: false },
-      }),
-    },
-  }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
+  let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
   describe('onFetch', () => {
     let customMetadataRecordType: ObjectType
     let afterOnFetchElements: Element[]
     let customMetadataInstance: InstanceElement
+
+    beforeEach(() => {
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { skipAliases: false } },
+          }),
+        },
+      }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    })
 
     beforeEach(async () => {
       const checkboxField = {
@@ -116,13 +124,15 @@ describe('customMetadataToObjectTypeFilter', () => {
           [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
           [INTERNAL_ID_FIELD]: CUSTOM_METADATA_RECORD_INTERNAL_ID,
           fields: [checkboxField, picklistField],
-        }
+        },
       )
       afterOnFetchElements = [customMetadataInstance, mockTypes.CustomMetadata]
       await filter.onFetch(afterOnFetchElements)
-      customMetadataRecordType = await awu(afterOnFetchElements)
+      customMetadataRecordType = (await awu(afterOnFetchElements)
         .filter(isObjectType)
-        .find(async e => await apiName(e) === CUSTOM_METADATA_RECORD_TYPE_NAME) as ObjectType
+        .find(
+          async (e) => (await apiName(e)) === CUSTOM_METADATA_RECORD_TYPE_NAME,
+        )) as ObjectType
       expect(customMetadataRecordType).toBeDefined()
     })
     it('should create type with correct annotations', () => {
@@ -135,16 +145,68 @@ describe('customMetadataToObjectTypeFilter', () => {
       })
     })
     it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {
-      expect(Object.keys(customMetadataRecordType.fields))
-        .toContainAllValues([
-          CHECKBOX_FIELD_NAME,
-          PICKLIST_FIELD_NAME,
-          ...Object.keys(mockTypes.CustomMetadata.fields),
-        ])
+      expect(Object.keys(customMetadataRecordType.fields)).toContainAllValues([
+        CHECKBOX_FIELD_NAME,
+        PICKLIST_FIELD_NAME,
+        ...Object.keys(mockTypes.CustomMetadata.fields),
+      ])
     })
     it('should remove the original CustomObject instance', () => {
-      expect(afterOnFetchElements.filter(isInstanceElement))
-        .not.toSatisfyAny(e => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
+      expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(
+        (e) => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
+      )
+    })
+
+    describe('Partial Fetch Support - CustomMetadata type does not exist in fetch elements', () => {
+      beforeEach(async () => {
+        const elements: Element[] = [customMetadataInstance]
+        const partialFetchFilter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            elementsSource: buildElementsSourceFromElements([
+              mockTypes.CustomMetadata,
+            ]),
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                optionalFeatures: { skipAliases: false },
+                target: ['CustomObject'],
+              },
+            }),
+          },
+        }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+        await partialFetchFilter.onFetch(elements)
+        customMetadataRecordType = elements
+          .filter(isObjectType)
+          .find(
+            (element) =>
+              apiNameSync(element) === CUSTOM_METADATA_RECORD_TYPE_NAME,
+          ) as ObjectType
+        expect(customMetadataRecordType).toBeDefined()
+      })
+
+      it('should create type with correct annotations', () => {
+        expect(customMetadataRecordType.annotations).toEqual({
+          [METADATA_TYPE]: CUSTOM_METADATA,
+          [API_NAME]: CUSTOM_METADATA_RECORD_TYPE_NAME,
+          [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
+          [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
+          [CORE_ANNOTATIONS.ALIAS]: CUSTOM_METADATA_RECORD_LABEL,
+        })
+      })
+      it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {
+        expect(Object.keys(customMetadataRecordType.fields)).toContainAllValues(
+          [
+            CHECKBOX_FIELD_NAME,
+            PICKLIST_FIELD_NAME,
+            ...Object.keys(mockTypes.CustomMetadata.fields),
+          ],
+        )
+      })
+      it('should remove the original CustomObject instance', () => {
+        expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(
+          (e) => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
+        )
+      })
     })
   })
   describe('preDeploy and onDeploy', () => {
@@ -160,7 +222,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         Types.primitiveDataTypes.Picklist,
         {
           [API_NAME]: `MDType__mdt.${PICKLIST_FIELD_NAME}`,
-        }
+        },
       )
       deletedField = new Field(
         mockTypes.CustomMetadataRecordType,
@@ -168,7 +230,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         Types.primitiveDataTypes.Picklist,
         {
           [API_NAME]: `MDType__mdt.${CHECKBOX_FIELD_NAME}}`,
-        }
+        },
       )
       const fieldAdditionChange = toChange({ after: addedField })
       const fieldDeletionChange = toChange({ before: deletedField })
@@ -181,15 +243,19 @@ describe('customMetadataToObjectTypeFilter', () => {
     })
 
     it('should create a deployable CustomObject instance on preDeploy', async () => {
-      const customObjectChange = await awu(afterPreDeployChanges)
+      const customObjectChange = (await awu(afterPreDeployChanges)
         .filter(isInstanceChange)
-        .find(isInstanceOfTypeChange(CUSTOM_OBJECT)) as Change<InstanceElement>
+        .find(isInstanceOfTypeChange(CUSTOM_OBJECT))) as Change<InstanceElement>
 
       expect(customObjectChange).toBeDefined()
       expect(afterPreDeployChanges).toHaveLength(1)
 
-      const deployableInstance = getChangeData(afterPreDeployChanges[0]) as InstanceElement
-      expect(deployableInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual('MDType__mdt')
+      const deployableInstance = getChangeData(
+        afterPreDeployChanges[0],
+      ) as InstanceElement
+      expect(deployableInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual(
+        'MDType__mdt',
+      )
       expect(deployableInstance.value.fields).toEqual([
         // Should include the added field only
         { fullName: PICKLIST_FIELD_NAME, required: false, type: 'Picklist' },

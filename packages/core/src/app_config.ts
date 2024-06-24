@@ -1,25 +1,32 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import os from 'os'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ElemID, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  BuiltinTypes,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  createRefToElmWithValue,
+} from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
-import { parser } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { collections } from '@salto-io/lowerdash'
 import { TelemetryConfig } from './telemetry'
 
@@ -38,25 +45,17 @@ const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
 export const CONFIG_DIR_NAME = 'salto.config'
 const CONFIG_FILENAME = 'config.nacl'
 
-export const getSaltoHome = (): string =>
-  process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
+export const getSaltoHome = (): string => process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
 
-export const getLocalStoragePath = (uid: string): string => (
-  path.join(getSaltoHome(), uid)
-)
+export const getLocalStoragePath = (uid: string): string => path.join(getSaltoHome(), uid)
 
-const telemetryToken = (): string => (
-  process.env.SALTO_TELEMETRY_TOKEN || ''
-)
+const telemetryToken = (): string => process.env.SALTO_TELEMETRY_TOKEN || ''
 
-const telemetryURL = (): string => (
-  process.env.SALTO_TELEMETRY_URL || ''
-)
+const telemetryURL = (): string => process.env.SALTO_TELEMETRY_URL || ''
 
-const telemetryDisabled = (): boolean => (
-  (process.env.SALTO_TELEMETRY_DISABLE !== undefined
-    && process.env.SALTO_TELEMETRY_DISABLE === '1') || telemetryURL() === ''
-)
+const telemetryDisabled = (): boolean =>
+  (process.env.SALTO_TELEMETRY_DISABLE !== undefined && process.env.SALTO_TELEMETRY_DISABLE === '1') ||
+  telemetryURL() === ''
 
 const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
   url: telemetryURL(),
@@ -72,9 +71,7 @@ const DEFAULT_COMMAND_CONFIG: CommandConfig = {
   shouldCalcTotalSize: true,
 }
 
-const configHomeDir = (): string => (
-  path.join(getSaltoHome(), CONFIG_DIR_NAME)
-)
+const configHomeDir = (): string => path.join(getSaltoHome(), CONFIG_DIR_NAME)
 
 const configFullPath = (): string => path.join(configHomeDir(), CONFIG_FILENAME)
 
@@ -109,13 +106,11 @@ export const saltoAppConfigType = new ObjectType({
   annotations: {},
 })
 
-const dumpConfig = async (config: AppConfig): Promise<void> => (
+const dumpConfig = async (config: AppConfig): Promise<void> =>
   replaceContents(
     configFullPath(),
-    await dumpElements([new InstanceElement(
-      ElemID.CONFIG_NAME,
-      saltoAppConfigType,
-      {
+    await dumpElements([
+      new InstanceElement(ElemID.CONFIG_NAME, saltoAppConfigType, {
         installationID: config.installationID,
         telemetry: {
           enabled: config.telemetry.enabled,
@@ -123,10 +118,9 @@ const dumpConfig = async (config: AppConfig): Promise<void> => (
         config: {
           shouldCalcTotalSize: config.command.shouldCalcTotalSize,
         },
-      }
-    )]),
+      }),
+    ]),
   )
-)
 
 const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
   config.telemetry = {
@@ -139,19 +133,16 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
 
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
-  const configInstance = await awu((await parse(buf, filepath)).elements)
-    .peek() as InstanceElement
+  const configInstance = (await awu((await parse(buf, filepath)).elements).peek()) as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
   configInstance.refType = createRefToElmWithValue(saltoAppConfigType)
-  const [configWithDefaults] = await awu(
-    applyInstancesDefaults(awu([configInstance]))
-  ).toArray() as InstanceElement[]
+  const [configWithDefaults] = (await awu(applyInstancesDefaults(awu([configInstance]))).toArray()) as InstanceElement[]
   return configWithDefaults.value as AppConfig
 }
 
 export const configFromDisk = async (): Promise<AppConfig> => {
-  if (!await exists(configFullPath())) {
+  if (!(await exists(configFullPath()))) {
     await mkdirp(configHomeDir())
     await dumpConfig({
       installationID: generateInstallationID(),

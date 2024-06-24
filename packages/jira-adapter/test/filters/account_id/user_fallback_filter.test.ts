@@ -1,23 +1,23 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { client as clientUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import userFallbackFilter from '../../../src/filters/account_id/user_fallback_filter'
@@ -35,47 +35,39 @@ describe('user_fallback_filter', () => {
       elemID: new ElemID(JIRA, 'Project'),
     })
 
-    instance = new InstanceElement(
-      'instance',
-      projectType,
-      {
-        leadAccountId: {
-          id: 'notExist',
-        },
+    instance = new InstanceElement('instance', projectType, {
+      leadAccountId: {
+        id: 'notExist',
       },
-    )
+    })
     const usersType = new ObjectType({
       elemID: new ElemID(JIRA, 'Users'),
     })
-    const usersElements = new InstanceElement(
-      'users',
-      usersType,
-      {
-        users: {
-          1: {
-            userId: '1',
-            username: 'name1',
-            displayName: 'disp1',
-            locale: 'en_US',
-            email: 'email1',
-          },
-          2: {
-            userId: '2',
-            username: 'name2',
-            displayName: 'disp2',
-            locale: 'en_US',
-            email: 'email2',
-          },
-          3: {
-            userId: '3',
-            username: 'name3',
-            displayName: 'disp3',
-            locale: 'en_US',
-            email: 'email3',
-          },
+    const usersElements = new InstanceElement('users', usersType, {
+      users: {
+        1: {
+          userId: '1',
+          username: 'name1',
+          displayName: 'disp1',
+          locale: 'en_US',
+          email: 'email1',
         },
-      }
-    )
+        2: {
+          userId: '2',
+          username: 'name2',
+          displayName: 'disp2',
+          locale: 'en_US',
+          email: 'email2',
+        },
+        3: {
+          userId: '3',
+          username: 'name3',
+          displayName: 'disp3',
+          locale: 'en_US',
+          email: 'email3',
+        },
+      },
+    })
     elementsSource = buildElementsSourceFromElements([usersElements])
   })
 
@@ -84,12 +76,14 @@ describe('user_fallback_filter', () => {
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       const { client, paginator, connection } = mockClient()
       mockConnection = connection
-      filter = userFallbackFilter(getFilterParams({
-        client,
-        paginator,
-        config,
-        elementsSource,
-      })) as typeof filter
+      filter = userFallbackFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config,
+          elementsSource,
+        }),
+      ) as typeof filter
 
       mockConnection.get.mockImplementation(async _url => ({
         status: 200,
@@ -122,7 +116,7 @@ describe('user_fallback_filter', () => {
     })
 
     it('should replace the account id with the current deployer if requested', async () => {
-      config.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
+      config.deploy.defaultMissingUserFallback = definitions.DEPLOYER_FALLBACK_VALUE
       const change = toChange({ after: instance })
       await filter.preDeploy([change])
       expect(instance.value.leadAccountId.id).toEqual('3')
@@ -154,12 +148,14 @@ describe('user_fallback_filter', () => {
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
       const { client, paginator, connection } = mockClient(true)
       mockConnection = connection
-      filter = userFallbackFilter(getFilterParams({
-        client,
-        paginator,
-        config,
-        elementsSource,
-      })) as typeof filter
+      filter = userFallbackFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config,
+          elementsSource,
+        }),
+      ) as typeof filter
 
       mockConnection.get.mockImplementation(async _url => ({
         status: 200,
@@ -197,7 +193,7 @@ describe('user_fallback_filter', () => {
     })
 
     it('should replace the account id with the current deployer if requested', async () => {
-      config.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
+      config.deploy.defaultMissingUserFallback = definitions.DEPLOYER_FALLBACK_VALUE
       const change = toChange({ after: instance })
       await filter.preDeploy([change])
       expect(instance.value.leadAccountId.id).toEqual('name3')

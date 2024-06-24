@@ -2,7 +2,7 @@
 
 Okta adapter for salto.io
 
-## Connecting Salto to Okta 
+## Connecting Salto to Okta
 
 Salto supports authenticating with Okta using an API Token:
 

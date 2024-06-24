@@ -1,24 +1,40 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  ChangeError,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isModificationChange,
+  ModificationChange,
+  ReferenceExpression,
+  SeverityLevel,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { isResolvedReferenceExpression, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  getInstancesFromElementSource,
+  isResolvedReferenceExpression,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import JiraClient from '../client/client'
 import { ISSUE_TYPE_SCHEMA_NAME, PROJECT_TYPE } from '../constants'
 
@@ -26,8 +42,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 const { isDefined } = values
 
-const isSameRef = (ref1: ReferenceExpression, ref2: ReferenceExpression): boolean =>
-  ref1.elemID.isEqual(ref2.elemID)
+const isSameRef = (ref1: ReferenceExpression, ref2: ReferenceExpression): boolean => ref1.elemID.isEqual(ref2.elemID)
 
 const getRemovedIssueTypeIds = (change: ModificationChange<InstanceElement>): ReferenceExpression[] => {
   const { before, after } = change.data
@@ -64,7 +79,7 @@ const areIssueTypesUsed = async (
   const jql = `project in (${linkedProjectNames.join(',')}) AND issuetype = ${issueType}`
   let response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   try {
-    response = await client.getSinglePage({
+    response = await client.get({
       url: '/rest/api/3/search',
       queryParams: {
         jql,
@@ -77,49 +92,50 @@ const areIssueTypesUsed = async (
   }
 
   if (Array.isArray(response.data) || response.data.total === undefined) {
-    log.error(`Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming issue type "${issueType}" has no issues.`)
+    log.error(
+      `Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming issue type "${issueType}" has no issues.`,
+    )
     return false
   }
   return response.data.total !== 0
 }
 
-export const issueTypeSchemeMigrationValidator = (
-  client: JiraClient,
-): ChangeValidator =>
+export const issueTypeSchemeMigrationValidator =
+  (client: JiraClient): ChangeValidator =>
   async (changes, elementSource) => {
     const relevantChanges = getRelevantChanges(changes)
     if (elementSource === undefined || relevantChanges.length === 0) {
       return []
     }
-    const idsIterator = awu(await elementSource.list())
-    const projects = await awu(idsIterator)
-      .filter(id => id.typeName === PROJECT_TYPE)
-      .filter(id => id.idType === 'instance')
-      .map(id => elementSource.get(id))
-      .toArray()
+    const projects = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
     const issueTypeSchemesToProjects = _.groupBy(
-      projects.filter(project => project.value.issueTypeScheme !== undefined
-        && isResolvedReferenceExpression(project.value.issueTypeScheme)),
+      projects.filter(
+        project =>
+          project.value.issueTypeScheme !== undefined && isResolvedReferenceExpression(project.value.issueTypeScheme),
+      ),
       project => project.value.issueTypeScheme.elemID.getFullName(),
     )
-    const errors = await awu(relevantChanges).map(async change => {
-      const issueTypeScheme = getChangeData(change)
-      const linkedProjectNames = issueTypeSchemesToProjects[issueTypeScheme.elemID.getFullName()]
-        ?.map(project => project.value.name) ?? []
-      if (linkedProjectNames.length === 0) {
+    const errors = await awu(relevantChanges)
+      .map(async change => {
+        const issueTypeScheme = getChangeData(change)
+        const linkedProjectNames =
+          issueTypeSchemesToProjects[issueTypeScheme.elemID.getFullName()]?.map(project => project.value.name) ?? []
+        if (linkedProjectNames.length === 0) {
+          return undefined
+        }
+        const removedIssueTypeNames = await awu(getRemovedIssueTypeIds(change))
+          .filter(async (ref: ReferenceExpression): Promise<boolean> => isInstanceElement(ref.value))
+          .map(issueTypeId => issueTypeId.value.value.name)
+          .toArray()
+        const removedTypesWithIssues = await awu(removedIssueTypeNames)
+          .filter(async issueType => areIssueTypesUsed(client, issueType, linkedProjectNames))
+          .toArray()
+        if (removedTypesWithIssues.length > 0) {
+          return getIssueTypeSchemeMigrationError(issueTypeScheme, removedTypesWithIssues)
+        }
         return undefined
-      }
-      const removedIssueTypeNames = await awu(getRemovedIssueTypeIds(change))
-        .filter(async (ref: ReferenceExpression): Promise<boolean> =>
-          isInstanceElement(ref.value))
-        .map(issueTypeId => issueTypeId.value.value.name).toArray()
-      const removedTypesWithIssues = await awu(removedIssueTypeNames).filter(async issueType => (
-        areIssueTypesUsed(client, issueType, linkedProjectNames)
-      )).toArray()
-      if (removedTypesWithIssues.length > 0) {
-        return getIssueTypeSchemeMigrationError(issueTypeScheme, removedTypesWithIssues)
-      }
-      return undefined
-    }).filter(isDefined).toArray()
+      })
+      .filter(isDefined)
+      .toArray()
     return errors
   }

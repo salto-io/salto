@@ -1,22 +1,30 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
-import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import gadgetFilter from '../../../src/filters/dashboard/gadget'
@@ -24,7 +32,6 @@ import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'
-
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -45,18 +52,19 @@ describe('gadgetFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
 
-
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = gadgetFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    filter = gadgetFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     dashboardGadgetType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_GADGET_TYPE),
@@ -82,7 +90,7 @@ describe('gadgetFilter', () => {
             },
           }),
         ],
-      }
+      },
     )
 
     connection.get.mockImplementation(async (url: string) => {
@@ -136,20 +144,11 @@ describe('gadgetFilter', () => {
     it('should add properties values', async () => {
       await filter.onFetch?.([instance])
 
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/dashboard/0/items/1/properties',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties', undefined)
 
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/dashboard/0/items/1/properties/key1',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', undefined)
 
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/dashboard/0/items/1/properties/key2',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', undefined)
 
       expect(instance.value.properties).toEqual({
         key1: 'value1',
@@ -188,15 +187,9 @@ describe('gadgetFilter', () => {
       })
       await filter.onFetch?.([instance])
 
-      expect(connection.get).not.toHaveBeenCalledWith(
-        '/rest/api/3/dashboard/0/items/1/properties/key1',
-        undefined,
-      )
+      expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', undefined)
 
-      expect(connection.get).not.toHaveBeenCalledWith(
-        '/rest/api/3/dashboard/0/items/1/properties/key2',
-        undefined,
-      )
+      expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', undefined)
 
       expect(instance.value.properties).toEqual({})
     })
@@ -207,7 +200,6 @@ describe('gadgetFilter', () => {
 
       expect(instance.value.properties).toEqual({})
     })
-
 
     it('should not add properties when got invalid response from values request', async () => {
       connection.get.mockImplementation(async (url: string) => {
@@ -294,9 +286,7 @@ describe('gadgetFilter', () => {
   })
 
   describe('deploy', () => {
-    const deployChangeMock = deployment.deployChange as jest.MockedFunction<
-      typeof deployment.deployChange
-    >
+    const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
 
     let change: Change<InstanceElement>
 
@@ -307,6 +297,8 @@ describe('gadgetFilter', () => {
         key1: 'value1',
         key2: 'value2',
       }
+      // references are resolved in pre deploy
+      instance.annotations[CORE_ANNOTATIONS.PARENT][0] = { id: '0' }
 
       change = toChange({ after: instance })
     })
@@ -316,17 +308,19 @@ describe('gadgetFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith({
         change: await resolveChangeElement(change, getLookUpName),
         client,
-        endpointDetails: getDefaultConfig({ isDataCenter: false })
-          .apiDefinitions.types[DASHBOARD_GADGET_TYPE].deployRequests,
+        endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types[DASHBOARD_GADGET_TYPE]
+          .deployRequests,
         fieldsToIgnore: ['properties'],
       })
     })
 
     it('should do nothing if removal throws 404', async () => {
-      deployChangeMock.mockRejectedValue(new clientUtils.HTTPError('message', {
-        status: 404,
-        data: {},
-      }))
+      deployChangeMock.mockRejectedValue(
+        new clientUtils.HTTPError('message', {
+          status: 404,
+          data: {},
+        }),
+      )
       const { deployResult } = await filter.deploy([toChange({ before: instance })])
 
       expect(deployResult.appliedChanges).toHaveLength(1)
@@ -343,27 +337,17 @@ describe('gadgetFilter', () => {
 
     it('should call update the properties', async () => {
       await filter.deploy([change])
-      expect(connection.put).toHaveBeenCalledWith(
-        '/rest/api/3/dashboard/0/items/1/properties/key1',
-        '"value1"',
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
+      expect(connection.put).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', '"value1"', {
+        headers: {
+          'Content-Type': 'application/json',
         },
+      })
 
-      )
-
-      expect(connection.put).toHaveBeenCalledWith(
-        '/rest/api/3/dashboard/0/items/1/properties/key2',
-        '"value2"',
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
+      expect(connection.put).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', '"value2"', {
+        headers: {
+          'Content-Type': 'application/json',
         },
-
-      )
+      })
     })
 
     it('should not call update when there are not properties', async () => {

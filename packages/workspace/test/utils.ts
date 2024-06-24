@@ -1,23 +1,23 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { Value, StaticFile, calculateStaticFileHash, isObjectType, TypeElement } from '@salto-io/adapter-api'
+import { StaticFile, calculateStaticFileHash, isObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { Functions, FunctionImplementation, FunctionExpression } from '../src/parser/functions'
+import { parser } from '@salto-io/parser'
 import { StaticFilesSource, MissingStaticFile } from '../src/workspace/static_files/common'
 import { File } from '../src/workspace/dir_store'
 import { RemoteMap, RemoteMapEntry, CreateRemoteMapParams, RemoteMapCreator } from '../src/workspace/remote_map'
@@ -25,62 +25,21 @@ import { RemoteMap, RemoteMapEntry, CreateRemoteMapParams, RemoteMapCreator } fr
 const { awu, toAsyncIterable } = collections.asynciterable
 const { isDefined } = values
 
-export class TestFuncImpl extends FunctionExpression {}
-
-const registerFunction = (
-  funcName: string,
-  func: FunctionImplementation,
-  functions: Functions = {},
-  aliases: string[] = [],
-): Functions => ({
-  ...functions,
-  ...[funcName].concat(aliases).reduce((acc, alias: string) => ({
-    ...acc,
-    ...{
-      [alias]: func,
-    },
-  }), {}),
-})
-
-export const registerTestFunction = (
-  funcName: string,
-  aliases: string[] = [],
-  functions: Functions = {}
-): Functions => (
-  registerFunction(
-    funcName,
-    {
-      parse: (parameters: Value[]) => Promise.resolve(new TestFuncImpl(funcName, parameters)),
-      dump: (val: Value) => Promise.resolve(new FunctionExpression(
-        funcName,
-        val.parameters,
-      )),
-      isSerializedAsFunction: (val: Value) => val instanceof TestFuncImpl,
-    },
-    functions,
-    aliases,
-  )
-)
-
-export const registerThrowingFunction = (
-  funcName: string, parse: () => Promise<void>
-): Functions => registerFunction(
-  funcName,
-  {
-    parse,
-    dump: () => Promise.reject(),
-    isSerializedAsFunction: () => true,
-  },
-)
+export class TestFuncImpl extends parser.FunctionExpression {}
 
 export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFilesSource => ({
   load: jest.fn().mockResolvedValue([]),
-  getStaticFile: jest.fn().mockImplementation((filepath: string, _encoding: BufferEncoding) => (
-    staticFiles.find(sf => sf.filepath === filepath) ?? new MissingStaticFile(filepath)
-  )),
-  getContent: jest.fn().mockImplementation(async (filepath: string) => (
-    await staticFiles.find(sf => sf.filepath === filepath)?.getContent() ?? undefined
-  )),
+  getStaticFile: jest
+    .fn()
+    .mockImplementation(
+      (args: { filepath: string }) =>
+        staticFiles.find(sf => sf.filepath === args.filepath) ?? new MissingStaticFile(args.filepath),
+    ),
+  getContent: jest
+    .fn()
+    .mockImplementation(
+      async (filepath: string) => (await staticFiles.find(sf => sf.filepath === filepath)?.getContent()) ?? undefined,
+    ),
   persistStaticFile: jest.fn().mockReturnValue([]),
   flush: jest.fn(),
   clone: jest.fn(),
@@ -88,16 +47,14 @@ export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFil
   getTotalSize: jest.fn(),
   clear: jest.fn(),
   delete: jest.fn(),
-  isPathIncluded: jest.fn().mockImplementation(
-    filePath => staticFiles.find(f => f.filepath === filePath) !== undefined
-  ),
+  isPathIncluded: jest
+    .fn()
+    .mockImplementation(filePath => staticFiles.find(f => f.filepath === filePath) !== undefined),
 })
 
 export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
   const maps = {} as Record<string, Record<string, string>>
-  const creator = async <T, K extends string = string>(
-    opts: CreateRemoteMapParams<T>
-  ): Promise<RemoteMap<T, K>> => {
+  const creator = async <T, K extends string = string>(opts: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
     if (maps[opts.namespace] === undefined) {
       maps[opts.namespace] = {} as Record<string, string>
     }
@@ -106,9 +63,7 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
       return value ? opts.deserialize(value) : undefined
     }
     return {
-      setAll: async (
-        entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>
-      ): Promise<void> => {
+      setAll: async (entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>): Promise<void> => {
         for await (const entry of entries) {
           maps[opts.namespace][entry.key] = await opts.serialize(entry.value)
         }
@@ -131,12 +86,11 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
         maps[opts.namespace] = {} as Record<K, string>
       },
       entries: (): AsyncIterable<RemoteMapEntry<T, K>> =>
-        awu(Object.entries(maps[opts.namespace]))
-          .map(async ([key, value]) =>
-            ({ key: key as K, value: await opts.deserialize(value as string) })),
-      keys: (): AsyncIterable<K> => toAsyncIterable(
-        Object.keys(maps[opts.namespace]) as unknown as K[]
-      ),
+        awu(Object.entries(maps[opts.namespace])).map(async ([key, value]) => ({
+          key: key as K,
+          value: await opts.deserialize(value as string),
+        })),
+      keys: (): AsyncIterable<K> => toAsyncIterable(Object.keys(maps[opts.namespace]) as unknown as K[]),
       values: (): AsyncIterable<T> =>
         awu(Object.values(maps[opts.namespace])).map(async v => opts.deserialize(v as string)),
       flush: (): Promise<boolean> => Promise.resolve(false),
@@ -164,22 +118,23 @@ export const exampleStaticFileWithContent = new StaticFile({
   content: defaultBuffer,
 })
 
-export const getFieldsAndAnnoTypes = async (
-  type: TypeElement,
-  touched: string[] = []
-): Promise<TypeElement[]> => {
+export const getFieldsAndAnnoTypes = async (type: TypeElement, touched: string[] = []): Promise<TypeElement[]> => {
   const fieldTypes = isObjectType(type)
-    ? await awu(Object.values(type.fields)).map(f => f.getType()).toArray()
+    ? await awu(Object.values(type.fields))
+        .map(f => f.getType())
+        .toArray()
     : []
   const annoTypes = Object.values(await type.getAnnotationTypes())
 
-  return awu([...fieldTypes, ...annoTypes]).flatMap(async nestedType => {
-    if (touched.includes(nestedType.elemID.getFullName())) {
-      return [undefined]
-    }
-    touched.push(nestedType.elemID.getFullName())
-    return [nestedType, ...await getFieldsAndAnnoTypes(nestedType, touched)]
-  }).filter(isDefined)
+  return awu([...fieldTypes, ...annoTypes])
+    .flatMap(async nestedType => {
+      if (touched.includes(nestedType.elemID.getFullName())) {
+        return [undefined]
+      }
+      touched.push(nestedType.elemID.getFullName())
+      return [nestedType, ...(await getFieldsAndAnnoTypes(nestedType, touched))]
+    })
+    .filter(isDefined)
     .toArray()
 }
 

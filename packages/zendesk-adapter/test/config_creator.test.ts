@@ -1,41 +1,38 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { configType } from '../src/config'
-import { optionsType, getConfig } from '../src/config_creator'
+import { optionsType, getConfig, DEFAULT_GUIDE_THEME_CONFIG } from '../src/config_creator'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType, {})
-const mockCreateDefaultInstanceFromType = jest.fn()
-  .mockResolvedValue(mockDefaultInstanceFromTypeResult)
+const mockCreateDefaultInstanceFromType = jest.fn().mockResolvedValue(mockDefaultInstanceFromTypeResult)
 
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-utils'),
-  createDefaultInstanceFromType: jest.fn()
-    .mockImplementation((...args) => mockCreateDefaultInstanceFromType(...args)),
+  createDefaultInstanceFromType: jest.fn().mockImplementation((...args) => mockCreateDefaultInstanceFromType(...args)),
 }))
 
 const mockLogError = jest.fn()
 jest.mock('@salto-io/logging', () => ({
   ...jest.requireActual<{}>('@salto-io/logging'),
-  logger: jest.fn()
-    .mockReturnValue({
-      debug: jest.fn(),
-      info: jest.fn(),
-      error: jest.fn((...args) => mockLogError(...args)),
-    }),
+  logger: jest.fn().mockReturnValue({
+    debug: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn((...args) => mockLogError(...args)),
+  }),
 }))
 
 describe('config_creator', () => {
@@ -88,6 +85,42 @@ describe('config_creator', () => {
     })
   })
 
+  describe('when input contains enableGuideThemes equal true', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ enableGuideThemes: true })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toEqual(DEFAULT_GUIDE_THEME_CONFIG)
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains enableGuideThemes equal false', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ enableGuideThemes: false })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toBeUndefined()
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains enableGuide and enableGuideThemes equal true', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ enableGuide: true, enableGuideThemes: true })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide and guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toEqual({
+        ...DEFAULT_GUIDE_THEME_CONFIG,
+        brands: ['.*'],
+      })
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
   describe('when input is not a valid optionsType', () => {
     beforeEach(async () => {
       const differentObjType = new ObjectType({
@@ -100,7 +133,9 @@ describe('config_creator', () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
       expect(resultConfig.value?.fetch?.guide).toBeUndefined()
-      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Received instance with refType ElemId full name: ${options?.refType.elemID.getFullName()}`)
+      expect(mockLogError).toHaveBeenCalledWith(
+        `Received an invalid instance for config options. Received instance with refType ElemId full name: ${options?.refType.elemID.getFullName()}`,
+      )
     })
   })
 })

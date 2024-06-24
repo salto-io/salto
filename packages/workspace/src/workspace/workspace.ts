@@ -1,52 +1,101 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import path from 'path'
-import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, AuthorInformation } from '@salto-io/adapter-api'
+import {
+  Element,
+  SaltoError,
+  SaltoElementError,
+  ElemID,
+  InstanceElement,
+  DetailedChange,
+  Change,
+  Value,
+  toChange,
+  isRemovalChange,
+  getChangeData,
+  isField,
+  AuthorInformation,
+  ReferenceInfo,
+  ReferenceType,
+  ReadOnlyElementsSource,
+  isAdditionOrModificationChange,
+  StaticFile,
+  isInstanceElement,
+  isObjectType,
+  isModificationChange,
+  TypeReference,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
   applyDetailedChanges,
+  getIndependentElemIDs,
+  inspectValue,
   naclCase,
-  resolvePath,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
+import { parser } from '@salto-io/parser'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
-import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
-import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, FromSource } from './nacl_files/multi_env/multi_env_source'
+import {
+  multiEnvSource,
+  getSourceNameForFilename,
+  MultiEnvSource,
+  EnvsChanges,
+  FromSource,
+  ENVS_PREFIX,
+} from './nacl_files/multi_env/multi_env_source'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { ElementSelector } from './element_selector'
-import { Errors, AccountDuplicationError, EnvDuplicationError, UnknownEnvError,
-  DeleteCurrentEnvError, InvalidEnvNameError, MAX_ENV_NAME_LEN, UnknownAccountError,
-  InvalidAccountNameError } from './errors'
-import { EnvConfig } from './config/workspace_config_types'
+import {
+  Errors,
+  AccountDuplicationError,
+  EnvDuplicationError,
+  UnknownEnvError,
+  DeleteCurrentEnvError,
+  InvalidEnvNameError,
+  MAX_ENV_NAME_LEN,
+  UnknownAccountError,
+  InvalidAccountNameError,
+} from './errors'
+import { EnvConfig, StateConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode, RecoveryOverrideFunc } from './nacl_files/elements_cache'
+import {
+  createMergeManager,
+  ElementMergeManager,
+  ChangeSet,
+  createEmptyChangeSet,
+  MergedRecoveryMode,
+  RecoveryOverrideFunc,
+} from './nacl_files/elements_cache'
 import { ReadOnlyRemoteMap, RemoteMap, RemoteMapCreator } from './remote_map'
-import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
+import {
+  serialize,
+  deserializeMergeErrors,
+  deserializeSingleElement,
+  deserializeValidationErrors,
+} from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
-import { updateReferenceIndexes } from './reference_indexes'
+import { ReferenceTargetIndexValue, updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
@@ -60,11 +109,16 @@ const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { partition } = promises.array
 
-export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
+
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
+
+export const getBaseDirFromEnvName = (envName: string): string =>
+  envName === COMMON_ENV_PREFIX ? envName : path.join(ENVS_PREFIX, envName)
+
+export const getStaticFileCacheName = (name: string): string => (name === COMMON_ENV_PREFIX ? 'common' : name)
 
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
@@ -75,13 +129,15 @@ export type DateRange = {
 }
 
 export type SourceLocation = {
-  sourceRange: SourceRange
-  subRange?: SourceRange
+  sourceRange: parser.SourceRange
+  subRange?: parser.SourceRange
 }
 
-export type WorkspaceError<T extends SaltoError> = Readonly<T & {
-  sourceLocations: SourceLocation[]
-}>
+export type WorkspaceError<T extends SaltoError> = Readonly<
+  T & {
+    sourceLocations: SourceLocation[]
+  }
+>
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
 export type StateRecency = {
@@ -121,12 +177,10 @@ export type EnvironmentsSources = {
 
 export type FromSourceWithEnv = {
   source: 'env'
-  envName? : string
+  envName?: string
 }
 
-const isFromSourceWithEnv = (
-  value: {source: FromSource} | FromSourceWithEnv
-): value is FromSourceWithEnv =>
+const isFromSourceWithEnv = (value: { source: FromSource } | FromSourceWithEnv): value is FromSourceWithEnv =>
   value.source === 'env'
 
 export type Workspace = {
@@ -141,20 +195,20 @@ export type Workspace = {
   // services is deprecated, kept for backwards compatibility. use accounts.
   // Remove this when no longer used, SALTO-1661
   services: (env?: string) => string[]
-  accountCredentials: (names?: ReadonlyArray<string>) =>
-    Promise<Readonly<Record<string, InstanceElement>>>
+  accountCredentials: (names?: ReadonlyArray<string>) => Promise<Readonly<Record<string, InstanceElement>>>
   // servicesCredentials is deprecated, kept for backwards compatibility.
   // use accountsCredentials.
   // Remove this when no longer used, SALTO-1661
-  servicesCredentials: (names?: ReadonlyArray<string>) =>
-    Promise<Readonly<Record<string, InstanceElement>>>
-  accountConfig: (name: string, defaultValue?: InstanceElement, shouldResolve?: boolean) =>
-    Promise<InstanceElement | undefined>
+  servicesCredentials: (names?: ReadonlyArray<string>) => Promise<Readonly<Record<string, InstanceElement>>>
+  accountConfig: (
+    name: string,
+    defaultValue?: InstanceElement,
+    shouldResolve?: boolean,
+  ) => Promise<InstanceElement | undefined>
   // serviceConfig is deprecated, kept for backwards compatibility.
   // use accountConfig.
   // Remove this when no longer used, SALTO-1661
-  serviceConfig: (name: string, defaultValue?: InstanceElement) =>
-    Promise<InstanceElement | undefined>
+  serviceConfig: (name: string, defaultValue?: InstanceElement) => Promise<InstanceElement | undefined>
   accountConfigPaths: (name: string) => Promise<string[]>
   // serviceConfigPaths is deprecated, kept for backwards compatibility.
   // use accountConfigPaths.
@@ -170,34 +224,40 @@ export type Workspace = {
   envOfFile(filename: string): string
   hasErrors(env?: string): Promise<boolean>
   errors(): Promise<Readonly<Errors>>
-  transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
-    Promise<Readonly<WorkspaceError<T>>>
+  transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T): Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
   updateNaclFiles: (
     changes: DetailedChange[],
     mode?: RoutingMode,
-    stateOnly? : boolean
+    stateOnly?: boolean,
   ) => Promise<UpdateNaclFilesResult>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   setNaclFiles: (naclFiles: NaclFile[], validate?: boolean) => Promise<EnvsChanges>
   removeNaclFiles: (names: string[], validate?: boolean) => Promise<EnvsChanges>
-  getSourceMap: (filename: string) => Promise<SourceMap>
-  getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
+  getSourceMap: (filename: string) => Promise<parser.SourceMap>
+  getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
-  getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
+  getElementOutgoingReferences: (
+    id: ElemID,
+    envName?: string,
+    includeWeakReferences?: boolean,
+  ) => Promise<{ id: ElemID; type: ReferenceType }[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
+  getElementsAuthorsById: (envName?: string) => Promise<Record<string, AuthorInformation>>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
   getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    from: FromSourceWithEnv | {
-      source: FromSource
-    },
+    from:
+      | FromSourceWithEnv
+      | {
+          source: FromSource
+        },
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   getElementFileNames: (env?: string) => Promise<Map<string, string[]>>
@@ -211,11 +271,12 @@ export type Workspace = {
   addService: (service: string, account?: string) => Promise<void>
   addEnvironment: (
     env: string,
-    environmentSourceCreator: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>
+    environmentSourceCreator: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>,
   ) => Promise<void>
   deleteEnvironment: (env: string, keepNacls?: boolean) => Promise<void>
-  renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
+  renameEnvironment: (envName: string, newEnvName: string, newSourceName?: string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
+  updateStateProvider: (stateConfig: StateConfig | undefined) => Promise<void>
   updateAccountCredentials: (account: string, creds: Readonly<InstanceElement>) => Promise<void>
   // updateServiceCredentials is deprecated, kept for backwards compatibility.
   // use updateAccountCredentials.
@@ -236,34 +297,25 @@ export type Workspace = {
   ) => Promise<void>
   getServiceFromAccountName: (account: string) => string
   getStateRecency(accounts: string): Promise<StateRecency>
-  promote(
-    idsToMove: ElemID[],
-    idsToRemove?: Record<string, ElemID[]>
-  ): Promise<void>
+  promote(idsToMove: ElemID[], idsToRemove?: Record<string, ElemID[]>): Promise<void>
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
-  sync(
-    idsToCopy: ElemID[],
-    idsToRemove: Record<string, ElemID[]>,
-    targetEnvs: string[],
-  ): Promise<void>
+  sync(idsToCopy: ElemID[], idsToRemove: Record<string, ElemID[]>, targetEnvs: string[]): Promise<void>
   getValue(id: ElemID): Promise<Value | undefined>
   getSearchableNames(): Promise<string[]>
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
   getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
-  getFileEnvs(filePath: string): {envName: string; isStatic?: boolean}[]
+  getFileEnvs(filePath: string): { envName: string; isStatic?: boolean }[]
   getStaticFile(params: {
     filepath: string
     encoding: BufferEncoding
     env?: string
+    isTemplate?: boolean
   }): Promise<StaticFile | undefined>
   getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
-  getElemIdsByStaticFilePaths(
-    filePaths?: Set<string>,
-    envName?: string
-  ): Promise<Record<string, string>>
+  getElemIdsByStaticFilePaths(filePaths?: Set<string>, envName?: string): Promise<Record<string, string>>
   getAliases(envName?: string): Promise<ReadOnlyRemoteMap<string>>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>
@@ -279,7 +331,7 @@ type SingleState = {
   alias: RemoteMap<string>
   referencedStaticFiles: RemoteMap<string[]>
   referenceSources: RemoteMap<ElemID[]>
-  referenceTargets: RemoteMap<collections.treeMap.TreeMap<ElemID>>
+  referenceTargets: RemoteMap<ReferenceTargetIndexValue>
   mapVersions: RemoteMap<number>
 }
 type WorkspaceState = {
@@ -306,21 +358,106 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
  * Serialize a reference tree to a JSON of path (without baseId) to ElemID
  * example: (adapter.type.instance.instanceName.)field.nestedField -> ElemID
  */
-export const serializeReferenceTree = async (val: collections.treeMap.TreeMap<ElemID>): Promise<string> => {
-  const entriesToSerialize = Array.from(val.entries()).map(([key, ids]) => [key, ids.map(id => id.getFullName())])
+export const serializeReferenceTree = async (val: ReferenceTargetIndexValue): Promise<string> => {
+  const entriesToSerialize = Array.from(val.entries()).map(([key, refs]) => [
+    key,
+    refs.map(ref => ({ ...ref, id: ref.id.getFullName() })),
+  ])
   return safeJsonStringify(entriesToSerialize)
 }
 
-export const deserializeReferenceTree = async (data: string): Promise<collections.treeMap.TreeMap<ElemID>> => {
+export const deserializeReferenceTree = async (data: string): Promise<ReferenceTargetIndexValue> => {
   const parsedEntries = JSON.parse(data)
 
   // Backwards compatibility for old serialized data, should be removed in the future
-  const isOldFormat = Array.isArray(parsedEntries) && parsedEntries.length > 0 && _.isString(parsedEntries[0])
-  const entries = isOldFormat ? [['', parsedEntries]] : parsedEntries
+  const isOldListFormat = Array.isArray(parsedEntries) && parsedEntries.length > 0 && _.isString(parsedEntries[0])
 
-  const elemIdsEntries = entries.map(([key, ids]: [string, string[]]) => [key, ids.map(ElemID.fromFullName)])
-  return new collections.treeMap.TreeMap<ElemID>(elemIdsEntries)
+  const entries = isOldListFormat ? [['', parsedEntries]] : parsedEntries
+
+  const elemIdsEntries = entries.map(([key, refs]: [string, (string | { id: string; type: ReferenceType })[]]) => [
+    key,
+    refs.map(ref => {
+      // Backwards compatibility for old serialized data, should be removed in the future
+      if (_.isString(ref)) {
+        return { id: ElemID.fromFullName(ref), type: 'strong' }
+      }
+
+      return { ...ref, id: ElemID.fromFullName(ref.id) }
+    }),
+  ])
+  return new collections.treeMap.TreeMap(elemIdsEntries)
 }
+
+/*
+ * List dependecies for a given list of elemIDs within a workspace in envToListFrom.
+ * Filters out weak references and any elemIDs from elemIDsToSkip.
+ */
+export const listElementsDependenciesInWorkspace = async ({
+  workspace,
+  elemIDsToFind,
+  elemIDsToSkip = [],
+  envToListFrom,
+}: {
+  workspace: Workspace
+  elemIDsToFind: ElemID[]
+  elemIDsToSkip?: ElemID[]
+  envToListFrom?: string
+}): Promise<{ dependencies: Record<string, ElemID[]>; missing: ElemID[] }> =>
+  log.timeDebug(async () => {
+    const workspaceBaseLevelIds = await log.timeDebug(
+      async () => new Set(await workspace.getSearchableNamesOfEnv(envToListFrom)),
+      `getSearchableNames for env: ${envToListFrom}`,
+    )
+    const elemIdsToSkipSet = new Set(elemIDsToSkip.map(id => id.getFullName()))
+    const baseLevelIds = elemIDsToFind.map(id => id.createBaseID().parent)
+    const [foundIds, missingIds] = _.partition(baseLevelIds, elemID => workspaceBaseLevelIds.has(elemID.getFullName()))
+
+    const result: Record<string, ElemID[]> = {}
+    const elemIDsToProcess = Array.from(foundIds)
+    const visited: Set<string> = new Set()
+    while (elemIDsToProcess.length > 0) {
+      const currentLevelIds = elemIDsToProcess
+        .splice(0, elemIDsToProcess.length)
+        .filter(currentId => !visited.has(currentId.getFullName()))
+      currentLevelIds.forEach(currentId => visited.add(currentId.getFullName()))
+
+      log.trace('Proccessing %d elements references', currentLevelIds.length)
+      // eslint-disable-next-line no-await-in-loop
+      const currentLevelResult = await Promise.all(
+        currentLevelIds.map(async currentId => {
+          // eslint-disable-next-line no-await-in-loop
+          const references = await workspace.getElementOutgoingReferences(currentId, envToListFrom, false)
+          const relevantElemIds = getIndependentElemIDs(
+            references
+              .map(ref => ref.id.createBaseID().parent)
+              .filter(elemId => !elemIdsToSkipSet.has(elemId.getFullName())),
+          )
+
+          const [foundElemIDs, missingElemIDs] = _.partition(relevantElemIds, elemID =>
+            workspaceBaseLevelIds.has(elemID.getFullName()),
+          )
+          result[currentId.getFullName()] = foundElemIDs
+          return { foundElemIDs, missingElemIDs }
+        }),
+      )
+      currentLevelResult.flatMap(entry => entry.missingElemIDs).forEach(id => missingIds.push(id))
+
+      _(currentLevelResult)
+        .flatMap(entry => entry.foundElemIDs)
+        .uniqBy(id => id.getFullName())
+        .forEach(id => elemIDsToProcess.push(id))
+
+      log.trace('Done proccessing references for %d elements', currentLevelIds.length)
+    }
+
+    return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
+  }, 'List dependencies in workspace')
+
+type GetCustomReferencesFunc = (
+  elements: Element[],
+  accountToServiceName: Record<string, string>,
+  adaptersConfig: AdaptersConfigSource,
+) => Promise<ReferenceInfo[]>
 
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
@@ -330,7 +467,8 @@ export const loadWorkspace = async (
   remoteMapCreator: RemoteMapCreator,
   ignoreFileChanges = false,
   persistent = true,
-  mergedRecoveryMode: MergedRecoveryMode = 'rebuild'
+  mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
+  getCustomReferences: GetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -340,36 +478,28 @@ export const loadWorkspace = async (
   }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
   let overrideEnv: string
-  const currentEnv = (): string => overrideEnv
-    ?? workspaceConfig.currentEnv
-    ?? workspaceConfig.envs[0].name
-  const getRemoteMapNamespace = (
-    namespace: string, env?: string
-  ): string => `workspace-${env || currentEnv()}-${namespace}`
+  const currentEnv = (): string => overrideEnv ?? workspaceConfig.currentEnv ?? workspaceConfig.envs[0].name
+  const getRemoteMapNamespace = (namespace: string, env?: string): string =>
+    `workspace-${env || currentEnv()}-${namespace}`
   const currentEnvConf = (): EnvConfig =>
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
-  const currentEnvsConf = (): EnvConfig[] =>
-    workspaceConfig.envs
+  const currentEnvsConf = (): EnvConfig[] => workspaceConfig.envs
   const accounts = (env?: string): string[] => {
-    const envConf = env
-      ? makeArray(workspaceConfig.envs).find(e => e.name === env)
-      : currentEnvConf()
+    const envConf = env ? makeArray(workspaceConfig.envs).find(e => e.name === env) : currentEnvConf()
     return makeArray(Object.keys(envConf?.accountToServiceName || {}))
   }
-  const state = (envName?: string): State => (
-    environmentsSources.sources[envName ?? currentEnv()].state as State
-  )
+  const state = (envName?: string): State => environmentsSources.sources[envName ?? currentEnv()].state as State
 
   let naclFilesSource = multiEnvSource(
     _.mapValues(environmentsSources.sources, e => e.naclFiles),
     environmentsSources.commonSourceName,
     remoteMapCreator,
     persistent,
-    mergedRecoveryMode
+    mergedRecoveryMode,
   )
   let workspaceState: Promise<WorkspaceState> | undefined
   const buildWorkspaceState = async ({
-    workspaceChanges = {},
+    workspaceChanges,
     stateOnlyChanges = {},
     validate = true,
   }: {
@@ -381,103 +511,105 @@ export const loadWorkspace = async (
       const wsConfig = await config.getWorkspaceConfig()
       log.debug('initializing state for workspace %s/%s', wsConfig.uid, wsConfig.name)
       log.debug('Full workspace config: %o', wsConfig)
-      const states: Record<string, SingleState> = Object.fromEntries(await awu(envs())
-        .map(async envName => [envName, {
-          merged: new RemoteElementSource(
-            await remoteMapCreator<Element>({
-              namespace: getRemoteMapNamespace('merged', envName),
-              serialize: element => serialize([element], 'keepRef'),
-              // TODO: we might need to pass static file reviver to the deserialization func
-              deserialize: s => deserializeSingleElement(
-                s,
-                async staticFile => await naclFilesSource.getStaticFile(
-                  staticFile.filepath,
-                  staticFile.encoding,
-                  envName
-                ) ?? staticFile
+      const states: Record<string, SingleState> = Object.fromEntries(
+        await awu(envs())
+          .map(async envName => [
+            envName,
+            {
+              merged: new RemoteElementSource(
+                await remoteMapCreator<Element>({
+                  namespace: getRemoteMapNamespace('merged', envName),
+                  serialize: element => serialize([element], 'keepRef'),
+                  // TODO: we might need to pass static file reviver to the deserialization func
+                  deserialize: s =>
+                    deserializeSingleElement(
+                      s,
+                      async staticFile =>
+                        (await naclFilesSource.getStaticFile({
+                          filePath: staticFile.filepath,
+                          encoding: staticFile.encoding,
+                          env: envName,
+                          isTemplate: staticFile.isTemplate,
+                        })) ?? staticFile,
+                    ),
+                  persistent,
+                }),
               ),
-              persistent,
-            })
-          ),
-          errors: await remoteMapCreator<MergeError[]>({
-            namespace: getRemoteMapNamespace('errors', envName),
-            serialize: mergeErrors => serialize(mergeErrors, 'keepRef'),
-            deserialize: async data => deserializeMergeErrors(data),
-            persistent,
-          }),
-          validationErrors: await remoteMapCreator<ValidationError[]>({
-            namespace: getRemoteMapNamespace('validationErrors', envName),
-            serialize: validationErrors => serialize(validationErrors, 'keepRef'),
-            deserialize: async data => deserializeValidationErrors(data),
-            persistent,
-          }),
-          changedBy: await remoteMapCreator<ElemID[]>({
-            namespace: getRemoteMapNamespace('changedBy', envName),
-            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
-            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
-            persistent,
-          }),
-          changedAt: await remoteMapCreator<ElemID[]>({
-            namespace: getRemoteMapNamespace('changedAt', envName),
-            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
-            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
-            persistent,
-          }),
-          authorInformation: await remoteMapCreator<AuthorInformation>({
-            namespace: getRemoteMapNamespace('authorInformation', envName),
-            serialize: async val => safeJsonStringify(val),
-            deserialize: data => JSON.parse(data),
-            persistent,
-          }),
-          alias: await remoteMapCreator<string>({
-            namespace: getRemoteMapNamespace('alias', envName),
-            serialize: async val => safeJsonStringify(val),
-            deserialize: data => JSON.parse(data),
-            persistent,
-          }),
-          referencedStaticFiles: await remoteMapCreator<string[]>({
-            namespace: getRemoteMapNamespace('referencedStaticFiles', envName),
-            serialize: async val => safeJsonStringify(val),
-            deserialize: data => JSON.parse(data),
-            persistent,
-          }),
-          referenceSources: await remoteMapCreator<ElemID[]>({
-            namespace: getRemoteMapNamespace('referenceSources', envName),
-            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
-            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
-            persistent,
-          }),
-          referenceTargets: await remoteMapCreator<collections.treeMap.TreeMap<ElemID>>({
-            namespace: getRemoteMapNamespace('referenceTargets', envName),
-            serialize: serializeReferenceTree,
-            deserialize: deserializeReferenceTree,
-            persistent,
-          }),
-          mapVersions: await remoteMapCreator<number>({
-            namespace: getRemoteMapNamespace('mapVersions', envName),
-            serialize: async val => val.toString(),
-            deserialize: async data => parseInt(data, 10),
-            persistent,
-          }),
-        }]).toArray())
+              errors: await remoteMapCreator<MergeError[]>({
+                namespace: getRemoteMapNamespace('errors', envName),
+                serialize: mergeErrors => serialize(mergeErrors, 'keepRef'),
+                deserialize: async data => deserializeMergeErrors(data),
+                persistent,
+              }),
+              validationErrors: await remoteMapCreator<ValidationError[]>({
+                namespace: getRemoteMapNamespace('validationErrors', envName),
+                serialize: validationErrors => serialize(validationErrors, 'keepRef'),
+                deserialize: async data => deserializeValidationErrors(data),
+                persistent,
+              }),
+              changedBy: await remoteMapCreator<ElemID[]>({
+                namespace: getRemoteMapNamespace('changedBy', envName),
+                serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
+                deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+                persistent,
+              }),
+              changedAt: await remoteMapCreator<ElemID[]>({
+                namespace: getRemoteMapNamespace('changedAt', envName),
+                serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
+                deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+                persistent,
+              }),
+              authorInformation: await remoteMapCreator<AuthorInformation>({
+                namespace: getRemoteMapNamespace('authorInformation', envName),
+                serialize: async val => safeJsonStringify(val),
+                deserialize: data => JSON.parse(data),
+                persistent,
+              }),
+              alias: await remoteMapCreator<string>({
+                namespace: getRemoteMapNamespace('alias', envName),
+                serialize: async val => safeJsonStringify(val),
+                deserialize: data => JSON.parse(data),
+                persistent,
+              }),
+              referencedStaticFiles: await remoteMapCreator<string[]>({
+                namespace: getRemoteMapNamespace('referencedStaticFiles', envName),
+                serialize: async val => safeJsonStringify(val),
+                deserialize: data => JSON.parse(data),
+                persistent,
+              }),
+              referenceSources: await remoteMapCreator<ElemID[]>({
+                namespace: getRemoteMapNamespace('referenceSources', envName),
+                serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
+                deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+                persistent,
+              }),
+              referenceTargets: await remoteMapCreator<ReferenceTargetIndexValue>({
+                namespace: getRemoteMapNamespace('referenceTargets', envName),
+                serialize: serializeReferenceTree,
+                deserialize: deserializeReferenceTree,
+                persistent,
+              }),
+              mapVersions: await remoteMapCreator<number>({
+                namespace: getRemoteMapNamespace('mapVersions', envName),
+                serialize: async val => val.toString(),
+                deserialize: async data => parseInt(data, 10),
+                persistent,
+              }),
+            },
+          ])
+          .toArray(),
+      )
       const sources: Record<string, ReadOnlyElementsSource> = {}
       await awu(envs()).forEach(async envName => {
-        sources[MULTI_ENV_SOURCE_PREFIX + envName] = await naclFilesSource
-          .getElementsSource(envName)
-        sources[STATE_SOURCE_PREFIX + envName] = mapReadOnlyElementsSource(
-          state(envName),
-          async element => getElementHiddenParts(
-            element,
-            state(envName),
-            await states[envName].merged.get(element.elemID)
-          )
+        sources[MULTI_ENV_SOURCE_PREFIX + envName] = await naclFilesSource.getElementsSource(envName)
+        sources[STATE_SOURCE_PREFIX + envName] = mapReadOnlyElementsSource(state(envName), async element =>
+          getElementHiddenParts(element, state(envName), await states[envName].merged.get(element.elemID)),
         )
       })
       const initializedState = {
         states,
         mergeManager: await createMergeManager(
-          [...Object.values(states)
-            .flatMap(remoteMaps => Object.values(remoteMaps))],
+          [...Object.values(states).flatMap(remoteMaps => Object.values(remoteMaps))],
           sources,
           remoteMapCreator,
           'workspaceMergeManager',
@@ -488,10 +620,24 @@ export const loadWorkspace = async (
       return initializedState
     }
 
-    const initBuild = workspaceState === undefined
-    const stateToBuild = workspaceState !== undefined
-      ? await workspaceState
-      : await initState()
+    /** HERE BE DRAGONS!
+     *
+     * Dragon 1: `workspaceState` will be `undefined` until `buildWorkspaceState` returns a promise (see the code in
+     * `getWorkspaceState`). `buildWorkspaceState` will return a promise the first time it executes an `await`.
+     * This means you can't put an `await` between the start of `buildWorkspaceState` and the following lines.
+     *
+     * Dragon 2: initState() uses naclFilesSource. One can't use naclFilesSource until load() was called on it. Hence,
+     * setting wsChanges must happen after we set previousState, but before we call initState().
+     * Don't move the initialization of wsChanges.
+     */
+    const previousState = workspaceState
+
+    const wsChanges =
+      workspaceChanges !== undefined ? workspaceChanges : await naclFilesSource.load({ ignoreFileChanges })
+
+    const stateToBuild = previousState !== undefined ? await previousState : await initState()
+
+    const initBuild = previousState === undefined
 
     if (ignoreFileChanges) {
       // Skip all updates to the state since this flag means we are operating under the assumption
@@ -501,24 +647,20 @@ export const loadWorkspace = async (
 
     const updateWorkspace = async (envName: string): Promise<void> => {
       const source = naclFilesSource
-      const getElementsDependents = async (
-        elemIDs: ElemID[],
-        addedIDs: Set<string>
-      ): Promise<ElemID[]> => {
+      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> => {
         elemIDs.forEach(id => addedIDs.add(id.getFullName()))
         const filesWithDependencies = _.uniq(
           await awu(elemIDs)
             .flatMap(id => source.getElementReferencedFiles(envName, id))
-            .toArray()
+            .toArray(),
         )
         const dependentsIDs = _.uniqBy(
           await awu(filesWithDependencies)
             .map(filename => source.getParsedNaclFile(filename))
-            .flatMap(async naclFile => ((await naclFile?.elements()) ?? [])
-              .map(elem => elem.elemID))
+            .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
             .filter(id => !addedIDs.has(id.getFullName()))
             .toArray(),
-          id => id.getFullName()
+          id => id.getFullName(),
         )
         return _.isEmpty(dependentsIDs)
           ? dependentsIDs
@@ -533,14 +675,12 @@ export const loadWorkspace = async (
         validatedElementsIDs: ElemID[]
       }> => {
         const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
-        const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id))))
-          .filter(values.isDefined)
+        const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id)))).filter(values.isDefined)
         const elementsToValidate = [...elements, ...dependents]
         return {
           errors: await validateElements(elementsToValidate, elementSource),
-          validatedElementsIDs: _.uniqBy(
-            [...elementsToValidate.map(elem => elem.elemID), ...relevantElementIDs],
-            e => e.getFullName(),
+          validatedElementsIDs: _.uniqBy([...elementsToValidate.map(elem => elem.elemID), ...relevantElementIDs], e =>
+            e.getFullName(),
           ),
         }
       }
@@ -549,13 +689,11 @@ export const loadWorkspace = async (
       // changes. In any other load - the state changes will be reflected by the workspace
       // / hidden changes.
       const completeStateOnlyChanges = async (
-        partialStateChanges: ChangeSet<Change<Element>>
+        partialStateChanges: ChangeSet<Change<Element>>,
       ): Promise<ChangeSet<Change<Element>>> => {
         const cachedHash = await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName)
         const stateHash = await state(envName).getHash()
-        const cacheValid = initBuild
-          ? cachedHash === stateHash && partialStateChanges.cacheValid
-          : true
+        const cacheValid = initBuild ? cachedHash === stateHash && partialStateChanges.cacheValid : true
         if (!cacheValid) {
           log.warn('Local state cache did not match local file system state. Resetting cache.')
           log.debug(`Cached hash: ${cachedHash}, stateHash: ${stateHash}.`)
@@ -563,21 +701,23 @@ export const loadWorkspace = async (
         // We identify a first nacl load when the state is empty, and all of the changes
         // are visible (which indicates a nacl load and not a first 'fetch' in which the
         // hidden changes won't be empty)
-        const isFirstInitFromNacls = _.isEmpty(partialStateChanges.changes)
-          && (await stateToBuild.states[envName].merged.isEmpty())
+        const isFirstInitFromNacls =
+          _.isEmpty(partialStateChanges.changes) && (await stateToBuild.states[envName].merged.isEmpty())
         const initHiddenElementsChanges = isFirstInitFromNacls
           ? await awu(await state(envName).getAll())
-            .filter(element => isHidden(element, state(envName)))
-            .map(elem => toChange({ after: elem })).toArray()
+              .filter(element => isHidden(element, state(envName)))
+              .map(elem => toChange({ after: elem }))
+              .toArray()
           : []
         log.debug('got %d init hidden element changes', initHiddenElementsChanges.length)
 
-        const stateRemovedElementChanges = await awu(workspaceChanges[envName]?.changes ?? [])
-          .filter(async change => (
-            isRemovalChange(change)
-            && getChangeData(change).elemID.isTopLevel()
-            && !await isHidden(getChangeData(change), state(envName))
-          ))
+        const stateRemovedElementChanges = await awu(wsChanges[envName]?.changes ?? [])
+          .filter(
+            async change =>
+              isRemovalChange(change) &&
+              getChangeData(change).elemID.isTopLevel() &&
+              !(await isHidden(getChangeData(change), state(envName))),
+          )
           .toArray()
         log.debug('got %d state removed element changes', stateRemovedElementChanges.length)
 
@@ -589,10 +729,12 @@ export const loadWorkspace = async (
           async change => {
             const changeData = getChangeData(change)
             const changeID = changeData.elemID
-            return isRemovalChange(change)
-            || await (await source.getElementsSource(envName)).get(changeID)
-            || isHidden(changeData, state(envName))
-          }
+            return (
+              isRemovalChange(change) ||
+              (await (await source.getElementsSource(envName)).get(changeID)) ||
+              isHidden(changeData, state(envName))
+            )
+          },
         )
 
         if (droppedStateOnlyChange.length > 0) {
@@ -601,7 +743,7 @@ export const loadWorkspace = async (
             droppedStateOnlyChange
               .map(getChangeData)
               .map(elem => elem.elemID.getFullName())
-              .join(', ')
+              .join(', '),
           )
         }
 
@@ -616,34 +758,29 @@ export const loadWorkspace = async (
       }
 
       const workspaceChangedElements = Object.fromEntries(
-        await awu(workspaceChanges[envName]?.changes ?? [])
+        await awu(wsChanges[envName]?.changes ?? [])
           .map(async change => {
             const workspaceElement = getChangeData(change)
             const hiddenOnlyElement = isRemovalChange(change)
               ? undefined
               : await getElementHiddenParts(
-                await state(envName).get(workspaceElement.elemID) ?? workspaceElement,
-                state(envName),
-                workspaceElement
-              )
+                  (await state(envName).get(workspaceElement.elemID)) ?? workspaceElement,
+                  state(envName),
+                  workspaceElement,
+                )
             return [workspaceElement.elemID.getFullName(), hiddenOnlyElement]
           })
-          .toArray()
+          .toArray(),
       )
 
-      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (
-        src1RecElements,
-        src2RecElements
-      ) => {
+      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements) => {
         const src1ElementsToMerge = await awu(src1RecElements).toArray()
         const src1IDSet = new Set(src1ElementsToMerge.map(elem => elem.elemID.getFullName()))
 
-        const shouldIncludeStateElement = async (elem: Element): Promise<boolean> => (
+        const shouldIncludeStateElement = async (elem: Element): Promise<boolean> =>
           src1IDSet.has(elem.elemID.getFullName()) || isHidden(elem, state(envName))
-        )
 
-        const src2ElementsToMerge = awu(src2RecElements)
-          .filter(shouldIncludeStateElement)
+        const src2ElementsToMerge = awu(src2RecElements).filter(shouldIncludeStateElement)
 
         return {
           src1ElementsToMerge: awu(src1ElementsToMerge),
@@ -652,12 +789,9 @@ export const loadWorkspace = async (
       }
 
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
-        src1Changes: workspaceChanges[envName],
+        src1Changes: wsChanges[envName],
         src2Changes: await completeStateOnlyChanges(
-          stateOnlyChanges[envName]
-          ?? createEmptyChangeSet(
-            await state(envName).getHash()
-          )
+          stateOnlyChanges[envName] ?? createEmptyChangeSet(await state(envName).getHash()),
         ),
         src2Overrides: workspaceChangedElements,
         recoveryOverride: dropStateOnlyElementsRecovery,
@@ -718,55 +852,52 @@ export const loadWorkspace = async (
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
+        elements => getCustomReferences(elements, currentEnvConf().accountToServiceName ?? {}, adaptersConfig),
       )
 
-      const changedElements = changes
-        .filter(isAdditionOrModificationChange)
-        .map(getChangeData)
+      const changedElements = changes.filter(isAdditionOrModificationChange).map(getChangeData)
       const changeIDs = changes.map(getChangeData).map(elem => elem.elemID)
       if (validate) {
-        const {
-          errors: validationErrors,
-          validatedElementsIDs,
-        } = await validateElementsAndDependents(
+        const { errors: validationErrors, validatedElementsIDs } = await validateElementsAndDependents(
           changedElements,
           stateToBuild.states[envName].merged,
           changeIDs,
         )
-        const validationErrorsById = await awu(validationErrors)
-          .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
+        const validationErrorsById = await awu(validationErrors).groupBy(err =>
+          err.elemID.createTopLevelParentID().parent.getFullName(),
+        )
 
-        const errorsToUpdate = Object.entries(validationErrorsById)
-          .map(([elemID, errors]) => ({ key: elemID, value: errors }))
+        const errorsToUpdate = Object.entries(validationErrorsById).map(([elemID, errors]) => ({
+          key: elemID,
+          value: errors,
+        }))
 
         const elementsWithNoErrors = validatedElementsIDs
           .map(id => id.getFullName())
           .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
-        const currentValidationErrors = Object.fromEntries(await awu(
-          stateToBuild.states[envName].validationErrors.entries()
-        ).map(error => [error.key, error.value] as [string, ValidationError[]]).toArray())
+        const currentValidationErrors = Object.fromEntries(
+          await awu(stateToBuild.states[envName].validationErrors.entries())
+            .map(error => [error.key, error.value] as [string, ValidationError[]])
+            .toArray(),
+        )
         await stateToBuild.states[envName].validationErrors.setAll(
-          errorsToUpdate.filter(error =>
-            !_.isEqual(error.value, (currentValidationErrors[error.key] ?? [])))
+          errorsToUpdate.filter(error => !_.isEqual(error.value, currentValidationErrors[error.key] ?? [])),
         )
         await stateToBuild.states[envName].validationErrors.deleteAll(
-          elementsWithNoErrors.filter(error => !_.isEmpty(currentValidationErrors[error]))
+          elementsWithNoErrors.filter(error => !_.isEmpty(currentValidationErrors[error])),
         )
       }
     }
 
-    await awu(envs()).forEach(async envName => { await updateWorkspace(envName) })
+    await awu(envs()).forEach(async envName => {
+      await updateWorkspace(envName)
+    })
     return stateToBuild
   }
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
-      const wsConfig = await config.getWorkspaceConfig()
-      log.debug('No workspace state for %s/%s. Building new workspace state.', wsConfig.uid, wsConfig.name)
-      const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
-      workspaceState = buildWorkspaceState({
-        workspaceChanges,
-      })
+      workspaceState = buildWorkspaceState({})
     }
     return workspaceState
   }
@@ -778,74 +909,93 @@ export const loadWorkspace = async (
     return naclFilesSource
   }
 
-  const elements = async (
-    env?: string
-  ): Promise<ElementsSource> => (await getWorkspaceState())
-    .states[env ?? currentEnv()].merged
+  const elements = async (env?: string): Promise<ElementsSource> =>
+    (await getWorkspaceState()).states[env ?? currentEnv()].merged
 
-  const getStateOnlyChanges = async (
-    hiddenChanges: DetailedChange[],
-  ): Promise<Change[]> => {
-    const changesByID = _.groupBy(
-      hiddenChanges,
-      change => change.id.createTopLevelParentID().parent.getFullName()
-    )
+  const getStateOnlyChanges = async (hiddenChanges: DetailedChange[]): Promise<Change[]> => {
+    const changesByID = _.groupBy(hiddenChanges, change => change.id.createTopLevelParentID().parent.getFullName())
 
-    return awu(Object.values(changesByID)).flatMap(async changes => {
-      const refID = changes[0].id
-      if (refID.isTopLevel()) {
-        return changes
-      }
-      const before = await state().get(refID.createTopLevelParentID().parent)
-      if (before === undefined) {
-        return []
-      }
-      const clonedBefore = before.clone()
-      applyDetailedChanges(clonedBefore, changes)
-      const after = await getElementHiddenParts(
-        clonedBefore,
-        state(),
-        before
-      )
-      return [toChange({ before, after })]
-    }).toArray()
+    return awu(Object.values(changesByID))
+      .flatMap(async changes => {
+        const refID = changes[0].id
+        if (refID.isTopLevel()) {
+          return changes
+        }
+        const before = await state().get(refID.createTopLevelParentID().parent)
+        if (before === undefined) {
+          return []
+        }
+        const clonedBefore = before.clone()
+        applyDetailedChanges(clonedBefore, changes)
+        const after = await getElementHiddenParts(clonedBefore, state(), before)
+        return [toChange({ before, after })]
+      })
+      .toArray()
   }
+
+  const fixStateOnlyChangesFieldTypes = (stateOnlyChanges: Change[], changes: DetailedChange[]): void => {
+    // stateOnlyChanges should contain only the hidden parts from the state. for fields it is not
+    // possible to hide just the type of the field, so in theory the type of the field shouldn't
+    // be a part of the information (since the type is not hidden unless the whole field is hidden),
+    // but since we can't have a field without a type, we have to put something there. using the type
+    // from the original change to make sure there is no conflict is a way to "remove" the information.
+    const modifiedFieldsByParent = _.groupBy(
+      changes.filter(isModificationChange).map(getChangeData).filter(isField),
+      field => field.parent.elemID.getFullName(),
+    )
+    stateOnlyChanges
+      .filter(isModificationChange)
+      .map(getChangeData)
+      .filter(isObjectType)
+      .forEach(element => {
+        const modifiedFields = modifiedFieldsByParent[element.elemID.getFullName()] ?? []
+        modifiedFields
+          .filter(field => element.fields[field.name] !== undefined)
+          .forEach(field => {
+            element.fields[field.name].refType = new TypeReference(field.refType.elemID)
+          })
+      })
+  }
+
   const updateNaclFiles = async ({
     changes,
     mode,
     stateOnly = false,
     validate = true,
-  } : {
-      changes: DetailedChange[]
-      mode?: RoutingMode
-      validate?: boolean
-      stateOnly?: boolean
-    }) : Promise<UpdateNaclFilesResult> => {
+  }: {
+    changes: DetailedChange[]
+    mode?: RoutingMode
+    validate?: boolean
+    stateOnly?: boolean
+  }): Promise<UpdateNaclFilesResult> => {
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
       state(),
       await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv()),
     )
-    const workspaceChanges = await ((await getLoadedNaclFilesSource())
-      .updateNaclFiles(
-        currentEnv(),
-        stateOnly ? [] : visibleChanges,
-        mode
-      ))
-    const currentStateHash = workspaceState ? await (await workspaceState)
-      .mergeManager.getHash(STATE_SOURCE_PREFIX + currentEnv()) : undefined
+    const workspaceChanges = await (
+      await getLoadedNaclFilesSource()
+    ).updateNaclFiles(currentEnv(), stateOnly ? [] : visibleChanges, mode)
+    const currentStateHash = workspaceState
+      ? await (await workspaceState).mergeManager.getHash(STATE_SOURCE_PREFIX + currentEnv())
+      : undefined
     const loadedStateHash = await state(currentEnv()).getHash()
     await state(currentEnv()).calculateHash()
     const postChangeHash = await state(currentEnv()).getHash()
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
-    workspaceState = buildWorkspaceState({ workspaceChanges,
-      stateOnlyChanges: { [currentEnv()]: {
-        changes: stateOnlyChanges,
-        cacheValid: currentStateHash === loadedStateHash,
-        preChangeHash: currentStateHash,
-        postChangeHash,
-      } },
-      validate })
+    fixStateOnlyChangesFieldTypes(stateOnlyChanges, changes)
+    workspaceState = buildWorkspaceState({
+      workspaceChanges,
+      stateOnlyChanges: {
+        [currentEnv()]: {
+          changes: stateOnlyChanges,
+          cacheValid: currentStateHash === loadedStateHash,
+          preChangeHash: currentStateHash,
+          postChangeHash,
+        },
+      },
+      validate,
+    })
     return {
       naclFilesChangesCount: Object.values(workspaceChanges)
         .map(changeSet => changeSet.changes)
@@ -854,10 +1004,7 @@ export const loadWorkspace = async (
     }
   }
   const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<EnvsChanges> => {
-    const [configFiles, otherFiles] = _.partition(
-      naclFiles,
-      file => adaptersConfig.isConfigFile(file.filename),
-    )
+    const [configFiles, otherFiles] = _.partition(naclFiles, file => adaptersConfig.isConfigFile(file.filename))
 
     if (configFiles.length !== 0) {
       await adaptersConfig.setNaclFiles(configFiles)
@@ -878,20 +1025,19 @@ export const loadWorkspace = async (
     return elementChanges
   }
 
-  const getErrorSourceRange = async <T extends SaltoElementError>(error: T):
-  Promise<SourceRange[]> => (
-    error.source === 'config'
+  const getErrorSourceRange = async <T extends SaltoElementError>(error: T): Promise<parser.SourceRange[]> =>
+    error.type === 'config'
       ? adaptersConfig.getSourceRanges(error.elemID)
       : (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), error.elemID)
-  )
 
-  const transformParseError = (error: ParseError): WorkspaceError<SaltoError> => ({
+  const transformParseError = (error: parser.ParseError): WorkspaceError<SaltoError> => ({
     ...error,
     sourceLocations: [{ sourceRange: error.context, subRange: error.subject }],
   })
 
-  const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
-    Promise<Readonly<WorkspaceError<T>>> => {
+  const transformToWorkspaceError = async <T extends SaltoElementError>(
+    saltoElemErr: T,
+  ): Promise<Readonly<WorkspaceError<T>>> => {
     const sourceRanges = await getErrorSourceRange(saltoElemErr)
     const sourceLocations: SourceLocation[] = sourceRanges.map(sourceRange => ({ sourceRange }))
 
@@ -902,10 +1048,8 @@ export const loadWorkspace = async (
     }
   }
   const transformError = async (error: SaltoError): Promise<WorkspaceError<SaltoError>> => {
-    const isParseError = (err: SaltoError): err is ParseError =>
-      _.has(err, 'subject')
-    const isElementError = (err: SaltoError): err is SaltoElementError =>
-      _.get(err, 'elemID') instanceof ElemID
+    const isParseError = (err: SaltoError): err is parser.ParseError => _.has(err, 'subject')
+    const isElementError = (err: SaltoError): err is SaltoElementError => _.get(err, 'elemID') instanceof ElemID
     if (isParseError(error)) {
       return transformParseError(error)
     }
@@ -921,34 +1065,30 @@ export const loadWorkspace = async (
     const loadNaclFileSource = await getLoadedNaclFilesSource()
     // It is important to make sure these are obtain using Promise.all in order to allow
     // the SaaS UI to debounce the DB accesses.
-    const [errorsFromSource, configErrors, validationErrors, mergeErrors]
-      : [Errors, Errors, ValidationError[], MergeError[]] = await Promise.all([
-        loadNaclFileSource.getErrors(env ?? currentEnv()),
-        adaptersConfig.getErrors(),
-        awu(currentWorkspaceState.states[envToUse].validationErrors.values()).flat().toArray(),
-        awu(currentWorkspaceState.states[envToUse].errors.values()).flat().toArray(),
-      ])
+    const [errorsFromSource, configErrors, validationErrors, mergeErrors]: [
+      Errors,
+      Errors,
+      ValidationError[],
+      MergeError[],
+    ] = await Promise.all([
+      loadNaclFileSource.getErrors(env ?? currentEnv()),
+      adaptersConfig.getErrors(),
+      awu(currentWorkspaceState.states[envToUse].validationErrors.values()).flat().toArray(),
+      awu(currentWorkspaceState.states[envToUse].errors.values()).flat().toArray(),
+    ])
 
     _(validationErrors)
       .groupBy(error => error.constructor.name)
       .entries()
       .forEach(([errorType, errorsGroup]) => {
-        log.warn(`Invalid elements, error type: ${errorType}, severity: ${errorsGroup[0].severity} element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`)
+        log.warn(
+          `Invalid elements, error type: ${errorType}, severity: ${errorsGroup[0].severity} element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`,
+        )
       })
     return new Errors({
-      parse: [
-        ...errorsFromSource.parse,
-        ...configErrors.parse,
-      ],
-      merge: [
-        ...errorsFromSource.merge,
-        ...mergeErrors,
-        ...configErrors.merge,
-      ],
-      validation: [
-        ...validationErrors,
-        ...configErrors.validation,
-      ],
+      parse: [...errorsFromSource.parse, ...configErrors.parse],
+      merge: [...errorsFromSource.merge, ...mergeErrors, ...configErrors.merge],
+      validation: [...validationErrors, ...configErrors.validation],
     })
   }
   const elementsImpl = async (includeHidden = true, env?: string): Promise<ElementsSource> => {
@@ -959,31 +1099,27 @@ export const loadWorkspace = async (
     return (await getLoadedNaclFilesSource()).getElementsSource(env ?? currentEnv())
   }
 
-  const getSourceByFilename = async (
-    filename: string
-  ): Promise<AdaptersConfigSource | MultiEnvSource> => (
-    adaptersConfig.isConfigFile(filename)
-      ? adaptersConfig
-      : getLoadedNaclFilesSource()
-  )
+  const getSourceByFilename = async (filename: string): Promise<AdaptersConfigSource | MultiEnvSource> =>
+    adaptersConfig.isConfigFile(filename) ? adaptersConfig : getLoadedNaclFilesSource()
 
   const pickAccounts = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
-    (_.isUndefined(names) ? accounts() : accounts().filter(s => names.includes(s)))
+    _.isUndefined(names) ? accounts() : accounts().filter(s => names.includes(s))
   const credsPath = (account: string): string => path.join(currentEnv(), account)
   const copyTo = async (ids: ElemID[], targetEnvs: string[]): Promise<void> => {
-    const workspaceChanges = await (await getLoadedNaclFilesSource())
-      .copyTo(currentEnv(), ids, targetEnvs)
+    const workspaceChanges = await (await getLoadedNaclFilesSource()).copyTo(currentEnv(), ids, targetEnvs)
     workspaceState = buildWorkspaceState({ workspaceChanges })
   }
 
-  const accountCredentials = async (names?: ReadonlyArray<string>): Promise<Readonly<Record<string,
-    InstanceElement>>> => _.fromPairs(await Promise.all(
-    pickAccounts(names).map(async account => [account, await credentials.get(credsPath(account))])
-  ))
+  const accountCredentials = async (
+    names?: ReadonlyArray<string>,
+  ): Promise<Readonly<Record<string, InstanceElement>>> =>
+    _.fromPairs(
+      await Promise.all(pickAccounts(names).map(async account => [account, await credentials.get(credsPath(account))])),
+    )
   const addAccount = async (service: string, account?: string): Promise<void> => {
     const accountName = account ?? service
 
-    if (accountName && (naclCase(accountName) !== accountName)) {
+    if (accountName && naclCase(accountName) !== accountName) {
       throw new InvalidAccountNameError(accountName)
     }
     const currentAccounts = accounts() || []
@@ -1001,12 +1137,15 @@ export const loadWorkspace = async (
     const source = await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv())
     return awu(await source.list()).some(elemId => accountNames.includes(elemId.adapter))
   }
-  const updateAccountCredentials = async (account: string,
-    credentialElements: Readonly<InstanceElement>): Promise<void> =>
-    credentials.set(credsPath(account), credentialElements)
-  const updateAccountConfig = async (service: string,
+  const updateAccountCredentials = async (
+    account: string,
+    credentialElements: Readonly<InstanceElement>,
+  ): Promise<void> => credentials.set(credsPath(account), credentialElements)
+  const updateAccountConfig = async (
+    service: string,
     newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[],
-    account?: string): Promise<void> => {
+    account?: string,
+  ): Promise<void> => {
     await adaptersConfig.setAdapter(account ?? service, service, newConfig)
   }
   const getAllChangedByAuthors = async (envName?: string): Promise<Author[]> => {
@@ -1016,26 +1155,16 @@ export const loadWorkspace = async (
     return keys.map(authorKeyToAuthor)
   }
 
-  const getChangedElementsByAuthors = async (
-    authors: Author[],
-    envName?: string,
-  ): Promise<ElemID[]> => {
+  const getChangedElementsByAuthors = async (authors: Author[], envName?: string): Promise<ElemID[]> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
-    const result = await currentWorkspaceState.states[env].changedBy.getMany(
-      authors.map(authorToAuthorKey)
-    )
-    ?? []
+    const result = (await currentWorkspaceState.states[env].changedBy.getMany(authors.map(authorToAuthorKey))) ?? []
     return result.filter(values.isDefined).flat()
   }
-  const getChangedElementsBetween = async (
-    dateRange: DateRange,
-    envName?: string,
-  ): Promise<ElemID[]> => {
+  const getChangedElementsBetween = async (dateRange: DateRange, envName?: string): Promise<ElemID[]> => {
     const isDateInRange = (date: string): boolean => {
       const dateToCheck = new Date(date)
-      return dateToCheck >= dateRange.start
-      && (dateRange.end === undefined || dateToCheck <= dateRange.end)
+      return dateToCheck >= dateRange.start && (dateRange.end === undefined || dateToCheck <= dateRange.end)
     }
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
@@ -1045,31 +1174,28 @@ export const loadWorkspace = async (
     const result = await currentWorkspaceState.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()
   }
-  const getStaticFilePathsByElemIds = async (
-    elementIds: ElemID[],
-    envName?: string,
-  ): Promise<string[]> => {
+  const getStaticFilePathsByElemIds = async (elementIds: ElemID[], envName?: string): Promise<string[]> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
     const result = await currentWorkspaceState.states[env].referencedStaticFiles.getMany(
-      elementIds.map(elemId => elemId.getFullName())
+      elementIds.map(elemId => elemId.getFullName()),
     )
     return result.filter(values.isDefined).flat()
   }
   const getElemIdsByStaticFilePaths = async (
     filePaths?: Set<string>,
-    envName?: string
+    envName?: string,
   ): Promise<Record<string, string>> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
     return Object.fromEntries(
       await awu(currentWorkspaceState.states[env].referencedStaticFiles.entries())
-        .flatMap(({ key: id, value: fileNames }) => (
+        .flatMap(({ key: id, value: fileNames }) =>
           fileNames
             .filter(filename => filePaths === undefined || filePaths.has(filename))
-            .map(filename => [filename, id])
-        ))
-        .toArray()
+            .map(filename => [filename, id]),
+        )
+        .toArray(),
     )
   }
   const getAliases = async (envName?: string): Promise<ReadOnlyRemoteMap<string>> => {
@@ -1084,7 +1210,7 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
-  return {
+  const workspace: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
     elements: elementsImpl,
@@ -1106,10 +1232,7 @@ export const loadWorkspace = async (
       if (!shouldResolve) {
         return unresolvedAccountConfig
       }
-      const resolvedAccountConfig = (await resolve(
-        [unresolvedAccountConfig],
-        adaptersConfig.getElements(),
-      ))[0]
+      const resolvedAccountConfig = (await resolve([unresolvedAccountConfig], adaptersConfig.getElements()))[0]
       if (!isInstanceElement(resolvedAccountConfig)) {
         log.error('Failed to resolve accountConfig, expected InstanceElement')
         return undefined
@@ -1132,9 +1255,7 @@ export const loadWorkspace = async (
       }
       return !(await envSource.naclFiles.isEmpty())
     },
-    envOfFile: filename => getSourceNameForFilename(
-      filename, envs() as string[], environmentsSources.commonSourceName
-    ),
+    envOfFile: filename => getSourceNameForFilename(filename, envs() as string[], environmentsSources.commonSourceName),
     // Returning the functions from the nacl file source directly (eg: promote: src.promote)
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.
     // Passing direct pointer for these functions would have resulted in pointers to a nullified
@@ -1143,40 +1264,28 @@ export const loadWorkspace = async (
     setNaclFiles,
     updateNaclFiles: (changes, mode, stateOnly) => updateNaclFiles({ changes, mode, stateOnly }),
     removeNaclFiles,
-    getSourceMap: async (filename: string) => (
-      (await getSourceByFilename(filename)).getSourceMap(filename)
-    ),
-    getSourceRanges: async (elemID: ElemID) => (
-      (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), elemID)
-    ),
-    listNaclFiles: async () => (
-      [
-        ...await (await getLoadedNaclFilesSource()).listNaclFiles(currentEnv()),
-        ...await adaptersConfig.listNaclFiles(),
-      ]
-    ),
-    getElementIdsBySelectors: async (
-      selectors: ElementSelector[], from, compacted = false,
-    ) => {
-      const env = isFromSourceWithEnv(from)
-        ? from.envName ?? currentEnv()
-        : currentEnv()
+    getSourceMap: async (filename: string) => (await getSourceByFilename(filename)).getSourceMap(filename),
+    getSourceRanges: async (elemID: ElemID) => (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), elemID),
+    listNaclFiles: async () => [
+      ...(await (await getLoadedNaclFilesSource()).listNaclFiles(currentEnv())),
+      ...(await adaptersConfig.listNaclFiles()),
+    ],
+    getElementIdsBySelectors: async (selectors: ElementSelector[], from, compacted = false) => {
+      const env = isFromSourceWithEnv(from) ? from.envName ?? currentEnv() : currentEnv()
 
-      return (await getLoadedNaclFilesSource())
-        .getElementIdsBySelectors(
-          env,
-          selectors,
-          (await getWorkspaceState()).states[env].referenceSources,
-          from.source,
-          compacted
-        )
+      return (await getLoadedNaclFilesSource()).getElementIdsBySelectors(
+        env,
+        selectors,
+        (await getWorkspaceState()).states[env].referenceSources,
+        from.source,
+        compacted,
+      )
     },
-    getElementReferencedFiles: async id => (
-      (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)
-    ),
-    getReferenceSourcesIndex: async (envName = currentEnv()) => (await getWorkspaceState())
-      .states[envName].referenceSources,
-    getElementOutgoingReferences: async (id, envName = currentEnv()) => {
+    getElementReferencedFiles: async id =>
+      (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id),
+    getReferenceSourcesIndex: async (envName = currentEnv()) =>
+      (await getWorkspaceState()).states[envName].referenceSources,
+    getElementOutgoingReferences: async (id, envName = currentEnv(), includeWeakReferences = true) => {
       const baseId = id.createBaseID().parent.getFullName()
       const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
 
@@ -1185,46 +1294,43 @@ export const loadWorkspace = async (
       }
 
       const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-      const references = idPath === ''
-      // Empty idPath means we are requesting the base level element, which includes all references
-        ? referencesTree.values()
-        : referencesTree.valuesWithPrefix(idPath)
+      const references = Array.from(
+        idPath === ''
+          ? // Empty idPath means we are requesting the base level element, which includes all references
+            referencesTree.values()
+          : referencesTree.valuesWithPrefix(idPath),
+      ).flat()
 
-      return _.uniqBy(Array.from(references).flat(), elemId => elemId.getFullName())
+      const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
+      return _.uniqBy(filteredReferences, ref => ref.id.getFullName())
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
       }
-      return await (await getWorkspaceState()).states[envName]
-        .referenceSources.get(id.getFullName()) ?? []
+      return (await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())) ?? []
     },
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)
       }
-      return await (await getWorkspaceState()).states[envName]
-        .authorInformation.get(id.getFullName()) ?? {}
+      return (await (await getWorkspaceState()).states[envName].authorInformation.get(id.getFullName())) ?? {}
+    },
+    getElementsAuthorsById: async (envName = currentEnv()) => {
+      const authorInformationMap = (await getWorkspaceState()).states[envName].authorInformation
+      const entries = await awu(authorInformationMap.entries()).toArray()
+      return Object.fromEntries(entries.map(entry => [entry.key, entry.value]))
     },
     getAllChangedByAuthors,
     getChangedElementsByAuthors,
-    getElementNaclFiles: async id => (
-      (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)
-    ),
+    getElementNaclFiles: async id => (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id),
     getElementFileNames: async (env?: string): Promise<Map<string, string[]>> =>
       (await getLoadedNaclFilesSource()).getElementFileNames(env ?? currentEnv()),
-    getTotalSize: async () => (
-      (await getLoadedNaclFilesSource()).getTotalSize()
-    ),
-    getNaclFile: async (filename: string) => (
-      (await getSourceByFilename(filename)).getNaclFile(filename)
-    ),
-    getParsedNaclFile: async (filename: string) => (
-      (await getSourceByFilename(filename)).getParsedNaclFile(filename)
-    ),
+    getTotalSize: async () => (await getLoadedNaclFilesSource()).getTotalSize(),
+    getNaclFile: async (filename: string) => (await getSourceByFilename(filename)).getNaclFile(filename),
+    getParsedNaclFile: async (filename: string) => (await getSourceByFilename(filename)).getParsedNaclFile(filename),
     promote: async (idsToMove, idsToRemove) => {
-      const workspaceChanges = await (await getLoadedNaclFilesSource())
-        .promote(currentEnv(), idsToMove, idsToRemove)
+      const workspaceChanges = await (await getLoadedNaclFilesSource()).promote(currentEnv(), idsToMove, idsToRemove)
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     demote: async (ids: ElemID[]) => {
@@ -1237,12 +1343,9 @@ export const loadWorkspace = async (
     },
     copyTo,
     sync: async (idsToCopy, idsToRemove, targetEnvs) => {
-      const workspaceChanges = await (await getLoadedNaclFilesSource()).sync(
-        currentEnv(),
-        idsToCopy,
-        idsToRemove,
-        targetEnvs,
-      )
+      const workspaceChanges = await (
+        await getLoadedNaclFilesSource()
+      ).sync(currentEnv(), idsToCopy, idsToRemove, targetEnvs)
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     transformToWorkspaceError,
@@ -1256,14 +1359,25 @@ export const loadWorkspace = async (
       await currentWSState.mergeManager.flush()
       await (await getLoadedNaclFilesSource()).flush()
       await adaptersConfig.flush()
-      await awu(Object.values(environmentsSources.sources))
-        .forEach(envSource => envSource.state?.flush())
+      await awu(Object.values(environmentsSources.sources)).forEach(envSource => envSource.state?.flush())
     },
     clone: (): Promise<Workspace> => {
-      const sources = _.mapValues(environmentsSources.sources, source =>
-        ({ naclFiles: source.naclFiles.clone(), state: source.state }))
+      const sources = _.mapValues(environmentsSources.sources, source => ({
+        naclFiles: source.naclFiles.clone(),
+        state: source.state,
+      }))
       const envSources = { commonSourceName: environmentsSources.commonSourceName, sources }
-      return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator)
+      return loadWorkspace(
+        config,
+        adaptersConfig,
+        credentials,
+        envSources,
+        remoteMapCreator,
+        ignoreFileChanges,
+        persistent,
+        mergedRecoveryMode,
+        getCustomReferences,
+      )
     },
     clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
@@ -1278,10 +1392,10 @@ export const loadWorkspace = async (
         await naclFilesSource.clear(args)
       }
       if (args.state) {
-        await promises.array.series(envs().map(e => (() => state(e).clear())))
+        await promises.array.series(envs().map(e => () => state(e).clear()))
       }
       if (args.credentials) {
-        await promises.array.series(envs().map(e => (() => credentials.delete(e))))
+        await promises.array.series(envs().map(e => () => credentials.delete(e)))
       }
       workspaceState = undefined
       await getWorkspaceState()
@@ -1305,7 +1419,7 @@ export const loadWorkspace = async (
     },
     addEnvironment: async (
       env: string,
-      environmentSourceCreator: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>
+      environmentSourceCreator: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>,
     ): Promise<void> => {
       if (workspaceConfig.envs.map(e => e.name).includes(env)) {
         throw new EnvDuplicationError(env)
@@ -1323,12 +1437,12 @@ export const loadWorkspace = async (
         environmentsSources.commonSourceName,
         remoteMapCreator,
         persistent,
-        mergedRecoveryMode
+        mergedRecoveryMode,
       )
       workspaceState = undefined
     },
     deleteEnvironment: async (env: string, keepNacls = false): Promise<void> => {
-      if (!(workspaceConfig.envs.map(e => e.name).includes(env))) {
+      if (!workspaceConfig.envs.map(e => e.name).includes(env)) {
         throw new UnknownEnvError(env)
       }
       if (env === currentEnv()) {
@@ -1355,10 +1469,10 @@ export const loadWorkspace = async (
         environmentsSources.commonSourceName,
         remoteMapCreator,
         persistent,
-        mergedRecoveryMode
+        mergedRecoveryMode,
       )
     },
-    renameEnvironment: async (envName: string, newEnvName: string, newEnvNaclPath? : string) => {
+    renameEnvironment: async (envName: string, newEnvName: string, newEnvNaclPath?: string) => {
       const envConfig = envs().find(e => e === envName)
       if (_.isUndefined(envConfig)) {
         throw new UnknownEnvError(envName)
@@ -1396,7 +1510,7 @@ export const loadWorkspace = async (
         environmentsSources.commonSourceName,
         remoteMapCreator,
         persistent,
-        mergedRecoveryMode
+        mergedRecoveryMode,
       )
     },
     setCurrentEnv: async (env: string, persist = true): Promise<void> => {
@@ -1413,8 +1527,8 @@ export const loadWorkspace = async (
     },
 
     getStateRecency: async (accountName: string): Promise<StateRecency> => {
-      const staleStateThresholdMs = (workspaceConfig.staleStateThresholdMinutes
-        || DEFAULT_STALE_STATE_THRESHOLD_MINUTES) * 60 * 1000
+      const staleStateThresholdMs =
+        (workspaceConfig.staleStateThresholdMinutes || DEFAULT_STALE_STATE_THRESHOLD_MINUTES) * 60 * 1000
       const date = (await state().getAccountsUpdateDates())[accountName]
       const status = (() => {
         if (date === undefined) {
@@ -1427,27 +1541,32 @@ export const loadWorkspace = async (
       })()
       return { serviceName: accountName, accountName, status, date }
     },
-    getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (
-      (await elements(env)).get(id)
-    ),
+
+    updateStateProvider: async stateConfig => {
+      if (_.isEqual(workspaceConfig.state, stateConfig)) {
+        // The config did not change, nothing to do
+        return
+      }
+      log.debug('Changing state config from %s to %s', inspectValue(workspaceConfig.state), inspectValue(stateConfig))
+      await Promise.all(
+        Object.values(environmentsSources.sources)
+          .map(source => source.state)
+          .filter(values.isDefined)
+          .map(sourceState => sourceState.updateConfig({ workspaceId: workspaceConfig.uid, stateConfig })),
+      )
+      workspaceConfig.state = stateConfig
+      await config.setWorkspaceConfig(workspaceConfig)
+    },
+    getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (await elements(env)).get(id),
     getSearchableNames: async (): Promise<string[]> =>
       (await getLoadedNaclFilesSource()).getSearchableNames(currentEnv()),
     getSearchableNamesOfEnv: async (env?: string): Promise<string[]> =>
       (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv()),
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
-      const getUnresolvedElemIDsFromErrors = (
-        validationErrors: readonly ValidationError[]
-      ): ElemID[] => {
-        const workspaceErrors = validationErrors
-          .filter(isUnresolvedRefError)
-          .map(e => e.target.createBaseID().parent)
+      const getUnresolvedElemIDsFromErrors = (validationErrors: readonly ValidationError[]): ElemID[] => {
+        const workspaceErrors = validationErrors.filter(isUnresolvedRefError).map(e => e.target.createBaseID().parent)
         return _.uniqBy(workspaceErrors, elemID => elemID.getFullName())
       }
-      const getUnresolvedElemIDs = async (
-        elementsArray: Element[],
-      ): Promise<ElemID[]> => getUnresolvedElemIDsFromErrors(
-        (await validateElements(elementsArray, await elements()))
-      )
       const unresolvedElemIDs = getUnresolvedElemIDsFromErrors((await errors()).validation)
       if (completeFromEnv === undefined) {
         return {
@@ -1455,69 +1574,36 @@ export const loadWorkspace = async (
           missing: compact(_.sortBy(unresolvedElemIDs, id => id.getFullName())),
         }
       }
-      const addAndValidate = async (
-        ids: ElemID[], visitedIds: Set<string>, elementsArray: Element[] = [],
-      ): Promise<{ completed: string[]; missing: string[] }> => {
-        const newIds = ids.filter(id => !visitedIds.has(id.getFullName()))
 
-        if (newIds.length === 0) {
-          return { completed: [], missing: [] }
-        }
-
-        newIds.map(id => id.getFullName()).forEach(id => visitedIds.add(id))
-
-        const getCompletionElem = async (id: ElemID): Promise<Element | undefined> => {
-          const rootElem = await (await elementsImpl(true, completeFromEnv))
-            .get(id.createTopLevelParentID().parent)
-          if (!rootElem) {
-            return undefined
-          }
-          // Using the createBaseID method in getUnresolvedElemIDsFromErrors function let us know
-          // the returned unresolved element is in fact a type, an instance or a field,
-          // so it's unnecessary to verify is the resolved path is an element
-          return resolvePath(rootElem, id)
-        }
-        const completionRes = Object.fromEntries(
-          await awu(newIds).map(async id => ([
-            id.getFullName(),
-            await getCompletionElem(id),
-          ])).toArray()
-        ) as Record<string, Element | undefined>
-        const [completed, missing] = _.partition(
-          Object.keys(completionRes), id => values.isDefined(completionRes[id])
-        )
-        const resolvedElements = Object.values(completionRes).filter(values.isDefined)
-        const unresolvedIDs = await getUnresolvedElemIDs(resolvedElements)
-        const innerRes = await addAndValidate(
-          unresolvedIDs,
-          visitedIds,
-          [...elementsArray, ...resolvedElements]
-        )
-        return {
-          completed: [...completed, ...innerRes.completed],
-          missing: [...missing, ...innerRes.missing],
-        }
-      }
-      const { completed, missing } = await addAndValidate(unresolvedElemIDs, new Set())
+      const { dependencies, missing } = await listElementsDependenciesInWorkspace({
+        workspace,
+        elemIDsToFind: unresolvedElemIDs,
+        elemIDsToSkip: (await workspace.getSearchableNames()).map(ElemID.fromFullName),
+        envToListFrom: completeFromEnv,
+      })
+      const completedElemIds = _.uniq(
+        Object.values(dependencies)
+          .flat()
+          .map(elemId => elemId.getFullName())
+          .concat(Object.keys(dependencies)),
+      )
       return {
-        found: compact(completed.sort().map(ElemID.fromFullName)),
-        missing: compact(missing.sort().map(ElemID.fromFullName)),
+        found: compact(completedElemIds.sort().map(ElemID.fromFullName)),
+        missing: compact(_.sortBy(missing, id => id.getFullName())),
       }
     },
-    getElementSourceOfPath: async (filePath, includeHidden = true) => (
-      adaptersConfig.isConfigFile(filePath)
-        ? adaptersConfig.getElements()
-        : elementsImpl(includeHidden)
-    ),
+    getElementSourceOfPath: async (filePath, includeHidden = true) =>
+      adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
-    getStaticFile: async ({ filepath, encoding, env }) =>
-      (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
+    getStaticFile: async ({ filepath, encoding, env, isTemplate }) =>
+      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv(), isTemplate }),
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,
     getAliases,
     isChangedAtIndexEmpty,
   }
+  return workspace
 }
 
 export const initWorkspace = async (
@@ -1529,6 +1615,7 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
+  getCustomReferences: GetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
@@ -1537,5 +1624,15 @@ export const initWorkspace = async (
     envs: [{ name: defaultEnvName, accountToServiceName: {} }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(config, adaptersConfig, credentials, envs, remoteMapCreator)
+  return loadWorkspace(
+    config,
+    adaptersConfig,
+    credentials,
+    envs,
+    remoteMapCreator,
+    undefined,
+    undefined,
+    undefined,
+    getCustomReferences,
+  )
 }

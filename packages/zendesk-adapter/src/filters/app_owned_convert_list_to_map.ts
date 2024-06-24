@@ -1,22 +1,22 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Joi from 'joi'
-import { safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { APP_OWNED_TYPE_NAME } from '../constants'
@@ -27,9 +27,13 @@ export type AppOwnedParameter = {
   name: string
 }
 
-const EXPECTED_PARAMETERS_SCHEMA = Joi.array().items(Joi.object({
-  name: Joi.string().required(),
-}).unknown(true)).required()
+const EXPECTED_PARAMETERS_SCHEMA = Joi.array()
+  .items(
+    Joi.object({
+      name: Joi.string().required(),
+    }).unknown(true),
+  )
+  .required()
 
 const isParameters = (values: unknown): values is AppOwnedParameter[] => {
   if (!_.isArray(values)) {
@@ -37,15 +41,15 @@ const isParameters = (values: unknown): values is AppOwnedParameter[] => {
   }
   const { error } = EXPECTED_PARAMETERS_SCHEMA.validate(values)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the app_owned parameters value: ${error.message}, ${safeJsonStringify(values, elementExpressionStringifyReplacer)}`)
+    log.error(
+      `Received an invalid response for the app_owned parameters value: ${error.message}, ${inspectValue(values)}`,
+    )
     return false
   }
   return true
 }
 
-const turnParametersFieldToMap = (
-  element: InstanceElement,
-): void => {
+const turnParametersFieldToMap = (element: InstanceElement): void => {
   if (!isParameters(element.value.parameters)) {
     return
   }
@@ -64,10 +68,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === APP_OWNED_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value.parameters))
-      .forEach(elem =>
-        turnParametersFieldToMap(
-          elem,
-        ))
+      .forEach(elem => turnParametersFieldToMap(elem))
   },
 })
 

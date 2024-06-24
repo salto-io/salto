@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Element, Change, PostFetchOptions, DeployResult, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  Change,
+  PostFetchOptions,
+  DeployResult,
+  SaltoElementError,
+  SaltoError,
+  ChangeGroup,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
 
@@ -35,16 +43,21 @@ export type FilterMetadata = {
   name: string
 }
 
-export type Filter<T extends FilterResult | void, DeployInfo=void> = Partial<{
+export type Filter<T extends FilterResult | void, DeployInfo = void> = Partial<{
   onFetch(elements: Element[]): Promise<T | void>
   preDeploy(changes: Change[]): Promise<void>
-  deploy(changes: Change[]): Promise<{
+  // TODO add changeGroup everywhere and switch to named params (SALTO-5531)
+  deploy(
+    changes: Change[],
+    changeGroup?: ChangeGroup,
+  ): Promise<{
     deployResult: DeployResult
     leftoverChanges: Change[]
   }>
   onDeploy(changes: Change[], deployInfo: DeployInfo): Promise<void>
   onPostFetch(args: PostFetchOptions): Promise<void>
-}> & FilterMetadata
+}> &
+  FilterMetadata
 
 export type FilterWith<
   T extends FilterResult | void,
@@ -53,32 +66,18 @@ export type FilterWith<
   DeployInfo = void,
 > = types.HasMember<Filter<T, DeployInfo>, M>
 
-export type FilterCreator<
-  R extends FilterResult | void,
-  T,
-  DeployInfo=void,
-> = (opts: T) => Filter<R, DeployInfo>
+export type FilterCreator<R extends FilterResult | void, T, DeployInfo = void> = (opts: T) => Filter<R, DeployInfo>
 
-export type RemoteFilterCreator<
-  R extends FilterResult | void,
-  T,
-  DeployInfo=void,
-> = (opts: T) => Filter<R, DeployInfo> & { remote: true }
+export type RemoteFilterCreator<R extends FilterResult | void, T, DeployInfo = void> = (
+  opts: T,
+) => Filter<R, DeployInfo> & { remote: true }
 
-export type LocalFilterCreatorDefinition<
-  R extends FilterResult | void,
-  T,
-  DeployInfo=void,
-> = {
+export type LocalFilterCreatorDefinition<R extends FilterResult | void, T, DeployInfo = void> = {
   creator: FilterCreator<R, T, DeployInfo>
   addsNewInformation?: false
 }
 
-export type RemoteFilterCreatorDefinition<
-  R extends FilterResult | void,
-  T,
-  DeployInfo=void,
-> = {
+export type RemoteFilterCreatorDefinition<R extends FilterResult | void, T, DeployInfo = void> = {
   creator: RemoteFilterCreator<R, T, DeployInfo>
   addsNewInformation: true
 }
@@ -88,38 +87,35 @@ export const isLocalFilterCreator = <
   RRemote extends FilterResult | void,
   TLocal,
   TRemote,
-  DLocal=void,
-  DRemote=void,
+  DLocal = void,
+  DRemote = void,
 >(
-    filterDef: LocalFilterCreatorDefinition<RLocal, TLocal, DLocal>
-      | RemoteFilterCreatorDefinition<RRemote, TRemote, DRemote>
-  ): filterDef is LocalFilterCreatorDefinition<RLocal, TLocal, DLocal> => (
-    filterDef.addsNewInformation !== true
-  )
+  filterDef:
+    | LocalFilterCreatorDefinition<RLocal, TLocal, DLocal>
+    | RemoteFilterCreatorDefinition<RRemote, TRemote, DRemote>,
+): filterDef is LocalFilterCreatorDefinition<RLocal, TLocal, DLocal> => filterDef.addsNewInformation !== true
 
-export const filtersRunner = <
-  R extends FilterResult | void,
-  T,
-  DeployInfo=void,
->(
-    opts: T,
-    filterCreators: ReadonlyArray<FilterCreator<R, T, DeployInfo>>,
-    onFetchAggregator: (results: R[]) => R | void = () => undefined,
-  ): Required<Filter<R, DeployInfo>> => {
+export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = void>(
+  opts: T,
+  filterCreators: ReadonlyArray<FilterCreator<R, T, DeployInfo>>,
+  onFetchAggregator: (results: R[]) => R | void = () => undefined,
+): Required<Filter<R, DeployInfo>> => {
   // Create all filters in advance to allow them to hold context between calls
   const allFilters = filterCreators.map(f => f(opts))
 
-  const filtersWith = <M extends keyof Filter<R, DeployInfo>>(m: M):
-    FilterWith<R, M, DeployInfo>[] => (
-      types.filterHasMember<Filter<R, DeployInfo>, M>(m, allFilters)
-    )
+  const filtersWith = <M extends keyof Filter<R, DeployInfo>>(m: M): FilterWith<R, M, DeployInfo>[] =>
+    types.filterHasMember<Filter<R, DeployInfo>, M>(m, allFilters)
 
   return {
     name: '',
     onFetch: async elements => {
-      const filterResults = (await promises.array.series(
-        filtersWith('onFetch').map(filter => () => log.time(() => filter.onFetch(elements), `(${filter.name}):onFetch`))
-      )).filter(isDefined)
+      const filterResults = (
+        await promises.array.series(
+          filtersWith('onFetch').map(
+            filter => () => log.timeDebug(() => filter.onFetch(elements), `(${filter.name}):onFetch`),
+          ),
+        )
+      ).filter(isDefined)
       return onFetchAggregator(filterResults)
     },
     /**
@@ -128,15 +124,22 @@ export const filtersRunner = <
      * to get in preDeploy a similar value to what it created in onFetch.
      */
     preDeploy: async changes => {
-      await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => log.time(() => filter.preDeploy(changes), `(${filter.name}):preDeploy`)))
+      await promises.array.series(
+        filtersWith('preDeploy')
+          .reverse()
+          .map(filter => () => log.timeDebug(() => filter.preDeploy(changes), `(${filter.name}):preDeploy`)),
+      )
     },
     /**
      * deploy method for implementing a deployment functionality.
      */
-    deploy: async changes => (
+    deploy: async (changes, changeGroup) =>
       awu(filtersWith('deploy')).reduce(
         async (total, current) => {
-          const { deployResult, leftoverChanges } = await log.time(() => current.deploy(total.leftoverChanges), `(${current.name}):deploy`)
+          const { deployResult, leftoverChanges } = await log.timeDebug(
+            () => current.deploy(total.leftoverChanges, changeGroup),
+            `(${current.name}):deploy`,
+          )
           return {
             deployResult: concatObjects([total.deployResult, deployResult]),
             leftoverChanges,
@@ -148,16 +151,19 @@ export const filtersRunner = <
             errors: [] as ReadonlyArray<SaltoError | SaltoElementError>,
           },
           leftoverChanges: changes,
-        }
-      )
-    ),
+        },
+      ),
     /**
      * onDeploy is called in the same order as onFetch and is expected to do basically
      * the same thing that onFetch does but with a different context (on changes instead
      * of on elements)
      */
     onDeploy: async (changes, deployResult) => {
-      await promises.array.series(filtersWith('onDeploy').map(filter => () => log.time(() => filter.onDeploy(changes, deployResult), `(${filter.name}):onDeploy`)))
+      await promises.array.series(
+        filtersWith('onDeploy').map(
+          filter => () => log.timeDebug(() => filter.onDeploy(changes, deployResult), `(${filter.name}):onDeploy`),
+        ),
+      )
     },
     /**
      * onPostFetch is run after fetch completed for all accounts, and receives
@@ -169,7 +175,9 @@ export const filtersRunner = <
      */
     onPostFetch: async args => {
       await promises.array.series(
-        filtersWith('onPostFetch').map(filter => () => log.time(() => filter.onPostFetch(args), `(${filter.name}):onPostFetch`))
+        filtersWith('onPostFetch').map(
+          filter => () => log.timeDebug(() => filter.onPostFetch(args), `(${filter.name}):onPostFetch`),
+        ),
       )
     },
   }

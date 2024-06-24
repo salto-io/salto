@@ -1,19 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 export type PermissionLevel = 'NONE' | 'VIEW' | 'FULL' | 'CREATE' | 'EDIT'
 export const ID_TO_PERMISSION_INFO: Readonly<Record<string, ReadonlySet<PermissionLevel>>> = {
@@ -39,7 +38,6 @@ export const ID_TO_PERMISSION_INFO: Readonly<Record<string, ReadonlySet<Permissi
   ADMI_BALANCE_TRX_BY_SEGMENTS: new Set(['NONE', 'VIEW', 'CREATE']),
   ADMI_BANK_CONNECTIVITY_CONFIG: new Set(['NONE', 'FULL']),
   ADMI_BILLINGINFO: new Set(['NONE', 'FULL']),
-  ADMI_BILLPAYSETUP: new Set(['NONE', 'FULL']),
   ADMI_BLCGA: new Set(['NONE', 'FULL']),
   ADMI_BUNDLER: new Set(['NONE', 'FULL']),
   ADMI_BUNDLERAUDITTRAIL: new Set(['NONE', 'FULL']),
@@ -524,13 +522,10 @@ export const ID_TO_PERMISSION_INFO: Readonly<Record<string, ReadonlySet<Permissi
   TRAN_APPROVEDD: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_APPROVEEFT: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_APPROVEPARTNERCOMM: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
-  TRAN_APPROVEVP: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_AUDIT: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_AUTO_CASH: new Set(['NONE', 'FULL']),
   TRAN_BALANCEOVERVIEW: new Set(['NONE', 'VIEW']),
   TRAN_BALJRNAL: new Set(['NONE', 'VIEW', 'CREATE', 'FULL']),
-  TRAN_BILLPAY_APPROVE: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
-  TRAN_BILLPAY_STATUS: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_BINTRNFR: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_BINWKSHT: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_BLANKORD: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
@@ -639,7 +634,6 @@ export const ID_TO_PERMISSION_INFO: Readonly<Record<string, ReadonlySet<Permissi
   TRAN_STATCHNG: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_STATUSDD: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_STATUSEFT: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
-  TRAN_STATUSVP: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_STPICKUP: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_SYSJRNL: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   TRAN_TAXLIAB: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),

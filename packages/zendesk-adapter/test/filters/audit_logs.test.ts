@@ -1,21 +1,28 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { elements as elementsUtils, client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import ZendeskClient from '../../src/client/client'
 import filterCreator, { AUDIT_TIME_TYPE_ID, DELETED_USER } from '../../src/filters/audit_logs'
@@ -30,7 +37,6 @@ import {
   TICKET_FIELD_TYPE_NAME,
   ZENDESK,
 } from '../../src/constants'
-
 
 const CURRENT_TIME = '2023-02-08T06:34:53Z'
 const BEFORE_TIME = '2023-02-08T04:34:53Z'
@@ -51,8 +57,12 @@ describe('audit_logs filter', () => {
   let mockPaginator: clientUtils.Paginator
 
   const createInstance = ({
-    type, id, updatedAt, updatedBy, parent,
-  }:{
+    type,
+    id,
+    updatedAt,
+    updatedBy,
+    parent,
+  }: {
     type: ObjectType
     id: number
     updatedAt?: string
@@ -69,9 +79,7 @@ describe('audit_logs filter', () => {
         updated_by_id: updatedBy || undefined,
       },
       [],
-      parent
-        ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
-        : undefined
+      parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] } : undefined,
     )
 
   const automationType = new ObjectType({ elemID: new ElemID(ZENDESK, AUTOMATION_TYPE_NAME) })
@@ -92,12 +100,17 @@ describe('audit_logs filter', () => {
 
   const automationInstance = createInstance({ type: automationType, id: 1, updatedAt: BEFORE_TIME })
   const ticketFieldInstance = createInstance({ type: ticketFieldType, id: 5, updatedAt: BEFORE_TIME })
-  const ticketFieldCustomOptionInstance = createInstance(
-    { type: ticketFieldCustomOptionType, id: 6, parent: ticketFieldInstance }
-  )
-  const articleTranslationInstance = createInstance(
-    { type: articleTranslationType, id: 2, updatedAt: BEFORE_TIME, updatedBy: 11 }
-  )
+  const ticketFieldCustomOptionInstance = createInstance({
+    type: ticketFieldCustomOptionType,
+    id: 6,
+    parent: ticketFieldInstance,
+  })
+  const articleTranslationInstance = createInstance({
+    type: articleTranslationType,
+    id: 2,
+    updatedAt: BEFORE_TIME,
+    updatedBy: 11,
+  })
 
   const auditTimeInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -109,32 +122,35 @@ describe('audit_logs filter', () => {
     { [CORE_ANNOTATIONS.HIDDEN]: true },
   )
 
-
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
     getIdByNameMock = getIdByName as jest.MockedFunction<typeof getIdByName>
-    mockGet = jest.spyOn(client, 'getSinglePage')
-    filter = filterCreator(createFilterCreatorParams({
-      client,
-      config: {
-        ...DEFAULT_CONFIG,
-        [FETCH_CONFIG]: {
-          include: [{
-            type: '.*',
-          }],
-          exclude: [],
-          guide: {
-            brands: ['.*'],
+    mockGet = jest.spyOn(client, 'get')
+    filter = filterCreator(
+      createFilterCreatorParams({
+        client,
+        config: {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            include: [
+              {
+                type: '.*',
+              },
+            ],
+            exclude: [],
+            guide: {
+              brands: ['.*'],
+            },
+            includeAuditDetails: true,
           },
-          includeAuditDetails: true,
         },
-      },
-      paginator: mockPaginator,
-      elementsSource: buildElementsSourceFromElements([]),
-    })) as FilterType
+        paginator: mockPaginator,
+        elementsSource: buildElementsSourceFromElements([]),
+      }),
+    ) as FilterType
     mockGet.mockImplementation(params => {
       if (params.url === '/api/v2/audit_logs') {
         return {
@@ -154,24 +170,28 @@ describe('audit_logs filter', () => {
   })
   describe('onFetch', () => {
     it('should only add changed_at correctly when flag is false', async () => {
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              include: [
+                {
+                  type: '.*',
+                },
+              ],
+              exclude: [],
+              guide: {
+                brands: ['.*'],
+              },
+              includeAuditDetails: false,
             },
-            includeAuditDetails: false,
           },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements([]),
-      })) as FilterType
+          paginator: mockPaginator,
+          elementsSource: buildElementsSourceFromElements([]),
+        }),
+      ) as FilterType
       const elements = [
         automationInstance,
         ticketFieldInstance,
@@ -182,10 +202,14 @@ describe('audit_logs filter', () => {
       expect(mockGet).toHaveBeenCalledTimes(1)
       expect(elements).toHaveLength(6)
       expect(elements.filter(e => e.elemID.typeName === AUDIT_TIME_TYPE_NAME)).toEqual([
-        auditTimeType, auditTimeInstance,
+        auditTimeType,
+        auditTimeInstance,
       ])
-      expect(elements.filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === BEFORE_TIME)).toHaveLength(4)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === BEFORE_TIME),
+      ).toHaveLength(4)
     })
     it('should do nothing if there is no updated_at in the instance or parent does not exist', async () => {
       const elements = [
@@ -196,8 +220,11 @@ describe('audit_logs filter', () => {
       await filter.onFetch(elements)
       expect(mockGet).toHaveBeenCalledTimes(1)
       expect(elements).toHaveLength(5)
-      expect(elements.filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === undefined)).toHaveLength(3)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === undefined),
+      ).toHaveLength(3)
     })
     it('should do nothing if last audit time is undefined because of invalid return', async () => {
       // res is not valid
@@ -240,8 +267,11 @@ describe('audit_logs filter', () => {
       await filter.onFetch(elements)
       expect(mockGet).toHaveBeenCalledTimes(1)
       expect(elements).toHaveLength(6)
-      expect(elements.filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(4)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined),
+      ).toHaveLength(4)
     })
     it('should add changed_at and change_by when flag is true and it is second fetch', async () => {
       const rawElements = [
@@ -251,29 +281,37 @@ describe('audit_logs filter', () => {
         articleTranslationInstance,
       ]
       const notUpdatedAutomation = createInstance({ type: automationType, id: 3, updatedAt: BEFORE_TIME })
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              include: [
+                {
+                  type: '.*',
+                },
+              ],
+              exclude: [],
+              guide: {
+                brands: ['.*'],
+              },
+              includeAuditDetails: true,
             },
-            includeAuditDetails: true,
           },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements(
-          [auditTimeInstance, auditTimeType, ...rawElements, notUpdatedAutomation]
-        ),
-      })) as FilterType
+          paginator: mockPaginator,
+          elementsSource: buildElementsSourceFromElements([
+            auditTimeInstance,
+            auditTimeType,
+            ...rawElements,
+            notUpdatedAutomation,
+          ]),
+        }),
+      ) as FilterType
       mockGet.mockImplementation(params => {
         if (params.url === '/api/v2/audit_logs') {
-          if (params.queryParams['filter[source_id]'] > 4) { // will be ticket_filed and ticket_field_custom_option
+          if (params.queryParams['filter[source_id]'] > 4) {
+            // will be ticket_filed and ticket_field_custom_option
             return {
               status: 200,
               data: {
@@ -308,10 +346,10 @@ describe('audit_logs filter', () => {
         }
         throw new Error('Err')
       })
-      getIdByNameMock
-        .mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' },)
+      getIdByNameMock.mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' })
       const elements = [
-        ...rawElements.map(e => e.clone())
+        ...rawElements
+          .map(e => e.clone())
           .map(e => {
             e.value.updated_at = e.value.updated_at !== undefined ? BETWEEN_TIME : undefined
             return e
@@ -322,32 +360,42 @@ describe('audit_logs filter', () => {
       expect(mockGet).toHaveBeenCalledTimes(5) // time, 1 automation, ticket_field, custom_field, count
       expect(elements).toHaveLength(7)
       // automation and translation
-      expect(elements.filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'new user')).toHaveLength(2)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'new user'),
+      ).toHaveLength(2)
       // ticket_filed and custom and notUpdatedAutomation
-      expect(elements.filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(3)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined),
+      ).toHaveLength(3)
     })
     it('should do nothing if getUpdatedByID is undefined', async () => {
       // no res (400)
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              include: [
+                {
+                  type: '.*',
+                },
+              ],
+              exclude: [],
+              guide: {
+                brands: ['.*'],
+              },
+              includeAuditDetails: true,
             },
-            includeAuditDetails: true,
           },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, automationInstance]),
-      })) as FilterType
+          paginator: mockPaginator,
+          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, automationInstance]),
+        }),
+      ) as FilterType
       mockGet.mockImplementation(params => {
         if (params.url === '/api/v2/audit_logs' && params.queryParams['filter[source_id]'] !== undefined) {
           throw new Error('Err')
@@ -364,38 +412,46 @@ describe('audit_logs filter', () => {
           },
         }
       })
-      getIdByNameMock
-        .mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' },)
-      const elements = [automationInstance].map(e => e.clone()).map(e => {
-        e.value.updated_at = BETWEEN_TIME
-        return e
-      })
+      getIdByNameMock.mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' })
+      const elements = [automationInstance]
+        .map(e => e.clone())
+        .map(e => {
+          e.value.updated_at = BETWEEN_TIME
+          return e
+        })
       await filter.onFetch(elements)
       expect(mockGet).toHaveBeenCalledTimes(3) // time, 1 automation, ticket_field, custom_field, count
       expect(elements).toHaveLength(3)
-      expect(elements.filter(e => e.elemID.typeName === AUTOMATION_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName === AUTOMATION_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined),
+      ).toHaveLength(1)
     })
     it('should do nothing if res for getUpdatedByID is in invalid format', async () => {
       // no res (400)
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              include: [
+                {
+                  type: '.*',
+                },
+              ],
+              exclude: [],
+              guide: {
+                brands: ['.*'],
+              },
+              includeAuditDetails: true,
             },
-            includeAuditDetails: true,
           },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, automationInstance]),
-      })) as FilterType
+          paginator: mockPaginator,
+          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, automationInstance]),
+        }),
+      ) as FilterType
       mockGet.mockImplementation(params => {
         if (params.url === '/api/v2/audit_logs' && params.queryParams['filter[source_id]'] !== undefined) {
           return {
@@ -422,39 +478,47 @@ describe('audit_logs filter', () => {
           },
         }
       })
-      getIdByNameMock
-        .mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' },)
-      const elements = [automationInstance].map(e => e.clone()).map(e => {
-        e.value.updated_at = BETWEEN_TIME
-        return e
-      })
+      getIdByNameMock.mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' })
+      const elements = [automationInstance]
+        .map(e => e.clone())
+        .map(e => {
+          e.value.updated_at = BETWEEN_TIME
+          return e
+        })
       await filter.onFetch(elements)
       expect(mockGet).toHaveBeenCalledTimes(3) // time, 1 automation, ticket_field, custom_field, count
       expect(elements).toHaveLength(3)
-      expect(elements.filter(e => e.elemID.typeName === AUTOMATION_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName === AUTOMATION_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined),
+      ).toHaveLength(1)
     })
     it('should set changed_by as undefined if res for getUpdatedByID is undefined', async () => {
       const newTicketField = ticketFieldInstance.clone()
       newTicketField.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'TEST'
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              include: [
+                {
+                  type: '.*',
+                },
+              ],
+              exclude: [],
+              guide: {
+                brands: ['.*'],
+              },
+              includeAuditDetails: true,
             },
-            includeAuditDetails: true,
           },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
-      })) as FilterType
+          paginator: mockPaginator,
+          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
+        }),
+      ) as FilterType
       mockGet.mockImplementation(params => {
         if (params.url === '/api/v2/audit_logs' && params.queryParams['filter[source_id]'] !== undefined) {
           return {
@@ -476,39 +540,47 @@ describe('audit_logs filter', () => {
           },
         }
       })
-      getIdByNameMock
-        .mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' },)
-      const elements = [ticketFieldInstance].map(e => e.clone()).map(e => {
-        e.value.updated_at = BETWEEN_TIME
-        return e
-      })
+      getIdByNameMock.mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' })
+      const elements = [ticketFieldInstance]
+        .map(e => e.clone())
+        .map(e => {
+          e.value.updated_at = BETWEEN_TIME
+          return e
+        })
       await filter.onFetch(elements)
       expect(mockGet).toHaveBeenCalledTimes(3) // time, ticket_field, count
       expect(elements).toHaveLength(3)
-      expect(elements.filter(e => e.elemID.typeName === TICKET_FIELD_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName === TICKET_FIELD_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined),
+      ).toHaveLength(1)
     })
     it('should set changed_by to undefined if changed_at is after audit_time', async () => {
       const newTicketField = ticketFieldInstance.clone()
       newTicketField.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'TEST'
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              include: [
+                {
+                  type: '.*',
+                },
+              ],
+              exclude: [],
+              guide: {
+                brands: ['.*'],
+              },
+              includeAuditDetails: true,
             },
-            includeAuditDetails: true,
           },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
-      })) as FilterType
+          paginator: mockPaginator,
+          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
+        }),
+      ) as FilterType
       mockGet.mockImplementation(params => {
         if (params.url === '/api/v2/audit_logs' && params.queryParams['filter[source_id]'] !== undefined) {
           return {
@@ -530,17 +602,21 @@ describe('audit_logs filter', () => {
           },
         }
       })
-      getIdByNameMock
-        .mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' },)
-      const elements = [ticketFieldInstance].map(e => e.clone()).map(e => {
-        e.value.updated_at = AFTER_AFTER_TIME
-        return e
-      })
+      getIdByNameMock.mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' })
+      const elements = [ticketFieldInstance]
+        .map(e => e.clone())
+        .map(e => {
+          e.value.updated_at = AFTER_AFTER_TIME
+          return e
+        })
       await filter.onFetch(elements)
       expect(mockGet).toHaveBeenCalledTimes(1) // time
       expect(elements).toHaveLength(3)
-      expect(elements.filter(e => e.elemID.typeName === TICKET_FIELD_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName === TICKET_FIELD_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined),
+      ).toHaveLength(1)
     })
     it('should add changed_by from elements source', async () => {
       const rawElements = [automationInstance, articleTranslationInstance]
@@ -549,26 +625,28 @@ describe('audit_logs filter', () => {
           e.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'new user'
           return e
         })
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              include: [
+                {
+                  type: '.*',
+                },
+              ],
+              exclude: [],
+              guide: {
+                brands: ['.*'],
+              },
+              includeAuditDetails: true,
             },
-            includeAuditDetails: true,
           },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements(
-          [auditTimeInstance, auditTimeType, ...rawElements]
-        ),
-      })) as FilterType
+          paginator: mockPaginator,
+          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, ...rawElements]),
+        }),
+      ) as FilterType
       mockGet.mockImplementation(params => {
         if (params.url === '/api/v2/audit_logs') {
           return {
@@ -591,30 +669,39 @@ describe('audit_logs filter', () => {
       expect(mockGet).toHaveBeenCalledTimes(1) // time, 1 automation, ticket_field, custom_field
       expect(elements).toHaveLength(4)
       // automation and translation
-      expect(elements.filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'new user')).toHaveLength(2)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'new user'),
+      ).toHaveLength(2)
     })
     it('should add deleted_user for translation with an undefined user', async () => {
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          config: {
+            ...DEFAULT_CONFIG,
+            [FETCH_CONFIG]: {
+              include: [
+                {
+                  type: '.*',
+                },
+              ],
+              exclude: [],
+              guide: {
+                brands: ['.*'],
+              },
+              includeAuditDetails: true,
             },
-            includeAuditDetails: true,
           },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements(
-          [auditTimeInstance, auditTimeType, articleTranslationInstance]
-        ),
-      })) as FilterType
+          paginator: mockPaginator,
+          elementsSource: buildElementsSourceFromElements([
+            auditTimeInstance,
+            auditTimeType,
+            articleTranslationInstance,
+          ]),
+        }),
+      ) as FilterType
       mockGet.mockImplementation(params => {
         if (params.url === '/api/v2/audit_logs') {
           return {
@@ -631,9 +718,9 @@ describe('audit_logs filter', () => {
         }
         throw new Error('Err')
       })
-      getIdByNameMock
-        .mockResolvedValue({ 21: 'b', 31: 'c' },)
-      const elements = [articleTranslationInstance].map(e => e.clone())
+      getIdByNameMock.mockResolvedValue({ 21: 'b', 31: 'c' })
+      const elements = [articleTranslationInstance]
+        .map(e => e.clone())
         .map(e => {
           e.value.updated_at = BETWEEN_TIME
           return e
@@ -643,8 +730,11 @@ describe('audit_logs filter', () => {
       expect(mockGet).toHaveBeenCalledTimes(2) // time, count
       expect(elements).toHaveLength(3)
       // automation and translation
-      expect(elements.filter(e => e.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === DELETED_USER)).toHaveLength(1)
+      expect(
+        elements
+          .filter(e => e.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
+          .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === DELETED_USER),
+      ).toHaveLength(1)
     })
   })
 })

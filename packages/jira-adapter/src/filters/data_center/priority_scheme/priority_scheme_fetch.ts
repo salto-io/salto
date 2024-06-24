@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemIdGetter, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -31,28 +31,27 @@ const fetchSchemeValues = async (paginator: clientUtils.Paginator): Promise<Valu
     url: '/rest/api/2/priorityschemes',
     paginationField: 'startAt',
   }
-  const schemeValues = await awu(paginator(
-    paginationArgs,
-    page => makeArray(page.schemes) as clientUtils.ResponseValue[]
-  )).flat().toArray()
+  const schemeValues = await awu(
+    paginator(paginationArgs, page => makeArray(page.schemes) as clientUtils.ResponseValue[]),
+  )
+    .flat()
+    .toArray()
   return schemeValues
 }
 
 const createInstance = (values: Values, type: ObjectType, getElemIdFunc: ElemIdGetter | undefined): InstanceElement => {
-  const serviceIds = elementUtils.createServiceIds(values, 'id', type.elemID)
+  const serviceIds = elementUtils.createServiceIds({ entry: values, serviceIDFields: ['id'], typeID: type.elemID })
 
   const defaultName = naclCase(values.name)
 
-  const instanceName = getElemIdFunc && serviceIds
-    ? getElemIdFunc(JIRA, serviceIds, defaultName).name
-    : defaultName
+  const instanceName = getElemIdFunc && serviceIds ? getElemIdFunc(JIRA, serviceIds, defaultName).name : defaultName
 
-  return new InstanceElement(
-    instanceName,
-    type,
-    values,
-    [JIRA, elementUtils.RECORDS_PATH, PRIORITY_SCHEME_TYPE_NAME, pathNaclCase(instanceName)]
-  )
+  return new InstanceElement(instanceName, type, values, [
+    JIRA,
+    elementUtils.RECORDS_PATH,
+    PRIORITY_SCHEME_TYPE_NAME,
+    pathNaclCase(instanceName),
+  ])
 }
 
 const transformInstance = (instance: InstanceElement): void => {
@@ -60,7 +59,6 @@ const transformInstance = (instance: InstanceElement): void => {
     delete instance.value.defaultScheme
   }
 }
-
 
 const filter: FilterCreator = ({ paginator, client, fetchQuery, getElemIdFunc }) => ({
   name: 'prioritySchemeFetchFilter',
@@ -82,10 +80,14 @@ const filter: FilterCreator = ({ paginator, client, fetchQuery, getElemIdFunc })
       elements.push(type)
       return undefined
     } catch (e) {
-      if (e instanceof clientUtils.HTTPError && e.response !== undefined
-        && (e.response.status === 403
-          || e.response.status === 405)) {
-        log.error(`Received a ${e.response.status} error when fetching priority schemes. You need an admin user to fetch them.`)
+      if (
+        e instanceof clientUtils.HTTPError &&
+        e.response !== undefined &&
+        (e.response.status === 403 || e.response.status === 405)
+      ) {
+        log.error(
+          `Received a ${e.response.status} error when fetching priority schemes. You need an admin user to fetch them.`,
+        )
         return {
           errors: [
             {

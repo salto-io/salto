@@ -1,41 +1,62 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  ChangeDataType,
+  ChangeError,
+  ChangeValidator,
+  CORE_ANNOTATIONS,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isModificationChange,
+  isReferenceExpression,
+  ModificationChange,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { filters, client as clientUtils } from '@salto-io/adapter-components'
+import Joi from 'joi'
+import { client as clientUtils, filters } from '@salto-io/adapter-components'
 import os from 'os'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getInstancesFromElementSource, validateReferenceExpression } from '@salto-io/adapter-utils'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
-import { doesProjectHaveIssues } from './project_deletion'
+import { doesProjectHaveIssues } from './projects/project_deletion'
+import { isWorkflowV2Instance } from '../filters/workflowV2/types'
 
-const { addUrlToInstance } = filters
+const { addUrlToInstance, configDefToInstanceFetchApiDefinitionsForServiceUrl } = filters
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
-type WorkflowSchemeItem = {
-    workflow: ReferenceExpression
-    issueType: ReferenceExpression
+export type WorkflowSchemeItem = {
+  workflow: ReferenceExpression
+  issueType: ReferenceExpression
 }
 
-const isWorkflowSchemeItem = (item: WorkflowSchemeItem): item is WorkflowSchemeItem =>
-  _.isPlainObject(item) && item.workflow instanceof ReferenceExpression && item.issueType instanceof ReferenceExpression
+const WORKFLOW_SCHEME_ITEM_SCHEMA = Joi.object({
+  workflow: Joi.custom(validateReferenceExpression('workflow')).required(),
+  issueType: Joi.custom(validateReferenceExpression('issueType')).required(),
+}).required()
+
+export const isWorkflowSchemeItem = createSchemeGuard<WorkflowSchemeItem>(WORKFLOW_SCHEME_ITEM_SCHEMA)
 
 type ChangedItem = {
   before: ReferenceExpression
@@ -49,17 +70,16 @@ export type StatusMigration = {
   newStatusId?: ReferenceExpression
 }
 
-const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
+export const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
   project.value.workflowScheme instanceof ReferenceExpression
 
 const workflowLinkedToProjectWithIssues = async (
   assignedProjects: InstanceElement[],
   client: JiraClient,
-): Promise<boolean> =>
-  awu(assignedProjects).some(async project => doesProjectHaveIssues(project, client))
+): Promise<boolean> => awu(assignedProjects).some(async project => doesProjectHaveIssues(project, client))
 
 export const getRelevantChanges = (
-  changes: ReadonlyArray<Change<ChangeDataType>>
+  changes: ReadonlyArray<Change<ChangeDataType>>,
 ): ModificationChange<InstanceElement>[] =>
   changes
     .filter(isInstanceChange)
@@ -74,32 +94,31 @@ const isItemModified = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): b
 
 const getAllIssueTypesForWorkflowScheme = async (
   elementSource: ReadOnlyElementsSource,
-  assignedProjects: InstanceElement[]
+  assignedProjects: InstanceElement[],
 ): Promise<ReferenceExpression[]> => {
   const issueTypeSchemes: InstanceElement[] = await awu(assignedProjects)
     .map(instance => instance.value.issueTypeScheme)
-    .filter(isResolvedReferenceExpression)
-    .map(ref => elementSource.get(ref.elemID))
+    .filter(isReferenceExpression)
+    .map(ref => ref.getResolvedValue(elementSource))
+    .filter(isDefined)
     .filter(isInstanceElement)
     .toArray()
   const issueTypes: ReferenceExpression[] = issueTypeSchemes
     .filter(issueTypeScheme => Array.isArray(issueTypeScheme.value.issueTypeIds))
     .flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
-    .filter(isResolvedReferenceExpression)
-  return _.uniqBy(
-    issueTypes,
-    issueType => issueType.elemID.getFullName()
-  )
+    .filter(isReferenceExpression)
+  return _.uniqBy(issueTypes, issueType => issueType.elemID.getFullName())
 }
 
 const getDefaultWorkflowIssueTypes = (
   workflowScheme: InstanceElement,
-  assignedIssueTypes: ReferenceExpression[]
+  assignedIssueTypes: ReferenceExpression[],
 ): ReferenceExpression[] => {
   workflowScheme.value.items
     ?.filter(isWorkflowSchemeItem)
     .forEach((item: WorkflowSchemeItem) =>
-      _.remove(assignedIssueTypes, issueType => issueType.elemID.isEqual(item.issueType.elemID)))
+      _.remove(assignedIssueTypes, issueType => issueType.elemID.isEqual(item.issueType.elemID)),
+    )
   return assignedIssueTypes
 }
 
@@ -113,34 +132,24 @@ const getChangedItemsFromChange = async (
   const afterItems = (after.value.items ?? []).filter(isWorkflowSchemeItem)
   const assignedIssueTypes = await getAllIssueTypesForWorkflowScheme(elementSource, assignedProjects)
   const defaultWorkflowIssueTypes = !before.value.defaultWorkflow.elemID.isEqual(after.value.defaultWorkflow.elemID)
-    ? getDefaultWorkflowIssueTypes(after, assignedIssueTypes) : []
+    ? getDefaultWorkflowIssueTypes(after, assignedIssueTypes)
+    : []
   const changedDefaultWorkflowItems = defaultWorkflowIssueTypes.map(issueType => ({
     before: before.value.defaultWorkflow,
     after: after.value.defaultWorkflow,
     issueType,
   }))
-  const removedItems = _.differenceWith(
-    beforeItems,
-    afterItems,
-    isItemEquals,
-  ).map((item: WorkflowSchemeItem) => ({
+  const removedItems = _.differenceWith(beforeItems, afterItems, isItemEquals).map((item: WorkflowSchemeItem) => ({
     before: item.workflow,
     after: after.value.defaultWorkflow,
     issueType: item.issueType,
   }))
-  const addedItems = _.differenceWith(
-    afterItems,
-    beforeItems,
-    isItemEquals,
-  ).map(item => ({
+  const addedItems = _.differenceWith(afterItems, beforeItems, isItemEquals).map(item => ({
     before: before.value.defaultWorkflow,
     after: item.workflow,
     issueType: item.issueType,
   }))
-  const afterItemsIssueTypes = _.keyBy(
-    afterItems,
-    item => item.issueType.elemID.getFullName(),
-  )
+  const afterItemsIssueTypes = _.keyBy(afterItems, item => item.issueType.elemID.getFullName())
   const modifiedItems = beforeItems
     .map((beforeItem: WorkflowSchemeItem) => {
       const afterItem: WorkflowSchemeItem = afterItemsIssueTypes[beforeItem.issueType.elemID.getFullName()]
@@ -152,27 +161,29 @@ const getChangedItemsFromChange = async (
         after: afterItem.workflow,
         issueType: beforeItem.issueType,
       }
-    }).filter(isDefined)
-  const changedItems = [
-    ...addedItems,
-    ...removedItems,
-    ...modifiedItems,
-    ...changedDefaultWorkflowItems,
-  ]
-  return changedItems
-    // Might happen if the user changed default workflow.
-    .filter(item => !item.before.elemID.isEqual(item.after.elemID))
-    .filter(item => assignedIssueTypes.some(issueType => issueType.elemID.isEqual(item.issueType.elemID)))
-    // Might happen on unresolved reference to new/old workflow.
-    .filter(item => isInstanceElement(item.before.value) && isInstanceElement(item.after.value))
+    })
+    .filter(isDefined)
+  const changedItems = [...addedItems, ...removedItems, ...modifiedItems, ...changedDefaultWorkflowItems]
+  return (
+    changedItems
+      // Might happen if the user changed default workflow.
+      .filter(item => !item.before.elemID.isEqual(item.after.elemID))
+      .filter(item => assignedIssueTypes.some(issueType => issueType.elemID.isEqual(item.issueType.elemID)))
+      // Might happen on unresolved reference to new/old workflow.
+      .filter(item => isInstanceElement(item.before.value) && isInstanceElement(item.after.value))
+  )
 }
 
 const areStatusesEquals = (status1: ReferenceExpression, status2: ReferenceExpression): boolean =>
   status1.elemID.isEqual(status2.elemID)
 
 const getMissingStatuses = (before: InstanceElement, after: InstanceElement): ReferenceExpression[] => {
-  const beforeStatuses = (before.value.statuses ?? []).map((status: {id: ReferenceExpression}) => status.id)
-  const afterStatuses = (after.value.statuses ?? []).map((status: {id: ReferenceExpression}) => status.id)
+  const beforeStatuses = isWorkflowV2Instance(before)
+    ? before.value.statuses.map(status => status.statusReference)
+    : (before.value.statuses ?? []).map((status: { id: ReferenceExpression }) => status.id)
+  const afterStatuses = isWorkflowV2Instance(after)
+    ? after.value.statuses.map(status => status.statusReference)
+    : (after.value.statuses ?? []).map((status: { id: ReferenceExpression }) => status.id)
   return _.differenceWith(beforeStatuses, afterStatuses, areStatusesEquals)
 }
 
@@ -201,77 +212,79 @@ const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => 
 ]`
 }
 export const isSameStatusMigration = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>
-  statusMigration1.issueTypeId.elemID.isEqual(statusMigration2.issueTypeId.elemID)
-    && statusMigration1.statusId.elemID.isEqual(statusMigration2.statusId.elemID)
-
+  statusMigration1.issueTypeId.elemID.isEqual(statusMigration2.issueTypeId.elemID) &&
+  statusMigration1.statusId.elemID.isEqual(statusMigration2.statusId.elemID)
 
 const getErrorMessageForStatusMigration = (
   instance: InstanceElement,
   statusMigrations: StatusMigration[],
 ): ChangeError | undefined => {
   const serviceUrl = instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]
-  return statusMigrations.length > 0 ? {
-    elemID: instance.elemID,
-    severity: 'Warning',
-    message: 'Workflow scheme change requires issue migration',
-    detailedMessage: `This workflow scheme change requires an issue migration, as some issue statuses do not exist in the new workflow. If you continue with the deployment, the changes will be pushed as a workflow scheme draft but will not be published. You will have to publish them manually from Jira. Alternatively, you can add the following NACL code to this workflow’s scheme code. Make sure to specific, for each issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes .\n${formatStatusMigrations(statusMigrations)}`,
-    deployActions: {
-      postAction: serviceUrl ? {
-        title: 'Finalize workflow scheme change',
-        description: `Salto pushed the ${instance.elemID.name} workflow scheme changes, but did not publish it. Please follow these steps to complete this change and migrate affected issues`,
-        showOnFailure: false,
-        subActions: [
-          `Go to ${serviceUrl}`,
-          'Click on "Publish"',
-          'Migrate issues as instructed',
-        ],
-      } : undefined,
-    },
-  } : undefined
+  return statusMigrations.length > 0
+    ? {
+        elemID: instance.elemID,
+        severity: 'Warning',
+        message: 'Workflow scheme change requires issue migration',
+        detailedMessage: `This workflow scheme change requires an issue migration, as some issue statuses do not exist in the new workflow. If you continue with the deployment, the changes will be pushed as a workflow scheme draft but will not be published. You will have to publish them manually from Jira. Alternatively, you can add the following NACL code to this workflow’s scheme code. Make sure to specific, for each issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes .\n${formatStatusMigrations(statusMigrations)}`,
+        deployActions: {
+          postAction: serviceUrl
+            ? {
+                title: 'Finalize workflow scheme change',
+                description: `Salto pushed the ${instance.elemID.name} workflow scheme changes, but did not publish it. Please follow these steps to complete this change and migrate affected issues`,
+                showOnFailure: false,
+                subActions: [`Go to ${serviceUrl}`, 'Click on "Publish"', 'Migrate issues as instructed'],
+              }
+            : undefined,
+        },
+      }
+    : undefined
 }
 
-export const workflowSchemeMigrationValidator = (
-  client: JiraClient,
-  config: JiraConfig,
-  paginator: clientUtils.Paginator,
-): ChangeValidator =>
+export const workflowSchemeMigrationValidator =
+  (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator =>
   async (changes, elementSource) => {
     const relevantChanges = getRelevantChanges(changes)
     if (elementSource === undefined || relevantChanges.length === 0) {
       return []
     }
-    const idsIterator = awu(await elementSource.list())
-    const projects = await awu(idsIterator)
-      .filter(id => id.typeName === PROJECT_TYPE)
-      .filter(id => id.idType === 'instance')
-      .map(id => elementSource.get(id))
-      .toArray()
-    const workflowSchemesToProjects = _.groupBy(
-      projects.filter(projectHasWorkflowSchemeReference),
-      project => project.value.workflowScheme.elemID.getFullName(),
+    const projects = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
+    const workflowSchemesToProjects = _.groupBy(projects.filter(projectHasWorkflowSchemeReference), project =>
+      project.value.workflowScheme.elemID.getFullName(),
     )
     const activeWorkflowsChanges = await awu(relevantChanges)
       .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()] !== undefined)
-      .filter(async change => workflowLinkedToProjectWithIssues(
-        workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
-        client,
-      )).toArray()
-    const errors = await awu(activeWorkflowsChanges).map(async change => {
-      await updateSchemeId(change, client, paginator, config)
-      const instance = getChangeData(change)
-      addUrlToInstance(instance, client.baseUrl, config)
-      const changedItems = await getChangedItemsFromChange(
-        change,
-        workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
-        elementSource,
+      .filter(async change =>
+        workflowLinkedToProjectWithIssues(
+          workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
+          client,
+        ),
       )
-      const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
-      const existingStatusMigrations: StatusMigration[] = instance.value.statusMigrations ?? []
-      const newStatusMigrations = _.differenceWith(statusMigrations, existingStatusMigrations, isSameStatusMigration)
-      if (newStatusMigrations.length === 0) {
-        return undefined
-      }
-      return getErrorMessageForStatusMigration(instance, [...existingStatusMigrations, ...newStatusMigrations])
-    }).filter(isDefined).toArray()
+      .toArray()
+    const errors = await awu(activeWorkflowsChanges)
+      .map(async change => {
+        await updateSchemeId(change, client, paginator, config)
+        const instance = getChangeData(change)
+        addUrlToInstance(
+          instance,
+          configDefToInstanceFetchApiDefinitionsForServiceUrl(
+            config.apiDefinitions.types[instance.elemID.typeName],
+            client.baseUrl,
+          ),
+        )
+        const changedItems = await getChangedItemsFromChange(
+          change,
+          workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
+          elementSource,
+        )
+        const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
+        const existingStatusMigrations: StatusMigration[] = instance.value.statusMigrations ?? []
+        const newStatusMigrations = _.differenceWith(statusMigrations, existingStatusMigrations, isSameStatusMigration)
+        if (newStatusMigrations.length === 0) {
+          return undefined
+        }
+        return getErrorMessageForStatusMigration(instance, [...existingStatusMigrations, ...newStatusMigrations])
+      })
+      .filter(isDefined)
+      .toArray()
     return errors
   }

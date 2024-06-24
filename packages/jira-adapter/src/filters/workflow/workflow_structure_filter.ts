@@ -1,90 +1,45 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType, SaltoError, Value } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  Element,
+  ElemID,
+  Field,
+  isInstanceElement,
+  ListType,
+  MapType,
+  SaltoError,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { walkOnValue, WALK_NEXT_STEP, naclCase, invertNaclCase } from '@salto-io/adapter-utils'
-import { findObject } from '../../utils'
+import { walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
 import { createConditionConfigurationTypes } from './conditions_types'
 import { Condition, isWorkflowResponseInstance, Rules, WorkflowResponse, Status, Transition, Validator } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { transformTransitions } from './transition_structure'
 
-const NOT_FETCHED_POST_FUNCTION_TYPES = [
-  'GenerateChangeHistoryFunction',
-  'IssueReindexFunction',
-  'IssueCreateFunction',
-]
+const NOT_FETCHED_POST_FUNCTION_TYPES = ['GenerateChangeHistoryFunction', 'IssueReindexFunction', 'IssueCreateFunction']
 
-const FETCHED_ONLY_INITIAL_POST_FUNCTION = [
-  'UpdateIssueStatusFunction',
-  'CreateCommentFunction',
-  'IssueStoreFunction',
-]
-
-export const TRANSITION_PARTS_SEPARATOR = '::'
-
-type TransitionType = 'Directed' | 'Initial' | 'Global' | 'Circular'
-
-const TYPE_TO_FROM_MAP: Record<Exclude<TransitionType, 'Directed'>, string> = {
-  Initial: 'none',
-  Global: 'any status',
-  Circular: 'any status',
-}
-
-export const createStatusMap = (statuses: Status[]): Map<string, string> => new Map(statuses
-  .filter((status): status is {id: string; name: string} => typeof status.id === 'string' && status.name !== undefined)
-  .map((status => [status.id, status.name])))
-
-const getTransitionType = (transition: Transition): TransitionType => {
-  if (transition.type === 'initial') {
-    return 'Initial'
-  }
-  if (transition.from !== undefined
-    && transition.from.length !== 0) {
-    return 'Directed'
-  }
-  if ((transition.to ?? '') === '') {
-    return 'Circular'
-  }
-  return 'Global'
-}
-
-// The key will be in the format of {transition name}::From: {from name}::{transition type}
-// Transitions that were created from any in the UI will have From: any status
-// The initial transition will have From: none
-// In case the user has a status named none or any status there will still be no problem due to the type
-// The types can be Directed, Initial, Global, and Circular (which is global circular)
-export const getTransitionKey = (transition: Transition, statusesMap: Map<string, string>): string => {
-  const type = getTransitionType(transition)
-  const fromSorted = type === 'Directed'
-    ? (transition.from?.map(from => (
-      typeof from === 'string' ? from : from.id ?? ''
-    )) ?? [])
-      .map(from => statusesMap.get(from) ?? from)
-      .sort()
-      .join(',')
-    : TYPE_TO_FROM_MAP[type]
-
-  return naclCase([transition.name ?? '', `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
-}
+const FETCHED_ONLY_INITIAL_POST_FUNCTION = ['UpdateIssueStatusFunction', 'CreateCommentFunction', 'IssueStoreFunction']
 
 const transformProperties = (item: Status | Transition): void => {
-  item.properties = item.properties?.additionalProperties
   // This is not deployable and we get another property
   // of "jira.issue.editable" with the same value
   delete item.properties?.issueEditable
@@ -100,24 +55,24 @@ const transformPostFunctions = (rules: Rules, transitionType?: string): void => 
       delete postFunc.configuration?.event?.name
     })
 
-    rules.postFunctions
-      ?.filter(({ type }) => type === 'SetIssueSecurityFromRoleFunction')
-      .forEach(postFunc => {
-        // This is not deployable and the id property provides the same info
-        delete postFunc.configuration?.projectRole?.name
-      })
+  rules.postFunctions
+    ?.filter(({ type }) => type === 'SetIssueSecurityFromRoleFunction')
+    .forEach(postFunc => {
+      // This is not deployable and the id property provides the same info
+      delete postFunc.configuration?.projectRole?.name
+    })
 
-    rules.postFunctions
-      ?.filter(({ type }) => isExtensionType(type))
-      .forEach(postFunc => {
-        delete postFunc.configuration?.id
-      })
+  rules.postFunctions
+    ?.filter(({ type }) => isExtensionType(type))
+    .forEach(postFunc => {
+      delete postFunc.configuration?.id
+    })
 
-    rules.postFunctions = rules.postFunctions?.filter(
-      postFunction => (transitionType === 'initial'
-        ? !NOT_FETCHED_POST_FUNCTION_TYPES.includes(postFunction.type ?? '')
-        : ![...NOT_FETCHED_POST_FUNCTION_TYPES, ...FETCHED_ONLY_INITIAL_POST_FUNCTION].includes(postFunction.type ?? '')),
-    )
+  rules.postFunctions = rules.postFunctions?.filter(postFunction =>
+    transitionType === 'initial'
+      ? !NOT_FETCHED_POST_FUNCTION_TYPES.includes(postFunction.type ?? '')
+      : ![...NOT_FETCHED_POST_FUNCTION_TYPES, ...FETCHED_ONLY_INITIAL_POST_FUNCTION].includes(postFunction.type ?? ''),
+  )
 }
 
 const transformValidator = (validator: Validator): void => {
@@ -126,12 +81,12 @@ const transformValidator = (validator: Validator): void => {
     return
   }
 
-  config.windowsDays = _.isString(config.windowsDays)
-    ? parseInt(config.windowsDays, 10)
-    : config.windowsDays
+  config.windowsDays = _.isString(config.windowsDays) ? parseInt(config.windowsDays, 10) : config.windowsDays
 
   // The name value is not deployable and the id property provides the same info
-  config.parentStatuses?.forEach(status => { delete status.name })
+  config.parentStatuses?.forEach(status => {
+    delete status.name
+  })
   delete config.previousStatus?.name
 
   if (config.field !== undefined) {
@@ -186,36 +141,6 @@ const transformRules = (rules: Rules, transitionType?: string): void => {
   rules.validators?.forEach(transformValidator)
 }
 
-const transformTransitions = (value: Value): SaltoError[] => {
-  const statusesMap = createStatusMap(value.statuses ?? [])
-  const maxCounts = _(value.transitions).map(transition => getTransitionKey(transition, statusesMap)).countBy().value()
-
-  const counts: Record<string, number> = {}
-
-  value.transitions = Object.fromEntries(value.transitions
-    // This is Value and not the actual type as we change types
-    .map((transition: Value) => {
-      const key = getTransitionKey(transition, statusesMap)
-      counts[key] = (counts[key] ?? 0) + 1
-      if (maxCounts[key] > 1) {
-        return [naclCase(`${invertNaclCase(key)}${TRANSITION_PARTS_SEPARATOR}${counts[key]}`), transition]
-      }
-      return [key, transition]
-    }))
-  const errorKeyNames = Object.entries(counts)
-    .filter(([, count]) => count > 1)
-    .map(([key]) => invertNaclCase(key).split(TRANSITION_PARTS_SEPARATOR)[0])
-
-
-  return errorKeyNames.length === 0
-    ? []
-    : [{
-      message: `The following transitions of workflow ${value.name} are not unique: ${errorKeyNames.join(', ')}.
-It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
-      severity: 'Warning',
-    }]
-}
-
 const transformWorkflowInstance = (workflowValues: WorkflowResponse): SaltoError[] => {
   workflowValues.entityId = workflowValues.id?.entityId
   workflowValues.name = workflowValues.id?.name
@@ -245,14 +170,26 @@ const filter: FilterCreator = ({ config }) => ({
       delete workflowType.fields.id
       workflowType.fields.operations.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
       if (workflowTransitionType !== undefined) {
-        workflowType.fields.transitions = new Field(workflowType, 'transitions', new MapType(workflowTransitionType))
+        workflowType.fields.transitions = new Field(workflowType, 'transitions', new MapType(workflowTransitionType), {
+          [CORE_ANNOTATIONS.CREATABLE]: true,
+          [CORE_ANNOTATIONS.UPDATABLE]: true,
+          [CORE_ANNOTATIONS.DELETABLE]: true,
+        })
         delete workflowTransitionType.fields.id
+        setTypeDeploymentAnnotations(workflowTransitionType)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.CREATABLE)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.UPDATABLE)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.DELETABLE)
       }
     }
 
     const workflowStatusType = findObject(elements, 'WorkflowStatus')
     if (workflowStatusType !== undefined) {
-      workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new MapType(BuiltinTypes.STRING))
+      workflowStatusType.fields.properties = new Field(
+        workflowStatusType,
+        'properties',
+        new MapType(BuiltinTypes.STRING),
+      )
       if (config.client.usePrivateAPI) {
         workflowStatusType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE] = true
       }
@@ -260,20 +197,40 @@ const filter: FilterCreator = ({ config }) => ({
 
     const workflowRulesType = findObject(elements, WORKFLOW_RULES_TYPE_NAME)
 
-    const conditionConfigurationTypes = createConditionConfigurationTypes()
+    const conditionConfigurationTypes = await createConditionConfigurationTypes()
 
     if (workflowRulesType !== undefined) {
-      workflowRulesType.fields.conditions = new Field(workflowRulesType, 'conditions', await workflowRulesType.fields.conditionsTree.getType())
+      workflowRulesType.fields.conditions = new Field(
+        workflowRulesType,
+        'conditions',
+        await workflowRulesType.fields.conditionsTree.getType(),
+      )
       delete workflowRulesType.fields.conditionsTree
 
-      workflowRulesType.fields.postFunctions = new Field(workflowRulesType, 'postFunctions', new ListType(postFunctionType))
+      workflowRulesType.fields.postFunctions = new Field(
+        workflowRulesType,
+        'postFunctions',
+        new ListType(postFunctionType),
+      )
       workflowRulesType.fields.validators = new Field(workflowRulesType, 'validators', new ListType(validatorType))
+      setTypeDeploymentAnnotations(workflowRulesType)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.CREATABLE)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.UPDATABLE)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.DELETABLE)
     }
 
     const worfkflowConditionType = findObject(elements, 'WorkflowCondition')
 
     if (worfkflowConditionType !== undefined) {
-      worfkflowConditionType.fields.configuration = new Field(worfkflowConditionType, 'configuration', conditionConfigurationTypes.type)
+      worfkflowConditionType.fields.configuration = new Field(
+        worfkflowConditionType,
+        'configuration',
+        conditionConfigurationTypes.type,
+        {
+          [CORE_ANNOTATIONS.CREATABLE]: true,
+          [CORE_ANNOTATIONS.UPDATABLE]: true,
+        },
+      )
     }
 
     elements.push(...postFunctionTypes)

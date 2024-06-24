@@ -1,26 +1,34 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  Element,
+  BuiltinTypes,
+  isInstanceElement,
+  ListType,
+} from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config'
 import { WORKATO } from '../../src/constants'
-
 
 describe('Field references filter', () => {
   let client: WorkatoClient
@@ -37,7 +45,7 @@ describe('Field references filter', () => {
         client,
         paginationFuncCreator: paginate,
       }),
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig(),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
   })
@@ -81,8 +89,7 @@ describe('Field references filter', () => {
     },
   })
 
-  const generateElements = (
-  ): Element[] => ([
+  const generateElements = (): Element[] => [
     apiClientType,
     new InstanceElement('cli123', apiClientType, { id: 123 }),
     apiCollectionType,
@@ -100,7 +107,7 @@ describe('Field references filter', () => {
     apiEndpointType,
     // eslint-disable-next-line camelcase
     new InstanceElement('ep1', apiEndpointType, { flow_id: 123 }),
-  ])
+  ]
 
   describe('on fetch', () => {
     let elements: Element[]
@@ -112,16 +119,18 @@ describe('Field references filter', () => {
 
     it('should resolve field values when referenced element exists', () => {
       const prof = elements.filter(
-        e => isInstanceElement(e) && e.refType.elemID.name === 'api_access_profile'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'api_access_profile',
       )[0] as InstanceElement
       expect(prof.value.api_client_id).toBeInstanceOf(ReferenceExpression)
       expect(prof.value.api_client_id?.elemID.getFullName()).toEqual('workato.api_client.instance.cli123')
       expect(prof.value.api_collection_ids).toHaveLength(1)
       expect(prof.value.api_collection_ids[0]).toBeInstanceOf(ReferenceExpression)
-      expect(prof.value.api_collection_ids[0].elemID.getFullName()).toEqual('workato.api_collection.instance.collection456')
+      expect(prof.value.api_collection_ids[0].elemID.getFullName()).toEqual(
+        'workato.api_collection.instance.collection456',
+      )
 
       const folders = elements.filter(
-        e => isInstanceElement(e) && e.refType.elemID.name === 'folder'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'folder',
       ) as InstanceElement[]
       expect(folders).toHaveLength(2)
       expect(folders[1].value.parent_id).toBeInstanceOf(ReferenceExpression)
@@ -130,7 +139,7 @@ describe('Field references filter', () => {
 
     it('should not resolve fields in unexpected types even if field name matches', () => {
       const collections = elements.filter(
-        e => isInstanceElement(e) && e.refType.elemID.name === 'api_collection'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'api_collection',
       ) as InstanceElement[]
       expect(collections).toHaveLength(2)
       expect(collections[1].value.api_client_id).not.toBeInstanceOf(ReferenceExpression)
@@ -139,7 +148,7 @@ describe('Field references filter', () => {
 
     it('should not resolve if referenced element does not exist', () => {
       const folders = elements.filter(
-        e => isInstanceElement(e) && e.refType.elemID.name === 'folder'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'folder',
       ) as InstanceElement[]
       expect(folders).toHaveLength(2)
       expect(folders[0].value.parent_id).not.toBeInstanceOf(ReferenceExpression)

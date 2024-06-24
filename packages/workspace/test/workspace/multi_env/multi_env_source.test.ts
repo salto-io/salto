@@ -1,33 +1,51 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import path from 'path'
-import { Element, ElemID, BuiltinTypes, ObjectType, DetailedChange, Change, getChangeData, StaticFile } from '@salto-io/adapter-api'
+import {
+  Element,
+  ElemID,
+  BuiltinTypes,
+  ObjectType,
+  DetailedChange,
+  Change,
+  getChangeData,
+  StaticFile,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import { createElementSelectors } from '../../../src/workspace/element_selector'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { multiEnvSource, ENVS_PREFIX, MultiEnvSource } from '../../../src/workspace/nacl_files/multi_env/multi_env_source'
+import {
+  multiEnvSource,
+  ENVS_PREFIX,
+  MultiEnvSource,
+} from '../../../src/workspace/nacl_files/multi_env/multi_env_source'
 import * as routers from '../../../src/workspace/nacl_files/multi_env/routers'
 import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems } from '../../common/helpers'
-import { InMemoryRemoteMap, RemoteMap, RemoteMapCreator, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
+import {
+  InMemoryRemoteMap,
+  RemoteMap,
+  RemoteMapCreator,
+  CreateRemoteMapParams,
+} from '../../../src/workspace/remote_map'
 import { createMockRemoteMap, mockStaticFilesSource } from '../../utils'
 import { MissingStaticFile } from '../../../src/workspace/static_files'
 import { NaclFilesSource, ChangeSet } from '../../../src/workspace/nacl_files'
@@ -85,13 +103,15 @@ const commonSourceRange = {
 const commonErrors = new Errors({
   validation: [] as ValidationError[],
   merge: [] as MergeError[],
-  parse: [{
-    severity: 'Error',
-    summary: 'common error',
-    subject: commonSourceRange,
-    message: 'common error',
-    context: commonSourceRange,
-  }],
+  parse: [
+    {
+      severity: 'Error',
+      summary: 'common error',
+      subject: commonSourceRange,
+      message: 'common error',
+      context: commonSourceRange,
+    },
+  ],
 })
 
 const envElemID = new ElemID('salto', 'env')
@@ -111,13 +131,15 @@ const envSourceRange = {
 const envErrors = new Errors({
   validation: [] as ValidationError[],
   merge: [] as MergeError[],
-  parse: [{
-    severity: 'Error',
-    summary: 'env error',
-    subject: envSourceRange,
-    message: 'env error',
-    context: envSourceRange,
-  }],
+  parse: [
+    {
+      severity: 'Error',
+      summary: 'env error',
+      subject: envSourceRange,
+      message: 'env error',
+      context: envSourceRange,
+    },
+  ],
 })
 const envNaclFiles = {
   'env.nacl': [envObject],
@@ -144,20 +166,17 @@ const inactiveSourceRange = {
 const inactiveErrors = new Errors({
   validation: [] as ValidationError[],
   merge: [] as MergeError[],
-  parse: [{
-    severity: 'Error',
-    summary: 'inactive error',
-    subject: inactiveSourceRange,
-    message: 'inactive error',
-    context: inactiveSourceRange,
-  }],
+  parse: [
+    {
+      severity: 'Error',
+      summary: 'inactive error',
+      subject: inactiveSourceRange,
+      message: 'inactive error',
+      context: inactiveSourceRange,
+    },
+  ],
 })
-const emptySource = createMockNaclFileSource(
-  [],
-  {},
-  commonErrors,
-  []
-)
+const emptySource = createMockNaclFileSource([], {}, commonErrors, [])
 const commonSrcStaticFileSource = mockStaticFilesSource()
 const commonSource = createMockNaclFileSource(
   [commonObject, commonFragment],
@@ -165,7 +184,7 @@ const commonSource = createMockNaclFileSource(
   commonErrors,
   [commonSourceRange],
   { changes: [], cacheValid: true },
-  commonSrcStaticFileSource
+  commonSrcStaticFileSource,
 )
 
 const envSrcStaticFileSource = mockStaticFilesSource()
@@ -175,14 +194,11 @@ const envSource = createMockNaclFileSource(
   envErrors,
   [envSourceRange],
   { changes: [], cacheValid: true },
-  envSrcStaticFileSource
+  envSrcStaticFileSource,
 )
-const inactiveSource = createMockNaclFileSource(
-  [inactiveObject, inactiveFragment],
-  inactiveNaclFiles,
-  inactiveErrors,
-  [inactiveSourceRange]
-)
+const inactiveSource = createMockNaclFileSource([inactiveObject, inactiveFragment], inactiveNaclFiles, inactiveErrors, [
+  inactiveSourceRange,
+])
 
 const activePrefix = 'active'
 const inactivePrefix = 'inactive'
@@ -192,12 +208,7 @@ const sources = {
   [activePrefix]: envSource,
   [inactivePrefix]: inactiveSource,
 }
-const source = multiEnvSource(
-  sources,
-  commonPrefix,
-  () => Promise.resolve(new InMemoryRemoteMap()),
-  true
-)
+const source = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), true)
 
 type MockRemoteMapCreator = {
   maps: Record<string, InMemoryRemoteMap<unknown>>
@@ -265,8 +276,8 @@ describe('multi env source', () => {
         it('should return merged addition changes for environment elements', () => {
           expect(loadResult[activePrefix].changes).toHaveLength(3)
           expect(loadResult[inactivePrefix].changes).toHaveLength(3)
-          const activeEnvObjChange = loadResult[activePrefix].changes.find(
-            change => getChangeData(change).elemID.isEqual(objectElemID)
+          const activeEnvObjChange = loadResult[activePrefix].changes.find(change =>
+            getChangeData(change).elemID.isEqual(objectElemID),
           ) as Change<ObjectType>
           expect(activeEnvObjChange).toBeDefined()
           expect(activeEnvObjChange?.action).toEqual('add')
@@ -274,8 +285,8 @@ describe('multi env source', () => {
           expect(getChangeData(activeEnvObjChange).fields).toHaveProperty('envField')
           expect(getChangeData(activeEnvObjChange).fields).toHaveProperty('commonField')
 
-          const inactiveEnvObjChange = loadResult[inactivePrefix].changes.find(
-            change => getChangeData(change).elemID.isEqual(objectElemID)
+          const inactiveEnvObjChange = loadResult[inactivePrefix].changes.find(change =>
+            getChangeData(change).elemID.isEqual(objectElemID),
           ) as Change<ObjectType>
           expect(inactiveEnvObjChange).toBeDefined()
           expect(inactiveEnvObjChange?.action).toEqual('add')
@@ -361,13 +372,11 @@ describe('multi env source', () => {
           expect(secondLoadResult[activePrefix].changes).toHaveLength(0)
         })
         it('should have the same pre change hash as the first load post change hash', () => {
-          expect(secondLoadResult[activePrefix].preChangeHash).toEqual(
-            firstLoadResult[activePrefix].postChangeHash
-          )
+          expect(secondLoadResult[activePrefix].preChangeHash).toEqual(firstLoadResult[activePrefix].postChangeHash)
         })
         it('should update the post change hash because the underlying hash changed', () => {
           expect(secondLoadResult[activePrefix].postChangeHash).not.toEqual(
-            secondLoadResult[activePrefix].preChangeHash
+            secondLoadResult[activePrefix].preChangeHash,
           )
         })
       })
@@ -419,9 +428,10 @@ describe('multi env source', () => {
       const commonSourceName = ''
       const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment])
       const primarySourceName = 'env1'
-      const mockPrimaryNaclFileSource = createMockNaclFileSource(
-        [envFragment, envObject], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject], {}, undefined, undefined, {
+        changes: [change],
+        cacheValid: true,
+      })
       const secondarySourceName = 'env2'
       const mockSecondaryNaclFileSource = createMockNaclFileSource([])
       const multiEnvSourceWithMockSources = multiEnvSource(
@@ -432,31 +442,30 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
       const detailedChange = { ...change, id: commonElemID, path: ['test'] } as DetailedChange
-      const elementChanges = (await multiEnvSourceWithMockSources
-        .updateNaclFiles(primarySourceName, [detailedChange]))
+      const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, [detailedChange])
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
-        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+        elemID: objectElemID,
+        fields: { ...commonFragment.fields, ...envFragment.fields },
       })
-      expect(sortElemArray(
-        await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
-      )).toEqual(sortElemArray([mergedSaltoObject, envObject, commonObject]))
+      expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray())).toEqual(
+        sortElemArray([mergedSaltoObject, envObject, commonObject]),
+      )
     })
     it('should change inner state upon update with removal', async () => {
       const change = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
       const commonSourceName = ''
-      const mockCommonNaclFileSource = createMockNaclFileSource(
-        [commonFragment], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment], {}, undefined, undefined, {
+        changes: [change],
+        cacheValid: true,
+      })
       const primarySourceName = 'env1'
       const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject])
       const multiEnvSourceWithMockSources = multiEnvSource(
@@ -466,16 +475,15 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
       const mergedSaltoObject = new ObjectType({
-        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+        elemID: objectElemID,
+        fields: { ...commonFragment.fields, ...envFragment.fields },
       })
       const detailedChange = {
         action: 'modify',
@@ -483,13 +491,12 @@ describe('multi env source', () => {
         path: ['bla'],
         id: objectElemID,
       } as DetailedChange
-      const elementChanges = (await multiEnvSourceWithMockSources
-        .updateNaclFiles(primarySourceName, [detailedChange]))
+      const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, [detailedChange])
       expect(Object.keys(elementChanges).length).toEqual(1)
       expect(elementChanges[primarySourceName].changes).toEqual([_.omit(detailedChange, ['path', 'id'])])
-      expect(sortElemArray(
-        await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
-      )).toEqual(sortElemArray([envObject, envFragment]))
+      expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray())).toEqual(
+        sortElemArray([envObject, envFragment]),
+      )
     })
     it('should change inner state upon update with modification with multiple changes', async () => {
       const newEnvFragment = new ObjectType({
@@ -504,19 +511,20 @@ describe('multi env source', () => {
       const removal = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
       const addition = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
       const envObjectRemoval = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
-      const modificaton = { action: 'modify', data: { before: envFragment, after: newEnvFragment } } as Change<ObjectType>
+      const modificaton = {
+        action: 'modify',
+        data: { before: envFragment, after: newEnvFragment },
+      } as Change<ObjectType>
       const commonSourceName = ''
-      const mockCommonNaclFileSource = createMockNaclFileSource(
-        [commonFragment], {}, undefined, undefined, { changes: [removal, addition],
-          cacheValid: true }
-      )
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment], {}, undefined, undefined, {
+        changes: [removal, addition],
+        cacheValid: true,
+      })
       const primarySourceName = 'env1'
-      const mockPrimaryNaclFileSource = createMockNaclFileSource(
-        [envFragment, envObject], {}, undefined, undefined, {
-          changes: [envObjectRemoval, modificaton],
-          cacheValid: true,
-        }
-      )
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject], {}, undefined, undefined, {
+        changes: [envObjectRemoval, modificaton],
+        cacheValid: true,
+      })
       const multiEnvSourceWithMockSources = multiEnvSource(
         {
           [commonSourceName]: mockCommonNaclFileSource,
@@ -524,13 +532,11 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
       const mergedSaltoObject = currentElements.find(e => e.elemID.isEqual(objectElemID))
       const detailedChanges = [
@@ -553,17 +559,11 @@ describe('multi env source', () => {
           id: commonElemID,
         },
       ] as DetailedChange[]
-      const elementChanges = (
-        await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, detailedChanges)
+      const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, detailedChanges)
+      const elements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
+      expect(_.sortBy(elementChanges[primarySourceName].changes, c => getChangeData(c).elemID.getFullName())).toEqual(
+        _.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName()).map(dc => _.omit(dc, ['path', 'id'])),
       )
-      const elements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
-      expect(
-        _.sortBy(elementChanges[primarySourceName]
-          .changes, c => getChangeData(c).elemID.getFullName())
-      ).toEqual(_.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName())
-        .map(dc => _.omit(dc, ['path', 'id'])))
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
     })
   })
@@ -577,9 +577,7 @@ describe('multi env source', () => {
   })
   describe('list', () => {
     it('should list elements from all active sources and not inactive sources', async () => {
-      const elements = await awu(
-        await (await source.getElementsSource(activePrefix)).list()
-      ).toArray()
+      const elements = await awu(await (await source.getElementsSource(activePrefix)).list()).toArray()
       expect(await awu(elements).toArray()).toHaveLength(3)
       await expectToContainAllItems(elements, [commonElemID, envElemID, objectElemID])
       expect(elements).not.toContain(inactiveElemID)
@@ -588,12 +586,7 @@ describe('multi env source', () => {
   describe('isEmpty', () => {
     it('should return true when there are no sources', async () => {
       const srcs = {}
-      const src = multiEnvSource(
-        srcs,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        true
-      )
+      const src = multiEnvSource(srcs, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), true)
       await src.load({})
       expect(await src.isEmpty(activePrefix)).toBeTruthy()
     })
@@ -603,12 +596,7 @@ describe('multi env source', () => {
         [activePrefix]: emptySource,
         [inactivePrefix]: inactiveSource,
       }
-      const src = multiEnvSource(
-        srcs,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        true
-      )
+      const src = multiEnvSource(srcs, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), true)
       await src.load({})
       expect(await src.isEmpty(activePrefix)).toBeFalsy()
     })
@@ -617,30 +605,18 @@ describe('multi env source', () => {
         [commonPrefix]: emptySource,
         [inactivePrefix]: inactiveSource,
       }
-      const src = multiEnvSource(
-        srcs,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        true
-      )
+      const src = multiEnvSource(srcs, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), true)
       await src.load({})
       expect(await src.isEmpty(activePrefix)).toBeTruthy()
     })
   })
   describe('get', () => {
     it('should return the merged element', async () => {
-      const elem = (await (
-        await source.getElementsSource(activePrefix)
-      ).get(objectElemID)) as ObjectType
-      expect(Object.keys(elem.fields).sort()).toEqual([
-        'commonField',
-        'envField',
-      ])
+      const elem = (await (await source.getElementsSource(activePrefix)).get(objectElemID)) as ObjectType
+      expect(Object.keys(elem.fields).sort()).toEqual(['commonField', 'envField'])
     })
     it('should not return the elements from inactive envs', async () => {
-      expect(
-        await (await source.getElementsSource(activePrefix)).get(inactiveElemID)
-      ).not.toBeDefined()
+      expect(await (await source.getElementsSource(activePrefix)).get(inactiveElemID)).not.toBeDefined()
     })
   })
   describe('getElementSource', () => {
@@ -658,20 +634,17 @@ describe('multi env source', () => {
       expect(elements).toHaveLength(3)
       await expectToContainAllItems(
         awu(elements).map(e => e.elemID),
-        [commonElemID, envElemID, objectElemID]
+        [commonElemID, envElemID, objectElemID],
       )
       expect(elements).not.toContain(inactiveObject)
       const obj = elements.find(e => _.isEqual(e.elemID, objectElemID)) as ObjectType
-      expect(Object.keys(obj.fields).sort()).toEqual([
-        'commonField',
-        'envField',
-      ])
+      expect(Object.keys(obj.fields).sort()).toEqual(['commonField', 'envField'])
     })
     it('should return all elements for not the primary env', async () => {
       const elements = await source.getAll('inactive')
       await expectToContainAllItems(
         awu(elements).map(e => e.elemID),
-        [commonElemID, inactiveElemID, objectElemID]
+        [commonElemID, inactiveElemID, objectElemID],
       )
       expect(elements).not.toContain(envObject)
     })
@@ -713,9 +686,10 @@ describe('multi env source', () => {
     it('should change inner state upon set with addition', async () => {
       const change = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
       const commonSourceName = ''
-      const mockCommonNaclFileSource = createMockNaclFileSource(
-        [commonFragment], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment], {}, undefined, undefined, {
+        changes: [change],
+        cacheValid: true,
+      })
       const primarySourceName = 'env1'
       const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject])
       const multiEnvSourceWithMockSources = multiEnvSource(
@@ -725,33 +699,33 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
-      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
-        [{ filename: 'test', buffer: 'test' }]
-      ))[primarySourceName].changes
+      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles([{ filename: 'test', buffer: 'test' }]))[
+        primarySourceName
+      ].changes
       expect(elementChanges).toEqual([change])
       const mergedSaltoObject = new ObjectType({
-        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+        elemID: objectElemID,
+        fields: { ...commonFragment.fields, ...envFragment.fields },
       })
-      expect(sortElemArray(await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray())).toEqual(sortElemArray([mergedSaltoObject, envObject, commonObject]))
+      expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray())).toEqual(
+        sortElemArray([mergedSaltoObject, envObject, commonObject]),
+      )
     })
     it('should change inner state upon set with removal', async () => {
       const change = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
       const commonSourceName = ''
       const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment])
       const primarySourceName = 'env1'
-      const mockPrimaryNaclFileSource = createMockNaclFileSource(
-        [envFragment, envObject], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject], {}, undefined, undefined, {
+        changes: [change],
+        cacheValid: true,
+      })
       const multiEnvSourceWithMockSources = multiEnvSource(
         {
           [commonSourceName]: mockCommonNaclFileSource,
@@ -759,23 +733,23 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
-      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
-        [{ filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }]
-      ))
+      const elementChanges = await multiEnvSourceWithMockSources.setNaclFiles([
+        { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' },
+      ])
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
-        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+        elemID: objectElemID,
+        fields: { ...commonFragment.fields, ...envFragment.fields },
       })
-      expect(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName))
-        .toArray()).toEqual([mergedSaltoObject])
+      expect(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()).toEqual([
+        mergedSaltoObject,
+      ])
     })
     it('should change inner state upon set with modification', async () => {
       const newEnvObject = new ObjectType({
@@ -794,9 +768,10 @@ describe('multi env source', () => {
       const commonSourceName = ''
       const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment])
       const primarySourceName = 'env1'
-      const mockPrimaryNaclFileSource = createMockNaclFileSource(
-        [envFragment, envObject], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject], {}, undefined, undefined, {
+        changes: [change],
+        cacheValid: true,
+      })
       const multiEnvSourceWithMockSources = multiEnvSource(
         {
           [commonSourceName]: mockCommonNaclFileSource,
@@ -804,36 +779,37 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
-      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
-        [{ filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }]
-      ))
+      const elementChanges = await multiEnvSourceWithMockSources.setNaclFiles([
+        { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' },
+      ])
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
-        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+        elemID: objectElemID,
+        fields: { ...commonFragment.fields, ...envFragment.fields },
       })
-      expect(sortElemArray(await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray())).toEqual(sortElemArray([mergedSaltoObject, newEnvObject]))
+      expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray())).toEqual(
+        sortElemArray([mergedSaltoObject, newEnvObject]),
+      )
     })
     it('should not change inner state upon set that ends up with the same state', async () => {
       const removal = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
       const addition = { action: 'add', data: { after: envObject } } as Change<ObjectType>
       const commonSourceName = ''
-      const mockCommonNaclFileSource = createMockNaclFileSource(
-        [commonFragment], {}, undefined, undefined, { changes: [addition], cacheValid: true }
-      )
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment], {}, undefined, undefined, {
+        changes: [addition],
+        cacheValid: true,
+      })
       const primarySourceName = 'env1'
-      const mockPrimaryNaclFileSource = createMockNaclFileSource(
-        [envFragment, envObject], {}, undefined, undefined, { changes: [removal], cacheValid: true }
-      )
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject], {}, undefined, undefined, {
+        changes: [removal],
+        cacheValid: true,
+      })
       const multiEnvSourceWithMockSources = multiEnvSource(
         {
           [commonSourceName]: mockCommonNaclFileSource,
@@ -841,22 +817,20 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
-      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles([
+      const elementChanges = await multiEnvSourceWithMockSources.setNaclFiles([
         { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' },
         { filename: 'test', buffer: 'test' },
-      ]))
+      ])
       expect(elementChanges[primarySourceName].changes).toEqual([])
-      expect(sortElemArray(await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray())).toEqual(sortElemArray(currentElements))
+      expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray())).toEqual(
+        sortElemArray(currentElements),
+      )
     })
   })
   describe('removeNaclFiles', () => {
@@ -873,9 +847,10 @@ describe('multi env source', () => {
     it('should change inner state upon remove of a file', async () => {
       const change = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
       const commonSourceName = ''
-      const mockCommonNaclFileSource = createMockNaclFileSource(
-        [commonFragment], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment], {}, undefined, undefined, {
+        changes: [change],
+        cacheValid: true,
+      })
       const primarySourceName = 'env1'
       const mockPrimaryNaclFileSource = createMockNaclFileSource([envObject])
       const multiEnvSourceWithMockSources = multiEnvSource(
@@ -885,32 +860,29 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
-      const elementChanges = (await multiEnvSourceWithMockSources
-        .removeNaclFiles(['test.nacl']))
+      const elementChanges = await multiEnvSourceWithMockSources.removeNaclFiles(['test.nacl'])
       expect(elementChanges[primarySourceName].changes).toEqual([change])
-      expect(await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()).toEqual([envObject])
+      expect(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()).toEqual([envObject])
     })
     it('should change inner state upon remove of multiple files', async () => {
       const removalCommon = { action: 'remove', data: { before: commonObject } } as Change<ObjectType>
       const removalPrimary = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
       const commonSourceName = ''
-      const mockCommonNaclFileSource = createMockNaclFileSource(
-        [commonObject], {}, undefined, undefined, { changes: [removalCommon], cacheValid: true }
-      )
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonObject], {}, undefined, undefined, {
+        changes: [removalCommon],
+        cacheValid: true,
+      })
       const primarySourceName = 'env1'
-      const mockPrimaryNaclFileSource = createMockNaclFileSource(
-        [envObject], {}, undefined, undefined, { changes: [removalPrimary], cacheValid: true }
-      )
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envObject], {}, undefined, undefined, {
+        changes: [removalPrimary],
+        cacheValid: true,
+      })
       const multiEnvSourceWithMockSources = multiEnvSource(
         {
           [commonSourceName]: mockCommonNaclFileSource,
@@ -918,21 +890,18 @@ describe('multi env source', () => {
         },
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
+      const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
-      const elementChanges = (await multiEnvSourceWithMockSources.removeNaclFiles(
-        ['test.nacl', path.join(ENVS_PREFIX, primarySourceName, 'env.nacl')]
-      ))
+      const elementChanges = await multiEnvSourceWithMockSources.removeNaclFiles([
+        'test.nacl',
+        path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'),
+      ])
       expect(elementChanges[primarySourceName].changes).toEqual([removalPrimary, removalCommon])
-      expect(await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()).toEqual([])
+      expect(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()).toEqual([])
     })
   })
   describe('getSourceMap', () => {
@@ -989,29 +958,30 @@ describe('multi env source', () => {
   describe('copyTo', () => {
     it('should route a copy to the proper env sources when specified', async () => {
       const selectors = createElementSelectors(['salto.*']).validSelectors
-      jest.spyOn(routers, 'routeCopyTo').mockImplementationOnce(
-        () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
+      jest
+        .spyOn(routers, 'routeCopyTo')
+        .mockImplementationOnce(() => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} }))
+      await source.copyTo(
+        activePrefix,
+        await awu(await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex)).toArray(),
+        ['inactive'],
       )
-      await source.copyTo(activePrefix, await awu(await source
-        .getElementIdsBySelectors(activePrefix, selectors, referencedByIndex)).toArray(), ['inactive'])
-      expect(routers.routeCopyTo).toHaveBeenCalledWith(
-        [envElemID, objectElemID], envSource, { inactive: inactiveSource }
-      )
+      expect(routers.routeCopyTo).toHaveBeenCalledWith([envElemID, objectElemID], envSource, {
+        inactive: inactiveSource,
+      })
     })
     it('should route a copy to all env sources when not specified', async () => {
       const selectors = createElementSelectors(['salto.*']).validSelectors
-      jest.spyOn(routers, 'routeCopyTo').mockImplementationOnce(
-        () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
-      )
+      jest
+        .spyOn(routers, 'routeCopyTo')
+        .mockImplementationOnce(() => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} }))
       await source.copyTo(
         activePrefix,
-        await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex)
-        ).toArray()
+        await awu(await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex)).toArray(),
       )
-      expect(routers.routeCopyTo).toHaveBeenCalledWith(
-        [envElemID, objectElemID], envSource, { inactive: inactiveSource }
-      )
+      expect(routers.routeCopyTo).toHaveBeenCalledWith([envElemID, objectElemID], envSource, {
+        inactive: inactiveSource,
+      })
     })
   })
   describe('sync', () => {
@@ -1021,14 +991,14 @@ describe('multi env source', () => {
       await source.sync(
         activePrefix,
         [],
-        { inactive: await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex)
-        ).toArray() },
+        {
+          inactive: await awu(
+            await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex),
+          ).toArray(),
+        },
         ['inactive'],
       )
-      expect(routers.routeRemoveFrom).toHaveBeenCalledWith(
-        [envElemID, objectElemID], inactiveSource, 'inactive',
-      )
+      expect(routers.routeRemoveFrom).toHaveBeenCalledWith([envElemID, objectElemID], inactiveSource, 'inactive')
     })
   })
   describe('getElementIdsBySelectors', () => {
@@ -1036,145 +1006,146 @@ describe('multi env source', () => {
       it('should extract the proper ids with overlaps when compact=false', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
         const res = await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex)
+          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex),
         ).toArray()
-        expect(res.map(id => id.getFullName()).sort()).toEqual([
-          envElemID,
-          envElemID.createNestedID('field', 'field'),
-          objectElemID,
-          objectElemID.createNestedID('field', 'envField'),
-        ].map(id => id.getFullName()))
+        expect(res.map(id => id.getFullName()).sort()).toEqual(
+          [
+            envElemID,
+            envElemID.createNestedID('field', 'field'),
+            objectElemID,
+            objectElemID.createNestedID('field', 'envField'),
+          ].map(id => id.getFullName()),
+        )
       })
       it('should extract the proper ids without overlaps when compact=true', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
         const res = await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'env', true)
+          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'env', true),
         ).toArray()
-        expect(res.map(id => id.getFullName()).sort()).toEqual([
-          envElemID,
-          objectElemID,
-        ].map(id => id.getFullName()))
+        expect(res.map(id => id.getFullName()).sort()).toEqual([envElemID, objectElemID].map(id => id.getFullName()))
       })
 
       it('should extract the proper ids from a specific env when passed', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-        const res = await awu(await source.getElementIdsBySelectors(inactivePrefix, selectors, referencedByIndex, 'env')).toArray()
-        expect(res.map(id => id.getFullName()).sort()).toEqual([
-          inactiveElemID,
-          inactiveElemID.createNestedID('field', 'field'),
-          objectElemID,
-          objectElemID.createNestedID('field', 'inactiveField'),
-        ].map(id => id.getFullName()))
+        const res = await awu(
+          await source.getElementIdsBySelectors(inactivePrefix, selectors, referencedByIndex, 'env'),
+        ).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual(
+          [
+            inactiveElemID,
+            inactiveElemID.createNestedID('field', 'field'),
+            objectElemID,
+            objectElemID.createNestedID('field', 'inactiveField'),
+          ].map(id => id.getFullName()),
+        )
       })
     })
     describe('from=common should select only common elements', () => {
       it('should extract the proper ids with overlaps when compact=false', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-        const res = await awu(await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'common')).toArray()
-        expect(res.map(id => id.getFullName()).sort()).toEqual([
-          commonObject.elemID,
-          commonObject.elemID.createNestedID('field', 'field'),
-          objectElemID,
-          objectElemID.createNestedID('field', 'commonField'),
-        ].map(id => id.getFullName()))
+        const res = await awu(
+          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'common'),
+        ).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual(
+          [
+            commonObject.elemID,
+            commonObject.elemID.createNestedID('field', 'field'),
+            objectElemID,
+            objectElemID.createNestedID('field', 'commonField'),
+          ].map(id => id.getFullName()),
+        )
       })
       it('should extract the proper ids without overlaps when compact=true', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
         const res = await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'common', true)
+          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'common', true),
         ).toArray()
-        expect(res.map(id => id.getFullName()).sort()).toEqual([
-          commonObject.elemID,
-          objectElemID,
-        ].map(id => id.getFullName()))
+        expect(res.map(id => id.getFullName()).sort()).toEqual(
+          [commonObject.elemID, objectElemID].map(id => id.getFullName()),
+        )
       })
     })
     describe('from=both should select both env and common elements', () => {
       it('should extract the proper ids with overlaps when compact=false', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-        const res = await awu(await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'all')).toArray()
-        expect(res.map(id => id.getFullName()).sort()).toEqual([
-          commonObject.elemID,
-          commonObject.elemID.createNestedID('field', 'field'),
-          envElemID,
-          envElemID.createNestedID('field', 'field'),
-          objectElemID,
-          objectElemID.createNestedID('field', 'commonField'),
-          objectElemID.createNestedID('field', 'envField'),
-        ].map(id => id.getFullName()))
+        const res = await awu(
+          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'all'),
+        ).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual(
+          [
+            commonObject.elemID,
+            commonObject.elemID.createNestedID('field', 'field'),
+            envElemID,
+            envElemID.createNestedID('field', 'field'),
+            objectElemID,
+            objectElemID.createNestedID('field', 'commonField'),
+            objectElemID.createNestedID('field', 'envField'),
+          ].map(id => id.getFullName()),
+        )
       })
       it('should extract the proper ids without overlaps when compact=true', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
         const res = await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'all', true)
+          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'all', true),
         ).toArray()
-        expect(res.map(id => id.getFullName()).sort()).toEqual([
-          commonObject.elemID,
-          envElemID,
-          objectElemID,
-        ].map(id => id.getFullName()))
+        expect(res.map(id => id.getFullName()).sort()).toEqual(
+          [commonObject.elemID, envElemID, objectElemID].map(id => id.getFullName()),
+        )
       })
     })
   })
   describe('promote', () => {
     it('should route promote the proper ids', async () => {
       const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-      jest.spyOn(routers, 'routePromote').mockImplementationOnce(
-        () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
-      )
+      jest
+        .spyOn(routers, 'routePromote')
+        .mockImplementationOnce(() => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} }))
       await source.promote(
         activePrefix,
-        await awu(await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'env', true)).toArray()
+        await awu(
+          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'env', true),
+        ).toArray(),
       )
-      expect(routers.routePromote).toHaveBeenCalledWith(
-        [envElemID, objectElemID], 'active', commonSource, {
-          active: envSource,
-          inactive: inactiveSource,
-        }
-      )
+      expect(routers.routePromote).toHaveBeenCalledWith([envElemID, objectElemID], 'active', commonSource, {
+        active: envSource,
+        inactive: inactiveSource,
+      })
     })
   })
   describe('demote', () => {
     it('should route demote the proper ids', async () => {
       const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-      jest.spyOn(routers, 'routeDemote').mockImplementationOnce(
-        () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
+      jest
+        .spyOn(routers, 'routeDemote')
+        .mockImplementationOnce(() => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} }))
+      await source.demote(
+        await awu(
+          await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'common', true),
+        ).toArray(),
       )
-      await source.demote(await awu(
-        await source.getElementIdsBySelectors(activePrefix, selectors, referencedByIndex, 'common', true)
-      ).toArray())
-      expect(routers.routeDemote).toHaveBeenCalledWith(
-        [commonObject.elemID, objectElemID], commonSource, {
-          active: envSource,
-          inactive: inactiveSource,
-        }
-      )
+      expect(routers.routeDemote).toHaveBeenCalledWith([commonObject.elemID, objectElemID], commonSource, {
+        active: envSource,
+        inactive: inactiveSource,
+      })
     })
   })
   describe('demoteAll', () => {
     it('should route demote all the proper ids', async () => {
       jest.spyOn(commonSource, 'list').mockImplementationOnce(() => Promise.resolve(awu([envElemID, objectElemID])))
-      jest.spyOn(routers, 'routeDemote').mockImplementationOnce(
-        () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
-      )
+      jest
+        .spyOn(routers, 'routeDemote')
+        .mockImplementationOnce(() => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} }))
       await source.demoteAll()
-      expect(routers.routeDemote).toHaveBeenCalledWith(
-        [envElemID, objectElemID], commonSource, {
-          active: envSource,
-          inactive: inactiveSource,
-        }
-      )
+      expect(routers.routeDemote).toHaveBeenCalledWith([envElemID, objectElemID], commonSource, {
+        active: envSource,
+        inactive: inactiveSource,
+      })
     })
   })
 
   describe('non persistent multiEnvSource', () => {
     it('should not allow flush when the ws is non-persistent', async () => {
-      const nonPSource = multiEnvSource(
-        sources,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        false
-      )
+      const nonPSource = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
       await expect(() => nonPSource.flush()).rejects.toThrow()
     })
   })
@@ -1189,52 +1160,32 @@ describe('multi env source', () => {
     it('should return the file it is present in the common source and the hashes match', async () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
-      const src = multiEnvSource(
-        sources,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        false
-      )
-      expect(await src.getStaticFile(
-        staticFile.filepath, staticFile.encoding, activePrefix
-      )).toEqual(staticFile)
+      const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      expect(
+        await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
+      ).toEqual(staticFile)
     })
     it('should return the file it is present in the env source and the hashes match', async () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
-      const src = multiEnvSource(
-        sources,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        false
-      )
-      expect(await src.getStaticFile(
-        staticFile.filepath, staticFile.encoding, activePrefix
-      )).toEqual(staticFile)
+      const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      expect(
+        await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
+      ).toEqual(staticFile)
     })
     it('should return missingStaticFile if the file is not present in any of the sources', async () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
-      const src = multiEnvSource(
-        sources,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        false
-      )
-      expect(await src.getStaticFile(
-        staticFile.filepath, staticFile.encoding, activePrefix
-      )).toEqual(new MissingStaticFile(staticFile.filepath))
+      const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      expect(
+        await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
+      ).toEqual(new MissingStaticFile(staticFile.filepath))
     })
   })
 
   describe('clear', () => {
     it('should clear the envSource', async () => {
-      const src = multiEnvSource(
-        sources,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        false
-      )
+      const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
       await src.clear()
       const postClearElements = await awu(await src.getAll('active')).toArray()
       expect(postClearElements).toEqual([])
@@ -1242,12 +1193,7 @@ describe('multi env source', () => {
   })
 
   describe('getFileEnvs', () => {
-    const src = multiEnvSource(
-      sources,
-      commonPrefix,
-      () => Promise.resolve(new InMemoryRemoteMap()),
-      false
-    )
+    const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
 
     it('should return a single env when the file is included in the env source', () => {
       expect(src.getFileEnvs('envs/active/env.nacl')).toEqual([{ envName: 'active' }])
@@ -1286,7 +1232,7 @@ describe('multi env source', () => {
         commonErrors,
         [commonSourceRange],
         { changes: [], cacheValid: true },
-        commonSrcStaticFileSource
+        commonSrcStaticFileSource,
       )
       const src = multiEnvSource(
         {
@@ -1295,7 +1241,7 @@ describe('multi env source', () => {
         },
         commonPrefix,
         () => Promise.resolve(new InMemoryRemoteMap()),
-        true
+        true,
       )
       const res = await src.getElementFileNames(activePrefix)
       expect(Array.from(res.entries())).toEqual([

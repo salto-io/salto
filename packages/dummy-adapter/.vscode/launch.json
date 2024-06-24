@@ -1,20 +1,15 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "dummy-adapter Debug Jest Tests",
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "${workspaceRoot}/node_modules/.bin/jest",
-                "--runInBand",
-                "--config",
-                "${workspaceRoot}/jest.config.js"
-            ],
-            "outFiles": [],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "dummy-adapter Debug Jest Tests",
+      "cwd": "${workspaceFolder}",
+      "args": ["${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--config", "${workspaceRoot}/jest.config.js"],
+      "outFiles": [],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
 }

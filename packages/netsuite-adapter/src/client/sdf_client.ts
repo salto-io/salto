@@ -1,25 +1,36 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  collections,
+  decorators,
+  objects as lowerdashObjects,
+  promises,
+  values as valuesUtils,
+} from '@salto-io/lowerdash'
 import { Values, AccountInfo } from '@salto-io/adapter-api'
 import { mkdirp, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
-  CommandsMetadataService, CommandActionExecutor, CLIConfigurationService, NodeConsoleLogger,
-  ActionResult, ActionResultUtils, SdkProperties,
+  CommandsMetadataService,
+  CommandActionExecutor,
+  CLIConfigurationService,
+  NodeConsoleLogger,
+  ActionResult,
+  ActionResultUtils,
+  SdkProperties,
 } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
 import osPath from 'path'
@@ -33,30 +44,86 @@ import {
   CONFIG_FEATURES,
   APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
+  CUSTOM_SEGMENT,
+  CUSTOM_RECORD_TYPE,
 } from '../constants'
+import { addCustomRecordTypePrefix } from '../types'
 import {
-  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
-  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, ClientConfig, InstanceLimiterFunc,
-} from '../config'
-import { NetsuiteFetchQueries, NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError, getFailedObjectsMap, getFailedObjects } from './errors'
+  DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
+  DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
+  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
+  DEFAULT_CONCURRENCY,
+} from '../config/constants'
+import { ClientConfig, InstanceLimiterFunc, NetsuiteTypesQueryParams, ObjectID } from '../config/types'
+import { NetsuiteFetchQueries, NetsuiteQuery } from '../config/query'
+import {
+  FeaturesDeployError,
+  ManifestValidationError,
+  ObjectsDeployError,
+  SettingsDeployError,
+  MissingManifestFeaturesError,
+  getFailedObjectsMap,
+  getFailedObjects,
+} from './errors'
 import { SdfCredentials } from './credentials'
 import {
-  CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
-  FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
-  ManifestDependencies, SdfDeployParams, SDFObjectNode,
+  CustomizationInfo,
+  CustomTypeInfo,
+  FailedImport,
+  FailedTypes,
+  FileCustomizationInfo,
+  FolderCustomizationInfo,
+  GetCustomObjectsResult,
+  ImportFileCabinetResult,
+  ImportObjectsResult,
+  ManifestDependencies,
+  SdfDeployParams,
+  SDFObjectNode,
 } from './types'
 import { fileCabinetTopLevelFolders } from './constants'
 import {
-  isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
-  mergeTypeToInstances, getGroupItemFromRegex, toError, sliceMessagesByRegex,
+  isCustomTypeInfo,
+  isFileCustomizationInfo,
+  isFolderCustomizationInfo,
+  isTemplateCustomTypeInfo,
+  mergeTypeToInstances,
+  getGroupItemFromRegex,
+  toError,
+  sliceMessagesByRegex,
 } from './utils'
 import { fixManifest } from './manifest_utils'
-import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
+import {
+  detectLanguage,
+  FEATURE_NAME,
+  fetchLockedObjectErrorRegex,
+  fetchUnexpectedErrorRegex,
+  multiLanguageErrorDetectors,
+  OBJECT_ID,
+} from './language_utils'
 import { Graph } from './graph_utils'
 import { FileSize, filterFilesInFolders, largeFoldersToExclude } from './file_cabinet_utils'
 import { reorderDeployXml } from './deploy_xml_utils'
-import { OBJECTS_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, getCustomTypeInfoPath, getFileCabinetCustomInfoPath, getFileCabinetDirPath, getSrcDirPath, getDeployFilePath, getManifestFilePath, getFeaturesXmlPath, FEATURES_XML } from './sdf_parser'
+import {
+  OBJECTS_DIR,
+  ADDITIONAL_FILE_PATTERN,
+  ATTRIBUTES_FILE_SUFFIX,
+  ATTRIBUTES_FOLDER_NAME,
+  FOLDER_ATTRIBUTES_FILE_SUFFIX,
+  READ_CONCURRENCY,
+  convertToXmlContent,
+  parseFeaturesXml,
+  parseFileCabinetDir,
+  parseObjectsDir,
+  convertToFeaturesXmlContent,
+  getCustomTypeInfoPath,
+  getFileCabinetCustomInfoPath,
+  getFileCabinetDirPath,
+  getSrcDirPath,
+  getDeployFilePath,
+  getManifestFilePath,
+  getFeaturesXmlPath,
+  FEATURES_XML,
+} from './sdf_parser'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -108,8 +175,7 @@ export const safeQuoteArgument = (argument: unknown): unknown => {
   return argument
 }
 
-const writeFileInFolder = async (folderPath: string, filename: string, content: string | Buffer):
-  Promise<void> => {
+const writeFileInFolder = async (folderPath: string, filename: string, content: string | Buffer): Promise<void> => {
   await mkdirp(folderPath)
   await writeFile(osPath.resolve(folderPath, filename), content)
 }
@@ -142,23 +208,17 @@ export default class SdfClient {
   private deployXmlContent: string
   private readonly instanceLimiter: InstanceLimiterFunc
 
-  constructor({
-    credentials,
-    config,
-    globalLimiter,
-    instanceLimiter,
-  }: SdfClientOpts) {
+  constructor({ credentials, config, globalLimiter, instanceLimiter }: SdfClientOpts) {
     this.globalLimiter = globalLimiter
     this.credentials = credentials
     this.fetchAllTypesAtOnce = config?.fetchAllTypesAtOnce ?? DEFAULT_FETCH_ALL_TYPES_AT_ONCE
-    this.maxItemsInImportObjectsRequest = config?.maxItemsInImportObjectsRequest
-      ?? DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST
+    this.maxItemsInImportObjectsRequest =
+      config?.maxItemsInImportObjectsRequest ?? DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST
     this.sdfConcurrencyLimit = config?.sdfConcurrencyLimit ?? DEFAULT_CONCURRENCY
     this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: this.sdfConcurrencyLimit })
     this.setupAccountLock = new AsyncLock()
     this.baseCommandExecutor = SdfClient.initCommandActionExecutor(baseExecutionPath)
-    const commandTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes
-      ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
+    const commandTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
     this.installedSuiteApps = config?.installedSuiteApps ?? []
     this.manifestXmlContent = ''
@@ -193,16 +253,14 @@ export default class SdfClient {
   }
 
   private static logDecorator = decorators.wrapMethodWith(
-    async (
-      { call }: decorators.OriginalCall,
-    ): Promise<unknown> => {
+    async ({ call }: decorators.OriginalCall): Promise<unknown> => {
       try {
         // eslint-disable-next-line @typescript-eslint/return-await
         return await call()
       } catch (e) {
         throw toError(e)
       }
-    }
+    },
   )
 
   private async createProject(projectName: string, suiteAppId: string | undefined): Promise<void> {
@@ -262,22 +320,18 @@ export default class SdfClient {
       .map(groups => groups[FEATURE_NAME])
 
     const errorMessage = dataLines
-      .filter(line => errorIds.some(id => (new RegExp(`\\b${id}\\b`)).test(line)))
+      .filter(line => errorIds.some(id => new RegExp(`\\b${id}\\b`).test(line)))
       .join(os.EOL)
 
     throw new FeaturesDeployError(errorMessage, errorIds)
   }
 
-  private static verifySuccessfulAction(actionResult: ActionResult, commandName: string):
-    void {
+  private static verifySuccessfulAction(actionResult: ActionResult, commandName: string): void {
     if (!actionResult.isSuccess()) {
       log.error(`SDF command ${commandName} has failed.`)
       throw Error(ActionResultUtils.getErrorMessagesString(actionResult))
     }
-    if ([
-      COMMANDS.DEPLOY_PROJECT,
-      COMMANDS.VALIDATE_PROJECT,
-    ].includes(commandName)) {
+    if ([COMMANDS.DEPLOY_PROJECT, COMMANDS.VALIDATE_PROJECT].includes(commandName)) {
       SdfClient.verifySuccessfulDeploy(actionResult.data)
     }
   }
@@ -287,13 +341,14 @@ export default class SdfClient {
     commandArguments: Values,
     projectCommandActionExecutor: CommandActionExecutor,
   ): Promise<ActionResult> {
-    const actionResult = await this.globalLimiter.schedule(
-      () => this.sdfCallsLimiter.schedule(() =>
+    const actionResult = await this.sdfCallsLimiter.schedule(() =>
+      this.globalLimiter.schedule(() =>
         projectCommandActionExecutor.executeAction({
           commandName,
           runInInteractiveMode: false,
           arguments: commandArguments,
-        }))
+        }),
+      ),
     )
     SdfClient.verifySuccessfulAction(actionResult, commandName)
     return actionResult
@@ -301,14 +356,11 @@ export default class SdfClient {
 
   // The SDF Java SDK has a race when accessing the authIds file concurrently that causes it to
   // override credentials so we have to make sure we never call auth related operations concurrently
-  private async withAuthIdsLock(fn: (() => Promise<void>)): Promise<void> {
+  private async withAuthIdsLock(fn: () => Promise<void>): Promise<void> {
     await this.setupAccountLock.acquire('authIdManipulation', fn)
   }
 
-  protected async setupAccount(
-    projectCommandActionExecutor: CommandActionExecutor,
-    authId: string
-  ): Promise<void> {
+  protected async setupAccount(projectCommandActionExecutor: CommandActionExecutor, authId: string): Promise<void> {
     const setupCommandArguments = {
       authid: authId,
       account: this.credentials.accountId,
@@ -319,19 +371,11 @@ export default class SdfClient {
     await this.withAuthIdsLock(async () => {
       log.debug(`Setting up account using authId: ${authId}`)
       try {
-        await this.executeProjectAction(
-          COMMANDS.SAVE_TOKEN,
-          safeArguments,
-          projectCommandActionExecutor
-        )
+        await this.executeProjectAction(COMMANDS.SAVE_TOKEN, safeArguments, projectCommandActionExecutor)
       } catch (e) {
         log.warn(`Failed to setup account using authId: ${authId}`, e)
         log.debug(`Retrying to setup account using authId: ${authId}`)
-        await this.executeProjectAction(
-          COMMANDS.SAVE_TOKEN,
-          setupCommandArguments,
-          projectCommandActionExecutor
-        )
+        await this.executeProjectAction(COMMANDS.SAVE_TOKEN, setupCommandArguments, projectCommandActionExecutor)
       }
     })
   }
@@ -341,8 +385,7 @@ export default class SdfClient {
     const projectName = `sdf-${authId}`
     await this.createProject(projectName, suiteAppId)
     const projectPath = osPath.resolve(baseExecutionPath, projectName)
-    const executor = SdfClient
-      .initCommandActionExecutor(projectPath)
+    const executor = SdfClient.initCommandActionExecutor(projectPath)
     await this.setupAccount(executor, authId)
     return { projectPath, executor, authId, type: suiteAppId !== undefined ? 'SuiteApp' : 'AccountCustomization' }
   }
@@ -366,18 +409,11 @@ export default class SdfClient {
   }
 
   private async projectCleanup(projectPath: string, authId: string): Promise<void> {
-    await Promise.all([
-      SdfClient.deleteProject(projectPath),
-      this.deleteAuthId(authId),
-    ])
+    await Promise.all([SdfClient.deleteProject(projectPath), this.deleteAuthId(authId)])
   }
 
   @SdfClient.logDecorator
-  async getCustomObjects(
-    typeNames: string[],
-    queries: NetsuiteFetchQueries,
-  ):
-    Promise<GetCustomObjectsResult> {
+  async getCustomObjects(typeNames: string[], queries: NetsuiteFetchQueries): Promise<GetCustomObjectsResult> {
     // in case of partial fetch we'd need to proceed in order to calculate deleted elements
     if (typeNames.concat(CONFIG_FEATURES).every(type => !queries.originFetchQuery.isTypeMatch(type))) {
       return {
@@ -390,64 +426,63 @@ export default class SdfClient {
 
     log.debug(`Running getCustomObjects with the following suiteApps ids: ${this.installedSuiteApps.join(', ')}`)
     const importResult = await Promise.all(
-      [undefined, ...this.installedSuiteApps]
-        .map(async suiteAppId => {
-          const { executor, projectPath, authId } = await this.initProject()
-          const instancesIds = await this.listInstances(
-            executor,
-            typeNames.filter(queries.originFetchQuery.isTypeMatch),
-            suiteAppId,
-          )
-          const { failedTypes, failedToFetchAllAtOnce } = await this.importObjects(
-            executor,
-            suiteAppId,
-            instancesIds.filter(queries.updatedFetchQuery.isObjectMatch),
-          )
-          const elements = await parseObjectsDir(projectPath)
+      [undefined, ...this.installedSuiteApps].map(async suiteAppId => {
+        const { executor, projectPath, authId } = await this.initProject()
+        const instancesIds = await this.listInstances(
+          executor,
+          typeNames.filter(queries.originFetchQuery.isTypeMatch),
+          suiteAppId,
+        )
+        const { failedTypes, failedToFetchAllAtOnce } = await this.importObjects(
+          executor,
+          suiteAppId,
+          instancesIds.filter(queries.updatedFetchQuery.isObjectMatch),
+        )
+        const elements = await parseObjectsDir(projectPath)
 
-          if (suiteAppId !== undefined) {
-            elements.forEach(e => { e.values[APPLICATION_ID] = suiteAppId })
-          }
-          if (suiteAppId === undefined && queries.updatedFetchQuery.isTypeMatch(CONFIG_FEATURES)) {
-            // use existing project to import features object
-            const { typeName, values } = await this.getFeaturesObject(executor, projectPath)
-            elements.push({
-              scriptId: typeName,
-              typeName,
-              values,
-            })
-          }
-          await this.projectCleanup(projectPath, authId)
+        if (suiteAppId !== undefined) {
+          elements.forEach(e => {
+            e.values[APPLICATION_ID] = suiteAppId
+          })
+        }
+        if (suiteAppId === undefined && queries.updatedFetchQuery.isTypeMatch(CONFIG_FEATURES)) {
+          // use existing project to import features object
+          const { typeName, values } = await this.getFeaturesObject(executor, projectPath)
+          elements.push({
+            scriptId: typeName,
+            typeName,
+            values,
+          })
+        }
+        await this.projectCleanup(projectPath, authId)
 
-          return { elements, instancesIds, failedToFetchAllAtOnce, failedTypes }
-        })
+        return { elements, instancesIds, failedToFetchAllAtOnce, failedTypes }
+      }),
     )
 
     const failedTypes = {
-      unexpectedError: concatObjects(
-        importResult.map(res => res.failedTypes.unexpectedError)
-      ),
-      lockedError: concatObjects(
-        importResult.map(res => res.failedTypes.lockedError)
-      ),
+      unexpectedError: concatObjects(importResult.map(res => res.failedTypes.unexpectedError)),
+      lockedError: concatObjects(importResult.map(res => res.failedTypes.lockedError)),
       excludedTypes: importResult.flatMap(res => res.failedTypes.excludedTypes),
     }
 
     const elements = importResult.flatMap(res => res.elements)
     const failedToFetchAllAtOnce = importResult.some(res => res.failedToFetchAllAtOnce)
-    const instancesIds = importResult.flatMap(res => res.instancesIds)
+    const instancesIds = importResult
+      .flatMap(res => res.instancesIds)
+      .flatMap(instanceId =>
+        // custom segments are always connected to a matching custom record type, that doesn't return in the object:list command
+        instanceId.type === CUSTOM_SEGMENT
+          ? [instanceId, { type: CUSTOM_RECORD_TYPE, instanceId: addCustomRecordTypePrefix(instanceId.instanceId) }]
+          : instanceId,
+      )
 
     return { elements, instancesIds, failedToFetchAllAtOnce, failedTypes }
   }
 
-  private async getFeaturesObject(
-    executor: CommandActionExecutor,
-    projectPath: string,
-  ): Promise<CustomizationInfo> {
+  private async getFeaturesObject(executor: CommandActionExecutor, projectPath: string): Promise<CustomizationInfo> {
     try {
-      await this.executeProjectAction(
-        COMMANDS.IMPORT_CONFIGURATION, { configurationid: ALL_FEATURES }, executor
-      )
+      await this.executeProjectAction(COMMANDS.IMPORT_CONFIGURATION, { configurationid: ALL_FEATURES }, executor)
     } catch (e) {
       log.error('Attempt to import features object has failed with error: %o', e)
       throw e
@@ -487,65 +522,107 @@ export default class SdfClient {
         return { failedToFetchAllAtOnce: false, failedTypes }
       }
     }
-    const failedTypes = await this.importObjectsInChunks(
-      executor,
-      suiteAppId,
-      instancesIds,
-    )
+    const failedTypes = await this.importObjectsInChunks(executor, suiteAppId, instancesIds)
     return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce, failedTypes }
   }
-
 
   private async importObjectsInChunks(
     executor: CommandActionExecutor,
     suiteAppId: string | undefined,
-    instancesIds: ObjectID[]
+    instancesIds: ObjectID[],
   ): Promise<FailedTypes> {
     const importObjectsChunk = async (
-      { type, ids, index, total }: ObjectsChunk, retriesLeft = SINGLE_OBJECT_RETRIES
+      { type, ids, index, total }: ObjectsChunk,
+      retriesLeft = SINGLE_OBJECT_RETRIES,
     ): Promise<FailedTypes> => {
-      const retryFetchFailedInstances = async (
-        failedInstancesIds: string[]
-      ): Promise<FailedTypes> => {
-        log.debug('Retrying to fetch failed instances with suiteApp: %s of chunk %d/%d of type %s: %o',
-          suiteAppId, index, total, type, failedInstancesIds)
-        const failedTypeToInstancesAfterRetry = await this.runImportObjectsCommand(
-          executor, type, failedInstancesIds.join(' '), suiteAppId
+      const retryFetchFailedInstances = async (failedInstancesIds: string[]): Promise<FailedTypes> => {
+        log.debug(
+          'Retrying to fetch failed instances with suiteApp: %s of chunk %d/%d of type %s: %o',
+          suiteAppId,
+          index,
+          total,
+          type,
+          failedInstancesIds,
         )
-        log.debug('Retried to fetch %d failed instances with suiteApp: %s of chunk %d/%d of type: %s.',
-          failedInstancesIds.length, suiteAppId, index, total, type)
+        const failedTypeToInstancesAfterRetry = await this.runImportObjectsCommand(
+          executor,
+          type,
+          failedInstancesIds.join(' '),
+          suiteAppId,
+        )
+        log.debug(
+          'Retried to fetch %d failed instances with suiteApp: %s of chunk %d/%d of type: %s.',
+          failedInstancesIds.length,
+          suiteAppId,
+          index,
+          total,
+          type,
+        )
         return failedTypeToInstancesAfterRetry
       }
 
       try {
-        log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s with SuiteApp %s', index, total, ids.length, type, suiteAppId)
-        let failedTypeToInstances = await this.runImportObjectsCommand(
-          executor, type, ids.join(' '), suiteAppId
+        log.debug(
+          'Starting to fetch chunk %d/%d with %d objects of type: %s with SuiteApp %s',
+          index,
+          total,
+          ids.length,
+          type,
+          suiteAppId,
         )
+        let failedTypeToInstances = await this.runImportObjectsCommand(executor, type, ids.join(' '), suiteAppId)
         if (failedTypeToInstances.unexpectedError[type]?.length > 0) {
           failedTypeToInstances = {
-            unexpectedError: (await retryFetchFailedInstances(
-              failedTypeToInstances.unexpectedError[type]
-            )).unexpectedError,
+            unexpectedError: (await retryFetchFailedInstances(failedTypeToInstances.unexpectedError[type]))
+              .unexpectedError,
             lockedError: failedTypeToInstances.lockedError,
             excludedTypes: failedTypeToInstances.excludedTypes,
           }
         }
-        log.debug('Fetched chunk %d/%d with %d objects of type: %s with suiteApp: %s. failedTypes: %o',
-          index, total, ids.length, type, suiteAppId, failedTypeToInstances)
+        log.debug(
+          'Fetched chunk %d/%d with %d objects of type: %s with suiteApp: %s. failedTypes: %o',
+          index,
+          total,
+          ids.length,
+          type,
+          suiteAppId,
+          failedTypeToInstances,
+        )
         return failedTypeToInstances
       } catch (e) {
-        log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s', index, total, ids.length, type, suiteAppId)
+        log.warn(
+          'Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s',
+          index,
+          total,
+          ids.length,
+          type,
+          suiteAppId,
+        )
         log.warn(toError(e))
         const [objectId] = ids
         if (retriesLeft === 0) {
-          throw new Error(`Failed to fetch object '${objectId}' of type '${type}' with error: ${toError(e).message}. Exclude it and fetch again.`)
+          throw new Error(
+            `Failed to fetch object '${objectId}' of type '${type}' with error: ${toError(e).message}. Exclude it and fetch again.`,
+          )
         }
         if (ids.length === 1) {
-          log.debug('Retrying to fetch chunk %d/%d with a single object \'%s\' of type: %s. %d retries left', index, total, objectId, type, retriesLeft - 1)
+          log.debug(
+            "Retrying to fetch chunk %d/%d with a single object '%s' of type: %s. %d retries left",
+            index,
+            total,
+            objectId,
+            type,
+            retriesLeft - 1,
+          )
           return importObjectsChunk({ type, ids, index, total }, retriesLeft - 1)
         }
-        log.debug('Retrying to fetch chunk %d/%d with %d objects of type: %s with smaller chunks', index, total, ids.length, type)
+        log.debug(
+          'Retrying to fetch chunk %d/%d with %d objects of type: %s with smaller chunks',
+          index,
+          total,
+          ids.length,
+          type,
+        )
         const middle = (ids.length + 1) / 2
         const results = await Promise.all([
           importObjectsChunk({ type, ids: ids.slice(0, middle), index, total }),
@@ -561,9 +638,8 @@ export default class SdfClient {
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
 
-    const [excludedGroups, instancesToFetch] = _.partition(
-      Object.entries(instancesIdsByType),
-      ([type, instances]) => this.instanceLimiter(type, instances.length)
+    const [excludedGroups, instancesToFetch] = _.partition(Object.entries(instancesIdsByType), ([type, instances]) =>
+      this.instanceLimiter(type, instances.length),
     )
 
     const excludedTypes = excludedGroups.map(([type, instances]) => {
@@ -582,12 +658,14 @@ export default class SdfClient {
           index: index + 1,
           total: Math.ceil(ids.length / this.maxItemsInImportObjectsRequest),
         }))
-        .toArray())
+        .toArray(),
+    )
 
     log.debug('Fetching custom objects by types in chunks')
-    const results = await withLimitedConcurrency( // limit the number of open promises
+    const results = await withLimitedConcurrency(
+      // limit the number of open promises
       idsChunks.map(idsChunk => () => importObjectsChunk(idsChunk)),
-      this.sdfConcurrencyLimit
+      this.sdfConcurrencyLimit,
     )
     return {
       lockedError: mergeTypeToInstances(...results.map(res => res.lockedError)),
@@ -599,9 +677,7 @@ export default class SdfClient {
   private static createFailedImportsMap(failedImports: FailedImport[]): NetsuiteTypesQueryParams {
     return _(failedImports)
       .groupBy(failedImport => SdfClient.fixTypeName(failedImport.customObject.type))
-      .mapValues(failedImportsGroup => failedImportsGroup.map(
-        failedImport => failedImport.customObject.id
-      ))
+      .mapValues(failedImportsGroup => failedImportsGroup.map(failedImport => failedImport.customObject.id))
       .value()
   }
 
@@ -625,25 +701,33 @@ export default class SdfClient {
     )
     const importResult = actionResult.data as ImportObjectsResult
 
-    const unexpectedError = SdfClient.createFailedImportsMap(importResult.failedImports
-      .filter(failedImport => {
+    const unexpectedError = SdfClient.createFailedImportsMap(
+      importResult.failedImports.filter(failedImport => {
         if (fetchUnexpectedErrorRegex.test(failedImport.customObject.result.message)) {
-          log.debug('Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
-            SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
+          log.debug(
+            'Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
+            SdfClient.fixTypeName(failedImport.customObject.type),
+            failedImport.customObject.id,
+          )
           return true
         }
         return false
-      }))
+      }),
+    )
 
-    const lockedError = SdfClient.createFailedImportsMap(importResult.failedImports
-      .filter(failedImport => {
+    const lockedError = SdfClient.createFailedImportsMap(
+      importResult.failedImports.filter(failedImport => {
         if (fetchLockedObjectErrorRegex.test(failedImport.customObject.result.message)) {
-          log.debug('Failed to fetch (%s) instance with id (%s) due to the instance being locked',
-            SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
+          log.debug(
+            'Failed to fetch (%s) instance with id (%s) due to the instance being locked',
+            SdfClient.fixTypeName(failedImport.customObject.type),
+            failedImport.customObject.id,
+          )
           return true
         }
         return false
-      }))
+      }),
+    )
 
     return { unexpectedError, lockedError, excludedTypes: [] }
   }
@@ -657,7 +741,7 @@ export default class SdfClient {
   async listInstances(
     executor: CommandActionExecutor,
     types: string[],
-    suiteAppId: string | undefined
+    suiteAppId: string | undefined,
   ): Promise<ObjectID[]> {
     const results = await this.executeProjectAction(
       COMMANDS.LIST_OBJECTS,
@@ -673,57 +757,56 @@ export default class SdfClient {
     }))
   }
 
-  private async listFilePaths(executor: CommandActionExecutor):
-    Promise<{ listedPaths: string[]; failedPaths: string[] }> {
+  private async listFilePaths(
+    executor: CommandActionExecutor,
+  ): Promise<{ listedPaths: string[]; failedPaths: string[] }> {
     const failedPaths: string[] = []
-    const actionResults = (await Promise.all(
-      fileCabinetTopLevelFolders
-        .map(folder =>
-          this.executeProjectAction(COMMANDS.LIST_FILES, { folder }, executor)
-            .catch(() => {
-              log.debug(`Adding ${folder} path to skip list`)
-              failedPaths.push(`^${folder}.*`)
-              return undefined
-            }))
-    )).filter(isDefined)
+    const actionResults = (
+      await Promise.all(
+        fileCabinetTopLevelFolders.map(folder =>
+          this.executeProjectAction(COMMANDS.LIST_FILES, { folder }, executor).catch(() => {
+            log.debug(`Adding ${folder} path to skip list`)
+            failedPaths.push(`^${folder}.*`)
+            return undefined
+          }),
+        ),
+      )
+    ).filter(isDefined)
     return {
       listedPaths: actionResults.flatMap(actionResult => makeArray(actionResult.data)),
       failedPaths,
     }
   }
 
-  private async importFiles(filePaths: string[], executor: CommandActionExecutor):
-    Promise<string[]> {
+  private async importFiles(filePaths: string[], executor: CommandActionExecutor): Promise<string[]> {
     if (filePaths.length === 0) {
       return []
     }
     try {
       log.info(`Going to import ${filePaths.length} files`)
-      const actionResult = await this.executeProjectAction(
-        COMMANDS.IMPORT_FILES,
-        { paths: filePaths },
-        executor
-      )
+      const actionResult = await this.executeProjectAction(COMMANDS.IMPORT_FILES, { paths: filePaths }, executor)
       return makeArray(actionResult.data.results)
         .filter(result => result.loaded)
         .map(result => result.path)
     } catch (e) {
       if (filePaths.length === 1) {
         log.error(`Failed to import file ${filePaths[0]} due to: ${toError(e).message}`)
-        throw new Error(`Failed to import file: ${filePaths[0]}. Consider adding it to the skip list. To learn more visit https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md`)
+        throw new Error(
+          `Failed to import file: ${filePaths[0]}. Consider adding it to the skip list. To learn more visit https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md`,
+        )
       }
       const middle = (filePaths.length + 1) / 2
       const firstChunkImportResults = await this.importFiles(filePaths.slice(0, middle), executor)
-      const secondChunkImportResults = await this.importFiles(
-        filePaths.slice(middle, filePaths.length), executor
-      )
+      const secondChunkImportResults = await this.importFiles(filePaths.slice(middle, filePaths.length), executor)
       return [...firstChunkImportResults, ...secondChunkImportResults]
     }
   }
 
   @SdfClient.logDecorator
-  async importFileCabinetContent(query: NetsuiteQuery, maxFileCabinetSizeInGB: number):
-    Promise<ImportFileCabinetResult> {
+  async importFileCabinetContent(
+    query: NetsuiteQuery,
+    maxFileCabinetSizeInGB: number,
+  ): Promise<ImportFileCabinetResult> {
     if (!query.areSomeFilesMatch()) {
       return {
         elements: [],
@@ -731,10 +814,7 @@ export default class SdfClient {
       }
     }
 
-    const filesToSize = async (
-      filePaths: string[],
-      fileCabinetDirPath: string
-    ): Promise<FileSize[]> => {
+    const filesToSize = async (filePaths: string[], fileCabinetDirPath: string): Promise<FileSize[]> => {
       const normalizedPath = (filePath: string): string => {
         const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
         return osPath.join(fileCabinetDirPath, ...filePathParts)
@@ -742,21 +822,21 @@ export default class SdfClient {
 
       return withLimitedConcurrency(
         filePaths.map(path => async () => ({ path, size: (await stat(normalizedPath(path))).size })),
-        READ_CONCURRENCY
+        READ_CONCURRENCY,
       )
     }
 
     const project = await this.initProject()
     const listFilesResults = await this.listFilePaths(project.executor)
-    const filePathsToImport = listFilesResults.listedPaths
-      .filter(path => query.isFileMatch(path))
+    const filePathsToImport = listFilesResults.listedPaths.filter(path => query.isFileMatch(path))
     const importFilesResult = await this.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
     const importedPaths = _.uniq(importFilesResult)
 
     const fileCabinetDirPath = getFileCabinetDirPath(project.projectPath)
     const largeFolders = largeFoldersToExclude(
-      await filesToSize(importedPaths, fileCabinetDirPath), maxFileCabinetSizeInGB
+      await filesToSize(importedPaths, fileCabinetDirPath),
+      maxFileCabinetSizeInGB,
     )
     const listedPaths = filterFilesInFolders(importedPaths, largeFolders)
     const elements = await parseFileCabinetDir(project.projectPath, listedPaths)
@@ -775,7 +855,7 @@ export default class SdfClient {
   async deploy(
     suiteAppId: string | undefined,
     { manifestDependencies, validateOnly = false }: SdfDeployParams,
-    dependencyGraph: Graph<SDFObjectNode>
+    dependencyGraph: Graph<SDFObjectNode>,
   ): Promise<void> {
     const project = await this.initProject(suiteAppId)
     const srcDirPath = getSrcDirPath(project.projectPath)
@@ -783,21 +863,23 @@ export default class SdfClient {
     const customizationInfos = Array.from(dependencyGraph.nodes.values()).map(node => node.value.customizationInfo)
     // Delete the default FileCabinet folder to prevent permissions error
     await rm(fileCabinetDirPath)
-    await Promise.all(customizationInfos.map(async customizationInfo => {
-      if (customizationInfo.typeName === CONFIG_FEATURES) {
-        return SdfClient.addFeaturesObjectToProject(customizationInfo, project.projectPath)
-      }
-      if (isCustomTypeInfo(customizationInfo)) {
-        return SdfClient.addCustomTypeInfoToProject(customizationInfo, srcDirPath)
-      }
-      if (isFileCustomizationInfo(customizationInfo)) {
-        return SdfClient.addFileInfoToProject(customizationInfo, srcDirPath)
-      }
-      if (isFolderCustomizationInfo(customizationInfo)) {
-        return SdfClient.addFolderInfoToProject(customizationInfo, srcDirPath)
-      }
-      throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
-    }))
+    await Promise.all(
+      customizationInfos.map(async customizationInfo => {
+        if (customizationInfo.typeName === CONFIG_FEATURES) {
+          return SdfClient.addFeaturesObjectToProject(customizationInfo, project.projectPath)
+        }
+        if (isCustomTypeInfo(customizationInfo)) {
+          return SdfClient.addCustomTypeInfoToProject(customizationInfo, srcDirPath)
+        }
+        if (isFileCustomizationInfo(customizationInfo)) {
+          return SdfClient.addFileInfoToProject(customizationInfo, srcDirPath)
+        }
+        if (isFolderCustomizationInfo(customizationInfo)) {
+          return SdfClient.addFolderInfoToProject(customizationInfo, srcDirPath)
+        }
+        throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
+      }),
+    )
     await this.runDeployCommands(project, customizationInfos, manifestDependencies, validateOnly, dependencyGraph)
     await this.projectCleanup(project.projectPath, project.authId)
   }
@@ -805,28 +887,19 @@ export default class SdfClient {
   private async fixManifest(
     projectPath: string,
     customizationInfos: CustomizationInfo[],
-    manifestDependencies: ManifestDependencies
+    manifestDependencies: ManifestDependencies,
   ): Promise<void> {
     const manifestPath = getManifestFilePath(projectPath)
     const manifestContent = (await readFile(manifestPath)).toString()
     this.manifestXmlContent = fixManifest(manifestContent, customizationInfos, manifestDependencies)
-    await writeFile(
-      manifestPath,
-      this.manifestXmlContent
-    )
+    await writeFile(manifestPath, this.manifestXmlContent)
   }
 
-  private async fixDeployXml(
-    dependencyGraph: Graph<SDFObjectNode>,
-    projectPath: string,
-  ): Promise<void> {
+  private async fixDeployXml(dependencyGraph: Graph<SDFObjectNode>, projectPath: string): Promise<void> {
     const deployFilePath = getDeployFilePath(projectPath)
     const deployXmlContent = (await readFile(deployFilePath)).toString()
     this.deployXmlContent = reorderDeployXml(deployXmlContent, dependencyGraph)
-    await writeFile(
-      deployFilePath,
-      this.deployXmlContent
-    )
+    await writeFile(deployFilePath, this.deployXmlContent)
   }
 
   private customizeDeployError(error: Error): Error {
@@ -843,6 +916,7 @@ export default class SdfClient {
       missingFeatureErrorRegexes,
       deployedObjectRegex,
       errorObjectRegex,
+      otherErrorRegexes,
     } = multiLanguageErrorDetectors[sdfLanguage]
 
     const manifestErrorScriptids = getFailedObjects(messages, manifestErrorDetailsRegex)
@@ -850,8 +924,9 @@ export default class SdfClient {
       return new ManifestValidationError(error.message, manifestErrorScriptids)
     }
 
-    const missingFeatureNames = missingFeatureErrorRegexes
-      .flatMap(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME))
+    const missingFeatureNames = missingFeatureErrorRegexes.flatMap(regex =>
+      getGroupItemFromRegex(error.message, regex, FEATURE_NAME),
+    )
     if (missingFeatureNames.length > 0) {
       return new MissingManifestFeaturesError(error.message, _.uniq(missingFeatureNames))
     }
@@ -890,7 +965,9 @@ ${this.manifestXmlContent}
 deploy.xml:
 ${this.deployXmlContent}
 `)
-    return error
+
+    const detectedErrors = messages.filter(message => otherErrorRegexes.some(regex => regex.test(message)))
+    return detectedErrors.length > 0 ? new Error(detectedErrors.join(os.EOL)) : error
   }
 
   private async runDeployCommands(
@@ -913,43 +990,37 @@ ${this.deployXmlContent}
         // SuiteApp project type can't contain account specific values
         // and thus the flag is not supported
         custCommandArguments,
-        executor
+        executor,
       )
     } catch (e) {
       throw this.customizeDeployError(toError(e))
     }
   }
 
-  private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo,
-    srcDirPath: string): Promise<void> {
-    await writeFile(
-      getCustomTypeInfoPath(srcDirPath, customTypeInfo),
-      convertToXmlContent(customTypeInfo)
-    )
+  private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo, srcDirPath: string): Promise<void> {
+    await writeFile(getCustomTypeInfoPath(srcDirPath, customTypeInfo), convertToXmlContent(customTypeInfo))
     if (isTemplateCustomTypeInfo(customTypeInfo)) {
-      await writeFile(getCustomTypeInfoPath(srcDirPath,
-        customTypeInfo, `${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
-      customTypeInfo.fileContent)
+      await writeFile(
+        getCustomTypeInfoPath(srcDirPath, customTypeInfo, `${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
+        customTypeInfo.fileContent,
+      )
     }
   }
 
   private static async addFeaturesObjectToProject(
     customizationInfo: CustomizationInfo,
-    projectPath: string
+    projectPath: string,
   ): Promise<void> {
-    await writeFile(
-      getFeaturesXmlPath(projectPath),
-      convertToFeaturesXmlContent(customizationInfo)
-    )
+    await writeFile(getFeaturesXmlPath(projectPath), convertToFeaturesXmlContent(customizationInfo))
   }
 
-  private static async addFileInfoToProject(fileCustomizationInfo: FileCustomizationInfo,
-    srcDirPath: string): Promise<void> {
+  private static async addFileInfoToProject(
+    fileCustomizationInfo: FileCustomizationInfo,
+    srcDirPath: string,
+  ): Promise<void> {
     const attrsFilename = fileCustomizationInfo.path.slice(-1)[0] + ATTRIBUTES_FILE_SUFFIX
     const fileFolderPath = getFileCabinetCustomInfoPath(srcDirPath, fileCustomizationInfo)
-    const attrsFolderPath = osPath.resolve(
-      fileFolderPath, ATTRIBUTES_FOLDER_NAME
-    )
+    const attrsFolderPath = osPath.resolve(fileFolderPath, ATTRIBUTES_FOLDER_NAME)
     const filename = fileCustomizationInfo.path.slice(-1)[0]
     await Promise.all([
       writeFileInFolder(fileFolderPath, filename, fileCustomizationInfo.fileContent),
@@ -957,12 +1028,18 @@ ${this.deployXmlContent}
     ])
   }
 
-  private static async addFolderInfoToProject(folderCustomizationInfo: FolderCustomizationInfo,
-    srcDirPath: string): Promise<void> {
+  private static async addFolderInfoToProject(
+    folderCustomizationInfo: FolderCustomizationInfo,
+    srcDirPath: string,
+  ): Promise<void> {
     const attrsFolderPath = osPath.resolve(
-      getFileCabinetCustomInfoPath(srcDirPath, folderCustomizationInfo), ATTRIBUTES_FOLDER_NAME
+      getFileCabinetCustomInfoPath(srcDirPath, folderCustomizationInfo),
+      ATTRIBUTES_FOLDER_NAME,
     )
-    await writeFileInFolder(attrsFolderPath, FOLDER_ATTRIBUTES_FILE_SUFFIX,
-      convertToXmlContent(folderCustomizationInfo))
+    await writeFileInFolder(
+      attrsFolderPath,
+      FOLDER_ATTRIBUTES_FILE_SUFFIX,
+      convertToXmlContent(folderCustomizationInfo),
+    )
   }
 }

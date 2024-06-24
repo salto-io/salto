@@ -1,39 +1,47 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
-  CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
+  CATEGORY_ORDER_TYPE_NAME,
+  EVERYONE_USER_TYPE,
   SECTION_ORDER_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
+import {
+  Guide,
+  IdLocator,
+  OmitInactiveConfig,
+  Themes,
+  ZendeskApiConfig,
+  ZendeskClientConfig,
+  ZendeskDeployConfig,
+  ZendeskFetchConfig,
+} from './user_config'
 
 const { defaultMissingUserFallbackField } = configUtils
-const { createClientConfigType } = clientUtils
-const {
-  createUserFetchConfigType,
-  createUserDeployConfigType,
-  createDucktypeAdapterApiConfigType,
-  validateDuckTypeFetchConfig,
-} = configUtils
+const { createClientConfigType } = definitions
+const { createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig, validateDefaultWithCustomizations } =
+  configUtils
 
 export const DEFAULT_ID_FIELDS = ['name']
 export const DEFAULT_FILENAME_FIELDS = ['name']
@@ -45,8 +53,8 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'count', fieldType: 'number' },
 ]
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
-  { fieldName: 'created_at', fieldType: 'string' },
-  { fieldName: 'updated_at', fieldType: 'string' },
+  { fieldName: 'created_at' },
+  { fieldName: 'updated_at' },
   { fieldName: 'created_by_id' },
   { fieldName: 'updated_by_id' },
 ]
@@ -62,38 +70,19 @@ export const DEPLOY_CONFIG = 'deploy'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
-export type IdLocator = {
-  fieldRegex: string
-  idRegex: string
-  type: string[]
+const DEFAULT_REQUEST_TIMEOUT = 5000 // Roughly p95 of observed request times
+
+export const DEFAULT_TIMEOUT_OPTS = {
+  ...clientUtils.DEFAULT_TIMEOUT_OPTS,
+  maxDuration: DEFAULT_REQUEST_TIMEOUT,
 }
 
-export type Guide = {
-  brands: string[]
-}
-
-export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
-
-export type ZendeskFetchConfig = configUtils.UserFetchConfig
-  & {
-  enableMissingReferences?: boolean
-  includeAuditDetails?: boolean
-  addAlias?: boolean
-  greedyAppReferences?: boolean
-  appReferenceLocators?: IdLocator[]
-  guide?: Guide
-  resolveOrganizationIDs?: boolean
-}
-export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig
-export type ZendeskApiConfig = configUtils.AdapterApiConfig<
-  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
-  configUtils.TransformationDefaultConfig & { omitInactive?: boolean }
-  >
+export const OMIT_INACTIVE_DEFAULT = true
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
   [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]?: ZedneskDeployConfig
+  [DEPLOY_CONFIG]?: ZendeskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
@@ -123,10 +112,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/groups/{groupId}',
         method: 'delete',
-        deployAsField: 'group',
         urlParamsToFields: {
           groupId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -159,10 +148,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/custom_roles/{customRoleId}',
         method: 'delete',
-        deployAsField: 'custom_role',
         urlParamsToFields: {
           customRoleId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -193,10 +182,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/organizations/{organizationId}',
         method: 'delete',
-        deployAsField: 'organization',
         urlParamsToFields: {
           organizationId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -205,7 +194,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'views__views',
       idFields: ['title'],
       fileNameFields: ['title'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'title', fieldType: 'string' },
+      ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/workspaces/agent-workspace/views/{id}',
     },
@@ -226,10 +218,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/views/{viewId}',
         method: 'delete',
-        deployAsField: 'view',
         urlParamsToFields: {
           viewId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -245,6 +237,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'unknown' },
+        {
+          fieldName: 'type',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['Group', 'User'] },
+        },
       ],
     },
   },
@@ -274,11 +271,21 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/triggers/{triggerId}',
         method: 'delete',
-        deployAsField: 'trigger',
         urlParamsToFields: {
           triggerId: 'id',
         },
+        omitRequestBody: true,
       },
+    },
+  },
+  trigger__conditions__all: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'is_user_value', fieldType: 'boolean' }],
+    },
+  },
+  trigger__conditions__any: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'is_user_value', fieldType: 'boolean' }],
     },
   },
   trigger_category: {
@@ -287,9 +294,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['name'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id' }),
       serviceUrl: '/admin/objects-rules/rules/triggers',
-      fieldTypeOverrides: [
-        { fieldName: 'id', fieldType: 'string' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
     },
     deployRequests: {
       add: {
@@ -308,10 +313,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/trigger_categories/{triggerCategoryId}',
         method: 'delete',
-        deployAsField: 'trigger_category',
         urlParamsToFields: {
           triggerCategoryId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -355,10 +360,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/automations/{automationId}',
         method: 'delete',
-        deployAsField: 'automation',
         urlParamsToFields: {
           automationId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -396,10 +401,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/slas/policies/{slaPolicyId}',
         method: 'delete',
-        deployAsField: 'sla_policy',
         urlParamsToFields: {
           slaPolicyId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -455,10 +460,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/targets/{targetId}',
         method: 'delete',
-        deployAsField: 'target',
         urlParamsToFields: {
           targetId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -489,10 +494,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/macros/{macroId}',
         method: 'delete',
-        deployAsField: 'macro',
         urlParamsToFields: {
           macroId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -556,10 +561,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/brands/{brandId}',
         method: 'delete',
-        deployAsField: 'brand',
         urlParamsToFields: {
           brandId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -568,7 +573,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'locales__locales',
       idFields: ['locale'],
       fileNameFields: ['locale'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      // no need to hide id as consistent across envs
+      fieldsToHide: FIELDS_TO_HIDE.concat([{ fieldName: 'default', fieldType: 'boolean' }]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
@@ -612,10 +618,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/business_hours/schedules/{scheduleId}',
         method: 'delete',
-        deployAsField: 'schedule',
         urlParamsToFields: {
           scheduleId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -628,7 +634,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           fieldType: 'string',
           restrictions: { enforce_value: true, values: ['accepted', 'declined', 'pending', 'inactive'] },
         },
-        { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['inbound', 'outbound'] } },
+        {
+          fieldName: 'type',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['inbound', 'outbound'] },
+        },
         { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -650,10 +660,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/sharing_agreements/{sharingAgreementId}',
         method: 'delete',
-        deployAsField: 'sharing_agreement',
         urlParamsToFields: {
           sharingAgreementId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -666,6 +676,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           fieldName: 'cname_status',
           fieldType: 'string',
           restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] },
+        },
+        {
+          fieldName: 'username',
+          fieldType: 'string',
         },
         {
           fieldName: 'dns_results',
@@ -692,6 +706,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'domain_verification_code' },
+        { fieldName: 'username', fieldType: 'string' },
       ]),
     },
     deployRequests: {
@@ -711,10 +726,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/recipient_addresses/{supportAddressId}',
         method: 'delete',
-        deployAsField: 'recipient_address',
         urlParamsToFields: {
           supportAddressId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -726,9 +741,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'name', fieldType: 'string' },
       ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'display_name', fieldType: 'string' },
-      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'display_name', fieldType: 'string' }),
       serviceUrl: '/admin/objects-rules/tickets/ticket-forms/edit/{id}',
     },
     deployRequests: {
@@ -748,10 +761,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/ticket_forms/{ticketFormId}',
         method: 'delete',
-        deployAsField: 'ticket_form',
         urlParamsToFields: {
           ticketFormId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -834,10 +847,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/ticket_fields/{ticketFieldId}',
         method: 'delete',
-        deployAsField: 'ticket_field',
         urlParamsToFields: {
           ticketFieldId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -866,11 +879,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           ticketFieldId: '_parent.0.id',
           ticketFieldOptionId: 'id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'name', fieldType: 'string' }),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         {
@@ -895,10 +910,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         {
           fieldName: 'type',
           fieldType: 'string',
-          restrictions: {
-            enforce_value: true,
-            values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'],
-          },
         },
         { fieldName: 'id', fieldType: 'number' },
       ],
@@ -906,9 +917,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'title', fieldType: 'string' },
       ),
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'description', fieldType: 'string' }
-      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'description', fieldType: 'string' }),
       serviceUrl: '/agent/admin/user_fields/{id}',
     },
     deployRequests: {
@@ -928,10 +937,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/user_fields/{userFieldId}',
         method: 'delete',
-        deployAsField: 'user_field',
         urlParamsToFields: {
           userFieldId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -960,6 +969,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           userFieldId: '_parent.0.id',
           userFieldOptionId: 'id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
@@ -968,6 +978,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'default', fieldType: 'boolean' },
       ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'name', fieldType: 'string' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
@@ -988,10 +999,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         {
           fieldName: 'type',
           fieldType: 'string',
-          restrictions: {
-            enforce_value: true,
-            values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'],
-          },
         },
         { fieldName: 'id', fieldType: 'number' },
       ],
@@ -999,9 +1006,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'title', fieldType: 'string' },
       ),
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'description', fieldType: 'string' }
-      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'description', fieldType: 'string' }),
       serviceUrl: '/agent/admin/organization_fields/{id}',
     },
     deployRequests: {
@@ -1021,22 +1026,19 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/organization_fields/{organizationFieldId}',
         method: 'delete',
-        deployAsField: 'organization_field',
         urlParamsToFields: {
           organizationFieldId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
   organization_field__custom_field_options: {
     transformation: {
       idFields: ['value'],
-      fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'name', fieldType: 'string' },
-      ),
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-      fieldsToOmit: FIELDS_TO_OMIT,
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'name', fieldType: 'string' }),
     },
   },
   organization_field_order: {
@@ -1055,9 +1057,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'values' }],
       sourceTypeName: 'routing_attributes__attributes',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
-      fieldTypeOverrides: [
-        { fieldName: 'id', fieldType: 'string' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
       serviceUrl: '/admin/objects-rules/rules/routing',
     },
     deployRequests: {
@@ -1077,10 +1077,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/routing/attributes/{attributeId}',
         method: 'delete',
-        deployAsField: 'attribute',
         urlParamsToFields: {
           attributeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1118,10 +1118,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/workspaces/{workspaceId}',
         method: 'delete',
-        deployAsField: 'workspace',
         urlParamsToFields: {
           workspaceId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1133,9 +1133,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   workspace__selected_macros__restriction: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'id', fieldType: 'unknown' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'unknown' }],
     },
   },
   workspace__apps: {
@@ -1154,9 +1152,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',
-      fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
-      ),
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
       idFields: ['settings.name', 'product'],
       fileNameFields: ['settings.name', 'product'],
@@ -1181,6 +1177,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           appInstallationId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1209,7 +1206,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'secret', fieldType: 'string' },
         { fieldName: 'user_id', fieldType: 'number' },
       ]),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'secret', fieldType: 'string' },
+        { fieldName: 'user_id', fieldType: 'number' },
+      ],
       serviceUrl: '/admin/apps-integrations/apis/zendesk-api/oauth_clients',
     },
     deployRequests: {
@@ -1229,10 +1230,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/oauth/clients/{oauthClientId}',
         method: 'delete',
-        deployAsField: 'client',
         urlParamsToFields: {
           oauthClientId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1257,6 +1258,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  account_setting__localization: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'locale_ids' }),
+    },
+  },
   resource_collection: {
     transformation: {
       sourceTypeName: 'resource_collections__resource_collections',
@@ -1272,6 +1278,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
 
+  // placeholder for config validation (the type is created by a filter)
+  tag: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
+    },
+  },
 
   // api types
   groups: {
@@ -1415,7 +1427,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   // eslint-disable-next-line camelcase
-  macros_definitions: { // has some overlaps with macro_actions
+  macros_definitions: {
+    // has some overlaps with macro_actions
     request: {
       url: '/api/v2/macros/definitions',
     },
@@ -1425,9 +1438,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   macro__restriction: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'id', fieldType: 'unknown' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'unknown' }],
     },
   },
   brands: {
@@ -1444,11 +1455,16 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   dynamic_content_item: {
     request: {
       url: '/api/v2/dynamic_content/items',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: '.',
       standaloneFields: [{ fieldName: 'variants' }],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'outdated', fieldType: 'boolean' },
+      ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/workspaces/agent-workspace/dynamic_content',
     },
@@ -1462,6 +1478,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         url: '/api/v2/dynamic_content/items/{dynamicContentItemId}',
         method: 'put',
         deployAsField: 'item',
+        fieldsToIgnore: ['variants'],
         urlParamsToFields: {
           dynamicContentItemId: 'id',
         },
@@ -1469,17 +1486,20 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/dynamic_content/items/{dynamicContentItemId}',
         method: 'delete',
-        deployAsField: 'item',
         urlParamsToFields: {
           dynamicContentItemId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
   dynamic_content_item__variants: {
     transformation: {
       idFields: ['&locale_id'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'outdated', fieldType: 'boolean' },
+      ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       extendsParentId: true,
     },
@@ -1508,6 +1528,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           dynammicContentVariantId: 'id',
           dynamicContentItemId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1549,13 +1570,22 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           holidayId: 'id',
           scheduleId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
       sourceTypeName: 'business_hours_schedule__holidays',
-      dataField: 'holidays',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      extendsParentId: true,
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'start_year', fieldType: 'string' },
+        { fieldName: 'end_year', fieldType: 'string' },
+      ]),
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'start_year', fieldType: 'string' },
+        { fieldName: 'end_year', fieldType: 'string' },
+      ],
     },
   },
   // eslint-disable-next-line camelcase
@@ -1658,6 +1688,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           attributeValueId: 'id',
           attributeId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
@@ -1716,6 +1747,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_clients: {
     request: {
       url: '/api/v2/oauth/clients',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
+    },
+    transformation: {
+      dataField: 'clients',
     },
   },
   // eslint-disable-next-line camelcase
@@ -1793,6 +1829,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           webhookId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1801,9 +1838,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       // we are doing this for better parallelization of requests on large accounts
       // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
       url: '/api/v2/help_center/categories/{category_id}/articles',
-      dependsOn: [
-        { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },
-      ],
+      dependsOn: [{ pathParam: 'category_id', from: { type: 'categories', field: 'id' } }],
       queryParams: {
         ...DEFAULT_QUERY_PARAMS,
         include: 'translations',
@@ -1826,10 +1861,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['title', '&section_id'],
       fileNameFields: ['title', '&section_id'],
-      standaloneFields: [
-        { fieldName: 'translations' },
-        { fieldName: 'attachments' },
-      ],
+      standaloneFields: [{ fieldName: 'translations' }, { fieldName: 'attachments' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
@@ -1837,7 +1869,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'author_id', fieldType: 'string' },
+        { fieldName: 'author_id', fieldType: 'unknown' },
         { fieldName: 'translations', fieldType: 'list<article_translation>' },
         { fieldName: 'attachments', fieldType: 'list<article_attachment>' },
       ],
@@ -1873,6 +1905,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           articleId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1890,16 +1923,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'content_url', fieldType: 'string' },
         { fieldName: 'size', fieldType: 'number' },
+        { fieldName: 'hash', fieldType: 'string' },
+        { fieldName: 'relative_path', fieldType: 'string' },
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'article_attachments', fieldType: 'List<article_attachment>' },
         { fieldName: 'content', fieldType: 'string' },
+        { fieldName: 'hash', fieldType: 'string' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'article_id', fieldType: 'number' },
         { fieldName: 'display_file_name', fieldType: 'string' },
-        { fieldName: 'relative_path', fieldType: 'string' },
       ),
       extendsParentId: true,
       dataField: 'article_attachments',
@@ -1911,6 +1946,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           articleAttachmentId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1921,9 +1957,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
-      ),
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'brand', fieldType: 'number' },
@@ -1961,6 +1995,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           translation_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1995,6 +2030,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           locale: 'locale',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2008,9 +2044,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
-      fieldTypeOverrides: [
-        { fieldName: 'default_locale', fieldType: 'string' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'default_locale', fieldType: 'string' }],
       // serviceUrl is created in the help_center_service_url filter
     },
     deployRequests: {
@@ -2089,13 +2123,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'parent_section_id', fieldType: 'number' },
+        { fieldName: 'direct_parent_type', fieldType: 'string' },
         { fieldName: 'sections', fieldType: 'list<section>' },
         { fieldName: 'articles', fieldType: 'list<article>' },
         { fieldName: 'translations', fieldType: 'list<section_translation>' },
       ],
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'html_url', fieldType: 'string' },
-      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'html_url', fieldType: 'string' }),
       // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
@@ -2121,6 +2154,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           section_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2149,9 +2183,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
-      ),
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'brand', fieldType: 'number' },
@@ -2189,6 +2221,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           translation_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2220,9 +2253,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'sections', fieldType: 'list<section>' },
         { fieldName: 'translations', fieldType: 'list<category_translation>' },
       ],
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'html_url', fieldType: 'string' },
-      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'html_url', fieldType: 'string' }),
       // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
@@ -2245,6 +2276,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           category_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2255,9 +2287,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
-      ),
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'brand', fieldType: 'number' },
@@ -2295,6 +2325,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           translation_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2335,14 +2366,15 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           permissionGroupId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
   user_segments: {
     request: {
       url: '/api/v2/help_center/user_segments',
-      queryParams: { per_page: String(PAGE_SIZE) },
-      paginationField: 'next_page',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'user_segments',
@@ -2364,7 +2396,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           fieldType: 'string',
           restrictions: { enforce_value: true, values: ['signed_in_users', 'staff', EVERYONE_USER_TYPE] },
         },
-
       ],
       serviceUrl: '/knowledge/user_segments/edit/{id}',
     },
@@ -2388,6 +2419,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           userSegmentId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2424,6 +2456,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_tokens: {
     request: {
       url: '/api/v2/oauth/tokens',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'tokens',
@@ -2463,6 +2497,180 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       isSingleton: true,
     },
   },
+  custom_objects: {
+    request: {
+      url: '/api/v2/custom_objects',
+      queryParams: { per_page: String(PAGE_SIZE) },
+      paginationField: 'next_page',
+      recurseInto: [
+        {
+          type: 'custom_object_fields',
+          toField: 'custom_object_fields',
+          context: [{ name: 'custom_object_key', fromField: 'key' }],
+        },
+      ],
+    },
+    transformation: {
+      dataField: 'custom_objects',
+    },
+  },
+  custom_object: {
+    transformation: {
+      idFields: ['key'],
+      sourceTypeName: 'custom_objects__custom_objects',
+      standaloneFields: [{ fieldName: 'custom_object_fields' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'created_by_user_id', fieldType: 'string' },
+        { fieldName: 'updated_by_user_id', fieldType: 'string' },
+      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        // these fields are generated by their raw_ counterparts, and we create them on preDeploy
+        { fieldName: 'title', fieldType: 'string' },
+        { fieldName: 'title_pluralized', fieldType: 'string' },
+        { fieldName: 'description', fieldType: 'string' },
+      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v2/custom_objects',
+        method: 'post',
+        deployAsField: 'custom_object',
+        fieldsToIgnore: ['custom_object_fields'],
+      },
+      modify: {
+        url: '/api/v2/custom_objects/{custom_object_key}',
+        method: 'patch',
+        deployAsField: 'custom_object',
+        fieldsToIgnore: ['custom_object_fields'],
+        urlParamsToFields: {
+          custom_object_key: 'key',
+        },
+      },
+      remove: {
+        url: '/api/v2/custom_objects/{custom_object_key}',
+        method: 'delete',
+        urlParamsToFields: {
+          custom_object_key: 'key',
+        },
+        omitRequestBody: true,
+      },
+    },
+  },
+  custom_object_fields: {
+    request: {
+      url: '/api/v2/custom_objects/{custom_object_key}/fields',
+      queryParams: DEFAULT_QUERY_PARAMS,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
+    },
+    transformation: {
+      dataField: 'custom_object_fields',
+    },
+  },
+  custom_object_field: {
+    transformation: {
+      idFields: ['key'],
+      extendsParentId: true,
+      standaloneFields: [{ fieldName: 'custom_field_options' }],
+      sourceTypeName: 'custom_object__custom_object_fields',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        // these fields are generated by their raw_ counterparts, and we create them on preDeploy
+        { fieldName: 'description', fieldType: 'string' },
+        { fieldName: 'title', fieldType: 'string' },
+      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v2/custom_objects/{custom_object_key}/fields',
+        method: 'post',
+        deployAsField: 'custom_object_field',
+        urlParamsToFields: {
+          custom_object_key: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/api/v2/custom_objects/{custom_object_key}/fields/{custom_object_field_key}',
+        method: 'put',
+        deployAsField: 'custom_object_field',
+        urlParamsToFields: {
+          custom_object_key: '_parent.0.key',
+          custom_object_field_key: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v2/custom_objects/{custom_object_key}/fields/{custom_object_field_key}',
+        method: 'delete',
+        urlParamsToFields: {
+          custom_object_key: '_parent.0.key',
+          custom_object_field_key: 'key',
+        },
+        omitRequestBody: true,
+      },
+    },
+  },
+  // Created in custom_object_field_options.ts
+  custom_object_field__custom_field_options: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+  },
+  themes: {
+    request: {
+      url: '/api/v2/guide/theming/themes',
+    },
+    transformation: {
+      dataField: 'themes',
+    },
+  },
+  theme: {
+    transformation: {
+      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
+      sourceTypeName: 'themes__themes',
+      fieldTypeOverrides: [{ fieldName: 'root', fieldType: 'theme_folder' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'live', fieldType: 'boolean' },
+        { fieldName: 'author', fieldType: 'string' },
+        { fieldName: 'version', fieldType: 'string' },
+      ]),
+    },
+    deployRequests: {
+      remove: {
+        url: '/api/v2/guide/theming/themes/{themeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          themeId: 'id',
+        },
+        omitRequestBody: true,
+      },
+    },
+  },
+  theme_file: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'filename', fieldType: 'string' },
+        { fieldName: 'content', fieldType: 'unknown' },
+      ],
+    },
+  },
+  theme_folder: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'files', fieldType: 'map<theme_file>' },
+        { fieldName: 'folders', fieldType: 'map<theme_folder>' },
+      ],
+    },
+  },
+  [THEME_SETTINGS_TYPE_NAME]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'brand', fieldType: 'number' },
+        { fieldName: 'liveTheme', fieldType: 'string' },
+      ],
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {
@@ -2500,6 +2708,9 @@ export const SUPPORTED_TYPES = {
   webhook: ['webhooks'],
   workspace: ['workspaces'],
   account_features: ['features'],
+  // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
+  tag: ['tags'],
+  custom_object: ['custom_objects'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand
@@ -2515,6 +2726,7 @@ export const GUIDE_BRAND_SPECIFIC_TYPES = {
 export const GUIDE_GLOBAL_TYPES = {
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
+  theme: ['themes'],
 }
 
 export const GUIDE_SUPPORTED_TYPES = {
@@ -2535,18 +2747,27 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
 
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
-    include: [{
-      type: elements.query.ALL_TYPES,
-    }],
-    exclude: [
-      { type: 'organization' },
-      { type: 'oauth_global_client' },
+    include: [
+      {
+        type: elements.query.ALL_TYPES,
+      },
     ],
+    exclude: [{ type: 'organization' }, { type: 'oauth_global_client' }],
     hideTypes: true,
     enableMissingReferences: true,
     resolveOrganizationIDs: false,
+    resolveUserIDs: true,
     includeAuditDetails: false,
-    addAlias: false,
+    addAlias: true,
+    handleIdenticalAttachmentConflicts: false,
+    omitInactive: {
+      default: OMIT_INACTIVE_DEFAULT,
+    },
+    omitTicketStatusTicketField: false,
+    useNewInfra: false,
+  },
+  [DEPLOY_CONFIG]: {
+    createMissingOrganizations: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2595,11 +2816,25 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
   },
 })
 
-const GuideType = createMatchingObjectType<Guide>({
-  elemID: new ElemID(ZENDESK, 'GuideType'),
+const ThemesReferenceJavascriptReferenceLookupStrategyType = createMatchingObjectType<
+  Themes['referenceOptions']['javascriptReferenceLookupStrategy']
+>({
+  elemID: new ElemID(ZENDESK, 'ThemesReferenceJavascriptReferenceLookupStrategyType'),
   fields: {
-    brands: {
-      refType: new ListType(BuiltinTypes.STRING),
+    strategy: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    minimumDigitAmount: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        _required: true,
+      },
+    },
+    prefix: {
+      refType: BuiltinTypes.STRING,
       annotations: {
         _required: true,
       },
@@ -2610,7 +2845,77 @@ const GuideType = createMatchingObjectType<Guide>({
   },
 })
 
-export type ChangeValidatorName = (
+const ThemesReferenceType = createMatchingObjectType<Themes['referenceOptions']>({
+  elemID: new ElemID(ZENDESK, 'ThemeType-referenceOptions'),
+  fields: {
+    enableReferenceLookup: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        _required: true,
+      },
+    },
+    javascriptReferenceLookupStrategy: {
+      refType: ThemesReferenceJavascriptReferenceLookupStrategyType,
+    },
+  },
+})
+
+const ThemesType = createMatchingObjectType<Themes>({
+  elemID: new ElemID(ZENDESK, 'ThemeType'),
+  fields: {
+    brands: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+    referenceOptions: {
+      refType: ThemesReferenceType,
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+const GuideType = createMatchingObjectType<Guide>({
+  elemID: new ElemID(ZENDESK, 'GuideType'),
+  fields: {
+    brands: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        _required: true,
+      },
+    },
+    themes: {
+      refType: ThemesType,
+    },
+    // Deprecated
+    themesForBrands: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+const OmitInactiveType = createMatchingObjectType<OmitInactiveConfig>({
+  elemID: new ElemID(ZENDESK, 'OmitInactiveType'),
+  fields: {
+    default: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+    customizations: {
+      refType: new MapType(BuiltinTypes.BOOLEAN),
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+export type ChangeValidatorName =
   | 'deployTypesNotSupported'
   | 'createCheckDeploymentBasedOnConfig'
   | 'accountSettings'
@@ -2656,6 +2961,8 @@ export type ChangeValidatorName = (
   | 'organizationExistence'
   | 'badFormatWebhookAction'
   | 'guideDisabled'
+  | 'guideThemeDeleteLive'
+  | 'guideThemeUpdateMetadata'
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
@@ -2663,12 +2970,24 @@ export type ChangeValidatorName = (
   | 'defaultAutomationRemoval'
   | 'deflectionAction'
   | 'uniqueAutomationConditions'
+  | 'triggerCategoryRemoval'
   | 'childInOrder'
   | 'childrenReferences'
   | 'orderChildrenParent'
   | 'guideOrderDeletion'
   | 'attachmentWithoutContent'
-  )
+  | 'duplicateRoutingAttributeValue'
+  | 'ticketFieldDeactivation'
+  | 'duplicateIdFieldValues'
+  | 'notEnabledMissingReferences'
+  | 'conditionalTicketFields'
+  | 'dynamicContentDeletion'
+  | 'dynamicContentPlaceholderModification'
+  | 'inactiveTicketFormInView'
+  | 'immutableTypeAndKeyForUserFields'
+  | 'localeModification'
+  | 'emptyAutomationOrder'
+  | 'viewCustomStatusConditions'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -2720,6 +3039,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     organizationExistence: { refType: BuiltinTypes.BOOLEAN },
     badFormatWebhookAction: { refType: BuiltinTypes.BOOLEAN },
     guideDisabled: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeDeleteLive: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeUpdateMetadata: { refType: BuiltinTypes.BOOLEAN },
     additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
@@ -2728,10 +3049,23 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     attachmentWithoutContent: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
     uniqueAutomationConditions: { refType: BuiltinTypes.BOOLEAN },
+    triggerCategoryRemoval: { refType: BuiltinTypes.BOOLEAN },
     childInOrder: { refType: BuiltinTypes.BOOLEAN },
     childrenReferences: { refType: BuiltinTypes.BOOLEAN },
     orderChildrenParent: { refType: BuiltinTypes.BOOLEAN },
     guideOrderDeletion: { refType: BuiltinTypes.BOOLEAN },
+    duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
+    ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
+    duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
+    notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+    conditionalTicketFields: { refType: BuiltinTypes.BOOLEAN },
+    dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
+    dynamicContentPlaceholderModification: { refType: BuiltinTypes.BOOLEAN },
+    inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
+    immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
+    localeModification: { refType: BuiltinTypes.BOOLEAN },
+    emptyAutomationOrder: { refType: BuiltinTypes.BOOLEAN },
+    viewCustomStatusConditions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -2742,28 +3076,35 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(ZENDESK),
+      refType: createClientConfigType({ adapter: ZENDESK }),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(
-        ZENDESK,
-        {
+      refType: definitions.createUserFetchConfigType({
+        adapterName: ZENDESK,
+        additionalFields: {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+          resolveUserIDs: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
-          addAlias: { refType: BuiltinTypes.BOOLEAN }, // SALTO-3662 this flag should become true by default
+          addAlias: { refType: BuiltinTypes.BOOLEAN },
+          handleIdenticalAttachmentConflicts: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
           resolveOrganizationIDs: { refType: BuiltinTypes.BOOLEAN },
+          extractReferencesFromFreeText: { refType: BuiltinTypes.BOOLEAN },
+          convertJsonIdsToReferences: { refType: BuiltinTypes.BOOLEAN },
+          omitInactive: { refType: OmitInactiveType },
+          omitTicketStatusTicketField: { refType: BuiltinTypes.BOOLEAN },
+          useNewInfra: { refType: BuiltinTypes.BOOLEAN },
         },
-      ),
+        omitElemID: true,
+      }),
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(
-        ZENDESK,
-        changeValidatorConfigType,
-        defaultMissingUserFallbackField
-      ),
+      refType: definitions.createUserDeployConfigType(ZENDESK, changeValidatorConfigType, {
+        ...defaultMissingUserFallbackField,
+        createMissingOrganizations: { refType: BuiltinTypes.BOOLEAN },
+      }),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({
@@ -2780,8 +3121,15 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.guide`,
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
+      `${FETCH_CONFIG}.resolveUserIDs`,
       `${FETCH_CONFIG}.includeAuditDetails`,
       `${FETCH_CONFIG}.addAlias`,
+      `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,
+      `${FETCH_CONFIG}.extractReferencesFromFreeText`,
+      `${FETCH_CONFIG}.convertJsonIdsToReferences`,
+      `${FETCH_CONFIG}.omitInactive.customizations`,
+      `${FETCH_CONFIG}.omitTicketStatusTicketField`,
+      `${FETCH_CONFIG}.useNewInfra`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -2790,27 +3138,59 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
 
 export type FilterContext = {
   [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]?: ZedneskDeployConfig
+  [DEPLOY_CONFIG]?: ZendeskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
-export const validateFetchConfig = validateDuckTypeFetchConfig
+export const validateFetchConfig = (
+  fetchConfigPath: string,
+  userFetchConfig: definitions.UserFetchConfig,
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void =>
+  validateDuckTypeFetchConfig(
+    fetchConfigPath,
+    userFetchConfig,
+    _.defaults({}, adapterApiConfig, {
+      supportedTypes: {
+        tag: ['tags'],
+      },
+    }),
+  )
 
 /**
  * Validating each Zendesk Guide type has a dataField property in the configuration
  */
-export const validateGuideTypesConfig = (
-  adapterApiConfig: configUtils.AdapterApiConfig,
-): void => {
-  const zendeskGuideTypesWithoutDataField = _.values(GUIDE_SUPPORTED_TYPES).flat()
+export const validateGuideTypesConfig = (adapterApiConfig: configUtils.AdapterApiConfig): void => {
+  const zendeskGuideTypesWithoutDataField = _.values(GUIDE_SUPPORTED_TYPES)
+    .flat()
     .filter(type => adapterApiConfig.types[type].transformation?.dataField === undefined)
   if (zendeskGuideTypesWithoutDataField.length > 0) {
-    throw Error(`Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`)
+    throw Error(
+      `Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`,
+    )
   }
 }
 
-export const isGuideEnabled = (
-  fetchConfig: ZendeskFetchConfig
-): boolean => (
-  fetchConfig.guide?.brands !== undefined
-)
+export const isGuideEnabled = (fetchConfig: ZendeskFetchConfig): boolean => fetchConfig.guide?.brands !== undefined
+
+export const isGuideThemesEnabled = (fetchConfig: ZendeskFetchConfig): boolean =>
+  (fetchConfig.guide?.themes?.brands !== undefined && fetchConfig.guide?.themes?.brands.length > 0) ||
+  // Deprecated
+  (fetchConfig.guide?.themesForBrands !== undefined && fetchConfig.guide?.themesForBrands.length > 0)
+
+export const validateOmitInactiveConfig = (
+  omitInactiveConfig: OmitInactiveConfig | undefined,
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => {
+  if (omitInactiveConfig !== undefined) {
+    validateDefaultWithCustomizations(
+      'omitInactive',
+      omitInactiveConfig,
+      _.defaults({}, adapterApiConfig, {
+        supportedTypes: {
+          tag: ['tags'],
+        },
+      }),
+    )
+  }
+}

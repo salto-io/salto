@@ -1,20 +1,28 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
+import { getParent, getParents } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -36,6 +44,16 @@ const filter: FilterCreator = ({ client, config }) => ({
         if (leadAccountId !== undefined) {
           instance.value.leadAccountId = leadAccountId
           delete instance.value.lead
+        }
+        try {
+          const parentPath = getParent(instance).path
+          if (parentPath === undefined || instance.path === undefined) {
+            log.error(`failed to get path for ${instance.elemID.getFullName()} or its parent`)
+            return
+          }
+          instance.path = [...parentPath.slice(0, -1), 'components', ...instance.path.slice(-1)]
+        } catch (err) {
+          log.error('failed to get parent path for %s: %o', instance.elemID.getFullName(), err)
         }
       })
   },
@@ -60,34 +78,35 @@ const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && getChangeData(change).elemID.typeName === PROJECT_COMPONENT_TYPE_NAME
-        && isRemovalChange(change)
+      change =>
+        isInstanceChange(change) &&
+        getChangeData(change).elemID.typeName === PROJECT_COMPONENT_TYPE_NAME &&
+        isRemovalChange(change),
     )
 
-
-    const deployResult = await deployChanges(
-      relevantChanges as Change<InstanceElement>[],
-      async change => {
-        try {
-          await defaultDeployChange({
-            change,
-            client,
-            apiDefinitions: config.apiDefinitions,
-          })
-        } catch (err) {
-          if (err instanceof clientUtils.HTTPError
-            && Array.isArray(err.response.data.errorMessages)
-            && err.response.data.errorMessages
-              .includes(`The component with id ${getChangeData(change).value.id} does not exist.`)
-          ) {
-            log.debug(`When attempting to delete component ${getChangeData(change).elemID.getFullName}, received an error that it is already deleted`)
-            return
-          }
-          throw err
+    const deployResult = await deployChanges(relevantChanges as Change<InstanceElement>[], async change => {
+      try {
+        await defaultDeployChange({
+          change,
+          client,
+          apiDefinitions: config.apiDefinitions,
+        })
+      } catch (err) {
+        if (
+          err instanceof clientUtils.HTTPError &&
+          Array.isArray(err.response.data.errorMessages) &&
+          err.response.data.errorMessages.includes(
+            `The component with id ${getChangeData(change).value.id} does not exist.`,
+          )
+        ) {
+          log.debug(
+            `When attempting to delete component ${getChangeData(change).elemID.getFullName}, received an error that it is already deleted`,
+          )
+          return
         }
+        throw err
       }
-    )
+    })
 
     return {
       leftoverChanges,

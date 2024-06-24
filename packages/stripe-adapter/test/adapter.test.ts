@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import 'jest-extended'
 import axios from 'axios'
@@ -24,6 +24,7 @@ import {
   isInstanceElement,
   ListType,
   ObjectType,
+  ProgressReporter,
   Values,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
@@ -48,12 +49,9 @@ jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
   return {
     ...actual,
-    elements: {
-      ...actual.elements,
-      swagger: {
-        ...actual.elements.swagger,
-        generateTypes: jest.fn(),
-      },
+    openapi: {
+      ...actual.openapi,
+      generateTypes: jest.fn(),
     },
   }
 })
@@ -67,24 +65,18 @@ describe('stripe swagger adapter', () => {
     response: unknown
   }
 
-  const CREDENTIALS = new InstanceElement(
-    'credentials',
-    accessTokenCredentialsType,
-    { token: 'testToken' }
-  )
+  const CREDENTIALS = new InstanceElement('credentials', accessTokenCredentialsType, { token: 'testToken' })
 
-  const DEFAULT_CONFIG_INSTANCE = new InstanceElement(
-    'config',
-    configType,
-    DEFAULT_CONFIG
-  )
+  const DEFAULT_CONFIG_INSTANCE = new InstanceElement('config', configType, DEFAULT_CONFIG)
 
   const fetchInstances = async (config = DEFAULT_CONFIG_INSTANCE): Promise<InstanceElement[]> => {
-    const { elements } = await adapter.operations({
-      credentials: CREDENTIALS,
-      config,
-      elementsSource: buildElementsSourceFromElements([]),
-    }).fetch({ progressReporter: { reportProgress: () => null } })
+    const { elements } = await adapter
+      .operations({
+        credentials: CREDENTIALS,
+        config,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
+      .fetch({ progressReporter: { reportProgress: () => null } })
 
     return elements.filter(isInstanceElement)
   }
@@ -95,32 +87,39 @@ describe('stripe swagger adapter', () => {
     })
     const pricesType = new ObjectType({
       elemID: new ElemID(STRIPE, 'prices'),
-      fields: { data: {
-        refType: new ListType(priceType),
-      } },
+      fields: {
+        data: {
+          refType: new ListType(priceType),
+        },
+      },
     })
-    const singularObjectTypesByName = Object.fromEntries(Object.keys(ALL_SUPPORTED_TYPES)
-      .map(type => [
+    const singularObjectTypesByName = Object.fromEntries(
+      Object.keys(ALL_SUPPORTED_TYPES).map(type => [
         type,
         new ObjectType({
           elemID: new ElemID(STRIPE, type),
           fields: { id: { refType: BuiltinTypes.STRING } },
-        })]))
+        }),
+      ]),
+    )
     const mockTypes = {
       allTypes: {
         ...singularObjectTypesByName,
         price: priceType,
         prices: pricesType,
-        ...Object.fromEntries(Object.entries(ALL_SUPPORTED_TYPES).map(
-          ([singleType, pluralTypes]) => [naclCase(pluralTypes[0]), new ObjectType({
-            elemID: new ElemID(STRIPE, pluralTypes[0]),
-            fields: {
-              data: {
-                refType: new ListType(singularObjectTypesByName[singleType]),
+        ...Object.fromEntries(
+          Object.entries(ALL_SUPPORTED_TYPES).map(([singleType, pluralTypes]) => [
+            naclCase(pluralTypes[0]),
+            new ObjectType({
+              elemID: new ElemID(STRIPE, pluralTypes[0]),
+              fields: {
+                data: {
+                  refType: new ListType(singularObjectTypesByName[singleType]),
+                },
               },
-            },
-          })]
-        )),
+            }),
+          ]),
+        ),
       },
       parsedConfigs: {
         products: {
@@ -165,13 +164,11 @@ describe('stripe swagger adapter', () => {
         },
       },
     }
-    mockedAdapterComponents.elements.swagger.generateTypes.mockResolvedValue(mockTypes)
+    mockedAdapterComponents.openapi.generateTypes.mockResolvedValue(mockTypes)
 
-    const mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' });
-    (mockReplies as MockReply[]).forEach(({ url, params, response }) => {
-      mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).reply(
-        200, response
-      )
+    const mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
+    ;(mockReplies as MockReply[]).forEach(({ url, params, response }) => {
+      mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).reply(200, response)
     })
   })
 
@@ -183,8 +180,7 @@ describe('stripe swagger adapter', () => {
     })
 
     it('fetches all instances', () => {
-      const fetchedInstancesFullNames = fetchedInstances
-        .map(instance => instance.elemID.getFullName())
+      const fetchedInstancesFullNames = fetchedInstances.map(instance => instance.elemID.getFullName())
       expect(fetchedInstancesFullNames).toIncludeSameMembers([
         'stripe.country_spec.instance.AR',
         'stripe.coupon.instance.testCoupon_forever_S8nceGxL',
@@ -203,18 +199,14 @@ describe('stripe swagger adapter', () => {
         fetchedInstancesTypes = new Set(fetchedInstances.map(instance => instance.elemID.typeName))
       })
 
-      it.each(Object.keys(ALL_SUPPORTED_TYPES))(
-        '%s',
-        typeName => {
-          expect(fetchedInstancesTypes).toContain(typeName)
-        },
-      )
+      it.each(Object.keys(ALL_SUPPORTED_TYPES))('%s', typeName => {
+        expect(fetchedInstancesTypes).toContain(typeName)
+      })
     })
 
     const PRODUCT_NAME = 'sfdsfsf_prod_JMpOpTpdX5rDKx'
     it(`fetches prices for product "${PRODUCT_NAME}"`, () => {
-      const productInstance = <InstanceElement>fetchedInstances
-        .find(e => e.elemID.name === PRODUCT_NAME)
+      const productInstance = <InstanceElement>fetchedInstances.find(e => e.elemID.name === PRODUCT_NAME)
       const expectedPriceIds = [
         'price_1JjN8THipyrr1EYirgGmnx9A',
         'price_1JjN8GHipyrr1EYi69M6nDJA',
@@ -233,108 +225,53 @@ describe('stripe swagger adapter', () => {
         let fetchedInstancesTypes: Set<string>
 
         beforeAll(async () => {
-          const config = new InstanceElement(
-            'config',
-            configType,
-            {
-              [FETCH_CONFIG]: {
-                include: SINGULAR_INCLUDE_TYPES.map(type => ({ type })),
-                exclude: [],
-              },
-              [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-            }
-          )
+          const config = new InstanceElement('config', configType, {
+            [FETCH_CONFIG]: {
+              include: SINGULAR_INCLUDE_TYPES.map(type => ({ type })),
+              exclude: [],
+            },
+            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+          })
           const instances = await fetchInstances(config)
           fetchedInstancesTypes = new Set(instances.map(e => e.elemID.typeName))
         })
 
-        it.each(SINGULAR_INCLUDE_TYPES)(
-          '%s',
-          includedType => {
-            expect(fetchedInstancesTypes).toContain(includedType)
-          }
-        )
+        it.each(SINGULAR_INCLUDE_TYPES)('%s', includedType => {
+          expect(fetchedInstancesTypes).toContain(includedType)
+        })
 
-        it('doesn\'t fetch additional types', () => {
-          const notIncluded = (typeName: string): boolean =>
-            !SINGULAR_INCLUDE_TYPES.includes(typeName)
+        it("doesn't fetch additional types", () => {
+          const notIncluded = (typeName: string): boolean => !SINGULAR_INCLUDE_TYPES.includes(typeName)
           const additionalTypes: string[] = Array.from(fetchedInstancesTypes).filter(notIncluded)
           expect(additionalTypes).toBeEmpty()
         })
       })
-
-      describe('fetches with deprecated config', () => {
-        const SINGULAR_INCLUDE_TYPES = ['coupon', 'tax_rate']
-
-        let fetchedInstancesTypes: Set<string>
-
-        beforeAll(async () => {
-          const config = new InstanceElement(
-            'config',
-            configType,
-            {
-              [FETCH_CONFIG]: {
-                includeTypes: ['coupons', 'tax_rates'],
-              },
-              [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-            }
-          )
-          const instances = await fetchInstances(config)
-          fetchedInstancesTypes = new Set(instances.map(e => e.elemID.typeName))
-        })
-
-        it.each(SINGULAR_INCLUDE_TYPES)(
-          '%s',
-          includedType => {
-            expect(fetchedInstancesTypes).toContain(includedType)
-          }
-        )
-
-        it('doesn\'t fetch additional types', () => {
-          const notIncluded = (typeName: string): boolean =>
-            !SINGULAR_INCLUDE_TYPES.includes(typeName)
-          const additionalTypes: string[] = Array.from(fetchedInstancesTypes).filter(notIncluded)
-          expect(additionalTypes).toBeEmpty()
-        })
-      })
-
 
       it('fetches instances of modified type: "product"', async () => {
-        const config = new InstanceElement(
-          'config',
-          configType,
-          {
-            [FETCH_CONFIG]: DEFAULT_CONFIG[FETCH_CONFIG],
-            [API_DEFINITIONS_CONFIG]: {
-              ...DEFAULT_API_DEFINITIONS,
-              types: {
-                products: {
-                  request: {
-                    url: '/v1/products',
-                  },
+        const config = new InstanceElement('config', configType, {
+          [FETCH_CONFIG]: DEFAULT_CONFIG[FETCH_CONFIG],
+          [API_DEFINITIONS_CONFIG]: {
+            ...DEFAULT_API_DEFINITIONS,
+            types: {
+              products: {
+                request: {
+                  url: '/v1/products',
                 },
               },
             },
-          }
-        )
+          },
+        })
         const fetchedTypes = (await fetchInstances(config)).map(i => i.elemID.typeName)
         expect(fetchedTypes).toContain('product')
       })
       it('should filter elements by type+name on fetch', async () => {
-        const config = new InstanceElement(
-          'config',
-          configType,
-          {
-            ...DEFAULT_CONFIG,
-            fetch: {
-              ...DEFAULT_CONFIG.fetch,
-              include: [
-                { type: 'coupon' },
-                { type: 'product', criteria: { name: 'a.*' } },
-              ],
-            },
+        const config = new InstanceElement('config', configType, {
+          ...DEFAULT_CONFIG,
+          fetch: {
+            ...DEFAULT_CONFIG.fetch,
+            include: [{ type: 'coupon' }, { type: 'product', criteria: { name: 'a.*' } }],
           },
-        )
+        })
         const instances = (await fetchInstances(config)).filter(isInstanceElement)
         expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual([
           'stripe.coupon.instance.testCoupon_forever_S8nceGxL',
@@ -351,7 +288,14 @@ describe('stripe swagger adapter', () => {
         config: DEFAULT_CONFIG_INSTANCE,
         elementsSource: buildElementsSourceFromElements([]),
       })
-      const deployOptions = { changeGroup: { groupID: '', changes: [] } }
+      const nullProgressReporter: ProgressReporter = {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        reportProgress: () => {},
+      }
+      const deployOptions = {
+        changeGroup: { groupID: '', changes: [] },
+        progressReporter: nullProgressReporter,
+      }
       await expect(adapterOperations.deploy(deployOptions)).rejects.toThrow(new Error('Not implemented.'))
     })
   })

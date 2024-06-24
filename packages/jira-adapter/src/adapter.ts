@@ -1,27 +1,52 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
+import {
+  Element,
+  FetchResult,
+  AdapterOperations,
+  DeployResult,
+  InstanceElement,
+  TypeMap,
+  isObjectType,
+  FetchOptions,
+  DeployOptions,
+  Change,
+  isInstanceChange,
+  ElemIdGetter,
+  ReadOnlyElementsSource,
+  ProgressReporter,
+  FixElementsFunc,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
+import {
+  config as configUtils,
+  definitions,
+  elements as elementUtils,
+  client as clientUtils,
+  combineElementFixers,
+  fetch as fetchUtils,
+  openapi,
+} from '@salto-io/adapter-components'
+import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { objects } from '@salto-io/lowerdash'
+import { objects, collections } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
-import { JiraConfig, getApiDefinitions } from './config/config'
+import { JiraConfig, configType, getApiDefinitions } from './config/config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import localeFilter from './filters/locale'
 import fieldReferencesFilter from './filters/field_references'
@@ -38,7 +63,7 @@ import boardColumnsFilter from './filters/board/board_columns'
 import boardSubQueryFilter from './filters/board/board_subquery'
 import boardEstimationFilter from './filters/board/board_estimation'
 import boardDeploymentFilter from './filters/board/board_deployment'
-import automationBrokenReferenceFilter from './filters/automation/automation_project_broken_reference'
+import brokenReferences from './filters/broken_reference_filter'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
 import smartValueReferenceFilter from './filters/automation/smart_values/smart_value_reference_filter'
 import webhookFilter from './filters/webhook/webhook'
@@ -64,6 +89,9 @@ import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
+import workflowFilter from './filters/workflowV2/workflow_filter'
+import workflowV1RemovalFilter from './filters/workflowV2/workflowV1_removal'
+import workflowTransitionIdsFilter from './filters/workflowV2/transition_ids'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
@@ -89,6 +117,7 @@ import contextReferencesFilter from './filters/fields/context_references_filter'
 import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
+import serviceUrlJsmFilter from './filters/service_url/service_url_jsm'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
@@ -100,12 +129,14 @@ import wrongUserPermissionSchemeFilter from './filters/permission_scheme/wrong_u
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
+import objectTypeIconFilter from './filters/assets/object_type_icon'
 import filtersFilter from './filters/filter'
 import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
-import { JIRA } from './constants'
-import { paginate, removeScopedObjects } from './client/pagination'
+import changePortalGroupFieldsFilter from './filters/change_portal_group_fields'
+import { JIRA, PROJECT_TYPE, SERVICE_DESK } from './constants'
+import { paginate, filterResponseEntries } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
@@ -114,12 +145,15 @@ import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 import deployDcIssueEventsFilter from './filters/data_center/issue_events'
+import requestTypelayoutsToValuesFilter from './filters/layouts/request_types_layouts_to_values'
 import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
 import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
+import requestTypeLayoutsFilter from './filters/layouts/request_type_request_form'
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
-import accountInfoFilter from './filters/account_info'
+import accountInfoFilter, { isJsmPremiumEnabledInService, isJsmEnabledInService } from './filters/account_info'
+import requestTypeFilter from './filters/request_type'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow/workflow_filter'
 import pluginVersionFliter from './filters/data_center/plugin_version'
@@ -131,38 +165,77 @@ import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
+import issueLayoutFilter from './filters/layouts/issue_layout'
+import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
+import changeJSMElementsFieldFilter from './filters/change_jsm_fields'
+import formsFilter from './filters/forms/forms'
+import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
+import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
+import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
+import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
+import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
+import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
+import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
+import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
+import assetsInstancesDeploymentFilter from './filters/assets/assets_instances_deployment'
+import deployAttributesFilter from './filters/assets/attribute_deploy_filter'
+import objectSchemaDeployFilter from './filters/assets/object_schema_deployment'
+import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
+import jsmPathFilter from './filters/jsm_paths'
+import portalSettingsFilter from './filters/portal_settings'
+import queueDeploymentFilter from './filters/queue_deployment'
+import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
+import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
+import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
+import queueFetchFilter from './filters/queue_fetch'
+import portalGroupsFilter from './filters/portal_groups'
+import assetsObjectTypePath from './filters/assets/assets_object_type_path'
+import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
+import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_order'
+import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
+import changeAttributesPathFilter from './filters/assets/change_attributes_path'
+import asyncApiCallsFilter from './filters/async_api_calls'
+import addImportantValuesFilter from './filters/add_important_values'
 import ScriptRunnerClient from './client/script_runner_client'
+import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
+import { hasSoftwareProject } from './utils'
+import { getWorkspaceId } from './workspace_id'
+import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
+import { createFixElementFunctions } from './fix_elements'
 
-const { getAllElements } = elementUtils.ducktype
-const { findDataField, computeGetArgs } = elementUtils
-
-const {
-  generateTypes,
-  getAllInstances,
-  loadSwagger,
-  addDeploymentAnnotations,
-} = elementUtils.swagger
-const { createPaginator } = clientUtils
+const { getAllElements, addRemainingTypes } = elementUtils.ducktype
+const { findDataField } = elementUtils
+const { computeGetArgs } = fetchUtils.resource
+const { getAllInstances } = elementUtils.swagger
+const { createPaginator, getWithCursorPagination } = clientUtils
 const log = logger(module)
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
+const { query: queryFilter, hideTypes: hideTypesFilter, ...otherCommonFilters } = commonFilters
+const { toArrayAsync } = collections.asynciterable
+const { makeArray } = collections.array
 
 export const DEFAULT_FILTERS = [
+  asyncApiCallsFilter,
   accountInfoFilter,
   storeUsersFilter,
+  changeJSMElementsFieldFilter,
+  queueFetchFilter,
+  changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,
   automationStructureFilter,
   // Should run before automationDeploymentFilter
-  automationBrokenReferenceFilter,
+  brokenReferences,
   automationDeploymentFilter,
+  addImportantValuesFilter,
   webhookFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,
+  workflowFilter,
+  workflowV1RemovalFilter,
   workflowStructureFilter,
-  // This should happen after workflowStructureFilter and before fieldStructureFilter
   queryFilter,
   // This should run before duplicateIdsFilter
   projectRoleRemoveTeamManagedDuplicatesFilter,
@@ -182,18 +255,30 @@ export const DEFAULT_FILTERS = [
   iconUrlFilter,
   triggersFilter,
   resolutionPropertyFilter,
+  scriptRunnerFilter,
+  // must run before references are transformed
+  scriptedFieldsIssueTypesFilter,
+  behaviorsMappingsFilter,
+  behaviorsFieldUuidFilter,
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
   scriptRunnerWorkflowListsFilter,
-  // must run after scriptRunnerWorkflowListsFilter
-  scriptRunnerWorkflowReferencesFilter,
   scriptRunnerTemplateExpressionFilter,
   scriptRunnerEmptyAccountIdsFilter,
-  transitionIdsFilter,
+  // resolves references in workflow instances!
   workflowPropertiesFilter,
+  // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
+  scriptRunnerWorkflowReferencesFilter,
+  // must run after scriptRunnerWorkflowReferencesFilter
+  workflowTransitionIdsFilter,
+  transitionIdsFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  // must run after workflowFilter
   emptyValidatorWorkflowFilter,
+  // must run before fieldReferencesFilter
+  formsFilter,
+  objectTypeIconFilter,
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
@@ -225,6 +310,7 @@ export const DEFAULT_FILTERS = [
   notificationSchemeStructureFilter,
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
+  issueTypeHierarchyFilter,
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
@@ -237,7 +323,19 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
+  serviceUrlJsmFilter, // Must run before fieldReferencesFilter
   fieldReferencesFilter,
+  // Must run after fieldReferencesFilter
+  addJsmTypesAsFieldsFilter,
+  issueLayoutFilter,
+  fetchJsmTypesFilter,
+  assetsObjectTypeChangeFields,
+  // Must run after issueLayoutFilter
+  removeSimpleFieldProjectFilter,
+  requestTypeLayoutsFilter,
+  createReferencesIssueLayoutFilter,
+  // Must run after createReferencesIssueLayoutFilter
+  requestTypelayoutsToValuesFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
   // must run after contextsProjectsFilter
@@ -272,9 +370,32 @@ export const DEFAULT_FILTERS = [
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
   addAliasFilter,
+  // must be done before scriptRunnerInstances
+  scriptRunnerListenersDeployFilter,
+  // must be done before scriptRunnerInstances
+  scriptedFragmentsDeployFilter,
+  scriptRunnerInstancesDeploy,
+  portalSettingsFilter,
+  queueDeploymentFilter,
+  portalGroupsFilter,
+  requestTypeFilter,
+  // Must run before asstesDeployFilter
+  assetsInstancesDeploymentFilter,
+  // Must be done after JsmTypesFilter
+  jsmPathFilter,
+  ...Object.values(otherCommonFilters),
+  // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
+  assetsObjectTypePath,
+  // Must run after assetsObjectTypePath
+  changeAttributesPathFilter,
+  defaultAttributesFilter,
+  assetsObjectTypeOrderFilter,
+  deployAttributesFilter,
+  objectSchemaDeployFilter, // Must run before deployJsmTypesFilter
+  deployJsmTypesFilter,
+  hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
   // Must be last
   defaultInstancesDeployFilter,
-  ...Object.values(otherCommonFilters),
 ]
 
 export interface JiraAdapterParams {
@@ -284,13 +405,13 @@ export interface JiraAdapterParams {
   config: JiraConfig
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
+  configInstance?: InstanceElement
 }
 
 type AdapterSwaggers = {
-  platform: elementUtils.swagger.LoadedSwagger
-  jira: elementUtils.swagger.LoadedSwagger
+  platform: openapi.LoadedSwagger
+  jira: openapi.LoadedSwagger
 }
-
 export default class JiraAdapter implements AdapterOperations {
   private createFiltersRunner: () => Required<Filter>
   private client: JiraClient
@@ -298,8 +419,11 @@ export default class JiraAdapter implements AdapterOperations {
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
+  private logIdsFunc?: () => void
   private fetchQuery: elementUtils.query.ElementQuery
   private getUserMapFunc: GetUserMapFunc
+  private fixElementsFunc: FixElementsFunc
+  private configInstance?: InstanceElement
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -307,52 +431,57 @@ export default class JiraAdapter implements AdapterOperations {
     scriptRunnerClient,
     getElemIdFunc,
     config,
+    configInstance,
     elementsSource,
   }: JiraAdapterParams) {
+    const wrapper = getElemIdFunc ? getElemIdFuncWrapper(getElemIdFunc) : undefined
     this.userConfig = config
-    this.getElemIdFunc = getElemIdFunc
+    this.configInstance = configInstance
+    this.getElemIdFunc = wrapper?.getElemIdFunc
+    this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
     this.scriptRunnerClient = scriptRunnerClient
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
-      customEntryExtractor: removeScopedObjects,
+      customEntryExtractor: filterResponseEntries,
       asyncRun: config.fetch.asyncPagination ?? true,
     })
 
-    this.fetchQuery = elementUtils.query.createElementQuery(
-      this.userConfig.fetch,
-      fetchCriteria,
-    )
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
     this.getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
 
     const filterContext = {}
-    this.createFiltersRunner = () => (
+    this.createFiltersRunner = () =>
       filtersRunner(
         {
           client,
           paginator,
           config,
-          getElemIdFunc,
+          getElemIdFunc: this.getElemIdFunc,
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
           getUserMapFunc: this.getUserMapFunc,
+          scriptRunnerClient,
         },
         filterCreators,
-        objects.concatObjects
+        objects.concatObjects,
       )
-    )
+
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ elementsSource, client, config }))
   }
 
   private async generateSwaggers(): Promise<AdapterSwaggers> {
     return Object.fromEntries(
       await Promise.all(
-        Object.entries(getApiDefinitions(this.userConfig.apiDefinitions))
-          .map(async ([key, config]) => [key, await loadSwagger(config.swagger.url)])
-      )
+        Object.entries(getApiDefinitions(this.userConfig.apiDefinitions)).map(async ([key, config]) => [
+          key,
+          await openapi.loadSwagger(config.swagger.url),
+        ]),
+      ),
     )
   }
 
@@ -366,14 +495,14 @@ export default class JiraAdapter implements AdapterOperations {
     // this will be replaced by built-in infrastructure support for multiple swagger defs
     // in the configuration
     const results = await Promise.all(
-      Object.keys(swaggers).map(
-        key => generateTypes(
+      Object.keys(swaggers).map(key =>
+        openapi.generateTypes(
           JIRA,
           apiDefinitions[key as keyof AdapterSwaggers],
           undefined,
-          swaggers[key as keyof AdapterSwaggers]
-        )
-      )
+          swaggers[key as keyof AdapterSwaggers],
+        ),
+      ),
     )
     return _.merge({}, ...results)
   }
@@ -381,16 +510,17 @@ export default class JiraAdapter implements AdapterOperations {
   @logDuration('generating swagger instances from service')
   private async getSwaggerInstances(
     allTypes: TypeMap,
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
+    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
+    supportedTypes: Record<string, string[]>,
+  ): Promise<fetchUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
       types: {
         ...parsedConfigs,
-        ..._.mapValues(
-          this.userConfig.apiDefinitions.types,
-          (def, typeName) => ({ ...parsedConfigs[typeName], ...def })
-        ),
+        ..._.mapValues(this.userConfig.apiDefinitions.types, (def, typeName) => ({
+          ...parsedConfigs[typeName],
+          ...def,
+        })),
       },
     }
     return getAllInstances({
@@ -398,18 +528,20 @@ export default class JiraAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchQuery: this.fetchQuery,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
 
   @logDuration('generating scriptRunner instances and types from service')
-  private async getScriptRunnerElements(): Promise<elementUtils.FetchElements<Element[]>> {
+  private async getScriptRunnerElements(): Promise<fetchUtils.FetchElements<Element[]>> {
     const { scriptRunnerApiDefinitions } = this.userConfig
     // scriptRunnerApiDefinitions is currently undefined for DC
-    if (this.scriptRunnerClient === undefined
-      || !this.userConfig.fetch.enableScriptRunnerAddon
-      || scriptRunnerApiDefinitions === undefined) {
+    if (
+      this.scriptRunnerClient === undefined ||
+      !this.userConfig.fetch.enableScriptRunnerAddon ||
+      scriptRunnerApiDefinitions === undefined
+    ) {
       return { elements: [] }
     }
 
@@ -432,46 +564,228 @@ export default class JiraAdapter implements AdapterOperations {
     })
   }
 
+  @logDuration('generating JSM assets instances and types from service')
+  private async getJSMAssetsElements(): Promise<fetchUtils.FetchElements<Element[]>> {
+    const { jsmApiDefinitions } = this.userConfig
+    // jsmApiDefinitions is currently undefined for DC
+    if (
+      this.client === undefined ||
+      jsmApiDefinitions === undefined ||
+      !this.userConfig.fetch.enableJSM ||
+      !(this.userConfig.fetch.enableJsmExperimental || this.userConfig.fetch.enableJSMPremium) ||
+      !(await isJsmPremiumEnabledInService(this.client))
+    ) {
+      return { elements: [] }
+    }
+
+    const workspaceId = await getWorkspaceId(this.client, this.userConfig)
+    if (workspaceId === undefined) {
+      return { elements: [] }
+    }
+    const workspaceContext = { workspaceId }
+    return getAllElements({
+      adapterName: JIRA,
+      types: jsmApiDefinitions.types,
+      shouldAddRemainingTypes: false,
+      supportedTypes: JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES,
+      fetchQuery: this.fetchQuery,
+      paginator: this.paginator,
+      nestedFieldFinder: findDataField,
+      computeGetArgs,
+      typeDefaults: jsmApiDefinitions.typeDefaults,
+      additionalRequestContext: workspaceContext,
+      getElemIdFunc: this.getElemIdFunc,
+      getEntriesResponseValuesFunc: jiraJSMAssetsEntriesFunc(),
+    })
+  }
+
+  @logDuration('generating JSM instances and types from service')
+  private async getJSMElements(
+    swaggerResponseElements: InstanceElement[],
+  ): Promise<fetchUtils.FetchElements<Element[]>> {
+    const { jsmApiDefinitions } = this.userConfig
+    // jsmApiDefinitions is currently undefined for DC
+    if (this.client === undefined || jsmApiDefinitions === undefined || !this.userConfig.fetch.enableJSM) {
+      return { elements: [] }
+    }
+
+    const isJsmEnabled = await isJsmEnabledInService(this.client)
+    if (!isJsmEnabled) {
+      log.debug('enableJSM set to true, but JSM is not enabled in the service, skipping fetching JSM elements')
+      return {
+        elements: [],
+        errors: [
+          {
+            message: 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
+            severity: 'Warning',
+          },
+        ],
+      }
+    }
+    const paginator = createPaginator({
+      client: this.client,
+      // Pagination method is different from the rest of jira's API
+      paginationFuncCreator: () => getWithCursorPagination(),
+    })
+    const paginationArgs = {
+      url: '/rest/servicedeskapi/servicedesk',
+      paginationField: '_links.next',
+    }
+    const serviceDeskProjectIds = (
+      await toArrayAsync(paginator(paginationArgs, page => makeArray(page.values) as clientUtils.ResponseValue[]))
+    )
+      .flat()
+      .map(project => project.projectId)
+
+    const serviceDeskProjects = await Promise.all(
+      swaggerResponseElements
+        .filter(project => project.elemID.typeName === PROJECT_TYPE)
+        .filter(isInstanceElement)
+        .filter(project => project.value.projectTypeKey === SERVICE_DESK)
+        .filter(project => {
+          if (!serviceDeskProjectIds.includes(project.value.id)) {
+            log.debug(`Skipping project ${project.value.name} since it has no JSM permissions`)
+            return false
+          }
+          return true
+        }),
+    )
+
+    const fetchResultWithDuplicateTypes = await Promise.all(
+      serviceDeskProjects.map(async projectInstance => {
+        const serviceDeskProjRecord: Record<string, string> = {
+          projectKey: projectInstance.value.key,
+          projectId: projectInstance.value.id,
+        }
+        log.debug(`Fetching elements for project ${projectInstance.elemID.name}`)
+        return getAllElements({
+          adapterName: JIRA,
+          types: jsmApiDefinitions.types,
+          shouldAddRemainingTypes: false,
+          supportedTypes: jsmApiDefinitions.supportedTypes,
+          fetchQuery: this.fetchQuery,
+          paginator: this.paginator,
+          nestedFieldFinder: findDataField,
+          computeGetArgs,
+          typeDefaults: jsmApiDefinitions.typeDefaults,
+          getElemIdFunc: this.getElemIdFunc,
+          additionalRequestContext: serviceDeskProjRecord,
+          getEntriesResponseValuesFunc: jiraJSMEntriesFunc(projectInstance),
+          shouldIgnorePermissionsError: true,
+        })
+      }),
+    )
+
+    /* Remove all the duplicate types and create map from type to it's instances  */
+    const typeNameToJSMInstances = _.groupBy(
+      fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
+      instance => instance.elemID.typeName,
+    )
+
+    /* create a list of all the JSM elements and change their types */
+    const jiraJSMElements = Object.entries(typeNameToJSMInstances).flatMap(([typeName, instances]) => {
+      const jsmElements = elementUtils.ducktype.getNewElementsFromInstances({
+        adapterName: JIRA,
+        typeName,
+        instances,
+        transformationConfigByType: configUtils.getTransformationConfigByType(jsmApiDefinitions.types),
+        transformationDefaultConfig: jsmApiDefinitions.typeDefaults.transformation,
+      })
+      return _.concat(jsmElements.instances as Element[], jsmElements.nestedTypes, jsmElements.type)
+    })
+    const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(
+      fetchResult => fetchResult.configChanges ?? [],
+    )
+    const jsmErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
+
+    return {
+      elements: jiraJSMElements,
+      configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
+      errors: jsmErrors,
+    }
+  }
+
   @logDuration('generating instances from service')
   private async getAllJiraElements(
     progressReporter: ProgressReporter,
-    swaggers: AdapterSwaggers
-  ): Promise<elementUtils.FetchElements<Element[]>> {
+    swaggers: AdapterSwaggers,
+  ): Promise<fetchUtils.FetchElements<Element[]>> {
     log.debug('going to fetch jira account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
+    const userConfigSupportedTypes = this.userConfig.apiDefinitions.supportedTypes
+    const shouldOmitBoardSupportedType = !(await hasSoftwareProject(this.client))
+    const supportedTypes = shouldOmitBoardSupportedType
+      ? _.omit(userConfigSupportedTypes, 'Board')
+      : userConfigSupportedTypes
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const [swaggerResponse, scriptRunnerElements] = await Promise.all([
-      this.getSwaggerInstances(swaggerTypes, parsedConfigs),
+      this.getSwaggerInstances(swaggerTypes, parsedConfigs, supportedTypes),
       this.getScriptRunnerElements(),
     ])
 
+    const jsmElements = await this.getJSMElements(swaggerResponse.elements)
+    const jsmAssetsElements = await this.getJSMAssetsElements()
     const elements: Element[] = [
       ...Object.values(swaggerTypes),
       ...swaggerResponse.elements,
       ...scriptRunnerElements.elements,
+      ...jsmElements.elements,
+      ...jsmAssetsElements.elements,
     ]
-    return { elements, errors: (swaggerResponse.errors ?? []).concat(scriptRunnerElements.errors ?? []) }
+
+    if (this.userConfig.jsmApiDefinitions) {
+      // Remaining types should be added once to avoid overlaps between the generated elements,
+      // so we add them once after all elements are generated
+      addRemainingTypes({
+        adapterName: JIRA,
+        elements,
+        typesConfig: this.userConfig.jsmApiDefinitions?.types ?? {},
+        supportedTypes: this.userConfig.jsmApiDefinitions?.supportedTypes ?? {},
+        typeDefaultConfig: {
+          ...this.userConfig.apiDefinitions.typeDefaults,
+          ...this.userConfig.jsmApiDefinitions?.typeDefaults,
+        },
+      })
+    }
+    return {
+      elements,
+      errors: (swaggerResponse.errors ?? [])
+        .concat(scriptRunnerElements.errors ?? [])
+        .concat(jsmElements.errors ?? [])
+        .concat(jsmAssetsElements.errors ?? []),
+      configChanges: jsmElements.configChanges ?? [],
+    }
   }
 
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     const swaggers = await this.generateSwaggers()
-    const { elements, errors } = await this.getAllJiraElements(progressReporter, swaggers)
+    const { elements, errors, configChanges } = await this.getAllJiraElements(progressReporter, swaggers)
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
+    const filterResult = (await this.createFiltersRunner().onFetch(elements)) || {}
 
+    const updatedConfig =
+      this.configInstance && configChanges
+        ? definitions.getUpdatedConfigFromConfigChanges({
+            configChanges,
+            currentConfig: this.configInstance,
+            configType,
+          })
+        : undefined
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
-    await addDeploymentAnnotations(
+    await openapi.addDeploymentAnnotations(
       elements.filter(isObjectType),
       Object.values(swaggers),
       this.userConfig.apiDefinitions,
     )
-
-    return { elements, errors: (errors ?? []).concat(filterResult.errors ?? []) }
+    if (this.logIdsFunc !== undefined) {
+      this.logIdsFunc()
+    }
+    return { elements, errors: (errors ?? []).concat(filterResult.errors ?? []), updatedConfig }
   }
 
   /**
@@ -479,17 +793,18 @@ export default class JiraAdapter implements AdapterOperations {
    */
   @logDuration('deploying account configuration')
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changesToDeploy = await Promise.all(changeGroup.changes
-      .filter(isInstanceChange)
-      .map(change => applyFunctionToChangeData<Change<InstanceElement>>(
-        change,
-        instance => instance.clone()
-      )))
+    const changesToDeploy = await Promise.all(
+      changeGroup.changes
+        .filter(isInstanceChange)
+        .map(change => applyFunctionToChangeData<Change<InstanceElement>>(change, instance => instance.clone())),
+    )
 
     const runner = this.createFiltersRunner()
     await runner.preDeploy(changesToDeploy)
 
-    const { deployResult: { appliedChanges, errors } } = await runner.deploy(changesToDeploy)
+    const {
+      deployResult: { appliedChanges, errors },
+    } = await runner.deploy(changesToDeploy)
 
     const changesToReturn = [...appliedChanges]
     await runner.onDeploy(changesToReturn)
@@ -507,4 +822,6 @@ export default class JiraAdapter implements AdapterOperations {
       getChangeGroupIds,
     }
   }
+
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

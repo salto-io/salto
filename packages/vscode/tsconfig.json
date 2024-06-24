@@ -1,34 +1,23 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "baseUrl": ".",
-        "declaration": true,
-        "declarationMap": true,
-        "paths": {
-            "jsforce": [
-                "../../node_modules/jsforce-types"
-            ],
-            "yargonaut": [
-                "src/types/yargonaut"
-            ],
-            // allow imports from subdirectories:
-            // e.g, "import Set from '@salto/lowerdash/collections/set'"
-            "@salto/lowerdash/*": [
-                "../../node_modules/@salto/lowerdash/dist/src/*"
-            ]
-        }
-    },
-    "include": [
-        "src/**/*",
-        "test/**/*",
-        "e2e_test/**/*"
-    ],
-    "references": [
-      { "path": "../core" },
-      { "path": "../lang-server" },
-      { "path": "../lowerdash" },
-      { "path": "../file" },
-      { "path": "../workspace" },
-    ]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "jsforce": ["../../node_modules/@salto-io/jsforce-types"],
+      "yargonaut": ["src/types/yargonaut"],
+      // allow imports from subdirectories:
+      // e.g, "import Set from '@salto/lowerdash/collections/set'"
+      "@salto/lowerdash/*": ["../../node_modules/@salto/lowerdash/dist/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../core" },
+    { "path": "../lang-server" },
+    { "path": "../lowerdash" },
+    { "path": "../file" },
+    { "path": "../workspace" },
+    { "path": "../parser" }
+  ]
 }

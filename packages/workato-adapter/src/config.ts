@@ -1,41 +1,66 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
+import { logger } from '@salto-io/logging'
+import {
+  WORKATO,
+  PROPERTY_TYPE,
+  ROLE_TYPE,
+  API_COLLECTION_TYPE,
+  FOLDER_TYPE,
+  RECIPE_TYPE,
+  CONNECTION_TYPE,
+  API_ENDPOINT_TYPE,
+  API_CLIENT_TYPE,
+  API_ACCESS_PROFILE_TYPE,
+  RECIPE_CODE_TYPE,
+} from './constants'
 
-type UserDeployConfig = configUtils.UserDeployConfig
+type UserDeployConfig = definitions.UserDeployConfig
 
-const { createClientConfigType } = clientUtils
-const {
-  createUserFetchConfigType,
-  createDucktypeAdapterApiConfigType,
-  validateDuckTypeFetchConfig,
-  createUserDeployConfigType,
-} = configUtils
+const log = logger(module)
+const { createClientConfigType } = definitions
+const { createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig } = configUtils
 
 export const DEFAULT_SERVICE_ID_FIELD = 'id'
 export const DEFAULT_ID_FIELDS = ['name']
-export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
-  { fieldName: 'created_at', fieldType: 'string' },
-  { fieldName: 'updated_at', fieldType: 'string' },
+export const EXTENDED_SCHEMA_FIELDS: configUtils.FieldToOmitType[] = [
   { fieldName: 'extended_input_schema' },
   { fieldName: 'extended_output_schema' },
+]
+
+export const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'created_at', fieldType: 'string' },
+  { fieldName: 'updated_at', fieldType: 'string' },
+]
+
+export const RECIPE_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'last_run_at' },
+  { fieldName: 'job_succeeded_count' },
+  { fieldName: 'job_failed_count' },
+  { fieldName: 'copy_count' },
+  { fieldName: 'lifetime_task_count' },
+]
+
+export const CONNECTION_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'authorized_at', fieldType: 'string' },
+  { fieldName: 'authorization_status', fieldType: 'string' },
 ]
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = []
 
@@ -43,10 +68,11 @@ export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
+export const ENABLE_DEPLOY_SUPPORT_FLAG = 'enableDeploySupport'
 
-export type WorkatoClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+export type WorkatoClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
-export type WorkatoFetchConfig = configUtils.UserFetchConfig & {
+export type WorkatoFetchConfig = definitions.UserFetchConfig & {
   serviceConnectionNames?: Record<string, string[]>
 }
 export type WorkatoApiConfig = configUtils.AdapterDuckTypeApiConfig
@@ -56,6 +82,7 @@ export type WorkatoConfig = {
   [FETCH_CONFIG]: WorkatoFetchConfig
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
   [DEPLOY_CONFIG]?: UserDeployConfig
+  [ENABLE_DEPLOY_SUPPORT_FLAG]?: boolean
 }
 
 export const SUPPORTED_TYPES = {
@@ -76,15 +103,8 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/connections',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
-      fieldsToOmit: [
-        ...FIELDS_TO_OMIT,
-        { fieldName: 'authorized_at', fieldType: 'string' },
-        { fieldName: 'authorization_status', fieldType: 'string' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
+      fieldsToOmit: [...DEFAULT_FIELDS_TO_OMIT, ...CONNECTION_FIELDS_TO_OMIT],
     },
   },
   [RECIPE_TYPE]: {
@@ -94,22 +114,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', '&folder_id'],
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-        { fieldName: 'user_id' },
-      ],
-      fieldsToOmit: [
-        ...FIELDS_TO_OMIT,
-        { fieldName: 'last_run_at' },
-        { fieldName: 'job_succeeded_count' },
-        { fieldName: 'job_failed_count' },
-        { fieldName: 'copy_count' },
-        { fieldName: 'lifetime_task_count' },
-      ],
-      standaloneFields: [
-        { fieldName: 'code', parseJSON: true },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }, { fieldName: 'user_id' }],
+      fieldsToOmit: [...DEFAULT_FIELDS_TO_OMIT, ...RECIPE_FIELDS_TO_OMIT],
+      standaloneFields: [{ fieldName: 'code', parseJSON: true }],
     },
   },
   [RECIPE_CODE_TYPE]: {
@@ -129,10 +136,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', '&parent_id'],
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [API_COLLECTION_TYPE]: {
@@ -141,10 +145,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'page',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [API_ENDPOINT_TYPE]: {
@@ -154,10 +155,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', 'base_path'],
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [API_CLIENT_TYPE]: {
@@ -166,10 +164,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'page',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [API_ACCESS_PROFILE_TYPE]: {
@@ -178,10 +173,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'page',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [ROLE_TYPE]: {
@@ -189,10 +181,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/roles',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [PROPERTY_TYPE]: {
@@ -209,7 +198,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
 }
 
-export const DEFAULT_CONFIG: WorkatoConfig = {
+const DEFAULT_CONFIG: WorkatoConfig = {
   [FETCH_CONFIG]: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
@@ -218,7 +207,7 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
     typeDefaults: {
       transformation: {
         idFields: DEFAULT_ID_FIELDS,
-        fieldsToOmit: FIELDS_TO_OMIT,
+        fieldsToOmit: [...DEFAULT_FIELDS_TO_OMIT, ...EXTENDED_SCHEMA_FIELDS],
         serviceIdField: DEFAULT_SERVICE_ID_FIELD,
         // TODO: change this to true for SALTO-3884.
         nestStandaloneInstances: false,
@@ -227,18 +216,45 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
     types: DEFAULT_TYPES,
     supportedTypes: SUPPORTED_TYPES,
   },
+  [ENABLE_DEPLOY_SUPPORT_FLAG]: false,
 }
 
-export type ChangeValidatorName = (
-  | 'deployNotSupported'
-)
+export const getDefaultConfig = (deploySupported = false): WorkatoConfig => {
+  if (!deploySupported) {
+    return DEFAULT_CONFIG
+  }
+  const defaultConfig = _.cloneDeep(DEFAULT_CONFIG)
+  defaultConfig[ENABLE_DEPLOY_SUPPORT_FLAG] = deploySupported
+  const typeDefaultTransformation = defaultConfig[API_DEFINITIONS_CONFIG].typeDefaults.transformation
+  if (typeDefaultTransformation !== undefined) {
+    typeDefaultTransformation.fieldsToOmit = typeDefaultTransformation.fieldsToOmit?.filter(
+      field => !EXTENDED_SCHEMA_FIELDS.map(exField => exField.fieldName).includes(field.fieldName),
+    )
+    log.debug(
+      'Updated fieldsToOmit of typeDefaults.transformation in default config to %o',
+      typeDefaultTransformation.fieldsToOmit,
+    )
+  }
+  return defaultConfig
+}
+export type ChangeValidatorsDeploySupportedName =
+  | 'deployTypesNotSupported'
+  | 'notSupportedTypes'
+  | 'notSupportedRemoval'
+  | 'notSupportedRecipeSettings'
+
+export type ChangeValidatorName = ChangeValidatorsDeploySupportedName | 'deployNotSupported'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
   elemID: new ElemID(WORKATO, 'changeValidatorConfig'),
   fields: {
+    deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedTypes: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedRemoval: { refType: BuiltinTypes.BOOLEAN },
     deployNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedRecipeSettings: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -249,28 +265,33 @@ export const configType = new ObjectType({
   elemID: new ElemID(WORKATO),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(WORKATO),
+      refType: createClientConfigType({ adapter: WORKATO }),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(
-        WORKATO,
-        {
+      refType: definitions.createUserFetchConfigType({
+        adapterName: WORKATO,
+        additionalFields: {
           serviceConnectionNames: {
             refType: new MapType(new ListType(BuiltinTypes.STRING)),
           },
         },
-      ),
+        omitElemID: true,
+      }),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({ adapter: WORKATO }),
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(WORKATO, changeValidatorConfigType),
+      refType: definitions.createUserDeployConfigType(WORKATO, changeValidatorConfigType),
     },
+    [ENABLE_DEPLOY_SUPPORT_FLAG]: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(
-      DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`
+      getDefaultConfig(),
+      API_DEFINITIONS_CONFIG,
+      `${FETCH_CONFIG}.hideTypes`,
+      ENABLE_DEPLOY_SUPPORT_FLAG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
@@ -280,7 +301,6 @@ export type FilterContext = {
   [FETCH_CONFIG]: WorkatoFetchConfig
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
 }
-
 
 export const validateFetchConfig = (
   fetchConfigPath: string,

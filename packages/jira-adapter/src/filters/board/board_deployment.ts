@@ -1,21 +1,29 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, ModificationChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  ModificationChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { BOARD_TYPE_NAME } from '../../constants'
@@ -29,10 +37,7 @@ import { findObject } from '../../utils'
 
 const log = logger(module)
 
-const deployName = async (
-  change: ModificationChange<InstanceElement>,
-  client: JiraClient
-): Promise<void> => {
+const deployName = async (change: ModificationChange<InstanceElement>, client: JiraClient): Promise<void> => {
   if (change.data.before.value.name === change.data.after.value.name) {
     return
   }
@@ -47,13 +52,9 @@ const deployName = async (
   })
 }
 
-const deployLocation = async (
-  change: ModificationChange<InstanceElement>,
-  client: JiraClient
-): Promise<void> => {
+const deployLocation = async (change: ModificationChange<InstanceElement>, client: JiraClient): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
-  if (_.isEqual(resolvedChange.data.before.value.location,
-    resolvedChange.data.after.value.location)) {
+  if (_.isEqual(resolvedChange.data.before.value.location, resolvedChange.data.after.value.location)) {
     return
   }
   const instance = getChangeData(resolvedChange)
@@ -68,10 +69,7 @@ const deployLocation = async (
   })
 }
 
-const deployFilter = async (
-  change: ModificationChange<InstanceElement>,
-  client: JiraClient
-): Promise<void> => {
+const deployFilter = async (change: ModificationChange<InstanceElement>, client: JiraClient): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
   if (resolvedChange.data.before.value.filterId === resolvedChange.data.after.value.filterId) {
     return
@@ -114,16 +112,14 @@ const filter: FilterCreator = ({ config, client }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && getChangeData(change).elemID.typeName === BOARD_TYPE_NAME
-        && isAdditionOrModificationChange(change)
+      change =>
+        isInstanceChange(change) &&
+        getChangeData(change).elemID.typeName === BOARD_TYPE_NAME &&
+        isAdditionOrModificationChange(change),
     )
 
-
     const deployResult = await deployChanges(
-      relevantChanges
-        .filter(isInstanceChange)
-        .filter(isAdditionOrModificationChange),
+      relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
       async change => {
         if (isAdditionChange(change)) {
           await defaultDeployChange({
@@ -141,7 +137,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         await deployColumns(change, client, config.client.boardColumnRetry)
         await deploySubQuery(change, client)
         await deployEstimation(change, client)
-      }
+      },
     )
 
     return {

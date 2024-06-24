@@ -1,21 +1,19 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  ObjectType, ElemID, InstanceElement, toChange,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { ObjectType, ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/workspace'
@@ -36,41 +34,37 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('workspace filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
-  const workspace = new InstanceElement(
-    'Test',
-    new ObjectType({ elemID: new ElemID(ZENDESK, 'workspace') }),
-    {
-      title: 'Test',
-      activated: true,
-      macro_ids: [1],
-      position: 1,
-      description: 'description test - 2',
-      ticket_form_id: 2,
-      apps: [{ id: 3, expand: true, position: 1 }],
-      conditions: {
-        all: [
-          {
-            field: 'status',
-            operator: 'is',
-            value: 'open',
-          },
-          {
-            field: 'brand_id',
-            operator: 'is',
-            value: 3,
-          },
-        ],
-        any: [
-          {
-            field: 'priority',
-            operator: 'is_not',
-            value: 'low',
-          },
-        ],
-      },
-      selected_macros: [{ id: 1, title: 'macro title', active: true, usage_7d: 0 }],
-    }
-  )
+  const workspace = new InstanceElement('Test', new ObjectType({ elemID: new ElemID(ZENDESK, 'workspace') }), {
+    title: 'Test',
+    activated: true,
+    macro_ids: [1],
+    position: 1,
+    description: 'description test - 2',
+    ticket_form_id: 2,
+    apps: [{ id: 3, expand: true, position: 1 }],
+    conditions: {
+      all: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: 'open',
+        },
+        {
+          field: 'brand_id',
+          operator: 'is',
+          value: 3,
+        },
+      ],
+      any: [
+        {
+          field: 'priority',
+          operator: 'is_not',
+          value: 'low',
+        },
+      ],
+    },
+    selected_macros: [{ id: 1, title: 'macro title', active: true, usage_7d: 0 }],
+  })
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -129,8 +123,7 @@ describe('workspace filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'add', data: { after: workspace } }])
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: workspace } }])
     })
 
     it('should pass the correct params to deployChange on update', async () => {
@@ -141,8 +134,7 @@ describe('workspace filter', () => {
       clonedWSAfter.value.id = id
       clonedWSAfter.value.description = 'edited'
       mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter
-        .deploy([{ action: 'modify', data: { before: clonedWSBefore, after: clonedWSAfter } }])
+      const res = await filter.deploy([{ action: 'modify', data: { before: clonedWSBefore, after: clonedWSAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedWSBefore, after: clonedWSAfter } },
@@ -153,13 +145,12 @@ describe('workspace filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          {
-            action: 'modify',
-            data: { before: clonedWSBefore, after: clonedWSAfter },
-          },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWSBefore, after: clonedWSAfter },
+        },
+      ])
     })
 
     it('should pass the correct params to deployChange on remove', async () => {
@@ -190,5 +181,43 @@ describe('workspace filter', () => {
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
+  })
+  it('should return error when client returns with status 200 and errors in an array', async () => {
+    const clonedWSAfter = workspace.clone()
+    delete clonedWSAfter.value.title
+
+    mockDeployChange.mockImplementation(async () => ({ errors: ['zendesk error'], status: 200 }))
+
+    const res = await filter.deploy([{ action: 'add', data: { after: clonedWSAfter } }])
+    expect(mockDeployChange).toHaveBeenCalledTimes(1)
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedWSAfter } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['selected_macros'],
+    })
+
+    expect(res.leftoverChanges).toHaveLength(0)
+    expect(res.deployResult.errors).toHaveLength(1)
+    expect(res.deployResult.appliedChanges).toHaveLength(0)
+  })
+  it('should return error when client returns with status 200 and errors as string', async () => {
+    const clonedWSAfter = workspace.clone()
+    delete clonedWSAfter.value.title
+
+    mockDeployChange.mockImplementation(async () => ({ errors: 'zendesk error', status: 200 }))
+
+    const res = await filter.deploy([{ action: 'add', data: { after: clonedWSAfter } }])
+    expect(mockDeployChange).toHaveBeenCalledTimes(1)
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedWSAfter } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['selected_macros'],
+    })
+
+    expect(res.leftoverChanges).toHaveLength(0)
+    expect(res.deployResult.errors).toHaveLength(1)
+    expect(res.deployResult.appliedChanges).toHaveLength(0)
   })
 })

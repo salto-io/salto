@@ -1,21 +1,33 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  ChangeData,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isObjectType,
+  isObjectTypeChange,
+  ObjectType,
+  TopLevelElement,
+  Values,
+} from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../query'
+import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../config/types'
 
 export interface CustomizationInfo {
   typeName: string
@@ -34,12 +46,10 @@ export interface TemplateCustomTypeInfo extends CustomTypeInfo {
 export interface FileCustomizationInfo extends CustomizationInfo {
   path: string[]
   fileContent: Buffer
-  hadMissingAttributes?: boolean
 }
 
 export interface FolderCustomizationInfo extends CustomizationInfo {
   path: string[]
-  hadMissingAttributes?: boolean
 }
 
 export type FileCabinetCustomizationInfo = FileCustomizationInfo | FolderCustomizationInfo
@@ -87,7 +97,7 @@ export type ImportObjectsResult = {
 }
 
 export type DataElementsResult = {
-  elements: (ObjectType | InstanceElement)[]
+  elements: TopLevelElement[]
   requestedTypes: string[]
   largeTypesError: string[]
 }
@@ -126,29 +136,27 @@ export class InvalidSuiteAppCredentialsError extends Error {
 
 export type DeployableChange = Change<ObjectType | InstanceElement>
 
+export type SDFObjectChangeType =
+  | {
+      changeType: 'addition'
+    }
+  | {
+      changeType: 'modification'
+      addedObjects: Set<string>
+    }
+
 export type SDFObjectNode = {
   change: DeployableChange
   serviceid: string
-  changeType: 'addition' | 'modification'
   customizationInfo: CustomizationInfo
-}
+} & SDFObjectChangeType
 
 export const getNodeId = (elemId: ElemID): string => elemId.getFullName()
 
-export const getChangeNodeId = (change: DeployableChange): string =>
-  getNodeId(getChangeData(change).elemID)
+export const getChangeNodeId = (change: DeployableChange): string => getNodeId(getChangeData(change).elemID)
 
-export const getDeployableChanges = (
-  changes: ReadonlyArray<Change>
-): DeployableChange[] =>
-  changes.filter(
-    change => isInstanceChange(change) || isObjectTypeChange(change)
-  ) as DeployableChange[]
+export const getDeployableChanges = (changes: ReadonlyArray<Change>): DeployableChange[] =>
+  changes.filter(change => isInstanceChange(change) || isObjectTypeChange(change)) as DeployableChange[]
 
-export const getOrTransformCustomRecordTypeToInstance = (
-  element: ChangeData<DeployableChange>
-): InstanceElement => (
-  isObjectType(element)
-    ? toCustomRecordTypeInstance(element)
-    : element
-)
+export const getOrTransformCustomRecordTypeToInstance = (element: ChangeData<DeployableChange>): InstanceElement =>
+  isObjectType(element) ? toCustomRecordTypeInstance(element) : element

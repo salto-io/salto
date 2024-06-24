@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { logger } from '@salto-io/logging'
 import { logDuration } from '../src/decorators'
 
@@ -42,7 +42,7 @@ describe('decorators', () => {
     let inst: TestCls
 
     beforeAll(() => {
-      log = jest.spyOn(logging, 'time')
+      log = jest.spyOn(logging, 'timeDebug')
       inst = new TestCls()
     })
     beforeEach(() => {
@@ -50,14 +50,14 @@ describe('decorators', () => {
     })
     it('should log the time it took to run sync functions', () => {
       inst.syncFunc()
-      expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'running sync')
+      expect(logging.timeDebug).toHaveBeenCalledTimes(1)
+      expect(logging.timeDebug).toHaveBeenCalledWith(expect.anything(), 'running sync')
     })
 
     it('should log the time it took to run async functions', async () => {
       await inst.asyncFunc()
-      expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'running async')
+      expect(logging.timeDebug).toHaveBeenCalledTimes(1)
+      expect(logging.timeDebug).toHaveBeenCalledWith(expect.anything(), 'running async')
     })
   })
 })

@@ -1,22 +1,29 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import FormData from 'form-data'
 import {
-  ObjectType, ElemID, InstanceElement, isInstanceElement, StaticFile, ReferenceExpression,
-  CORE_ANNOTATIONS, getChangeData, createSaltoElementError,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  StaticFile,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+  getChangeData,
+  createSaltoElementError,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/brand_logo'
@@ -57,21 +64,17 @@ describe('brand logo filter', () => {
   describe('onFetch', () => {
     let brandInstance: InstanceElement
     beforeEach(() => {
-      brandInstance = new InstanceElement(
-        'brand',
-        brandType,
-        {
-          id: brandId,
-          name: 'test',
-          active: true,
-          [LOGO_FIELD]: {
-            content_type: 'image/png',
-            content_url: `https://company.zendesk.com/system/brands/${logoId}/brand1_logo.png`,
-            file_name: filename,
-            id: logoId,
-          },
+      brandInstance = new InstanceElement('brand', brandType, {
+        id: brandId,
+        name: 'test',
+        active: true,
+        [LOGO_FIELD]: {
+          content_type: 'image/png',
+          content_url: `https://company.zendesk.com/system/brands/${logoId}/brand1_logo.png`,
+          file_name: filename,
+          id: logoId,
         },
-      )
+      })
       mockGet = jest.spyOn(client, 'getResource')
       mockGet.mockImplementation(params => {
         if (params.url === `/system/brands/${logoId}/brand1_logo.png`) {
@@ -86,13 +89,12 @@ describe('brand logo filter', () => {
     it('should create brand logos instances', async () => {
       const elements = [brandType, brandInstance].map(e => e.clone())
       await filter.onFetch(elements)
-      expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual([
-          'zendesk.brand',
-          'zendesk.brand.instance.brand',
-          'zendesk.brand_logo',
-          'zendesk.brand_logo.instance.test__brand1_logo_png@uuuv',
-        ])
+      expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.brand',
+        'zendesk.brand.instance.brand',
+        'zendesk.brand_logo',
+        'zendesk.brand_logo.instance.test__brand1_logo_png@uuuv',
+      ])
     })
     it('should create a new logo instance', async () => {
       const elements = [brandType, brandInstance].map(e => e.clone())
@@ -105,7 +107,9 @@ describe('brand logo filter', () => {
         filename,
         contentType: 'image/png',
         content: new StaticFile({
-          filepath: 'zendesk/brand_logo/test__brand1_logo.png', encoding: 'binary', content,
+          filepath: 'zendesk/brand_logo/test__brand1_logo.png',
+          encoding: 'binary',
+          content,
         }),
       })
     })
@@ -115,9 +119,7 @@ describe('brand logo filter', () => {
 
       const instances = elements.filter(isInstanceElement)
       const brand = instances.find(e => e.elemID.typeName === BRAND_TYPE_NAME)
-      const logo = instances.find(
-        e => e.elemID.typeName === BRAND_LOGO_TYPE_NAME
-      ) as InstanceElement
+      const logo = instances.find(e => e.elemID.typeName === BRAND_LOGO_TYPE_NAME) as InstanceElement
       expect(brand?.value).toEqual({
         ...brandInstance.value,
         [LOGO_FIELD]: new ReferenceExpression(logo.elemID, logo),
@@ -139,7 +141,7 @@ describe('brand logo filter', () => {
         }
         throw new Error('Err')
       })
-      mockBrandGet = jest.spyOn(client, 'getSinglePage')
+      mockBrandGet = jest.spyOn(client, 'get')
       mockBrandGet.mockImplementation(params => {
         if (params.url === `/api/v2/brands/${brandId}`) {
           return {
@@ -149,28 +151,22 @@ describe('brand logo filter', () => {
         }
         throw new Error('Err')
       })
-      logoInstance = new InstanceElement(
-        'brand_logo',
-        logoType,
-        {
-          id: logoId,
-          filename: 'test.png',
-          contentType: 'image/png',
-          content: new StaticFile({
-            filepath: 'zendesk/brand_logo/test__test.png', encoding: 'binary', content,
-          }),
-        },
-      )
-      brandInstance = new InstanceElement(
-        'brand',
-        brandType,
-        {
-          id: brandId,
-          name: 'test',
-          active: true,
-          [LOGO_FIELD]: new ReferenceExpression(logoInstance.elemID, logoInstance),
-        },
-      )
+      logoInstance = new InstanceElement('brand_logo', logoType, {
+        id: logoId,
+        filename: 'test.png',
+        contentType: 'image/png',
+        content: new StaticFile({
+          filepath: 'zendesk/brand_logo/test__test.png',
+          encoding: 'binary',
+          content,
+        }),
+      })
+      brandInstance = new InstanceElement('brand', brandType, {
+        id: brandId,
+        name: 'test',
+        active: true,
+        [LOGO_FIELD]: new ReferenceExpression(logoInstance.elemID, logoInstance),
+      })
       logoInstance.annotate({
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brandInstance.elemID, brandInstance)],
       })
@@ -202,13 +198,10 @@ describe('brand logo filter', () => {
 
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
-      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
-        .toEqual(clonedBrand.value)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value).toEqual(clonedBrand.value)
 
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges[0]).toEqual(
-        { action: 'add', data: { after: clonedLogo } }
-      )
+      expect(res.deployResult.appliedChanges[0]).toEqual({ action: 'add', data: { after: clonedLogo } })
     })
     it('should modify logo instances', async () => {
       const beforeLogo = logoInstance.clone()
@@ -220,9 +213,7 @@ describe('brand logo filter', () => {
       })
       mockPut = jest.spyOn(client, 'put')
       mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
-      const res = await filter.deploy([
-        { action: 'modify', data: { before: beforeLogo, after: afterLogo } },
-      ])
+      const res = await filter.deploy([{ action: 'modify', data: { before: beforeLogo, after: afterLogo } }])
 
       expect(mockPut).toHaveBeenCalledTimes(1)
       expect(mockPut).toHaveBeenCalledWith({
@@ -235,9 +226,10 @@ describe('brand logo filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
 
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges[0]).toEqual(
-        { action: 'modify', data: { before: beforeLogo, after: afterLogo } }
-      )
+      expect(res.deployResult.appliedChanges[0]).toEqual({
+        action: 'modify',
+        data: { before: beforeLogo, after: afterLogo },
+      })
     })
     it('should remove logo instances', async () => {
       const clonedBrand = brandInstance.clone()
@@ -258,13 +250,10 @@ describe('brand logo filter', () => {
 
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
-      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
-        .toEqual(clonedBrand.value)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value).toEqual(clonedBrand.value)
 
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges[0]).toEqual(
-        { action: 'remove', data: { before: clonedLogo } }
-      )
+      expect(res.deployResult.appliedChanges[0]).toEqual({ action: 'remove', data: { before: clonedLogo } })
     })
     it('should fail deploy in case of reaching maximum retries limit', async () => {
       const clonedBrand = brandInstance.clone()
@@ -294,13 +283,12 @@ describe('brand logo filter', () => {
           message: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
-        })
+        }),
       )
 
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
-      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
-        .toEqual(clonedBrand.value)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value).toEqual(clonedBrand.value)
     })
     it('should fail deploy in case of not abling to re-fetch the brand (reaching maximum retries limit)', async () => {
       const clonedBrand = brandInstance.clone()
@@ -331,12 +319,11 @@ describe('brand logo filter', () => {
           message: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
-        })
+        }),
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
-      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
-        .toEqual(clonedBrand.value)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value).toEqual(clonedBrand.value)
     })
     it('should return errors', async () => {
       const clonedBrand = brandInstance.clone()
@@ -353,12 +340,11 @@ describe('brand logo filter', () => {
           message: `Expected ${clonedLogo.elemID.getFullName()} to have exactly one parent, found 0`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
-        })
+        }),
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
-      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
-        .toEqual(clonedBrand.value)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value).toEqual(clonedBrand.value)
     })
   })
 })

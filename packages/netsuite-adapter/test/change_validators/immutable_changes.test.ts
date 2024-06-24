@@ -1,25 +1,34 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, ChangeDataType, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  ChangeDataType,
+  CORE_ANNOTATIONS,
+  ElemID,
+  Field,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
 import { CUSTOM_RECORD_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
 import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../../src/types/file_cabinet_types'
-
 
 describe('customization type change validator', () => {
   const file = fileType()
@@ -28,15 +37,12 @@ describe('customization type change validator', () => {
   describe('SCRIPT_ID', () => {
     describe('has been modified', () => {
       it('should have change error for custom type', async () => {
-        const entityCustomFieldInstance = new InstanceElement('elementName',
-          entitycustomfield, {
-            [SCRIPT_ID]: 'custentity_my_script_id',
-          })
+        const entityCustomFieldInstance = new InstanceElement('elementName', entitycustomfield, {
+          [SCRIPT_ID]: 'custentity_my_script_id',
+        })
         const after = entityCustomFieldInstance.clone()
         after.value[SCRIPT_ID] = 'modified'
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ before: entityCustomFieldInstance, after })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ before: entityCustomFieldInstance, after })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(entityCustomFieldInstance.elemID)
@@ -55,9 +61,7 @@ describe('customization type change validator', () => {
         })
         const after = type.clone()
         after.annotations[SCRIPT_ID] = 'modified'
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ before: type, after })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ before: type, after })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(type.elemID)
@@ -75,9 +79,7 @@ describe('customization type change validator', () => {
         })
         const after = type.clone()
         after.annotations[SCRIPT_ID] = 'modified'
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ before: type, after })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ before: type, after })])
         expect(changeErrors).toHaveLength(0)
       })
 
@@ -93,9 +95,7 @@ describe('customization type change validator', () => {
         )
         const after = field.clone()
         after.annotations[SCRIPT_ID] = 'modified'
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ before: field, after })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ before: field, after })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(field.elemID)
@@ -110,18 +110,14 @@ describe('customization type change validator', () => {
         )
         const after = field.clone()
         after.annotations[SCRIPT_ID] = 'modified'
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ before: field, after })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ before: field, after })])
         expect(changeErrors).toHaveLength(0)
       })
     })
     describe('is missing on added change', () => {
       it('should have change error for custom type', async () => {
         const entityCustomFieldInstance = new InstanceElement('elementName', entitycustomfield)
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ after: entityCustomFieldInstance })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ after: entityCustomFieldInstance })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(entityCustomFieldInstance.elemID)
@@ -137,9 +133,7 @@ describe('customization type change validator', () => {
             metadataType: CUSTOM_RECORD_TYPE,
           },
         })
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ after: type })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ after: type })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(type.elemID)
@@ -152,9 +146,7 @@ describe('customization type change validator', () => {
             [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
           },
         })
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ after: type })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ after: type })])
         expect(changeErrors).toHaveLength(0)
       })
 
@@ -167,9 +159,7 @@ describe('customization type change validator', () => {
           'custom_field',
           BuiltinTypes.STRING,
         )
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ after: field })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ after: field })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(field.elemID)
@@ -181,9 +171,7 @@ describe('customization type change validator', () => {
           'custom_field',
           BuiltinTypes.STRING,
         )
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ after: field })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ after: field })])
         expect(changeErrors).toHaveLength(0)
       })
 
@@ -193,9 +181,7 @@ describe('customization type change validator', () => {
           'non_custom_field',
           BuiltinTypes.STRING,
         )
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ after: field })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ after: field })])
         expect(changeErrors).toHaveLength(0)
       })
     })
@@ -213,24 +199,19 @@ describe('customization type change validator', () => {
         })
         const after = type.clone()
         after.annotationRefTypes = {}
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ before: type, after })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ before: type, after })])
         expect(changeErrors).toHaveLength(0)
       })
 
       it('when added, should have change error for type without refType and no script id', async () => {
         const type = new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
-          annotationRefsOrTypes: {
-          },
+          annotationRefsOrTypes: {},
           annotations: {
             metadataType: CUSTOM_RECORD_TYPE,
           },
         })
-        const changeErrors = await immutableChangesValidator(
-          [toChange({ after: type })]
-        )
+        const changeErrors = await immutableChangesValidator([toChange({ after: type })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(type.elemID)
@@ -238,10 +219,9 @@ describe('customization type change validator', () => {
     })
 
     it('should not have errors for elements with SCRIPT_ID', async () => {
-      const entityCustomFieldInstance = new InstanceElement('elementName',
-        entitycustomfield, {
-          [SCRIPT_ID]: 'custentity_my_script_id',
-        })
+      const entityCustomFieldInstance = new InstanceElement('elementName', entitycustomfield, {
+        [SCRIPT_ID]: 'custentity_my_script_id',
+      })
       const type = new ObjectType({
         elemID: new ElemID(NETSUITE, 'customrecord1'),
         annotationRefsOrTypes: {
@@ -260,7 +240,7 @@ describe('customization type change validator', () => {
 
       new Array<ChangeDataType>(entityCustomFieldInstance, type, field).forEach(async element => {
         const change = await immutableChangesValidator([toChange({ after: element })])
-        expect(change).toBeFalsy()
+        expect(change).toEqual([])
       })
     })
   })
@@ -271,9 +251,7 @@ describe('customization type change validator', () => {
     })
     const after = fileInstance.clone()
     after.value[PATH] = 'Templates/modified.html'
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before: fileInstance, after })]
-    )
+    const changeErrors = await immutableChangesValidator([toChange({ before: fileInstance, after })])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(fileInstance.elemID)
@@ -285,25 +263,20 @@ describe('customization type change validator', () => {
     })
     const after = fileInstance.clone()
     after.annotations[CORE_ANNOTATIONS.PARENT] = ['[/Templates/modified]']
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before: fileInstance, after })]
-    )
+    const changeErrors = await immutableChangesValidator([toChange({ before: fileInstance, after })])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(fileInstance.elemID)
   })
 
   it('should not have change error if custom type regular field has been modified', async () => {
-    const entityCustomFieldInstance = new InstanceElement('elementName',
-      entitycustomfield, {
-        [SCRIPT_ID]: 'custentity_my_script_id',
-        label: 'original',
-      })
+    const entityCustomFieldInstance = new InstanceElement('elementName', entitycustomfield, {
+      [SCRIPT_ID]: 'custentity_my_script_id',
+      label: 'original',
+    })
     const after = entityCustomFieldInstance.clone()
     after.value.label = 'modified'
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before: entityCustomFieldInstance, after })]
-    )
+    const changeErrors = await immutableChangesValidator([toChange({ before: entityCustomFieldInstance, after })])
     expect(changeErrors).toHaveLength(0)
   })
 
@@ -317,17 +290,17 @@ describe('customization type change validator', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
-          new ElemID('netsuite', 'someType', 'instance', 'someInstance'),
-          new InstanceElement('someInstance', new ObjectType({ elemID: new ElemID('netsuite', 'someType') })),
-        )],
-      }
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(
+            new ElemID('netsuite', 'someType', 'instance', 'someInstance'),
+            new InstanceElement('someInstance', new ObjectType({ elemID: new ElemID('netsuite', 'someType') })),
+          ),
+        ],
+      },
     )
     const after = fileInstance.clone()
     after.value.content = 'modified'
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before: fileInstance, after })]
-    )
+    const changeErrors = await immutableChangesValidator([toChange({ before: fileInstance, after })])
     expect(changeErrors).toHaveLength(0)
   })
 
@@ -342,9 +315,7 @@ describe('customization type change validator', () => {
     const before = new InstanceElement('instance', accountingPeriodType, { identifier: 'a' })
     const after = new InstanceElement('instance', accountingPeriodType, { identifier: 'b' })
 
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before, after })]
-    )
+    const changeErrors = await immutableChangesValidator([toChange({ before, after })])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(after.elemID)
@@ -358,9 +329,7 @@ describe('customization type change validator', () => {
     const before = new InstanceElement('instance', accountingPeriodType, { fiscalCalendar: { name: 'a' } })
     const after = new InstanceElement('instance', accountingPeriodType, { fiscalCalendar: { name: 'b' } })
 
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before, after })]
-    )
+    const changeErrors = await immutableChangesValidator([toChange({ before, after })])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(after.elemID)
@@ -370,29 +339,29 @@ describe('customization type change validator', () => {
     const before = new InstanceElement('instance', addressForm, { application_id: 'a' })
     const after = new InstanceElement('instance', addressForm, { application_id: 'b' })
 
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before, after })]
-    )
+    const changeErrors = await immutableChangesValidator([toChange({ before, after })])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(after.elemID)
   })
 
   it('should have change error if type application_id was modified', async () => {
-    const before = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1'),
+    const before = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
       annotationRefsOrTypes: {
         [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
       },
-      annotations: { application_id: 'a' } })
-    const after = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotations: { application_id: 'a' },
+    })
+    const after = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
       annotationRefsOrTypes: {
         [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
       },
-      annotations: { application_id: 'b' } })
+      annotations: { application_id: 'b' },
+    })
 
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before, after })]
-    )
+    const changeErrors = await immutableChangesValidator([toChange({ before, after })])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(after.elemID)

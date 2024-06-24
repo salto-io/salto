@@ -1,35 +1,66 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import wu from 'wu'
 import _ from 'lodash'
 import { DataNodeMap, Group } from '@salto-io/dag'
 import {
-  BuiltinTypes, Change, Element, ElemID, getChangeData, InstanceElement,
-  ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
-  AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
+  BuiltinTypes,
+  Change,
+  Element,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  ObjectType,
+  CORE_ANNOTATIONS,
+  SaltoError,
+  Values,
+  ListType,
+  DetailedChange,
+  AdapterAuthentication,
+  OAuthRequestParameters,
+  OauthAccessTokenResponse,
   createRefToElmWithValue,
   StaticFile,
   ChangeError,
   ChangeDataType,
+  DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
 import {
-  Plan, PlanItem, EVENT_TYPES, DeployResult,
-  telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
+  Plan,
+  PlanItem,
+  EVENT_TYPES,
+  DeployResult,
+  telemetrySender,
+  Telemetry,
+  Tags,
+  TelemetryEvent,
+  CommandConfig,
+  deploy as coreDeploy,
+  ItemStatus,
 } from '@salto-io/core'
-import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex, staticFiles } from '@salto-io/workspace'
+import {
+  Workspace,
+  errors as wsErrors,
+  state as wsState,
+  remoteMap,
+  elementSource,
+  pathIndex,
+  staticFiles,
+} from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
@@ -44,7 +75,10 @@ const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable
 
-export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
+export interface MockWriteStreamOpts {
+  isTTY?: boolean
+  hasColors?: boolean
+}
 
 export class MockWriteStream {
   constructor({ isTTY = true, hasColors = true }: MockWriteStreamOpts = {}) {
@@ -56,7 +90,9 @@ export class MockWriteStream {
   colors: boolean
   isTTY: boolean
 
-  write(s: string): void { this.content += s }
+  write(s: string): void {
+    this.content += s
+  }
 }
 
 export type MockCliOutput = {
@@ -64,14 +100,15 @@ export type MockCliOutput = {
   stderr: MockWriteStream
 }
 
-export const mockSpinnerCreator = (spinners: Spinner[]): SpinnerCreator => jest.fn(() => {
-  const result = {
-    succeed: jest.fn(),
-    fail: jest.fn(),
-  }
-  spinners.push(result)
-  return result
-})
+export const mockSpinnerCreator = (spinners: Spinner[]): SpinnerCreator =>
+  jest.fn(() => {
+    const result = {
+      succeed: jest.fn(),
+      fail: jest.fn(),
+    }
+    spinners.push(result)
+    return result
+  })
 
 export interface MockCliReturn {
   err: string
@@ -86,16 +123,9 @@ export type MockTelemetry = {
 
 export const getMockTelemetry = (): MockTelemetry => {
   const commonTags = { installationID: '1234', app: 'test' }
-  const telemetry = telemetrySender(
-    { url: '', enabled: false, token: '' },
-    commonTags
-  )
+  const telemetry = telemetrySender({ url: '', enabled: false, token: '' }, commonTags)
   const events: TelemetryEvent[] = []
-  telemetry.sendCountEvent = async (
-    name: string,
-    value: number,
-    tags: Tags = {},
-  ): Promise<void> => {
+  telemetry.sendCountEvent = async (name: string, value: number, tags: Tags = {}): Promise<void> => {
     events.push({
       name,
       value,
@@ -107,9 +137,10 @@ export const getMockTelemetry = (): MockTelemetry => {
 
   return Object.assign(telemetry, {
     getEvents: (): TelemetryEvent[] => events,
-    getEventsMap: (): { [name: string]: TelemetryEvent[] } => (
-      _(events).groupBy(e => e.name).value()
-    ),
+    getEventsMap: (): { [name: string]: TelemetryEvent[] } =>
+      _(events)
+        .groupBy(e => e.name)
+        .value(),
   })
 }
 
@@ -167,18 +198,17 @@ export const cli = async ({
   const spinnerCreator = mockSpinnerCreator(spinners)
 
   const exitCode = await realCli({ input, output, commandDefs, spinnerCreator, workspacePath: '.' })
-  await Promise.all([
-    input.telemetry.stop(1000),
-    logger.end(),
-  ])
+  await Promise.all([input.telemetry.stop(1000), logger.end()])
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const createMockGetCredentialsFromUser = (value: Values) =>
-  jest.fn(async (configObjType: ObjectType): Promise<InstanceElement> =>
-    new InstanceElement(ElemID.CONFIG_NAME, configObjType, value))
+  jest.fn(
+    async (configObjType: ObjectType): Promise<InstanceElement> =>
+      new InstanceElement(ElemID.CONFIG_NAME, configObjType, value),
+  )
 
 export const elements = (): Element[] => {
   const addrElemID = new ElemID('salto', 'address')
@@ -246,22 +276,24 @@ export const elements = (): Element[] => {
     },
   })
 
-  const saltoEmployeeInstance = new InstanceElement(
-    'test', saltoEmployee,
-    { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo' } }
-  )
+  const saltoEmployeeInstance = new InstanceElement('test', saltoEmployee, {
+    name: 'FirstEmployee',
+    nicknames: ['you', 'hi'],
+    office: { label: 'bla', name: 'foo' },
+  })
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
-export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => new wsErrors.Errors({
-  parse: [],
-  merge: [],
-  validation: errors.map(err => ({ elemID: new ElemID('test'), error: err.message, ...err })),
-})
+export const mockErrors = (errors: SaltoError[]): wsErrors.Errors =>
+  new wsErrors.Errors({
+    parse: [],
+    merge: [],
+    validation: errors.map(err => ({ elemID: new ElemID('test'), error: err.message, ...err })),
+  })
 
 // Mock interface does not handle template functions well
-export type MockWorkspace = MockInterface<Omit<Workspace, 'transformToWorkspaceError'>>
-  & Pick<Workspace, 'transformToWorkspaceError'>
+export type MockWorkspace = MockInterface<Omit<Workspace, 'transformToWorkspaceError'>> &
+  Pick<Workspace, 'transformToWorkspaceError'>
 
 export const withoutEnvironmentParam = 'active'
 export const withEnvironmentParam = 'inactive'
@@ -274,8 +306,7 @@ type MockWorkspaceArgs = {
   getElements?: () => Element[]
 }
 
-export const mockStateStaticFilesSource = ()
-: MockInterface<staticFiles.StateStaticFilesSource> => ({
+export const mockStateStaticFilesSource = (): MockInterface<staticFiles.StateStaticFilesSource> => ({
   persistStaticFile: mockFunction<staticFiles.StateStaticFilesSource['persistStaticFile']>(),
   getStaticFile: mockFunction<staticFiles.StateStaticFilesSource['getStaticFile']>(),
   clear: mockFunction<staticFiles.StateStaticFilesSource['clear']>(),
@@ -283,7 +314,6 @@ export const mockStateStaticFilesSource = ()
   delete: mockFunction<staticFiles.StateStaticFilesSource['delete']>(),
   flush: mockFunction<staticFiles.StateStaticFilesSource['flush']>(),
 })
-
 
 export const mockWorkspace = ({
   uid = '123',
@@ -297,21 +327,18 @@ export const mockWorkspace = ({
     pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     accountsUpdateDate: new InMemoryRemoteMap(),
-    saltoMetadata: new InMemoryRemoteMap([
-      { key: 'version', value: currentVersion },
-    ] as {key: wsState.StateMetadataKey; value: string}[]),
+    saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: currentVersion }] as {
+      key: wsState.StateMetadataKey
+      value: string
+    }[]),
     staticFilesSource: mockStateStaticFilesSource(),
   })
-  const stateByEnv = Object.fromEntries(
-    envs.map(env => [env, wsState.buildInMemState(mockStateData)])
-  )
+  const stateByEnv = Object.fromEntries(envs.map(env => [env, wsState.buildInMemState(mockStateData)]))
   let currentEnv = envs[0]
   return {
     uid,
     name,
-    elements: mockFunction<Workspace['elements']>().mockResolvedValue(
-      createInMemoryElementSource(getElements())
-    ),
+    elements: mockFunction<Workspace['elements']>().mockResolvedValue(createInMemoryElementSource(getElements())),
     state: mockFunction<Workspace['state']>().mockImplementation(env => stateByEnv[env ?? currentEnv]),
     envs: mockFunction<Workspace['envs']>().mockReturnValue(envs),
     currentEnv: mockFunction<Workspace['currentEnv']>().mockImplementation(() => currentEnv),
@@ -331,11 +358,12 @@ export const mockWorkspace = ({
     hasErrors: mockFunction<Workspace['hasErrors']>().mockResolvedValue(false),
     errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
     transformToWorkspaceError: mockFunction<Workspace['transformToWorkspaceError']>().mockImplementation(
-      async error => ({ ...error, sourceLocations: [] })
+      async error => ({ ...error, sourceLocations: [] }),
     ) as Workspace['transformToWorkspaceError'],
-    transformError: mockFunction<Workspace['transformError']>().mockImplementation(
-      async error => ({ ...error, sourceLocations: [] })
-    ),
+    transformError: mockFunction<Workspace['transformError']>().mockImplementation(async error => ({
+      ...error,
+      sourceLocations: [],
+    })),
     updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>().mockResolvedValue({
       naclFilesChangesCount: 0,
       stateOnlyChangesCount: 0,
@@ -345,8 +373,9 @@ export const mockWorkspace = ({
     getNaclFile: mockFunction<Workspace['getNaclFile']>(),
     setNaclFiles: mockFunction<Workspace['setNaclFiles']>(),
     removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>(),
-    getServiceFromAccountName: mockFunction<Workspace['getServiceFromAccountName']>()
-      .mockImplementation(account => account),
+    getServiceFromAccountName: mockFunction<Workspace['getServiceFromAccountName']>().mockImplementation(
+      account => account,
+    ),
     getSourceMap: mockFunction<Workspace['getSourceMap']>().mockResolvedValue(new parser.SourceMap()),
     getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockResolvedValue([]),
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([]),
@@ -354,6 +383,7 @@ export const mockWorkspace = ({
     getElementOutgoingReferences: mockFunction<Workspace['getElementOutgoingReferences']>().mockResolvedValue([]),
     getElementIncomingReferences: mockFunction<Workspace['getElementIncomingReferences']>().mockResolvedValue([]),
     getElementAuthorInformation: mockFunction<Workspace['getElementAuthorInformation']>().mockResolvedValue({}),
+    getElementsAuthorsById: mockFunction<Workspace['getElementsAuthorsById']>().mockResolvedValue({}),
     getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([]),
     getElementIdsBySelectors: mockFunction<Workspace['getElementIdsBySelectors']>().mockResolvedValue(awu([])),
     getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>(),
@@ -365,19 +395,19 @@ export const mockWorkspace = ({
     addEnvironment: mockFunction<Workspace['addEnvironment']>(),
     deleteEnvironment: mockFunction<Workspace['deleteEnvironment']>(),
     renameEnvironment: mockFunction<Workspace['renameEnvironment']>(),
-    setCurrentEnv: mockFunction<Workspace['setCurrentEnv']>().mockImplementation(async env => { currentEnv = env }),
+    setCurrentEnv: mockFunction<Workspace['setCurrentEnv']>().mockImplementation(async env => {
+      currentEnv = env
+    }),
     updateAccountCredentials: mockFunction<Workspace['updateAccountCredentials']>(),
     updateServiceCredentials: mockFunction<Workspace['updateServiceCredentials']>(),
     updateAccountConfig: mockFunction<Workspace['updateAccountConfig']>(),
     updateServiceConfig: mockFunction<Workspace['updateServiceConfig']>(),
-    getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(
-      async accountName => ({
-        serviceName: accountName,
-        accountName,
-        status: 'Nonexistent',
-        date: undefined,
-      })
-    ),
+    getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(async accountName => ({
+      serviceName: accountName,
+      accountName,
+      status: 'Nonexistent',
+      date: undefined,
+    })),
     getAllChangedByAuthors: mockFunction<Workspace['getAllChangedByAuthors']>(),
     getChangedElementsByAuthors: mockFunction<Workspace['getChangedElementsByAuthors']>(),
     promote: mockFunction<Workspace['promote']>(),
@@ -385,6 +415,7 @@ export const mockWorkspace = ({
     demoteAll: mockFunction<Workspace['demoteAll']>(),
     copyTo: mockFunction<Workspace['copyTo']>(),
     sync: mockFunction<Workspace['sync']>(),
+    updateStateProvider: mockFunction<Workspace['updateStateProvider']>(),
     getValue: mockFunction<Workspace['getValue']>(),
     getSearchableNames: mockFunction<Workspace['getSearchableNames']>(),
     getSearchableNamesOfEnv: mockFunction<Workspace['getSearchableNamesOfEnv']>(),
@@ -403,22 +434,28 @@ export const mockWorkspace = ({
 
 export const mockCredentialsType = (adapterName: string): AdapterAuthentication => {
   const configID = new ElemID(adapterName)
-  return { basic: { credentialsType: new ObjectType({
-    elemID: configID,
-    fields: {
-      username: { refType: BuiltinTypes.STRING },
-      password: { refType: BuiltinTypes.STRING },
-      token: {
-        refType: BuiltinTypes.STRING,
-        annotations: {},
-      },
-      sandbox: { refType: BuiltinTypes.BOOLEAN },
+  return {
+    basic: {
+      credentialsType: new ObjectType({
+        elemID: configID,
+        fields: {
+          username: { refType: BuiltinTypes.STRING },
+          password: { refType: BuiltinTypes.STRING },
+          token: {
+            refType: BuiltinTypes.STRING,
+            annotations: {},
+          },
+          sandbox: { refType: BuiltinTypes.BOOLEAN },
+        },
+      }),
     },
-  }) } }
+  }
 }
 
-export const mockOauthCredentialsType = (adapterName: string,
-  oauthParameters: OAuthRequestParameters): AdapterAuthentication => {
+export const mockOauthCredentialsType = (
+  adapterName: string,
+  oauthParameters: OAuthRequestParameters,
+): AdapterAuthentication => {
   const baseType = mockCredentialsType(adapterName)
   baseType.oauth = {
     credentialsType: new ObjectType({
@@ -438,12 +475,13 @@ export const mockOauthCredentialsType = (adapterName: string,
       },
     }),
     createOAuthRequest: jest.fn().mockReturnValue(oauthParameters),
-    createFromOauthResponse: jest.fn().mockImplementation((oldConfig: Values,
-      response: OauthAccessTokenResponse) => ({
-      sandbox: oldConfig.sandbox,
-      accessToken: response.fields.accessToken,
-      instanceUrl: response.fields.instanceUrl,
-    })),
+    createFromOauthResponse: jest
+      .fn()
+      .mockImplementation(async (oldConfig: Values, response: OauthAccessTokenResponse) => ({
+        sandbox: oldConfig.sandbox,
+        accessToken: response.fields.accessToken,
+        instanceUrl: response.fields.instanceUrl,
+      })),
   }
   return baseType
 }
@@ -463,48 +501,60 @@ export const mockConfigType = (adapterName: string): ObjectType => {
   })
 }
 
-export const mockAdapterAuthentication = (credentialsType: ObjectType): AdapterAuthentication =>
-  ({ basic: { credentialsType } })
+export const mockAdapterAuthentication = (credentialsType: ObjectType): AdapterAuthentication => ({
+  basic: { credentialsType },
+})
 
-export const detailedChange = (
-  action: 'add' | 'modify' | 'remove', path: ReadonlyArray<string> | ElemID,
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  before: any, after: any,
-): DetailedChange => {
-  const id = path instanceof ElemID ? path : new ElemID('salesforce', ...path)
+export const baseChange = (action: 'add' | 'modify' | 'remove'): Change<Element> => {
+  const before = new ObjectType({ elemID: new ElemID('salesforce') })
+  const after = new ObjectType({ elemID: new ElemID('salesforce'), annotations: { anno: 'test' } })
   if (action === 'add') {
-    return { action, id, data: { after } }
+    return { action, data: { after } }
   }
   if (action === 'remove') {
-    return { action, id, data: { before } }
+    return { action, data: { before } }
   }
-  return { action, id, data: { before, after } }
+  return { action, data: { before, after } }
 }
 
-export const dummyChanges: DetailedChange[] = [
+export const detailedChange = (
+  action: 'add' | 'modify' | 'remove',
+  path: ReadonlyArray<string> | ElemID,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  before: any,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  after: any,
+): DetailedChangeWithBaseChange => {
+  const id = path instanceof ElemID ? path : new ElemID('salesforce', ...path)
+  if (action === 'add') {
+    return { action, id, data: { after }, baseChange: baseChange(action) }
+  }
+  if (action === 'remove') {
+    return { action, id, data: { before }, baseChange: baseChange(action) }
+  }
+  return { action, id, data: { before, after }, baseChange: baseChange(action) }
+}
+
+export const dummyChanges: DetailedChangeWithBaseChange[] = [
   detailedChange('add', ['adapter', 'dummy'], undefined, 'after-add-dummy1'),
   detailedChange('remove', ['adapter', 'dummy2'], 'before-remove-dummy2', undefined),
 ]
 
-const toPlanItem = (
-  parent: Change,
-  subChanges: Change[],
-  detailed: DetailedChange[]
-): PlanItem => ({
+const toPlanItem = (parent: Change, subChanges: Change[], detailed: DetailedChange[]): PlanItem => ({
   groupKey: getChangeData(parent).elemID.getFullName(),
-  items: new Map<string, Change>(
-    [parent, ...subChanges].map(c => [_.uniqueId(), c])
-  ),
+  items: new Map<string, Change>([parent, ...subChanges].map(c => [_.uniqueId(), c])),
   action: parent.action,
+  account: getChangeData(parent).elemID.adapter,
   changes: () => {
     const changes = [parent, ...subChanges]
     const detailedChangesByChange = _.groupBy(detailed, change => change.id.createBaseID().parent.getFullName())
     return changes.map(change => ({
       ...change,
-      detailedChanges: () => detailedChangesByChange[getChangeData(change).elemID.getFullName()],
+      detailedChanges: () =>
+        detailedChangesByChange[getChangeData(change).elemID.getFullName()].map(dc => ({ ...dc, baseChange: change })),
     }))
   },
-  detailedChanges: () => detailed,
+  detailedChanges: () => detailed.map(dc => ({ ...dc, baseChange: parent })),
 })
 
 const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {
@@ -532,9 +582,15 @@ const showOnFailureDummyChanges = {
   },
 }
 
-const createShowOnFailureDummyChangeError = (
-  { change, isSuccessful, showOnFailure }: { change: Change; isSuccessful: boolean; showOnFailure: boolean }
-): ChangeError => {
+const createShowOnFailureDummyChangeError = ({
+  change,
+  isSuccessful,
+  showOnFailure,
+}: {
+  change: Change
+  isSuccessful: boolean
+  showOnFailure: boolean
+}): ChangeError => {
   const prefix = isSuccessful ? 'Successful' : 'Failed'
   const message = `${prefix} change with showOnFailure=${showOnFailure}`
   return {
@@ -625,28 +681,21 @@ export const preview = (): Plan => {
       detailedChange('add', ['lead', 'field', 'do_you_have_a_sales_team'], undefined, 'new field'),
       detailedChange('modify', ['lead', 'field', 'how_many_sales_people', 'label'], 'old label', 'new label'),
       detailedChange('remove', ['lead', 'field', 'status'], 'old field', undefined),
-    ]
+    ],
   )
   result.addNode(_.uniqueId('lead'), [], leadPlanItem)
 
   const accountPlanItem = toPlanItem(
     createChange('modify', 'account'),
-    [
-      createChange('add', 'account', 'status'),
-      createChange('modify', 'account', 'name'),
-    ],
+    [createChange('add', 'account', 'status'), createChange('modify', 'account', 'name')],
     [
       detailedChange('add', ['account', 'field', 'status'], undefined, { name: 'field', type: 'picklist' }),
       detailedChange('modify', ['account', 'field', 'name', 'label'], 'old label', 'new label'),
-    ]
+    ],
   )
   result.addNode(_.uniqueId('account'), [], accountPlanItem)
 
-  const activityPlanItem = toPlanItem(
-    createChange('add', 'activity', 'field', 'name'),
-    [],
-    []
-  )
+  const activityPlanItem = toPlanItem(createChange('add', 'activity', 'field', 'name'), [], [])
   result.addNode(_.uniqueId('activity'), [], activityPlanItem)
 
   const employeeInstance = elements()[4] as InstanceElement
@@ -749,18 +798,19 @@ export const preview = (): Plan => {
   return result as Plan
 }
 
-export const deploy = async (
-  _workspace: Workspace,
+export const deploy: typeof coreDeploy = async (
+  workspace: Workspace,
   actionPlan: Plan,
-  reportProgress: (action: PlanItem, step: string, details?: string) => void,
-  _accounts: string[],
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
+  _accounts = workspace.accounts(),
+  _checkOnly = false,
 ): Promise<DeployResult> => {
   let numOfChangesReported = 0
   wu(actionPlan.itemsByEvalOrder()).forEach(change => {
     numOfChangesReported += 1
     if (numOfChangesReported / 3 === 1) {
       reportProgress(change, 'started')
-      reportProgress(change, 'error', 'details')
+      reportProgress(change, 'error', '')
       return
     }
     if (numOfChangesReported / 2 === 1) {
@@ -769,7 +819,7 @@ export const deploy = async (
       return
     }
     reportProgress(change, 'started')
-    reportProgress(change, 'cancelled', 'details')
+    reportProgress(change, 'cancelled', '')
   })
 
   return {
@@ -777,12 +827,16 @@ export const deploy = async (
     changes: dummyChanges.map(c => ({ change: c, serviceChanges: [c] })),
     appliedChanges: [
       showOnFailureDummyChanges.successful.withShowOnFailure,
-      showOnFailureDummyChanges.successful.withoutShowOnFailure],
+      showOnFailureDummyChanges.successful.withoutShowOnFailure,
+    ],
     errors: [],
   }
 }
 
-export const staticFileChange = (action: 'add' | 'modify' | 'remove', withContent = false): DetailedChange => {
+export const staticFileChange = (
+  action: 'add' | 'modify' | 'remove',
+  withContent = false,
+): DetailedChangeWithBaseChange => {
   const id = new ElemID('salesforce')
   const path = ['salesforce', 'Records', 'advancedpdftemplate', 'custtmpl_103_t2257860_156']
   const beforeFile = new StaticFile({
@@ -800,12 +854,12 @@ export const staticFileChange = (action: 'add' | 'modify' | 'remove', withConten
 
   if (action === 'add') {
     const data = { after: afterFile }
-    return { id, action, data, path }
+    return { id, action, data, path, baseChange: baseChange(action) }
   }
   if (action === 'modify') {
     const data = { before: beforeFile, after: afterFile }
-    return { id, action, data, path }
+    return { id, action, data, path, baseChange: baseChange(action) }
   }
   const data = { before: beforeFile }
-  return { id, action, data, path }
+  return { id, action, data, path, baseChange: baseChange(action) }
 }

@@ -1,5 +1,7 @@
 # JIRA system configuration
+
 ## Default Configuration
+
 ```hcl
 jira {
   apiDefinitions = {
@@ -2264,9 +2266,6 @@ jira {
       ]
       WorkflowScheme = [
         "WorkflowSchemes",
-      ]
-      ServerInformation = [
-        "ServerInformation",
       ]
       Board = [
         "Boards",

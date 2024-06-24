@@ -1,21 +1,21 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
-import { NetsuiteQuery } from '../../src/query'
+import { NetsuiteQuery } from '../../src/config/query'
 import * as fileCabinetDetector from '../../src/changes_detector/changes_detectors/file_cabinet'
 import customRecordTypeDetector from '../../src/changes_detector/changes_detectors/custom_record_type'
 import scriptDetector from '../../src/changes_detector/changes_detectors/script'
@@ -86,7 +86,9 @@ describe('changes_detector', () => {
   })
 
   it('should match the file direct parent directory if the file was changed', async () => {
-    getChangedFilesMock.mockResolvedValue([{ type: 'object', objectId: '/Templates/path/to/file', time: new Date('03/15/2020 03:04 pm') }])
+    getChangedFilesMock.mockResolvedValue([
+      { type: 'object', objectId: '/Templates/path/to/file', time: new Date('03/15/2020 03:04 pm') },
+    ])
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
@@ -135,8 +137,8 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isCustomRecordTypeMatch('customrecord2')).toBeFalsy()
 
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
-    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
-    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord1'))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'customrecordtype' }))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'customrecord1' }))
   })
 
   it('should match custom records of custom segments', async () => {
@@ -159,8 +161,8 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isCustomRecordMatch({ type: 'customrecord_cseg1', instanceId: 'val_123' })).toBeTruthy()
 
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
-    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
-    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord_cseg1'))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'customrecordtype' }))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.objectContaining({ from: 'customrecord_cseg1' }))
   })
 
   it('should return all the results of system note query failed', async () => {

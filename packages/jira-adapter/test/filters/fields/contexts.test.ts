@@ -1,21 +1,28 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
+import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
+
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
@@ -41,9 +48,7 @@ describe('deployContextChange', () => {
   let contextType: ObjectType
   let parentField: InstanceElement
 
-  const deployChangeMock = deployment.deployChange as jest.MockedFunction<
-    typeof deployment.deployChange
-  >
+  const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
   let client: JiraClient
   let paginator: clientUtils.Paginator
 
@@ -54,22 +59,20 @@ describe('deployContextChange', () => {
     client = mockCli.client
     paginator = mockCli.paginator
 
-    filter = fieldsDeploymentFilter(getFilterParams({
-      client,
-      paginator,
-    })) as typeof filter
+    filter = fieldsDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+      }),
+    ) as typeof filter
 
     contextType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),
     })
 
-    parentField = new InstanceElement(
-      'parentField',
-      new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }),
-      {
-        id: '2',
-      }
-    )
+    parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }), {
+      id: '2',
+    })
   })
   it('should call deployChange', async () => {
     const beforeInstance = new InstanceElement(
@@ -82,7 +85,7 @@ describe('deployContextChange', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
-      }
+      },
     )
 
     const afterInstance = new InstanceElement(
@@ -96,31 +99,20 @@ describe('deployContextChange', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
-      }
+      },
     )
 
     const change = toChange({
       before: beforeInstance,
       after: afterInstance,
     })
-    await deployContextChange(
-      change,
-      client,
-      getDefaultConfig({ isDataCenter: false }).apiDefinitions
-    )
+    await deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
 
     expect(deployChangeMock).toHaveBeenCalledWith({
       change: await resolveChangeElement(change, getLookUpName),
       client,
-      endpointDetails: getDefaultConfig({ isDataCenter: false })
-        .apiDefinitions.types.CustomFieldContext.deployRequests,
-      fieldsToIgnore: [
-        'defaultValue',
-        'options',
-        'isGlobalContext',
-        'issueTypeIds',
-        'projectIds',
-      ],
+      endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.CustomFieldContext.deployRequests,
+      fieldsToIgnore: ['defaultValue', 'options', 'isGlobalContext', 'issueTypeIds', 'projectIds'],
     })
   })
 
@@ -135,7 +127,7 @@ describe('deployContextChange', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
-      }
+      },
     )
 
     deployChangeMock.mockImplementation(async () => {
@@ -148,11 +140,7 @@ describe('deployContextChange', () => {
     const change = toChange({
       before: beforeInstance,
     })
-    await deployContextChange(
-      change,
-      client,
-      getDefaultConfig({ isDataCenter: false }).apiDefinitions
-    )
+    await deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
   })
 
   it('should throw for other error messages', async () => {
@@ -166,7 +154,7 @@ describe('deployContextChange', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
-      }
+      },
     )
 
     deployChangeMock.mockImplementation(async () => {
@@ -180,7 +168,7 @@ describe('deployContextChange', () => {
       before: beforeInstance,
     })
     await expect(
-      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions),
     ).rejects.toThrow()
   })
 
@@ -195,7 +183,7 @@ describe('deployContextChange', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
-      }
+      },
     )
 
     deployChangeMock.mockImplementation(async () => {
@@ -207,7 +195,6 @@ describe('deployContextChange', () => {
       })
     })
 
-
     const instanceBefore = instance.clone()
     instanceBefore.value.description = 'desc'
     const change = toChange({
@@ -215,7 +202,7 @@ describe('deployContextChange', () => {
       after: instance,
     })
     await expect(
-      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions),
     ).rejects.toThrow()
   })
 })

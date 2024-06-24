@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { strings } from '../src/index'
 
 describe('strings', () => {
@@ -116,7 +116,9 @@ describe('strings', () => {
       expect([...strings.matchAll('abcdbcdbcd', /[ab](cde)/g)]).toEqual([])
     })
     it('should throw for non-global regular expressions', () => {
-      expect(() => [...strings.matchAll('abcdacdbcd', /[ab](cd)/)]).toThrow(new Error('matchAll only supports global regular expressions'))
+      expect(() => [...strings.matchAll('abcdacdbcd', /[ab](cd)/)]).toThrow(
+        new Error('matchAll only supports global regular expressions'),
+      )
     })
   })
 
@@ -131,8 +133,45 @@ describe('strings', () => {
       expect(strings.continuousSplit('hello world', [])).toEqual(['hello world'])
     })
     it('should split string by all regexes', () => {
-      expect(strings.continuousSplit('afirstasecondbthirdafourthb', [FIND_A, FIND_B]))
-        .toEqual(['first', 'second', 'third', 'fourth'])
+      expect(strings.continuousSplit('afirstasecondbthirdafourthb', [FIND_A, FIND_B])).toEqual([
+        'first',
+        'second',
+        'third',
+        'fourth',
+      ])
+    })
+  })
+
+  describe('humanFileSize', () => {
+    it('should return result in bytes', () => {
+      expect(strings.humanFileSize(500)).toEqual('500.00 B')
+    })
+    it('should return result in KB', () => {
+      expect(strings.humanFileSize(50000)).toEqual('48.83 kB')
+    })
+    it('should return result in MB', () => {
+      expect(strings.humanFileSize(50000000)).toEqual('47.68 MB')
+    })
+    it('should return result in GB', () => {
+      expect(strings.humanFileSize(50000000000)).toEqual('46.57 GB')
+    })
+    it('should return result in TB', () => {
+      expect(strings.humanFileSize(50000000000000)).toEqual('45.47 TB')
+    })
+  })
+
+  describe('isNumberStr', () => {
+    it('should return true on string of number', () => {
+      expect(strings.isNumberStr('500')).toBeTruthy()
+    })
+    it('should return false on a string of nan', () => {
+      expect(strings.isNumberStr('adc')).toBeFalsy()
+    })
+    it('should return true on a string of decimal number', () => {
+      expect(strings.isNumberStr('0.95')).toBeTruthy()
+    })
+    it('should return false on an empty string', () => {
+      expect(strings.isNumberStr('')).toBeFalsy()
     })
   })
 })

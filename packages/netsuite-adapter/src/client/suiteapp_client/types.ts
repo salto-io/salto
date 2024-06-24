@@ -1,24 +1,23 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config'
+import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config/types'
 import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
-
 
 export const SUITE_QL_RESULTS_SCHEMA = {
   type: 'object',
@@ -29,15 +28,39 @@ export const SUITE_QL_RESULTS_SCHEMA = {
       type: 'array',
       items: { type: 'object' },
     },
+    links: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          rel: { type: 'string' },
+          href: { type: 'string' },
+        },
+        required: ['rel', 'href'],
+      },
+    },
   },
   required: ['hasMore', 'items'],
   additionalProperties: true,
+}
+
+export type SuiteQLQueryArgs = {
+  select: string
+  from: string
+  join?: string
+  where?: string
+  groupBy?: string
+  orderBy?: string
 }
 
 export type SuiteQLResults = {
   hasMore: boolean
   items: Values[]
   totalResults?: number
+  links?: {
+    rel: string
+    href: string
+  }[]
 }
 
 export const SAVED_SEARCH_RESULTS_SCHEMA = {
@@ -50,25 +73,27 @@ export const SAVED_SEARCH_RESULTS_SCHEMA = {
 export type SavedSearchResults = Values[]
 
 export const RESTLET_RESULTS_SCHEMA = {
-  anyOf: [{
-    type: 'object',
-    properties: {
-      status: { const: 'success' },
-      results: {},
+  anyOf: [
+    {
+      type: 'object',
+      properties: {
+        status: { const: 'success' },
+        results: {},
+      },
+      required: ['status', 'results'],
     },
-    required: ['status', 'results'],
-  }, {
-    type: 'object',
-    properties: {
-      status: { const: 'error' },
-      message: { type: 'string' },
-      error: { type: 'object' },
+    {
+      type: 'object',
+      properties: {
+        status: { const: 'error' },
+        message: { type: 'string' },
+        error: { type: 'object' },
+      },
+      required: ['status', 'message'],
     },
-    required: ['status', 'message'],
-  }],
+  ],
   additionalProperties: true,
 }
-
 
 export type RestletSuccessResults = {
   status: 'success'
@@ -83,8 +108,7 @@ export type RestletErrorResults = {
 
 export type RestletResults = RestletSuccessResults | RestletErrorResults
 
-export const isError = (results: RestletResults): results is RestletErrorResults =>
-  results.status === 'error'
+export const isError = (results: RestletResults): results is RestletErrorResults => results.status === 'error'
 
 export type HttpMethod = 'POST' | 'GET'
 
@@ -102,10 +126,10 @@ export type SavedSearchQuery = {
 }
 
 export enum EnvType {
-  PRODUCTION,
-  SANDBOX,
-  BETA,
-  INTERNAL
+  PRODUCTION = 'PRODUCTION',
+  SANDBOX = 'SANDBOX',
+  BETA = 'BETA',
+  INTERNAL = 'INTERNAL',
 }
 
 const BASIC_SYSTEM_INFO_SCHEME_PROPERTIES = {
@@ -123,11 +147,12 @@ export const SYSTEM_INFORMATION_SCHEME = {
       properties: {
         ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
         envType: {
-          type: 'number',
+          type: 'string',
           enum: [EnvType.PRODUCTION, EnvType.SANDBOX, EnvType.BETA, EnvType.INTERNAL],
         },
       },
       required: ['time', 'appVersion', 'envType'],
+      additionalProperties: false,
     },
     {
       type: 'object',
@@ -135,9 +160,9 @@ export const SYSTEM_INFORMATION_SCHEME = {
         ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
       },
       required: ['time', 'appVersion'],
+      additionalProperties: false,
     },
   ],
-  additionalProperties: true,
 }
 
 export type SystemInformation = {
@@ -156,20 +181,14 @@ export const FILES_READ_SCHEMA = {
             type: 'string',
           },
           status: {
-            enum: [
-              'success',
-            ],
+            enum: ['success'],
             type: 'string',
           },
           type: {
             type: 'string',
           },
         },
-        required: [
-          'content',
-          'status',
-          'type',
-        ],
+        required: ['content', 'status', 'type'],
         type: 'object',
       },
       {
@@ -178,16 +197,11 @@ export const FILES_READ_SCHEMA = {
             type: 'object',
           },
           status: {
-            enum: [
-              'error',
-            ],
+            enum: ['error'],
             type: 'string',
           },
         },
-        required: [
-          'error',
-          'status',
-        ],
+        required: ['error', 'status'],
         type: 'object',
       },
     ],
@@ -208,7 +222,7 @@ type ReadFailure = {
 
 export type ReadResults = (ReadSuccess | ReadFailure)[]
 
-export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'listBundles' | 'listSuiteApps'
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'record' | 'listBundles' | 'listSuiteApps'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>
 
@@ -222,11 +236,14 @@ export type FileDetails = {
   isOnline: boolean
   hideInBundle: boolean
   description: string
-} & ({
-  content: Buffer
-} | {
-  url: string
-})
+} & (
+  | {
+      content: Buffer
+    }
+  | {
+      url: string
+    }
+)
 
 export type FolderDetails = {
   type: 'folder'
@@ -349,31 +366,46 @@ export type SetConfigResult = (SuccessSetConfig | FailSetConfig)[]
 
 export type HasElemIDFunc = (elemID: ElemID) => Promise<boolean>
 
-export const isSuccessSetConfig = (
-  result: SuccessSetConfig | FailSetConfig
-): result is SuccessSetConfig =>
+export const isSuccessSetConfig = (result: SuccessSetConfig | FailSetConfig): result is SuccessSetConfig =>
   result.status === 'success'
 
 export const SET_CONFIG_RESULT_SCHEMA = {
   type: 'array',
   items: {
-    anyOf: [{
-      type: 'object',
-      properties: {
-        configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
-        status: { const: 'success' },
+    anyOf: [
+      {
+        type: 'object',
+        properties: {
+          configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
+          status: { const: 'success' },
+        },
+        required: ['configType', 'status'],
       },
-      required: ['configType', 'status'],
-    }, {
-      type: 'object',
-      properties: {
-        configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
-        status: { const: 'fail' },
-        errorMessage: { type: 'string' },
+      {
+        type: 'object',
+        properties: {
+          configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
+          status: { const: 'fail' },
+          errorMessage: { type: 'string' },
+        },
+        required: ['configType', 'status', 'errorMessage'],
       },
-      required: ['configType', 'status', 'errorMessage'],
-    }],
+    ],
   },
+}
+
+export type SuiteAppType = {
+  appId: string
+  name: string
+  version: string
+  description: string
+  dateInstalled: Date
+  dateLastUpdated: Date
+  publisherId: string
+  installedBy: {
+    id: number
+    name: string
+  }
 }
 
 export const GET_BUNDLES_RESULT_SCHEMA = {
@@ -384,8 +416,29 @@ export const GET_BUNDLES_RESULT_SCHEMA = {
       id: { type: 'number' },
       name: { type: 'string' },
       version: { type: ['string', 'null'] },
+      isManaged: { type: ['boolean', 'null'] },
+      description: { type: ['string', 'null'] },
+      dateInstalled: { type: ['string', 'null'] },
+      dateLastUpdated: { type: ['string', 'null'] },
+      installedFrom: { type: ['string', 'null'] },
+      publisher: {
+        type: ['object', 'null'],
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+        },
+        required: ['id', 'name'],
+      },
+      installedBy: {
+        type: ['object', 'null'],
+        properties: {
+          id: { type: 'number' },
+          name: { type: 'string' },
+        },
+        required: ['id', 'name'],
+      },
     },
-    required: ['id', 'name', 'version'],
+    required: ['id', 'name', 'installedFrom', 'publisher'],
   },
 }
 
@@ -403,3 +456,47 @@ export const GET_SUITEAPPS_RESULT_SCHEMA = {
 }
 
 export type SetConfigRecordsValuesResult = { errorMessage: string } | SetConfigResult
+
+export const QUERY_RECORD_TYPES = {
+  workflow: 'workflow',
+  workflowstate: 'workflowstate',
+  workflowtransition: 'workflowtransition',
+  actiontype: 'actiontype',
+  workflowstatecustomfield: 'workflowstatecustomfield',
+  workflowcustomfield: 'workflowcustomfield',
+} as const
+
+export type QueryRecordType = keyof typeof QUERY_RECORD_TYPES
+
+export type QueryRecordSchema = {
+  type: QueryRecordType
+  sublistId?: string
+  idAlias?: string
+  typeSuffix?: string
+  customTypes?: Record<string, string>
+  fields: string[]
+  filter: {
+    fieldId: string
+    in: string[]
+  }
+  sublists?: QueryRecordSchema[]
+}
+
+export type QueryRecordResponse = {
+  body: Record<string, unknown>
+  sublists: QueryRecordResponse[]
+  errors?: string[]
+}
+
+export const QUERY_RECORDS_RESPONSE_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    required: ['body', 'sublists'],
+    properties: {
+      body: { type: 'object' },
+      sublists: { type: 'array' },
+      errors: { type: 'array', items: { type: 'string' } },
+    },
+  },
+}

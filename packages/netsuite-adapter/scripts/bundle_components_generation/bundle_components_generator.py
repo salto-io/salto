@@ -11,16 +11,20 @@ from pathlib import Path
 from collections import defaultdict
 from types_generation.types_generator import login
 from constants import LICENSE_HEADER, TABLE_ROW, TABLE_DATA
+from bundles_info import BUNDLES_INFO
 import json
+import logging
+logging.basicConfig(filename='bundle_generation.log', level=logging.DEBUG)
 
 SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
 BUNDLE_COMPONENTS_DIR = os.path.join(SRC_DIR, 'bundle_components/')
 FULL_LINE_LENGTH = 4
-BUNDLE_IDS = [332172, 39609, 53195, 233251, 47492]
-NO_VERSION = 'NO_VERSION'
 
-search_bundles_link_template = 'https://{account_id}.app.netsuite.com/app/bundler/installbundle.nl?whence='
+NO_VERSION = 'NO_VERSION'
+NO_ACCESS_ERROR_MESSAGE = 'You have not been granted access to the bundle.'
+UNEXPECTED_ERROR_MESSAGE = 'An unexpected error has occurred'
+bundles_link_template = 'https://{account_id}.app.netsuite.com/app/bundler/bundledetails.nl?sourcecompanyid={publisher_id}&domain={installed_from}&config=F&id={bundle_id}'
 
 bundle_components_file_template = LICENSE_HEADER + '''
 
@@ -37,9 +41,9 @@ def wait_on_element(webpage):
   return False
 
 def parse_components_table(bundle_id_to_components, bundle_id, components_table, webpage, driverWait):
-  webpage_version = webpage.find_element(By.CSS_SELECTOR, '[data-searchable-id="mainmainversion"] > .uir-field')
-  print('Bundle id is: ', bundle_id, 'with version: ',webpage_version.text.strip())
-  version = webpage_version.text.strip() if webpage_version.text.strip() != '' else NO_VERSION
+  version_element = webpage.find_element(By.CSS_SELECTOR, 'div[data-nsps-label="Version"] .uir-field.inputreadonly')
+  version = version_element.text.strip() if version_element.text.strip() != '' else NO_VERSION
+  print('Bundle id is: ', bundle_id, 'with version: ',version)
   # wait until loading row disappears and the table is fully loaded.
   driverWait.until(wait_on_element)
   for row in components_table.find_elements(By.TAG_NAME, TABLE_ROW)[3:]:
@@ -52,26 +56,32 @@ def parse_components_table(bundle_id_to_components, bundle_id, components_table,
 def parse_bundle_components(account_id, username, password, secret_key_2fa, webpage, driverWait):
   logging.info('Starting to parse bundles')
   try:
-    webpage.get(search_bundles_link_template.format(account_id = account_id))
+    webpage.get('https://{account_id}.app.netsuite.com/app/center/card.nl?sc=-29&whence='.format(account_id = account_id))
     login(username, password, secret_key_2fa, webpage)
     bundle_id_to_components = defaultdict(lambda: defaultdict(list))
-    for bundle_id in BUNDLE_IDS:
-      search_field = driverWait.until(lambda driver: driver.find_element(By.XPATH, '//*[@id="keywords"]'))
-      search_field.clear() # clear previous input if it exits
-      search_field.send_keys(bundle_id)
-      webpage.find_element(By.XPATH, '//*[@id="search"]').click()
-      driverWait.until(lambda driver: driver.find_element(By.XPATH, '//*[@id="name1href"]')).click()
+    unfetched_bundles = []
+    for bundle_info in BUNDLES_INFO:
+      bundle_id, installed_from, publisher_id = bundle_info
+      if (not (installed_from and publisher_id)):
+        unfetched_bundles.append((bundle_id, installed_from, publisher_id))
+        continue
+      webpage.get(bundles_link_template.format(account_id = account_id, publisher_id = publisher_id, installed_from = installed_from, bundle_id = bundle_id))
       try:
-        driverWait.until(EC.text_to_be_present_in_element((By.TAG_NAME, 'body'), 'You have not been granted access to the bundle.'))
+        error_conditions = lambda driver: NO_ACCESS_ERROR_MESSAGE in driver.find_element(By.TAG_NAME, 'body').text or UNEXPECTED_ERROR_MESSAGE in driver.find_element(By.TAG_NAME, 'body').text
+        driverWait.until(error_conditions)
         # for private bundles we return an empty Record
         bundle_id_to_components[bundle_id] = {}
-        webpage.back()
       except TimeoutException:
-        driverWait.until(lambda driver: driver.find_element(By.XPATH, '//*[@id="componentstabtxt"]')).click()
-        components_table = driverWait.until(lambda d: d.find_element(By.XPATH, '//*[@id="contentslist__tab"]')) 
-        parse_components_table(bundle_id_to_components, bundle_id, components_table, webpage, driverWait)
+        try:
+          driverWait.until(lambda driver: driver.find_element(By.XPATH, '//*[@id="componentstabtxt"]')).click()
+          components_table = driverWait.until(lambda d: d.find_element(By.XPATH, '//*[@id="contentslist__tab"]')) 
+          parse_components_table(bundle_id_to_components, bundle_id, components_table, webpage, driverWait)
+        except TimeoutException:
+          unfetched_bundles.append((bundle_id, installed_from, publisher_id))
+          continue
   finally:
     webpage.quit()
+  logging.info(f'The following bundles were not fetched due to missing required fields: {" ".join(map(str, unfetched_bundles))}')
   return bundle_id_to_components
 
 def format_components(bundle_id_to_components):
@@ -96,7 +106,7 @@ def generate_bundle_map_file(bundle_id_to_components):
 
 def create_merged_map(bundle_id_to_components):
   file_path = 'bundle_component.json'
-
+  logging.info('Creating merged map')
   if not os.path.exists(file_path):
     json_data = json.dumps(bundle_id_to_components)
     with open('bundle_component.json', 'w') as file:
@@ -127,13 +137,17 @@ def merge_dictionaries(existing_data, new_bundle_dict):
       for version in new_bundle_data:
         if version not in existing_bundle_data:
           existing_bundle_data[version] = new_bundle_data
-          merged_dict[bundle_id] = existing_bundle_data
+          
+      merged_dict[bundle_id] = existing_bundle_data
 
   return merged_dict
 
 def main():
-  webpage = webdriver.Chrome()
-  driverWait = wait.WebDriverWait(webpage, 15)
+# Running headless chrome speeds the script, but it's not required. To view the browser, remove the headless option.
+  op = webdriver.ChromeOptions()
+  op.add_argument('headless')
+  webpage = webdriver.Chrome(options=op)
+  driverWait = wait.WebDriverWait(webpage, 20)
   account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
   bundle_to_components = parse_bundle_components(account_id, username, password, secret_key_2fa, webpage, driverWait)
   merged_bundle_map = create_merged_map(bundle_to_components)

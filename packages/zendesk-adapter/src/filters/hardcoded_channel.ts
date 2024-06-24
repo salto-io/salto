@@ -1,23 +1,29 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import Joi from 'joi'
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, ObjectType, Values,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  Values,
 } from '@salto-io/adapter-api'
-import { naclCase, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
+import { naclCase, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
@@ -36,16 +42,20 @@ type Channel = {
   enabled: boolean
 }
 
-const EXPECTED_CHANNELS_SCHEMA = Joi.array().items(Joi.object({
-  value: Joi.string().required(),
-  title: Joi.string().required(),
-  enabled: Joi.boolean(),
-})).required()
+const EXPECTED_CHANNELS_SCHEMA = Joi.array()
+  .items(
+    Joi.object({
+      value: Joi.string().required(),
+      title: Joi.string().required(),
+      enabled: Joi.boolean(),
+    }),
+  )
+  .required()
 
 const isChannels = (values: unknown): values is Channel[] => {
   const { error } = EXPECTED_CHANNELS_SCHEMA.validate(values)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the channel values: ${error.message}, ${safeJsonStringify(values, elementExpressionStringifyReplacer)}`)
+    log.error(`Received an invalid response for the channel values: ${error.message}, ${inspectValue(values)}`)
     return false
   }
   return true
@@ -75,24 +85,25 @@ const filterCreator: FilterCreator = () => ({
       elemID: new ElemID(ZENDESK, CHANNEL_TYPE_NAME),
       fields: {
         id: {
-          refType: BuiltinTypes.SERVICE_ID, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          refType: BuiltinTypes.SERVICE_ID,
+          annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
         },
         name: { refType: BuiltinTypes.STRING },
       },
       path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, CHANNEL_TYPE_NAME],
     })
-    if (channels.length !== (new Set(channels.map(c => c.value))).size) {
-      log.warn(`Found duplicate ids in the channels - Not adding channel instances. ${safeJsonStringify(channels)}`)
+    if (channels.length !== new Set(channels.map(c => c.value)).size) {
+      log.warn(`Found duplicate ids in the channels - Not adding channel instances. ${inspectValue(channels)}`)
       return
     }
     const instances = channels.map(channel => {
       const instanceName = naclCase(channel.title)
-      return new InstanceElement(
+      return new InstanceElement(instanceName, channelType, { id: channel.value, name: channel.title }, [
+        ZENDESK,
+        RECORDS_PATH,
+        CHANNEL_TYPE_NAME,
         instanceName,
-        channelType,
-        { id: channel.value, name: channel.title },
-        [ZENDESK, RECORDS_PATH, CHANNEL_TYPE_NAME, instanceName],
-      )
+      ])
     })
     elements.push(channelType, ...instances)
   },

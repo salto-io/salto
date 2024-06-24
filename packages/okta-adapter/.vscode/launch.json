@@ -9,12 +9,7 @@
       "request": "launch",
       "name": "okta-adapter Debug Jest Tests",
       "cwd": "${workspaceFolder}",
-      "args": [
-        "${workspaceRoot}/node_modules/.bin/jest",
-        "--runInBand",
-        "--config",
-        "${workspaceRoot}/jest.config.js"
-      ],
+      "args": ["${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--config", "${workspaceRoot}/jest.config.js"],
       "outFiles": [],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
@@ -25,17 +20,12 @@
       "name": "okta-adapter Debug Jest E2E Tests",
       "cwd": "${workspaceFolder}",
       "env": {
-        "RUN_E2E_TESTS": "1",
+        "RUN_E2E_TESTS": "1"
       },
-      "args": [
-        "${workspaceRoot}/node_modules/.bin/jest",
-        "--runInBand",
-        "--config",
-        "${workspaceRoot}/jest.config.js"
-      ],
+      "args": ["${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--config", "${workspaceRoot}/jest.config.js"],
       "outFiles": [],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
-    },
+    }
   ]
 }

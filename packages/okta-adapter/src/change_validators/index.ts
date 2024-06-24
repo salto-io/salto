@@ -1,26 +1,26 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
+import { deployment, elements as elementsUtils, definitions as definitionUtils } from '@salto-io/adapter-components'
 import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
+import { groupPushToApplicationUniquenessValidator } from './group_push_to_application_uniqueness'
 import { defaultPoliciesValidator } from './default_policies'
-import { groupRuleAdministratorValidator } from './group_rule_administrator'
 import { customApplicationStatusValidator } from './custom_application_status'
 import { appGroupValidator } from './app_group'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
@@ -28,55 +28,96 @@ import { appIntegrationSetupValidator } from './app_integration_setup'
 import { assignedAccessPoliciesValidator } from './assigned_policies'
 import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_fields'
 import { enabledAuthenticatorsValidator } from './enabled_authenticators'
-import { roleAssignmentValidator } from './role_assignment'
 import { usersValidator } from './user'
+import { appWithGroupPushValidator } from './app_with_group_push'
+import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
+import { appUserSchemaBaseChangesValidator } from './app_user_schema_base_properties'
+import { appGroupAssignmentValidator } from './app_group_assignments'
+import { appUrlsValidator } from './app_urls'
+import { profileMappingRemovalValidator } from './profile_mapping_removal'
+import { brandRemovalValidator } from './brand_removal'
+import { appUserSchemaRemovalValidator } from './app_user_schema_removal'
+import { domainAdditionValidator } from './domain_addition'
+import { domainModificationValidator } from './domain_modification'
+import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
+import { brandThemeRemovalValidator } from './brand_theme_removal'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
-  ChangeValidatorName,
   DEPLOY_CONFIG,
-  OktaConfig,
+  OldOktaDefinitionsConfig,
   PRIVATE_API_DEFINITIONS_CONFIG,
 } from '../config'
-import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
+import { OktaUserConfig, ChangeValidatorName } from '../user_config'
+import { OktaOptions } from '../definitions/types'
 
 const {
   createCheckDeploymentBasedOnConfigValidator,
+  createCheckDeploymentBasedOnDefinitionsValidator,
   getDefaultChangeValidators,
   createChangeValidator,
 } = deployment.changeValidators
 
 export default ({
   client,
-  config,
+  userConfig,
+  fetchQuery,
+  definitions,
+  oldApiDefsConfig,
 }: {
   client: OktaClient
-  config: OktaConfig
+  userConfig: OktaUserConfig
+  fetchQuery: elementsUtils.query.ElementQuery
+  definitions: definitionUtils.ApiDefinitions<OktaOptions>
+  oldApiDefsConfig: OldOktaDefinitionsConfig
 }): ChangeValidator => {
+  const typesDeployedWithOldInfra = [
+    ...Object.keys(oldApiDefsConfig[API_DEFINITIONS_CONFIG].types),
+    ...Object.keys(oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types),
+  ]
+  const typesDeployedWithNewInfra = definitionUtils.queryWithDefault(definitions.deploy?.instances ?? {}).allKeys()
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
-      typesConfig: _.merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),
+      typesConfig: _.merge(
+        oldApiDefsConfig[API_DEFINITIONS_CONFIG].types,
+        oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types,
+      ),
+      typesWithNoDeploy: typesDeployedWithNewInfra,
+    }),
+    createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator<OktaOptions>({
+      deployDefinitions: definitions.deploy ?? { instances: {} },
+      typesWithNoDeploy: typesDeployedWithOldInfra,
     }),
     application: applicationValidator,
     appGroup: appGroupValidator,
     groupRuleStatus: groupRuleStatusValidator,
     groupRuleActions: groupRuleActionsValidator,
     defaultPolicies: defaultPoliciesValidator,
-    groupRuleAdministrator: groupRuleAdministratorValidator,
     customApplicationStatus: customApplicationStatusValidator,
     userTypeAndSchema: userTypeAndSchemaValidator,
     appIntegrationSetup: appIntegrationSetupValidator(client),
     assignedAccessPolicies: assignedAccessPoliciesValidator,
     groupSchemaModifyBase: groupSchemaModifyBaseValidator,
     enabledAuthenticators: enabledAuthenticatorsValidator,
-    roleAssignment: roleAssignmentValidator,
-    users: usersValidator(client, config),
+    users: usersValidator(client, userConfig, fetchQuery),
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
+    appUserSchemaBaseChanges: appUserSchemaBaseChangesValidator,
+    appWithGroupPush: appWithGroupPushValidator,
+    groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
+    appGroupAssignment: appGroupAssignmentValidator,
+    appUrls: appUrlsValidator,
+    profileMappingRemoval: profileMappingRemovalValidator,
+    brandRemoval: brandRemovalValidator,
+    dynamicOSVersion: dynamicOSVersionFeatureValidator,
+    brandThemeRemoval: brandThemeRemovalValidator,
+    appUserSchemaRemoval: appUserSchemaRemovalValidator,
+    domainAddition: domainAdditionValidator,
+    domainModification: domainModificationValidator,
   }
 
   return createChangeValidator({
     validators,
-    validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
+    validatorsActivationConfig: userConfig[DEPLOY_CONFIG]?.changeValidators,
   })
 }

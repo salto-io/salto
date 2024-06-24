@@ -1,23 +1,30 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { mockFunction } from '@salto-io/test-utils'
-import { ClientRateLimitConfig } from '../../src/client/config'
-import { AdapterHTTPClient, APIConnection, ClientOpts, ConnectionCreator, HTTPError, UnauthorizedError } from '../../src/client'
+import { ClientRateLimitConfig } from '../../src/definitions/user/client_config'
+import {
+  AdapterHTTPClient,
+  APIConnection,
+  ClientOpts,
+  ConnectionCreator,
+  HTTPError,
+  UnauthorizedError,
+} from '../../src/client'
 import { createConnection, Credentials } from './common'
 import { TimeoutError } from '../../src/client/http_client'
 
@@ -37,27 +44,26 @@ describe('client_http_client', () => {
     mockAxiosAdapter.restore()
   })
 
-  class MyCustomClient extends AdapterHTTPClient<
-    Credentials, ClientRateLimitConfig
-  > {
-    constructor(
-      clientOpts: ClientOpts<Credentials, ClientRateLimitConfig>,
-    ) {
-      super(
-        'MyCustom',
-        clientOpts,
-        mockCreateConnection,
-        {
-          pageSize: { get: 123 },
-          rateLimit: { total: -1, get: 3, deploy: 4 },
-          maxRequestsPerMinute: -1,
-          retry: { maxAttempts: 3, retryDelay: 123, additionalStatusCodesToRetry: STATUSES_TO_RETRY },
-        }
-      )
+  class MyCustomClient extends AdapterHTTPClient<Credentials, ClientRateLimitConfig> {
+    constructor(clientOpts: ClientOpts<Credentials, ClientRateLimitConfig>) {
+      super('MyCustom', clientOpts, mockCreateConnection, {
+        pageSize: { get: 123 },
+        rateLimit: { total: -1, get: 3, deploy: 4 },
+        maxRequestsPerMinute: -1,
+        retry: {
+          maxAttempts: 3,
+          retryDelay: 123,
+          additionalStatusCodesToRetry: STATUSES_TO_RETRY,
+        },
+        timeout: {
+          lastRetryNoTimeout: true,
+          retryOnTimeout: true,
+        },
+      })
     }
   }
 
-  describe('getSinglePage', () => {
+  describe('get', () => {
     it('should make the right request', async () => {
       expect(mockCreateConnection).not.toHaveBeenCalled()
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
@@ -73,8 +79,8 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
       mockAxiosAdapter.onGet('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
-      const getRes = await client.getSinglePage({ url: '/ep' })
-      const getRes2 = await client.getSinglePage({ url: '/ep2', queryParams: { a: 'AAA' } })
+      const getRes = await client.get({ url: '/ep' })
+      const getRes2 = await client.get({ url: '/ep2', queryParams: { a: 'AAA' } })
       expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
       expect(getRes2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
@@ -92,7 +98,7 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/users/me').reply(401, {
         accountId: 'ACCOUNT_ID',
       })
-      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(UnauthorizedError)
+      await expect(client.get({ url: '/ep' })).rejects.toThrow(UnauthorizedError)
     })
 
     it('should throw HTTPError on other http errors', async () => {
@@ -101,7 +107,7 @@ describe('client_http_client', () => {
         accountId: 'ACCOUNT_ID',
       })
       mockAxiosAdapter.onGet('/ep').replyOnce(400, { a: 'b' })
-      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(HTTPError)
+      await expect(client.get({ url: '/ep' })).rejects.toThrow(HTTPError)
     })
 
     it('should throw TimeoutError if received ETIMEDOUT', async () => {
@@ -118,6 +124,8 @@ describe('client_http_client', () => {
           put: mockFunction<APIConnection['put']>(),
           patch: mockFunction<APIConnection['patch']>(),
           delete: mockFunction<APIConnection['delete']>(),
+          head: mockFunction<APIConnection['delete']>(),
+          options: mockFunction<APIConnection['delete']>(),
           accountInfo: {
             accountId: 'ACCOUNT_ID',
             accountType: 'Sandbox',
@@ -126,7 +134,91 @@ describe('client_http_client', () => {
         }),
       })
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
-      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(TimeoutError)
+      await expect(client.get({ url: '/ep' })).rejects.toThrow(TimeoutError)
+    })
+  })
+
+  describe('head', () => {
+    it('should make the right request', async () => {
+      expect(mockCreateConnection).not.toHaveBeenCalled()
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clearValuesFromResponseDataFunc = jest.spyOn(MyCustomClient.prototype as any, 'clearValuesFromResponseData')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const extractHeadersFunc = jest.spyOn(MyCustomClient.prototype as any, 'extractHeaders')
+      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter
+        .onHead('/ep')
+        .replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      mockAxiosAdapter.onHead('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
+
+      const res = await client.head({ url: '/ep' })
+      const res2 = await client.head({ url: '/ep2', queryParams: { a: 'AAA' } })
+      expect(res).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
+      expect(res2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
+      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
+      expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
+      expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
+    })
+
+    it('should throw HTTPError on http errors', async () => {
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onHead('/ep').replyOnce(400, { a: 'b' })
+      await expect(client.head({ url: '/ep' })).rejects.toThrow(HTTPError)
+    })
+  })
+
+  describe('options', () => {
+    it('should make the right request', async () => {
+      expect(mockCreateConnection).not.toHaveBeenCalled()
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clearValuesFromResponseDataFunc = jest.spyOn(MyCustomClient.prototype as any, 'clearValuesFromResponseData')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const extractHeadersFunc = jest.spyOn(MyCustomClient.prototype as any, 'extractHeaders')
+      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter
+        .onOptions('/ep')
+        .replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      mockAxiosAdapter.onOptions('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
+
+      const res = await client.options({ url: '/ep' })
+      const res2 = await client.options({ url: '/ep2', queryParams: { a: 'AAA' } })
+      expect(res).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
+      expect(res2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
+      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
+      expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
+      expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
+    })
+
+    it('should throw HTTPError on http errors', async () => {
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onOptions('/ep').replyOnce(400, { a: 'b' })
+      await expect(client.options({ url: '/ep' })).rejects.toThrow(HTTPError)
     })
   })
 
@@ -197,6 +289,15 @@ describe('client_http_client', () => {
       expect(getRes).toEqual({ data: { a: 'b' }, status: 200 })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(1)
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledWith({ a: 'b' }, '/ep')
+    })
+    it('should include data when provided', async () => {
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      mockAxiosAdapter.onGet('/users/me').reply(200, { accountId: 'ACCOUNT_ID' })
+      mockAxiosAdapter.onDelete('/ep', { a: 'AAA' }).replyOnce(200, { a: 'b' })
+      await client.delete({ url: '/ep', data: { b: 'c' } })
+      const request = mockAxiosAdapter.history.delete[0]
+      expect(request.url).toEqual('/ep')
+      expect(JSON.parse(request.data)).toEqual({ b: 'c' })
     })
   })
 

@@ -1,26 +1,36 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/service_url'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
-import { CONNECTION_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, WORKATO, FOLDER_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, API_ENDPOINT_TYPE, PROPERTY_TYPE, API_CLIENT_TYPE } from '../../src/constants'
-
+import { getDefaultConfig } from '../../src/config'
+import {
+  CONNECTION_TYPE,
+  RECIPE_TYPE,
+  RECIPE_CODE_TYPE,
+  WORKATO,
+  FOLDER_TYPE,
+  ROLE_TYPE,
+  API_COLLECTION_TYPE,
+  API_ENDPOINT_TYPE,
+  PROPERTY_TYPE,
+  API_CLIENT_TYPE,
+} from '../../src/constants'
 
 describe('service_url', () => {
   let client: WorkatoClient
@@ -40,50 +50,45 @@ describe('service_url', () => {
     connectionInstance = new InstanceElement(
       CONNECTION_TYPE,
       new ObjectType({ elemID: new ElemID(WORKATO, CONNECTION_TYPE) }),
-      { id: 1 }
+      { id: 1 },
     )
-    recipeInstance = new InstanceElement(
-      RECIPE_TYPE,
-      new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_TYPE) }), { id: 2 },
-    )
+    recipeInstance = new InstanceElement(RECIPE_TYPE, new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_TYPE) }), {
+      id: 2,
+    })
     recipeCodeInstance = new InstanceElement(
       RECIPE_CODE_TYPE,
-      new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_CODE_TYPE) }), undefined, undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(recipeInstance.elemID, recipeInstance),
-      ] }
+      new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_CODE_TYPE) }),
+      undefined,
+      undefined,
+      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(recipeInstance.elemID, recipeInstance)] },
     )
-    folderInstance = new InstanceElement(
-      FOLDER_TYPE,
-      new ObjectType({ elemID: new ElemID(WORKATO, FOLDER_TYPE) }), { id: 4 },
-    )
-    roleInstance = new InstanceElement(
-      ROLE_TYPE,
-      new ObjectType({ elemID: new ElemID(WORKATO, ROLE_TYPE) }), { id: 5 },
-    )
+    folderInstance = new InstanceElement(FOLDER_TYPE, new ObjectType({ elemID: new ElemID(WORKATO, FOLDER_TYPE) }), {
+      id: 4,
+    })
+    roleInstance = new InstanceElement(ROLE_TYPE, new ObjectType({ elemID: new ElemID(WORKATO, ROLE_TYPE) }), { id: 5 })
     apiCollectionInstance = new InstanceElement(
       API_COLLECTION_TYPE,
-      new ObjectType({ elemID: new ElemID(WORKATO, API_COLLECTION_TYPE) }), { id: 6 },
+      new ObjectType({ elemID: new ElemID(WORKATO, API_COLLECTION_TYPE) }),
+      { id: 6 },
     )
     apiEndpointInstance = new InstanceElement(
       API_ENDPOINT_TYPE,
       new ObjectType({ elemID: new ElemID(WORKATO, API_ENDPOINT_TYPE) }),
       {
         id: 7,
-        api_collection_id: new ReferenceExpression(
-          apiCollectionInstance.elemID,
-          apiCollectionInstance,
-        ),
-      }
+        api_collection_id: new ReferenceExpression(apiCollectionInstance.elemID, apiCollectionInstance),
+      },
     )
     propertyInstance = new InstanceElement(
       PROPERTY_TYPE,
-      new ObjectType({ elemID: new ElemID(WORKATO, PROPERTY_TYPE) }), { id: 8 },
+      new ObjectType({ elemID: new ElemID(WORKATO, PROPERTY_TYPE) }),
+      { id: 8 },
     )
 
     apiClientInstance = new InstanceElement(
       PROPERTY_TYPE,
-      new ObjectType({ elemID: new ElemID(WORKATO, API_CLIENT_TYPE) }), { id: 9 },
+      new ObjectType({ elemID: new ElemID(WORKATO, API_CLIENT_TYPE) }),
+      { id: 9 },
     )
 
     filter = filterCreator({
@@ -92,7 +97,7 @@ describe('service_url', () => {
         client,
         paginationFuncCreator: paginate,
       }),
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig(),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
 
@@ -126,19 +131,27 @@ describe('service_url', () => {
   })
 
   it('should set the right url for role', () => {
-    expect(roleInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://app.workato.com/privilege_groups/5/edit')
+    expect(roleInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://app.workato.com/privilege_groups/5/edit',
+    )
   })
 
   it('should set the right url for api collection', () => {
-    expect(apiCollectionInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://app.workato.com/api_groups/6/endpoints')
+    expect(apiCollectionInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://app.workato.com/api_groups/6/endpoints',
+    )
   })
 
   it('should set the right url for api endpoint', () => {
-    expect(apiEndpointInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://app.workato.com/api_groups/6/endpoints/7')
+    expect(apiEndpointInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://app.workato.com/api_groups/6/endpoints/7',
+    )
   })
 
   it('should set the right url for property', () => {
-    expect(propertyInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://app.workato.com/account_properties')
+    expect(propertyInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://app.workato.com/account_properties',
+    )
   })
 
   it('should set the right url for api client', () => {

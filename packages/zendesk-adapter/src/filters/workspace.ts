@@ -1,21 +1,26 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isRemovalChange, Values,
+  Change,
+  createSaltoElementError,
+  getChangeData,
+  InstanceElement,
+  isRemovalChange,
+  Values,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -30,46 +35,46 @@ const WORKSPACE_TYPE_NAME = 'workspace'
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'workspaceFilter',
   preDeploy: async changes => {
-    await applyforInstanceChangesOfType(
-      changes,
-      [WORKSPACE_TYPE_NAME],
-      (instance: InstanceElement) => {
-        instance.value = {
-          ...instance.value,
-          macros: (instance.value.selected_macros ?? [])
-            .filter(_.isPlainObject)
-            .map((e: Values) => e.id)
-            .filter(values.isDefined),
-        }
-        return instance
+    await applyforInstanceChangesOfType(changes, [WORKSPACE_TYPE_NAME], (instance: InstanceElement) => {
+      instance.value = {
+        ...instance.value,
+        macros: (instance.value.selected_macros ?? [])
+          .filter(_.isPlainObject)
+          .map((e: Values) => e.id)
+          .filter(values.isDefined),
       }
-    )
+      return instance
+    })
   },
   onDeploy: async changes => {
-    await applyforInstanceChangesOfType(
-      changes,
-      [WORKSPACE_TYPE_NAME],
-      (instance: InstanceElement) => {
-        instance.value = _.omit(instance.value, ['macros'])
-        return instance
-      }
-    )
+    await applyforInstanceChangesOfType(changes, [WORKSPACE_TYPE_NAME], (instance: InstanceElement) => {
+      instance.value = _.omit(instance.value, ['macros'])
+      return instance
+    })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [workspaceChanges, leftoverChanges] = _.partition(
       changes,
-      change =>
-        (getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME)
-        && !isRemovalChange(change),
+      change => getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME && !isRemovalChange(change),
     )
-    const deployResult = await deployChanges(
-      workspaceChanges,
-      async change => {
-        await deployChange(
-          change, client, config.apiDefinitions, ['selected_macros'],
-        )
-      },
-    )
+    const deployResult = await deployChanges(workspaceChanges, async change => {
+      const response = await deployChange(change, client, config.apiDefinitions, ['selected_macros'])
+      // It's possible for the deployment to return with status 200 and still have errors.
+      if (response !== undefined && !_.isArray(response) && response.errors !== undefined) {
+        let errorMsg = 'Something went wrong'
+        if (Array.isArray(response.errors) && response.errors.length > 0) {
+          errorMsg = String(response.errors[0])
+        } else if (typeof response.errors === 'string') {
+          errorMsg = response.errors
+        }
+        throw createSaltoElementError({
+          // caught by deployChanges
+          message: errorMsg,
+          severity: 'Error',
+          elemID: getChangeData(change).elemID,
+        })
+      }
+    })
     return { deployResult, leftoverChanges }
   },
 })

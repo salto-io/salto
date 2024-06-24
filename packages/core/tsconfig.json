@@ -1,36 +1,37 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "baseUrl": ".",
-        "resolveJsonModule": true
-    },
-    "include": [
-        "src/**/*",
-        "src/**/*.json",
-        "test/**/*",
-        "index.ts"
-    ],
-    "references": [
-        { "path": "../adapter-api" },
-        { "path": "../adapter-utils" },
-        { "path": "../adapter-components" },
-        { "path": "../aws-utils" },
-        { "path": "../dag" },
-        { "path": "../dummy-adapter" },
-        { "path": "../file" },
-        { "path": "../jira-adapter" },
-        { "path": "../logging" },
-        { "path": "../lowerdash" },
-        { "path": "../netsuite-adapter" },
-        { "path": "../okta-adapter" },
-        { "path": "../salesforce-adapter" },
-        { "path": "../sap-adapter" },
-        { "path": "../stripe-adapter" },
-        { "path": "../test-utils" },
-        { "path": "../workato-adapter" },
-        { "path": "../workspace" },
-        { "path": "../zendesk-adapter" },
-        { "path": "../zuora-billing-adapter" },
-    ]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": "."
+  },
+  "include": ["src/**/*", "src/**/*.json", "index.ts"],
+  "references": [
+    { "path": "../adapter-api" },
+    { "path": "../adapter-utils" },
+    { "path": "../adapter-components" },
+    { "path": "../aws-utils" },
+    { "path": "../confluence-adapter" },
+    { "path": "../dag" },
+    { "path": "../dummy-adapter" },
+    { "path": "../file" },
+    { "path": "../google-workspace-adapter" },
+    { "path": "../intercom-adapter" },
+    { "path": "../jira-adapter" },
+    { "path": "../logging" },
+    { "path": "../lowerdash" },
+    { "path": "../microsoft-entra-adapter" },
+    { "path": "../netsuite-adapter" },
+    { "path": "../okta-adapter" },
+    { "path": "../parser" },
+    { "path": "../salesforce-adapter" },
+    { "path": "../sap-adapter" },
+    { "path": "../serviceplaceholder-adapter" },
+    { "path": "../stripe-adapter" },
+    { "path": "../test-utils" },
+    { "path": "../workato-adapter" },
+    { "path": "../workspace" },
+    { "path": "../zendesk-adapter" },
+    { "path": "../zuora-billing-adapter" },
+    { "path": "../pagerduty-adapter" }
+  ]
 }

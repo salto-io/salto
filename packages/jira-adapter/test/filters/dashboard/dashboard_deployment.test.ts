@@ -1,22 +1,31 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
-import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import { getFilterParams, mockClient } from '../../utils'
@@ -45,18 +54,19 @@ describe('dashboardDeploymentFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
 
-
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = dashboardDeploymentFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    filter = dashboardDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     dashboardType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_TYPE),
@@ -121,53 +131,47 @@ describe('dashboardDeploymentFilter', () => {
   })
 
   describe('deploy', () => {
-    const deployChangeMock = deployment.deployChange as jest.MockedFunction<
-      typeof deployment.deployChange
-    >
+    const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
 
     let change: Change<InstanceElement>
 
     beforeEach(async () => {
       deployChangeMock.mockClear()
-      const instance = new InstanceElement(
-        'instance',
-        dashboardType,
-        {
-          id: '0',
-          layout: 'AAA',
-          gadgets: [
-            new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'gadget1'), {
-              value: {
-                id: '1',
-                position: {
-                  column: 0,
-                  row: 0,
-                },
+      const instance = new InstanceElement('instance', dashboardType, {
+        id: '0',
+        layout: 'AAA',
+        gadgets: [
+          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'gadget1'), {
+            value: {
+              id: '1',
+              position: {
+                column: 0,
+                row: 0,
               },
-            }),
+            },
+          }),
 
-            new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'gadget2'), {
-              value: {
-                id: '2',
-                position: {
-                  column: 1,
-                  row: 0,
-                },
+          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'gadget2'), {
+            value: {
+              id: '2',
+              position: {
+                column: 1,
+                row: 0,
               },
-            }),
+            },
+          }),
 
-            new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'gadget3'), {
-              value: {
-                id: '3',
-                position: {
-                  column: 2,
-                  row: 0,
-                },
+          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'gadget3'), {
+            value: {
+              id: '3',
+              position: {
+                column: 2,
+                row: 0,
               },
-            }),
-          ],
-        }
-      )
+            },
+          }),
+        ],
+      })
 
       change = toChange({ after: instance })
     })
@@ -177,12 +181,8 @@ describe('dashboardDeploymentFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith({
         change: await resolveChangeElement(change, getLookUpName),
         client,
-        endpointDetails: getDefaultConfig({ isDataCenter: false })
-          .apiDefinitions.types[DASHBOARD_TYPE].deployRequests,
-        fieldsToIgnore: [
-          'layout',
-          'gadgets',
-        ],
+        endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types[DASHBOARD_TYPE].deployRequests,
+        fieldsToIgnore: ['layout', 'gadgets'],
       })
     })
 

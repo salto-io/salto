@@ -1,20 +1,30 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { config as configUtils } from '@salto-io/adapter-components'
-import { AUTOMATION_LABEL_TYPE, AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
+import {
+  AUTOMATION_LABEL_TYPE,
+  AUTOMATION_TYPE,
+  BOARD_COLUMN_CONFIG_TYPE,
+  BOARD_ESTIMATION_TYPE,
+  ISSUE_TYPE_NAME,
+  ISSUE_TYPE_SCHEMA_NAME,
+  PROJECTS_FIELD,
+  RESOLUTION_TYPE_NAME,
+  STATUS_TYPE_NAME,
+} from '../constants'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const DEFAULT_MAX_RESULTS = '1000'
@@ -28,9 +38,12 @@ export type JspUrls = {
 }
 
 export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
-  types: Record<string, configUtils.TypeConfig & {
-    jspRequests?: JspUrls
-  }>
+  types: Record<
+    string,
+    configUtils.TypeConfig & {
+      jspRequests?: JspUrls
+    }
+  >
   platformSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   typesToFallbackToInternalId: string[]
@@ -39,9 +52,7 @@ export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'>
 export type JiraDuckTypeConfig = configUtils.AdapterDuckTypeApiConfig
 
 const DEFAULT_ID_FIELDS = ['name']
-const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
-  { fieldName: 'expand', fieldType: 'string' },
-]
+const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [{ fieldName: 'expand', fieldType: 'string' }]
 
 const DEFAULT_SERVICE_ID_FIELD = 'id'
 
@@ -85,9 +96,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   DashboardGadget: {
     transformation: {
       idFields: ['title', 'position.column', 'position.row'],
-      fieldTypeOverrides: [
-        { fieldName: 'properties', fieldType: 'Map<unknown>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'properties', fieldType: 'Map<unknown>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -117,6 +126,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           dashboardId: '_parent.0.id',
           gadgetId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -141,9 +151,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      fieldsToOmit: [
-        { fieldName: 'isFavourite' },
-      ],
+      fieldsToOmit: [{ fieldName: 'isFavourite' }],
       standaloneFields: [
         {
           fieldName: 'gadgets',
@@ -165,14 +173,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/dashboard/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
   BoardConfiguration_columnConfig_columns: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'statuses', fieldType: 'List<string>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'statuses', fieldType: 'List<string>' }],
     },
   },
   Fields: {
@@ -191,24 +198,28 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
             { name: 'fieldId', fromField: 'id' },
             { name: 'fieldSchema', fromField: 'schema.custom' },
           ],
-          conditions: [{
-            fromField: 'id',
-            match: ['customfield_.*'],
-          }],
+          conditions: [
+            {
+              fromField: 'id',
+              match: ['customfield_.*'],
+            },
+          ],
         },
         {
           type: 'PageBeanCustomFieldContextDefaultValue',
           toField: 'contextDefaults',
           skipOnError: true,
           context: [{ name: 'fieldId', fromField: 'id' }],
-          conditions: [{
-            fromField: 'schema.custom',
-            // This condition is to avoid trying to fetch the default value
-            // for unsupported types (e.g., com.atlassian.jira.ext.charting:timeinstatus)
-            // for which Jira will return "Retrieving default value for provided
-            // custom field is not supported."
-            match: ['com.atlassian.jira.plugin.system.customfieldtypes:*'],
-          }],
+          conditions: [
+            {
+              fromField: 'schema.custom',
+              // This condition is to avoid trying to fetch the default value
+              // for unsupported types (e.g., com.atlassian.jira.ext.charting:timeinstatus)
+              // for which Jira will return "Retrieving default value for provided
+              // custom field is not supported."
+              match: ['com.atlassian.jira.plugin.system.customfieldtypes:*'],
+            },
+          ],
         },
         {
           type: 'PageBeanIssueTypeToContextMapping',
@@ -256,9 +267,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'contextIssueTypes', fieldType: 'list<IssueTypeToContextMapping>' },
         { fieldName: 'contextProjects', fieldType: 'list<CustomFieldContextProjectMapping>' },
       ],
-      fileNameFields: [
-        'name',
-      ],
+      fileNameFields: ['name'],
     },
     deployRequests: {
       add: {
@@ -275,6 +284,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/field/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -305,10 +315,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           type: 'PageBeanCustomFieldContextOption',
           toField: 'options',
           context: [{ name: 'contextId', fromField: 'id' }],
-          conditions: [{
-            fromContext: 'fieldSchema',
-            match: FIELD_TYPES_WITH_OPTIONS,
-          }],
+          conditions: [
+            {
+              fromContext: 'fieldSchema',
+              match: FIELD_TYPES_WITH_OPTIONS,
+            },
+          ],
         },
       ],
     },
@@ -326,17 +338,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   CustomFieldContext: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'options', fieldType: 'list<CustomFieldContextOption>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'options', fieldType: 'list<CustomFieldContextOption>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
         },
       ],
-      fieldsToOmit: [
-        { fieldName: 'isAnyIssueType' },
-      ],
+      fieldsToOmit: [{ fieldName: 'isAnyIssueType' }],
     },
     deployRequests: {
       add: {
@@ -361,6 +369,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           contextId: 'id',
           fieldId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -415,6 +424,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/fieldconfiguration/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -465,6 +475,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/fieldconfigurationscheme/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -514,9 +525,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      fieldsToOmit: [
-        { fieldName: 'expand' },
-      ],
+      fieldsToOmit: [{ fieldName: 'expand' }],
       serviceUrl: '/issues/?filter={id}',
     },
     deployRequests: {
@@ -531,14 +540,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/filter/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
   GroupName: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'groupId' },
-      ],
+      fieldsToOmit: [{ fieldName: 'groupId' }],
     },
   },
   IssueTypeSchemes: {
@@ -560,9 +568,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Board_location: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'projectKeyOrId', fieldType: 'number' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'projectKeyOrId', fieldType: 'number' }],
       fieldsToOmit: [
         { fieldName: 'displayName' },
         { fieldName: 'projectName' },
@@ -578,9 +584,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'issueTypeIds', fieldType: 'list<IssueTypeSchemeMapping>' }],
       serviceIdField: 'issueTypeSchemeId',
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/secure/admin/ConfigureOptionSchemes!default.jspa?fieldId=&schemeId={id}',
     },
     deployRequests: {
@@ -601,6 +605,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           issueTypeSchemeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -669,6 +674,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           issueTypeScreenSchemeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -704,9 +710,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       dataField: '.',
       isSingleton: true,
-      fieldTypeOverrides: [
-        { fieldName: 'permissions', fieldType: 'Map<UserPermission>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'permissions', fieldType: 'Map<UserPermission>' }],
     },
   },
   PermissionSchemes: {
@@ -726,11 +730,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'notificationType', fieldType: 'string' },
         { fieldName: 'parameter', fieldType: 'unknown' },
       ],
-      fieldsToOmit: [
-        { fieldName: 'value' },
-        { fieldName: 'expand' },
-        { fieldName: 'user' },
-      ],
+      fieldsToOmit: [{ fieldName: 'value' }, { fieldName: 'expand' }, { fieldName: 'user' }],
     },
   },
 
@@ -774,15 +774,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           schemeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
   ProjectType: {
     transformation: {
       idFields: ['key'],
-      fieldsToOmit: [
-        { fieldName: 'icon' },
-      ],
+      fieldsToOmit: [{ fieldName: 'icon' }],
     },
   },
   RoleActor: {
@@ -816,6 +815,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/projectCategory/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -837,18 +837,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
         { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
       ],
-      fieldsToHide: [
-        {
-          fieldName: 'id',
-        },
-      ],
-      fieldsToOmit: [
-        { fieldName: 'style' },
-        { fieldName: 'simplified' },
-        { fieldName: 'isPrivate' },
-        { fieldName: 'expand' },
-        { fieldName: 'archived' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'style' }],
+      fieldsToOmit: [{ fieldName: 'isPrivate' }, { fieldName: 'expand' }, { fieldName: 'archived' }],
       standaloneFields: [
         {
           fieldName: 'components',
@@ -874,6 +864,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           projectIdOrKey: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -895,9 +886,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'componentBean', fieldType: 'ProjectComponent' },
         { fieldName: 'deleted', fieldType: 'boolean' },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: [
         { fieldName: 'issueCount' },
         { fieldName: 'projectId' },
@@ -922,6 +911,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/component/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -933,6 +923,22 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/secure/admin/EditNotifications!default.jspa?schemeId={id}',
     },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/notificationscheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/notificationscheme/{id}',
+        method: 'put',
+        fieldsToIgnore: ['notificationSchemeEvents', 'notificationIds', 'id'],
+      },
+      remove: {
+        url: '/rest/api/3/notificationscheme/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
   },
   NotificationSchemeEvent: {
     transformation: {
@@ -940,6 +946,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'eventType', fieldType: 'number' },
         { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/notificationscheme/{notificationSchemeId}/notification',
+        method: 'put',
+        urlParamsToFields: {
+          notificationSchemeId: 'notificationSchemeId',
+        },
+        fieldsToIgnore: ['notificationSchemeId'],
+      },
+      remove: {
+        url: '/rest/api/3/notificationscheme/{notificationSchemeId}/notification/{notificationId}',
+        method: 'delete',
+        urlParamsToFields: {
+          notificationSchemeId: 'notificationSchemeId',
+          notificationId: 'id',
+        },
+        omitRequestBody: true,
+      },
     },
   },
   PageBeanIssueTypeScreenSchemesProjects: {
@@ -1006,9 +1031,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Screen: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'tabs', fieldType: 'list<ScreenableTab>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'tabs', fieldType: 'list<ScreenableTab>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1034,6 +1057,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           screenId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1054,9 +1078,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   ScreenableTab: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'fields', fieldType: 'list<ScreenableField>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'fields', fieldType: 'list<ScreenableField>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1081,6 +1103,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           tabId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1114,16 +1137,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   WorkflowCondition: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'nodeType' },
-      ],
+      fieldsToOmit: [{ fieldName: 'nodeType' }],
     },
   },
   TransitionScreenDetails: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'name' },
-      ],
+      fieldsToOmit: [{ fieldName: 'name' }],
     },
   },
   Workflow: {
@@ -1139,10 +1158,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'entityId',
         },
       ],
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'updated' },
-      ],
+      fieldsToOmit: [{ fieldName: 'created' }, { fieldName: 'updated' }],
       serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
     },
     deployRequests: {
@@ -1154,7 +1170,83 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/workflow/{entityId}',
         method: 'delete',
+        omitRequestBody: true,
       },
+    },
+  },
+  WorkflowConfiguration: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        // JiraWorkflow fieldType exists in the swagger but not as a get response
+        // this line creates the type despite that
+        { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
+        { fieldName: 'tempWorkflowTypeRename', fieldType: 'WorkflowConfiguration' },
+        { fieldName: 'statusMappings', fieldType: 'List<StatusMappingDTO>' },
+        { fieldName: 'transitions', fieldType: 'Map<WorkflowTransitions>' },
+      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'version' }],
+      idFields: ['name'],
+      serviceIdField: 'id',
+      serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/workflows/create',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/workflows/update',
+        method: 'post',
+      },
+      remove: {
+        url: '/rest/api/3/workflow/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  WorkflowRuleConfiguration: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'id' }],
+    },
+  },
+  WorkflowTransitions: {
+    transformation: {
+      // transitionId is not multi-env friendly
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
+  WorkflowTrigger: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'id' }],
+    },
+  },
+  WorkflowRuleConfiguration_parameters: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'roleIds', fieldType: 'List<string>' },
+        { fieldName: 'groupIds', fieldType: 'List<string>' },
+        { fieldName: 'fieldId', fieldType: 'List<string>' },
+        { fieldName: 'denyUserCustomFields', fieldType: 'List<string>' },
+        { fieldName: 'groupCustomFields', fieldType: 'List<string>' },
+        { fieldName: 'statusIds', fieldType: 'List<string>' },
+        { fieldName: 'previousStatusIds', fieldType: 'string' },
+        { fieldName: 'fromStatusId', fieldType: 'string' },
+        { fieldName: 'toStatusId', fieldType: 'string' },
+        { fieldName: 'screenId', fieldType: 'string' },
+        { fieldName: 'field', fieldType: 'string' },
+        { fieldName: 'sourceFieldKey', fieldType: 'string' },
+        { fieldName: 'targetFieldKey', fieldType: 'string' },
+        { fieldName: 'roleId', fieldType: 'string' },
+        { fieldName: 'issueSecurityLevelId', fieldType: 'string' },
+        { fieldName: 'webhookId', fieldType: 'string' },
+        { fieldName: 'date1FieldKey', fieldType: 'string' },
+        { fieldName: 'date2FieldKey', fieldType: 'string' },
+        { fieldName: 'fieldsRequired', fieldType: 'List<string>' },
+        { fieldName: 'groupsExemptFromValidation', fieldType: 'List<string>' },
+        { fieldName: 'fieldKey', fieldType: 'string' },
+      ],
     },
   },
   WorkflowSchemes: {
@@ -1220,9 +1312,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   IssueSecurityLevelMember: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'issueSecurityLevelId' },
-      ],
+      fieldsToOmit: [{ fieldName: 'issueSecurityLevelId' }],
     },
   },
 
@@ -1233,9 +1323,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           type: 'PageBeanIssueSecurityLevelMember',
           toField: 'members',
-          context: [{
-            name: 'issueSecurityLevelId', fromField: 'id',
-          }],
+          context: [
+            {
+              name: 'issueSecurityLevelId',
+              fromField: 'id',
+            },
+          ],
         },
       ],
     },
@@ -1300,12 +1393,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/statuses?id={id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
 
   WorkflowScheme: {
     transformation: {
+      fieldTypeOverrides: [{ fieldName: 'statusMigrations', fieldType: 'List<StatusMapping>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1325,6 +1420,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/workflowscheme/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1334,14 +1430,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     transformation: {
       dataField: '.',
-      fieldTypeOverrides: [
-        { fieldName: 'untranslatedName', fieldType: 'string' },
-      ],
-      fieldsToOmit: [
-        { fieldName: 'avatarId' },
-        { fieldName: 'iconUrl' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'untranslatedName', fieldType: 'string' }],
+      fieldsToOmit: [{ fieldName: 'iconUrl' }],
       fieldsToHide: [
+        {
+          fieldName: 'avatarId',
+        },
         {
           fieldName: 'id',
         },
@@ -1352,14 +1446,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       add: {
         url: '/rest/api/3/issuetype',
         method: 'post',
+        fieldsToIgnore: ['avatar'],
       },
       modify: {
         url: '/rest/api/3/issuetype/{id}',
         method: 'put',
+        fieldsToIgnore: ['avatar'],
       },
       remove: {
         url: '/rest/api/3/issuetype/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1396,21 +1493,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'timeTracking', fieldType: 'string' },
         { fieldName: 'field', fieldType: 'string' },
       ],
-      fieldsToOmit: [
-        { fieldName: 'type' },
-      ],
+      fieldsToOmit: [{ fieldName: 'type' }],
     },
   },
 
   Group: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'originalName', fieldType: 'string' },
-      ],
-      fieldsToHide: [
-        { fieldName: 'groupId' },
-        { fieldName: 'originalName' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'originalName', fieldType: 'string' }],
+      fieldsToHide: [{ fieldName: 'groupId' }, { fieldName: 'originalName' }],
       serviceIdField: 'groupId',
     },
     deployRequests: {
@@ -1421,6 +1511,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/group?groupname={name}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1444,9 +1535,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'subQuery', fieldType: 'string' },
         { fieldName: 'estimation', fieldType: BOARD_ESTIMATION_TYPE },
       ],
-      fieldsToOmit: [
-        { fieldName: 'canEdit' },
-      ],
+      fieldsToOmit: [{ fieldName: 'canEdit' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1464,6 +1553,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           boardId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1487,6 +1577,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           issueLinkTypeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
@@ -1520,6 +1611,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/role/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1532,7 +1624,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Automation: {
     transformation: {
+      fieldsToOmit: [{ fieldName: 'ruleHome' }, { fieldName: 'schemaVersion' }],
       serviceUrl: '/jira/settings/automation#/rule/{id}',
+      idFields: ['name', PROJECTS_FIELD], // idFields is handled separately in automation filter.
     },
   },
 
@@ -1583,9 +1677,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   FilterSubscription: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'id' },
-      ],
+      fieldsToOmit: [{ fieldName: 'id' }],
     },
   },
 
@@ -1627,6 +1719,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           screenSchemeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1647,30 +1740,810 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 }
 
-const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
-  ScripRunnerListeners: {
+const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
+  ScriptRunnerListener: {
     request: {
       url: '/sr-dispatcher/jira/admin/token/scriptevents',
+    },
+    transformation: {
+      sourceTypeName: 'ScriptRunnerListener__values',
+      idFields: ['description'],
+      fieldsToHide: [
+        { fieldName: 'uuid' },
+        { fieldName: 'createdByAccountId' },
+        { fieldName: 'createdTimestamp' },
+        { fieldName: 'updatedByAccountId' },
+        { fieldName: 'updatedTimestamp' },
+      ],
+    },
+  },
+  ScriptFragment: {
+    request: {
+      url: '/sr-dispatcher/jira/token/script-fragments',
+    },
+    transformation: {
+      idFields: ['id'],
+    },
+  },
+  ScheduledJob: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
+    },
+    transformation: {},
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts/{uuid}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  Behavior: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/behaviours',
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours/{uuid}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  Behavior__config: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'fieldUuid',
+        },
+      ],
+    },
+  },
+  EscalationService: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts',
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts/{uuid}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ScriptedField: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/scripted-fields',
+    },
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'issueTypeIds',
+        },
+      ],
+      dataField: '.',
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields/{uuid}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ScriptRunnerSettings: {
+    request: {
+      url: '/sr-dispatcher/jira/admin/token/settings/features',
+    },
+    transformation: {
+      isSingleton: true,
+      fieldsToOmit: [{ fieldName: 'use_s3_storage@b' }],
+      fieldsToHide: [{ fieldName: 'jql_aliases@b' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/sr-dispatcher/jira/admin/token/settings/features',
+        method: 'put',
+      },
+    },
+  },
+}
+const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
+  RequestType: {
+    request: {
+      url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype',
+      paginationField: 'start',
+      recurseInto: [
+        {
+          type: 'RequestType__workflowStatuses',
+          toField: 'workflowStatuses',
+          context: [{ name: 'requestTypeId', fromField: 'id' }],
+        },
+      ],
+    },
+    transformation: {
+      idFields: ['name', 'projectKey'],
+      sourceTypeName: 'RequestType__values',
+      dataField: 'values',
+      fieldsToOmit: [{ fieldName: '_expands' }, { fieldName: 'portalId' }, { fieldName: 'groupIds' }],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'icon' }, { fieldName: 'serviceDeskId' }],
+      serviceIdField: 'id',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype',
+        method: 'post',
+        urlParamsToFields: {
+          projectId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype/{id}',
+        method: 'delete',
+        urlParamsToFields: {
+          projectId: '_parent.0.id',
+        },
+      },
+    },
+  },
+  CustomerPermissions: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk/{projectKey}/settings/requestsecurity',
+    },
+    transformation: {
+      idFields: ['projectName'],
+      dataField: '.',
+      fieldsToOmit: [
+        { fieldName: '_links' },
+        { fieldName: 'projectName' },
+        { fieldName: 'emailAddress' },
+        { fieldName: 'portalUrl' },
+        { fieldName: 'portalId' },
+        { fieldName: 'anonymousAccessLinkedConfluenceSpace' },
+        { fieldName: 'unlicensedAccessLinkedConfluenceSpace' },
+        { fieldName: 'globalPublicSignup' },
+        { fieldName: 'globalAnonymousAccess' },
+        { fieldName: 'canAdministerJIRA' },
+        { fieldName: 'customerRoleMisconfigured' },
+        { fieldName: 'serviceDeskPublicSignup' },
+      ],
+      fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
+    },
+  },
+  Queue: {
+    request: {
+      url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/queue',
+      paginationField: 'start',
+    },
+    transformation: {
+      idFields: ['name', 'projectKey'],
+      serviceIdField: 'id',
+      sourceTypeName: 'Queue__values',
+      dataField: 'values',
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: [{ fieldName: '_links' }],
+      fieldTypeOverrides: [{ fieldName: 'columns', fieldType: 'List<Field>' }],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/queues/custom/{id}',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      remove: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues/',
+        method: 'delete',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+        omitRequestBody: true,
+      },
+    },
+  },
+  PortalGroup: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk/{projectId}/request-types?isValidOnly=true',
+    },
+    transformation: {
+      idFields: ['name', 'projectKey'],
+      sourceTypeName: 'PortalGroup__groups',
+      dataField: 'groups',
+      fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
+      fieldTypeOverrides: [{ fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' }],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings/portal-groups',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups',
+        method: 'post',
+        urlParamsToFields: {
+          projectId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups/{id}',
+        method: 'delete',
+        urlParamsToFields: {
+          projectId: '_parent.0.id',
+        },
+      },
+    },
+  },
+  Calendar: {
+    request: {
+      url: '/rest/workinghours/1/internal/dialog/{projectKey}',
+    },
+    transformation: {
+      idFields: ['name', 'projectKey'],
+      sourceTypeName: 'Calendar__calendars',
+      dataField: 'calendars',
+      fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
+      fieldsToOmit: [
+        { fieldName: 'canUpdate' },
+        { fieldName: 'canDelete' },
+        { fieldName: 'deletable' },
+        { fieldName: 'updateMessage' },
+        { fieldName: 'context' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/workinghours/1/api/calendar/{projectKey}',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/workinghours/1/api/calendar/{projectKey}/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      remove: {
+        url: '/rest/workinghours/1/api/calendar/{id}',
+        method: 'delete',
+      },
+    },
+  },
+  Calendar__holidays: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'date' }],
+    },
+  },
+  RequestType__workflowStatuses: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk-data/{projectKey}/request-type/{requestTypeId}/workflow',
+    },
+    transformation: {
+      dataField: 'statuses',
+      sourceTypeName: 'RequestType__workflowStatuses__statuses',
+      fieldsToOmit: [{ fieldName: 'projectKey' }, { fieldName: 'statusNameId' }, { fieldName: 'original' }],
+    },
+  },
+  PortalSettings: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk-data/{projectKey}',
+    },
+    transformation: {
+      idFields: ['name'],
+      dataField: '.',
+      fieldsToOmit: [
+        { fieldName: 'projectId' },
+        { fieldName: 'portalId' },
+        { fieldName: 'portalUrl' },
+        { fieldName: 'helpCenterUrl' },
+        { fieldName: 'descriptionWiki' },
+        { fieldName: 'portalLogoUrl' },
+        { fieldName: 'canAdministerJIRA' },
+      ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings',
+    },
+  },
+  PortalSettings__announcementSettings: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'canAgentsManageHelpCenterAnnouncement' }],
+    },
+  },
+  SLA: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk/agent/{projectKey}/sla/metrics',
+    },
+    transformation: {
+      dataField: 'timeMetrics',
+      sourceTypeName: 'SLA__timeMetrics',
+      idFields: ['name', 'projectKey'],
+      fieldsToHide: [{ fieldName: 'projectKey' }, { fieldName: 'id' }, { fieldName: 'customFieldId' }],
+      serviceIdField: 'id',
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/sla/custom/{id}',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/agent/{projectKey}/sla/metrics',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/agent/{projectKey}/sla/metrics/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      remove: {
+        url: '/rest/servicedesk/1/servicedesk/agent/{projectKey}/sla/metrics/{id}',
+        method: 'delete',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+        omitRequestBody: true,
+      },
+    },
+  },
+  SLA__config__goals: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'id' }],
+    },
+  },
+  SLA__config__goals__subGoals: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'goalId' }, { fieldName: 'id' }],
+    },
+  },
+  SLA__config__definition__pause: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'type' }, { fieldName: 'missing' }],
+    },
+  },
+  SLA__config__definition__start: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'type' }, { fieldName: 'missing' }],
+    },
+  },
+  SLA__config__definition__stop: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'type' }, { fieldName: 'missing' }],
+    },
+  },
+  SLA__config__definition: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'inconsistent' }],
+    },
+  },
+  ObjectSchemas: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list',
+      paginationField: 'startAt',
+      recurseInto: [
+        {
+          type: 'ObjectSchemaStatuses',
+          toField: 'objectSchemaStatuses',
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
+        },
+        {
+          type: 'ObjectTypes',
+          toField: 'objectTypes',
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
+        },
+        {
+          type: 'ObjectTypeAttribute',
+          toField: 'attributes',
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
+        },
+        {
+          type: 'ObjectSchemaReferenceTypes',
+          toField: 'referenceTypes',
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
+        },
+        {
+          type: 'ObjectSchemaProperties',
+          toField: 'properties',
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
+        },
+      ],
+    },
+    transformation: {
+      dataField: 'values',
+    },
+  },
+  ObjectSchema: {
+    transformation: {
+      sourceTypeName: 'ObjectSchemas__values',
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'updated' },
+        { fieldName: 'globalId' },
+        { fieldName: 'objectCount' },
+        { fieldName: 'objectTypeCount' },
+        { fieldName: 'canManage' },
+        { fieldName: 'atlassianTemplateId' },
+      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'idAsInt' }, { fieldName: 'workspaceId' }],
+      serviceIdField: 'id',
+      standaloneFields: [
+        { fieldName: 'objectSchemaStatuses' },
+        { fieldName: 'objectTypes' },
+        { fieldName: 'attributes' },
+        { fieldName: 'referenceTypes' },
+      ],
+      fieldTypeOverrides: [{ fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' }],
+      serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/create',
+        method: 'post',
+        fieldsToIgnore: ['properties', 'workspaceId'],
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{id}',
+        method: 'put',
+        fieldsToIgnore: ['properties', 'workspaceId'],
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectSchemaStatuses: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype?objectSchemaId={AssetsSchemaId}',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  ObjectSchemaStatus: {
+    transformation: {
+      sourceTypeName: 'ObjectSchema__objectSchemaStatuses',
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'workspaceId' }, { fieldName: 'objectSchemaId' }],
+      serviceIdField: 'id',
+      serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectSchemaProperties: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/global/config/objectschema/{AssetsSchemaId}/property',
+    },
+    transformation: {
+      sourceTypeName: 'ObjectSchema__ObjectSchemaProperties',
+      fieldsToOmit: [{ fieldName: 'createObjectsCustomField' }, { fieldName: 'serviceDescCustomersEnabled' }],
+    },
+  },
+  ObjectTypes: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{AssetsSchemaId}/objecttypes/flat',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  ObjectType: {
+    transformation: {
+      sourceTypeName: 'ObjectSchema__objectTypes',
+      idFields: ['&parentObjectTypeId', 'name'],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'objectSchemaId' }],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'updated' },
+        { fieldName: 'globalId' },
+        { fieldName: 'workspaceId' },
+        { fieldName: 'objectCount' },
+      ],
+      extendsParentId: false,
+      serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}',
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/create',
+        method: 'post',
+        fieldsToIgnore: ['objectCount'],
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/{id}',
+        method: 'put',
+        fieldsToIgnore: ['objectCount'],
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectTypeAttribute: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{AssetsSchemaId}/attributes',
+      queryParams: {
+        extended: 'true',
+      },
+    },
+    transformation: {
+      dataField: '.',
+      idFields: ['&objectType', 'name'],
+      sourceTypeName: 'ObjectSchema__attributes',
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'workspaceId' }],
+      fieldsToOmit: [
+        { fieldName: 'globalId' },
+        { fieldName: 'system' },
+        { fieldName: 'referenceObjectType' }, // API returns referenceObjectTypeId as well.
+        { fieldName: 'position' },
+      ],
+      fieldTypeOverrides: [
+        { fieldName: 'typeValue', fieldType: 'string' },
+        { fieldName: 'additionalValue', fieldType: 'string' },
+      ],
+      serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}&mode=attribute',
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttypeattribute/{objectType}',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttypeattribute/{objectType}/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1//objecttypeattribute/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectSchemaReferenceTypes: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype?objectSchemaId={AssetsSchemaId}',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  ObjectSchemaReferenceType: {
+    transformation: {
+      sourceTypeName: 'ObjectSchema__referenceTypes',
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'workspaceId' }],
+      serviceIdField: 'id',
+      fieldsToOmit: [{ fieldName: 'objectSchemaId' }, { fieldName: 'url16' }, { fieldName: 'globalId' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: 'gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectSchemaDefaultReferenceType: {
+    // This endpoint returns only the default object reference types.
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'workspaceId' }],
+      serviceIdField: 'id',
+      fieldsToOmit: [{ fieldName: 'objectSchemaId' }, { fieldName: 'url16' }, { fieldName: 'globalId' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectSchemaGlobalStatus: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
+      fieldsToOmit: [{ fieldName: 'objectSchemaId' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectTypeIcon: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/icon/global',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: [{ fieldName: 'url16' }, { fieldName: 'url48' }],
+      fieldTypeOverrides: [{ fieldName: 'icon', fieldType: 'unknown' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/icon/{id}',
+        method: 'put',
+        fieldsToIgnore: ['icon'],
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/icon/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
     },
   },
 }
 
-export const DUCKTYPE_SUPPORTED_TYPES = {
-  // ScripRunnerListeners: ['ScripRunnerListeners'],
+export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
+  RequestType: ['RequestType'],
+  CustomerPermissions: ['CustomerPermissions'],
+  Queue: ['Queue'],
+  PortalGroup: ['PortalGroup'],
+  Calendar: ['Calendar'],
+  PortalSettings: ['PortalSettings'],
+  SLA: ['SLA'],
+  Form: [], // being fetched by a filter.
+  ObjectSchema: [],
+  ObjectSchemaDefaultReferenceType: [],
+  ObjectSchemaGlobalStatus: [],
+  ObjectTypeIcon: [],
+  ObjectSchemaStatus: [], // being fetched by recurseInto.
+  ObjectType: [], // being fetched by recurseInto.
+  ObjectTypeAttribute: [], // being fetched by recurseInto.
 }
 
-const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
+  ObjectSchema: ['ObjectSchemas'],
+  ObjectSchemaDefaultReferenceType: ['ObjectSchemaDefaultReferenceType'],
+  ObjectSchemaGlobalStatus: ['ObjectSchemaGlobalStatus'],
+  ObjectTypeIcon: ['ObjectTypeIcon'],
+}
+
+export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {
+  ScriptRunnerListener: ['ScriptRunnerListener'],
+  ScriptFragment: ['ScriptFragment'],
+  ScheduledJob: ['ScheduledJob'],
+  // Behavior: ['Behavior'],
+  EscalationService: ['EscalationService'],
+  ScriptedField: ['ScriptedField'],
+  ScriptRunnerSettings: ['ScriptRunnerSettings'],
+}
+
+const SCRIPT_RUNNER_FIELDS_TO_HIDE = [
+  {
+    fieldName: 'uuid',
+  },
+  {
+    fieldName: 'auditData',
+  },
+]
+
+const SCRIPT_RUNNER_TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+  idFields: DEFAULT_ID_FIELDS,
+  fieldsToOmit: FIELDS_TO_OMIT,
+  fieldsToHide: SCRIPT_RUNNER_FIELDS_TO_HIDE,
+  serviceIdField: 'uuid',
+  nestStandaloneInstances: true,
+}
+
+export const SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
+  typeDefaults: {
+    transformation: SCRIPT_RUNNER_TRANSFORMATION_DEFAULTS,
+  },
+  types: SCRIPT_RUNNER_DUCKTYPE_TYPES,
+  supportedTypes: SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES,
+}
+
+const JSM_TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
   idFields: DEFAULT_ID_FIELDS,
   fieldsToOmit: FIELDS_TO_OMIT,
   nestStandaloneInstances: true,
 }
 
-export const DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
+export const JSM_DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
   typeDefaults: {
-    transformation: TRANSFORMATION_DEFAULTS,
+    transformation: JSM_TRANSFORMATION_DEFAULTS,
   },
-  types: DUCKTYPE_TYPES,
-  supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
+  types: JSM_DUCKTYPE_TYPES,
+  supportedTypes: JSM_DUCKTYPE_SUPPORTED_TYPES,
 }
 
 const SUPPORTED_TYPES = {
@@ -1705,18 +2578,23 @@ const SUPPORTED_TYPES = {
   StatusCategory: ['StatusCategories'],
   Workflow: ['Workflows'],
   WorkflowScheme: ['WorkflowSchemes'],
-  ServerInformation: ['ServerInformation'],
   Board: ['Boards'],
   Group: ['Groups'],
   Automation: [],
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
+  IssueLayout: [],
+  WorkflowConfiguration: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
     url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/platform-swagger.v3.json',
     typeNameOverrides: [
+      {
+        originalName: 'JiraWorkflow',
+        newName: 'WorkflowConfiguration',
+      },
       {
         originalName: 'FilterDetails',
         newName: 'Filter',

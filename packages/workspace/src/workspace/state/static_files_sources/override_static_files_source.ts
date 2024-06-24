@@ -1,19 +1,19 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { hash as lowerdashHash } from '@salto-io/lowerdash'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { calculateStaticFileHash } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DirectoryStore } from '../../dir_store'
 import { StateStaticFilesSource } from '../../static_files/common'
@@ -25,9 +25,7 @@ const log = logger(module)
  * Builds a static file source that does not preserve
  * the static files history and overrides it on each set.
  */
-export const buildOverrideStateStaticFilesSource = (
-  dirStore: DirectoryStore<Buffer>,
-): StateStaticFilesSource => ({
+export const buildOverrideStateStaticFilesSource = (dirStore: DirectoryStore<Buffer>): StateStaticFilesSource => ({
   persistStaticFile: async file => {
     const content = await file.getContent()
     if (content === undefined) {
@@ -39,32 +37,28 @@ export const buildOverrideStateStaticFilesSource = (
       filename: file.filepath,
     })
   },
-  getStaticFile: async (path, encoding, hash) => {
-    if (hash === undefined) {
-      throw new Error(`path ${path} was passed without a hash to getStaticFile`)
+  getStaticFile: async args => {
+    if (args.hash === undefined) {
+      throw new Error(`path ${args.filepath} was passed without a hash to getStaticFile`)
     }
     return new LazyStaticFile(
-      path,
-      hash,
-      dirStore.getFullPath(path),
+      args.filepath,
+      args.hash,
+      dirStore.getFullPath(args.filepath),
       async () => {
-        const content = (await dirStore.get(path))?.buffer
-        return content !== undefined
-            && lowerdashHash.toMD5(content) === hash
-          ? content
-          : undefined
+        const content = (await dirStore.get(args.filepath))?.buffer
+        return content !== undefined && calculateStaticFileHash(content) === args.hash ? content : undefined
       },
-      encoding
+      args.encoding,
+      args.isTemplate,
     )
   },
 
   rename: dirStore.rename,
   delete: file => dirStore.delete(file.filepath),
   clear: dirStore.clear,
-  flush: () => log.time(
-    async () => {
+  flush: () =>
+    log.timeDebug(async () => {
       await dirStore.flush()
-    },
-    'Flushing override static state files source',
-  ),
+    }, 'Flushing override static state files source'),
 })

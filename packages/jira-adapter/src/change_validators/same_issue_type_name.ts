@@ -1,25 +1,36 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { AdditionChange, Change, ChangeDataType, ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  AdditionChange,
+  Change,
+  ChangeDataType,
+  ChangeError,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  ModificationChange,
+  SeverityLevel,
+} from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { ISSUE_TYPE_NAME } from '../constants'
 
-
-const { awu } = collections.asynciterable
 const { isDefined } = values
 
 const getSameIssueTypeNameError = (
@@ -33,9 +44,8 @@ const getSameIssueTypeNameError = (
 })
 
 const getRelevantChanges = (
-  changes: ReadonlyArray<Change<ChangeDataType>>
-): (ModificationChange<InstanceElement> | AdditionChange<InstanceElement>
-)[] =>
+  changes: ReadonlyArray<Change<ChangeDataType>>,
+): (ModificationChange<InstanceElement> | AdditionChange<InstanceElement>)[] =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
@@ -46,12 +56,8 @@ export const sameIssueTypeNameChangeValidator: ChangeValidator = async (changes,
   if (elementSource === undefined || relevantChanges.length === 0) {
     return []
   }
-  const idsIterator = awu(await elementSource.list())
-  const issueTypes: InstanceElement[] = await awu(idsIterator)
-    .filter(id => id.typeName === ISSUE_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
+  const issueTypes = await getInstancesFromElementSource(elementSource, [ISSUE_TYPE_NAME])
+
   const issuesByNames = _.groupBy(
     [...issueTypes, ...relevantChanges.map(getChangeData)],
     issueType => issueType.value.name,
@@ -59,11 +65,12 @@ export const sameIssueTypeNameChangeValidator: ChangeValidator = async (changes,
   return relevantChanges
     .map(change => {
       const otherInstance = issuesByNames[getChangeData(change).value.name]?.find(
-        issueType => !issueType.elemID.isEqual(getChangeData(change).elemID)
+        issueType => !issueType.elemID.isEqual(getChangeData(change).elemID),
       )
       if (otherInstance === undefined) {
         return undefined
       }
       return getSameIssueTypeNameError(change, otherInstance)
-    }).filter(isDefined)
+    })
+    .filter(isDefined)
 }

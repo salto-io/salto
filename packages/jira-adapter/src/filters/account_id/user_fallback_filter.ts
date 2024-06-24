@@ -1,23 +1,28 @@
-
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
-import { setPath, walkOnElement } from '@salto-io/adapter-utils'
-import { config as configUtils } from '@salto-io/adapter-components'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
+import {
+  ElemID,
+  getChangeData,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
+import { setPath, walkOnElement } from '@salto-io/adapter-utils'
+import { definitions } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers } from './account_id_filter'
 import { getCurrentUserInfo, getUserIdFromEmail, getUsersMap, getUsersMapByVisibleId, UserMap } from '../../users'
@@ -26,9 +31,9 @@ import JiraClient from '../../client/client'
 const getFallbackUser = async (
   client: JiraClient,
   defaultUser: string,
-  userMap: UserMap
+  userMap: UserMap,
 ): Promise<string | undefined> => {
-  if (defaultUser !== configUtils.DEPLOYER_FALLBACK_VALUE) {
+  if (defaultUser !== definitions.DEPLOYER_FALLBACK_VALUE) {
     if (!client.isDataCenter && defaultUser !== undefined) {
       return getUserIdFromEmail(defaultUser, userMap)
     }
@@ -41,9 +46,7 @@ const getFallbackUser = async (
   }
 
   const currentUserInfo = await getCurrentUserInfo(client)
-  return client.isDataCenter
-    ? currentUserInfo?.username
-    : currentUserInfo?.userId
+  return client.isDataCenter ? currentUserInfo?.username : currentUserInfo?.userId
 }
 
 const filter: FilterCreator = ({ client, config, elementsSource }) => {
@@ -79,7 +82,8 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => {
                 value[fieldName].id = fallbackUser
               }
             }, config),
-          }))
+          }),
+        )
     },
     onDeploy: async changes => {
       if (_.isEmpty(fallbackPathToUser)) {
@@ -93,16 +97,15 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => {
         .keyBy(element => element.elemID.getFullName())
         .value()
 
-      Object.entries(fallbackPathToUser)
-        .forEach(([path, userId]) => {
-          const idPath = ElemID.fromFullName(path)
-          const baseId = idPath.createBaseID().parent.getFullName()
-          if (!Object.prototype.hasOwnProperty.call(idToInstance, baseId)) {
-            return
-          }
+      Object.entries(fallbackPathToUser).forEach(([path, userId]) => {
+        const idPath = ElemID.fromFullName(path)
+        const baseId = idPath.createBaseID().parent.getFullName()
+        if (!Object.prototype.hasOwnProperty.call(idToInstance, baseId)) {
+          return
+        }
 
-          setPath(idToInstance[baseId], idPath.createNestedID('id'), userId)
-        })
+        setPath(idToInstance[baseId], idPath.createNestedID('id'), userId)
+      })
     },
   }
 }

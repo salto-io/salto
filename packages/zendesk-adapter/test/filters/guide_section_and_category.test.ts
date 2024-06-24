@@ -1,98 +1,84 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { filterUtils } from '@salto-io/adapter-components'
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType, ReferenceExpression,
-  toChange,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/guide_section_and_category'
-
 
 import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
+import ZendeskClient from '../../src/client/client'
+import { FilterResult } from '../../src/filter'
 
 describe('guid section and category filter', () => {
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy', FilterResult>
   let filter: FilterType
+  let client: ZendeskClient
+  let mockPut: jest.SpyInstance
 
   const sectionTypeName = 'section'
   const sectionTranslationTypename = 'section_translation'
   const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
-  const sectionTranslationType = new ObjectType(
-    { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
-  )
+  const sectionTranslationType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTranslationTypename) })
   const guideLanguageSettingsType = new ObjectType({
     elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
   })
 
-  const guideLanguageSettingsInstance = new InstanceElement(
+  const guideLanguageSettingsInstance = new InstanceElement('instance', guideLanguageSettingsType, {
+    locale: 'he',
+  })
+
+  const sectionTranslationInstance = new InstanceElement('instance', sectionTranslationType, {
+    locale: new ReferenceExpression(guideLanguageSettingsInstance.elemID, guideLanguageSettingsInstance),
+    title: 'name',
+    body: 'description',
+  })
+  const sectionInstance = new InstanceElement('instance', sectionType, {
+    source_locale: 'he',
+    translations: [sectionTranslationInstance.value],
+  })
+
+  const sectionTranslationStringLocaleInstance = new InstanceElement('instance', sectionTranslationType, {
+    locale: 'he',
+    title: 'name',
+    body: 'description',
+  })
+
+  const sectionInstanceStringLocale = new InstanceElement('instance', sectionType, {
+    source_locale: 'he',
+    translations: [sectionTranslationStringLocaleInstance.value],
+  })
+
+  const categoryInstance = new InstanceElement(
     'instance',
-    guideLanguageSettingsType,
+    new ObjectType({ elemID: new ElemID(ZENDESK, 'category') }),
     {
       locale: 'he',
-    }
-  )
-
-  const sectionTranslationInstance = new InstanceElement(
-    'instance',
-    sectionTranslationType,
-    {
-      locale: new ReferenceExpression(guideLanguageSettingsInstance.elemID, guideLanguageSettingsInstance),
-      title: 'name',
-      body: 'description',
-    }
-  )
-  const sectionInstance = new InstanceElement(
-    'instance',
-    sectionType,
-    {
       source_locale: 'he',
-      translations: [
-        sectionTranslationInstance.value,
-      ],
-    }
+      id: 1111,
+      outdated: false,
+    },
   )
-
-  const sectionTranslationStringLocaleInstance = new InstanceElement(
-    'instance',
-    sectionTranslationType,
-    {
-      locale: 'he',
-      title: 'name',
-      body: 'description',
-    }
-  )
-
-  const sectionInstanceStringLocale = new InstanceElement(
-    'instance',
-    sectionType,
-    {
-      source_locale: 'he',
-      translations: [
-        sectionTranslationStringLocaleInstance.value,
-      ],
-    }
-  )
-
 
   beforeEach(async () => {
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
+    client = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+    })
+
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   describe('preDeploy', () => {
@@ -112,6 +98,26 @@ describe('guid section and category filter', () => {
     })
   })
 
+  describe('deploy', () => {
+    beforeEach(() => {
+      mockPut = jest.spyOn(client, 'put')
+      mockPut.mockImplementation(params => {
+        if (['/api/v2/help_center/categories/1111/source_locale'].includes(params.url)) {
+          return {
+            status: 200,
+          }
+        }
+        throw new Error('Err')
+      })
+    })
+    it('should send a separate request when updating default_locale', async () => {
+      const categoryInstanceCopy = categoryInstance.clone()
+      categoryInstanceCopy.value.source_locale = 'ar'
+      await filter.deploy([{ action: 'modify', data: { before: categoryInstance, after: categoryInstanceCopy } }])
+      expect(mockPut).toHaveBeenCalledTimes(2)
+    })
+  })
+
   describe('onDeploy', () => {
     it('should omit the name and description fields after deploy', async () => {
       const sectionInstanceCopy = sectionInstance.clone()
@@ -119,9 +125,7 @@ describe('guid section and category filter', () => {
       await filter.onDeploy([toChange({ after: sectionInstanceCopy })])
       expect(sectionInstanceCopy.value).toEqual({
         source_locale: 'he',
-        translations: [
-          sectionTranslationInstance.value,
-        ],
+        translations: [sectionTranslationInstance.value],
       })
     })
     it('should omit the name and description fields after deploy when locale is string', async () => {
@@ -130,9 +134,7 @@ describe('guid section and category filter', () => {
       await filter.onDeploy([toChange({ after: sectionInstanceCopy })])
       expect(sectionInstanceCopy.value).toEqual({
         source_locale: 'he',
-        translations: [
-          sectionTranslationStringLocaleInstance.value,
-        ],
+        translations: [sectionTranslationStringLocaleInstance.value],
       })
     })
   })

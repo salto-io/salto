@@ -1,24 +1,36 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
-import { Workspace, parser, errors as wsErrors, state, nacl, staticFiles, dirStore,
-  loadWorkspace, EnvironmentsSources, remoteMap, elementSource, pathIndex,
-  adaptersConfigSource as acs } from '@salto-io/workspace'
+import {
+  Workspace,
+  errors as wsErrors,
+  state,
+  nacl,
+  staticFiles,
+  dirStore,
+  loadWorkspace,
+  EnvironmentsSources,
+  remoteMap,
+  elementSource,
+  pathIndex,
+  adaptersConfigSource as acs,
+} from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -44,9 +56,7 @@ const { awu } = collections.asynciterable
 // RB   username: 'test@test',
 // RB })
 
-export const mockErrors = (
-  errors: SaltoError[], parseErrors: parser.ParseError[] = []
-): wsErrors.Errors => ({
+export const mockErrors = (errors: SaltoError[], parseErrors: parser.ParseError[] = []): wsErrors.Errors => ({
   all: () => [...errors, ...parseErrors],
   hasErrors: () => errors.length !== 0,
   merge: [],
@@ -55,38 +65,43 @@ export const mockErrors = (
   strings: () => errors.map(err => err.message),
 })
 
-const mockDirStore = <T extends dirStore.ContentType>(files: Record<string, T> = {}):
-dirStore.DirectoryStore<T> => {
-  let naclFiles = _.mapValues(
-    files,
-    (buffer, filename) => ({ filename, buffer })
-  )
+const mockDirStore = <T extends dirStore.ContentType>(files: Record<string, T> = {}): dirStore.DirectoryStore<T> => {
+  let naclFiles = _.mapValues(files, (buffer, filename) => ({ filename, buffer }))
   return {
     list: mockFunction<dirStore.DirectoryStore<T>['list']>().mockImplementation(async () => Object.keys(naclFiles)),
     get: mockFunction<dirStore.DirectoryStore<T>['get']>().mockImplementation(async filepath => naclFiles[filepath]),
-    set: mockFunction<dirStore.DirectoryStore<T>['set']>().mockImplementation(async file => { naclFiles[file.filename] = file }),
-    delete: mockFunction<dirStore.DirectoryStore<T>['delete']>().mockImplementation(async filepath => { delete naclFiles[filepath] }),
-    clear: mockFunction<dirStore.DirectoryStore<T>['clear']>().mockImplementation(async () => { naclFiles = {} }),
+    set: mockFunction<dirStore.DirectoryStore<T>['set']>().mockImplementation(async file => {
+      naclFiles[file.filename] = file
+    }),
+    delete: mockFunction<dirStore.DirectoryStore<T>['delete']>().mockImplementation(async filepath => {
+      delete naclFiles[filepath]
+    }),
+    clear: mockFunction<dirStore.DirectoryStore<T>['clear']>().mockImplementation(async () => {
+      naclFiles = {}
+    }),
     rename: mockFunction<dirStore.DirectoryStore<T>['rename']>(),
     renameFile: mockFunction<dirStore.DirectoryStore<T>['renameFile']>(),
     flush: mockFunction<dirStore.DirectoryStore<T>['flush']>(),
     mtimestamp: mockFunction<dirStore.DirectoryStore<T>['mtimestamp']>().mockResolvedValue(0),
-    getFiles: mockFunction<dirStore.DirectoryStore<T>['getFiles']>().mockImplementation(async filenames => filenames.map(name => naclFiles[name])),
+    getFiles: mockFunction<dirStore.DirectoryStore<T>['getFiles']>().mockImplementation(async filenames =>
+      filenames.map(name => naclFiles[name]),
+    ),
     getTotalSize: mockFunction<dirStore.DirectoryStore<T>['getTotalSize']>(),
     clone: mockFunction<dirStore.DirectoryStore<T>['clone']>(),
     isEmpty: mockFunction<dirStore.DirectoryStore<T>['isEmpty']>(),
-    getFullPath: mockFunction<dirStore.DirectoryStore<T>['getFullPath']>().mockImplementation(filepath => `full-${filepath}`),
+    getFullPath: mockFunction<dirStore.DirectoryStore<T>['getFullPath']>().mockImplementation(
+      filepath => `full-${filepath}`,
+    ),
     isPathIncluded: mockFunction<dirStore.DirectoryStore<T>['isPathIncluded']>(),
     exists: mockFunction<dirStore.DirectoryStore<T>['exists']>(),
   }
 }
 
-const persistentMockCreateRemoteMap = ():
-  <T, K extends string = string>(opts: CreateRemoteMapParams<T>) => Promise<RemoteMap<T, K>> => {
+const persistentMockCreateRemoteMap = (): (<T, K extends string = string>(
+  opts: CreateRemoteMapParams<T>,
+) => Promise<RemoteMap<T, K>>) => {
   const maps = {} as Record<string, Record<string, string>>
-  const creator = async <T, K extends string = string>(
-    opts: CreateRemoteMapParams<T>
-  ): Promise<RemoteMap<T, K>> => {
+  const creator = async <T, K extends string = string>(opts: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
     if (maps[opts.namespace] === undefined) {
       maps[opts.namespace] = {} as Record<string, string>
     }
@@ -95,9 +110,7 @@ const persistentMockCreateRemoteMap = ():
       return value ? opts.deserialize(value) : undefined
     }
     return {
-      setAll: async (
-        entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>
-      ): Promise<void> => {
+      setAll: async (entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>): Promise<void> => {
         for await (const entry of entries) {
           maps[opts.namespace][entry.key] = await opts.serialize(entry.value)
         }
@@ -120,12 +133,11 @@ const persistentMockCreateRemoteMap = ():
         maps[opts.namespace] = {} as Record<K, string>
       },
       entries: (): AsyncIterable<RemoteMapEntry<T, K>> =>
-        awu(Object.entries(maps[opts.namespace]))
-          .map(async ([key, value]) =>
-            ({ key: key as K, value: await opts.deserialize(value as string) })),
-      keys: (): AsyncIterable<K> => toAsyncIterable(
-        Object.keys(maps[opts.namespace]) as unknown as K[]
-      ),
+        awu(Object.entries(maps[opts.namespace])).map(async ([key, value]) => ({
+          key: key as K,
+          value: await opts.deserialize(value as string),
+        })),
+      keys: (): AsyncIterable<K> => toAsyncIterable(Object.keys(maps[opts.namespace]) as unknown as K[]),
       values: (): AsyncIterable<T> =>
         awu(Object.values(maps[opts.namespace])).map(async v => opts.deserialize(v as string)),
       flush: (): Promise<boolean> => Promise.resolve(false),
@@ -140,9 +152,8 @@ const persistentMockCreateRemoteMap = ():
 const buildMockWorkspace = async (
   files: Record<string, string>,
   staticFileNames: string[],
-  persistent = false
-):
-Promise<Workspace> => {
+  persistent = false,
+): Promise<Workspace> => {
   const mockStaticFilesCache: staticFiles.StaticFilesCache = {
     list: mockFunction<staticFiles.StaticFilesCache['list']>(),
     get: mockFunction<staticFiles.StaticFilesCache['get']>(),
@@ -157,23 +168,17 @@ Promise<Workspace> => {
   const mockCreateRemoteMap = persistentMockCreateRemoteMap()
   const commonStaticFilesSource = staticFiles.buildStaticFilesSource(
     mockDirStore(Object.fromEntries(staticFileNames.map(f => [f, Buffer.from(f)]))),
-    mockStaticFilesCache
+    mockStaticFilesCache,
   )
   const commonNaclFilesSource = await nacl.naclFilesSource(
     '',
     mockedDirStore,
     commonStaticFilesSource,
     mockCreateRemoteMap,
-    persistent
+    persistent,
   )
-  const defaultStaticFilesSource = staticFiles.buildStaticFilesSource(
-    mockDirStore({}),
-    mockStaticFilesCache
-  )
-  const inactiveStaticFilesSource = staticFiles.buildStaticFilesSource(
-    mockDirStore({}),
-    mockStaticFilesCache
-  )
+  const defaultStaticFilesSource = staticFiles.buildStaticFilesSource(mockDirStore({}), mockStaticFilesCache)
+  const inactiveStaticFilesSource = staticFiles.buildStaticFilesSource(mockDirStore({}), mockStaticFilesCache)
 
   const elementsSources = {
     commonSourceName: '',
@@ -187,21 +192,16 @@ Promise<Workspace> => {
           mockDirStore({}),
           defaultStaticFilesSource,
           mockCreateRemoteMap,
-          persistent
+          persistent,
         ),
         state: state.buildInMemState(async () => ({
-          elements: createInMemoryElementSource(
-            await awu(await commonNaclFilesSource.getAll()).toArray()
-          ),
+          elements: createInMemoryElementSource(await awu(await commonNaclFilesSource.getAll()).toArray()),
           pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
           topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
           accountsUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),
-          staticFilesSource: staticFiles.buildStaticFilesSource(
-            mockDirStore({}),
-            mockStaticFilesCache
-          ),
+          staticFilesSource: staticFiles.buildStaticFilesSource(mockDirStore({}), mockStaticFilesCache),
         })),
       },
       inactive: {
@@ -210,7 +210,7 @@ Promise<Workspace> => {
           mockDirStore({}),
           inactiveStaticFilesSource,
           mockCreateRemoteMap,
-          persistent
+          persistent,
         ),
         state: state.buildInMemState(async () => ({
           elements: createInMemoryElementSource([]),
@@ -219,10 +219,7 @@ Promise<Workspace> => {
           accountsUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),
-          staticFilesSource: staticFiles.buildStaticFilesSource(
-            mockDirStore({}),
-            mockStaticFilesCache
-          ),
+          staticFilesSource: staticFiles.buildStaticFilesSource(mockDirStore({}), mockStaticFilesCache),
         })),
       },
     },
@@ -260,21 +257,13 @@ Promise<Workspace> => {
     delete: jest.fn(),
     rename: jest.fn(),
   }
-  return loadWorkspace(
-    mockConfSource,
-    mockAdaptersConf,
-    mockCredentialsSource,
-    elementsSources,
-    mockCreateRemoteMap,
-  )
+  return loadWorkspace(mockConfSource, mockAdaptersConf, mockCredentialsSource, elementsSources, mockCreateRemoteMap)
 }
 
-export const mockWorkspace = async (naclFiles: string[] = [], staticFileNames: string[] = []):
-Promise<Workspace> =>
+export const mockWorkspace = async (naclFiles: string[] = [], staticFileNames: string[] = []): Promise<Workspace> =>
   buildMockWorkspace(
     Object.fromEntries(
-      naclFiles
-        .map(file => [path.basename(file), readFileSync(file, { encoding: 'utf8' }) ?? 'blabla'])
+      naclFiles.map(file => [path.basename(file), readFileSync(file, { encoding: 'utf8' }) ?? 'blabla']),
     ),
     staticFileNames,
   )

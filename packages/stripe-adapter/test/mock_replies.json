@@ -11,10 +11,7 @@
           "application": null,
           "created": 1617626493,
           "description": null,
-          "enabled_events": [
-            "invoice.finalization_failed",
-            "account.updated"
-          ],
+          "enabled_events": ["invoice.finalization_failed", "account.updated"],
           "livemode": false,
           "metadata": {},
           "status": "enabled",
@@ -138,12 +135,7 @@
           "object": "reporting.report_type",
           "data_available_end": 1638316800,
           "data_available_start": 1616536800,
-          "default_columns": [
-            "category",
-            "description",
-            "net_amount",
-            "currency"
-          ],
+          "default_columns": ["category", "description", "net_amount", "currency"],
           "livemode": false,
           "name": "Balance summary",
           "updated": 1638340021,
@@ -260,17 +252,10 @@
           "object": "country_spec",
           "default_currency": "ars",
           "supported_bank_account_currencies": {
-            "ars": [
-              "AR"
-            ]
+            "ars": ["AR"]
           },
-          "supported_payment_currencies": [
-            "ars"
-          ],
-          "supported_payment_methods": [
-            "card",
-            "stripe"
-          ],
+          "supported_payment_currencies": ["ars"],
+          "supported_payment_methods": ["card", "stripe"],
           "supported_transfer_countries": [
             "AR",
             "AT",
@@ -329,19 +314,11 @@
           "verification_fields": {
             "company": {
               "additional": [],
-              "minimum": [
-                "external_account",
-                "tos_acceptance.date",
-                "tos_acceptance.ip"
-              ]
+              "minimum": ["external_account", "tos_acceptance.date", "tos_acceptance.ip"]
             },
             "individual": {
               "additional": [],
-              "minimum": [
-                "external_account",
-                "tos_acceptance.date",
-                "tos_acceptance.ip"
-              ]
+              "minimum": ["external_account", "tos_acceptance.date", "tos_acceptance.ip"]
             }
           }
         }

@@ -1,26 +1,38 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, ElemID, ElemIdGetter, Field, getChangeData, InstanceElement, ListType, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  ElemID,
+  ElemIdGetter,
+  Field,
+  getChangeData,
+  InstanceElement,
+  ListType,
+  ModificationChange,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { filterUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { getFilterParams, mockClient } from '../../utils'
+import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import { JIRA, ACCOUNT_IDS_FIELDS_NAMES } from '../../../src/constants'
+import { JIRA, ACCOUNT_ID_FIELDS_NAMES, WORKFLOW_CONFIGURATION_TYPE, AUTOMATION_TYPE } from '../../../src/constants'
 import accountIdFilter, { ACCOUNT_ID_TYPES } from '../../../src/filters/account_id/account_id_filter'
 import * as common from './account_id_common'
 
@@ -42,20 +54,25 @@ describe('account_id_filter', () => {
   let dashboardInstance: InstanceElement
   let boardInstance: InstanceElement
   let fieldContextInstance: InstanceElement
+  let workflowInstance: InstanceElement
+  let automationInstance: InstanceElement
 
   beforeEach(() => {
-    elemIdGetter = mockFunction<ElemIdGetter>()
-      .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
+    elemIdGetter = mockFunction<ElemIdGetter>().mockImplementation(
+      (adapterName, _serviceIds, name) => new ElemID(adapterName, name),
+    )
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     const { client, paginator } = mockClient()
-    filter = accountIdFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-      getElemIdFunc: elemIdGetter,
-    })) as typeof filter
+    filter = accountIdFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        getElemIdFunc: elemIdGetter,
+      }),
+    ) as typeof filter
 
     objectType = common.createType('PermissionScheme') // passes 3rd condition
     changedObjectType = common.createObjectedType('NotificationScheme') // passes 3rd condition
@@ -65,40 +82,126 @@ describe('account_id_filter', () => {
     for (let i = 0; i < 4; i += 1) {
       simpleInstances[i] = common.createInstance(i.toString(), objectType)
     }
-    filterInstance = new InstanceElement(
-      'filterInstance',
-      common.createFilterType(),
-      {
-        owner: 'acc2',
-      }
-    )
-    boardInstance = new InstanceElement(
-      'boardInstance',
-      common.createBoardType(),
-      {
-        admins: {
-          users: ['acc3', 'acc31'],
+    filterInstance = new InstanceElement('filterInstance', common.createFilterType(), {
+      owner: 'acc2',
+    })
+    boardInstance = new InstanceElement('boardInstance', common.createBoardType(), {
+      admins: {
+        users: ['acc3', 'acc31'],
+      },
+    })
+    dashboardInstance = new InstanceElement('instance3', common.createDashboardType(), {
+      inner: {
+        owner: 'acc4',
+      },
+    })
+    fieldContextInstance = new InstanceElement('instance', common.createFieldContextType(), {
+      defaultValue: {
+        accountId: 'acc5',
+      },
+    })
+    // breaking the test style because it becomes too complicated
+    workflowInstance = new InstanceElement('workflowInstance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
+      transitions: {
+        transition1: {
+          conditions: {
+            conditions: [
+              {
+                parameters: {
+                  accountIds: 'allow-assignee',
+                },
+              },
+              {
+                parameters: {
+                  scriptRunner: {
+                    accountIds: ['quack'],
+                  },
+                },
+              },
+            ],
+          },
         },
-      }
-    )
-    dashboardInstance = new InstanceElement(
-      'instance3',
-      common.createDashboardType(),
-      {
-        inner: {
-          owner: 'acc4',
+      },
+    })
+    automationInstance = new InstanceElement('automationInstance', createEmptyType(AUTOMATION_TYPE), {
+      components: [
+        {
+          component: 'ACTION',
+          type: 'jira.issue.create',
+          value: {
+            operations: [
+              {
+                field: {
+                  type: 'ID',
+                  value: 'bla',
+                },
+                fieldType: 'project',
+                type: 'SET',
+                value: {
+                  value: 'current',
+                  type: 'COPY',
+                },
+              },
+              {
+                field: {
+                  type: 'ID',
+                  value: 'assignee',
+                },
+                fieldType: 'assignee',
+                type: 'SET',
+                value: {
+                  type: 'ID',
+                  value: 'acc6',
+                },
+              },
+            ],
+            sendNotifications: false,
+          },
+          children: [],
+          conditions: [],
         },
-      }
-    )
-    fieldContextInstance = new InstanceElement(
-      'instance',
-      common.createFieldContextType(),
-      {
-        defaultValue: {
-          accountId: 'acc5',
+        {
+          component: 'CONDITION',
+          schemaVersion: 3,
+          type: 'jira.issue.condition',
+          value: {
+            selectedField: {
+              type: 'ID',
+              value: 'assignee',
+            },
+            selectedFieldType: 'assignee',
+            comparison: 'EQUALS',
+            compareFieldValue: {
+              type: 'ID',
+              values: ['acc7', 'acc8'],
+            },
+            multiValue: false,
+          },
+          children: [],
+          conditions: [],
         },
-      }
-    )
+        {
+          // do not add account id
+          component: 'CONDITION',
+          schemaVersion: 3,
+          type: 'jira.issue.condition',
+          value: {
+            selectedField: {
+              type: 'ID',
+              value: 'assignee',
+            },
+            selectedFieldType: 'assignee',
+            comparison: 'NOT_EMPTY',
+            compareFieldValue: {
+              type: 'ID',
+              multiValue: false,
+            },
+          },
+          children: [],
+          conditions: [],
+        },
+      ],
+    })
 
     displayChanges = [
       toChange({ after: displayNamesInstances[0] }),
@@ -107,13 +210,31 @@ describe('account_id_filter', () => {
   })
   describe('fetch', () => {
     it('changes instance element structures for all 5 types', async () => {
-      await filter.onFetch([simpleInstances[1], filterInstance, dashboardInstance, boardInstance, fieldContextInstance])
+      await filter.onFetch([
+        simpleInstances[1],
+        filterInstance,
+        dashboardInstance,
+        boardInstance,
+        fieldContextInstance,
+        workflowInstance,
+        automationInstance,
+      ])
       common.checkObjectedInstanceIds(simpleInstances[1], '1')
       expect(filterInstance.value.owner.id).toEqual('acc2')
       expect(boardInstance.value.admins.users[0].id).toEqual('acc3')
       expect(boardInstance.value.admins.users[1].id).toEqual('acc31')
       expect(dashboardInstance.value.inner.owner.id).toEqual('acc4')
       expect(fieldContextInstance.value.defaultValue.accountId.id).toEqual('acc5')
+      expect(workflowInstance.value.transitions.transition1.conditions.conditions[0].parameters.accountIds).toEqual(
+        'allow-assignee',
+      )
+      expect(
+        workflowInstance.value.transitions.transition1.conditions.conditions[1].parameters.scriptRunner.accountIds[0]
+          .id,
+      ).toEqual('quack')
+      expect(automationInstance.value.components[0].value.operations[1].value.value.id).toEqual('acc6')
+      expect(automationInstance.value.components[1].value.compareFieldValue.values[0].id).toEqual('acc7')
+      expect(automationInstance.value.components[1].value.compareFieldValue.values[1].id).toEqual('acc8')
     })
     it('should change account ids in all defined types', async () => {
       await awu(ACCOUNT_ID_TYPES).forEach(async typeName => {
@@ -129,30 +250,32 @@ describe('account_id_filter', () => {
       await filter.onFetch([instance])
       common.checkSimpleInstanceIds(instance, '1')
     })
+    it('should not change account ids for empty values', async () => {
+      await filter.onFetch([automationInstance])
+      expect(automationInstance.value.components[2].value.compareFieldValue.value).toBeUndefined()
+    })
     it('should enhance types with relevant account ids', async () => {
       const currentObjectType = new ObjectType({
         elemID: new ElemID(JIRA, 'CustomFieldContext'),
       })
-      ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
-        currentObjectType.fields[fieldName] = new Field(
-          currentObjectType,
-          fieldName,
-          BuiltinTypes.STRING
-        )
+      ACCOUNT_ID_FIELDS_NAMES.forEach(fieldName => {
+        currentObjectType.fields[fieldName] = new Field(currentObjectType, fieldName, BuiltinTypes.STRING)
       })
       currentObjectType.fields.accountIds = new Field(
         currentObjectType,
         'accountIds',
-        new ListType(BuiltinTypes.STRING)
+        new ListType(BuiltinTypes.STRING),
       )
       await filter.onFetch([currentObjectType])
-      await awu(ACCOUNT_IDS_FIELDS_NAMES).forEach(async fieldName => {
-        const currentType = await currentObjectType.fields[fieldName].getType() as ObjectType
+      await awu(ACCOUNT_ID_FIELDS_NAMES).forEach(async fieldName => {
+        const currentType = (await currentObjectType.fields[fieldName].getType()) as ObjectType
         expect(Object.prototype.hasOwnProperty.call(currentType.fields, 'id')).toBeTruthy()
         expect(Object.prototype.hasOwnProperty.call(currentType.fields, 'displayName')).toBeTruthy()
         expect(currentType.elemID.getFullName()).toEqual('jira.AccountIdInfo')
       })
-      expect((await currentObjectType.fields.accountIds.getType()).elemID.getFullName()).toEqual('List<jira.AccountIdInfo>')
+      expect((await currentObjectType.fields.accountIds.getType()).elemID.getFullName()).toEqual(
+        'List<jira.AccountIdInfo>',
+      )
     })
     it('should not enhance types with account ids that are not part of the known types', async () => {
       const currentObjectType = new ObjectType({
@@ -200,7 +323,7 @@ describe('account_id_filter', () => {
       common.checkDisplayNames((displayChanges[1] as ModificationChange<InstanceElement>).data.before, '1')
       common.checkObjectedInstanceIds((displayChanges[1] as ModificationChange<InstanceElement>).data.after, '2')
       common.checkDisplayNames((displayChanges[1] as ModificationChange<InstanceElement>).data.after, '2')
-    }, 1000000)
+    })
     it('returns even wrong structure instances on OnDeploy', async () => {
       const elementInstance = displayNamesInstances[0]
       elementInstance.value.accountId.wrong = 'wrong'

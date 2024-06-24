@@ -1,24 +1,28 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { config } from '@salto-io/adapter-components'
-import { DEFAULT_API_DEFINITIONS, DUCKTYPE_API_DEFINITIONS, JiraApiConfig } from '../config/api_config'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
+import {
+  DEFAULT_API_DEFINITIONS,
+  SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS,
+  JiraApiConfig,
+  JSM_DUCKTYPE_API_DEFINITIONS,
+} from '../config/api_config'
 import { ProductSettings } from './product_settings'
 import { addTypeNameOverrides } from './utils'
-
 
 const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
   types: {
@@ -153,11 +157,12 @@ const CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES = [
 ]
 
 export const CLOUD_SETTINGS: ProductSettings = {
-  defaultApiDefinitions: config.mergeWithDefaultConfig(
+  defaultApiDefinitions: definitionsUtils.mergeWithDefaultConfig(
     addTypeNameOverrides(DEFAULT_API_DEFINITIONS, CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES),
     CLOUD_DEFAULT_API_DEFINITIONS,
   ) as JiraApiConfig,
   wrapConnection: _.identity,
   type: 'cloud',
-  defaultScriptRunnerApiDefinitions: DUCKTYPE_API_DEFINITIONS,
+  defaultScriptRunnerApiDefinitions: SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS,
+  defaultDuckTypeApiDefinitions: JSM_DUCKTYPE_API_DEFINITIONS,
 }

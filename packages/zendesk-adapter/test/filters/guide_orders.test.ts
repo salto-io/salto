@@ -1,21 +1,30 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { elements as elementsUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
-import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK, ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../../src/constants'
+import { fetch as fetchUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
+import {
+  ARTICLE_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  ZENDESK,
+  ARTICLES_FIELD,
+  CATEGORIES_FIELD,
+  SECTIONS_FIELD,
+} from '../../src/constants'
 import categoryOrderFilter from '../../src/filters/guide_order/category_order'
 import sectionOrderFilter from '../../src/filters/guide_order/section_order'
 import articleOrderFilter from '../../src/filters/guide_order/article_order'
@@ -24,7 +33,7 @@ import { createOrderType } from '../../src/filters/guide_order/guide_order_utils
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 
-const { createUrl } = elementsUtils
+const { createUrl } = fetchUtils.resource
 
 const client = new ZendeskClient({
   credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -73,18 +82,10 @@ const createChildInstance = (
 const createCategoryInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
   createChildInstance(id, 'category_id', categoryType, 'brand', position, createdAt)
 
-const createSectionInCategoryInstance = (
-  id = 0,
-  position?: number,
-  createdAt?: string
-) : InstanceElement =>
+const createSectionInCategoryInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
   createChildInstance(id, 'section', sectionType, 'category_id', position, createdAt, CATEGORY_TYPE_NAME)
 
-const createSectionInSectionInstance = (
-  id = 0,
-  position?: number,
-  createdAt?: string
-) : InstanceElement =>
+const createSectionInSectionInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
   createChildInstance(id, 'section', sectionType, 'parent_section_id', position, createdAt, SECTION_TYPE_NAME)
 
 const createArticleInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
@@ -92,16 +93,15 @@ const createArticleInstance = (id = 0, position?: number, createdAt?: string): I
 
 let filter: FilterType
 
-const testFetch = async ({ createParent, createChild, orderField }
-: {
+const testFetch = async ({
+  createParent,
+  createChild,
+  orderField,
+}: {
   createParent: () => InstanceElement
-  createChild: (id: number,
-                position?: number,
-                createdAt?: string,
-                promoted?: boolean) => InstanceElement
+  createChild: (id: number, position?: number, createdAt?: string, promoted?: boolean) => InstanceElement
   orderField: string
-  })
- : Promise<void> => {
+}): Promise<void> => {
   const parentInstance = createParent()
   parentInstance.value.id = PARENT_ID
   const EARLY_CREATED_AT = '2022-10-29T11:00:00Z'
@@ -119,7 +119,9 @@ const testFetch = async ({ createParent, createChild, orderField }
   if (orderField === ARTICLES_FIELD) {
     const promotedArticle = createChild(2, 2, EARLY_CREATED_AT)
     promotedArticle.value.promoted = true
-    childInstances.forEach(child => { child.value.promoted = false })
+    childInstances.forEach(child => {
+      child.value.promoted = false
+    })
 
     childInstances.push(promotedArticle)
     sortedOrder.unshift(promotedArticle)
@@ -136,9 +138,7 @@ const testFetch = async ({ createParent, createChild, orderField }
       // Sort by position -> later createAt -> later id
       [orderField]: sortedOrder.map(c => new ReferenceExpression(c.elemID, c)),
     },
-    parentInstance.path !== undefined
-      ? [...parentInstance.path.slice(0, -1), typeObject.elemID.typeName]
-      : undefined,
+    parentInstance.path !== undefined ? [...parentInstance.path.slice(0, -1), typeObject.elemID.typeName] : undefined,
   )
 
   // with Article_field we added another article to make sure promoted articles are first
@@ -165,7 +165,7 @@ const testDeploy = async (
   orderField: string,
   createChildElement: (id?: number) => InstanceElement,
   updateApi: configUtils.DeployRequestConfig,
-) : Promise<void> => {
+): Promise<void> => {
   const children = [createChildElement(0), createChildElement(1)]
   const orderInstance = new InstanceElement(
     parentInstance.elemID.name,
@@ -190,7 +190,7 @@ const testDeploy = async (
   expect(mockPut).toHaveBeenCalledWith({
     url: createUrl({
       instance: createChildElement(),
-      baseUrl: updateApi.url,
+      url: updateApi.url,
       urlParamsToFields: updateApi.urlParamsToFields,
     }),
     data: { position: 0 },
@@ -198,7 +198,7 @@ const testDeploy = async (
   expect(mockPut).toHaveBeenCalledWith({
     url: createUrl({
       instance: createChildElement(1),
-      baseUrl: updateApi.url,
+      url: updateApi.url,
       urlParamsToFields: updateApi.urlParamsToFields,
     }),
     data: { position: 1 },
@@ -213,9 +213,7 @@ describe('Categories order in brand', () => {
       config[FETCH_CONFIG].guide = {
         brands: ['.*'],
       }
-      filter = categoryOrderFilter(
-        createFilterCreatorParams({ config })
-      ) as FilterType
+      filter = categoryOrderFilter(createFilterCreatorParams({ config })) as FilterType
       await testFetch({
         createParent: createBrandInstance,
         createChild: createCategoryInstance,
@@ -226,9 +224,7 @@ describe('Categories order in brand', () => {
       config[FETCH_CONFIG].guide = {
         brands: ['.*'],
       }
-      filter = categoryOrderFilter(
-        createFilterCreatorParams({ config })
-      ) as FilterType
+      filter = categoryOrderFilter(createFilterCreatorParams({ config })) as FilterType
       // Should not create categories order field at all
       const brandWithoutGuide = createBrandInstance(false)
       const categories = [createCategoryInstance(), createCategoryInstance()]
@@ -238,9 +234,7 @@ describe('Categories order in brand', () => {
     })
     it('with Guide not active in Salto', async () => {
       config[FETCH_CONFIG].guide = undefined
-      filter = categoryOrderFilter(
-        createFilterCreatorParams({})
-      ) as FilterType
+      filter = categoryOrderFilter(createFilterCreatorParams({})) as FilterType
       // Should not create categories order field at all
       const brandWithGuide = createBrandInstance()
       const categories = [createCategoryInstance(), createCategoryInstance()]
@@ -264,12 +258,7 @@ describe('Categories order in brand', () => {
     })
 
     it('deploy', async () => {
-      await testDeploy(
-        createBrandInstance(),
-        CATEGORIES_FIELD,
-        createCategoryInstance,
-        updateApi,
-      )
+      await testDeploy(createBrandInstance(), CATEGORIES_FIELD, createCategoryInstance, updateApi)
     })
   })
 })
@@ -301,12 +290,7 @@ describe('Sections order in category', () => {
     } as configUtils.DeployRequestConfig
 
     it('deploy', async () => {
-      await testDeploy(
-        createCategoryInstance(),
-        SECTIONS_FIELD,
-        createSectionInCategoryInstance,
-        updateApi,
-      )
+      await testDeploy(createCategoryInstance(), SECTIONS_FIELD, createSectionInCategoryInstance, updateApi)
     })
   })
 })
@@ -339,12 +323,7 @@ describe('Sections order in section', () => {
       } as configUtils.DeployRequestConfig
 
       it('deploy', async () => {
-        await testDeploy(
-          createSectionInCategoryInstance(1),
-          SECTIONS_FIELD,
-          createSectionInSectionInstance,
-          updateApi,
-        )
+        await testDeploy(createSectionInCategoryInstance(1), SECTIONS_FIELD, createSectionInSectionInstance, updateApi)
       })
     })
   })
@@ -377,12 +356,7 @@ describe('Articles order in section', () => {
     } as configUtils.DeployRequestConfig
 
     it('deploy', async () => {
-      await testDeploy(
-        createSectionInCategoryInstance(),
-        ARTICLES_FIELD,
-        createArticleInstance,
-        updateApi,
-      )
+      await testDeploy(createSectionInCategoryInstance(), ARTICLES_FIELD, createArticleInstance, updateApi)
     })
   })
 })

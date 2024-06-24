@@ -1,26 +1,35 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
+import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { getDefaultConfig } from '../../src/config/config'
+import _ from 'lodash'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
-import { JIRA } from '../../src/constants'
+import { JIRA, PROJECT_TYPE_TYPE_NAME } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
-import { getFilterParams, getLicenseElementSource, mockClient } from '../utils'
+import { createEmptyType, getFilterParams, getLicenseElementSource, mockClient } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -39,10 +48,17 @@ describe('projectFilter', () => {
   let instance: InstanceElement
   let client: JiraClient
   let type: ObjectType
+  let config: JiraConfig
   let connection: MockInterface<clientUtils.APIConnection>
-  const deployChangeMock = deployment.deployChange as jest.MockedFunction<
-    typeof deployment.deployChange
-  >
+  const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
+  const SoftwareTypeInstance = new InstanceElement('softwareType', createEmptyType(PROJECT_TYPE_TYPE_NAME), {
+    key: 'software',
+    formattedKey: 'Software',
+  })
+  const JsmTypeInstance = new InstanceElement('jsmType', createEmptyType(PROJECT_TYPE_TYPE_NAME), {
+    key: 'service_desk',
+    formattedKey: 'Service Desk',
+  })
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
@@ -51,11 +67,13 @@ describe('projectFilter', () => {
 
     deployChangeMock.mockClear()
     const elementsSource = getLicenseElementSource(true)
-    filter = projectFilter(getFilterParams({
-      client,
-      paginator,
-      elementsSource,
-    })) as typeof filter
+    filter = projectFilter(
+      getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+      }),
+    ) as typeof filter
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'Project'),
@@ -69,15 +87,21 @@ describe('projectFilter', () => {
       },
     })
 
-    instance = new InstanceElement(
+    instance = new InstanceElement('instance', type, {}, [
+      JIRA,
+      elementUtils.RECORDS_PATH,
+      'Project',
       'instance',
-      type,
-    )
+      'instance',
+    ])
   })
 
   describe('onFetch', () => {
     beforeEach(async () => {
       instance.value = {
+        key: 'P1',
+        name: 'p1',
+        projectTypeKey: 'software',
         lead: {
           accountId: '1',
         },
@@ -134,8 +158,7 @@ describe('projectFilter', () => {
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })
 
-      expect(type.fields.priorityScheme.annotations).toEqual({
-      })
+      expect(type.fields.priorityScheme.annotations).toEqual({})
     })
 
     it('should add the deployment annotations to priority scheme if DC', async () => {
@@ -145,10 +168,12 @@ describe('projectFilter', () => {
 
       deployChangeMock.mockClear()
 
-      filter = projectFilter(getFilterParams({
-        client,
-        paginator,
-      })) as typeof filter
+      filter = projectFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
 
       await filter.onFetch([type, instance])
 
@@ -205,10 +230,30 @@ describe('projectFilter', () => {
     it('For impartial instance should set undefined', async () => {
       await filter.onFetch([type, instance])
 
-      instance.value = {
-      }
+      instance.value = {}
       await filter.onFetch([instance])
       expect(instance.value).toEqual({})
+    })
+    it('should change the path for software project', async () => {
+      await filter.onFetch([type, instance, SoftwareTypeInstance, JsmTypeInstance])
+      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Software', 'instance', 'instance'])
+    })
+    it('should change the path for service desk project', async () => {
+      instance.value.projectTypeKey = 'service_desk'
+      await filter.onFetch([type, instance, SoftwareTypeInstance, JsmTypeInstance])
+      expect(instance.path).toEqual([
+        JIRA,
+        elementUtils.RECORDS_PATH,
+        'Project',
+        'Service Desk',
+        'instance',
+        'instance',
+      ])
+    })
+    it('should change for unexpected project type', async () => {
+      instance.value.projectTypeKey = 'unexpected'
+      await filter.onFetch([type, instance, SoftwareTypeInstance, JsmTypeInstance])
+      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Other', 'instance', 'instance'])
     })
   })
 
@@ -216,6 +261,7 @@ describe('projectFilter', () => {
     let change: Change
 
     beforeEach(async () => {
+      instance.value.key = 'P1'
       const afterInstance = instance.clone()
       afterInstance.value.workflowScheme = 1
       afterInstance.value.id = 2
@@ -228,10 +274,18 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        endpointDetails: getDefaultConfig({ isDataCenter: false })
-          .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme',
-          'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme', 'permissionScheme'],
+        endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
+        fieldsToIgnore: [
+          'components',
+          'fieldConfigurationScheme',
+          PROJECT_CONTEXTS_FIELD,
+          'priorityScheme',
+          'customerPermissions',
+          'workflowScheme',
+          'issueTypeScreenScheme',
+          'issueTypeScheme',
+          'permissionScheme',
+        ],
       })
     })
 
@@ -254,11 +308,13 @@ describe('projectFilter', () => {
 
       deployChangeMock.mockClear()
       const elementsSource = getLicenseElementSource(false)
-      filter = projectFilter(getFilterParams({
-        client,
-        paginator,
-        elementsSource,
-      })) as typeof filter
+      filter = projectFilter(
+        getFilterParams({
+          client,
+          paginator,
+          elementsSource,
+        }),
+      ) as typeof filter
 
       await filter.deploy([change])
 
@@ -282,11 +338,115 @@ describe('projectFilter', () => {
         undefined,
       )
     })
+    it('should deploy customerPermissions modification when enableJSM is true', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      instance.value.projectTypeKey = 'service_desk'
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(
+        getFilterParams({
+          client,
+          paginator,
+          elementsSource,
+          config,
+        }),
+      ) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/servicedesk/1/servicedesk/P1/settings/requestsecurity',
+        {
+          serviceDeskOpenAccess: false,
+        },
+        undefined,
+      )
+    })
+    it('should not call to post customerPermissions when project is not jsm', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      instance.value.projectTypeKey = 'software'
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(
+        getFilterParams({
+          client,
+          paginator,
+          elementsSource,
+          config,
+        }),
+      ) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
+    it('should not call to post customerPermissions when project is jsm but there is no customerPremissions', async () => {
+      instance.value.customerPermissions = undefined
+      instance.value.projectTypeKey = 'service_desk'
+      const afterInstance = instance.clone()
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(
+        getFilterParams({
+          client,
+          paginator,
+          elementsSource,
+          config,
+        }),
+      ) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
+    it('should not deploy customerPermissions modification when enableJSM is false', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      instance.value.projectTypeKey = 'service_desk'
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      filter = projectFilter(
+        getFilterParams({
+          client,
+          paginator,
+          elementsSource,
+          config,
+        }),
+      ) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
   })
 
   describe('When deploying an addition change', () => {
     let change: Change
-
     beforeEach(async () => {
       instance.value.id = 3
       instance.value.priorityScheme = 11
@@ -312,33 +472,30 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        endpointDetails: getDefaultConfig({ isDataCenter: false })
-          .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
+        fieldsToIgnore: [
+          'components',
+          'fieldConfigurationScheme',
+          PROJECT_CONTEXTS_FIELD,
+          'priorityScheme',
+          'customerPermissions',
+          'permissionScheme',
+        ],
       })
     })
 
     it('should call the endpoint to get the components', async () => {
       await filter.deploy([change])
 
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/project/3',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/project/3', undefined)
     })
 
     it('should call the endpoint to remove the components', async () => {
       await filter.deploy([change])
 
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/api/3/component/1',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/component/1', undefined)
 
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/api/3/component/2',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/component/2', undefined)
     })
 
     it('should call the endpoint to set the priorityScheme', async () => {
@@ -348,11 +505,13 @@ describe('projectFilter', () => {
 
       deployChangeMock.mockClear()
       const elementsSource = getLicenseElementSource(false)
-      filter = projectFilter(getFilterParams({
-        client,
-        paginator,
-        elementsSource,
-      })) as typeof filter
+      filter = projectFilter(
+        getFilterParams({
+          client,
+          paginator,
+          elementsSource,
+        }),
+      ) as typeof filter
 
       await filter.deploy([change])
 
@@ -415,11 +574,13 @@ describe('projectFilter', () => {
           return {
             status: 200,
             data: {
-              values: [{
-                fieldConfigurationScheme: {
-                  id: '4',
+              values: [
+                {
+                  fieldConfigurationScheme: {
+                    id: '4',
+                  },
                 },
-              }],
+              ],
             },
           }
         }
@@ -433,50 +594,38 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        endpointDetails: getDefaultConfig({ isDataCenter: false })
-          .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
+        fieldsToIgnore: [
+          'components',
+          'fieldConfigurationScheme',
+          PROJECT_CONTEXTS_FIELD,
+          'priorityScheme',
+          'customerPermissions',
+          'permissionScheme',
+        ],
       })
     })
 
     it('should call the endpoint to get the projectId', () => {
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/project/key',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/project/key', undefined)
     })
 
     it('should call the endpoint to get the fieldConfigurationScheme', () => {
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/fieldconfigurationscheme/project?projectId=3',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/fieldconfigurationscheme/project?projectId=3', undefined)
     })
 
     it('should call the endpoint to delete the fieldConfigurationScheme', () => {
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/api/3/fieldconfigurationscheme/4',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/fieldconfigurationscheme/4', undefined)
     })
 
     it('should call the endpoint to get the components', () => {
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/project/3',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/project/3', undefined)
     })
 
     it('should call the endpoint to remove the components', () => {
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/api/3/component/1',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/component/1', undefined)
 
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/api/3/component/2',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/component/2', undefined)
     })
   })
 
@@ -516,8 +665,7 @@ describe('projectFilter', () => {
           return {
             status: 200,
             data: {
-              values: [{
-              }],
+              values: [{}],
             },
           }
         }
@@ -531,50 +679,38 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        endpointDetails: getDefaultConfig({ isDataCenter: false })
-          .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
+        fieldsToIgnore: [
+          'components',
+          'fieldConfigurationScheme',
+          PROJECT_CONTEXTS_FIELD,
+          'priorityScheme',
+          'customerPermissions',
+          'permissionScheme',
+        ],
       })
     })
 
     it('should call the endpoint to get the projectId', () => {
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/project/key',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/project/key', undefined)
     })
 
     it('should call the endpoint to get the fieldConfigurationScheme', () => {
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/fieldconfigurationscheme/project?projectId=3',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/fieldconfigurationscheme/project?projectId=3', undefined)
     })
 
     it('should not call the endpoint to delete the fieldConfigurationScheme', () => {
-      expect(connection.delete).not.toHaveBeenCalledWith(
-        '/rest/api/3/fieldconfigurationscheme/4',
-        undefined,
-      )
+      expect(connection.delete).not.toHaveBeenCalledWith('/rest/api/3/fieldconfigurationscheme/4', undefined)
     })
 
     it('should call the endpoint to get the components', () => {
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/api/3/project/3',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/project/3', undefined)
     })
 
     it('should call the endpoint to remove the components', () => {
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/api/3/component/1',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/component/1', undefined)
 
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/api/3/component/2',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/component/2', undefined)
     })
   })
 
@@ -603,10 +739,12 @@ describe('projectFilter', () => {
 
       deployChangeMock.mockClear()
 
-      filter = projectFilter(getFilterParams({
-        client,
-        paginator,
-      })) as typeof filter
+      filter = projectFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
     })
     it('should set lead account id on fetch', async () => {
       instance.value = {
@@ -635,10 +773,17 @@ describe('projectFilter', () => {
         expect(deployChangeMock).toHaveBeenCalledWith({
           change,
           client,
-          endpointDetails: getDefaultConfig({ isDataCenter: true })
-            .apiDefinitions.types.Project.deployRequests,
-          fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme',
-            'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme'],
+          endpointDetails: getDefaultConfig({ isDataCenter: true }).apiDefinitions.types.Project.deployRequests,
+          fieldsToIgnore: [
+            'components',
+            'fieldConfigurationScheme',
+            PROJECT_CONTEXTS_FIELD,
+            'priorityScheme',
+            'customerPermissions',
+            'workflowScheme',
+            'issueTypeScreenScheme',
+            'issueTypeScheme',
+          ],
         })
       })
       it('should call the endpoint to set the scheme', () => {

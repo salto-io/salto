@@ -1,22 +1,33 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType, InstanceElement, PrimitiveType, PrimitiveTypes, Field } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
-import { getChangeData, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange, getAllChangeData } from '../src/change'
+import {
+  getChangeData,
+  Change,
+  isInstanceChange,
+  isObjectTypeChange,
+  isFieldChange,
+  toChange,
+  isAdditionChange,
+  isRemovalChange,
+  isModificationChange,
+  getAllChangeData,
+} from '../src/change'
 
 describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
@@ -56,30 +67,30 @@ describe('change.ts', () => {
   })
 
   it('should getAllChangeData for removal change', () => {
-    const elems = getAllChangeData({
+    const elements = getAllChangeData({
       action: 'remove',
       data: { before: obj },
     })
-    expect(elems).toEqual([obj])
+    expect(elements).toEqual([obj])
   })
 
   it('should getAllChangeData for add change', () => {
-    const elems = getAllChangeData({
+    const elements = getAllChangeData({
       action: 'add',
       data: { after: inst },
     })
-    expect(elems).toEqual([inst])
+    expect(elements).toEqual([inst])
   })
 
   it('should getAllChangeData for modification change', () => {
     const { field } = obj.fields
     const otherField = field.clone()
     otherField.name = 'other'
-    const elems = getAllChangeData({
+    const elements = getAllChangeData({
       action: 'modify',
       data: { before: field, after: otherField },
     })
-    expect(elems).toEqual([field, otherField])
+    expect(elements).toEqual([field, otherField])
   })
 
   describe('isChange Functions', () => {
@@ -116,9 +127,7 @@ describe('change.ts', () => {
       })
 
       it('should return false for changes of non instance elements', () => {
-        [objChange, fieldChange, typeChange].forEach(
-          change => expect(isInstanceChange(change)).toBeFalsy()
-        )
+        ;[objChange, fieldChange, typeChange].forEach(change => expect(isInstanceChange(change)).toBeFalsy())
       })
     })
 
@@ -128,9 +137,7 @@ describe('change.ts', () => {
       })
 
       it('should return false for changes of non object type elements', () => {
-        [instChange, fieldChange, typeChange].forEach(
-          change => expect(isObjectTypeChange(change)).toBeFalsy()
-        )
+        ;[instChange, fieldChange, typeChange].forEach(change => expect(isObjectTypeChange(change)).toBeFalsy())
       })
     })
 
@@ -140,9 +147,7 @@ describe('change.ts', () => {
       })
 
       it('should return false for changes of non field elements', () => {
-        [objChange, instChange, typeChange].forEach(
-          change => expect(isFieldChange(change)).toBeFalsy()
-        )
+        ;[objChange, instChange, typeChange].forEach(change => expect(isFieldChange(change)).toBeFalsy())
       })
     })
   })
@@ -163,7 +168,7 @@ describe('change.ts', () => {
       expect(isModificationChange(newChange)).toBeTruthy()
     })
 
-    it('should throw error if befor and after not provided', () => {
+    it('should throw error if before and after not provided', () => {
       expect(() => toChange({})).toThrow('Must provide before or after')
     })
   })

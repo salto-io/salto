@@ -1,33 +1,45 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Values } from '@salto-io/adapter-api'
-import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../src/constants'
+import {
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  APPLICATION_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  GROUP_RULE_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  NETWORK_ZONE_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+  USER_SCHEMA_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  BRAND_THEME_TYPE_NAME,
+  DOMAIN_TYPE_NAME,
+} from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
   [ACCESS_POLICY_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'authentication policy',
-    priority: 1,
     system: false,
     type: 'ACCESS_POLICY',
   },
   [ACCESS_POLICY_RULE_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'authentication rule',
-    priority: 0,
     system: false,
     conditions: {
       network: { connection: 'ANYWHERE' },
@@ -96,6 +108,9 @@ export const mockDefaultValues: Record<string, Values> = {
         honorForceAuthn: true,
         authnContextClassRef: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
         requestCompressed: false,
+        attributeStatements: [],
+        inlineHooks: [],
+        acsEndpoints: [],
         allowMultipleAcsEndpoints: false,
         samlSignedRequestEnabled: false,
         slo: {
@@ -110,6 +125,9 @@ export const mockDefaultValues: Record<string, Values> = {
     objectClass: ['okta:user_group'],
     type: 'OKTA_GROUP',
     profile: { name: 'Employees', description: 'all employees' },
+  },
+  [APP_GROUP_ASSIGNMENT_TYPE_NAME]: {
+    priority: 0,
   },
   [GROUP_RULE_TYPE_NAME]: {
     type: 'group_rule',
@@ -133,14 +151,12 @@ export const mockDefaultValues: Record<string, Values> = {
   [PROFILE_ENROLLMENT_POLICY_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'profile',
-    priority: 1,
     system: false,
     type: 'PROFILE_ENROLLMENT',
   },
   [PROFILE_ENROLLMENT_RULE_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'Catch-all Rule',
-    priority: 99,
     system: true,
     type: 'PROFILE_ENROLLMENT',
   },
@@ -158,9 +174,7 @@ export const mockDefaultValues: Record<string, Values> = {
             scope: 'NONE',
             minLength: 1,
             maxLength: 50,
-            permissions: [
-              { principal: 'SELF', action: 'READ_WRITE' },
-            ],
+            permissions: [{ principal: 'SELF', action: 'READ_WRITE' }],
             master: { type: 'PROFILE_MASTER' },
           },
           lastName: {
@@ -187,5 +201,24 @@ export const mockDefaultValues: Record<string, Values> = {
         },
       },
     },
+  },
+  [BRAND_TYPE_NAME]: {
+    removePoweredByOkta: false,
+    agreeToCustomPrivacyPolicy: true,
+  },
+  [BRAND_THEME_TYPE_NAME]: {
+    primaryColorHex: '#1662dd',
+    primaryColorContrastHex: '#ffffff',
+    secondaryColorHex: '#ebebed',
+    secondaryColorContrastHex: '#000000',
+    signInPageTouchPointVariant: 'OKTA_DEFAULT',
+    endUserDashboardTouchPointVariant: 'OKTA_DEFAULT',
+    errorPageTouchPointVariant: 'OKTA_DEFAULT',
+    emailTemplateTouchPointVariant: 'OKTA_DEFAULT',
+    loadingPageTouchPointVariant: 'OKTA_DEFAULT',
+  },
+  [DOMAIN_TYPE_NAME]: {
+    certificateSourceType: 'OKTA_MANAGED',
+    validationStatus: 'NOT_STARTED',
   },
 }

@@ -1,0 +1,9 @@
+# This file contains a list of commit hashes that will be ignored by git blame.
+#
+# For more details see:
+# - https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#ignore-commits-in-the-blame-view
+# - https://git-scm.com/docs/git-blame#Documentation/git-blame.txt---ignore-revs-fileltfilegt
+#
+
+# SALTO-5404 Format the entire project with prettier (#5466)
+13d9dcb73a106d8c4b299f1f69b543d1df9d41ea

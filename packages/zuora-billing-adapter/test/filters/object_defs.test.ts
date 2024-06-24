@@ -1,21 +1,27 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, isEqualElements, isObjectType, ReferenceExpression,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Element,
+  isEqualElements,
+  isObjectType,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DetailedDependency } from '@salto-io/adapter-utils'
@@ -39,263 +45,198 @@ describe('Object defs filter', () => {
       elemID: new ElemID(ZUORA_BILLING, STANDARD_OBJECT_DEFINITION_TYPE),
     })
 
-    const account = new InstanceElement(
-      'account',
-      standardObjectDefType,
-      {
-        additionalProperties: {
-          type: 'account',
+    const account = new InstanceElement('account', standardObjectDefType, {
+      type: 'account',
+      schema: {
+        $schema: 'http://json-schema.org/draft-04/schema#',
+        title: 'Account',
+        type: 'object',
+        required: ['Id', 'CreatedById', 'AccountNumber', 'Name'],
+        properties: {
+          Id: {
+            type: 'string',
+            format: 'uuid',
+          },
+          CreatedById: {
+            type: 'string',
+            format: 'uuid',
+          },
+          AccountNumber: {
+            type: 'string',
+            maxLength: 512,
+          },
+          Name: {
+            type: 'string',
+            maxLength: 512,
+          },
         },
-        schema: {
-          $schema: 'http://json-schema.org/draft-04/schema#',
-          title: 'Account',
-          type: 'object',
-          required: [
-            'Id',
-            'CreatedById',
-            'AccountNumber',
-            'Name',
-          ],
-          properties: {
-            Id: {
-              type: 'string',
-              format: 'uuid',
+        relationships: [
+          {
+            cardinality: 'oneToMany',
+            namespace: 'default',
+            object: 'Custom1',
+            fields: {
+              Id: 'AccountId__c',
             },
-            CreatedById: {
-              type: 'string',
-              format: 'uuid',
-            },
-            additionalProperties: {
-              AccountNumber: {
-                type: 'string',
-                additionalProperties: {
-                  maxLength: 512,
-                },
-              },
-              Name: {
-                type: 'string',
-                additionalProperties: {
-                  maxLength: 512,
-                },
+            recordConstraints: {
+              create: {
+                enforceValidMapping: false,
               },
             },
           },
-          relationships: [
-            {
-              cardinality: 'oneToMany',
-              namespace: 'default',
-              object: 'Custom1',
-              fields: {
-                additionalProperties: {
-                  Id: 'AccountId__c',
-                },
-              },
-              recordConstraints: {
-                create: {
-                  enforceValidMapping: false,
-                },
-              },
-            },
-          ],
-        },
+        ],
       },
-    )
-    const accountingcode = new InstanceElement(
-      'AccountingCode',
-      standardObjectDefType,
-      {
-        additionalProperties: {
-          type: 'AccountingCode',
-        },
-        schema: {
-          $schema: 'http://json-schema.org/draft-04/schema#',
-          title: 'AccountingCode',
-          type: 'object',
-          required: [
-            'Name',
-            'Id',
-          ],
-          properties: {
-            additionalProperties: {
-              deleted: {
-                type: 'boolean',
-              },
-              Category: {
-                type: 'string',
-                maxLength: 512,
-              },
-            },
-            Id: {
-              type: 'string',
-              format: 'uuid',
-            },
+    })
+    const accountingcode = new InstanceElement('AccountingCode', standardObjectDefType, {
+      type: 'AccountingCode',
+      schema: {
+        $schema: 'http://json-schema.org/draft-04/schema#',
+        title: 'AccountingCode',
+        type: 'object',
+        required: ['Name', 'Id'],
+        properties: {
+          deleted: {
+            type: 'boolean',
+          },
+          Category: {
+            type: 'string',
+            maxLength: 512,
+          },
+          Id: {
+            type: 'string',
+            format: 'uuid',
           },
         },
       },
-    )
-    const Custom1 = new InstanceElement(
-      'Custom1',
-      customObjectDefType,
-      {
-        additionalProperties: {
-          Id: 'some id',
-          type: 'Custom1',
+    })
+    const Custom1 = new InstanceElement('Custom1', customObjectDefType, {
+      Id: 'some id',
+      type: 'Custom1',
+      CreatedById: 'id1',
+      UpdatedById: 'id1',
+      CreatedDate: '2021-01-01T01:23:45.678Z',
+      UpdatedDate: '2021-01-01T01:23:45.678Z',
+      schema: {
+        object: 'Custom1',
+        label: 'Custom1',
+        properties: {
+          field1__c: {
+            format: 'uuid',
+            label: 'field1 label',
+            origin: 'custom',
+            type: 'string',
+            description: 'some description',
+          },
+          field2__c: {
+            label: 'field2 label',
+            type: 'number',
+          },
+          SubscriptionId__c: {
+            format: 'uuid',
+            label: 'Subscription',
+            origin: 'custom',
+            type: 'string',
+            description: 'The subscription that is associated with the record.',
+          },
+          AccountId__c: {
+            format: 'uuid',
+            label: 'Account',
+            origin: 'custom',
+            type: 'string',
+            description: 'The account that is associated with the record.',
+          },
+          Custom2Id__c: {
+            format: 'uuid',
+            label: 'Custom2',
+            origin: 'custom',
+            type: 'string',
+          },
+          Id: {
+            format: 'uuid',
+            label: 'Id',
+            origin: 'system',
+            type: 'string',
+          },
         },
-        CreatedById: 'id1',
-        UpdatedById: 'id1',
-        CreatedDate: '2021-01-01T01:23:45.678Z',
-        UpdatedDate: '2021-01-01T01:23:45.678Z',
-        schema: {
-          object: 'Custom1',
-          label: 'Custom1',
-          properties: {
-            additionalProperties: {
-              field1__c: {
-                format: 'uuid',
-                label: 'field1 label',
-                origin: 'custom',
-                type: 'string',
-                additionalProperties: {
-                  description: 'some description',
-                },
-              },
-              field2__c: {
-                label: 'field2 label',
-                type: 'number',
-              },
-              SubscriptionId__c: {
-                format: 'uuid',
-                label: 'Subscription',
-                origin: 'custom',
-                type: 'string',
-                additionalProperties: {
-                  description: 'The subscription that is associated with the record.',
-                },
-              },
-              AccountId__c: {
-                format: 'uuid',
-                label: 'Account',
-                origin: 'custom',
-                type: 'string',
-                additionalProperties: {
-                  description: 'The account that is associated with the record.',
-                },
-              },
-              Custom2Id__c: {
-                format: 'uuid',
-                label: 'Custom2',
-                origin: 'custom',
-                type: 'string',
-              },
+        required: ['field2__c', 'Id', 'AccountId__c'],
+        description: 'this is a decription',
+        filterable: ['field2__c', 'Id'],
+        relationships: [
+          {
+            cardinality: 'manyToOne',
+            namespace: 'com_zuora',
+            object: 'subscription',
+            fields: {
+              SubscriptionId__c: 'Id',
             },
-            Id: {
-              format: 'uuid',
-              label: 'Id',
-              origin: 'system',
-              type: 'string',
+            recordConstraints: {
+              create: {
+                enforceValidMapping: false,
+              },
             },
           },
-          required: [
-            'field2__c',
-            'Id',
-            'AccountId__c',
-          ],
-          description: 'this is a decription',
-          filterable: [
-            'field2__c',
-            'Id',
-          ],
-          relationships: [
-            {
-              cardinality: 'manyToOne',
-              namespace: 'com_zuora',
-              object: 'subscription',
-              fields: {
-                additionalProperties: {
-                  SubscriptionId__c: 'Id',
-                },
-              },
-              recordConstraints: {
-                create: {
-                  enforceValidMapping: false,
-                },
-              },
+          {
+            cardinality: 'manyToOne',
+            namespace: 'com_zuora',
+            object: 'account',
+            fields: {
+              AccountId__c: 'Id',
             },
-            {
-              cardinality: 'manyToOne',
-              namespace: 'com_zuora',
-              object: 'account',
-              fields: {
-                additionalProperties: {
-                  AccountId__c: 'Id',
-                },
+            recordConstraints: {
+              create: {
+                enforceValidMapping: false,
               },
-              recordConstraints: {
-                create: {
-                  enforceValidMapping: false,
-                },
-              },
-            },
-            {
-              cardinality: 'oneToMany',
-              namespace: 'com_zuora',
-              object: 'account',
-              fields: {
-                additionalProperties: {
-                  Id: 'Id',
-                },
-              },
-            },
-            {
-              cardinality: 'manyToOne',
-              namespace: 'default',
-              object: 'Custom2',
-              fields: {
-                additionalProperties: {
-                  Custom2Id__c: 'Id',
-                },
-              },
-              recordConstraints: {
-                create: {
-                  enforceValidMapping: false,
-                },
-              },
-            },
-          ],
-        },
-      },
-    )
-    const Custom2 = new InstanceElement(
-      'Custom2',
-      customObjectDefType,
-      {
-        additionalProperties: {
-          Id: 'some other id',
-          type: 'Custom2',
-        },
-        CreatedById: 'id1',
-        UpdatedById: 'id1',
-        CreatedDate: '2021-01-01T01:23:45.678Z',
-        UpdatedDate: '2021-01-01T01:23:45.678Z',
-        schema: {
-          object: 'Custom2',
-          label: 'Custom2',
-          properties: {
-            Id: {
-              format: 'uuid',
-              label: 'Id',
-              origin: 'system',
-              type: 'string',
             },
           },
-          required: [],
-          description: 'this is a decription',
-          filterable: [],
-          // not supposed to happen
-          relationships: {},
-        },
+          {
+            cardinality: 'oneToMany',
+            namespace: 'com_zuora',
+            object: 'account',
+            fields: {
+              Id: 'Id',
+            },
+          },
+          {
+            cardinality: 'manyToOne',
+            namespace: 'default',
+            object: 'Custom2',
+            fields: {
+              Custom2Id__c: 'Id',
+            },
+            recordConstraints: {
+              create: {
+                enforceValidMapping: false,
+              },
+            },
+          },
+        ],
       },
-    )
+    })
+    const Custom2 = new InstanceElement('Custom2', customObjectDefType, {
+      Id: 'some other id',
+      type: 'Custom2',
+      CreatedById: 'id1',
+      UpdatedById: 'id1',
+      CreatedDate: '2021-01-01T01:23:45.678Z',
+      UpdatedDate: '2021-01-01T01:23:45.678Z',
+      schema: {
+        object: 'Custom2',
+        label: 'Custom2',
+        properties: {
+          Id: {
+            format: 'uuid',
+            label: 'Id',
+            origin: 'system',
+            type: 'string',
+          },
+        },
+        required: [],
+        description: 'this is a decription',
+        filterable: [],
+        // not supposed to happen
+        relationships: {},
+      },
+    })
     return [customObjectDefType, standardObjectDefType, account, accountingcode, Custom1, Custom2]
   }
 
@@ -382,6 +323,7 @@ describe('Object defs filter', () => {
       })
       expect(account.annotations).toEqual({
         metadataType: 'StandardObject',
+        objectType: 'account',
       })
     })
     it('should create custom objects and fields correctly, with the __c suffix', () => {
@@ -466,6 +408,7 @@ describe('Object defs filter', () => {
         id: 'some id',
         label: 'Custom1',
         metadataType: 'CustomObject',
+        objectType: 'Custom1',
       })
       // eslint-disable-next-line no-underscore-dangle
       const objRefs = custom1.annotations._generated_dependencies as DetailedDependency[]

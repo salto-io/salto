@@ -1,19 +1,26 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, Element } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  Element,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
@@ -26,6 +33,7 @@ import { translationcollectionType } from '../../src/autogen/types/standard_type
 import { fileType } from '../../src/types/file_cabinet_types'
 import { getConfigurationTypes } from '../../src/types/configuration_types'
 import { bundleType } from '../../src/types/bundle_type'
+import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
 
 describe('add alias filter', () => {
   const { type: workflow } = workflowType()
@@ -64,6 +72,7 @@ describe('add alias filter', () => {
   let elements: Element[]
 
   let defaultOpts: LocalFilterOpts
+  let optsWithoutAlias: LocalFilterOpts
   let optsWithAlias: LocalFilterOpts
   let optsWithAliasAndIsPartial: LocalFilterOpts
   beforeEach(async () => {
@@ -123,9 +132,17 @@ describe('add alias filter', () => {
       [IS_SUB_INSTANCE]: true,
     })
 
-
     translationCollectionInstance = new InstanceElement('custtranslation1', translationcollection, {
-      name: new ReferenceExpression(translationcollection.elemID.createNestedID('instance', 'custtranslation1', 'strings', 'string', 'self', SCRIPT_ID)),
+      name: new ReferenceExpression(
+        translationcollection.elemID.createNestedID(
+          'instance',
+          'custtranslation1',
+          'strings',
+          'string',
+          'self',
+          SCRIPT_ID,
+        ),
+      ),
       strings: {
         string: {
           self: {
@@ -148,17 +165,23 @@ describe('add alias filter', () => {
       },
     })
     standardInstanceWithTranslation = new InstanceElement('customworkflow2', workflow, {
-      name: new ReferenceExpression(translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customworkflow', SCRIPT_ID)),
+      name: new ReferenceExpression(
+        translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customworkflow', SCRIPT_ID),
+      ),
     })
     customRecordTypeWithTranslation = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord2'),
       annotations: {
-        recordname: new ReferenceExpression(translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customrecord', SCRIPT_ID)),
+        recordname: new ReferenceExpression(
+          translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customrecord', SCRIPT_ID),
+        ),
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
     segmentInstanceWithTranslation = new InstanceElement('cseg2', customsegment, {
-      label: new ReferenceExpression(translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customsegment', SCRIPT_ID)),
+      label: new ReferenceExpression(
+        translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customsegment', SCRIPT_ID),
+      ),
     })
     customRecordTypeWithSegmentWithTranslation = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord_cseg2'),
@@ -196,10 +219,22 @@ describe('add alias filter', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
     }
+    optsWithoutAlias = {
+      ...defaultOpts,
+      config: {
+        fetch: {
+          include: fullQueryParams(),
+          exclude: emptyQueryParams(),
+          addAlias: false,
+        },
+      },
+    }
     optsWithAlias = {
       ...defaultOpts,
       config: {
         fetch: {
+          include: fullQueryParams(),
+          exclude: emptyQueryParams(),
           addAlias: true,
         },
       },
@@ -211,8 +246,12 @@ describe('add alias filter', () => {
     }
   })
   it('should not add aliases when addAlias=false', async () => {
-    await filterCreator(defaultOpts).onFetch?.(elements)
+    await filterCreator(optsWithoutAlias).onFetch?.(elements)
     expect(elements.some(elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined)).toBeFalsy()
+  })
+  it('should add aliases by default', async () => {
+    await filterCreator(defaultOpts).onFetch?.(elements)
+    expect(elements.every(elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined)).toBeTruthy()
   })
   it('should add aliases', async () => {
     await filterCreator(optsWithAlias).onFetch?.(elements)
@@ -235,7 +274,9 @@ describe('add alias filter', () => {
     expect(standardInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Workflow')
     expect(customRecordTypeWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Record Type')
     expect(segmentInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Segment')
-    expect(customRecordTypeWithSegmentWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Segment')
+    expect(customRecordTypeWithSegmentWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+      'Translated Custom Segment',
+    )
   })
   it('should take translated names from element source on partial fetch', async () => {
     await filterCreator(optsWithAliasAndIsPartial).onFetch?.([
@@ -247,6 +288,8 @@ describe('add alias filter', () => {
     expect(standardInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Workflow')
     expect(customRecordTypeWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Record Type')
     expect(segmentInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Segment')
-    expect(customRecordTypeWithSegmentWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Segment')
+    expect(customRecordTypeWithSegmentWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+      'Translated Custom Segment',
+    )
   })
 })

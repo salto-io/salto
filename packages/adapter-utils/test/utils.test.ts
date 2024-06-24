@@ -1,39 +1,81 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
-  ReferenceExpression, Values, TemplateExpression, Value, ElemID, InstanceAnnotationTypes,
-  isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
-  Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
-  RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
-  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression, getChangeData,
-  PlaceholderObjectType, UnresolvedReference,
+  Field,
+  InstanceElement,
+  ObjectType,
+  PrimitiveTypes,
+  PrimitiveType,
+  TypeMap,
+  ReferenceExpression,
+  Values,
+  TemplateExpression,
+  Value,
+  ElemID,
+  InstanceAnnotationTypes,
+  isListType,
+  ListType,
+  BuiltinTypes,
+  StaticFile,
+  isPrimitiveType,
+  isReferenceExpression,
+  isPrimitiveValue,
+  CORE_ANNOTATIONS,
+  FieldMap,
+  AdditionChange,
+  RemovalChange,
+  ModificationChange,
+  isInstanceElement,
+  isObjectType,
+  MapType,
+  isMapType,
+  ContainerType,
+  TypeReference,
+  createRefToElmWithValue,
+  VariableExpression,
+  PlaceholderObjectType,
+  UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import Joi from 'joi'
 import wu from 'wu'
 import {
-  transformValues, resolvePath, TransformFunc, restoreValues, resolveValues, resolveChangeElement,
-  findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
-  findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
-  flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
-  restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, resolveTypeShallow,
+  transformValues,
+  resolvePath,
+  TransformFunc,
+  findElement,
+  findElements,
+  findObjectType,
+  safeJsonStringify,
+  findInstances,
+  flattenElementStr,
+  valuesDeepSome,
+  filterByID,
+  setPath,
+  flatValues,
+  mapKeysRecursive,
+  createDefaultInstanceFromType,
+  applyInstancesDefaults,
+  applyFunctionToChangeData,
+  transformElement,
+  toObjectType,
+  getParents,
+  resolveTypeShallow,
   elementExpressionStringifyReplacer,
   createSchemeGuard,
   getParent,
@@ -44,6 +86,10 @@ import {
   FILTER_FUNC_NEXT_STEP,
   transformValuesSync,
   TransformFuncSync,
+  getIndependentElemIDs,
+  getInstancesFromElementSource,
+  validatePlainObject,
+  validateArray,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -56,7 +102,6 @@ describe('Test utils.ts', () => {
     annotations: { testAnno: 'TEST ANNO TYPE' },
     path: ['here', 'we', 'go'],
   })
-  const getName: GetLookupNameFunc = ({ ref }) => ref.value
   const mockElem = new ElemID('mockAdapter', 'test')
   const mockType = new ObjectType({
     elemID: mockElem,
@@ -65,6 +110,7 @@ describe('Test utils.ts', () => {
     },
     annotations: {
       testAnno: 'TEST ANNO',
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
     fields: {
       ref: { refType: BuiltinTypes.STRING },
@@ -77,39 +123,50 @@ describe('Test utils.ts', () => {
       numMap: { refType: new MapType(BuiltinTypes.NUMBER) },
       strMap: { refType: new MapType(BuiltinTypes.STRING) },
       obj: {
-        refType: new ListType(new ObjectType({
-          elemID: mockElem,
-          fields: {
-            field: { refType: BuiltinTypes.STRING },
-            otherField: {
-              refType: BuiltinTypes.STRING,
-            },
-            value: { refType: BuiltinTypes.STRING },
-            mapOfStringList: {
-              refType: new MapType(new ListType(BuiltinTypes.STRING)),
-            },
-            innerObj: {
-              refType: new ObjectType({
-                elemID: mockElem,
-                fields: {
-                  name: { refType: BuiltinTypes.STRING },
-                  listOfNames: {
-                    refType: new ListType(BuiltinTypes.STRING),
+        refType: new ListType(
+          new ObjectType({
+            elemID: mockElem,
+            fields: {
+              field: { refType: BuiltinTypes.STRING },
+              otherField: {
+                refType: BuiltinTypes.STRING,
+              },
+              value: { refType: BuiltinTypes.STRING },
+              mapOfStringList: {
+                refType: new MapType(new ListType(BuiltinTypes.STRING)),
+              },
+              innerObj: {
+                refType: new ObjectType({
+                  elemID: mockElem,
+                  fields: {
+                    name: { refType: BuiltinTypes.STRING },
+                    listOfNames: {
+                      refType: new ListType(BuiltinTypes.STRING),
+                    },
+                    magical: {
+                      refType: new ObjectType({
+                        elemID: mockElem,
+                        fields: {
+                          deepNumber: { refType: BuiltinTypes.NUMBER },
+                          deepName: { refType: BuiltinTypes.STRING },
+                        },
+                        annotations: {
+                          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+                        },
+                      }),
+                    },
                   },
-                  magical: {
-                    refType: new ObjectType({
-                      elemID: mockElem,
-                      fields: {
-                        deepNumber: { refType: BuiltinTypes.NUMBER },
-                        deepName: { refType: BuiltinTypes.STRING },
-                      },
-                    }),
+                  annotations: {
+                    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
                   },
-                },
-              }),
+                }),
+              },
             },
-          },
-        })),
+            annotations: {
+              [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+            },
+          }),
+        ),
       },
     },
     path: ['this', 'is', 'happening'],
@@ -119,9 +176,14 @@ describe('Test utils.ts', () => {
   const valueRef = new ReferenceExpression(mockElem, regValue, mockType)
   const templateElemID = new ElemID('template', 'test')
   const templateElemID2 = new ElemID('template2', 'test2')
-  const templateRef = new TemplateExpression({ parts: ['this is:',
-    new ReferenceExpression(templateElemID), 'a template',
-    new ReferenceExpression(templateElemID2)] })
+  const templateRef = new TemplateExpression({
+    parts: [
+      'this is:',
+      new ReferenceExpression(templateElemID),
+      'a template',
+      new ReferenceExpression(templateElemID2),
+    ],
+  })
   const fileContent = 'bb'
   const valueFile = new StaticFile({ filepath: 'aa', content: Buffer.from(fileContent) })
 
@@ -144,7 +206,7 @@ describe('Test utils.ts', () => {
       obj: [
         {
           field: 'firstField',
-          otherField: 'doesn\'t matter',
+          otherField: "doesn't matter",
           value: {
             val: 'someString',
             anotherVal: { objTest: '123' },
@@ -155,7 +217,7 @@ describe('Test utils.ts', () => {
           },
           innerObj: {
             name: 'oren',
-            listOfNames: ['abc', 'qwe', 'opiu'],
+            listOfNames: ['abc', 'qwe', 'iop'],
             magical: {
               deepNumber: '888',
               deepName: 'innerName',
@@ -188,8 +250,7 @@ describe('Test utils.ts', () => {
             },
           },
         },
-        {
-        },
+        {},
       ],
       objWithInnerObj: {
         innerObj: {
@@ -219,9 +280,7 @@ describe('Test utils.ts', () => {
 
   describe('toObjectType func', () => {
     it('should not modify object types', () => {
-      expect(
-        toObjectType(mockType, {})
-      ).toEqual(mockType)
+      expect(toObjectType(mockType, {})).toEqual(mockType)
     })
     it('should translate map types based on the instance values', () => {
       const mapType = new MapType(BuiltinTypes.STRING)
@@ -230,22 +289,26 @@ describe('Test utils.ts', () => {
         bbb: 'BBB',
       }
       expect(toObjectType(mapType, {})).toEqual(new ObjectType({ elemID: mapType.elemID }))
-      expect(toObjectType(mapType, instance)).toEqual(new ObjectType({
-        elemID: mapType.elemID,
-        fields: {
-          aaa: { refType: BuiltinTypes.STRING },
-          bbb: { refType: BuiltinTypes.STRING },
-        },
-      }))
+      expect(toObjectType(mapType, instance)).toEqual(
+        new ObjectType({
+          elemID: mapType.elemID,
+          fields: {
+            aaa: { refType: BuiltinTypes.STRING },
+            bbb: { refType: BuiltinTypes.STRING },
+          },
+        }),
+      )
       mapType.annotations = { randomAnnotation: {} }
-      expect(toObjectType(mapType, instance)).toEqual(new ObjectType({
-        elemID: mapType.elemID,
-        fields: {
-          aaa: { refType: BuiltinTypes.STRING },
-          bbb: { refType: BuiltinTypes.STRING },
-        },
-        annotations: mapType.annotations,
-      }))
+      expect(toObjectType(mapType, instance)).toEqual(
+        new ObjectType({
+          elemID: mapType.elemID,
+          fields: {
+            aaa: { refType: BuiltinTypes.STRING },
+            bbb: { refType: BuiltinTypes.STRING },
+          },
+          annotations: mapType.annotations,
+        }),
+      )
     })
 
     it('should support complex types', async () => {
@@ -255,13 +318,18 @@ describe('Test utils.ts', () => {
         a: 'this is ignored',
         b: 'so is this',
       }
-      expect(toObjectType(mapType, instance)).toEqual(new ObjectType({
-        elemID: mapType.elemID,
-        fields: {
-          a: { refType: mockType.fields.obj.refType },
-          b: { refType: mockType.fields.obj.refType },
-        },
-      }))
+      expect(toObjectType(mapType, instance)).toEqual(
+        new ObjectType({
+          elemID: mapType.elemID,
+          fields: {
+            a: { refType: mockType.fields.obj.refType },
+            b: { refType: mockType.fields.obj.refType },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+          },
+        }),
+      )
     })
   })
 
@@ -272,11 +340,13 @@ describe('Test utils.ts', () => {
 
     describe('with empty values', () => {
       it('should return undefined', async () => {
-        expect(await transformValues({
-          values: {},
-          transformFunc: () => undefined,
-          type: mockType,
-        })).toBeUndefined()
+        expect(
+          await transformValues({
+            values: {},
+            transformFunc: () => undefined,
+            type: mockType,
+          }),
+        ).toBeUndefined()
       })
     })
 
@@ -333,7 +403,7 @@ describe('Test utils.ts', () => {
             field: new Field(
               mockType.fields.strArray.parent,
               mockType.fields.strArray.name,
-              await (await mockType.fields.strArray.getType() as ListType).getInnerType(),
+              await ((await mockType.fields.strArray.getType()) as ListType).getInnerType(),
               mockType.fields.strArray.annotations,
             ),
           })
@@ -356,9 +426,9 @@ describe('Test utils.ts', () => {
         it('should call transform on array elements', async () => {
           const numArrayFieldType = await mockType.fields.numArray.getType()
           expect(isListType(numArrayFieldType)).toBeTruthy()
-          const numArrayValues = (mockInstance.value.numArray as string[])
-          await awu(numArrayValues).forEach(
-            async value => expect(transformFunc).toHaveBeenCalledWith({
+          const numArrayValues = mockInstance.value.numArray as string[]
+          await awu(numArrayValues).forEach(async value =>
+            expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
               field: new Field(
@@ -367,26 +437,22 @@ describe('Test utils.ts', () => {
                 await (numArrayFieldType as ListType).getInnerType(),
                 mockType.fields.numArray.annotations,
               ),
-            })
+            }),
           )
         })
 
         it('should call transform on map value elements', async () => {
           const numMapFieldType = await mockType.fields.numMap.getType()
           expect(isMapType(numMapFieldType)).toBeTruthy()
-          const numMapValues = (mockInstance.value.numMap as Map<string, number>)
-          await awu(Object.entries(numMapValues)).forEach(
-            async ([key, value]) => {
-              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
-                c => c.field && c.field.name === key
-              )
-              expect(calls).toHaveLength(1)
-              expect(calls[0].value).toEqual(value)
-              expect(calls[0].path).toBeUndefined()
-              expect(await calls[0].field?.getType()).toEqual(BuiltinTypes.NUMBER)
-              expect(calls[0].field?.parent.elemID).toEqual(mockType.fields.numMap.refType.elemID)
-            }
-          )
+          const numMapValues = mockInstance.value.numMap as Map<string, number>
+          await awu(Object.entries(numMapValues)).forEach(async ([key, value]) => {
+            const calls = transformFunc.mock.calls.map(c => c[0]).filter(c => c.field && c.field.name === key)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].value).toEqual(value)
+            expect(calls[0].path).toBeUndefined()
+            expect(await calls[0].field?.getType()).toEqual(BuiltinTypes.NUMBER)
+            expect(calls[0].field?.parent.elemID).toEqual(mockType.fields.numMap.refType.elemID)
+          })
         })
 
         it('should call transform on primitive types in nested objects', async () => {
@@ -397,21 +463,18 @@ describe('Test utils.ts', () => {
           ): Promise<Field> => {
             if (isListType(type)) {
               if (typeof path[0] !== 'number') {
-                throw new Error(`type ${type.elemID.getFullName()} is a list type but path part ${path[0]} is not a number`)
+                throw new Error(
+                  `type ${type.elemID.getFullName()} is a list type but path part ${path[0]} is not a number`,
+                )
               }
-              return getField(
-                (await type.getInnerType() as ObjectType | ContainerType),
-                path.slice(1),
-                value[path[0]],
-              )
+              return getField((await type.getInnerType()) as ObjectType | ContainerType, path.slice(1), value[path[0]])
             }
             const field = isMapType(type)
               ? new Field(toObjectType(type, value), String(path[0]), await type.getInnerType())
               : type.fields[path[0]]
-            return path.length === 1 ? field
-              : getField(
-                await field.getType() as ObjectType | ContainerType, path.slice(1), value[path[0]]
-              )
+            return path.length === 1
+              ? field
+              : getField((await field.getType()) as ObjectType | ContainerType, path.slice(1), value[path[0]])
           }
           const nestedPrimitivePaths = [
             ['obj', 0, 'field'],
@@ -423,19 +486,16 @@ describe('Test utils.ts', () => {
             ['obj', 0, 'mapOfStringList', 'l1'],
             ['obj', 1, 'mapOfStringList', 'something'],
           ]
-          await awu(nestedPrimitivePaths).forEach(
-            async path => {
-              const field = await getField(mockType, path, mockInstance.value)
-              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
-                c => c.field && c.field.name === field.name
-                  && c.value === _.get(mockInstance.value, path)
-              )
-              expect(calls).toHaveLength(1)
-              expect(calls[0].path).toBeUndefined()
-              expect(await calls[0].field?.getType()).toEqual(await field.getType())
-              expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
-            }
-          )
+          await awu(nestedPrimitivePaths).forEach(async path => {
+            const field = await getField(mockType, path, mockInstance.value)
+            const calls = transformFunc.mock.calls
+              .map(c => c[0])
+              .filter(c => c.field && c.field.name === field.name && c.value === _.get(mockInstance.value, path))
+            expect(calls).toHaveLength(1)
+            expect(calls[0].path).toBeUndefined()
+            expect(await calls[0].field?.getType()).toEqual(await field.getType())
+            expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
+          })
         })
 
         it('should omit undefined fields in object', () => {
@@ -472,7 +532,6 @@ describe('Test utils.ts', () => {
           expect(result).toEqual(mockInstance.annotations)
         })
 
-
         it('should call transform on instance annotation references values', () => {
           const referenceAnnotationNames = [CORE_ANNOTATIONS.DEPENDS_ON]
           referenceAnnotationNames.forEach(annotation => {
@@ -493,7 +552,7 @@ describe('Test utils.ts', () => {
             str: 'asd',
             num: '10',
             bool: 'true',
-            nums: ['1', '2'],
+            numbers: ['1', '2'],
             numMap: { one: 1, two: 2 },
             notExist: 'a',
           }
@@ -501,7 +560,7 @@ describe('Test utils.ts', () => {
             str: BuiltinTypes.STRING,
             num: BuiltinTypes.NUMBER,
             bool: BuiltinTypes.BOOLEAN,
-            nums: new ListType(BuiltinTypes.NUMBER),
+            numbers: new ListType(BuiltinTypes.NUMBER),
             numMap: new MapType(BuiltinTypes.NUMBER),
           }
           const result = await transformValues({
@@ -515,37 +574,34 @@ describe('Test utils.ts', () => {
         })
         it('should call transform func on all defined types', async () => {
           const primitiveTypes = ['str', 'num', 'bool']
-          primitiveTypes.forEach(
-            name => expect(transformFunc).toHaveBeenCalledWith({
+          primitiveTypes.forEach(name =>
+            expect(transformFunc).toHaveBeenCalledWith({
               value: origValue[name],
               path: undefined,
               field: new Field(defaultFieldParent, name, typeMap[name]),
-            })
+            }),
           )
-          origValue.nums.forEach(
-            (value: string) => expect(transformFunc).toHaveBeenCalledWith({
+          origValue.numbers.forEach((value: string) =>
+            expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
-              field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
-            })
+              field: new Field(defaultFieldParent, 'numbers', BuiltinTypes.NUMBER),
+            }),
           )
-          await awu(Object.entries(origValue.numMap)).forEach(
-            async ([key, value]) => {
-              const field = new Field(
-                toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
-                key,
-                BuiltinTypes.NUMBER,
-              )
-              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
-                c => c.field && c.field.name === field.name
-                  && c.value === value
-              )
-              expect(calls).toHaveLength(1)
-              expect(calls[0].path).toBeUndefined()
-              expect(await calls[0].field?.getType()).toEqual(await field.getType())
-              expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
-            }
-          )
+          await awu(Object.entries(origValue.numMap)).forEach(async ([key, value]) => {
+            const field = new Field(
+              toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
+              key,
+              BuiltinTypes.NUMBER,
+            )
+            const calls = transformFunc.mock.calls
+              .map(c => c[0])
+              .filter(c => c.field && c.field.name === field.name && c.value === value)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].path).toBeUndefined()
+            expect(await calls[0].field?.getType()).toEqual(await field.getType())
+            expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
+          })
         })
         it('should omit undefined fields values', () => {
           expect(resp).not.toHaveProperty('notExist')
@@ -571,9 +627,7 @@ describe('Test utils.ts', () => {
             transformFunc,
           })
           varResult = await transformValues({
-            values: new VariableExpression(
-              new ElemID(ElemID.VARIABLES_NAMESPACE, 'myVar', 'var')
-            ),
+            values: new VariableExpression(new ElemID(ElemID.VARIABLES_NAMESPACE, 'myVar', 'var')),
             type: mockType,
             transformFunc,
           })
@@ -585,7 +639,7 @@ describe('Test utils.ts', () => {
         })
       })
     })
-    const MAGIC_VAL = 'magix'
+    const MAGIC_VAL = 'magicX'
     const MOD_MAGIC_VAL = 'BIRD'
     const transformTest: TransformFunc = async ({ value, field }) => {
       if (value === MAGIC_VAL) {
@@ -646,17 +700,15 @@ describe('Test utils.ts', () => {
         },
       }
       beforeEach(async () => {
-        const result = await transformValues(
-          {
-            values: {
-              ...mockInstance.value,
-              ...unTypedValues,
-            },
-            type: mockType,
-            transformFunc: transformTest,
-            strict: false,
-          }
-        )
+        const result = await transformValues({
+          values: {
+            ...mockInstance.value,
+            ...unTypedValues,
+          },
+          type: mockType,
+          transformFunc: transformTest,
+          strict: false,
+        })
         expect(result).toBeDefined()
         resp = result as Values
       })
@@ -679,47 +731,109 @@ describe('Test utils.ts', () => {
         expect(resp.obj[0].value).toEqual(mockInstance.value.obj[0].value)
       })
 
-      it('should tranfsorm nested arrays which do not have a field', () => {
+      it('should transform nested arrays which do not have a field', () => {
         expect(resp.unTypedArr[0]).toEqual(MOD_MAGIC_VAL)
       })
 
-      it('should tranfsorm nested objects which do not have a field', () => {
+      it('should transform nested objects which do not have a field', () => {
         expect(resp.unTypedObj.key).toEqual(MOD_MAGIC_VAL)
       })
     })
 
     describe('when called with pathID', () => {
-      const paths = new Set<string>()
+      const paths: string[] = []
       const createPathsSet: TransformFunc = ({ value, field, path }) => {
         if (value && field && path) {
-          paths.add(path.getFullName())
+          paths.push(path.getFullName())
         }
         return value
       }
 
       beforeAll(async () => {
-        await transformValues(
-          {
-            values: mockInstance.value,
-            type: mockType,
-            transformFunc: createPathsSet,
-            pathID: mockInstance.elemID,
-          }
-        )
+        await transformValues({
+          values: mockInstance.value,
+          type: mockType,
+          transformFunc: createPathsSet,
+          pathID: mockInstance.elemID,
+        })
       })
 
       it('should traverse list items with correct path ID', () => {
-        expect(paths)
-          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'field').getFullName())
+        expect(paths).toContain(mockInstance.elemID.createNestedID('obj', '0', 'field').getFullName())
       })
 
       it('should traverse map items with correct path ID', () => {
-        expect(paths)
-          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList').getFullName())
-        expect(paths)
-          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1').getFullName())
-        expect(paths)
-          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName())
+        expect(paths).toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList').getFullName())
+        expect(paths).toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1').getFullName())
+        expect(paths).toContain(
+          mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName(),
+        )
+      })
+
+      it('should traverse paths in DFS order', () => {
+        const resPaths = [
+          'mockAdapter.test.instance.mockInstance.ref',
+          'mockAdapter.test.instance.mockInstance.str',
+          'mockAdapter.test.instance.mockInstance.bool',
+          'mockAdapter.test.instance.mockInstance.num',
+          'mockAdapter.test.instance.mockInstance.numArray',
+          'mockAdapter.test.instance.mockInstance.numArray.0',
+          'mockAdapter.test.instance.mockInstance.numArray.1',
+          'mockAdapter.test.instance.mockInstance.numArray.2',
+          'mockAdapter.test.instance.mockInstance.strArray',
+          'mockAdapter.test.instance.mockInstance.strArray',
+          'mockAdapter.test.instance.mockInstance.numMap',
+          'mockAdapter.test.instance.mockInstance.numMap.key12',
+          'mockAdapter.test.instance.mockInstance.numMap.num13',
+          'mockAdapter.test.instance.mockInstance.strMap',
+          'mockAdapter.test.instance.mockInstance.strMap.a',
+          'mockAdapter.test.instance.mockInstance.strMap.bla',
+          'mockAdapter.test.instance.mockInstance.file',
+          'mockAdapter.test.instance.mockInstance.obj',
+          'mockAdapter.test.instance.mockInstance.obj.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.field',
+          'mockAdapter.test.instance.mockInstance.obj.0.otherField',
+          'mockAdapter.test.instance.mockInstance.obj.0.value',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.2',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical.deepNumber',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical.deepName',
+          'mockAdapter.test.instance.mockInstance.obj.1',
+          'mockAdapter.test.instance.mockInstance.obj.1.field',
+          'mockAdapter.test.instance.mockInstance.obj.1.value',
+          'mockAdapter.test.instance.mockInstance.obj.1.value.0',
+          'mockAdapter.test.instance.mockInstance.obj.1.value.1',
+          'mockAdapter.test.instance.mockInstance.obj.1.mapOfStringList',
+          'mockAdapter.test.instance.mockInstance.obj.1.mapOfStringList.something',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.magical.deepName',
+          'mockAdapter.test.instance.mockInstance.obj.2',
+          'mockAdapter.test.instance.mockInstance.obj.2.field',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.0',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.1',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.2',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.3',
+        ]
+        expect(paths).toEqual(resPaths)
       })
     })
 
@@ -731,11 +845,10 @@ describe('Test utils.ts', () => {
             new ObjectType({
               elemID: mockElem,
               fields: { key: { refType: BuiltinTypes.NUMBER } },
-            })
+            }),
           ),
-          transformFunc: ({ value, path }) => (
-            _.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`
-          ),
+          transformFunc: ({ value, path }) =>
+            _.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`,
           pathID: mockElem.createNestedID('instance', 'list'),
           strict: true,
         })
@@ -751,27 +864,110 @@ describe('Test utils.ts', () => {
       })
     })
 
-    describe('with allowEmpty', () => {
-      it('should not remove empty list', async () => {
-        const result = await transformValues({
-          values: [],
-          type: new ListType(BuiltinTypes.NUMBER),
-          transformFunc: ({ value }) => value,
-          allowEmpty: true,
-        })
+    describe('allowEmpty', () => {
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          arr: { refType: new ListType(BuiltinTypes.NUMBER) },
+          obj: {
+            refType: new ObjectType({
+              elemID: new ElemID('adapter', 'nestedType'),
+              fields: {
+                nestedArr: { refType: new ListType(BuiltinTypes.STRING) },
+                val: { refType: BuiltinTypes.STRING },
+              },
+            }),
+          },
+          emptyObj: { refType: new ObjectType({ elemID: new ElemID('adapter', 'emptyType') }) },
+        },
+      })
+      describe('with allowEmptyArrays', () => {
+        it('should remove empty objects and not remove empty list', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyArrays: true,
+          })
 
-        expect(result).toEqual([])
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+          })
+        })
       })
 
-      it('should not remove empty object', async () => {
-        const result = await transformValues({
-          values: {},
-          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
-          transformFunc: ({ value }) => value,
-          allowEmpty: true,
-        })
+      describe('with allowEmptyObjects', () => {
+        it('should remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+          })
 
-        expect(result).toEqual({})
+          expect(result).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
+      })
+
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+            allowEmptyArrays: true,
+          })
+
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
       })
     })
   })
@@ -783,11 +979,13 @@ describe('Test utils.ts', () => {
 
     describe('with empty values', () => {
       it('should return undefined', async () => {
-        expect(transformValuesSync({
-          values: {},
-          transformFunc: () => undefined,
-          type: mockType,
-        })).toBeUndefined()
+        expect(
+          transformValuesSync({
+            values: {},
+            transformFunc: () => undefined,
+            type: mockType,
+          }),
+        ).toBeUndefined()
       })
     })
 
@@ -850,7 +1048,6 @@ describe('Test utils.ts', () => {
           })
         })
 
-
         it('should call transform on map types', () => {
           expect(isMapType(mockType.fields.strMap.getTypeSync())).toBeTruthy()
           expect(transformFunc).toHaveBeenCalledWith({
@@ -868,9 +1065,9 @@ describe('Test utils.ts', () => {
         it('should call transform on array elements', () => {
           const numArrayFieldType = mockType.fields.numArray.getTypeSync()
           expect(isListType(numArrayFieldType)).toBeTruthy()
-          const numArrayValues = (mockInstance.value.numArray as string[])
-          wu(numArrayValues).forEach(
-            async value => expect(transformFunc).toHaveBeenCalledWith({
+          const numArrayValues = mockInstance.value.numArray as string[]
+          wu(numArrayValues).forEach(async value =>
+            expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
               field: new Field(
@@ -879,26 +1076,22 @@ describe('Test utils.ts', () => {
                 await (numArrayFieldType as ListType).getInnerType(),
                 mockType.fields.numArray.annotations,
               ),
-            })
+            }),
           )
         })
 
         it('should call transform on map value elements', () => {
           const numMapFieldType = mockType.fields.numMap.getTypeSync()
           expect(isMapType(numMapFieldType)).toBeTruthy()
-          const numMapValues = (mockInstance.value.numMap as Map<string, number>)
-          wu(Object.entries(numMapValues)).forEach(
-            async ([key, value]) => {
-              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
-                c => c.field && c.field.name === key
-              )
-              expect(calls).toHaveLength(1)
-              expect(calls[0].value).toEqual(value)
-              expect(calls[0].path).toBeUndefined()
-              expect(await calls[0].field?.getType()).toEqual(BuiltinTypes.NUMBER)
-              expect(calls[0].field?.parent.elemID).toEqual(mockType.fields.numMap.refType.elemID)
-            }
-          )
+          const numMapValues = mockInstance.value.numMap as Map<string, number>
+          wu(Object.entries(numMapValues)).forEach(async ([key, value]) => {
+            const calls = transformFunc.mock.calls.map(c => c[0]).filter(c => c.field && c.field.name === key)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].value).toEqual(value)
+            expect(calls[0].path).toBeUndefined()
+            expect(await calls[0].field?.getType()).toEqual(BuiltinTypes.NUMBER)
+            expect(calls[0].field?.parent.elemID).toEqual(mockType.fields.numMap.refType.elemID)
+          })
         })
 
         it('should call transform on primitive types in nested objects', () => {
@@ -909,21 +1102,18 @@ describe('Test utils.ts', () => {
           ): Promise<Field> => {
             if (isListType(type)) {
               if (typeof path[0] !== 'number') {
-                throw new Error(`type ${type.elemID.getFullName()} is a list type but path part ${path[0]} is not a number`)
+                throw new Error(
+                  `type ${type.elemID.getFullName()} is a list type but path part ${path[0]} is not a number`,
+                )
               }
-              return getField(
-                (await type.getInnerType() as ObjectType | ContainerType),
-                path.slice(1),
-                value[path[0]],
-              )
+              return getField((await type.getInnerType()) as ObjectType | ContainerType, path.slice(1), value[path[0]])
             }
             const field = isMapType(type)
               ? new Field(toObjectType(type, value), String(path[0]), await type.getInnerType())
               : type.fields[path[0]]
-            return path.length === 1 ? field
-              : getField(
-                await field.getType() as ObjectType | ContainerType, path.slice(1), value[path[0]]
-              )
+            return path.length === 1
+              ? field
+              : getField((await field.getType()) as ObjectType | ContainerType, path.slice(1), value[path[0]])
           }
           const nestedPrimitivePaths = [
             ['obj', 0, 'field'],
@@ -935,19 +1125,16 @@ describe('Test utils.ts', () => {
             ['obj', 0, 'mapOfStringList', 'l1'],
             ['obj', 1, 'mapOfStringList', 'something'],
           ]
-          wu(nestedPrimitivePaths).forEach(
-            async path => {
-              const field = await getField(mockType, path, mockInstance.value)
-              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
-                c => c.field && c.field.name === field.name
-                  && c.value === _.get(mockInstance.value, path)
-              )
-              expect(calls).toHaveLength(1)
-              expect(calls[0].path).toBeUndefined()
-              expect(calls[0].field?.getTypeSync()).toEqual(field.getTypeSync())
-              expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
-            }
-          )
+          wu(nestedPrimitivePaths).forEach(async path => {
+            const field = await getField(mockType, path, mockInstance.value)
+            const calls = transformFunc.mock.calls
+              .map(c => c[0])
+              .filter(c => c.field && c.field.name === field.name && c.value === _.get(mockInstance.value, path))
+            expect(calls).toHaveLength(1)
+            expect(calls[0].path).toBeUndefined()
+            expect(calls[0].field?.getTypeSync()).toEqual(field.getTypeSync())
+            expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
+          })
         })
 
         it('should omit undefined fields in object', () => {
@@ -984,7 +1171,6 @@ describe('Test utils.ts', () => {
           expect(result).toEqual(mockInstance.annotations)
         })
 
-
         it('should call transform on instance annotation references values', () => {
           const referenceAnnotationNames = [CORE_ANNOTATIONS.DEPENDS_ON]
           referenceAnnotationNames.forEach(annotation => {
@@ -1005,7 +1191,7 @@ describe('Test utils.ts', () => {
             str: 'asd',
             num: '10',
             bool: 'true',
-            nums: ['1', '2'],
+            numbers: ['1', '2'],
             numMap: { one: 1, two: 2 },
             notExist: 'a',
           }
@@ -1013,7 +1199,7 @@ describe('Test utils.ts', () => {
             str: BuiltinTypes.STRING,
             num: BuiltinTypes.NUMBER,
             bool: BuiltinTypes.BOOLEAN,
-            nums: new ListType(BuiltinTypes.NUMBER),
+            numbers: new ListType(BuiltinTypes.NUMBER),
             numMap: new MapType(BuiltinTypes.NUMBER),
           }
           const result = transformValuesSync({
@@ -1027,37 +1213,34 @@ describe('Test utils.ts', () => {
         })
         it('should call transform func on all defined types', () => {
           const primitiveTypes = ['str', 'num', 'bool']
-          primitiveTypes.forEach(
-            name => expect(transformFunc).toHaveBeenCalledWith({
+          primitiveTypes.forEach(name =>
+            expect(transformFunc).toHaveBeenCalledWith({
               value: origValue[name],
               path: undefined,
               field: new Field(defaultFieldParent, name, typeMap[name]),
-            })
+            }),
           )
-          origValue.nums.forEach(
-            (value: string) => expect(transformFunc).toHaveBeenCalledWith({
+          origValue.numbers.forEach((value: string) =>
+            expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
-              field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
-            })
+              field: new Field(defaultFieldParent, 'numbers', BuiltinTypes.NUMBER),
+            }),
           )
-          wu(Object.entries(origValue.numMap)).forEach(
-            async ([key, value]) => {
-              const field = new Field(
-                toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
-                key,
-                BuiltinTypes.NUMBER,
-              )
-              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
-                c => c.field && c.field.name === field.name
-                  && c.value === value
-              )
-              expect(calls).toHaveLength(1)
-              expect(calls[0].path).toBeUndefined()
-              expect(await calls[0].field?.getType()).toEqual(await field.getType())
-              expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
-            }
-          )
+          wu(Object.entries(origValue.numMap)).forEach(async ([key, value]) => {
+            const field = new Field(
+              toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
+              key,
+              BuiltinTypes.NUMBER,
+            )
+            const calls = transformFunc.mock.calls
+              .map(c => c[0])
+              .filter(c => c.field && c.field.name === field.name && c.value === value)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].path).toBeUndefined()
+            expect(await calls[0].field?.getType()).toEqual(await field.getType())
+            expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
+          })
         })
         it('should omit undefined fields values', () => {
           expect(resp).not.toHaveProperty('notExist')
@@ -1083,9 +1266,7 @@ describe('Test utils.ts', () => {
             transformFunc,
           })
           varResult = transformValuesSync({
-            values: new VariableExpression(
-              new ElemID(ElemID.VARIABLES_NAMESPACE, 'myVar', 'var')
-            ),
+            values: new VariableExpression(new ElemID(ElemID.VARIABLES_NAMESPACE, 'myVar', 'var')),
             type: mockType,
             transformFunc,
           })
@@ -1097,7 +1278,7 @@ describe('Test utils.ts', () => {
         })
       })
     })
-    const MAGIC_VAL = 'magix'
+    const MAGIC_VAL = 'magicX'
     const MOD_MAGIC_VAL = 'BIRD'
     const transformTest: TransformFuncSync = ({ value, field }) => {
       if (value === MAGIC_VAL) {
@@ -1158,17 +1339,15 @@ describe('Test utils.ts', () => {
         },
       }
       beforeEach(() => {
-        const result = transformValuesSync(
-          {
-            values: {
-              ...mockInstance.value,
-              ...unTypedValues,
-            },
-            type: mockType,
-            transformFunc: transformTest,
-            strict: false,
-          }
-        )
+        const result = transformValuesSync({
+          values: {
+            ...mockInstance.value,
+            ...unTypedValues,
+          },
+          type: mockType,
+          transformFunc: transformTest,
+          strict: false,
+        })
         expect(result).toBeDefined()
         resp = result as Values
       })
@@ -1191,47 +1370,109 @@ describe('Test utils.ts', () => {
         expect(resp.obj[0].value).toEqual(mockInstance.value.obj[0].value)
       })
 
-      it('should tranfsorm nested arrays which do not have a field', () => {
+      it('should transform nested arrays which do not have a field', () => {
         expect(resp.unTypedArr[0]).toEqual(MOD_MAGIC_VAL)
       })
 
-      it('should tranfsorm nested objects which do not have a field', () => {
+      it('should transform nested objects which do not have a field', () => {
         expect(resp.unTypedObj.key).toEqual(MOD_MAGIC_VAL)
       })
     })
 
     describe('when called with pathID', () => {
-      const paths = new Set<string>()
+      const paths: string[] = []
       const createPathsSet: TransformFuncSync = ({ value, field, path }) => {
         if (value && field && path) {
-          paths.add(path.getFullName())
+          paths.push(path.getFullName())
         }
         return value
       }
 
       beforeAll(() => {
-        transformValuesSync(
-          {
-            values: mockInstance.value,
-            type: mockType,
-            transformFunc: createPathsSet,
-            pathID: mockInstance.elemID,
-          }
-        )
+        transformValuesSync({
+          values: mockInstance.value,
+          type: mockType,
+          transformFunc: createPathsSet,
+          pathID: mockInstance.elemID,
+        })
       })
 
       it('should traverse list items with correct path ID', () => {
-        expect(paths)
-          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'field').getFullName())
+        expect(paths).toContain(mockInstance.elemID.createNestedID('obj', '0', 'field').getFullName())
       })
 
       it('should traverse map items with correct path ID', () => {
-        expect(paths)
-          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList').getFullName())
-        expect(paths)
-          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1').getFullName())
-        expect(paths)
-          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName())
+        expect(paths).toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList').getFullName())
+        expect(paths).toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1').getFullName())
+        expect(paths).toContain(
+          mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName(),
+        )
+      })
+
+      it('should traverse paths in DFS order', () => {
+        const resPaths = [
+          'mockAdapter.test.instance.mockInstance.ref',
+          'mockAdapter.test.instance.mockInstance.str',
+          'mockAdapter.test.instance.mockInstance.bool',
+          'mockAdapter.test.instance.mockInstance.num',
+          'mockAdapter.test.instance.mockInstance.numArray',
+          'mockAdapter.test.instance.mockInstance.numArray.0',
+          'mockAdapter.test.instance.mockInstance.numArray.1',
+          'mockAdapter.test.instance.mockInstance.numArray.2',
+          'mockAdapter.test.instance.mockInstance.strArray',
+          'mockAdapter.test.instance.mockInstance.strArray',
+          'mockAdapter.test.instance.mockInstance.numMap',
+          'mockAdapter.test.instance.mockInstance.numMap.key12',
+          'mockAdapter.test.instance.mockInstance.numMap.num13',
+          'mockAdapter.test.instance.mockInstance.strMap',
+          'mockAdapter.test.instance.mockInstance.strMap.a',
+          'mockAdapter.test.instance.mockInstance.strMap.bla',
+          'mockAdapter.test.instance.mockInstance.file',
+          'mockAdapter.test.instance.mockInstance.obj',
+          'mockAdapter.test.instance.mockInstance.obj.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.field',
+          'mockAdapter.test.instance.mockInstance.obj.0.otherField',
+          'mockAdapter.test.instance.mockInstance.obj.0.value',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.2',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical.deepNumber',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical.deepName',
+          'mockAdapter.test.instance.mockInstance.obj.1',
+          'mockAdapter.test.instance.mockInstance.obj.1.field',
+          'mockAdapter.test.instance.mockInstance.obj.1.value',
+          'mockAdapter.test.instance.mockInstance.obj.1.value.0',
+          'mockAdapter.test.instance.mockInstance.obj.1.value.1',
+          'mockAdapter.test.instance.mockInstance.obj.1.mapOfStringList',
+          'mockAdapter.test.instance.mockInstance.obj.1.mapOfStringList.something',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.magical.deepName',
+          'mockAdapter.test.instance.mockInstance.obj.2',
+          'mockAdapter.test.instance.mockInstance.obj.2.field',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.0',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.1',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.2',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.3',
+        ]
+        expect(paths).toEqual(resPaths)
       })
     })
 
@@ -1243,11 +1484,10 @@ describe('Test utils.ts', () => {
             new ObjectType({
               elemID: mockElem,
               fields: { key: { refType: BuiltinTypes.NUMBER } },
-            })
+            }),
           ),
-          transformFunc: ({ value, path }) => (
-            _.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`
-          ),
+          transformFunc: ({ value, path }) =>
+            _.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`,
           pathID: mockElem.createNestedID('instance', 'list'),
           strict: true,
         })
@@ -1263,27 +1503,110 @@ describe('Test utils.ts', () => {
       })
     })
 
-    describe('with allowEmpty', () => {
-      it('should not remove empty list', async () => {
-        const result = transformValuesSync({
-          values: [],
-          type: new ListType(BuiltinTypes.NUMBER),
-          transformFunc: ({ value }) => value,
-          allowEmpty: true,
-        })
+    describe('allowEmpty', () => {
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          arr: { refType: new ListType(BuiltinTypes.NUMBER) },
+          obj: {
+            refType: new ObjectType({
+              elemID: new ElemID('adapter', 'nestedType'),
+              fields: {
+                nestedArr: { refType: new ListType(BuiltinTypes.STRING) },
+                val: { refType: BuiltinTypes.STRING },
+              },
+            }),
+          },
+          emptyObj: { refType: new ObjectType({ elemID: new ElemID('adapter', 'emptyType') }) },
+        },
+      })
+      describe('with allowEmptyArrays', () => {
+        it('should remove empty objects and not remove empty lists', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyArrays: true,
+          })
 
-        expect(result).toEqual([])
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+          })
+        })
       })
 
-      it('should not remove empty object', async () => {
-        const result = transformValuesSync({
-          values: {},
-          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
-          transformFunc: ({ value }) => value,
-          allowEmpty: true,
-        })
+      describe('with allowEmptyObjects', () => {
+        it('should not remove empty objects and remove empty list', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+          })
 
-        expect(result).toEqual({})
+          expect(result).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
+      })
+
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformValues({
+            values: {
+              arr: [],
+              obj: {
+                nestedArr: [],
+                val: 'a',
+              },
+              emptyObj: {
+                nested: {},
+              },
+            },
+            type,
+            transformFunc: ({ value }) => value,
+            allowEmptyObjects: true,
+            allowEmptyArrays: true,
+          })
+
+          expect(result).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
+        })
       })
     })
   })
@@ -1311,18 +1634,14 @@ describe('Test utils.ts', () => {
             refType: listType,
             annotations: {
               a1: 'foo',
-              [CORE_ANNOTATIONS.DEPENDS_ON]: [
-                { reference: new ReferenceExpression(primType.elemID) },
-              ],
+              [CORE_ANNOTATIONS.DEPENDS_ON]: [{ reference: new ReferenceExpression(primType.elemID) }],
             },
           },
           f3: {
             refType: mapType,
             annotations: {
               a2: 'foo',
-              [CORE_ANNOTATIONS.DEPENDS_ON]: [
-                { reference: new ReferenceExpression(primType.elemID) },
-              ],
+              [CORE_ANNOTATIONS.DEPENDS_ON]: [{ reference: new ReferenceExpression(primType.elemID) }],
             },
           },
           f4: {
@@ -1332,16 +1651,10 @@ describe('Test utils.ts', () => {
         annotationRefsOrTypes: { a2: BuiltinTypes.STRING },
         annotations: { a2: 1 },
       })
-      inst = new InstanceElement(
-        'test',
-        objType,
-        { f1: 'a', f2: [1, 2, 3], f3: false },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: ['me'],
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
-        },
-      )
+      inst = new InstanceElement('test', objType, { f1: 'a', f2: [1, 2, 3], f3: false }, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: ['me'],
+        [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+      })
       transformFunc = mockFunction<TransformFunc>().mockImplementation(({ value }) => value)
     })
     describe('with PrimitiveType', () => {
@@ -1354,7 +1667,9 @@ describe('Test utils.ts', () => {
       })
       it('should transform annotations', () => {
         expect(transformFunc).toHaveBeenCalledWith({
-          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+          value: 'asd',
+          field: expect.any(Field),
+          path: primType.elemID.createNestedID('attr', 'a1'),
         })
       })
     })
@@ -1368,7 +1683,9 @@ describe('Test utils.ts', () => {
       })
       it('should transform inner type annotations', () => {
         expect(transformFunc).toHaveBeenCalledWith({
-          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+          value: 'asd',
+          field: expect.any(Field),
+          path: primType.elemID.createNestedID('attr', 'a1'),
         })
       })
     })
@@ -1382,7 +1699,9 @@ describe('Test utils.ts', () => {
       })
       it('should transform inner type annotations', () => {
         expect(transformFunc).toHaveBeenCalledWith({
-          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+          value: 'asd',
+          field: expect.any(Field),
+          path: primType.elemID.createNestedID('attr', 'a1'),
         })
       })
     })
@@ -1403,7 +1722,9 @@ describe('Test utils.ts', () => {
       })
       it('should transform field annotations', () => {
         expect(transformFunc).toHaveBeenCalledWith({
-          value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
+          value: 'foo',
+          field: expect.any(Field),
+          path: objType.fields.f2.elemID.createNestedID('a1'),
         })
         expect(transformFunc).toHaveBeenCalledWith({
           value: { reference: new ReferenceExpression(primType.elemID) },
@@ -1423,7 +1744,10 @@ describe('Test utils.ts', () => {
       let result: ObjectType
       beforeEach(async () => {
         result = await transformElement({
-          element: objType, transformFunc, strict: false, runOnFields: true,
+          element: objType,
+          transformFunc,
+          strict: false,
+          runOnFields: true,
         })
       })
       it('should return new object type', () => {
@@ -1438,7 +1762,9 @@ describe('Test utils.ts', () => {
       })
       it('should transform field annotations', () => {
         expect(transformFunc).toHaveBeenCalledWith({
-          value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
+          value: 'foo',
+          field: expect.any(Field),
+          path: objType.fields.f2.elemID.createNestedID('a1'),
         })
         expect(transformFunc).toHaveBeenCalledWith({
           value: { reference: new ReferenceExpression(primType.elemID) },
@@ -1456,7 +1782,10 @@ describe('Test utils.ts', () => {
       it('should not run on annotations if transformFunc returned undefined on the field', async () => {
         const otherFunc = mockFunction<TransformFunc>().mockImplementation(() => undefined)
         await transformElement({
-          element: objType, transformFunc: otherFunc, strict: false, runOnFields: true,
+          element: objType,
+          transformFunc: otherFunc,
+          strict: false,
+          runOnFields: true,
         })
         expect(otherFunc).toHaveBeenCalledWith({
           value: expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
@@ -1484,9 +1813,11 @@ describe('Test utils.ts', () => {
         expect(isInstanceElement(result)).toBeTruthy()
       })
       it('should transform values', () => {
-        expect(transformFunc).toHaveBeenCalledWith(
-          { value: 'a', field: objType.fields.f1, path: inst.elemID.createNestedID('f1') }
-        )
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 'a',
+          field: objType.fields.f1,
+          path: inst.elemID.createNestedID('f1'),
+        })
       })
       it('should transform annotations', () => {
         expect(transformFunc).toHaveBeenCalledWith({
@@ -1500,7 +1831,7 @@ describe('Test utils.ts', () => {
         const callArgs = transformFunc.mock.calls.flat().find(args => args.value === 'someUrl')
         expect(callArgs?.field).toBeDefined()
         const fieldArg = callArgs?.field
-        const fieldType = fieldArg !== undefined && await fieldArg.getType()
+        const fieldType = fieldArg !== undefined && (await fieldArg.getType())
         const annotations = fieldType && fieldType.annotations
         expect(callArgs?.field?.annotations).toEqual(annotations)
         expect(_.isEmpty(callArgs?.field?.annotations)).toBeFalsy()
@@ -1521,16 +1852,12 @@ describe('Test utils.ts', () => {
             nestedArray: { refType: new ListType(nestedType) },
           },
         })
-        invalidInst = new InstanceElement(
-          'invalid',
-          otherObjType,
-          {
-            nested: 'aaa',
-            numberNested: 1,
-            booleanNested: true,
-            nestedArray: ['aaa', 'bbb'],
-          },
-        )
+        invalidInst = new InstanceElement('invalid', otherObjType, {
+          nested: 'aaa',
+          numberNested: 1,
+          booleanNested: true,
+          nestedArray: ['aaa', 'bbb'],
+        })
       })
       it('should correctly handle type inconsistencies when strict=false', async () => {
         result = await transformElement({ element: invalidInst, transformFunc, strict: false })
@@ -1550,15 +1877,11 @@ describe('Test utils.ts', () => {
       })
     })
     describe('allowEmpty', () => {
-      const element = new InstanceElement(
-        'instance',
-        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
-        {
-          val1: [],
-          val2: undefined,
-          val3: {},
-        }
-      )
+      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
+        val1: [],
+        val2: undefined,
+        val3: {},
+      })
 
       it('allowEmpty = true should not remove empty objects and arrays', async () => {
         const transformedElement = await transformElement({
@@ -1580,390 +1903,65 @@ describe('Test utils.ts', () => {
         expect(transformedElement.value).toEqual({})
       })
     })
-  })
-
-  describe('resolveValues func', () => {
-    const instanceName = 'Instance'
-    const objectName = 'Object'
-    const newValue = 'NEW'
-    const elementID = new ElemID('salesforce', 'elememt')
-    const element = new ObjectType({
-      elemID: elementID,
-      annotationRefsOrTypes: {
-        refValue: BuiltinTypes.STRING,
-        reg: BuiltinTypes.STRING,
-
-      },
-      annotations: {
-        name: objectName,
-      },
-      fields: {
-        refValue: { refType: BuiltinTypes.STRING },
-        arrayValues: { refType: new ListType(BuiltinTypes.STRING) },
-        mapValues: { refType: new MapType(BuiltinTypes.STRING) },
-        fileValue: { refType: BuiltinTypes.STRING },
-        objValue: { refType: new ObjectType({ elemID: new ElemID('salesforce', 'nested') }) },
-      },
-    })
-    element.annotations.typeRef = new ReferenceExpression(
-      elementID.createNestedID('annotation', 'name'), objectName, element
-    )
-
-    const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
-      new ReferenceExpression(
-        elemID.createNestedID(...path)
-      )
-    )
-
-    const elemID = new ElemID('salesforce', 'base')
-
-    const refType = new ObjectType({
-      elemID: new ElemID('salto', 'simple'),
-    })
-
-    const firstRef = new InstanceElement(
-      'first',
-      refType,
-      { from: 'Milano', to: 'Minsk', obj: { a: 1 } }
-    )
-    const instance = new InstanceElement(
-      'instance',
-      element,
-      {
-        name: instanceName,
-        fileValue: valueFile,
-        refValue: valueRef,
-        objValue: new ReferenceExpression(
-          firstRef.elemID.createNestedID('obj'), firstRef.value.obj, firstRef,
-        ),
-        into: new TemplateExpression({
-          parts: [
-            'Well, you made a long journey from ',
-            refTo(firstRef, 'from'),
-            ' to ',
-            refTo(firstRef, 'to'),
-            ', Rochelle Rochelle',
-          ],
-        }),
-        arrayValues: [
-          regValue,
-          valueRef,
-          {},
-        ],
-        mapValues: {
-          regValue,
-          valueRef,
-        },
-      },
-      [],
-      {
-        [CORE_ANNOTATIONS.DEPENDS_ON]: { reference: valueRef },
-      },
-    )
-    const elementRef = new ReferenceExpression(element.elemID, element, element)
-
-    const sourceElement = new ObjectType({
-      elemID,
-      annotationRefsOrTypes: {
-        refValue: BuiltinTypes.STRING,
-        objectRef: BuiltinTypes.STRING,
-        reg: BuiltinTypes.STRING,
-      },
-      annotations: {
-        objectRef: elementRef,
-        refValue: valueRef,
-        reg: regValue,
-      },
-      fields: {
-        field: {
-          refType: element,
-          annotations: {
-            reg: regValue,
-            refValue: valueRef,
-          },
-        },
-      },
-    })
-
-    describe('resolveValues on objectType', () => {
-      let sourceElementCopy: ObjectType
-      let resolvedElement: ObjectType
-
-      beforeAll(async () => {
-        sourceElementCopy = sourceElement.clone()
-        resolvedElement = await resolveValues(sourceElement, getName)
-      })
-
-      it('should not modify the source element', () => {
-        expect(sourceElement).toEqual(sourceElementCopy)
-      })
-
-      it('should transform element ref values', () => {
-        expect(resolvedElement.annotations.refValue).toEqual(regValue)
-        expect(resolvedElement.annotations.objectRef).toEqual(element)
-
-        expect(resolvedElement.fields.field.annotations.refValue).toEqual(regValue)
-      })
-
-      it('should transform regular values', () => {
-        expect(resolvedElement.annotations.reg).toEqual(regValue)
-        expect(resolvedElement.fields.field.annotations.reg).toEqual(regValue)
-      })
-
-      it('should transform back to sourceElement value', async () => {
-        expect(await restoreValues(sourceElement, resolvedElement, getName)).toEqual(sourceElement)
-      })
-
-      it('should maintain new values when transforming back to orig value', async () => {
-        const after = resolvedElement.clone()
-        after.annotations.new = newValue
-        after.annotationRefTypes.new = createRefToElmWithValue(BuiltinTypes.STRING)
-        after.fields.field.annotations.new = newValue
-        after.annotations.regValue = newValue
-        after.annotationRefTypes.regValue = createRefToElmWithValue(BuiltinTypes.STRING)
-        after.fields.field.annotations.regValue = newValue
-
-        const restored = await restoreValues(sourceElement, after, getName)
-        expect(restored.annotations.new).toEqual(newValue)
-        expect(restored.annotations.regValue).toEqual(newValue)
-
-        expect(restored.fields.field.annotations.new).toEqual(newValue)
-        expect(restored.fields.field.annotations.regValue).toEqual(newValue)
-      })
-    })
-
-    describe('resolveValues on instance', () => {
-      let resolvedInstance: InstanceElement
-
-      beforeAll(async () => {
-        resolvedInstance = await resolveValues(instance, getName)
-      })
-
-      it('should transform instanceElement', () => {
-        expect(resolvedInstance.value.name).toEqual(instance.value.name)
-        expect(resolvedInstance.value.refValue).toEqual(regValue)
-        expect(resolvedInstance.value.arrayValues).toHaveLength(3)
-        expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
-        expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
-        expect(Object.values(resolvedInstance.value.mapValues)).toHaveLength(2)
-        expect(resolvedInstance.value.mapValues.regValue).toEqual(regValue)
-        expect(resolvedInstance.value.mapValues.valueRef).toEqual(regValue)
-        expect(resolvedInstance.value.fileValue).toEqual(Buffer.from(fileContent))
-        expect(resolvedInstance.value.objValue).toEqual(firstRef.value.obj)
-      })
-
-      it('should transform back to instance', async () => {
-        const restoredInstance = await restoreValues(instance, resolvedInstance, getName)
-        expect(restoredInstance).toEqual(instance)
-        // toEqual does not check types so we have to check them explicitly
-        expect(restoredInstance.value.refValue).toBeInstanceOf(ReferenceExpression)
-        expect(restoredInstance.value.objValue).toBeInstanceOf(ReferenceExpression)
-        expect(restoredInstance.value.arrayValues[1]).toBeInstanceOf(ReferenceExpression)
-        expect(restoredInstance.value.mapValues.valueRef).toBeInstanceOf(ReferenceExpression)
-        expect(restoredInstance.value.fileValue).toBeInstanceOf(StaticFile)
-        expect(restoredInstance.value.into).toBeInstanceOf(TemplateExpression)
-      })
-    })
-
-    describe('resolveValues on primitive', () => {
-      const prim = new PrimitiveType({
-        elemID: new ElemID('mockAdapter', 'str'),
-        primitive: PrimitiveTypes.STRING,
-        annotationRefsOrTypes: {
-          testAnno: BuiltinTypes.STRING,
-          testNumAnno: BuiltinTypes.NUMBER,
-          refAnno: BuiltinTypes.STRING,
-        },
-        annotations: {
-          testAnno: 'TEST ANNO TYPE',
-          testNumAnno: 34,
-          refAnno: valueRef,
+    describe('allowEmptyArrays', () => {
+      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
+        val1: [],
+        val2: undefined,
+        val3: {
+          emptyObj: {},
+          nestedArray: [],
         },
       })
 
-      let resolvedPrim: PrimitiveType
-
-      beforeAll(async () => {
-        resolvedPrim = await resolveValues(prim, getName)
+      it('allowEmptyArrays = true should not remove empty arrays', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmptyArrays: true,
+        })
+        expect(transformedElement.value).toEqual({ val1: [], val3: { nestedArray: [] } })
       })
 
-
-      it('should transform primitive', () => {
-        expect(resolvedPrim).not.toEqual(prim)
-
-        expect(resolvedPrim.primitive).toEqual(prim.primitive)
-        expect(resolvedPrim.elemID).toEqual(prim.elemID)
-        expect(resolvedPrim.path).toEqual(prim.path)
-        expect(resolvedPrim.annotationRefTypes).toEqual(prim.annotationRefTypes)
-
-        expect(resolvedPrim.annotations).not.toEqual(prim.annotations)
-        expect(resolvedPrim.annotations.refAnno).toEqual(regValue)
-      })
-
-      it('should transform back to primitive', async () => {
-        expect(await restoreValues(prim, resolvedPrim, getName)).toEqual(prim)
+      it('allowEmptyArrays = false should remove empty arrays', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmptyArrays: false,
+        })
+        expect(transformedElement.value).toEqual({})
       })
     })
-
-    describe('resolveValues on field', () => {
-      const FieldType = new ObjectType({
-        elemID,
-        annotationRefsOrTypes: {
-          testAnno: BuiltinTypes.STRING,
-          testNumAnno: BuiltinTypes.NUMBER,
-          refAnno: BuiltinTypes.STRING,
+    describe('allowEmptyObjects', () => {
+      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
+        val1: [],
+        val2: undefined,
+        val3: {
+          emptyObj: {},
+          nestedArray: [],
         },
+        obj: {},
       })
 
-      const fieldParent = new ObjectType({ elemID })
-
-      const field = new Field(fieldParent, 'field', FieldType, {
-        testAnno: 'TEST ANNO TYPE',
-        testNumAnno: 34,
-        refAnno: valueRef,
-      })
-
-      let resolvedField: Field
-
-      beforeAll(async () => {
-        resolvedField = await resolveValues(field, getName)
-      })
-
-
-      it('should transform field', async () => {
-        expect(resolvedField).not.toEqual(field)
-
-        expect(await resolvedField.getType()).toEqual(await field.getType())
-        expect(resolvedField.name).toEqual(field.name)
-        expect(resolvedField.elemID).toEqual(field.elemID)
-        expect(resolvedField.path).toEqual(field.path)
-        expect(resolvedField.parent).toBe(field.parent)
-
-        expect(resolvedField.annotations).not.toEqual(field.annotations)
-        expect(resolvedField.annotations.refAnno).toEqual(regValue)
-        expect(resolvedField.annotations.testAnno).toEqual(field.annotations.testAnno)
-      })
-
-      it('should transform back to field', async () => {
-        expect(await restoreValues(field, resolvedField, getName)).toEqual(field)
-      })
-    })
-  })
-
-  describe('restore/ResolveChangeElement functions', () => {
-    let afterData: InstanceElement
-    let beforeData: InstanceElement
-    let additionChange: AdditionChange<InstanceElement>
-    let removalChange: RemovalChange<InstanceElement>
-    let modificationChange: ModificationChange<InstanceElement>
-    beforeEach(() => {
-      afterData = mockInstance.clone()
-      beforeData = mockInstance.clone()
-      additionChange = { action: 'add', data: { after: afterData } }
-      removalChange = { action: 'remove', data: { before: beforeData } }
-      modificationChange = { action: 'modify', data: { before: beforeData, after: afterData } }
-    })
-
-    describe('restoreChangeElement func', () => {
-      let mockRestore: RestoreValuesFunc
-      beforeEach(() => {
-        mockRestore = jest.fn().mockImplementation(
-          <T extends Element>(_source: T, targetElement: T, _getLookUpName: GetLookupNameFunc) =>
-            targetElement
-        )
-      })
-      describe('with addition change', () => {
-        let sourceChange: AdditionChange<InstanceElement>
-        let restoredChange: AdditionChange<InstanceElement>
-        beforeEach(async () => {
-          sourceChange = { action: 'add', data: { after: afterData.clone() } }
-          const sourceChanges = _.keyBy(
-            [sourceChange],
-            c => getChangeData(c).elemID.getFullName(),
-          )
-          restoredChange = await restoreChangeElement(additionChange,
-            sourceChanges, getName, mockRestore) as AdditionChange<InstanceElement>
+      it('allowEmptyObjects = true should not remove empty objects', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmptyObjects: true,
         })
-        it('should call restore func on the after data', () => {
-          expect(mockRestore).toHaveBeenCalledWith(sourceChange.data.after, afterData, getName)
-        })
-        it('should return the after data from the source change', () => {
-          expect(restoredChange.data.after).toStrictEqual(sourceChange.data.after)
-        })
-      })
-      describe('with removal change', () => {
-        let sourceChange: RemovalChange<InstanceElement>
-        let restoredChange: RemovalChange<InstanceElement>
-        beforeEach(async () => {
-          sourceChange = { action: 'remove', data: { before: beforeData.clone() } }
-          const sourceChanges = _.keyBy(
-            [sourceChange],
-            c => getChangeData(c).elemID.getFullName(),
-          )
-          restoredChange = await restoreChangeElement(
-            removalChange,
-            sourceChanges,
-            getName,
-            mockRestore,
-          ) as RemovalChange<InstanceElement>
-        })
-        it('should not call restore func on the before data', () => {
-          expect(mockRestore).not.toHaveBeenCalled()
-        })
-        it('should return the before data from the source change', () => {
-          expect(restoredChange.data.before).toBe(sourceChange.data.before)
-        })
-      })
-      describe('with modification change', () => {
-        let sourceChange: ModificationChange<InstanceElement>
-        let restoredChange: ModificationChange<InstanceElement>
-        beforeEach(async () => {
-          sourceChange = {
-            action: 'modify',
-            data: { before: beforeData.clone(), after: afterData.clone() },
-          }
-          const sourceChanges = _.keyBy(
-            [sourceChange],
-            c => getChangeData(c).elemID.getFullName(),
-          )
-          restoredChange = await restoreChangeElement(
-            modificationChange,
-            sourceChanges,
-            getName,
-            mockRestore,
-          ) as ModificationChange<InstanceElement>
-        })
-        it('should call the restore func only on the after data', () => {
-          expect(mockRestore).toHaveBeenCalledTimes(1)
-          expect(mockRestore).toHaveBeenCalledWith(sourceChange.data.after, afterData, getName)
-        })
-        it('should return the before data from the source change', () => {
-          expect(restoredChange.data.before).toBe(sourceChange.data.before)
-        })
-      })
-    })
-
-    describe('resolveChangeElement func', () => {
-      let mockResolve: ResolveValuesFunc
-      beforeEach(() => {
-        mockResolve = jest.fn().mockImplementation(
-          <T extends Element>(element: T, _getLookUpName: GetLookupNameFunc) => element
-        )
-      })
-      it('should call resolve func on after data when add change', async () => {
-        await resolveChangeElement(additionChange, getName, mockResolve)
-        expect(mockResolve).toHaveBeenCalledWith(afterData, getName, undefined)
+        expect(transformedElement.value).toEqual({ val3: { emptyObj: {} }, obj: {} })
       })
 
-      it('should call resolve func on before and after data when modification change', async () => {
-        await resolveChangeElement(modificationChange, getName, mockResolve)
-        expect(mockResolve).toHaveBeenCalledWith(beforeData, getName, undefined)
-        expect(mockResolve).toHaveBeenCalledWith(afterData, getName, undefined)
-      })
-
-      it('should call resolve func on before data when removal change', async () => {
-        await resolveChangeElement(removalChange, getName, mockResolve)
-        expect(mockResolve).toHaveBeenCalledWith(beforeData, getName, undefined)
+      it('allowEmptyObjects = false should remove empty objects', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmptyObjects: false,
+        })
+        expect(transformedElement.value).toEqual({})
       })
     })
   })
@@ -2052,7 +2050,7 @@ describe('Test utils.ts', () => {
     })
 
     it('should set annotation type path', () => {
-      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno',), BuiltinTypes.NUMBER)
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno'), BuiltinTypes.NUMBER)
       expect(clonedMockType.annotationRefTypes.testAnno.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
     })
 
@@ -2101,34 +2099,23 @@ describe('Test utils.ts', () => {
       expect(resolvePath(mockType, mockType.elemID)).toEqual(mockType)
     })
     it('should resolve a field annotation path', () => {
-      expect(resolvePath(
-        mockType,
-        mockType.fields.str.elemID.createNestedID('testAnno')
-      )).toBe('TEST FIELD ANNO')
+      expect(resolvePath(mockType, mockType.fields.str.elemID.createNestedID('testAnno'))).toBe('TEST FIELD ANNO')
     })
     it('should resolve an annotation path', () => {
-      expect(resolvePath(
-        mockType,
-        mockType.elemID.createNestedID('attr', 'testAnno')
-      )).toBe('TEST ANNO')
+      expect(resolvePath(mockType, mockType.elemID.createNestedID('attr', 'testAnno'))).toBe('TEST ANNO')
     })
     it('should resolve an instance value path', () => {
-      expect(resolvePath(
-        mockInstance,
-        mockInstance.elemID.createNestedID('str')
-      )).toBe('val')
+      expect(resolvePath(mockInstance, mockInstance.elemID.createNestedID('str'))).toBe('val')
     })
     it('should not resolve an annotation type path', () => {
-      expect(resolvePath(
-        mockType,
-        mockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno')
-      )).toBeUndefined()
+      expect(
+        resolvePath(mockType, mockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno')),
+      ).toBeUndefined()
     })
     it('should resolve an instance annotation value path', () => {
-      expect(resolvePath(
-        mockInstance,
-        mockInstance.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON)
-      )?.reference).toBe(valueRef)
+      expect(
+        resolvePath(mockInstance, mockInstance.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON))?.reference,
+      ).toBe(valueRef)
     })
   })
 
@@ -2165,10 +2152,7 @@ describe('Test utils.ts', () => {
       annotations: {},
     })
     const otRef = createRefToElmWithValue(ot)
-    const instances = [
-      new InstanceElement('1', otRef, {}),
-      new InstanceElement('2', otRef, {}),
-    ]
+    const instances = [new InstanceElement('1', otRef, {}), new InstanceElement('2', otRef, {})]
     const elements = [primStr, primStr, ot, ...instances]
     describe('findElements', () => {
       it('should find all elements with the requested id', () => {
@@ -2200,7 +2184,7 @@ describe('Test utils.ts', () => {
   })
 
   describe('flattenElementStr function', () => {
-    it('should not modifiy an object type', () => {
+    it('should not modify an object type', () => {
       const flatObj = flattenElementStr(mockType)
       expect(flatObj).toEqual(mockType)
     })
@@ -2251,22 +2235,13 @@ describe('Test utils.ts', () => {
       expect(valuesDeepSome({ a: 321, b: 321, c: 41, d: 44 }, predicate)).toEqual(false)
     })
     it('should find for entire object predicate', () => {
-      expect(valuesDeepSome(
-        { a: 321, b: 321, c: { aha: 41 }, d: 44 },
-        v => v.aha === 41,
-      )).toEqual(true)
+      expect(valuesDeepSome({ a: 321, b: 321, c: { aha: 41 }, d: 44 }, v => v.aha === 41)).toEqual(true)
     })
-    it('should find for nested crazyness', () => {
-      expect(valuesDeepSome(
-        { a: 321, b: [3, 2, 1], c: [{ aha: 42 }], d: 44 },
-        predicate,
-      )).toEqual(true)
+    it('should find for nested craziness', () => {
+      expect(valuesDeepSome({ a: 321, b: [3, 2, 1], c: [{ aha: 42 }], d: 44 }, predicate)).toEqual(true)
     })
-    it('miss for nested crazyness', () => {
-      expect(valuesDeepSome(
-        { a: 321, b: [3, 2, 1], c: [{ aha: 41 }], d: 44 },
-        predicate,
-      )).toEqual(false)
+    it('miss for nested craziness', () => {
+      expect(valuesDeepSome({ a: 321, b: [3, 2, 1], c: [{ aha: 41 }], d: 44 }, predicate)).toEqual(false)
     })
   })
   describe('filterByID', () => {
@@ -2314,7 +2289,7 @@ describe('Test utils.ts', () => {
       [],
       {
         [CORE_ANNOTATIONS.DEPENDS_ON]: [{ reference: new ObjectType({ elemID: new ElemID('salto', 'dep') }) }],
-      }
+      },
     )
     const prim = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
@@ -2334,44 +2309,36 @@ describe('Test utils.ts', () => {
       const expectEqualFields = (actual: FieldMap | undefined, expected: FieldMap): void => {
         expect(actual).toBeDefined()
         expect(Object.keys(actual ?? {})).toEqual(Object.keys(expected))
-        Object.entries(expected).forEach(
-          ([name, field]) => expect(actual?.[name]?.isEqual(field)).toBeTruthy()
-        )
+        Object.entries(expected).forEach(([name, field]) => expect(actual?.[name]?.isEqual(field)).toBeTruthy())
       }
 
-      const onlyFields = await filterByID(
-        objElemID,
-        obj,
-        async id => (id.idType === 'type' || id.idType === 'field' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const onlyFields = await filterByID(objElemID, obj, async id =>
+        id.idType === 'type' || id.idType === 'field' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(onlyFields).toBeDefined()
       expectEqualFields(onlyFields?.fields, obj.fields)
       expect(onlyFields?.annotations).toEqual({})
       expect(onlyFields?.annotationRefTypes).toEqual({})
-      const onlyAnno = await filterByID(
-        objElemID,
-        obj,
-        async id => (id.idType === 'type' || id.idType === 'attr' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const onlyAnno = await filterByID(objElemID, obj, async id =>
+        id.idType === 'type' || id.idType === 'attr' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(onlyAnno).toBeDefined()
       expect(onlyAnno?.fields).toEqual({})
       expect(onlyAnno?.annotations).toEqual(obj.annotations)
       expect(onlyAnno?.annotationRefTypes).toEqual({})
 
-      const onlyAnnoType = await filterByID(
-        objElemID,
-        obj,
-        async id => (id.idType === 'type' || id.idType === 'annotation' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const onlyAnnoType = await filterByID(objElemID, obj, async id =>
+        id.idType === 'type' || id.idType === 'annotation'
+          ? FILTER_FUNC_NEXT_STEP.RECURSE
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(onlyAnnoType).toBeDefined()
       expect(onlyAnnoType?.fields).toEqual({})
       expect(onlyAnnoType?.annotations).toEqual({})
       expect(onlyAnnoType?.annotationRefTypes).toEqual(obj.annotationRefTypes)
 
-      const withoutAnnoObjStr = await filterByID(
-        objElemID,
-        obj,
-        async id => (!id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const withoutAnnoObjStr = await filterByID(objElemID, obj, async id =>
+        !id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(withoutAnnoObjStr).toBeDefined()
       expectEqualFields(withoutAnnoObjStr?.fields, obj.fields)
@@ -2380,10 +2347,10 @@ describe('Test utils.ts', () => {
       expect(withoutAnnoObjStr?.annotations.map).toEqual(obj.annotations.map)
       expect(withoutAnnoObjStr?.annotationRefTypes).toEqual(obj.annotationRefTypes)
 
-      const withoutFieldAnnotations = await filterByID(
-        objElemID,
-        obj,
-        async id => (id.getFullName() !== 'salto.obj.field.obj.label' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const withoutFieldAnnotations = await filterByID(objElemID, obj, async id =>
+        id.getFullName() !== 'salto.obj.field.obj.label'
+          ? FILTER_FUNC_NEXT_STEP.RECURSE
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
 
       expect(withoutFieldAnnotations).toBeDefined()
@@ -2391,13 +2358,10 @@ describe('Test utils.ts', () => {
       expect(withoutFieldAnnotations?.annotationRefTypes).toEqual(obj.annotationRefTypes)
       expect(withoutFieldAnnotations?.fields.obj).toBeDefined()
       expect(withoutFieldAnnotations?.fields.obj.annotations).toEqual({})
-      const onlyI = await filterByID(
-        objElemID,
-        obj,
-        async id => (
-          (Number.isNaN(Number(_.last(id.getFullNameParts()))) || Number(_.last(id.getFullNameParts())) === 0
-            ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
-        )
+      const onlyI = await filterByID(objElemID, obj, async id =>
+        Number.isNaN(Number(_.last(id.getFullNameParts()))) || Number(_.last(id.getFullNameParts())) === 0
+          ? FILTER_FUNC_NEXT_STEP.RECURSE
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(onlyI).toBeDefined()
       expectEqualFields(onlyI?.fields, obj.fields)
@@ -2407,92 +2371,69 @@ describe('Test utils.ts', () => {
     })
 
     it('should filter primitive type', async () => {
-      const filteredPrim = await filterByID(
-        prim.elemID,
-        prim,
-        async id => (!id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const filteredPrim = await filterByID(prim.elemID, prim, async id =>
+        !id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(filteredPrim?.annotations.obj).toEqual({ num: 17 })
       expect(filteredPrim?.annotationRefTypes).toEqual({ obj: createRefToElmWithValue(annoType) })
     })
 
     it('should filter instances', async () => {
-      const filteredInstance = await filterByID(
-        inst.elemID,
-        inst,
-        async id => (!id.getFullNameParts().includes('list') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const filteredInstance = await filterByID(inst.elemID, inst, async id =>
+        !id.getFullNameParts().includes('list') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(filteredInstance?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
       expect(filteredInstance?.annotations).toEqual(inst.annotations)
     })
 
     it('should not filter empty values', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        obj,
-        {
-          emptyList: [],
-          emptyObj: {},
-        },
-      )
-      const filteredInstance = await filterByID(
-        instance.elemID,
-        instance,
-        async () => FILTER_FUNC_NEXT_STEP.RECURSE
-      )
+      const instance = new InstanceElement('instance', obj, {
+        emptyList: [],
+        emptyObj: {},
+      })
+      const filteredInstance = await filterByID(instance.elemID, instance, async () => FILTER_FUNC_NEXT_STEP.RECURSE)
       expect(filteredInstance?.value).toEqual({ emptyList: [], emptyObj: {} })
     })
 
     it('should return undefined if the base item fails the filter func', async () => {
-      const filteredInstance = await filterByID(
-        inst.elemID,
-        inst,
-        async id => (id.idType !== 'instance' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const filteredInstance = await filterByID(inst.elemID, inst, async id =>
+        id.idType !== 'instance' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(filteredInstance).toBeUndefined()
     })
 
     it('should not set array, map and obj values that are empty after filtering', async () => {
-      const withoutList = await filterByID(
-        inst.elemID,
-        inst,
-        async id => (Number.isNaN(Number(_.last(id.getFullNameParts())))
-          ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const withoutList = await filterByID(inst.elemID, inst, async id =>
+        Number.isNaN(Number(_.last(id.getFullNameParts())))
+          ? FILTER_FUNC_NEXT_STEP.RECURSE
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(withoutList?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
 
-      const withoutObj = await filterByID(
-        inst.elemID,
-        inst,
-        async id => (!id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      const withoutObj = await filterByID(inst.elemID, inst, async id =>
+        !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
+          ? FILTER_FUNC_NEXT_STEP.RECURSE
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(withoutObj?.value).toEqual({ list: inst.value.list, map: inst.value.map })
 
-      const withoutMap = await filterByID(
-        inst.elemID,
-        inst,
-        async id => (!id.getFullNameParts().includes('Do') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),
+      const withoutMap = await filterByID(inst.elemID, inst, async id =>
+        !id.getFullNameParts().includes('Do') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
       )
       expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
     })
     it('should include value that filterFunc returns INCLUDE for without recursing', async () => {
       const includedID = inst.elemID.createNestedID('obj')
-      const filterFunc = jest.fn().mockImplementation(
-        async (id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
-          if (id.isParentOf(includedID)) {
-            return FILTER_FUNC_NEXT_STEP.RECURSE
-          }
-          if (id.isEqual(includedID)) {
-            return FILTER_FUNC_NEXT_STEP.INCLUDE
-          }
-          return FILTER_FUNC_NEXT_STEP.EXCLUDE
+      const filterFunc = jest.fn().mockImplementation(async (id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
+        if (id.isParentOf(includedID)) {
+          return FILTER_FUNC_NEXT_STEP.RECURSE
         }
-      )
-      const filteredInstance = await filterByID(
-        inst.elemID,
-        inst,
-        filterFunc,
-      )
+        if (id.isEqual(includedID)) {
+          return FILTER_FUNC_NEXT_STEP.INCLUDE
+        }
+        return FILTER_FUNC_NEXT_STEP.EXCLUDE
+      })
+      const filteredInstance = await filterByID(inst.elemID, inst, filterFunc)
       expect(filteredInstance?.value).toEqual({ obj: inst.value.obj })
       Object.keys(inst.value.obj).forEach(key => {
         expect(filterFunc).not.toHaveBeenCalledWith(includedID.createNestedID(key))
@@ -2509,26 +2450,26 @@ describe('Test utils.ts', () => {
   describe('mapKeysRecursive', () => {
     it('should map all keys recursively', () => {
       const result = mapKeysRecursive(mockInstance.value, ({ key }) => key.toUpperCase())
-      expect(Object.keys(result))
-        .toEqual(expect.arrayContaining(['BOOL', 'STR', 'OBJ', 'OBJWITHINNEROBJ', 'NUMMAP']))
+      expect(Object.keys(result)).toEqual(expect.arrayContaining(['BOOL', 'STR', 'OBJ', 'OBJWITHINNEROBJ', 'NUMMAP']))
       expect(Object.keys(result.OBJWITHINNEROBJ)).toContain('INNEROBJ')
-      expect(Object.keys(result.OBJWITHINNEROBJ.INNEROBJ))
-        .toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
+      expect(Object.keys(result.OBJWITHINNEROBJ.INNEROBJ)).toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
       expect(Object.keys(result.NUMMAP)).toEqual(expect.arrayContaining(['KEY12', 'NUM13']))
     })
 
     it('should map keys recursively when passing the pathID', () => {
-      const result = mapKeysRecursive(mockInstance.value, ({ key, pathID }) => {
-        if (pathID?.getFullName().toLowerCase().includes('key')) {
-          return key.toUpperCase()
-        }
-        return key
-      }, mockInstance.elemID)
-      expect(Object.keys(result))
-        .toEqual(expect.arrayContaining(['bool', 'str', 'obj', 'objWithInnerObj', 'numMap']))
+      const result = mapKeysRecursive(
+        mockInstance.value,
+        ({ key, pathID }) => {
+          if (pathID?.getFullName().toLowerCase().includes('key')) {
+            return key.toUpperCase()
+          }
+          return key
+        },
+        mockInstance.elemID,
+      )
+      expect(Object.keys(result)).toEqual(expect.arrayContaining(['bool', 'str', 'obj', 'objWithInnerObj', 'numMap']))
       expect(Object.keys(result.objWithInnerObj)).toContain('innerObj')
-      expect(Object.keys(result.objWithInnerObj.innerObj))
-        .toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
+      expect(Object.keys(result.objWithInnerObj.innerObj)).toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
       expect(Object.keys(result.numMap)).toEqual(expect.arrayContaining(['KEY12', 'num13']))
     })
   })
@@ -2564,26 +2505,15 @@ describe('Test utils.ts', () => {
       },
     })
     const nestedTypeRef = createRefToElmWithValue(nested)
-    const ins1 = new InstanceElement(
-      'ins',
-      nestedTypeRef,
-      { field1: 'ins1', field2: 'ins1' },
-      undefined,
-      { anno: 1 },
-    )
-    const shouldUseFieldDef = new InstanceElement(
-      'ins',
-      nestedTypeRef,
-      {
-        field2: 'ins1',
-        base: { field1: 'ins2', field2: 'ins2' },
-      }
-    )
+    const ins1 = new InstanceElement('ins', nestedTypeRef, { field1: 'ins1', field2: 'ins1' }, undefined, { anno: 1 })
+    const shouldUseFieldDef = new InstanceElement('ins', nestedTypeRef, {
+      field2: 'ins1',
+      base: { field1: 'ins2', field2: 'ins2' },
+    })
 
     it('should use field defaults', async () => {
       const elements = [shouldUseFieldDef.clone()]
-      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
-        .toArray() as [InstanceElement]
+      const [transformed] = (await awu(applyInstancesDefaults(awu(elements))).toArray()) as [InstanceElement]
       expect(transformed.value).toEqual({
         field1: 'field1',
         field2: 'ins1',
@@ -2595,17 +2525,12 @@ describe('Test utils.ts', () => {
     })
 
     it('should use type defaults', async () => {
-      const shouldUseTypeDef = new InstanceElement(
-        'ins',
-        nestedTypeRef,
-        {
-          field1: 'ins1',
-          base: { field1: 'ins2', field2: 'ins2' },
-        }
-      )
+      const shouldUseTypeDef = new InstanceElement('ins', nestedTypeRef, {
+        field1: 'ins1',
+        base: { field1: 'ins2', field2: 'ins2' },
+      })
       const elements = [shouldUseTypeDef]
-      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
-        .toArray() as [InstanceElement]
+      const [transformed] = (await awu(applyInstancesDefaults(awu(elements))).toArray()) as [InstanceElement]
       expect(transformed.value).toEqual({
         field1: 'ins1',
         field2: 'type',
@@ -2618,8 +2543,7 @@ describe('Test utils.ts', () => {
 
     it('should use object defaults', async () => {
       const elements = [ins1.clone()]
-      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
-        .toArray() as [InstanceElement]
+      const [transformed] = (await awu(applyInstancesDefaults(awu(elements))).toArray()) as [InstanceElement]
       expect(transformed.value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
@@ -2634,8 +2558,7 @@ describe('Test utils.ts', () => {
       const instanceWithAdditionalValues = ins1.clone()
       instanceWithAdditionalValues.value.hasNoCorrespondingField = 'hasNoCorrespondingField'
       const elements = [instanceWithAdditionalValues]
-      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
-        .toArray() as [InstanceElement]
+      const [transformed] = (await awu(applyInstancesDefaults(awu(elements))).toArray()) as [InstanceElement]
       expect(transformed.value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
@@ -2651,8 +2574,7 @@ describe('Test utils.ts', () => {
       const instanceWithAdditionalValues = ins1.clone()
       instanceWithAdditionalValues.value.base = 'differentType'
       const elements = [instanceWithAdditionalValues]
-      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
-        .toArray() as [InstanceElement]
+      const [transformed] = (await awu(applyInstancesDefaults(awu(elements))).toArray()) as [InstanceElement]
       expect(transformed.value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
@@ -2670,14 +2592,10 @@ describe('Test utils.ts', () => {
         },
       })
 
-      const instanceWithNoValues = new InstanceElement(
-        'instance',
-        typeWithNestedDefaults,
-      )
+      const instanceWithNoValues = new InstanceElement('instance', typeWithNestedDefaults)
 
       const elements = [instanceWithNoValues]
-      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
-        .toArray() as [InstanceElement]
+      const [transformed] = (await awu(applyInstancesDefaults(awu(elements))).toArray()) as [InstanceElement]
       expect(transformed.value).toEqual({
         withDefault: 'default val',
       })
@@ -2696,17 +2614,14 @@ describe('Test utils.ts', () => {
           },
         },
       })
-      expect((await createDefaultInstanceFromType('test', configType)).isEqual(new InstanceElement(
-        'test',
-        configType,
-        { val1: 'test' }
-      ))).toBeTruthy()
-      expect(await createDefaultInstanceFromType('test', configType))
-        .toEqual(new InstanceElement(
-          'test',
-          configType,
-          { val1: 'test' }
-        ))
+      expect(
+        (await createDefaultInstanceFromType('test', configType)).isEqual(
+          new InstanceElement('test', configType, { val1: 'test' }),
+        ),
+      ).toBeTruthy()
+      expect(await createDefaultInstanceFromType('test', configType)).toEqual(
+        new InstanceElement('test', configType, { val1: 'test' }),
+      )
     })
   })
 
@@ -2727,19 +2642,14 @@ describe('Test utils.ts', () => {
           target: 'target',
         },
       })
-      obj.annotations.ref = new ReferenceExpression(
-        elemID.createNestedID('attr', 'target'),
-        'target',
-        obj
-      )
+      obj.annotations.ref = new ReferenceExpression(elemID.createNestedID('attr', 'target'), 'target', obj)
       const json = safeJsonStringify(obj)
       const parsed = JSON.parse(json)
       it('should serialize circular deps as [Circular]', () => {
         expect(parsed.annotations.ref.topLevelParent).toEqual('[Circular]')
         expect(parsed.fields.field.parent).toEqual('[Circular]')
       })
-      it('should not serialize and object which is accessed twice without '
-        + 'actually being circular as [Circulr]', () => {
+      it('should not serialize and object which is accessed twice without actually being circular as [Circular]', () => {
         /*
         TODO: See what to do with this
         expect(parsed.fields.field).toEqual(undefined)
@@ -2759,10 +2669,7 @@ describe('Test utils.ts', () => {
           target: 'target',
         },
       })
-      obj.annotations.ref = new ReferenceExpression(
-        elemID.createNestedID('attr', 'target'),
-        'target',
-      )
+      obj.annotations.ref = new ReferenceExpression(elemID.createNestedID('attr', 'target'), 'target')
       const saltoJSON = safeJsonStringify(obj)
       // eslint-disable-next-line no-restricted-syntax
       const regJSON = JSON.stringify(obj)
@@ -2774,15 +2681,11 @@ describe('Test utils.ts', () => {
       let inst: InstanceElement
       beforeAll(() => {
         const elemID = new ElemID('salto', 'obj')
-        inst = new InstanceElement(
-          'test2',
-          new ObjectType({ elemID }),
-          {
-            title: 'test',
-            refWithVal: new ReferenceExpression(new ElemID('a', 'b'), 'something'),
-            refWithoutVal: new ReferenceExpression(new ElemID('c', 'd')),
-          },
-        )
+        inst = new InstanceElement('test2', new ObjectType({ elemID }), {
+          title: 'test',
+          refWithVal: new ReferenceExpression(new ElemID('a', 'b'), 'something'),
+          refWithoutVal: new ReferenceExpression(new ElemID('c', 'd')),
+        })
       })
       it('should replace the reference expression object with a serialized representation', () => {
         const res = safeJsonStringify(inst, elementExpressionStringifyReplacer, 2)
@@ -2799,13 +2702,12 @@ describe('Test utils.ts', () => {
   "refType": "TypeReference(salto.obj, <omitted>)"
 }`)
       })
-      it('should replace static file objects with the file\'s path', () => {
+      it("should replace static file objects with the file's path", () => {
         const element = new ObjectType({
           elemID: new ElemID('salto', 'obj_staticfile'),
           annotationRefsOrTypes: {
             refValue: BuiltinTypes.STRING,
             reg: BuiltinTypes.STRING,
-
           },
           annotations: {},
           fields: {
@@ -2836,30 +2738,12 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('getAllReferencedIds', () => {
-    it('should find referenced ids', () => {
-      const res = getAllReferencedIds(mockInstance)
-      expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa',
-        templateElemID.getFullName(), templateElemID2.getFullName()]))
-    })
-    it('should find referenced ids only in annotations', () => {
-      const res = getAllReferencedIds(mockInstance, true)
-      expect(res).toEqual(new Set(['mockAdapter.test']))
-    })
-  })
-
   describe('getParents', () => {
     let result: ReturnType<typeof getParents>
     const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
     describe('for an element with parents', () => {
       beforeEach(() => {
-        const inst = new InstanceElement(
-          'test',
-          obj,
-          {},
-          undefined,
-          { [CORE_ANNOTATIONS.PARENT]: ['a', 'b'] },
-        )
+        const inst = new InstanceElement('test', obj, {}, undefined, { [CORE_ANNOTATIONS.PARENT]: ['a', 'b'] })
         result = getParents(inst)
       })
       it('should return the parents annotation', () => {
@@ -2868,11 +2752,7 @@ describe('Test utils.ts', () => {
     })
     describe('for an element without parents', () => {
       beforeEach(() => {
-        const inst = new InstanceElement(
-          'test',
-          obj,
-          {},
-        )
+        const inst = new InstanceElement('test', obj, {})
         result = getParents(inst)
       })
       it('should return an empty array', () => {
@@ -2887,20 +2767,10 @@ describe('Test utils.ts', () => {
 
     beforeEach(() => {
       const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
-      parent = new InstanceElement(
-        'parent',
-        obj,
-        {},
-      )
-      child = new InstanceElement(
-        'child',
-        obj,
-        {},
-        [],
-        {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
-        },
-      )
+      parent = new InstanceElement('parent', obj, {})
+      child = new InstanceElement('child', obj, {}, [], {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
+      })
     })
 
     it('should return the parent when there is a single instance parent', () => {
@@ -2916,9 +2786,7 @@ describe('Test utils.ts', () => {
     })
 
     it('should throw when having a non instance parent', () => {
-      child.annotations[CORE_ANNOTATIONS.PARENT] = [
-        new ReferenceExpression(parent.elemID, 'a'),
-      ]
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, 'a')]
       expect(() => getParent(child)).toThrow()
     })
   })
@@ -2926,20 +2794,12 @@ describe('Test utils.ts', () => {
   describe('resolveTypeShallow', () => {
     const cloneAndAddField = (objectType: ObjectType): ObjectType => {
       const clonedObj = objectType.clone()
-      clonedObj.fields.newField = new Field(
-        objectType,
-        'newField',
-        BuiltinTypes.STRING,
-      )
+      clonedObj.fields.newField = new Field(objectType, 'newField', BuiltinTypes.STRING)
       return clonedObj
     }
-    const fieldType = new ObjectType(
-      { elemID: new ElemID('ad', 'fieldType') },
-    )
+    const fieldType = new ObjectType({ elemID: new ElemID('ad', 'fieldType') })
     const fieldTypeWithAdditionalField = cloneAndAddField(fieldType)
-    const annoType = new ObjectType(
-      { elemID: new ElemID('ad', 'annoType') },
-    )
+    const annoType = new ObjectType({ elemID: new ElemID('ad', 'annoType') })
     const annoTypeWithAdditionalField = cloneAndAddField(annoType)
     const objWithResolved = new ObjectType({
       elemID: new ElemID('ad', 'withResolved'),
@@ -2960,26 +2820,19 @@ describe('Test utils.ts', () => {
         annoA: new TypeReference(annoType.elemID),
       },
     })
-    const instWithResolvedType = new InstanceElement(
-      'resolved',
-      objWithResolved,
-      {
-        a: 'does not matter',
-      }
-    )
-    const instWithUnresolvedType = new InstanceElement(
-      'resolved',
-      new TypeReference(objWithResolved.elemID),
-      {
-        a: 'does not matter',
-      }
-    )
-    const elementsSource = buildElementsSourceFromElements(
-      [
-        fieldTypeWithAdditionalField, annoTypeWithAdditionalField, instWithUnresolvedType,
-        objWithResolvedWithAdditionalField, instWithResolvedType,
-      ],
-    )
+    const instWithResolvedType = new InstanceElement('resolved', objWithResolved, {
+      a: 'does not matter',
+    })
+    const instWithUnresolvedType = new InstanceElement('resolved', new TypeReference(objWithResolved.elemID), {
+      a: 'does not matter',
+    })
+    const elementsSource = buildElementsSourceFromElements([
+      fieldTypeWithAdditionalField,
+      annoTypeWithAdditionalField,
+      instWithUnresolvedType,
+      objWithResolvedWithAdditionalField,
+      instWithResolvedType,
+    ])
 
     it('Should keep an ObjectType with resolved field types as is', async () => {
       const clonedObj = objWithResolved.clone()
@@ -3009,16 +2862,15 @@ describe('Test utils.ts', () => {
     })
 
     it('should resolve to PlaceholderObjectType if the type is not in the source', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        new TypeReference(new ElemID('adapter', 'unknownType'))
-      )
+      const instance = new InstanceElement('instance', new TypeReference(new ElemID('adapter', 'unknownType')))
       const source = buildElementsSourceFromElements([], [buildElementsSourceFromElements([instance])])
       expect(instance.refType.type).toBeUndefined()
       await resolveTypeShallow(instance, source)
-      expect(instance.refType.type).toMatchObject(new PlaceholderObjectType({
-        elemID: instance.refType.elemID,
-      }))
+      expect(instance.refType.type).toMatchObject(
+        new PlaceholderObjectType({
+          elemID: instance.refType.elemID,
+        }),
+      )
     })
   })
 
@@ -3027,13 +2879,60 @@ describe('Test utils.ts', () => {
       const scheme = Joi.object({
         a: Joi.string().required(),
       })
-      const schemeGuard = createSchemeGuard<{a: string}>(scheme, 'message')
+      const schemeGuard = createSchemeGuard<{ a: string }>(scheme, 'message')
       expect(schemeGuard({ a: 'string' })).toBeTruthy()
       expect(schemeGuard({ a: 2 })).toBeFalsy()
     })
   })
+
+  describe(`${validatePlainObject.name}`, () => {
+    it('should throw an error if value is not a plain object', () => {
+      expect(() => validatePlainObject('lala', 'fieldName')).toThrow(
+        new Error("Expected fieldName to be a plain object, but got 'lala'"),
+      )
+      expect(() => validatePlainObject(123, 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got 123'),
+      )
+      expect(() => validatePlainObject([], 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got []'),
+      )
+      expect(() => validatePlainObject(new Map(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got Map(0) {}'),
+      )
+      expect(() => validatePlainObject(new Set(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be a plain object, but got Set(0) {}'),
+      )
+    })
+
+    it('should not throw an error if value is a plain object', () => {
+      expect(() => validatePlainObject({}, 'fieldName')).not.toThrow()
+      expect(() => validatePlainObject({ a: 1 }, 'fieldName')).not.toThrow()
+    })
+  })
+
+  describe(`${validateArray.name}`, () => {
+    it('should throw an error if value is not an array', () => {
+      expect(() => validateArray('lala', 'fieldName')).toThrow(
+        new Error("Expected fieldName to be an array, but got 'lala'"),
+      )
+      expect(() => validateArray(123, 'fieldName')).toThrow(new Error('Expected fieldName to be an array, but got 123'))
+      expect(() => validateArray({}, 'fieldName')).toThrow(new Error('Expected fieldName to be an array, but got {}'))
+      expect(() => validateArray(new Map(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be an array, but got Map(0) {}'),
+      )
+      expect(() => validateArray(new Set(), 'fieldName')).toThrow(
+        new Error('Expected fieldName to be an array, but got Set(0) {}'),
+      )
+    })
+
+    it('should not throw an error if value is an array', () => {
+      expect(() => validateArray([], 'fieldName')).not.toThrow()
+      expect(() => validateArray([1], 'fieldName')).not.toThrow()
+    })
+  })
+
   describe('getSubtypes', () => {
-    it('should return the expected subtypes', async () => {
+    it('should return the expected subtypes', () => {
       const typeA = new ObjectType({ elemID: new ElemID('adapter', 'A') })
       const typeB = new ObjectType({ elemID: new ElemID('adapter', 'B') })
       const typeC = new ObjectType({
@@ -3057,7 +2956,7 @@ describe('Test utils.ts', () => {
           e: { refType: typeE },
         },
       })
-      const subtypes = await getSubtypes([typeD, typeF])
+      const subtypes = getSubtypes([typeD, typeF])
       expect(_.sortBy(subtypes, type => type.elemID.name)).toEqual([typeA, typeB, typeC, typeE])
     })
   })
@@ -3075,15 +2974,62 @@ describe('Test utils.ts', () => {
   })
   describe('isResolvedReferenceExpression', () => {
     const inst = new InstanceElement('inst', new ObjectType({ elemID: new ElemID('test', 'type') }))
-    it('should return false for a reference expression with undefind value', () => {
+    it('should return false for a reference expression with undefined value', () => {
       expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID))).toBeFalsy()
     })
-    it('should return false for a reference with uresolvedReference as value', () => {
-      expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, new UnresolvedReference(inst.elemID))))
-        .toBeFalsy()
+    it('should return false for a reference with unresolvedReference as value', () => {
+      expect(
+        isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, new UnresolvedReference(inst.elemID))),
+      ).toBeFalsy()
     })
     it('should return true for a resolved reference expression', () => {
       expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, inst))).toBeTruthy()
+    })
+  })
+  describe('getIndependentElemIDs', () => {
+    it('should filter out any elemIDs that their parent is included in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const fieldElemID = elemID.createNestedID('field', 'fieldA')
+      const anotherElemID = new ElemID('salto', 'anotherType')
+      const res = getIndependentElemIDs([fieldElemID, elemID, anotherElemID])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([elemID, anotherElemID])
+    })
+    it('should filter out nested instance path if the top level instance is in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const instA = elemID.createNestedID('instance', 'inst')
+      const nested = instA.createNestedID('nested')
+      const res = getIndependentElemIDs([instA, elemID, nested])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([instA, elemID])
+    })
+    it('it should not filter out nested elemIDs if their parent is not included in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const anotherElemID = new ElemID('salto', 'anotherType', 'field', 'nestedField')
+      const res = getIndependentElemIDs([elemID, anotherElemID])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([elemID, anotherElemID])
+    })
+  })
+  describe('getInstancesFromElementSource', () => {
+    it('should return elements of type from element source', async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const instA = new InstanceElement('instA', type)
+      const instB = new InstanceElement('instB', type)
+      const source = buildElementsSourceFromElements([instA, instB, type])
+      const res = await getInstancesFromElementSource(source, ['type'])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([instA, instB])
+    })
+    it('should not return elements from other types from element source', async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const typeB = new ObjectType({ elemID: new ElemID('salto', 'typeB') })
+      const instA = new InstanceElement('instA', type)
+      const instB = new InstanceElement('instB', typeB)
+      const source = buildElementsSourceFromElements([instA, instB, type, typeB])
+      const res = await getInstancesFromElementSource(source, ['type'])
+      expect(res).toHaveLength(1)
+      expect(res).toEqual([instA])
     })
   })
 })

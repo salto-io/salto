@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   isInstanceChange,
   ChangeValidator,
@@ -21,16 +21,14 @@ import {
   getChangeData,
   InstanceElement,
   isReferenceExpression,
-  isInstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { getInstancesFromElementSource, safeJsonStringify } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE_NAME } from '../constants'
 
 const { isDefined } = lowerDashValues
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 const stringifyAutomationConditions = (automation: InstanceElement): string =>
@@ -58,13 +56,9 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE_NAME)
     .filter(instance => instance.value.active === true)
 
-  const elementSourceActiveAutomations = await awu(await elementSource.list())
-    .filter(id => id.typeName === AUTOMATION_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .filter(automation => automation.value.active === true)
-    .toArray()
+  const elementSourceActiveAutomations = (
+    await getInstancesFromElementSource(elementSource, [AUTOMATION_TYPE_NAME])
+  ).filter(automation => automation.value.active === true)
 
   // We map all automations to their conditions in advance, to avoid running on the whole list every time
   const conditionsToAutomations = _.groupBy(
@@ -72,24 +66,26 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
     stringifyAutomationConditions,
   )
 
-  const errors = changedAutomations.map((automation): ChangeError | undefined => {
-    const automationConditions = stringifyAutomationConditions(automation)
+  const errors = changedAutomations
+    .map((automation): ChangeError | undefined => {
+      const automationConditions = stringifyAutomationConditions(automation)
 
-    if (conditionsToAutomations[automationConditions].length > 1) {
-      const equalAutomations = conditionsToAutomations[automationConditions]
-        .filter(otherAutomation => !otherAutomation.elemID.isEqual(automation.elemID))
-        .map(equalAutomation => equalAutomation.elemID.getFullName())
-        .join(', ')
+      if (conditionsToAutomations[automationConditions].length > 1) {
+        const equalAutomations = conditionsToAutomations[automationConditions]
+          .filter(otherAutomation => !otherAutomation.elemID.isEqual(automation.elemID))
+          .map(equalAutomation => equalAutomation.elemID.getFullName())
+          .join(', ')
 
-      return {
-        elemID: automation.elemID,
-        severity: 'Error',
-        message: 'Automation conditions are not unique',
-        detailedMessage: `Automation has the same conditions as '${equalAutomations}', make sure the conditions are unique before deploying.`,
+        return {
+          elemID: automation.elemID,
+          severity: 'Error',
+          message: 'Automation conditions are not unique',
+          detailedMessage: `Automation has the same conditions as '${equalAutomations}', make sure the conditions are unique before deploying.`,
+        }
       }
-    }
-    return undefined
-  }).filter(isDefined)
+      return undefined
+    })
+    .filter(isDefined)
 
   return errors
 }

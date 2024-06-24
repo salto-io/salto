@@ -1,5 +1,7 @@
 # Zendesk system configuration
+
 ## Default Configuration
+
 ```hcl
 zendesk {
   apiDefinitions = {
@@ -33,11 +35,9 @@ zendesk {
         fieldsToHide = [
           {
             fieldName = "created_at"
-            fieldType = "string"
           },
           {
             fieldName = "updated_at"
-            fieldType = "string"
           },
           {
             fieldName = "created_by_id"
@@ -47,6 +47,8 @@ zendesk {
           },
         ]
         serviceIdField = "id"
+        omitInactive = true
+        nestStandaloneInstances = false
       }
     }
     types = {
@@ -56,11 +58,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -98,10 +98,10 @@ zendesk {
           remove = {
             url = "/api/v2/groups/{groupId}"
             method = "delete"
-            deployAsField = "group"
             urlParamsToFields = {
               groupId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -111,11 +111,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -177,10 +175,10 @@ zendesk {
           remove = {
             url = "/api/v2/custom_roles/{customRoleId}"
             method = "delete"
-            deployAsField = "custom_role"
             urlParamsToFields = {
               customRoleId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -190,11 +188,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -236,10 +232,10 @@ zendesk {
           remove = {
             url = "/api/v2/organizations/{organizationId}"
             method = "delete"
-            deployAsField = "organization"
             urlParamsToFields = {
               organizationId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -255,11 +251,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -297,10 +291,10 @@ zendesk {
           remove = {
             url = "/api/v2/views/{viewId}"
             method = "delete"
-            deployAsField = "view"
             urlParamsToFields = {
               viewId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -334,11 +328,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -376,11 +368,31 @@ zendesk {
           remove = {
             url = "/api/v2/triggers/{triggerId}"
             method = "delete"
-            deployAsField = "trigger"
             urlParamsToFields = {
               triggerId = "id"
             }
+            omitRequestBody = true
           }
+        }
+      }
+      trigger__conditions__all = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "is_user_value"
+              fieldType = "boolean"
+            },
+          ]
+        }
+      }
+      trigger__conditions__any = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "is_user_value"
+              fieldType = "boolean"
+            },
+          ]
         }
       }
       trigger_category = {
@@ -392,11 +404,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -433,10 +443,10 @@ zendesk {
           remove = {
             url = "/api/v2/trigger_categories/{triggerCategoryId}"
             method = "delete"
-            deployAsField = "trigger_category"
             urlParamsToFields = {
               triggerCategoryId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -466,11 +476,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -508,10 +516,10 @@ zendesk {
           remove = {
             url = "/api/v2/automations/{automationId}"
             method = "delete"
-            deployAsField = "automation"
             urlParamsToFields = {
               automationId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -535,11 +543,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -577,10 +583,10 @@ zendesk {
           remove = {
             url = "/api/v2/slas/policies/{slaPolicyId}"
             method = "delete"
-            deployAsField = "sla_policy"
             urlParamsToFields = {
               slaPolicyId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -619,11 +625,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -648,11 +652,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -690,10 +692,10 @@ zendesk {
           remove = {
             url = "/api/v2/targets/{targetId}"
             method = "delete"
-            deployAsField = "target"
             urlParamsToFields = {
               targetId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -709,11 +711,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -771,10 +771,10 @@ zendesk {
           remove = {
             url = "/api/v2/macros/{macroId}"
             method = "delete"
-            deployAsField = "macro"
             urlParamsToFields = {
               macroId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -786,11 +786,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -817,11 +815,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -842,11 +838,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -868,11 +862,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -934,11 +926,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -970,10 +960,10 @@ zendesk {
           remove = {
             url = "/api/v2/brands/{brandId}"
             method = "delete"
-            deployAsField = "brand"
             urlParamsToFields = {
               brandId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -989,11 +979,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1045,11 +1033,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1087,10 +1073,10 @@ zendesk {
           remove = {
             url = "/api/v2/business_hours/schedules/{scheduleId}"
             method = "delete"
-            deployAsField = "schedule"
             urlParamsToFields = {
               scheduleId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -1130,11 +1116,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1165,10 +1149,10 @@ zendesk {
           remove = {
             url = "/api/v2/sharing_agreements/{sharingAgreementId}"
             method = "delete"
-            deployAsField = "sharing_agreement"
             urlParamsToFields = {
               sharingAgreementId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -1248,11 +1232,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1266,6 +1248,10 @@ zendesk {
             },
             {
               fieldName = "domain_verification_code"
+            },
+            {
+              fieldName = "username"
+              fieldType = "string"
             },
           ]
         }
@@ -1286,10 +1272,10 @@ zendesk {
           remove = {
             url = "/api/v2/recipient_addresses/{supportAddressId}"
             method = "delete"
-            deployAsField = "recipient_address"
             urlParamsToFields = {
               supportAddressId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -1299,11 +1285,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1314,6 +1298,10 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "name"
+              fieldType = "string"
             },
           ]
           fieldTypeOverrides = [
@@ -1341,10 +1329,6 @@ zendesk {
               fieldName = "display_name"
               fieldType = "string"
             },
-            {
-              fieldName = "name"
-              fieldType = "string"
-            },
           ]
           serviceUrl = "/admin/objects-rules/tickets/ticket-forms/edit/{id}"
         }
@@ -1365,10 +1349,10 @@ zendesk {
           remove = {
             url = "/api/v2/ticket_forms/{ticketFormId}"
             method = "delete"
-            deployAsField = "ticket_form"
             urlParamsToFields = {
               ticketFormId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -1381,11 +1365,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1414,11 +1396,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1510,11 +1490,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1525,6 +1503,10 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "title"
+              fieldType = "string"
             },
           ]
           fieldsToOmit = [
@@ -1545,10 +1527,6 @@ zendesk {
             {
               fieldName = "position"
               fieldType = "number"
-            },
-            {
-              fieldName = "title"
-              fieldType = "string"
             },
             {
               fieldName = "description"
@@ -1587,10 +1565,10 @@ zendesk {
           remove = {
             url = "/api/v2/ticket_fields/{ticketFieldId}"
             method = "delete"
-            deployAsField = "ticket_field"
             urlParamsToFields = {
               ticketFieldId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -1619,6 +1597,7 @@ zendesk {
               ticketFieldId = "_parent.0.id"
               ticketFieldOptionId = "id"
             }
+            omitRequestBody = true
           }
         }
         transformation = {
@@ -1628,11 +1607,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1643,6 +1620,26 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "name"
+              fieldType = "string"
             },
           ]
           fieldTypeOverrides = [
@@ -1676,19 +1673,6 @@ zendesk {
             {
               fieldName = "type"
               fieldType = "string"
-              restrictions = {
-                enforce_value = true
-                values = [
-                  "checkbox",
-                  "date",
-                  "decimal",
-                  "dropdown",
-                  "integer",
-                  "regexp",
-                  "text",
-                  "textarea",
-                ]
-              }
             },
             {
               fieldName = "id"
@@ -1698,11 +1682,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1713,6 +1695,10 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "title"
+              fieldType = "string"
             },
           ]
           fieldsToOmit = [
@@ -1729,10 +1715,6 @@ zendesk {
             {
               fieldName = "count"
               fieldType = "number"
-            },
-            {
-              fieldName = "title"
-              fieldType = "string"
             },
             {
               fieldName = "description"
@@ -1758,10 +1740,10 @@ zendesk {
           remove = {
             url = "/api/v2/user_fields/{userFieldId}"
             method = "delete"
-            deployAsField = "user_field"
             urlParamsToFields = {
               userFieldId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -1790,6 +1772,7 @@ zendesk {
               userFieldId = "_parent.0.id"
               userFieldOptionId = "id"
             }
+            omitRequestBody = true
           }
         }
         transformation = {
@@ -1799,11 +1782,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1818,6 +1799,26 @@ zendesk {
             {
               fieldName = "default"
               fieldType = "boolean"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "name"
+              fieldType = "string"
             },
           ]
           fieldTypeOverrides = [
@@ -1851,19 +1852,6 @@ zendesk {
             {
               fieldName = "type"
               fieldType = "string"
-              restrictions = {
-                enforce_value = true
-                values = [
-                  "checkbox",
-                  "date",
-                  "decimal",
-                  "dropdown",
-                  "integer",
-                  "regexp",
-                  "text",
-                  "textarea",
-                ]
-              }
             },
             {
               fieldName = "id"
@@ -1873,11 +1861,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1888,6 +1874,10 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "title"
+              fieldType = "string"
             },
           ]
           fieldsToOmit = [
@@ -1904,10 +1894,6 @@ zendesk {
             {
               fieldName = "count"
               fieldType = "number"
-            },
-            {
-              fieldName = "title"
-              fieldType = "string"
             },
             {
               fieldName = "description"
@@ -1933,10 +1919,10 @@ zendesk {
           remove = {
             url = "/api/v2/organization_fields/{organizationFieldId}"
             method = "delete"
-            deployAsField = "organization_field"
             urlParamsToFields = {
               organizationFieldId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -1948,11 +1934,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -1998,11 +1982,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2034,11 +2016,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2076,10 +2056,10 @@ zendesk {
           remove = {
             url = "/api/v2/routing/attributes/{attributeId}"
             method = "delete"
-            deployAsField = "attribute"
             urlParamsToFields = {
               attributeId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -2091,11 +2071,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2122,11 +2100,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2164,16 +2140,22 @@ zendesk {
           remove = {
             url = "/api/v2/workspaces/{workspaceId}"
             method = "delete"
-            deployAsField = "workspace"
             urlParamsToFields = {
               workspaceId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
       workspace__selected_macros = {
         transformation = {
           fieldsToHide = [
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "usage_7d"
+              fieldType = "number"
+            },
           ]
         }
       }
@@ -2207,11 +2189,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2246,11 +2226,11 @@ zendesk {
           ]
           idFields = [
             "settings.name",
-            "app_id",
+            "product",
           ]
           fileNameFields = [
             "settings.name",
-            "app_id",
+            "product",
           ]
           fieldTypeOverrides = [
             {
@@ -2278,6 +2258,7 @@ zendesk {
             urlParamsToFields = {
               appInstallationId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -2286,11 +2267,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2321,11 +2300,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2353,11 +2330,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2383,6 +2358,14 @@ zendesk {
               fieldName = "id"
               fieldType = "number"
             },
+            {
+              fieldName = "secret"
+              fieldType = "string"
+            },
+            {
+              fieldName = "user_id"
+              fieldType = "number"
+            },
           ]
           serviceUrl = "/admin/apps-integrations/apis/zendesk-api/oauth_clients"
         }
@@ -2403,10 +2386,10 @@ zendesk {
           remove = {
             url = "/api/v2/oauth/clients/{oauthClientId}"
             method = "delete"
-            deployAsField = "client"
             urlParamsToFields = {
               oauthClientId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -2416,11 +2399,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2448,11 +2429,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2480,11 +2459,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2511,11 +2488,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2532,6 +2507,16 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+          ]
+        }
+      }
+      tag = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
             },
           ]
         }
@@ -2610,11 +2595,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2676,6 +2659,7 @@ zendesk {
           url = "/api/v2/macros"
           queryParams = {
             "page[size]" = "100"
+            access = "shared"
           }
           paginationField = "links.next"
         }
@@ -2693,11 +2677,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2721,11 +2703,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2748,11 +2728,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2803,11 +2781,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2845,10 +2821,10 @@ zendesk {
           remove = {
             url = "/api/v2/dynamic_content/items/{dynamicContentItemId}"
             method = "delete"
-            deployAsField = "item"
             urlParamsToFields = {
               dynamicContentItemId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -2860,11 +2836,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2910,6 +2884,7 @@ zendesk {
               dynammicContentVariantId = "id"
               dynamicContentItemId = "_parent.0.id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -2950,19 +2925,17 @@ zendesk {
               holidayId = "id"
               scheduleId = "_parent.0.id"
             }
+            omitRequestBody = true
           }
         }
         transformation = {
           sourceTypeName = "business_hours_schedule__holidays"
-          dataField = "holidays"
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -2974,11 +2947,27 @@ zendesk {
               fieldName = "id"
               fieldType = "number"
             },
+            {
+              fieldName = "start_year"
+              fieldType = "string"
+            },
+            {
+              fieldName = "end_year"
+              fieldType = "string"
+            },
           ]
           fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "start_year"
+              fieldType = "string"
+            },
+            {
+              fieldName = "end_year"
+              fieldType = "string"
             },
           ]
         }
@@ -3033,11 +3022,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -3105,6 +3092,7 @@ zendesk {
               attributeValueId = "id"
               attributeId = "_parent.0.id"
             }
+            omitRequestBody = true
           }
         }
         transformation = {
@@ -3113,11 +3101,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -3190,6 +3176,13 @@ zendesk {
       oauth_clients = {
         request = {
           url = "/api/v2/oauth/clients"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
+        }
+        transformation = {
+          dataField = "clients"
         }
       }
       oauth_global_clients = {
@@ -3260,11 +3253,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -3313,6 +3304,7 @@ zendesk {
             urlParamsToFields = {
               webhookId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -3373,11 +3365,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -3401,7 +3391,7 @@ zendesk {
             },
             {
               fieldName = "author_id"
-              fieldType = "string"
+              fieldType = "unknown"
             },
             {
               fieldName = "translations"
@@ -3468,6 +3458,7 @@ zendesk {
             urlParamsToFields = {
               articleId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -3488,11 +3479,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -3512,6 +3501,10 @@ zendesk {
               fieldName = "size"
               fieldType = "number"
             },
+            {
+              fieldName = "hash"
+              fieldType = "string"
+            },
           ]
           fieldTypeOverrides = [
             {
@@ -3524,6 +3517,10 @@ zendesk {
             },
             {
               fieldName = "content"
+              fieldType = "string"
+            },
+            {
+              fieldName = "hash"
               fieldType = "string"
             },
           ]
@@ -3565,6 +3562,7 @@ zendesk {
             urlParamsToFields = {
               articleAttachmentId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -3582,11 +3580,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -3670,6 +3666,7 @@ zendesk {
             urlParamsToFields = {
               translation_id = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -3711,6 +3708,7 @@ zendesk {
             urlParamsToFields = {
               locale = "locale"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -3885,11 +3883,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -3979,6 +3975,7 @@ zendesk {
             urlParamsToFields = {
               section_id = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -4017,11 +4014,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -4105,6 +4100,7 @@ zendesk {
             urlParamsToFields = {
               translation_id = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -4140,11 +4136,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -4216,6 +4210,7 @@ zendesk {
             urlParamsToFields = {
               category_id = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -4233,11 +4228,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -4321,6 +4314,7 @@ zendesk {
             urlParamsToFields = {
               translation_id = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -4342,11 +4336,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -4387,6 +4379,7 @@ zendesk {
             urlParamsToFields = {
               permissionGroupId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -4394,9 +4387,9 @@ zendesk {
         request = {
           url = "/api/v2/help_center/user_segments"
           queryParams = {
-            per_page = "100"
+            "page[size]" = "100"
           }
-          paginationField = "next_page"
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "user_segments"
@@ -4408,11 +4401,9 @@ zendesk {
           fieldsToHide = [
             {
               fieldName = "created_at"
-              fieldType = "string"
             },
             {
               fieldName = "updated_at"
-              fieldType = "string"
             },
             {
               fieldName = "created_by_id"
@@ -4473,6 +4464,7 @@ zendesk {
             urlParamsToFields = {
               userSegmentId = "id"
             }
+            omitRequestBody = true
           }
         }
       }
@@ -4508,6 +4500,10 @@ zendesk {
       oauth_tokens = {
         request = {
           url = "/api/v2/oauth/tokens"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "tokens"
@@ -4547,6 +4543,288 @@ zendesk {
         transformation = {
           sourceTypeName = "features__features"
           isSingleton = true
+        }
+      }
+      custom_objects = {
+        request = {
+          url = "/api/v2/custom_objects"
+          queryParams = {
+            per_page = "100"
+          }
+          paginationField = "next_page"
+          recurseInto = [
+            {
+              type = "custom_object_fields"
+              toField = "custom_object_fields"
+              context = [
+                {
+                  name = "custom_object_key"
+                  fromField = "key"
+                },
+              ]
+            },
+          ]
+        }
+        transformation = {
+          dataField = "custom_objects"
+        }
+      }
+      custom_object = {
+        transformation = {
+          idFields = [
+            "key",
+          ]
+          sourceTypeName = "custom_objects__custom_objects"
+          standaloneFields = [
+            {
+              fieldName = "custom_object_fields"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+            },
+            {
+              fieldName = "updated_at"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
+              fieldName = "created_by_user_id"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_by_user_id"
+              fieldType = "string"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "title"
+              fieldType = "string"
+            },
+            {
+              fieldName = "title_pluralized"
+              fieldType = "string"
+            },
+            {
+              fieldName = "description"
+              fieldType = "string"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/api/v2/custom_objects"
+            method = "post"
+            deployAsField = "custom_object"
+            fieldsToIgnore = [
+              "custom_object_fields",
+            ]
+          }
+          modify = {
+            url = "/api/v2/custom_objects/{custom_object_key}"
+            method = "patch"
+            deployAsField = "custom_object"
+            fieldsToIgnore = [
+              "custom_object_fields",
+            ]
+            urlParamsToFields = {
+              custom_object_key = "key"
+            }
+          }
+          remove = {
+            url = "/api/v2/custom_objects/{custom_object_key}"
+            method = "delete"
+            urlParamsToFields = {
+              custom_object_key = "key"
+            }
+            omitRequestBody = true
+          }
+        }
+      }
+      custom_object_fields = {
+        request = {
+          url = "/api/v2/custom_objects/{custom_object_key}/fields"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
+        }
+        transformation = {
+          dataField = "custom_object_fields"
+        }
+      }
+      custom_object_field = {
+        transformation = {
+          idFields = [
+            "key",
+          ]
+          extendsParentId = true
+          sourceTypeName = "custom_object__custom_object_fields"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+            },
+            {
+              fieldName = "updated_at"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "description"
+              fieldType = "string"
+            },
+            {
+              fieldName = "title"
+              fieldType = "string"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/api/v2/custom_objects/{custom_object_key}/fields"
+            method = "post"
+            deployAsField = "custom_object_field"
+            urlParamsToFields = {
+              custom_object_key = "_parent.0.key"
+            }
+          }
+          modify = {
+            url = "/api/v2/custom_objects/{custom_object_key}/fields/{custom_object_field_key}"
+            method = "put"
+            deployAsField = "custom_object_field"
+            urlParamsToFields = {
+              custom_object_key = "_parent.0.key"
+              custom_object_field_key = "id"
+            }
+          }
+          remove = {
+            url = "/api/v2/custom_objects/{custom_object_key}/fields/{custom_object_field_key}"
+            method = "delete"
+            urlParamsToFields = {
+              custom_object_key = "_parent.0.key"
+              custom_object_field_key = "key"
+            }
+            omitRequestBody = true
+          }
+        }
+      }
+      custom_object_field__custom_field_options = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+            },
+            {
+              fieldName = "updated_at"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      themes = {
+        request = {
+          url = "/api/v2/guide/theming/themes"
+        }
+        transformation = {
+          dataField = "themes"
+        }
+      }
+      theme = {
+        transformation = {
+          idFields = [
+            "&brand_id",
+            "name",
+          ]
+          sourceTypeName = "themes__themes"
+          fieldTypeOverrides = [
+            {
+              fieldName = "files"
+              fieldType = "map<unknown>"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+            },
+            {
+              fieldName = "updated_at"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
         }
       }
     }
@@ -4652,6 +4930,12 @@ zendesk {
       ]
       account_features = [
         "features",
+      ]
+      tag = [
+        "tags",
+      ]
+      custom_object = [
+        "custom_objects",
       ]
     }
   }

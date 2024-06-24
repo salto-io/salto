@@ -1,30 +1,36 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import glob from 'glob'
 import { Plan, telemetrySender, preview, loadLocalWorkspace, AppConfig } from '@salto-io/core'
-import { parser, Workspace, WorkspaceComponents } from '@salto-io/workspace'
+import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { readTextFile, writeFile } from '@salto-io/file'
 import {
-  ActionName, Change, ElemID, getChangeData, InstanceElement, ObjectType, Values,
-  Element, TypeMap,
+  ActionName,
+  Change,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  ObjectType,
+  Values,
+  Element,
+  TypeMap,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import {
-  findElement,
-} from '@salto-io/adapter-utils'
+import { findElement } from '@salto-io/adapter-utils'
 import commandDefs from '../../src/commands'
 import cli from '../../src/cli'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
@@ -51,11 +57,12 @@ expect.extend({
     const pass = resolved.length !== 0
     return {
       pass,
-      message: () => `file ${quote(pattern)} ${
-        pass
-          ? `exists${resolved.length > 1 || pattern !== resolved[0] ? `: ${filenameList(resolved)}` : ''}`
-          : 'does not exist'
-      }`,
+      message: () =>
+        `file ${quote(pattern)} ${
+          pass
+            ? `exists${resolved.length > 1 || pattern !== resolved[0] ? `: ${filenameList(resolved)}` : ''}`
+            : 'does not exist'
+        }`,
     }
   },
 })
@@ -64,8 +71,7 @@ export type ReplacementPair = [string | RegExp, string]
 
 const { parse } = parser
 
-const mockCliOutput = (): CliOutput =>
-  ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
+const mockCliOutput = (): CliOutput => ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
 const config: AppConfig = {
   installationID: 'abcd',
@@ -84,8 +90,7 @@ const telemetry = telemetrySender(
 
 export const cleanup = async (): Promise<void> => telemetry.stop(0)
 
-export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):
-  Promise<void> => {
+export const editNaclFile = async (filename: string, replacements: ReplacementPair[]): Promise<void> => {
   let fileAsString = await readTextFile(filename)
   replacements.forEach(pair => {
     fileAsString = fileAsString.replace(pair[0], pair[1])
@@ -93,8 +98,7 @@ export const editNaclFile = async (filename: string, replacements: ReplacementPa
   await writeFile(filename, fileAsString)
 }
 
-export const getNaclFileElements = async (filename: string):
-  Promise<Element[]> => {
+export const getNaclFileElements = async (filename: string): Promise<Element[]> => {
   const fileAsString = await readTextFile(filename)
   return awu((await parse(Buffer.from(fileAsString), filename)).elements).toArray()
 }
@@ -107,7 +111,7 @@ const runCommand = ({
   workspacePath: string
   args: string[]
   cliOutput?: CliOutput
-}): Promise<CliExitCode> => (
+}): Promise<CliExitCode> =>
   cli({
     input: {
       args,
@@ -119,19 +123,15 @@ const runCommand = ({
     output: cliOutput ?? mockCliOutput(),
     spinnerCreator: mockSpinnerCreator([]),
   })
-)
 
-export const runInit = async (
-  workspaceName: string,
-  workspacePath: string,
-): Promise<void> => {
+export const runInit = async (workspaceName: string, workspacePath: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['init', workspaceName],
+    workspacePath,
+    args: ['init', workspaceName],
   })
 }
 
-export const runAddSalesforceService = async (workspacePath: string,
-  accountName?: string): Promise<void> => {
+export const runAddSalesforceService = async (workspacePath: string, accountName?: string): Promise<void> => {
   await runCommand({
     workspacePath,
     args: accountName
@@ -140,32 +140,31 @@ export const runAddSalesforceService = async (workspacePath: string,
   })
 }
 
-export const runSalesforceLogin = async (workspacePath: string,
-  accountName: string): Promise<void> => {
+export const runSalesforceLogin = async (workspacePath: string, accountName: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['account', 'login', accountName],
+    workspacePath,
+    args: ['account', 'login', accountName],
   })
 }
 
-export const runCreateEnv = async (
-  workspacePath: string,
-  envName: string,
-  force?: boolean,
-): Promise<void> => {
+export const runCreateEnv = async (workspacePath: string, envName: string, force?: boolean): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['env', 'create', envName, ...force ? ['-f'] : []],
+    workspacePath,
+    args: ['env', 'create', envName, ...(force ? ['-f'] : [])],
   })
 }
 
 export const runSetEnv = async (workspacePath: string, envName: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['env', 'set', envName],
+    workspacePath,
+    args: ['env', 'set', envName],
   })
 }
 
 export const runDeleteEnv = async (workspacePath: string, envName: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['env', 'delete', envName],
+    workspacePath,
+    args: ['env', 'delete', envName],
   })
 }
 
@@ -185,9 +184,16 @@ export const runFetch = async (
     args: [
       'fetch',
       '-f',
-      ...inputEnvironment ? ['-e', inputEnvironment] : [],
-      '-m', isolated ? 'isolated' : 'override',
-      ...(configOverrides ?? []).flatMap(override => ['-C', override]),
+      ...(inputEnvironment ? ['-e', inputEnvironment] : []),
+      '-m',
+      isolated ? 'isolated' : 'override',
+      ...(configOverrides ?? [])
+        // Temporary workaround until https://salto-io.atlassian.net/browse/SALTO-5544 is implemented
+        .concat([
+          'salesforce.fetch.optionalFeatures.hideTypesFolder=false',
+          'e2esalesforce.fetch.optionalFeatures.hideTypesFolder=false',
+        ])
+        .flatMap(override => ['-C', override]),
     ],
   })
   expect(result).toEqual(CliExitCode.Success)
@@ -224,12 +230,12 @@ export const runClean = async ({
   cleanArgs: Partial<WorkspaceComponents>
 }): Promise<CliExitCode> => {
   const options = [
-    ...cleanArgs.nacl === false ? ['--no-nacl'] : [],
-    ...cleanArgs.state === false ? ['--no-state'] : [],
-    ...cleanArgs.cache === false ? ['--no-cache'] : [],
-    ...cleanArgs.staticResources === false ? ['--no-static-resources'] : [],
-    ...cleanArgs.credentials ? ['--credentials'] : [],
-    ...cleanArgs.accountConfig ? ['--account-config'] : [],
+    ...(cleanArgs.nacl === false ? ['--no-nacl'] : []),
+    ...(cleanArgs.state === false ? ['--no-state'] : []),
+    ...(cleanArgs.cache === false ? ['--no-cache'] : []),
+    ...(cleanArgs.staticResources === false ? ['--no-static-resources'] : []),
+    ...(cleanArgs.credentials ? ['--credentials'] : []),
+    ...(cleanArgs.accountConfig ? ['--account-config'] : []),
   ]
   return runCommand({
     workspacePath,
@@ -244,10 +250,7 @@ export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Worksp
   return workspace
 }
 
-export const runPreviewGetPlan = async (
-  fetchOutputDir: string,
-  accounts?: string[]
-): Promise<Plan> => {
+export const runPreviewGetPlan = async (fetchOutputDir: string, accounts?: string[]): Promise<Plan> => {
   const workspace = await loadLocalWorkspace({ path: fetchOutputDir })
   return preview(workspace, accounts)
 }
@@ -255,8 +258,7 @@ export const runPreviewGetPlan = async (
 const getChangedElementName = (change: Change): string => getChangeData(change).elemID.name
 
 type ExpectedChange = { action: ActionName; element: string }
-export const verifyChanges = (plan: Plan,
-  expectedChanges: ExpectedChange[]): void => {
+export const verifyChanges = (plan: Plan, expectedChanges: ExpectedChange[]): void => {
   const compareChanges = (a: ExpectedChange, b: ExpectedChange): number => {
     if (a.action !== b.action) {
       return a.action > b.action ? 1 : -1
@@ -275,29 +277,27 @@ export const verifyChanges = (plan: Plan,
   expect(changes).toEqual(expectedChanges.sort(compareChanges))
 }
 
-export const runEmptyPreview = async (
-  fetchOutputDir: string,
-  accounts?: string[]
-): Promise<void> => {
+export const runEmptyPreview = async (fetchOutputDir: string, accounts?: string[]): Promise<void> => {
   const plan = await runPreviewGetPlan(fetchOutputDir, accounts)
   verifyChanges(plan, [])
 }
 
-const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
-  name: string): InstanceElement =>
-  findElement(elements,
-    new ElemID(adapter, typeName, 'instance', name)) as InstanceElement
+const findInstance = (
+  elements: ReadonlyArray<Element>,
+  adapter: string,
+  typeName: string,
+  name: string,
+): InstanceElement => findElement(elements, new ElemID(adapter, typeName, 'instance', name)) as InstanceElement
 
 export const verifyInstance = async (
   elements: AsyncIterable<Element>,
   adapter: string,
   typeName: string,
   name: string,
-  expectedValues: Values
+  expectedValues: Values,
 ): Promise<void> => {
   const newInstance = findInstance(await awu(elements).toArray(), adapter, typeName, name)
-  Object.entries(expectedValues).forEach(([key, value]) =>
-    expect(newInstance.value[key]).toEqual(value))
+  Object.entries(expectedValues).forEach(([key, value]) => expect(newInstance.value[key]).toEqual(value))
 }
 
 export const verifyObject = async (
@@ -306,16 +306,13 @@ export const verifyObject = async (
   typeName: string,
   expectedAnnotationTypes: TypeMap,
   expectedAnnotations: Values,
-  expectedFieldAnnotations: Record<string, Values>
+  expectedFieldAnnotations: Record<string, Values>,
 ): Promise<ObjectType> => {
-  const object = findElement(
-    await awu(elements).toArray(),
-    new ElemID(adapter, typeName)
-  ) as ObjectType
+  const object = findElement(await awu(elements).toArray(), new ElemID(adapter, typeName)) as ObjectType
   Object.entries(expectedAnnotationTypes).forEach(([key, value]) =>
-    expect(object.annotationRefTypes[key].elemID).toEqual(value.elemID))
-  Object.entries(expectedAnnotations).forEach(([key, value]) =>
-    expect(object.annotations[key]).toEqual(value))
+    expect(object.annotationRefTypes[key].elemID).toEqual(value.elemID),
+  )
+  Object.entries(expectedAnnotations).forEach(([key, value]) => expect(object.annotations[key]).toEqual(value))
   Object.entries(expectedFieldAnnotations).forEach(([fieldName, fieldAnnotation]) => {
     expect(object.fields[fieldName].annotations[fieldAnnotation[0]]).toEqual(fieldAnnotation[1])
   })

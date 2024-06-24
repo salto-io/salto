@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   ObjectType,
   ElemID,
@@ -87,33 +87,29 @@ describe('state', () => {
   describe('buildStateData', () => {
     it('should call staticFilesSource get when deserializing elements', async () => {
       const remoteMapCreator = mockFunction<RemoteMapCreator>()
-      await buildStateData(
-        'env',
-        remoteMapCreator,
-        stateStaticFilesSource,
-        false,
-      )
+      await buildStateData('env', remoteMapCreator, stateStaticFilesSource, false)
 
-      const elementsDeserialize = remoteMapCreator.mock.calls
-        .find(call => call[0].namespace === 'state-env-elements')?.[0].deserialize
+      const elementsDeserialize = remoteMapCreator.mock.calls.find(
+        call => call[0].namespace === 'state-env-elements',
+      )?.[0].deserialize
 
       expect(elementsDeserialize).toBeDefined()
 
       await elementsDeserialize?.(await serialize([newElem]))
-      expect(stateStaticFilesSource.getStaticFile).toHaveBeenCalledWith(staticFile.filepath, 'utf8', staticFile.hash)
+      expect(stateStaticFilesSource.getStaticFile).toHaveBeenCalledWith({
+        filepath: staticFile.filepath,
+        encoding: 'utf8',
+        hash: staticFile.hash,
+      })
     })
 
     it('should call staticFilesSource get when serializing elements', async () => {
       const remoteMapCreator = mockFunction<RemoteMapCreator>()
-      await buildStateData(
-        'env',
-        remoteMapCreator,
-        stateStaticFilesSource,
-        false,
-      )
+      await buildStateData('env', remoteMapCreator, stateStaticFilesSource, false)
 
-      const elementsSerialize = remoteMapCreator.mock.calls
-        .find(call => call[0].namespace === 'state-env-elements')?.[0].serialize
+      const elementsSerialize = remoteMapCreator.mock.calls.find(
+        call => call[0].namespace === 'state-env-elements',
+      )?.[0].serialize
 
       expect(elementsSerialize).toBeDefined()
 
@@ -139,9 +135,16 @@ describe('state', () => {
     it('get', async () => {
       expect(await state.get(elemID)).toEqual(elem)
     })
-    it('set', async () => {
-      await state.set(newElem)
-      expect(await state.get(newElemID)).toEqual(newElem)
+    describe('set', () => {
+      beforeEach(async () => {
+        await state.set(newElem)
+      })
+      it('should set element such that get would return it', async () => {
+        expect(await state.get(newElemID)).toEqual(newElem)
+      })
+      it('should not change account update date', async () => {
+        expect(await state.getAccountsUpdateDates()).toEqual(accountsUpdateDate)
+      })
     })
     it('remove', async () => {
       await state.set(newElem)
@@ -234,10 +237,14 @@ describe('state', () => {
           expect(allElements.some(e => e.isEqual(toAdd))).toBeTruthy()
         })
         it('should modify elements that were modified', () => {
-          expect(allElements[2].isEqual(new ObjectType({
-            elemID: new ElemID(adapter, 'modify', 'type'),
-            fields: { modifyMe: { refType: BuiltinTypes.NUMBER }, addMe: { refType: BuiltinTypes.STRING } },
-          }))).toBeTruthy()
+          expect(
+            allElements[2].isEqual(
+              new ObjectType({
+                elemID: new ElemID(adapter, 'modify', 'type'),
+                fields: { modifyMe: { refType: BuiltinTypes.NUMBER }, addMe: { refType: BuiltinTypes.STRING } },
+              }),
+            ),
+          ).toBeTruthy()
         })
       })
       describe('pathIndex', () => {
@@ -307,13 +314,9 @@ describe('state', () => {
         expect(accountsUpdateDates[adapter] < newAccountsUpdateDates[adapter]).toBeTruthy()
       })
       it('should call removal of static file that was removed', async () => {
-        const beforeElem = new InstanceElement(
-          'elem',
-          new ObjectType({ elemID: new ElemID('salesforce', 'type') }),
-          {
-            f1: staticFile, // To modify
-          }
-        )
+        const beforeElem = new InstanceElement('elem', new ObjectType({ elemID: new ElemID('salesforce', 'type') }), {
+          f1: staticFile, // To modify
+        })
         const afterElem = beforeElem.clone()
         delete afterElem.value.f1
 
@@ -323,6 +326,12 @@ describe('state', () => {
         })
 
         expect(stateStaticFilesSource.delete).toHaveBeenCalledWith(staticFile)
+      })
+    })
+
+    describe('updateConfig', () => {
+      it('should do nothing', async () => {
+        await expect(state.updateConfig({ workspaceId: '', stateConfig: undefined })).resolves.not.toThrow()
       })
     })
   })

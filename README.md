@@ -2,7 +2,9 @@
 [![Knuckles](bnw-face.png)](https://github.com/salto-io/salto/blob/main/docs/faq.md#why-did-we-choose-knuckles-as-our-mascot)
 ---
 
-[![CircleCI](https://circleci.com/gh/salto-io/salto.svg?style=shield&circle-token=e64029d1886e2965a8d51b09597054b5a1e84733)](https://circleci.com/gh/salto-io/salto) &nbsp; &nbsp; [![Coverage Status](https://coveralls.io/repos/github/salto-io/salto/badge.svg?branch=main)](https://coveralls.io/github/salto-io/salto?branch=main)
+[![CircleCI](https://circleci.com/gh/salto-io/salto.svg?style=shield)](https://circleci.com/gh/salto-io/salto)
+[![Coverage Status](https://coveralls.io/repos/github/salto-io/salto/badge.svg?branch=main)](https://coveralls.io/github/salto-io/salto?branch=main)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 ---
 
 Salto allows you to manage your business applications' configuration in code. By doing so, it enables modern devops style methodologies for development, testing and deployment for these business applications.

@@ -1,50 +1,61 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isEqualValues, isObjectType, isRemovalChange, isRemovalOrModificationChange, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, getParents, isResolvedReferenceExpression, resolveChangeElement, resolvePath, resolveValues } from '@salto-io/adapter-utils'
+import {
+  Change,
+  CORE_ANNOTATIONS,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isEqualValues,
+  isObjectType,
+  isRemovalChange,
+  isRemovalOrModificationChange,
+  ObjectType,
+  ReadOnlyElementsSource,
+  Value,
+} from '@salto-io/adapter-api'
+import { client as clientUtils, resolveChangeElement, resolveValues } from '@salto-io/adapter-components'
+import {
+  applyFunctionToChangeData,
+  getParents,
+  isResolvedReferenceExpression,
+  resolvePath,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
 import { addAnnotationRecursively, setFieldDeploymentAnnotations } from '../../utils'
 
-
-const resolveDefaultOption = (
-  contextChange: Change<InstanceElement>,
-): Promise<Change<InstanceElement>> =>
-  applyFunctionToChangeData<Change<InstanceElement>>(
-    contextChange,
-    instance => {
-      const clonedInstance = instance.clone();
-
-      ['optionId', 'cascadingOptionId']
-        .filter(fieldName => isResolvedReferenceExpression(clonedInstance.value.defaultValue?.[fieldName]))
-        .forEach(fieldName => {
-          // We resolve this values like this and not with resolveChangeElement
-          // is because if we just created these options, the options under instance.value will
-          // include the new option ids while the copied options under the references
-          // resValues won't
-          clonedInstance.value.defaultValue[fieldName] = resolvePath(
-            clonedInstance,
-            clonedInstance.value.defaultValue[fieldName].elemID
-          ).id
-        })
-      return clonedInstance
-    }
-  )
+const resolveDefaultOption = (contextChange: Change<InstanceElement>): Promise<Change<InstanceElement>> =>
+  applyFunctionToChangeData<Change<InstanceElement>>(contextChange, instance => {
+    const clonedInstance = instance.clone()
+    ;['optionId', 'cascadingOptionId']
+      .filter(fieldName => isResolvedReferenceExpression(clonedInstance.value.defaultValue?.[fieldName]))
+      .forEach(fieldName => {
+        // We resolve this values like this and not with resolveChangeElement
+        // is because if we just created these options, the options under instance.value will
+        // include the new option ids while the copied options under the references
+        // resValues won't
+        clonedInstance.value.defaultValue[fieldName] = resolvePath(
+          clonedInstance,
+          clonedInstance.value.defaultValue[fieldName].elemID,
+        ).id
+      })
+    return clonedInstance
+  })
 
 export const updateDefaultValues = async (
   contextChange: Change<InstanceElement>,
@@ -66,17 +77,17 @@ export const updateDefaultValues = async (
     ? resolvedChange.data.after.value.defaultValue
     : undefined
 
-  if (isRemovalChange(contextChange)
-      || isEqualValues(beforeDefault, afterDefault)
-  ) {
+  if (isRemovalChange(contextChange) || isEqualValues(beforeDefault, afterDefault)) {
     return
   }
 
-  const defaultValueToUpdate = afterDefault ?? _.mapValues(
-    beforeDefault,
-    // The way to delete a default value is to set its values to null
-    (value: Value, key: string) => (['contextId', 'type'].includes(key) ? value : null)
-  )
+  const defaultValueToUpdate =
+    afterDefault ??
+    _.mapValues(
+      beforeDefault,
+      // The way to delete a default value is to set its values to null
+      (value: Value, key: string) => (['contextId', 'type'].includes(key) ? value : null),
+    )
 
   const contextInstance = getChangeData(resolvedChange)
   const parentId = getParents(contextInstance)[0].id
@@ -84,20 +95,22 @@ export const updateDefaultValues = async (
   await client.put({
     url: `/rest/api/3/field/${parentId}/context/defaultValue`,
     data: {
-      defaultValues: [{
-        ...defaultValueToUpdate,
-        contextId: contextInstance.value.id,
-      }],
+      defaultValues: [
+        {
+          ...defaultValueToUpdate,
+          contextId: contextInstance.value.id,
+        },
+      ],
     },
   })
 }
 
-export const setDefaultValueTypeDeploymentAnnotations = async (
-  fieldContextType: ObjectType,
-): Promise<void> => {
+export const setDefaultValueTypeDeploymentAnnotations = async (fieldContextType: ObjectType): Promise<void> => {
   const defaultValueType = await fieldContextType.fields.defaultValue?.getType()
   if (!isObjectType(defaultValueType)) {
-    throw new Error(`type ${defaultValueType.elemID.getFullName()} of ${fieldContextType.fields.defaultValue?.elemID.getFullName()} is not an object type`)
+    throw new Error(
+      `type ${defaultValueType.elemID.getFullName()} of ${fieldContextType.fields.defaultValue?.elemID.getFullName()} is not an object type`,
+    )
   }
 
   setFieldDeploymentAnnotations(fieldContextType, 'defaultValue')

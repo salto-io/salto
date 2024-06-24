@@ -1,23 +1,25 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import wu from 'wu'
 import { collections, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 
 const { difference } = collections.set
 type DFS_STATUS = 'in_progress' | 'done'
+const log = logger(module)
 
 export type NodeId = collections.set.SetId
 export type Edge = [NodeId, NodeId]
@@ -40,19 +42,28 @@ export class NodeSkippedError extends Error {
   }
 }
 
+// Errors that should be thrown *during* the walk. (The default behavior is to finish the walk and only then throw the errors that were encountered).
+// Please note that async jobs that have already started will not be interrupted; however, the function will return with an error.
+export class FatalError extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
+
 export class WalkError extends Error {
   readonly handlerErrors: ReadonlyMap<NodeId, Error>
   readonly circularDependencyError?: CircularDependencyError
 
-  constructor(
-    handlerErrors: ReadonlyMap<NodeId, Error>,
-    circularDependencyError?: CircularDependencyError
-  ) {
-    super([
-      'At least one error encountered during walk:',
-      circularDependencyError?.toString(),
-      WalkError.formatErrors(handlerErrors),
-    ].filter(s => s).join('\n'))
+  constructor(handlerErrors: ReadonlyMap<NodeId, Error>, circularDependencyError?: CircularDependencyError) {
+    super(
+      [
+        'At least one error encountered during walk:',
+        circularDependencyError?.toString(),
+        WalkError.formatErrors(handlerErrors),
+      ]
+        .filter(s => s)
+        .join('\n'),
+    )
     this.handlerErrors = handlerErrors
     this.circularDependencyError = circularDependencyError
   }
@@ -61,7 +72,8 @@ export class WalkError extends Error {
     const indentStr = Array(indent).fill(' ').join('')
     return wu(errors)
       .map(([node, error]) => `${indentStr}${node}: ${error}`)
-      .toArray().join('\n')
+      .toArray()
+      .join('\n')
   }
 }
 
@@ -78,15 +90,20 @@ class WalkErrors<T> extends Map<NodeId, Error> {
   }
 
   set(nodeId: NodeId, value: Error, visited: Set<string> = new Set()): this {
+    log.error('Error encountered while walking on node %s: %s\n stack: %s', nodeId, value, value.stack)
     const idAsString = nodeId.toString()
     if (visited.has(idAsString)) {
       return this
     }
     visited.add(idAsString)
     super.set(nodeId, value)
-    this.nodeMap.getReverse(nodeId).forEach(
-      dependentNode => this.set(dependentNode, new NodeSkippedError(nodeId), visited)
-    )
+    if (value instanceof FatalError) {
+      this.nodeMap.forEach((_, id) => this.set(id, new NodeSkippedError(nodeId), visited))
+      throw new WalkError(this, undefined)
+    }
+    this.nodeMap
+      .getReverse(nodeId)
+      .forEach(dependentNode => this.set(dependentNode, new NodeSkippedError(nodeId), visited))
     return this
   }
 
@@ -97,9 +114,7 @@ class WalkErrors<T> extends Map<NodeId, Error> {
     if (this.size !== 0 || unhandledNodes.size !== 0) {
       throw new WalkError(
         this,
-        unhandledNodes.size !== 0
-          ? new CircularDependencyError(this.nodeMap.cloneWithout(errorNodes))
-          : undefined,
+        unhandledNodes.size !== 0 ? new CircularDependencyError(this.nodeMap.cloneWithout(errorNodes)) : undefined,
       )
     }
   }
@@ -112,7 +127,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   private readonly reverseNeighbors: collections.map.DefaultMap<NodeId, Set<NodeId>>
 
   private static createReverseNeighbors(
-    entries: Iterable<[NodeId, Set<NodeId>]>
+    entries: Iterable<[NodeId, Set<NodeId>]>,
   ): collections.map.DefaultMap<NodeId, Set<NodeId>> {
     const result = new collections.map.DefaultMap<NodeId, Set<NodeId>>(() => new Set<NodeId>())
     wu(entries).forEach(([id, deps]) => deps.forEach(dep => result.get(dep).add(id)))
@@ -125,8 +140,8 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 
   clone(): this {
-    return new (this.constructor as new(entries: Iterable<[NodeId, Set<NodeId>]>) => this)(
-      wu(this).map(([k, v]) => [k, new Set<NodeId>(v)])
+    return new (this.constructor as new (entries: Iterable<[NodeId, Set<NodeId>]>) => this)(
+      wu(this).map(([k, v]) => [k, new Set<NodeId>(v)]),
     )
   }
 
@@ -178,7 +193,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   filterNodes(func: (node: NodeId) => boolean): this {
     const nodesToDrop = new Set(wu(this.keys()).filter(node => !func(node)))
     return new (this.constructor as new (entries: Iterable<[NodeId, Set<NodeId>]>) => this)(
-      this.entriesWithout(nodesToDrop)
+      this.entriesWithout(nodesToDrop),
     )
   }
 
@@ -232,19 +247,20 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 
   getCycle(): Edge[] | undefined {
-    const getCycleFrom = (
-      id: NodeId,
-      nodeColors: Map<NodeId, DFS_STATUS>,
-      path: Edge[] = []
-    ): Edge[] | undefined => {
+    const getCycleFrom = (id: NodeId, nodeColors: Map<NodeId, DFS_STATUS>, path: Edge[] = []): Edge[] | undefined => {
       if (nodeColors.has(id)) {
-        return nodeColors.get(id) === 'in_progress' ? path : undefined
+        if (nodeColors.get(id) === 'in_progress') {
+          // Found a cycle - the cycle is "closed" on this node.
+          // In order to return just the cycle, we need to remove any edges that lead up to this node
+          return path.slice(path.findIndex(edge => edge[0] === id))
+        }
+        return undefined
       }
       nodeColors.set(id, 'in_progress')
       const children = this.get(id).keys()
-      const cycle = wu(children).map(child => (
-        getCycleFrom(child, nodeColors, [...path, [id, child]])
-      )).find(values.isDefined)
+      const cycle = wu(children)
+        .map(child => getCycleFrom(child, nodeColors, [...path, [id, child]]))
+        .find(values.isDefined)
       nodeColors.set(id, 'done')
       return cycle
     }
@@ -253,6 +269,38 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return wu(this.keys())
       .map(root => getCycleFrom(root, nodeColors))
       .find(values.isDefined)
+  }
+
+  getComponent({
+    roots,
+    filterFunc,
+    reverse,
+  }: {
+    roots: NodeId[]
+    filterFunc?: (id: NodeId) => boolean
+    reverse?: boolean
+  }): Set<NodeId> {
+    const getComponentImpl = (
+      id: NodeId,
+      visited: Set<NodeId>,
+      filter: (id: NodeId) => boolean = () => true,
+    ): Set<NodeId> => {
+      if (visited.has(id)) {
+        return new Set()
+      }
+      visited.add(id)
+      const directChildren = reverse ? this.getReverse(id) : this.get(id)
+      const children = new Set(
+        wu(directChildren.values())
+          .filter(filter)
+          .map(childId => getComponentImpl(childId, visited, filter))
+          .flatten(true),
+      )
+      return children.add(id)
+    }
+    const visited = new Set<NodeId>()
+
+    return new Set(roots.flatMap(root => [...getComponentImpl(root, visited, filterFunc).values()]))
   }
 
   clear(): void {
@@ -265,10 +313,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
 export class DataNodeMap<T> extends AbstractNodeMap {
   readonly nodeData: Map<NodeId, T>
 
-  constructor(
-    entries?: Iterable<[NodeId, Set<NodeId>]>,
-    nodeData?: Map<NodeId, T>,
-  ) {
+  constructor(entries?: Iterable<[NodeId, Set<NodeId>]>, nodeData?: Map<NodeId, T>) {
     super(entries)
     this.nodeData = nodeData || new Map<NodeId, T>()
   }
@@ -283,39 +328,8 @@ export class DataNodeMap<T> extends AbstractNodeMap {
     return super.deleteNode(id)
   }
 
-  getComponent({ roots, filterFunc, reverse }:{
-    roots: NodeId[]
-    filterFunc?: (id: NodeId) => boolean
-    reverse?: boolean
-  }): Set<NodeId> {
-    const getComponentImpl = (
-      id: NodeId,
-      visited: Set<NodeId>,
-      filter: (id: NodeId) => boolean = () => true
-    ): Set<NodeId> => {
-      if (visited.has(id)) {
-        return new Set()
-      }
-      visited.add(id)
-      const directChildren = reverse ? this.getReverse(id) : this.get(id)
-      const children = new Set(
-        wu(directChildren.values())
-          .filter(filter)
-          .map(childId => getComponentImpl(childId, visited, filter))
-          .flatten(true)
-      )
-      return children.add(id)
-    }
-    const visited = new Set<NodeId>()
-
-    return new Set(roots.flatMap(root => [...getComponentImpl(root, visited, filterFunc).values()]))
-  }
-
   cloneWithout(ids: Set<NodeId>): this {
-    return new (this.constructor as new (
-      entries: Iterable<[NodeId, Set<NodeId>]>,
-      nodeData: Map<NodeId, T>,
-    ) => this)(
+    return new (this.constructor as new (entries: Iterable<[NodeId, Set<NodeId>]>, nodeData: Map<NodeId, T>) => this)(
       this.entriesWithout(ids),
       new Map<NodeId, T>(wu(this.nodeData).filter(([k]) => !ids.has(k))),
     )
@@ -363,7 +377,11 @@ export class DAG<T> extends DataNodeMap<T> {
         break
       }
 
-      nextNodes = new Set<NodeId>(wu(freeNodes).map(n => dependencies.deleteNode(n)).flatten())
+      nextNodes = new Set<NodeId>(
+        wu(freeNodes)
+          .map(n => dependencies.deleteNode(n))
+          .flatten(),
+      )
 
       yield freeNodes
     }
@@ -376,14 +394,17 @@ export class DAG<T> extends DataNodeMap<T> {
   async walkAsyncDestructive(handler: AsyncNodeHandler): Promise<void> {
     const errors = new WalkErrors(this)
 
-    const next = (affectedNodes: Iterable<NodeId>): Promise<void> => promiseAllToSingle(
-      wu(this.freeNodes(affectedNodes)).map(
-        node => handler(node).then(
-          () => next(this.deleteNode(node)),
-          e => { errors.set(node, e) },
-        )
+    const next = (affectedNodes: Iterable<NodeId>): Promise<void> =>
+      promiseAllToSingle(
+        wu(this.freeNodes(affectedNodes)).map(node =>
+          handler(node).then(
+            () => next(this.deleteNode(node)),
+            e => {
+              errors.set(node, e)
+            },
+          ),
+        ),
       )
-    )
 
     await next(this.keys())
     errors.throwIfNotEmpty()
@@ -397,15 +418,15 @@ export class DAG<T> extends DataNodeMap<T> {
     const errors = new WalkErrors(this)
 
     const next = (affectedNodes: Iterable<NodeId>): void => {
-      wu(this.freeNodes(affectedNodes))
-        .forEach(node => {
-          try {
-            handler(node)
-            next(this.deleteNode(node))
-          } catch (e) {
-            errors.set(node, e)
-          }
-        })
+      wu(this.freeNodes(affectedNodes)).forEach(node => {
+        try {
+          handler(node)
+        } catch (e) {
+          errors.set(node, e)
+          return
+        }
+        next(this.deleteNode(node))
+      })
     }
     next(this.keys())
     errors.throwIfNotEmpty()
@@ -419,7 +440,9 @@ export class DAG<T> extends DataNodeMap<T> {
     const setMany = (newEdges: Map<NodeId, Set<NodeId>>): void => {
       // Note we use "this.set" for efficiency. this is safe to do because we revert
       // all changes at the end, so this does not break the reverseEdges map
-      wu(newEdges.entries()).forEach(([id, deps]) => { this.set(id, deps) })
+      wu(newEdges.entries()).forEach(([id, deps]) => {
+        this.set(id, deps)
+      })
     }
     const origEdges = new Map(wu(changes.keys()).map(id => [id, this.get(id)]))
     setMany(changes)

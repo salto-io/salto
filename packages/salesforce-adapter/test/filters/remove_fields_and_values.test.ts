@@ -1,22 +1,30 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, ElemID, BuiltinTypes, Element, InstanceElement } from '@salto-io/adapter-api'
-import { makeFilter } from '../../src/filters/remove_fields_and_values'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  Element,
+  InstanceElement,
+} from '@salto-io/adapter-api'
+import removeFieldAndValuesFilter, {
+  makeFilter,
+} from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
-import { defaultFilterContext } from '../utils'
+import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
 describe('remove fields filter', () => {
@@ -42,7 +50,10 @@ describe('remove fields filter', () => {
     },
   })
 
-  const mockObjIdWithInstance = new ElemID(constants.SALESFORCE, 'typeWithInstance')
+  const mockObjIdWithInstance = new ElemID(
+    constants.SALESFORCE,
+    'typeWithInstance',
+  )
   const mockTypeWithInstance = new ObjectType({
     elemID: mockObjIdWithInstance,
     fields: {
@@ -60,20 +71,23 @@ describe('remove fields filter', () => {
     mockTypeWithInstance,
     {
       existing: 'existing',
-      doesntExistInType: 'doesntExistInType',
+      doesNotExistInType: 'doesNotExistInType',
       removeAlsoFromInstance: 'removeAlsoFromInstance',
       removeAlsoFromInstance2: 'removeAlsoFromInstance2',
       withNested: {
         existing: 'existing',
         remove: 'remove',
       },
-    }
+    },
   )
 
   const filter = makeFilter(
     new Map([
       ['typeRemoval', ['remove']],
-      ['typeWithInstance', ['removeAlsoFromInstance', 'removeAlsoFromInstance2']],
+      [
+        'typeWithInstance',
+        ['removeAlsoFromInstance', 'removeAlsoFromInstance2'],
+      ],
       ['nested', ['remove']],
     ]),
   )({ config: defaultFilterContext }) as FilterWith<'onFetch'>
@@ -95,14 +109,18 @@ describe('remove fields filter', () => {
     it('should remove field', () => {
       const testType = testElements[0] as ObjectType
       expect(testType.fields.existing).toBeDefined()
-      expect(testType.fields.existing.isEqual(mockType.fields.existing)).toBe(true)
+      expect(testType.fields.existing.isEqual(mockType.fields.existing)).toBe(
+        true,
+      )
       expect(testType.fields.remove).toBeUndefined()
     })
 
     it('should not remove field when the ID is not of the right object', () => {
       const testType = testElements[1] as ObjectType
       expect(testType.fields.existing).toBeDefined()
-      expect(testType.fields.existing.isEqual(mockTypeWithInstance.fields.existing)).toBe(true)
+      expect(
+        testType.fields.existing.isEqual(mockTypeWithInstance.fields.existing),
+      ).toBe(true)
     })
 
     it('should remove multiple fields from type and corresponding instance', () => {
@@ -115,26 +133,126 @@ describe('remove fields filter', () => {
       expect(testInstance.value.removeAlsoFromInstance).toBeUndefined()
       expect(testInstance.value.removeAlsoFromInstance2).toBeUndefined()
       expect(testInstance.value.withNested).toBeDefined()
-      expect(testInstance.value.withNested.existing).toEqual(mockInstance.value.withNested.existing)
+      expect(testInstance.value.withNested.existing).toEqual(
+        mockInstance.value.withNested.existing,
+      )
       expect(testInstance.value.withNested.remove).toBeUndefined()
     })
 
     it('should remove from nested type and corresponding instance', () => {
       const testNestedType = testElements[2] as ObjectType
       expect(testNestedType.fields.existing).toBeDefined()
-      expect(testNestedType.fields.existing.isEqual(mockNestedType.fields.existing)).toBe(true)
+      expect(
+        testNestedType.fields.existing.isEqual(mockNestedType.fields.existing),
+      ).toBe(true)
       expect(testNestedType.fields.remove).toBeUndefined()
 
       const testInstance = testElements[3] as InstanceElement
       expect(testInstance.value.withNested).toBeDefined()
-      expect(testInstance.value.withNested.existing).toEqual(mockInstance.value.withNested.existing)
+      expect(testInstance.value.withNested.existing).toEqual(
+        mockInstance.value.withNested.existing,
+      )
       expect(testInstance.value.withNested.remove).toBeUndefined()
     })
 
     it('should not remove values that does not exist on type', () => {
       const testInstance = testElements[3] as InstanceElement
-      expect(testInstance.value.doesntExistInType).toBeDefined()
-      expect(testInstance.value.doesntExistInType).toEqual(mockInstance.value.doesntExistInType)
+      expect(testInstance.value.doesNotExistInType).toBeDefined()
+      expect(testInstance.value.doesNotExistInType).toEqual(
+        mockInstance.value.doesNotExistInType,
+      )
+    })
+  })
+  describe('CPQ billing types', () => {
+    const revenueRecognitionTreatmentType = createCustomObjectType(
+      'blng__RevenueRecognitionTreatment__c',
+      {
+        annotations: {
+          apiName: 'blng__RevenueRecognitionTreatment__c',
+        },
+        fields: {
+          blng__Active__c: {
+            refType: BuiltinTypes.BOOLEAN,
+          },
+          blng__UniqueId__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          blng__Family__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          blng__NextOpenPeriod__c: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      },
+    )
+    const financePeriodType = createCustomObjectType('blng__FinancePeriod__c', {
+      annotations: {
+        apiName: 'blng__FinancePeriod__c',
+      },
+      fields: {
+        blng__Family__c: {
+          refType: BuiltinTypes.STRING,
+        },
+        blng__NextOpenPeriod__c: {
+          refType: BuiltinTypes.STRING,
+        },
+        blng__PeriodStatus__c: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    })
+    const revenueRecognitionTreatmentInstance = new InstanceElement(
+      'SomeInstance',
+      revenueRecognitionTreatmentType,
+      {
+        blng__Active__c: true,
+        blng__UniqueId__c: 'some_unique_id',
+      },
+    )
+    const financePeriodInstance = new InstanceElement(
+      'SomeInstance',
+      financePeriodType,
+      {
+        blng__Family__c: 'some_family',
+        blng__NextOpenPeriod__c: 'some_period',
+        blng__PeriodStatus__c: 'some_status',
+      },
+    )
+
+    let elements: Element[]
+
+    beforeEach(async () => {
+      elements = [
+        revenueRecognitionTreatmentType,
+        revenueRecognitionTreatmentInstance,
+        financePeriodType,
+        financePeriodInstance,
+      ].map((element) => element.clone())
+      const filterUnderTest = removeFieldAndValuesFilter({
+        config: defaultFilterContext,
+      }) as FilterWith<'onFetch'>
+      await filterUnderTest.onFetch(elements)
+    })
+
+    it('should remove only the appropriate field', () => {
+      const revenueObjectType = elements[0] as ObjectType
+      const revenueInstance = elements[1] as InstanceElement
+      const financeObjectType = elements[2] as ObjectType
+      const financeInstance = elements[3] as InstanceElement
+      expect(revenueObjectType.fields).not.toContainKey('blng__UniqueId__c')
+      expect(revenueObjectType.fields).toContainKey('blng__Active__c')
+      expect(revenueInstance.value).not.toContainKey('blng__UniqueId__c')
+      expect(revenueInstance.value).toContainKey('blng__Active__c')
+
+      expect(financeObjectType.fields).not.toContainKey('blng__Family__c')
+      expect(financeObjectType.fields).not.toContainKey(
+        'blng__NextOpenPeriod__c',
+      )
+      expect(financeObjectType.fields).toContainKey('blng__PeriodStatus__c')
+      expect(financeInstance.value).not.toContainKey('blng__Family__c')
+      expect(financeInstance.value).not.toContainKey('blng__NextOpenPeriod__c')
+      expect(financeInstance.value).toContainKey('blng__PeriodStatus__c')
     })
   })
 })

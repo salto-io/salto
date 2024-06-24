@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../../src/filters/author_information/saved_searches'
@@ -46,10 +46,11 @@ describe('netsuite saved searches author information tests', () => {
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '01/28/1995 6:17 am' },
     ])
 
-    savedSearch = new InstanceElement(SAVED_SEARCH,
-      new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
-    missingSavedSearch = new InstanceElement(SAVED_SEARCH,
-      new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
+    savedSearch = new InstanceElement(SAVED_SEARCH, new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
+    missingSavedSearch = new InstanceElement(
+      SAVED_SEARCH,
+      new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }),
+    )
     savedSearch.value.scriptid = '1'
     missingSavedSearch.value.scriptid = '2'
     elements = [savedSearch, missingSavedSearch, userPreferenceInstance]
@@ -67,11 +68,15 @@ describe('netsuite saved searches author information tests', () => {
 
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(runSavedSearchQueryMock).toHaveBeenNthCalledWith(1, {
-      type: 'savedsearch',
-      columns: ['modifiedby', 'id', 'datemodified'],
-      filters: [],
-    })
+    expect(runSavedSearchQueryMock).toHaveBeenNthCalledWith(
+      1,
+      {
+        type: 'savedsearch',
+        columns: ['modifiedby', 'id', 'datemodified'],
+        filters: [],
+      },
+      undefined,
+    )
     expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
   })
 
@@ -165,9 +170,7 @@ describe('netsuite saved searches author information tests', () => {
   })
   it('elements will stay the same if a modified by was empty in search', async () => {
     runSavedSearchQueryMock.mockReset()
-    runSavedSearchQueryMock.mockResolvedValueOnce([
-      { id: '1', modifiedby: [] },
-    ])
+    runSavedSearchQueryMock.mockResolvedValueOnce([{ id: '1', modifiedby: [] }])
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(savedSearch.annotations).toEqual({})
   })
@@ -180,9 +183,7 @@ describe('netsuite saved searches author information tests', () => {
     })
     it('bad search result schema', async () => {
       runSavedSearchQueryMock.mockReset()
-      runSavedSearchQueryMock.mockResolvedValueOnce([
-        { id: '1', modifiedby: { text: 'user 1 name' } },
-      ])
+      runSavedSearchQueryMock.mockResolvedValueOnce([{ id: '1', modifiedby: { text: 'user 1 name' } }])
       filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(savedSearch.annotations)).toHaveLength(0)
     })

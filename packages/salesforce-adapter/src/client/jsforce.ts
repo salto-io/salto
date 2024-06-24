@@ -1,25 +1,43 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  MetadataObject, DescribeValueTypeResult, MetadataInfo, SaveResult, UpsertResult,
-  ListMetadataQuery, FileProperties, DescribeSObjectResult, BulkOptions, BulkLoadOperation,
-  DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator, DeployResult,
-  RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo, QueryResult, Batch,
-  IdentityInfo, Record as SfRecord,
-} from 'jsforce'
+  MetadataObject,
+  DescribeValueTypeResult,
+  MetadataInfo,
+  SaveResult,
+  UpsertResult,
+  ListMetadataQuery,
+  FileProperties,
+  DescribeSObjectResult,
+  BulkOptions,
+  BulkLoadOperation,
+  DescribeGlobalSObjectResult,
+  DeployOptions,
+  DeployResultLocator,
+  DeployResult,
+  RetrieveRequest,
+  RetrieveResult,
+  Callback,
+  RetrieveResultLocator,
+  UserInfo,
+  QueryResult,
+  Batch,
+  IdentityInfo,
+  Record as SfRecord,
+} from '@salto-io/jsforce'
 import { Value } from '@salto-io/adapter-api'
 
 // This class is the interfaces we use from jsforce library
@@ -28,30 +46,52 @@ import { Value } from '@salto-io/adapter-api'
 export interface Metadata {
   pollInterval: number
   pollTimeout: number
-  describe(): Promise<{ metadataObjects: MetadataObject[]; organizationNamespace: string }>
+
+  checkDeployStatus(
+    id: string,
+    includeDetails?: boolean,
+    callback?: Callback<DeployResult>,
+  ): Promise<DeployResult>
+  describe(): Promise<{
+    metadataObjects: MetadataObject[]
+    organizationNamespace: string
+  }>
   describeValueType(type: string): Promise<DescribeValueTypeResult>
-  read(type: string, fullNames: string | string[]): Promise<MetadataInfo | MetadataInfo[]>
-  list(queries: ListMetadataQuery | ListMetadataQuery[]): Promise<FileProperties[]>
+  read(
+    type: string,
+    fullNames: string | string[],
+  ): Promise<MetadataInfo | MetadataInfo[]>
+  list(
+    queries: ListMetadataQuery | ListMetadataQuery[],
+  ): Promise<FileProperties[]>
   upsert(
-    type: string, metadata: MetadataInfo | MetadataInfo[]
+    type: string,
+    metadata: MetadataInfo | MetadataInfo[],
   ): Promise<UpsertResult | UpsertResult[]>
-  delete(type: string, fullNames: string | string[]): Promise<SaveResult | SaveResult[]>
-  update(
-    type: string, updateMetadata: MetadataInfo | MetadataInfo[]
+  delete(
+    type: string,
+    fullNames: string | string[],
   ): Promise<SaveResult | SaveResult[]>
-  retrieve(request: RetrieveRequest,
-    callback?: Callback<RetrieveResult>): RetrieveResultLocator<RetrieveResult>
+  update(
+    type: string,
+    updateMetadata: MetadataInfo | MetadataInfo[],
+  ): Promise<SaveResult | SaveResult[]>
+  retrieve(
+    request: RetrieveRequest,
+    callback?: Callback<RetrieveResult>,
+  ): RetrieveResultLocator<RetrieveResult>
   deploy(
-    zipInput: Buffer | string | NodeJS.ReadableStream, options: DeployOptions
+    zipInput: Buffer | string | NodeJS.ReadableStream,
+    options: DeployOptions,
   ): DeployResultLocator<DeployResult>
   deployRecentValidation(
-      validationId: string
+    validationId: string,
   ): DeployResultLocator<DeployResult>
 }
 
 export interface Soap {
   describeSObjects(
-    typeNames: string | string[]
+    typeNames: string | string[],
   ): Promise<DescribeSObjectResult | DescribeSObjectResult[]>
 }
 
@@ -70,7 +110,12 @@ export type Limits = {
 export interface Bulk {
   pollInterval: number
   pollTimeout: number
-  load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: SfRecord[]): Batch
+  load(
+    type: string,
+    operation: BulkLoadOperation,
+    options?: BulkOptions,
+    input?: SfRecord[],
+  ): Batch
 }
 
 export interface Tooling {
@@ -90,9 +135,10 @@ export default interface Connection {
   limits(): Promise<Limits>
   identity(): Promise<IdentityInfo>
   instanceUrl: string
+  request(request: string): Promise<unknown>
 }
 
-type ArrayOrSingle<T> = T|T[]
+type ArrayOrSingle<T> = T | T[]
 
 export interface RunTestFailure {
   id: string

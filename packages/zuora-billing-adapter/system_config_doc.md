@@ -1,5 +1,7 @@
 # Zuora Billing system configuration
+
 ## Default Configuration
+
 ```hcl
 zuora_billing {
   apiDefinitions = {

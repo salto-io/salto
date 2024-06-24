@@ -1,24 +1,24 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType, ElemID, Value, SeverityLevel } from '@salto-io/adapter-api'
+import { parser } from '@salto-io/parser'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { InMemoryRemoteMap, CreateRemoteMapParams, RemoteMap } from '../../../src/workspace/remote_map'
 import { createParseResultCache, ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
-import { SourceMap } from '../../../src/parser'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 describe('ParsedNaclFileCache', () => {
@@ -27,10 +27,9 @@ describe('ParsedNaclFileCache', () => {
   let remoteMaps: Record<string, InMemoryRemoteMap<Value, string>> = {}
   const inMemoryRemoteMapsCreator = async <T, K extends string = string>(
     _opts: CreateRemoteMapParams<T>,
-  ): Promise<RemoteMap<T, K>> =>
-    (new InMemoryRemoteMap<T, K>())
+  ): Promise<RemoteMap<T, K>> => new InMemoryRemoteMap<T, K>()
   let cache: ParsedNaclFileCache
-  const sourceMap = new SourceMap()
+  const sourceMap = new parser.SourceMap()
 
   const someDateTimestamp = 553881433
   const afterTimestamp = someDateTimestamp + 10
@@ -185,11 +184,10 @@ describe('ParsedNaclFileCache', () => {
     return parsedWithoutBuff
   }
 
-  const fileExistsInCache = async (filename: string):
-  Promise<boolean> => (await (await cache.get(filename)).elements()) !== undefined
+  const fileExistsInCache = async (filename: string): Promise<boolean> =>
+    (await (await cache.get(filename)).elements()) !== undefined
 
-  const validateParsedNaclFileEquals = async (p1: ParsedNaclFile, p2: ParsedNaclFile):
-  Promise<void> => {
+  const validateParsedNaclFileEquals = async (p1: ParsedNaclFile, p2: ParsedNaclFile): Promise<void> => {
     expect(await p1.elements()).toEqual(await p2.elements())
     expect(p1.filename).toEqual(p2.filename)
     expect(await p1.sourceMap?.()).toEqual(await p2.sourceMap?.())
@@ -199,56 +197,27 @@ describe('ParsedNaclFileCache', () => {
 
   beforeAll(async () => {
     jest.spyOn(Date, 'now').mockImplementation(() => someDateTimestamp)
-    parsedInitDummy = await toParsedNaclFile(
-      initDummyParsedKey,
-      parseResultWithoutMD5InitDummy
-    )
-    parsedDummy = await toParsedNaclFile(
-      dummyParsedKey,
-      parseResultWithoutMD5
-    )
-    parsedDummy2 = await toParsedNaclFile(
-      dummy2ParsedKey,
-      parseResultWithoutMD5Dummy2
-    )
-    parsedToDelete = await toParsedNaclFile(
-      toDeleteKey,
-      toDeleteParseResult
-    )
-    parsedToDelete2 = await toParsedNaclFile(
-      toDelete2Key,
-      toDelete2ParseResult
-    )
+    parsedInitDummy = await toParsedNaclFile(initDummyParsedKey, parseResultWithoutMD5InitDummy)
+    parsedDummy = await toParsedNaclFile(dummyParsedKey, parseResultWithoutMD5)
+    parsedDummy2 = await toParsedNaclFile(dummy2ParsedKey, parseResultWithoutMD5Dummy2)
+    parsedToDelete = await toParsedNaclFile(toDeleteKey, toDeleteParseResult)
+    parsedToDelete2 = await toParsedNaclFile(toDelete2Key, toDelete2ParseResult)
   })
 
   beforeEach(async () => {
-    cache = createParseResultCache(
-      'mockCache',
-      inMemoryRemoteMapsCreator,
-      mockedStaticFilesSource,
-      true
-    )
+    cache = createParseResultCache('mockCache', inMemoryRemoteMapsCreator, mockedStaticFilesSource, true)
   })
 
   describe('put', () => {
     let initCache: string | undefined
     beforeEach(async () => {
-      await cache.put(
-        dummyFilename,
-        parsedDummy,
-      )
+      await cache.put(dummyFilename, parsedDummy)
       initCache = await cache.getHash()
-      await cache.put(
-        dummy2Filename,
-        parsedDummy2,
-      )
+      await cache.put(dummy2Filename, parsedDummy2)
     })
 
     it('Should return the same value as inserted', async () => {
-      await validateParsedNaclFileEquals(
-        await cache.get(dummyFilename),
-        parsedWithoutBuffer(parsedDummy),
-      )
+      await validateParsedNaclFileEquals(await cache.get(dummyFilename), parsedWithoutBuffer(parsedDummy))
     })
 
     it('should update the hash value', async () => {
@@ -259,10 +228,7 @@ describe('ParsedNaclFileCache', () => {
   describe('putAll', () => {
     let initCache: string | undefined
     beforeEach(async () => {
-      await cache.put(
-        initDummyFilename,
-        parsedInitDummy,
-      )
+      await cache.put(initDummyFilename, parsedInitDummy)
       initCache = await cache.getHash()
       await cache.putAll({
         [dummyFilename]: parsedDummy,
@@ -271,14 +237,8 @@ describe('ParsedNaclFileCache', () => {
     })
 
     it('Should return the same value as inserted', async () => {
-      await validateParsedNaclFileEquals(
-        await cache.get(dummyFilename),
-        parsedWithoutBuffer(parsedDummy),
-      )
-      await validateParsedNaclFileEquals(
-        await cache.get(dummy2Filename),
-        parsedWithoutBuffer(parsedDummy2),
-      )
+      await validateParsedNaclFileEquals(await cache.get(dummyFilename), parsedWithoutBuffer(parsedDummy))
+      await validateParsedNaclFileEquals(await cache.get(dummy2Filename), parsedWithoutBuffer(parsedDummy2))
     })
 
     it('should update the hash value', async () => {
@@ -288,10 +248,7 @@ describe('ParsedNaclFileCache', () => {
 
   describe('hasValid', () => {
     beforeEach(async () => {
-      await cache.put(
-        dummyFilename,
-        parsedDummy,
-      )
+      await cache.put(dummyFilename, parsedDummy)
     })
 
     it('Should be true if content did not change', async () => {
@@ -314,10 +271,7 @@ describe('ParsedNaclFileCache', () => {
 
   describe('get', () => {
     beforeEach(async () => {
-      await cache.put(
-        dummyFilename,
-        parsedDummy,
-      )
+      await cache.put(dummyFilename, parsedDummy)
     })
     it('Should get value if exists', async () => {
       expect(await fileExistsInCache(dummyFilename)).toEqual(true)
@@ -331,10 +285,7 @@ describe('ParsedNaclFileCache', () => {
   describe('delete', () => {
     let initCache: string | undefined
     beforeEach(async () => {
-      await cache.put(
-        toDeleteFilename,
-        parsedToDelete,
-      )
+      await cache.put(toDeleteFilename, parsedToDelete)
       initCache = await cache.getHash()
       expect(await fileExistsInCache(toDeleteFilename)).toEqual(true)
       await cache.delete(toDeleteKey.filename)
@@ -370,35 +321,21 @@ describe('ParsedNaclFileCache', () => {
     })
   })
 
-
   describe('list', () => {
     it('Should list all filenames', async () => {
-      await cache.put(
-        dummyFilename,
-        parsedDummy,
-      )
-      await cache.put(
-        toDeleteFilename,
-        parsedToDelete,
-      )
+      await cache.put(dummyFilename, parsedDummy)
+      await cache.put(toDeleteFilename, parsedToDelete)
       const filesList = await cache.list()
       const currentFileNames = [dummyFilename, toDeleteFilename]
       expect(filesList.length).toEqual(currentFileNames.length)
-      filesList.forEach(name =>
-        expect(currentFileNames.includes(name)).toBeTruthy())
+      filesList.forEach(name => expect(currentFileNames.includes(name)).toBeTruthy())
     })
   })
 
   describe('clear', () => {
     it('Should not return value for any key after clear', async () => {
-      await cache.put(
-        dummyFilename,
-        parsedDummy,
-      )
-      await cache.put(
-        toDeleteFilename,
-        parsedToDelete,
-      )
+      await cache.put(dummyFilename, parsedDummy)
+      await cache.put(toDeleteFilename, parsedToDelete)
       await cache.clear()
       expect(await fileExistsInCache(dummyFilename)).toEqual(false)
       expect(await fileExistsInCache(toDeleteFilename)).toEqual(false)
@@ -408,38 +345,22 @@ describe('ParsedNaclFileCache', () => {
   describe('rename', () => {
     let clearFnsBeforeRename: jest.SpyInstance<Promise<void>>[]
     beforeEach(async () => {
-      await cache.put(
-        dummyFilename,
-        parsedDummy,
-      )
-      await cache.put(
-        toDeleteFilename,
-        parsedToDelete,
-      )
-      await validateParsedNaclFileEquals(
-        await cache.get(dummyFilename), parsedWithoutBuffer(parsedDummy)
-      )
-      await validateParsedNaclFileEquals(
-        await cache.get(toDeleteFilename), parsedWithoutBuffer(parsedToDelete)
-      )
-      clearFnsBeforeRename = Object.values(remoteMaps).map(remoteMap =>
-        jest.spyOn(remoteMap, 'clear'))
+      await cache.put(dummyFilename, parsedDummy)
+      await cache.put(toDeleteFilename, parsedToDelete)
+      await validateParsedNaclFileEquals(await cache.get(dummyFilename), parsedWithoutBuffer(parsedDummy))
+      await validateParsedNaclFileEquals(await cache.get(toDeleteFilename), parsedWithoutBuffer(parsedToDelete))
+      clearFnsBeforeRename = Object.values(remoteMaps).map(remoteMap => jest.spyOn(remoteMap, 'clear'))
       await cache.rename('newName')
     })
 
     it('Should return the same values before and after rename', async () => {
-      await validateParsedNaclFileEquals(
-        await cache.get(dummyFilename), parsedWithoutBuffer(parsedDummy)
-      )
-      await validateParsedNaclFileEquals(
-        await cache.get(toDeleteFilename), parsedWithoutBuffer(parsedToDelete)
-      )
+      await validateParsedNaclFileEquals(await cache.get(dummyFilename), parsedWithoutBuffer(parsedDummy))
+      await validateParsedNaclFileEquals(await cache.get(toDeleteFilename), parsedWithoutBuffer(parsedToDelete))
     })
 
     // This is impl specific but we need to check we cleared the old remoteMaps
     it('Should clear all the remoteMaps created before the rename', async () => {
-      clearFnsBeforeRename.forEach(clearFn =>
-        expect(clearFn).toHaveBeenCalled())
+      clearFnsBeforeRename.forEach(clearFn => expect(clearFn).toHaveBeenCalled())
     })
   })
 
@@ -447,22 +368,14 @@ describe('ParsedNaclFileCache', () => {
     let remoteMapsFlushFuncs: jest.SpyInstance<Promise<boolean>>[]
     beforeEach(async () => {
       // Put stuff in the cache so there will be remoteMaps
-      await cache.put(
-        dummyFilename,
-        parsedDummy,
-      )
-      await cache.put(
-        toDeleteFilename,
-        parsedToDelete,
-      )
-      remoteMapsFlushFuncs = Object.values(remoteMaps).map(remoteMap =>
-        jest.spyOn(remoteMap, 'flush'))
+      await cache.put(dummyFilename, parsedDummy)
+      await cache.put(toDeleteFilename, parsedToDelete)
+      remoteMapsFlushFuncs = Object.values(remoteMaps).map(remoteMap => jest.spyOn(remoteMap, 'flush'))
     })
 
     it('Should call flush on all created remoteMaps', async () => {
       await cache.flush()
-      remoteMapsFlushFuncs.forEach(flushSpy =>
-        expect(flushSpy).toHaveBeenCalled())
+      remoteMapsFlushFuncs.forEach(flushSpy => expect(flushSpy).toHaveBeenCalled())
     })
 
     it('Should also flush deleted files remoteMaps', async () => {
@@ -492,25 +405,19 @@ describe('ParsedNaclFileCache', () => {
     beforeEach(async () => {
       await cache.put(
         dummyFilename,
-        await toParsedNaclFile(
-          dummyParsedKey,
-          {
-            elements: [dummyObjectType],
-            errors: [errorA],
-            sourceMap,
-          },
-        )
+        await toParsedNaclFile(dummyParsedKey, {
+          elements: [dummyObjectType],
+          errors: [errorA],
+          sourceMap,
+        }),
       )
       await cache.put(
         toDeleteFilename,
-        await toParsedNaclFile(
-          toDeleteKey,
-          {
-            elements: [toDeleteObjectType],
-            errors: [errorB],
-            sourceMap,
-          },
-        )
+        await toParsedNaclFile(toDeleteKey, {
+          elements: [toDeleteObjectType],
+          errors: [errorB],
+          sourceMap,
+        }),
       )
     })
 
@@ -521,14 +428,14 @@ describe('ParsedNaclFileCache', () => {
     })
 
     it('Should unset errors when none exist', async () => {
-      await cache.put(toDeleteFilename, await toParsedNaclFile(
-        toDeleteKey,
-        {
+      await cache.put(
+        toDeleteFilename,
+        await toParsedNaclFile(toDeleteKey, {
           elements: [toDeleteObjectType],
           errors: [],
           sourceMap,
-        },
-      ))
+        }),
+      )
       const errors = await cache.getAllErrors()
       expect(errors.includes(errorA)).toBeTruthy()
       expect(errors.includes(errorB)).toBeFalsy()
@@ -537,12 +444,7 @@ describe('ParsedNaclFileCache', () => {
 
   describe('non persistent workspace', () => {
     it('should not allow flush when the ws is non-persistent', async () => {
-      const nonPCache = createParseResultCache(
-        'mockCache',
-        inMemoryRemoteMapsCreator,
-        mockedStaticFilesSource,
-        false
-      )
+      const nonPCache = createParseResultCache('mockCache', inMemoryRemoteMapsCreator, mockedStaticFilesSource, false)
       await expect(() => nonPCache.flush()).rejects.toThrow()
     })
   })

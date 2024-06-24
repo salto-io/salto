@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   BuiltinTypes,
   Change,
@@ -30,6 +30,7 @@ import changeValidator from '../../src/change_validators/unknown_users'
 import {
   createInstanceElement,
   createMetadataObjectType,
+  Types,
 } from '../../src/transformers/transformer'
 import {
   CUSTOM_OBJECT,
@@ -40,7 +41,7 @@ import {
 } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
-import { createCustomObjectType } from '../utils'
+import { createCustomObjectType, createField } from '../utils'
 import * as filterUtilsModule from '../../src/filters/utils'
 
 jest.mock('../../src/filters/utils', () => ({
@@ -51,10 +52,12 @@ jest.mock('../../src/filters/utils', () => ({
 const mockedFilterUtils = jest.mocked(filterUtilsModule)
 
 const setupClientMock = (userNames: string[]): void => {
-  const mockQueryResult = userNames.map((userName): SalesforceRecord => ({
-    [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
-    Username: userName,
-  }))
+  const mockQueryResult = userNames.map(
+    (userName): SalesforceRecord => ({
+      [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
+      Username: userName,
+    }),
+  )
 
   mockedFilterUtils.queryClient.mockResolvedValue(mockQueryResult)
 }
@@ -64,7 +67,7 @@ describe('unknown user change validator', () => {
   const TEST_USERNAME = 'ExistingUsername'
   const ANOTHER_TEST_USERNAME = 'BadUserName'
 
-  let validator:ChangeValidator
+  let validator: ChangeValidator
 
   beforeAll(() => {
     validator = changeValidator(mockAdapter({}).client)
@@ -81,7 +84,10 @@ describe('unknown user change validator', () => {
     })
     let irrelevantChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseOwner: IRRELEVANT_USERNAME }, irrelevantType)
+      const beforeRecord = createInstanceElement(
+        { fullName: 'someName', defaultCaseOwner: IRRELEVANT_USERNAME },
+        irrelevantType,
+      )
       const afterRecord = beforeRecord.clone()
       afterRecord.value.userName = ANOTHER_TEST_USERNAME
       irrelevantChange = toChange({ before: beforeRecord, after: afterRecord })
@@ -93,18 +99,37 @@ describe('unknown user change validator', () => {
     })
   })
   describe('when a username exists in Salesforce', () => {
-    let change: Change
+    let changes: Change[]
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME }, mockTypes.CaseSettings)
+      const beforeRecord = createInstanceElement(
+        { fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME },
+        mockTypes.CaseSettings,
+      )
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = TEST_USERNAME
-      change = toChange({ before: beforeRecord, after: afterRecord })
+
+      const typeForCustomField = mockTypes.Account.clone()
+      const fieldBefore = createField(
+        typeForCustomField,
+        Types.primitiveDataTypes.Text,
+        'SomeField',
+        {
+          businessOwnerUser: IRRELEVANT_USERNAME,
+        },
+      )
+      const fieldAfter = fieldBefore.clone()
+      fieldAfter.annotations.businessOwnerUser = TEST_USERNAME
+
+      changes = [
+        toChange({ before: beforeRecord, after: afterRecord }),
+        toChange({ before: fieldBefore, after: fieldAfter }),
+      ]
 
       setupClientMock([TEST_USERNAME])
     })
 
     it('should pass validation', async () => {
-      const changeErrors = await validator([change])
+      const changeErrors = await validator(changes)
       expect(changeErrors).toBeEmpty()
     })
   })
@@ -114,11 +139,15 @@ describe('unknown user change validator', () => {
       type: ObjectType,
       userField: string,
       typeField: string,
-    ): InstanceElement => createInstanceElement({
-      fullName: 'someFullName',
-      [userField]: IRRELEVANT_USERNAME,
-      [typeField]: 'User',
-    }, type)
+    ): InstanceElement =>
+      createInstanceElement(
+        {
+          fullName: 'someFullName',
+          [userField]: IRRELEVANT_USERNAME,
+          [typeField]: 'User',
+        },
+        type,
+      )
 
     describe.each([
       {
@@ -136,22 +165,29 @@ describe('unknown user change validator', () => {
         userField: 'defaultCaseOwner',
         typeField: 'defaultCaseOwnerType',
       },
-    ])('when the username exists [$type.elemID.typeName]', ({ type, userField, typeField }) => {
-      beforeEach(() => {
-        const instanceElement = instanceElementWithTypeAndUser(type, userField, typeField)
-        const beforeRecord = instanceElement
-        const afterRecord = instanceElement.clone()
-        afterRecord.value[userField] = TEST_USERNAME
-        change = toChange({ before: beforeRecord, after: afterRecord })
+    ])(
+      'when the username exists [$type.elemID.typeName]',
+      ({ type, userField, typeField }) => {
+        beforeEach(() => {
+          const instanceElement = instanceElementWithTypeAndUser(
+            type,
+            userField,
+            typeField,
+          )
+          const beforeRecord = instanceElement
+          const afterRecord = instanceElement.clone()
+          afterRecord.value[userField] = TEST_USERNAME
+          change = toChange({ before: beforeRecord, after: afterRecord })
 
-        setupClientMock([TEST_USERNAME])
-      })
+          setupClientMock([TEST_USERNAME])
+        })
 
-      it('should pass validation', async () => {
-        const changeErrors = await validator([change])
-        expect(changeErrors).toBeEmpty()
-      })
-    })
+        it('should pass validation', async () => {
+          const changeErrors = await validator([change])
+          expect(changeErrors).toBeEmpty()
+        })
+      },
+    )
     describe.each([
       {
         type: mockTypes.FolderShare,
@@ -168,22 +204,29 @@ describe('unknown user change validator', () => {
         userField: 'defaultCaseOwner',
         typeField: 'defaultCaseOwnerType',
       },
-    ])('when the username doesn`t exist but type is not `User` [$type.elemID.typeName]', ({ type, userField, typeField }) => {
-      beforeEach(() => {
-        const instanceElement = instanceElementWithTypeAndUser(type, userField, typeField)
-        const beforeRecord = instanceElement
-        const afterRecord = instanceElement.clone()
-        afterRecord.value[typeField] = 'Role'
-        afterRecord.value[userField] = TEST_USERNAME
-        change = toChange({ before: beforeRecord, after: afterRecord })
+    ])(
+      'when the username doesn`t exist but type is not `User` [$type.elemID.typeName]',
+      ({ type, userField, typeField }) => {
+        beforeEach(() => {
+          const instanceElement = instanceElementWithTypeAndUser(
+            type,
+            userField,
+            typeField,
+          )
+          const beforeRecord = instanceElement
+          const afterRecord = instanceElement.clone()
+          afterRecord.value[typeField] = 'Role'
+          afterRecord.value[userField] = TEST_USERNAME
+          change = toChange({ before: beforeRecord, after: afterRecord })
 
-        setupClientMock([])
-      })
-      it('should also pass validation', async () => {
-        const changeErrors = await validator([change])
-        expect(changeErrors).toBeEmpty()
-      })
-    })
+          setupClientMock([])
+        })
+        it('should also pass validation', async () => {
+          const changeErrors = await validator([change])
+          expect(changeErrors).toBeEmpty()
+        })
+      },
+    )
     describe.each([
       {
         type: mockTypes.FolderShare,
@@ -200,26 +243,36 @@ describe('unknown user change validator', () => {
         userField: 'defaultCaseOwner',
         typeField: 'defaultCaseOwnerType',
       },
-    ])('when the username doesn`t exist [$type.elemID.typeName]', ({ type, userField, typeField }) => {
-      beforeEach(() => {
-        const instanceElement = instanceElementWithTypeAndUser(type, userField, typeField)
-        const beforeRecord = instanceElement
-        const afterRecord = instanceElement.clone()
-        afterRecord.value[userField] = TEST_USERNAME
-        change = toChange({ before: beforeRecord, after: afterRecord })
+    ])(
+      'when the username doesn`t exist [$type.elemID.typeName]',
+      ({ type, userField, typeField }) => {
+        beforeEach(() => {
+          const instanceElement = instanceElementWithTypeAndUser(
+            type,
+            userField,
+            typeField,
+          )
+          const beforeRecord = instanceElement
+          const afterRecord = instanceElement.clone()
+          afterRecord.value[userField] = TEST_USERNAME
+          change = toChange({ before: beforeRecord, after: afterRecord })
 
-        setupClientMock([])
-      })
-      it('should fail validation', async () => {
-        const changeErrors = await validator([change])
-        expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
-      })
-    })
+          setupClientMock([])
+        })
+        it('should fail validation', async () => {
+          const changeErrors = await validator([change])
+          expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
+        })
+      },
+    )
   })
   describe('when a username does not exist in Salesforce', () => {
     let change: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME }, mockTypes.CaseSettings)
+      const beforeRecord = createInstanceElement(
+        { fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME },
+        mockTypes.CaseSettings,
+      )
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
@@ -246,13 +299,15 @@ describe('unknown user change validator', () => {
   describe('when an instance references multiple usernames', () => {
     let change: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({
-        fullName: 'someName',
-        defaultCaseUser: IRRELEVANT_USERNAME,
-        defaultCaseOwnerType: 'User',
-        defaultCaseOwner: TEST_USERNAME,
-      },
-      mockTypes.CaseSettings)
+      const beforeRecord = createInstanceElement(
+        {
+          fullName: 'someName',
+          defaultCaseUser: IRRELEVANT_USERNAME,
+          defaultCaseOwnerType: 'User',
+          defaultCaseOwner: TEST_USERNAME,
+        },
+        mockTypes.CaseSettings,
+      )
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
@@ -283,30 +338,37 @@ describe('unknown user change validator', () => {
   describe('when a field references multiple usernames', () => {
     let change: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({
-        fullName: new ElemID(SALESFORCE, 'WorkflowAlert', 'instance', 'SomeWorkflowAlert').getFullName(),
-        recipients: [
-          {
-            type: 'user',
-            recipient: TEST_USERNAME,
-          },
-          {
-            type: 'user',
-            recipient: ANOTHER_TEST_USERNAME,
-          },
-          {
-            type: 'email',
-            recipient: IRRELEVANT_USERNAME,
-          },
-        ],
-      },
-      mockTypes.WorkflowAlert)
+      const beforeRecord = createInstanceElement(
+        {
+          fullName: new ElemID(
+            SALESFORCE,
+            'WorkflowAlert',
+            'instance',
+            'SomeWorkflowAlert',
+          ).getFullName(),
+          recipients: [
+            {
+              type: 'user',
+              recipient: TEST_USERNAME,
+            },
+            {
+              type: 'user',
+              recipient: ANOTHER_TEST_USERNAME,
+            },
+            {
+              type: 'email',
+              recipient: IRRELEVANT_USERNAME,
+            },
+          ],
+        },
+        mockTypes.WorkflowAlert,
+      )
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
     })
 
-    it('Should only create an error for the users that don\'t exist', async () => {
+    it("Should only create an error for the users that don't exist", async () => {
       setupClientMock([TEST_USERNAME])
       const changeErrors = await validator([change])
       expect(changeErrors).toHaveLength(1)
@@ -320,7 +382,7 @@ describe('unknown user change validator', () => {
       beforeEach(async () => {
         const instance = createInstanceElement(
           { [INSTANCE_FULL_NAME_FIELD]: 'TestWorkflowAlert' },
-          mockTypes.WorkflowAlert
+          mockTypes.WorkflowAlert,
         )
         changeErrors = await validator([toChange({ after: instance })])
       })
@@ -375,38 +437,61 @@ describe('unknown user change validator', () => {
     })
     let changeErrors: readonly ChangeError[]
     beforeEach(async () => {
-      const newRecord = createInstanceElement({
-        [INSTANCE_FULL_NAME_FIELD]: 'SomeApprovalProcess',
-        approvalStep: [
-          {
-            assignedApprover: {
-              approver: {
-                name: TEST_USERNAME,
-                type: 'User',
+      const newRecord = createInstanceElement(
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'SomeApprovalProcess',
+          approvalStep: [
+            {
+              assignedApprover: {
+                approver: {
+                  name: TEST_USERNAME,
+                  type: 'User',
+                },
               },
             },
-          },
 
-          {
-            assignedApprover: {
-              approver: {
-                name: ANOTHER_TEST_USERNAME,
-                type: 'User',
+            {
+              assignedApprover: {
+                approver: {
+                  name: ANOTHER_TEST_USERNAME,
+                  type: 'User',
+                },
               },
             },
-          },
-        ],
-      },
-      approvalProcessType)
+          ],
+        },
+        approvalProcessType,
+      )
       const change = toChange({ after: newRecord })
       setupClientMock([IRRELEVANT_USERNAME])
       changeErrors = await validator([change])
     })
     it('should fail if the users don`t exist', () => {
       expect(changeErrors).toHaveLength(2)
-      const instanceElemId = new ElemID(SALESFORCE, 'ApprovalProcess', 'instance', 'SomeApprovalProcess')
-      expect(changeErrors[0]).toHaveProperty('elemID', instanceElemId.createNestedID('approvalStep', '0', 'assignedApprover', 'approver'))
-      expect(changeErrors[1]).toHaveProperty('elemID', instanceElemId.createNestedID('approvalStep', '1', 'assignedApprover', 'approver'))
+      const instanceElemId = new ElemID(
+        SALESFORCE,
+        'ApprovalProcess',
+        'instance',
+        'SomeApprovalProcess',
+      )
+      expect(changeErrors[0]).toHaveProperty(
+        'elemID',
+        instanceElemId.createNestedID(
+          'approvalStep',
+          '0',
+          'assignedApprover',
+          'approver',
+        ),
+      )
+      expect(changeErrors[1]).toHaveProperty(
+        'elemID',
+        instanceElemId.createNestedID(
+          'approvalStep',
+          '1',
+          'assignedApprover',
+          'approver',
+        ),
+      )
     })
   })
   describe('when the user information is in a nested array', () => {
@@ -445,37 +530,75 @@ describe('unknown user change validator', () => {
     })
     let changeErrors: readonly ChangeError[]
     beforeEach(async () => {
-      const newRecord = createInstanceElement({
-        fullName: 'SomeAssignmentRules',
-        assignmentRule: [
-          {
-            ruleEntry: [
-              {
-                assignedTo: TEST_USERNAME,
-                assignedToType: 'User',
-              },
-            ],
-          },
-          {
-            ruleEntry: [
-              {
-                assignedTo: ANOTHER_TEST_USERNAME,
-                assignedToType: 'User',
-              },
-            ],
-          },
-        ],
-      },
-      assignmentRulesType)
+      const newRecord = createInstanceElement(
+        {
+          fullName: 'SomeAssignmentRules',
+          assignmentRule: [
+            {
+              ruleEntry: [
+                {
+                  assignedTo: TEST_USERNAME,
+                  assignedToType: 'User',
+                },
+              ],
+            },
+            {
+              ruleEntry: [
+                {
+                  assignedTo: ANOTHER_TEST_USERNAME,
+                  assignedToType: 'User',
+                },
+              ],
+            },
+          ],
+        },
+        assignmentRulesType,
+      )
       const change = toChange({ after: newRecord })
       setupClientMock([IRRELEVANT_USERNAME])
       changeErrors = await validator([change])
     })
     it('should fail if any of the users don`t exist', () => {
       expect(changeErrors).toHaveLength(2)
-      const instanceElemId = new ElemID(SALESFORCE, 'AssignmentRules', 'instance', 'SomeAssignmentRules')
-      expect(changeErrors[0]).toHaveProperty('elemID', instanceElemId.createNestedID('assignmentRule', '0', 'ruleEntry', '0'))
-      expect(changeErrors[1]).toHaveProperty('elemID', instanceElemId.createNestedID('assignmentRule', '1', 'ruleEntry', '0'))
+      const instanceElemId = new ElemID(
+        SALESFORCE,
+        'AssignmentRules',
+        'instance',
+        'SomeAssignmentRules',
+      )
+      expect(changeErrors[0]).toHaveProperty(
+        'elemID',
+        instanceElemId.createNestedID('assignmentRule', '0', 'ruleEntry', '0'),
+      )
+      expect(changeErrors[1]).toHaveProperty(
+        'elemID',
+        instanceElemId.createNestedID('assignmentRule', '1', 'ruleEntry', '0'),
+      )
+    })
+  })
+  describe('when the user information is in a CustomField businessOwnerUser annotation', () => {
+    let changes: Change[]
+    beforeEach(() => {
+      const typeForCustomField = mockTypes.Account.clone()
+      const fieldAfter = createField(
+        typeForCustomField,
+        Types.primitiveDataTypes.Text,
+        'SomeField',
+        {
+          businessOwnerUser: TEST_USERNAME,
+        },
+      )
+      changes = [toChange({ after: fieldAfter })]
+
+      setupClientMock([IRRELEVANT_USERNAME])
+    })
+    it('should return a change error', async () => {
+      const changeErrors = await validator(changes)
+      expect(changeErrors).toEqual([
+        expect.objectContaining({
+          elemID: getChangeData(changes[0]).elemID,
+        }),
+      ])
     })
   })
 })

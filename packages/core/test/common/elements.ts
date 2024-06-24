@@ -1,24 +1,46 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, InstanceElement, PrimitiveType, ListType, MapType, ReferenceExpression, Field } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  BuiltinTypes,
+  ElemID,
+  ObjectType,
+  InstanceElement,
+  PrimitiveType,
+  ListType,
+  MapType,
+  ReferenceExpression,
+  Field,
+  Element,
+} from '@salto-io/adapter-api'
 
-type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType,
-    ObjectType, InstanceElement, ListType, MapType, InstanceElement, InstanceElement, Field]
-export const getAllElements = (): AllElementsTypes => {
-  const addrElemID = new ElemID('salto', 'address')
+type AllElementsTypes = [
+  PrimitiveType,
+  ObjectType,
+  ObjectType,
+  ObjectType,
+  InstanceElement,
+  ListType,
+  MapType,
+  InstanceElement,
+  InstanceElement,
+  Field,
+]
+export const getAllElements = (accountName = 'salto'): AllElementsTypes => {
+  const addrElemID = new ElemID(accountName, 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
     fields: {
@@ -28,7 +50,7 @@ export const getAllElements = (): AllElementsTypes => {
     annotationRefsOrTypes: { label: BuiltinTypes.STRING },
   })
 
-  const officeElemID = new ElemID('salto', 'office')
+  const officeElemID = new ElemID(accountName, 'office')
   const saltoOffice = new ObjectType({
     elemID: officeElemID,
     fields: {
@@ -52,7 +74,7 @@ export const getAllElements = (): AllElementsTypes => {
     },
   })
 
-  const employeeElemID = new ElemID('salto', 'employee')
+  const employeeElemID = new ElemID(accountName, 'employee')
   const stringListType = new ListType(BuiltinTypes.STRING)
   const stringMapType = new MapType(BuiltinTypes.STRING)
   const saltoEmployee = new ObjectType({
@@ -90,34 +112,44 @@ export const getAllElements = (): AllElementsTypes => {
     },
   })
 
-  const saltoEmployeeInstance = new InstanceElement(
-    'instance',
-    saltoEmployee,
-    { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } } }
-  )
+  const saltoEmployeeInstance = new InstanceElement('instance', saltoEmployee, {
+    name: 'FirstEmployee',
+    nicknames: ['you', 'hi'],
+    office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
+  })
 
-  const saltoEmployeeToRename = new InstanceElement(
-    'original',
-    saltoEmployee,
-    { name: 'FirstEmployee',
-      nicknames: ['you', 'hi'],
-      office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
-      friend: new ReferenceExpression(employeeElemID.createNestedID('instance', 'original')) }
-  )
+  const saltoEmployeeToRename = new InstanceElement('original', saltoEmployee, {
+    name: 'FirstEmployee',
+    nicknames: ['you', 'hi'],
+    office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
+    friend: new ReferenceExpression(employeeElemID.createNestedID('instance', 'original')),
+  })
 
-  const anotherSaltoEmployeeInstance = new InstanceElement(
-    'anotherInstance',
-    saltoEmployee,
-    { name: 'FirstEmployee',
-      nicknames: ['you', 'hi'],
-      office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
-      friend: new ReferenceExpression(saltoEmployeeToRename.elemID),
-      parent: new ReferenceExpression(saltoEmployee.elemID) }
-  )
+  const anotherSaltoEmployeeInstance = new InstanceElement('anotherInstance', saltoEmployee, {
+    name: 'FirstEmployee',
+    nicknames: ['you', 'hi'],
+    office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
+    friend: new ReferenceExpression(saltoEmployeeToRename.elemID),
+    parent: new ReferenceExpression(saltoEmployee.elemID),
+  })
 
   const fieldElement = new Field(saltoAddr, 'country', BuiltinTypes.STRING)
 
-  return [BuiltinTypes.STRING, saltoAddr, saltoOffice,
-    saltoEmployee, saltoEmployeeInstance, stringListType, stringMapType,
-    saltoEmployeeToRename, anotherSaltoEmployeeInstance, fieldElement]
+  return [
+    BuiltinTypes.STRING,
+    saltoAddr,
+    saltoOffice,
+    saltoEmployee,
+    saltoEmployeeInstance,
+    stringListType,
+    stringMapType,
+    saltoEmployeeToRename,
+    anotherSaltoEmployeeInstance,
+    fieldElement,
+  ]
 }
+
+export const getTopLevelElements = (accountName = 'salto'): Element[] =>
+  getAllElements(accountName)
+    .filter(elem => elem.elemID.isTopLevel())
+    .filter(elem => elem.elemID.adapter === accountName)

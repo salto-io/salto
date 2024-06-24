@@ -1,29 +1,48 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  ObjectType,
+  Element,
+  isObjectType,
+  getDeepInnerType,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  isInstanceElement,
+  Value,
+  Values,
+} from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { getParent } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { JiraConfig, JspUrls } from './config/config'
-import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN } from './constants'
+import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN, SOFTWARE_FIELD } from './constants'
+import JiraClient from './client/client'
+
+type appInfo = {
+  id: string
+  plan: string
+}
 
 const log = logger(module)
-
 const { awu } = collections.asynciterable
+const MAX_RETRIES = 5
 
 export const setFieldDeploymentAnnotations = (type: ObjectType, fieldName: string): void => {
   if (type.fields[fieldName] !== undefined) {
@@ -39,9 +58,7 @@ export const setTypeDeploymentAnnotations = (type: ObjectType): void => {
 }
 
 export const findObject = (elements: Element[], name: string): ObjectType | undefined => {
-  const type = elements.filter(isObjectType).find(
-    element => element.elemID.name === name
-  )
+  const type = elements.filter(isObjectType).find(element => element.elemID.name === name)
 
   if (type === undefined) {
     log.warn(`${name} type not found`)
@@ -50,11 +67,7 @@ export const findObject = (elements: Element[], name: string): ObjectType | unde
   return type
 }
 
-
-export const addAnnotationRecursively = async (
-  type: ObjectType,
-  annotation: string
-): Promise<void> =>
+export const addAnnotationRecursively = async (type: ObjectType, annotation: string): Promise<void> =>
   awu(Object.values(type.fields)).forEach(async field => {
     if (!field.annotations[annotation]) {
       field.annotations[annotation] = true
@@ -65,11 +78,7 @@ export const addAnnotationRecursively = async (
     }
   })
 
-export const getFilledJspUrls = (
-  instance: InstanceElement,
-  config: JiraConfig,
-  typeName: string
-): JspUrls => {
+export const getFilledJspUrls = (instance: InstanceElement, config: JiraConfig, typeName: string): JspUrls => {
   const jspRequests = config.apiDefinitions.types[typeName]?.jspRequests
   if (jspRequests === undefined) {
     throw new Error(`${typeName} jsp urls are missing from the configuration`)
@@ -77,32 +86,65 @@ export const getFilledJspUrls = (
 
   return {
     ...jspRequests,
-    query: jspRequests.query && elementUtils.createUrl({
-      instance,
-      baseUrl: jspRequests.query,
-    }),
+    query:
+      jspRequests.query &&
+      fetchUtils.resource.createUrl({
+        instance,
+        url: jspRequests.query,
+      }),
   }
 }
 
-export const isFreeLicense = async (
-  elementsSource: ReadOnlyElementsSource
-): Promise<boolean> => {
-  if (!await elementsSource.has(ACCOUNT_INFO_ELEM_ID)) {
+export const isAllFreeLicense = async (elementsSource: ReadOnlyElementsSource): Promise<boolean> => {
+  if (!(await elementsSource.has(ACCOUNT_INFO_ELEM_ID))) {
+    log.error('account info instance not found in elements source, treating the account as paid one')
     return false
   }
   const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
-  if (!isInstanceElement(accountInfo)
-  || accountInfo.value.license?.applications === undefined) {
+  if (!isInstanceElement(accountInfo) || accountInfo.value.license?.applications === undefined) {
     log.error('account info instance or its license not found in elements source, treating the account as paid one')
     return false
   }
-  const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-software')
+  const hasPaidApp = accountInfo.value.license.applications.some((app: appInfo) => app.plan !== 'FREE')
+  return !hasPaidApp
+}
 
+export const isJiraSoftwareFreeLicense = async (elementsSource: ReadOnlyElementsSource): Promise<boolean> => {
+  if (!(await elementsSource.has(ACCOUNT_INFO_ELEM_ID))) {
+    return true
+  }
+  const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
+  if (!isInstanceElement(accountInfo) || accountInfo.value.license?.applications === undefined) {
+    log.error('account info instance or its license not found in elements source, treating the account as free one')
+    return true
+  }
+  const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-software')
   if (mainApplication?.plan === undefined) {
-    log.error('could not find license of jira-software, treating the account as paid one')
-    return false
+    log.warn('could not find license of jira-software, treating the account as free one')
+    return true
   }
   return mainApplication.plan === JIRA_FREE_PLAN
+}
+
+/*
+ * Checks if the Jira service has a service desk license. The default is to assume that it doesn't.
+ */
+export const hasJiraServiceDeskLicense = async (elementsSource: ReadOnlyElementsSource): Promise<boolean> => {
+  const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
+  if (
+    accountInfo === undefined ||
+    !isInstanceElement(accountInfo) ||
+    accountInfo.value.license?.applications === undefined
+  ) {
+    log.error('account info instance or its license not found in elements source, treating the account as free one')
+    return false
+  }
+  const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-servicedesk')
+  if (mainApplication?.plan === undefined) {
+    log.warn('could not find license of jira-software, treating the account as free one')
+    return false
+  }
+  return true
 }
 
 export const renameKey = (object: Value, { from, to }: { from: string; to: string }): void => {
@@ -112,10 +154,97 @@ export const renameKey = (object: Value, { from, to }: { from: string; to: strin
   }
 }
 
-export const isThereValidParent = (element: Element): boolean => {
+type ProjectResponse = {
+  projectTypeKey: string
+}
+type ProjectDataResponse = {
+  values: ProjectResponse[]
+}
+
+const PROJECT_DATA_RESPONSE_SCHEMA = Joi.object({
+  values: Joi.array()
+    .items(
+      Joi.object({
+        projectTypeKey: Joi.string().required(),
+      })
+        .unknown(true)
+        .required(),
+    )
+    .required(),
+})
+  .unknown(true)
+  .required()
+
+const isProjectDataResponse = createSchemeGuard<ProjectDataResponse>(PROJECT_DATA_RESPONSE_SCHEMA)
+
+/*
+ * Checks if the Jira service has a software project. The default is to assume that it does.
+ * We are going to exclude Borads if we sure that there is no software project.
+ */
+export const hasSoftwareProject = async (client: JiraClient): Promise<boolean> => {
   try {
-    return getParent(element) !== undefined
-  } catch {
-    return false
+    const response = await client.get({
+      url: '/rest/api/3/project/search',
+    })
+    if (!isProjectDataResponse(response.data)) {
+      return true
+    }
+    return response.data.values.some(project => project.projectTypeKey === SOFTWARE_FIELD)
+  } catch (e) {
+    log.error(`Failed to get server info: ${e}`)
+  }
+  return true
+}
+
+export const convertPropertiesToList = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.entries(field.properties).map(([key, value]) => ({ key, value }))
+    }
+  })
+}
+export const convertPropertiesToMap = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.fromEntries(field.properties.map(({ key, value }: Values) => [key, value]))
+    }
+  })
+}
+
+export const jitterWait = async (delay: number): Promise<void> => {
+  const jitter = Math.random() * 3000 // random delay between 0 and 3 seconds
+  log.debug(`Waiting for ${delay + jitter}ms`)
+  await new Promise(resolve => setTimeout(resolve, delay + jitter))
+}
+
+// Some requests should be performed in batches and are executed in parallel.
+// This may result in a "Failed to acquire lock" error, so we want to retry in such cases.
+export const acquireLockRetry = async <T>({
+  fn,
+  delays,
+  retries = MAX_RETRIES,
+}: {
+  fn: () => Promise<T>
+  delays?: number[]
+  retries?: number
+}): Promise<T> => {
+  try {
+    return await fn()
+  } catch (error) {
+    if (
+      error instanceof clientUtils.HTTPError &&
+      Array.isArray(error.response.data.errorMessages) &&
+      error.response?.data?.errorMessages?.some((message: string) => message.includes('Failed to acquire lock'))
+    ) {
+      if (retries === 1) {
+        throw error
+      }
+      log.debug(`Request failed due to 'Failed to acquire lock', retrying ${retries - 1} more times.`)
+      if (delays !== undefined && delays.length > 0) {
+        await jitterWait(delays[0])
+      }
+      return acquireLockRetry({ fn, delays: _.tail(delays), retries: retries - 1 })
+    }
+    throw error
   }
 }

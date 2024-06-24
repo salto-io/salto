@@ -1,27 +1,28 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { WORKFLOW_DETAILED_TYPE, TASK_TYPE, SETTINGS_TYPE_PREFIX } from '../constants'
 import { FilterCreator } from '../filter'
 
 type ZuoraReferenceSerializationStrategyName = 'currencyCode' | 'segmentName'
+type ZuoraReferenceIndexName = ZuoraReferenceSerializationStrategyName
 const ZuoraReferenceSerializationStrategyLookup: Record<
   ZuoraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
-  referenceUtils.ReferenceSerializationStrategy
+  referenceUtils.ReferenceSerializationStrategy<ZuoraReferenceIndexName>
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
   currencyCode: {
@@ -36,19 +37,18 @@ const ZuoraReferenceSerializationStrategyLookup: Record<
   },
 }
 
-type ZuoraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
-  zuoraSerializationStrategy?: ZuoraReferenceSerializationStrategyName
-}
+type ZuoraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
+  never,
+  ZuoraReferenceSerializationStrategyName
+>
 
-class ZuoraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
+class ZuoraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
+  never,
+  ZuoraReferenceSerializationStrategyName,
+  ZuoraReferenceIndexName
+> {
   constructor(def: ZuoraFieldReferenceDefinition) {
-    super({ src: def.src })
-    this.serializationStrategy = ZuoraReferenceSerializationStrategyLookup[
-      def.zuoraSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
-    ]
-    this.target = def.target
-      ? { ...def.target, lookup: this.serializationStrategy.lookup }
-      : undefined
+    super(def, ZuoraReferenceSerializationStrategyLookup)
   }
 }
 
@@ -140,17 +140,17 @@ const fieldNameToTypeMappingDefs: ZuoraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'currency', parentTypes: ['GETProductRatePlanChargePricingType'] },
-    zuoraSerializationStrategy: 'currencyCode',
+    serializationStrategy: 'currencyCode',
     target: { type: `${SETTINGS_TYPE_PREFIX}Currency` },
   },
   {
     src: { field: 'homeCurrencyCode', parentTypes: [`${SETTINGS_TYPE_PREFIX}FxCurrency`] },
-    zuoraSerializationStrategy: 'currencyCode',
+    serializationStrategy: 'currencyCode',
     target: { type: `${SETTINGS_TYPE_PREFIX}Currency` },
   },
   {
     src: { field: 'segmentName', parentTypes: [`${SETTINGS_TYPE_PREFIX}RuleDetail`] },
-    zuoraSerializationStrategy: 'segmentName',
+    serializationStrategy: 'segmentName',
     target: { type: `${SETTINGS_TYPE_PREFIX}Segment` },
   },
 

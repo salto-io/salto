@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { config as configUtils, deployment } from '@salto-io/adapter-components'
 import {
@@ -45,7 +45,7 @@ import {
   helpCenterActivationValidator,
   helpCenterCreationOrRemovalValidator,
   everyoneUserSegmentModificationValidator,
-  guideOrderDeletionValidator,
+  orderDeletionValidator,
   childrenReferencesValidator,
   childInOrderValidator,
   orderChildrenParentValidator,
@@ -63,16 +63,33 @@ import {
   organizationExistenceValidator,
   badFormatWebhookActionValidator,
   guideDisabledValidator,
+  guideThemeDeleteLiveValidator,
+  guideThemeUpdateMetadataValidator,
   additionOfTicketStatusForTicketFormValidator,
   defaultDynamicContentItemVariantValidator,
   featureActivationValidator,
-  deflectionActionValidator,
+  activeActionFeaturesValidator,
   standardFieldsValidator,
   uniqueAutomationConditionsValidator,
-  defaultAutomationRemovalValidator, attachmentWithoutContentValidator,
+  defaultAutomationRemovalValidator,
+  attachmentWithoutContentValidator,
+  duplicateRoutingAttributeValueValidator,
+  triggerCategoryRemovalValidator,
+  ticketFieldDeactivationValidator,
+  duplicateIdFieldValuesValidator,
+  notEnabledMissingReferencesValidator,
+  conditionalTicketFieldsValidator,
+  dynamicContentDeletionValidator,
+  dynamicContentPlaceholderModificationValidator,
+  inactiveTicketFormInViewValidator,
+  immutableTypeAndKeyForUserFieldsValidator,
+  localeModificationValidator,
+  emptyAutomationOrderValidator,
+  viewCustomStatusConditionsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig } from './config'
+import { ChangeValidatorName, ZendeskConfig } from './config'
+import { ZendeskDeployConfig, ZendeskFetchConfig } from './user_config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -83,6 +100,7 @@ const {
 
 export default ({
   client,
+  config,
   apiConfig,
   fetchConfig,
   deployConfig,
@@ -90,18 +108,21 @@ export default ({
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
+  config: ZendeskConfig
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   fetchConfig: ZendeskFetchConfig
-  deployConfig?: ZedneskDeployConfig
+  deployConfig?: ZendeskDeployConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
 }): ChangeValidator => {
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     deployTypesNotSupported: deployTypesNotSupportedValidator,
-    createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator(
-      { typesConfig: apiConfig.types, typesDeployedViaParent, typesWithNoDeploy }
-    ),
+    createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
+      typesConfig: apiConfig.types,
+      typesDeployedViaParent,
+      typesWithNoDeploy,
+    }),
     accountSettings: accountSettingsValidator,
     emptyCustomFieldOptions: emptyCustomFieldOptionsValidator,
     emptyVariants: emptyVariantsValidator,
@@ -127,9 +148,9 @@ export default ({
     customStatusCategory: customStatusCategoryValidator,
     customStatusActiveDefault: customStatusActiveDefaultValidator,
     defaultCustomStatuses: defaultCustomStatusesValidator,
-    customRoleRemoval: customRoleRemovalValidator(client),
+    customRoleRemoval: customRoleRemovalValidator(client, fetchConfig),
     sideConversations: sideConversationsValidator,
-    users: usersValidator(client, deployConfig),
+    users: usersValidator(client, fetchConfig),
     requiredAppOwnedParameters: requiredAppOwnedParametersValidator,
     oneTranslationPerLocale: oneTranslationPerLocaleValidator,
     articleRemoval: articleRemovalValidator,
@@ -141,23 +162,38 @@ export default ({
     helpCenterActivation: helpCenterActivationValidator,
     helpCenterCreationOrRemoval: helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook: externalSourceWebhookValidator,
-    defaultGroupChange: defaultGroupChangeValidator,
-    organizationExistence: organizationExistenceValidator(client, fetchConfig),
+    defaultGroupChange: defaultGroupChangeValidator(client),
+    organizationExistence: organizationExistenceValidator(client, fetchConfig, deployConfig),
     badFormatWebhookAction: badFormatWebhookActionValidator,
     guideDisabled: guideDisabledValidator(fetchConfig),
+    guideThemeDeleteLive: guideThemeDeleteLiveValidator,
+    guideThemeUpdateMetadata: guideThemeUpdateMetadataValidator,
     additionOfTicketStatusForTicketForm: additionOfTicketStatusForTicketFormValidator,
     defaultDynamicContentItemVariant: defaultDynamicContentItemVariantValidator,
+    dynamicContentPlaceholderModification: dynamicContentPlaceholderModificationValidator,
     featureActivation: featureActivationValidator,
-    deflectionAction: deflectionActionValidator,
+    deflectionAction: activeActionFeaturesValidator,
     standardFields: standardFieldsValidator,
     uniqueAutomationConditions: uniqueAutomationConditionsValidator,
     defaultAutomationRemoval: defaultAutomationRemovalValidator,
     attachmentWithoutContent: attachmentWithoutContentValidator,
+    duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
+    triggerCategoryRemoval: triggerCategoryRemovalValidator(fetchConfig),
+    duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
+    notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
+    conditionalTicketFields: conditionalTicketFieldsValidator,
+    dynamicContentDeletion: dynamicContentDeletionValidator,
+    inactiveTicketFormInView: inactiveTicketFormInViewValidator,
+    immutableTypeAndKeyForUserFields: immutableTypeAndKeyForUserFieldsValidator,
+    localeModification: localeModificationValidator,
+    emptyAutomationOrder: emptyAutomationOrderValidator,
+    viewCustomStatusConditions: viewCustomStatusConditionsValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,
     orderChildrenParent: orderChildrenParentValidator,
-    guideOrderDeletion: guideOrderDeletionValidator,
+    guideOrderDeletion: orderDeletionValidator,
+    ticketFieldDeactivation: ticketFieldDeactivationValidator,
     // ******************************
   }
 

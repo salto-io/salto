@@ -1,74 +1,45 @@
 {
-	"comments": {
-		// symbol used for single line comment. Remove this entry if your language does not support line comments
-		"lineComment": "//"
-	},
-	// symbols used as brackets
-	"brackets": [
-		[
-			"{",
-			"}"
-		],
-		[
-			"[",
-			"]"
-		],
-		[
-			"(",
-			")"
-		]
-	],
-	"autoClosingPairs": [
-		{
-			"open": "{",
-			"close": "}"
-		},
-		{
-			"open": "[",
-			"close": "]"
-		},
-		{
-			"open": "(",
-			"close": ")"
-		},
-		{
-			"open": "\"",
-			"close": "\"",
-			"notIn": [
-				"string"
-			]
-		},
-		{
-			"open": "'",
-			"close": "'",
-			"notIn": [
-				"string",
-				"comment"
-			]
-		}
-	],
-	"autoCloseBefore": ";:.,=}])> \n\t\"",
-	"surroundingPairs": [
-		[
-			"{",
-			"}"
-		],
-		[
-			"[",
-			"]"
-		],
-		[
-			"(",
-			")"
-		],
-		[
-			"\"",
-			"\""
-		],
-		[
-			"'",
-			"'"
-		]
-	],
-	"wordPattern" : "\"[^\"]+\"|[\\w.@]+"
+  "comments": {
+    // symbol used for single line comment. Remove this entry if your language does not support line comments
+    "lineComment": "//"
+  },
+  // symbols used as brackets
+  "brackets": [
+    ["{", "}"],
+    ["[", "]"],
+    ["(", ")"]
+  ],
+  "autoClosingPairs": [
+    {
+      "open": "{",
+      "close": "}"
+    },
+    {
+      "open": "[",
+      "close": "]"
+    },
+    {
+      "open": "(",
+      "close": ")"
+    },
+    {
+      "open": "\"",
+      "close": "\"",
+      "notIn": ["string"]
+    },
+    {
+      "open": "'",
+      "close": "'",
+      "notIn": ["string", "comment"]
+    }
+  ],
+  "autoCloseBefore": ";:.,=}])> \n\t\"",
+  "surroundingPairs": [
+    ["{", "}"],
+    ["[", "]"],
+    ["(", ")"],
+    ["\"", "\""],
+    ["'", "'"]
+  ],
+  "wordPattern": "\"[^\"]+\"|[\\w.@]+"
 }

@@ -1,5 +1,7 @@
 # Zendesk system configuration
+
 ## Default Configuration for single environment
+
 ```hcl
 zendesk {
   apiDefinitions = {

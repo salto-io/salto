@@ -1,29 +1,43 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, StaticFile, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
-import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, FILE, FILE_CABINET_PATH, FOLDER, NETSUITE, PATH, RECORDS_PATH, SCRIPT_ID, SETTINGS_PATH } from '../src/constants'
+import {
+  CONFIG_FEATURES,
+  CUSTOM_RECORD_TYPE,
+  ENTITY_CUSTOM_FIELD,
+  FILE,
+  FILE_CABINET_PATH,
+  FOLDER,
+  INTEGRATION,
+  NETSUITE,
+  PATH,
+  RECORDS_PATH,
+  SCRIPT_ID,
+  SETTINGS_PATH,
+} from '../src/constants'
 import loadElementsFromFolder from '../src/sdf_folder_loader'
 import { getMetadataTypes, isCustomRecordType, metadataTypesToList } from '../src/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
 import { LocalFilterCreator } from '../src/filter'
-import { addApplicationIdToType } from '../src/transformer'
+import { addApplicationIdToType, addBundleFieldToType } from '../src/transformer'
 import { createEmptyElementsSourceIndexes } from './utils'
+import { fullFetchConfig } from '../src/config/config_creator'
 
 const parseSdfProjectDirMock = jest.fn()
 jest.mock('../src/client/sdf_parser', () => ({
@@ -42,15 +56,13 @@ describe('sdf folder loader', () => {
   it('should return elements', async () => {
     const folderCustomizationInfo: FolderCustomizationInfo = {
       typeName: FOLDER,
-      values: {
-      },
+      values: {},
       path: ['a', 'b'],
     }
 
     const fileCustomizationInfo: FileCustomizationInfo = {
       typeName: FILE,
-      values: {
-      },
+      values: {},
       path: ['a', 'b', 'c'],
       fileContent: Buffer.from('Dummy content'),
     }
@@ -59,9 +71,7 @@ describe('sdf folder loader', () => {
       typeName: CONFIG_FEATURES,
       scriptId: CONFIG_FEATURES,
       values: {
-        feature: [
-          { id: 'feature', label: 'Feature', status: 'ENABLED' },
-        ],
+        feature: [{ id: 'feature', label: 'Feature', status: 'ENABLED' }],
       },
     }
 
@@ -83,12 +93,18 @@ describe('sdf folder loader', () => {
       scriptId: 'customrecord1',
     }
 
+    const integrationCustInfo = {
+      typeName: INTEGRATION,
+      values: '',
+    }
+
     parseSdfProjectDirMock.mockResolvedValue([
       folderCustomizationInfo,
       fileCustomizationInfo,
       featuresCustomTypeInfo,
       customTypeInfo,
       customRecordTypeCustInfo,
+      integrationCustInfo,
     ])
 
     const elementsSourceIndex = createEmptyElementsSourceIndexes()
@@ -104,7 +120,7 @@ describe('sdf folder loader', () => {
         baseDir: 'projectDir',
         elementsSource,
       },
-      [filterMock]
+      [filterMock],
     )
 
     expect(createElementsSourceIndexMock).toHaveBeenCalledWith(elementsSource, true)
@@ -112,80 +128,91 @@ describe('sdf folder loader', () => {
       elementsSourceIndex,
       elementsSource,
       isPartial: true,
-      config: {},
+      config: { fetch: fullFetchConfig() },
     })
     expect(parseSdfProjectDirMock).toHaveBeenCalledWith('projectDir')
 
     const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
-    const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
-      .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
+    const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes }).concat(
+      createCustomRecordTypes([], standardTypes.customrecordtype.type),
+    )
 
+    addApplicationIdToType(additionalTypes.bundle)
     // metadataTypes + folderInstance + fileInstance + featuresInstance + customTypeInstance + customRecordType
     expect(elements).toHaveLength(metadataTypes.length + 5)
-
     const instance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === ENTITY_CUSTOM_FIELD)
     addApplicationIdToType(standardTypes[ENTITY_CUSTOM_FIELD].type)
-    expect(instance).toEqual(new InstanceElement(
-      'custentity_my_script_id',
-      standardTypes[ENTITY_CUSTOM_FIELD].type,
-      {
-        [SCRIPT_ID]: 'custentity_my_script_id',
-        label: 'elementName',
-      },
-      [NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, 'custentity_my_script_id']
-    ))
+    addBundleFieldToType(standardTypes[ENTITY_CUSTOM_FIELD].type, additionalTypes.bundle)
+    expect(instance).toEqual(
+      new InstanceElement(
+        'custentity_my_script_id',
+        standardTypes[ENTITY_CUSTOM_FIELD].type,
+        {
+          [SCRIPT_ID]: 'custentity_my_script_id',
+          label: 'elementName',
+        },
+        [NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, 'custentity_my_script_id'],
+      ),
+    )
 
     const fileInstance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === FILE)
     addApplicationIdToType(additionalTypes[FILE])
-    expect(fileInstance).toEqual(new InstanceElement(
-      naclCase('a/b/c'),
-      additionalTypes[FILE],
-      {
-        [PATH]: '/a/b/c',
-        content: new StaticFile({
-          filepath: 'netsuite/FileCabinet/a/b/c',
-          content: Buffer.from('Dummy content'),
-        }),
-      },
-      [NETSUITE, FILE_CABINET_PATH, 'a', 'b', 'c']
-    ))
+    addBundleFieldToType(additionalTypes[FILE], additionalTypes.bundle)
+    expect(fileInstance).toEqual(
+      new InstanceElement(
+        naclCase('a/b/c'),
+        additionalTypes[FILE],
+        {
+          [PATH]: '/a/b/c',
+          content: new StaticFile({
+            filepath: 'netsuite/FileCabinet/a/b/c',
+            content: Buffer.from('Dummy content'),
+          }),
+        },
+        [NETSUITE, FILE_CABINET_PATH, 'a', 'b', 'c'],
+      ),
+    )
 
     const folderInstance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === FOLDER)
     addApplicationIdToType(additionalTypes[FOLDER])
-    expect(folderInstance).toEqual(new InstanceElement(
-      naclCase('a/b'),
-      additionalTypes[FOLDER],
-      {
-        [PATH]: '/a/b',
-      },
-      [NETSUITE, FILE_CABINET_PATH, 'a', 'b', 'b']
-    ))
+    addBundleFieldToType(additionalTypes[FOLDER], additionalTypes.bundle)
+    expect(folderInstance).toEqual(
+      new InstanceElement(
+        naclCase('a/b'),
+        additionalTypes[FOLDER],
+        {
+          [PATH]: '/a/b',
+        },
+        [NETSUITE, FILE_CABINET_PATH, 'a', 'b', 'b'],
+      ),
+    )
 
     const featuresInstance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === CONFIG_FEATURES)
     addApplicationIdToType(additionalTypes[CONFIG_FEATURES])
-    expect(featuresInstance).toEqual(new InstanceElement(
-      ElemID.CONFIG_NAME,
-      additionalTypes[CONFIG_FEATURES],
-      {
-        feature: [
-          { id: 'feature', label: 'Feature', status: 'ENABLED' },
-        ],
-      },
-      [NETSUITE, SETTINGS_PATH, CONFIG_FEATURES]
-    ))
+    expect(featuresInstance).toEqual(
+      new InstanceElement(
+        ElemID.CONFIG_NAME,
+        additionalTypes[CONFIG_FEATURES],
+        {
+          feature: [{ id: 'feature', label: 'Feature', status: 'ENABLED' }],
+        },
+        [NETSUITE, SETTINGS_PATH, CONFIG_FEATURES],
+      ),
+    )
 
     const customRecordType = elements.find(elem => isObjectType(elem) && isCustomRecordType(elem))
     addApplicationIdToType(standardTypes[CUSTOM_RECORD_TYPE].type)
-    expect(customRecordType).toEqual(createCustomRecordTypes(
-      [new InstanceElement(
-        'customrecord1',
+    addBundleFieldToType(standardTypes[CUSTOM_RECORD_TYPE].type, additionalTypes.bundle)
+    expect(customRecordType).toEqual(
+      createCustomRecordTypes(
+        [
+          new InstanceElement('customrecord1', standardTypes[CUSTOM_RECORD_TYPE].type, {
+            [SCRIPT_ID]: 'customrecord1',
+            recordname: 'custom record 1',
+          }),
+        ],
         standardTypes[CUSTOM_RECORD_TYPE].type,
-        {
-          [SCRIPT_ID]: 'customrecord1',
-          recordname: 'custom record 1',
-        }
-      )],
-      standardTypes[CUSTOM_RECORD_TYPE].type
-    )[0])
+      )[0],
+    )
   })
 })

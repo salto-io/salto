@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 export const NETSUITE = 'netsuite'
 export const RECORDS_PATH = 'Records'
 export const FILE_CABINET_PATH = 'FileCabinet'
@@ -63,6 +63,10 @@ export const EMPLOYEE = 'employee'
 export const REPORT_DEFINITION = 'reportdefinition'
 export const FINANCIAL_LAYOUT = 'financiallayout'
 export const BUNDLE = 'bundle'
+export const BIN = 'bin'
+export const TAX_SCHEDULE = 'taxSchedule'
+export const PROJECT_EXPENSE_TYPE = 'projectExpenseType'
+export const ALLOCATION_TYPE = 'allocationType'
 
 // Type Annotations
 export const SOURCE = 'source'
@@ -83,9 +87,20 @@ export const PARENT = 'parent'
 export const CUSTOM_FIELD_PREFIX = 'custom_'
 export const EXCHANGE_RATE = 'exchangeRate'
 export const PERMISSIONS = 'permissions'
+export const PERMISSION = 'permission'
 export const CUSTOM_FIELD = 'customField'
 export const CUSTOM_FIELD_LIST = 'customFieldList'
 export const CONTENT = 'content'
+export const INIT_CONDITION = 'initcondition'
+export const SELECT_RECORD_TYPE = 'selectrecordtype'
+export const ADDITIONAL_DEPENDENCIES = 'additionalDependencies'
+
+type InactiveFields = 'isinactive' | 'inactive' | 'isInactive'
+export const INACTIVE_FIELDS: { [K in InactiveFields]: K } = {
+  isinactive: 'isinactive',
+  inactive: 'inactive',
+  isInactive: 'isInactive',
+}
 
 // Field Annotations
 export const SOAP = 'soap'
@@ -93,6 +108,7 @@ export const IS_ATTRIBUTE = 'isAttribute'
 export const ADDITIONAL_FILE_SUFFIX = 'additionalFileSuffix'
 export const LIST_MAPPED_BY_FIELD = 'map_key_field'
 export const INDEX = 'index'
+export const REAL_VALUE_KEY = '#text'
 
 // SDF FileCabinet top level folders
 export const FILE_CABINET_PATH_SEPARATOR = '/'

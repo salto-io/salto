@@ -1,22 +1,31 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isInstanceChange,
+  isModificationChange,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import Joi from 'joi'
 import { addAnnotationRecursively, findObject } from '../../../utils'
 import { AUTOMATION_LABEL_TYPE } from '../../../constants'
@@ -40,13 +49,12 @@ export const LABELS_POST_RESPONSE_SCHEME = Joi.object({
   color: Joi.string().allow('').required(),
 }).unknown(true)
 
-export const isLabelsPostResponse = createSchemeGuard<LabelsResponse>(LABELS_POST_RESPONSE_SCHEME, 'Received an invalid page response')
+export const isLabelsPostResponse = createSchemeGuard<LabelsResponse>(
+  LABELS_POST_RESPONSE_SCHEME,
+  'Received an invalid page response',
+)
 
-
-const updateAutomationLabel = async (
-  instance: InstanceElement,
-  client: JiraClient,
-): Promise<void> => {
+const updateAutomationLabel = async (instance: InstanceElement, client: JiraClient): Promise<void> => {
   const resolvedInstance = await resolveValues(instance, getLookUpName)
 
   const data = {
@@ -60,10 +68,7 @@ const updateAutomationLabel = async (
   await client.put({ url, data })
 }
 
-const createAutomationLabel = async (
-  instance: InstanceElement,
-  client: JiraClient,
-): Promise<void> => {
+const createAutomationLabel = async (instance: InstanceElement, client: JiraClient): Promise<void> => {
   const resolvedInstance = await resolveValues(instance, getLookUpName)
 
   const data = {
@@ -76,7 +81,9 @@ const createAutomationLabel = async (
 
   const response = await client.post({ url, data })
   if (!isLabelsPostResponse(response.data)) {
-    throw new Error(`Received an invalid automation label response when attempting to add automation label: ${instance.elemID.getFullName()}`)
+    throw new Error(
+      `Received an invalid automation label response when attempting to add automation label: ${instance.elemID.getFullName()}`,
+    )
   }
   instance.value.id = response.data.id
 }
@@ -103,20 +110,16 @@ const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && getChangeData(change).elemID.typeName === AUTOMATION_LABEL_TYPE
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === AUTOMATION_LABEL_TYPE,
     )
 
-    const deployResult = await deployChanges(
-      relevantChanges.filter(isInstanceChange),
-      async change => {
-        if (isAdditionChange(change)) {
-          await createAutomationLabel(getChangeData(change), client)
-        } else if (isModificationChange(change)) {
-          await updateAutomationLabel(getChangeData(change), client)
-        }
+    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
+      if (isAdditionChange(change)) {
+        await createAutomationLabel(getChangeData(change), client)
+      } else if (isModificationChange(change)) {
+        await updateAutomationLabel(getChangeData(change), client)
       }
-    )
+    })
     return {
       leftoverChanges,
       deployResult,

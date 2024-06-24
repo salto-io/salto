@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/persistent-pool",
-  "version": "0.3.43",
+  "version": "0.3.58",
   "license": "Apache-2.0",
   "description": "Keeps a persistent pool of objects",
   "repository": {
@@ -23,15 +23,16 @@
     "clean-ts": "../../build_utils/clean-old-ts.sh",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn lint --fix"
+    "lint-fix": "yarn lint --fix",
+    "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
+    "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "3.198.0",
     "@aws-sdk/lib-dynamodb": "3.198.0",
-    "@salto-io/logging": "0.3.43",
-    "@salto-io/lowerdash": "0.3.43",
-    "@salto-io/test-utils": "0.3.43",
-    "aws-sdk": "^2.863.0",
+    "@salto-io/logging": "0.3.58",
+    "@salto-io/lowerdash": "0.3.58",
+    "@salto-io/test-utils": "0.3.58",
     "uuid": "^8.3.0"
   },
   "devDependencies": {
@@ -42,8 +43,9 @@
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
-    "eslint": "^6.2.2",
+    "eslint": "^7.3.2",
     "eslint-config-airbnb": "18.0.1",
+    "eslint-config-prettier": "9.1.0",
     "eslint-plugin-header": "^3.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jest": "^22.6.4",
@@ -55,6 +57,7 @@
     "jest-dynalite": "^3.3.1",
     "jest-environment-node": "^27.4.4",
     "jest-junit": "^12.0.0",
+    "prettier": "3.2.5",
     "ts-jest": "^27.1.2",
     "typescript": "4.1.3"
   }

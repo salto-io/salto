@@ -1,37 +1,34 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { SAP } from './constants'
 
-const { createClientConfigType } = clientUtils
-const {
-  createUserFetchConfigType,
-  createSwaggerAdapterApiConfigType,
-} = configUtils
+const { createClientConfigType } = definitions
+const { createSwaggerAdapterApiConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
-export type SAPClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+export type SAPClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
-export type SAPFetchConfig = configUtils.UserFetchConfig
+export type SAPFetchConfig = definitions.UserFetchConfig
 
 export type SAPApiConfig = configUtils.AdapterSwaggerApiConfig
 
@@ -135,12 +132,13 @@ export const configType = createMatchingObjectType<Partial<SAPConfig>>({
   elemID: new ElemID(SAP),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(SAP),
+      refType: createClientConfigType({ adapter: SAP }),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(
-        SAP,
-      ),
+      refType: definitions.createUserFetchConfigType({
+        adapterName: SAP,
+        omitElemID: true,
+      }),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({ adapter: SAP }),

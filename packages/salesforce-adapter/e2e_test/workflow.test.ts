@@ -1,45 +1,66 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  InstanceElement, Element, ElemID, ObjectType,
+  InstanceElement,
+  Element,
+  ElemID,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import {
-  findElements as findElementsByID, findElement,
+  findElements as findElementsByID,
+  findElement,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { MetadataInfo } from 'jsforce-types'
+import { MetadataInfo } from '@salto-io/jsforce-types'
+import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
 import {
-  WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
+  WORKFLOW_ALERTS_FIELD,
+  WORKFLOW_FIELD_UPDATES_FIELD,
+  WORKFLOW_RULES_FIELD,
+  WORKFLOW_TASKS_FIELD,
   WORKFLOW_FIELD_TO_TYPE,
 } from '../src/filters/workflow'
 import {
-  SALESFORCE, INSTANCE_FULL_NAME_FIELD, WORKFLOW_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
-  WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_TASK_METADATA_TYPE, WORKFLOW_ACTION_ALERT_METADATA_TYPE,
+  SALESFORCE,
+  INSTANCE_FULL_NAME_FIELD,
+  WORKFLOW_METADATA_TYPE,
+  WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE,
+  WORKFLOW_TASK_METADATA_TYPE,
+  WORKFLOW_ACTION_ALERT_METADATA_TYPE,
 } from '../src/constants'
 import SalesforceAdapter from '../src/adapter'
 import { findElements } from '../test/utils'
 import {
-  getMetadataInstance, getMetadata, removeMetadataIfAlreadyExists, createAndVerify,
-  removeElementAndVerify, fetchTypes, runFiltersOnFetch,
+  getMetadataInstance,
+  getMetadata,
+  removeMetadataIfAlreadyExists,
+  createAndVerify,
+  removeElementAndVerify,
+  fetchTypes,
+  runFiltersOnFetch,
+  nullProgressReporter,
 } from './utils'
 import { testHelpers } from './jest_environment'
+
+const log = logger(module)
 
 describe('workflow filter', () => {
   // Set long timeout as we communicate with salesforce API
@@ -50,9 +71,11 @@ describe('workflow filter', () => {
   let fetchResult: Element[]
   let credLease: CredsLease<UsernamePasswordCredentials>
   beforeAll(async () => {
+    log.resetLogCount()
     credLease = await testHelpers().credentials()
-    const adapterParams = realAdapter({ credentials:
-      new UsernamePasswordCredentials(credLease.value) })
+    const adapterParams = realAdapter({
+      credentials: new UsernamePasswordCredentials(credLease.value),
+    })
     adapter = adapterParams.adapter
     client = adapterParams.client
   })
@@ -61,6 +84,7 @@ describe('workflow filter', () => {
     if (credLease.return) {
       await credLease.return()
     }
+    log.info('workflow filter E2E: Log counts = %o', log.getLogCount())
   })
   const baseCustomObject = 'Lead'
 
@@ -166,22 +190,44 @@ describe('workflow filter', () => {
       subName: string,
       subDescription: string,
     ): void => {
-      const subElemId = new ElemID('salesforce', subTypeName, 'instance', subName)
-      const [subInstance] = findElementsByID(fetchResult, subElemId) as Iterable<InstanceElement>
+      const subElemId = new ElemID(
+        'salesforce',
+        subTypeName,
+        'instance',
+        subName,
+      )
+      const [subInstance] = findElementsByID(
+        fetchResult,
+        subElemId,
+      ) as Iterable<InstanceElement>
       expect(subInstance.value.description).toEqual(subDescription)
     }
 
     beforeAll(async () => {
       await verifyWorkflowInnerTypesExist()
-      const rawWorkflowTypes = await fetchTypes(client, [WORKFLOW_METADATA_TYPE,
-        ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
-      const rawWorkflowInstance = await getMetadataInstance(client,
-        findElement(rawWorkflowTypes, new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)) as ObjectType,
-        baseCustomObject)
+      const rawWorkflowTypes = await fetchTypes(client, [
+        WORKFLOW_METADATA_TYPE,
+        ...Object.values(WORKFLOW_FIELD_TO_TYPE),
+      ])
+      const rawWorkflowInstance = await getMetadataInstance(
+        client,
+        findElement(
+          rawWorkflowTypes,
+          new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
+        ) as ObjectType,
+        baseCustomObject,
+      )
       expect(rawWorkflowInstance).toBeDefined()
-      fetchResult = [...rawWorkflowTypes, rawWorkflowInstance as InstanceElement]
+      fetchResult = [
+        ...rawWorkflowTypes,
+        rawWorkflowInstance as InstanceElement,
+      ]
       await runFiltersOnFetch(client, {}, fetchResult)
-      workflows = findElements(fetchResult, WORKFLOW_METADATA_TYPE, baseCustomObject)
+      workflows = findElements(
+        fetchResult,
+        WORKFLOW_METADATA_TYPE,
+        baseCustomObject,
+      )
     })
     describe('fetch workflow', () => {
       it('should remove workflow instance', async () => {
@@ -190,27 +236,38 @@ describe('workflow filter', () => {
     })
     describe('fetch workflow alerts', () => {
       it('should fetch workflow alerts', async () => {
-        verifySubInstance(WORKFLOW_ACTION_ALERT_METADATA_TYPE, `${baseCustomObject}_TestWorkflowAlert@v`,
-          'E2E Fetch WorkflowAlert')
+        verifySubInstance(
+          WORKFLOW_ACTION_ALERT_METADATA_TYPE,
+          `${baseCustomObject}_TestWorkflowAlert@v`,
+          'E2E Fetch WorkflowAlert',
+        )
       })
     })
     describe('fetch workflow field updates', () => {
       it('should fetch workflow field updates', async () => {
-        verifySubInstance(WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+        verifySubInstance(
+          WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
           `${baseCustomObject}_TestWorkflowFieldUpdate@v`,
-          'E2E Fetch WorkflowFieldUpdate')
+          'E2E Fetch WorkflowFieldUpdate',
+        )
       })
     })
     describe('fetch workflow task', () => {
       it('should fetch workflow task', async () => {
-        verifySubInstance(WORKFLOW_TASK_METADATA_TYPE, `${baseCustomObject}_TestWorkflowTask@v`,
-          'E2E Fetch WorkflowTask')
+        verifySubInstance(
+          WORKFLOW_TASK_METADATA_TYPE,
+          `${baseCustomObject}_TestWorkflowTask@v`,
+          'E2E Fetch WorkflowTask',
+        )
       })
     })
     describe('fetch workflow rule', () => {
       it('should fetch workflow rule', async () => {
-        verifySubInstance(WORKFLOW_RULE_METADATA_TYPE, `${baseCustomObject}_TestWorkflowRule@v`,
-          'E2E Fetch WorkflowRule')
+        verifySubInstance(
+          WORKFLOW_RULE_METADATA_TYPE,
+          `${baseCustomObject}_TestWorkflowRule@v`,
+          'E2E Fetch WorkflowRule',
+        )
       })
     })
   })
@@ -239,7 +296,13 @@ describe('workflow filter', () => {
             template: 'unfiled$public/SalesNewCustomerEmail',
           }
 
-          newAlert = await createAndVerify(adapter, client, alertType, value, fetchResult)
+          newAlert = await createAndVerify(
+            adapter,
+            client,
+            alertType,
+            value,
+            fetchResult,
+          )
         })
       })
       describe('update workflow alert', () => {
@@ -261,13 +324,25 @@ describe('workflow filter', () => {
           await adapter.deploy({
             changeGroup: {
               groupID: newAlert.elemID.getFullName(),
-              changes: [{ action: 'modify', data: { before: oldAlert, after: newAlert } }],
+              changes: [
+                {
+                  action: 'modify',
+                  data: { before: oldAlert, after: newAlert },
+                },
+              ],
             },
+            progressReporter: nullProgressReporter,
           })
 
-          const postUpdate = await getMetadata(client, alertType, newInstanceName)
+          const postUpdate = await getMetadata(
+            client,
+            alertType,
+            newInstanceName,
+          )
           expect(postUpdate).toBeDefined()
-          expect(_.get(postUpdate, 'description')).toEqual('My Updated Workflow Alert')
+          expect(_.get(postUpdate, 'description')).toEqual(
+            'My Updated Workflow Alert',
+          )
           expect(_.get(postUpdate, 'recipients')).toEqual([
             {
               recipient: 'CEO',
@@ -278,8 +353,9 @@ describe('workflow filter', () => {
               type: 'role',
             },
           ])
-          expect(_.get(postUpdate, 'template'))
-            .toEqual('unfiled$public/SupportCaseResponse')
+          expect(_.get(postUpdate, 'template')).toEqual(
+            'unfiled$public/SupportCaseResponse',
+          )
         })
       })
       describe('delete workflow alert', () => {
@@ -290,11 +366,16 @@ describe('workflow filter', () => {
     })
 
     describe('workflow field updates manipulations', () => {
-      const fieldUpdateType = WORKFLOW_FIELD_TO_TYPE[WORKFLOW_FIELD_UPDATES_FIELD]
+      const fieldUpdateType =
+        WORKFLOW_FIELD_TO_TYPE[WORKFLOW_FIELD_UPDATES_FIELD]
       const newInstanceName = `${baseCustomObject}.MyWorkflowFieldUpdate`
       let newInstance: InstanceElement
       beforeAll(async () => {
-        await removeMetadataIfAlreadyExists(client, fieldUpdateType, newInstanceName)
+        await removeMetadataIfAlreadyExists(
+          client,
+          fieldUpdateType,
+          newInstanceName,
+        )
       })
       describe('should create workflow field update', () => {
         it('should create workflow field update', async () => {
@@ -310,7 +391,11 @@ describe('workflow filter', () => {
             operation: 'Formula',
           }
           newInstance = await createAndVerify(
-            adapter, client, fieldUpdateType, value, fetchResult
+            adapter,
+            client,
+            fieldUpdateType,
+            value,
+            fetchResult,
           )
         })
       })
@@ -325,18 +410,29 @@ describe('workflow filter', () => {
           await adapter.deploy({
             changeGroup: {
               groupID: newInstance.elemID.getFullName(),
-              changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+              changes: [
+                { action: 'modify', data: { before: old, after: newInstance } },
+              ],
             },
+            progressReporter: nullProgressReporter,
           })
 
-          const workflowFieldUpdateInfo = await getMetadata(client, fieldUpdateType,
-            newInstanceName)
+          const workflowFieldUpdateInfo = await getMetadata(
+            client,
+            fieldUpdateType,
+            newInstanceName,
+          )
           expect(workflowFieldUpdateInfo).toBeDefined()
-          expect(_.get(workflowFieldUpdateInfo, 'description'))
-            .toEqual('My Updated Workflow Field Update')
+          expect(_.get(workflowFieldUpdateInfo, 'description')).toEqual(
+            'My Updated Workflow Field Update',
+          )
           expect(_.get(workflowFieldUpdateInfo, 'field')).toEqual('Rating')
-          expect(_.get(workflowFieldUpdateInfo, 'operation')).toEqual('PreviousValue')
-          expect(_.get(workflowFieldUpdateInfo, 'reevaluateOnChange')).toEqual('false')
+          expect(_.get(workflowFieldUpdateInfo, 'operation')).toEqual(
+            'PreviousValue',
+          )
+          expect(_.get(workflowFieldUpdateInfo, 'reevaluateOnChange')).toEqual(
+            'false',
+          )
         })
       })
       describe('should delete workflow field update', () => {
@@ -368,7 +464,13 @@ describe('workflow filter', () => {
             subject: 'TestWorkflowOutboundMessage',
           }
 
-          newInstance = await createAndVerify(adapter, client, taskType, value, fetchResult)
+          newInstance = await createAndVerify(
+            adapter,
+            client,
+            taskType,
+            value,
+            fetchResult,
+          )
         })
       })
 
@@ -380,13 +482,22 @@ describe('workflow filter', () => {
           await adapter.deploy({
             changeGroup: {
               groupID: newInstance.elemID.getFullName(),
-              changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+              changes: [
+                { action: 'modify', data: { before: old, after: newInstance } },
+              ],
             },
+            progressReporter: nullProgressReporter,
           })
 
-          const workflowTaskInfo = await getMetadata(client, taskType, newInstanceName)
+          const workflowTaskInfo = await getMetadata(
+            client,
+            taskType,
+            newInstanceName,
+          )
           expect(workflowTaskInfo).toBeDefined()
-          expect(_.get(workflowTaskInfo, 'description')).toEqual('My Updated Workflow Task')
+          expect(_.get(workflowTaskInfo, 'description')).toEqual(
+            'My Updated Workflow Task',
+          )
         })
       })
       describe('delete workflow task', () => {
@@ -445,7 +556,13 @@ describe('workflow filter', () => {
             ],
           }
 
-          newInstance = await createAndVerify(adapter, client, rulesType, value, fetchResult)
+          newInstance = await createAndVerify(
+            adapter,
+            client,
+            rulesType,
+            value,
+            fetchResult,
+          )
         })
       })
       describe('update workflow rule', () => {
@@ -471,19 +588,35 @@ describe('workflow filter', () => {
           await adapter.deploy({
             changeGroup: {
               groupID: newInstance.elemID.getFullName(),
-              changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+              changes: [
+                { action: 'modify', data: { before: old, after: newInstance } },
+              ],
             },
+            progressReporter: nullProgressReporter,
           })
 
-          const workflowRuleInfo = await getMetadata(client, rulesType, newInstanceName)
+          const workflowRuleInfo = await getMetadata(
+            client,
+            rulesType,
+            newInstanceName,
+          )
           expect(workflowRuleInfo).toBeDefined()
-          expect(_.get(workflowRuleInfo, 'description')).toEqual('My Updated Workflow Rule')
+          expect(_.get(workflowRuleInfo, 'description')).toEqual(
+            'My Updated Workflow Rule',
+          )
           expect(_.get(workflowRuleInfo, 'criteriaItems')).toBeUndefined()
           expect(_.get(workflowRuleInfo, 'formula')).toEqual('true')
-          expect(_.get(workflowRuleInfo, 'triggerType')).toEqual('onCreateOrTriggeringUpdate')
-          const workflowTimeTrigger = _.get(workflowRuleInfo, 'workflowTimeTriggers')
-          expect(workflowTimeTrigger.actions).toEqual({ name: 'TestWorkflowFieldUpdate',
-            type: 'FieldUpdate' })
+          expect(_.get(workflowRuleInfo, 'triggerType')).toEqual(
+            'onCreateOrTriggeringUpdate',
+          )
+          const workflowTimeTrigger = _.get(
+            workflowRuleInfo,
+            'workflowTimeTriggers',
+          )
+          expect(workflowTimeTrigger.actions).toEqual({
+            name: 'TestWorkflowFieldUpdate',
+            type: 'FieldUpdate',
+          })
           expect(workflowTimeTrigger.timeLength).toEqual('2')
           expect(workflowTimeTrigger.workflowTimeTriggerUnit).toEqual('Days')
         })

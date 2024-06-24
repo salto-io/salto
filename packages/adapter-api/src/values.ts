@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import path from 'path'
 import { inspect } from 'util'
@@ -36,18 +36,20 @@ export type CompareOptions = {
   compareByValue?: boolean
 }
 
-export const calculateStaticFileHash = (content: Buffer): string =>
-  hashUtils.toMD5(content)
+export const calculateStaticFileHash = (content: Buffer): string => hashUtils.toMD5(content)
 
-type HashOrContent = {
-  content: Buffer
-} | {
-  hash: string
-}
+type HashOrContent =
+  | {
+      content: Buffer
+    }
+  | {
+      hash: string
+    }
 
 export type StaticFileParameters = {
   filepath: string
   encoding?: BufferEncoding
+  isTemplate?: boolean // if true then encoding has to be utf8
 } & HashOrContent
 
 export const DEFAULT_STATIC_FILE_ENCODING: BufferEncoding = 'binary'
@@ -55,11 +57,16 @@ export const DEFAULT_STATIC_FILE_ENCODING: BufferEncoding = 'binary'
 export class StaticFile {
   public readonly filepath: string
   public readonly hash: string
+  public readonly isTemplate?: boolean
   public readonly encoding: BufferEncoding
   private internalContent?: Buffer
   constructor(params: StaticFileParameters) {
+    this.isTemplate = params.isTemplate
     this.filepath = path.normalize(params.filepath)
     this.encoding = params.encoding ?? DEFAULT_STATIC_FILE_ENCODING
+    if (this.isTemplate === true && params.encoding !== 'utf8') {
+      this.encoding = 'utf8'
+    }
     if (!Buffer.isEncoding(this.encoding)) {
       throw Error(`Cannot create StaticFile at path - ${this.filepath} due to invalid encoding - ${this.encoding}`)
     }
@@ -78,24 +85,27 @@ export class StaticFile {
   public isEqual(other: StaticFile): boolean {
     return this.hash === other.hash && this.encoding === other.encoding
   }
+
+  [inspect.custom](): string {
+    return `StaticFile(${this.filepath}, ${this.hash ? this.hash : '<unknown hash>'})`
+  }
 }
 
 type StaticFileMetadata = Pick<StaticFile, 'filepath' | 'hash'>
-export const getStaticFileUniqueName = ({ filepath, hash }: StaticFileMetadata): string =>
-  `${filepath}-${hash}`
+export const getStaticFileUniqueName = ({ filepath, hash }: StaticFileMetadata): string => `${filepath}-${hash}`
 
 const getResolvedValue = async (
   elemID: ElemID,
   elementsSource?: ReadOnlyElementsSource,
-  resolvedValue?: Value
+  resolvedValue?: Value,
 ): Promise<Value> => {
   if (resolvedValue === undefined && elementsSource === undefined) {
     throw new Error(
-      `Can not resolve value of reference with ElemID ${elemID.getFullName()} `
-      + 'without elementsSource because value does not exist'
+      `Can not resolve value of reference with ElemID ${elemID.getFullName()} ` +
+        'without elementsSource because value does not exist',
     )
   }
-  const value = (await elementsSource?.get(elemID)) ?? resolvedValue
+  const value = resolvedValue ?? (await elementsSource?.get(elemID))
   // When there's no value in the ElementSource & in the Ref
   // Fallback to a placeholder Type. This resembles the behavior
   // before the RefType change.
@@ -106,15 +116,14 @@ const getResolvedValue = async (
 }
 
 export class UnresolvedReference {
-  constructor(public target: ElemID) {
-  }
+  constructor(public target: ElemID) {}
 }
 
 export class ReferenceExpression {
   constructor(
     public readonly elemID: ElemID,
     private resValue?: Value,
-    public topLevelParent?: Element
+    public topLevelParent?: Element,
   ) {}
 
   /**
@@ -129,7 +138,7 @@ export class ReferenceExpression {
   }
 
   clone(): this {
-    type CtorType = (new (...args: ConstructorParameters<typeof ReferenceExpression>) => this)
+    type CtorType = new (...args: ConstructorParameters<typeof ReferenceExpression>) => this
     const ExpressionCtor = this.constructor as CtorType
     return new ExpressionCtor(this.elemID, this.resValue, this.topLevelParent)
   }
@@ -137,9 +146,7 @@ export class ReferenceExpression {
   get value(): Value {
     // Dereference variables and recursive reference expressions
     const innerValue = isVariable(this.resValue) ? this.resValue.value : this.resValue
-    return (innerValue instanceof ReferenceExpression)
-      ? innerValue.value
-      : innerValue
+    return innerValue instanceof ReferenceExpression ? innerValue.value : innerValue
   }
 
   set value(value: Value) {
@@ -156,48 +163,40 @@ export class ReferenceExpression {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isReferenceExpression = (value: any): value is ReferenceExpression => (
-  value instanceof ReferenceExpression
-)
+export const isReferenceExpression = (value: any): value is ReferenceExpression => value instanceof ReferenceExpression
 
 export class VariableExpression extends ReferenceExpression {
-  constructor(
-    elemID: ElemID,
-    resValue?: Value,
-    topLevelParent?: Element
-  ) {
+  constructor(elemID: ElemID, resValue?: Value, topLevelParent?: Element) {
     super(elemID, resValue, topLevelParent)
-    // This is to prevent programing errors since the parser will always create
+    // This is to prevent programming errors since the parser will always create
     // VariableExpressions with idType === 'var'
     if (elemID.idType !== 'var') {
-      throw new Error(`A variable expression must point to a variable, but ${elemID.getFullName()
-      } is a ${elemID.idType}`)
+      throw new Error(
+        `A variable expression must point to a variable, but ${elemID.getFullName()} is a ${elemID.idType}`,
+      )
     }
   }
 }
 
-export class TypeReference {
+export class TypeReference<T extends TypeElement = TypeElement> {
   constructor(
     public readonly elemID: ElemID,
-    public type: TypeElement | undefined = undefined,
+    public type: T | undefined = undefined,
   ) {
     if (!elemID.isTopLevel()) {
-      throw new Error(
-        `Invalid id for type reference: ${elemID.getFullName()}. Type reference must be top level.`
-      )
+      throw new Error(`Invalid id for type reference: ${elemID.getFullName()}. Type reference must be top level.`)
     }
   }
 
-  clone(): TypeReference {
+  clone(): TypeReference<T> {
     return new TypeReference(this.elemID, this.type)
   }
 
-  async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+  async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<T> {
     return getResolvedValue(this.elemID, elementsSource, this.type)
   }
 
-
-  getResolvedValueSync(): TypeElement | undefined {
+  getResolvedValueSync(): T | undefined {
     return this.type
   }
 
@@ -223,113 +222,29 @@ export class TemplateExpression {
 export type Expression = ReferenceExpression | TemplateExpression
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isStaticFile = (value: any): value is StaticFile => (
-  value instanceof StaticFile
-)
+export const isStaticFile = (value: any): value is StaticFile => value instanceof StaticFile
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isTypeReference = (value: any): value is TypeReference => (
-  value instanceof TypeReference
-)
-
-/*
-  Benchmarking reveals that looping on strings is extremely expensive.
-  It seems that random access to a string is, for some reason, a bit expensive.
-  Using "replace" takes about 30 times as much as a straightforward comparison.
-  However, it's about 20 times better to use replace than to iterate over both strings.
-  For this reason we first check a naive comparison, and then test with replace.
-  */
-const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean =>
-  (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
-
-export const shouldResolve = (value: unknown): boolean => (
-  // We don't resolve references to elements because the logic of how to resolve each
-  // reference currently exists only in the adapter so here we don't know how to
-  // resolve them.
-  // We do resolve variables because they always point to a primitive value that we can compare.
-  // If a value is not a reference we decided to return that we should "resolve" it so
-  // the value will be treated like a resolved reference
-  !isReferenceExpression(value) || !value.elemID.isBaseID() || value.elemID.idType === 'var'
-)
-
-const shouldCompareByValue = (
-  first: Value,
-  second: Value,
-  options?: CompareOptions,
-): boolean => Boolean(options?.compareByValue)
-  && shouldResolve(first)
-  && shouldResolve(second)
-
-export const compareSpecialValues = (
-  first: Value,
-  second: Value,
-  options?: CompareOptions,
-): boolean | undefined => {
-  if (isStaticFile(first) && isStaticFile(second)) {
-    return first.isEqual(second)
-      && (options?.compareByValue
-        ? true
-        : first.filepath === second.filepath)
-  }
-  if (isReferenceExpression(first) || isReferenceExpression(second)) {
-    if (shouldCompareByValue(first, second, options)) {
-      const fValue = isReferenceExpression(first) ? first.value : first
-      const sValue = isReferenceExpression(second) ? second.value : second
-
-      return _.isEqualWith(
-        fValue,
-        sValue,
-        (va1, va2) => compareSpecialValues(va1, va2, options),
-      )
-    }
-
-    if (isReferenceExpression(first) && isReferenceExpression(second)) {
-      return first.elemID.isEqual(second.elemID)
-    }
-    // If one side is a reference and the other is not and we should not
-    // compare by values then the values are different
-    return false
-  }
-  if (typeof first === 'string' && typeof second === 'string') {
-    return compareStringsIgnoreNewlineDifferences(first, second)
-  }
-  return undefined
-}
-
-export const isEqualValues = (
-  first: Value,
-  second: Value,
-  options?: CompareOptions,
-): boolean => _.isEqualWith(
-  first,
-  second,
-  (va1, va2) => compareSpecialValues(va1, va2, options),
-)
+export const isTypeReference = (value: any): value is TypeReference => value instanceof TypeReference
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isVariableExpression = (value: any): value is VariableExpression => (
-  value instanceof VariableExpression
-)
+export const isVariableExpression = (value: any): value is VariableExpression => value instanceof VariableExpression
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isTemplateExpression = (value: any): value is TemplateExpression => (
-  value instanceof TemplateExpression
-)
+export const isTemplateExpression = (value: any): value is TemplateExpression => value instanceof TemplateExpression
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isExpression = (value: any): value is Expression => (
+export const isExpression = (value: any): value is Expression =>
   isReferenceExpression(value) || isTemplateExpression(value)
-)
 
-export const isPrimitiveValue = (value: Value): value is PrimitiveValue => (
+export const isPrimitiveValue = (value: Value): value is PrimitiveValue =>
   value === undefined || value === null || ['string', 'number', 'boolean'].includes(typeof value)
-)
 
 // A _.cloneDeep variation that stops at references to avoid creating recursive clones
 // of elements and element parts.
 // This is not completely safe as it will keep references pointing to the original values
 // so use with caution
-export const cloneDeepWithoutRefs = <T>(value: T): T => (
+export const cloneDeepWithoutRefs = <T>(value: T): T =>
   _.cloneDeepWith(value, val => {
     if (isReferenceExpression(val)) {
       return val.clone()
@@ -339,4 +254,3 @@ export const cloneDeepWithoutRefs = <T>(value: T): T => (
     }
     return undefined
   })
-)

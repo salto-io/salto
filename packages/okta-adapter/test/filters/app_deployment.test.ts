@@ -1,29 +1,40 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
-import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, isInstanceElement, ModificationChange, isObjectType, CORE_ANNOTATIONS, ListType, BuiltinTypes } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+  getChangeData,
+  isInstanceElement,
+  ModificationChange,
+  isObjectType,
+  CORE_ANNOTATIONS,
+  ListType,
+  BuiltinTypes,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import appDeploymentFilter, { isInactiveCustomAppChange } from '../../src/filters/app_deployment'
 import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME } from '../../src/constants'
-
 
 describe('appDeploymentFilter', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
@@ -33,48 +44,38 @@ describe('appDeploymentFilter', () => {
   const appType = new ObjectType({
     elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
     fields: {
+      id: { refType: BuiltinTypes.SERVICE_ID },
       features: { refType: new ListType(BuiltinTypes.STRING) },
     },
   })
   const orgSettingType = new ObjectType({ elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME) })
-  const orgSettingInstance = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    orgSettingType,
-    { subdomain: 'oktaSubdomain' },
-  )
-  const appInstance = new InstanceElement(
-    'regular app',
-    appType,
-    { name: 'salesforce', signOnMode: 'SAML_2_0' },
-  )
-  const customSamlAppInstance = new InstanceElement(
-    'custom saml app',
-    appType,
-    { name: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0' },
-  )
-  const customSwaInstance = new InstanceElement(
-    'custom swa app',
-    appType,
-    { name: 'oktaSubdomain_swa_link', signOnMode: 'AUTO_LOGIN' },
-  )
-  const customSamlAfterFetch = new InstanceElement(
-    'custom saml app',
-    appType,
-    { customName: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0' },
-  )
-  const customSwaAfterFetch = new InstanceElement(
-    'custom swa app',
-    appType,
-    { customName: 'oktaSubdomain_swa_link', signOnMode: 'AUTO_LOGIN' },
-  )
+  const orgSettingInstance = new InstanceElement(ElemID.CONFIG_NAME, orgSettingType, { subdomain: 'oktaSubdomain' })
+  const appInstance = new InstanceElement('regular app', appType, { name: 'salesforce', signOnMode: 'SAML_2_0' })
+  const customSamlAppInstance = new InstanceElement('custom saml app', appType, {
+    name: 'oktaSubdomain_saml_link',
+    signOnMode: 'SAML_2_0',
+  })
+  const customSwaInstance = new InstanceElement('custom swa app', appType, {
+    name: 'oktaSubdomain_swa_link',
+    signOnMode: 'AUTO_LOGIN',
+  })
+  const customSamlAfterFetch = new InstanceElement('custom saml app', appType, {
+    customName: 'oktaSubdomain_saml_link',
+    signOnMode: 'SAML_2_0',
+  })
+  const customSwaAfterFetch = new InstanceElement('custom swa app', appType, {
+    customName: 'oktaSubdomain_swa_link',
+    signOnMode: 'AUTO_LOGIN',
+  })
 
   beforeEach(() => {
     jest.clearAllMocks()
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
+    const definitions = createDefinitions({ client })
     filter = appDeploymentFilter(
-      getFilterParams({ client, elementsSource: buildElementsSourceFromElements([orgSettingInstance]) })
+      getFilterParams({ definitions, elementSource: buildElementsSourceFromElements([orgSettingInstance]) }),
     ) as typeof filter
   })
 
@@ -95,6 +96,13 @@ describe('appDeploymentFilter', () => {
       const app = elements.filter(isInstanceElement).find(e => e.elemID.name === 'regular app')
       expect(app?.value.name).toEqual('salesforce')
       expect(app?.value.customName).toBeUndefined()
+    })
+    it('should remove "features" field if it is empty', async () => {
+      const emptyFeaturesApp = new InstanceElement('empty features app', appType, { features: [] })
+      const elements = [appType, orgSettingType, orgSettingInstance, emptyFeaturesApp]
+      await filter.onFetch(elements)
+      const app = elements.filter(isInstanceElement).find(e => e.elemID.name === 'empty features app')
+      expect(app?.value.features).toBeUndefined()
     })
     it('should add deployment annotations for "features" field', async () => {
       const elements = [appType, orgSettingType, orgSettingInstance, customSamlAppInstance, customSwaInstance]
@@ -120,11 +128,7 @@ describe('appDeploymentFilter', () => {
       expect(swaApp?.value.name).toEqual('oktaSubdomain_swa_link')
     })
     it('should do nothing if customName field does not exist', async () => {
-      const customAppAddition = new InstanceElement(
-        'custom saml app',
-        appType,
-        { signOnMode: 'SAML_2_0' },
-      )
+      const customAppAddition = new InstanceElement('custom saml app', appType, { signOnMode: 'SAML_2_0' })
       const changes = [toChange({ before: appInstance, after: appInstance }), toChange({ after: customAppAddition })]
       await filter.preDeploy(changes)
       const instances = changes.map(getChangeData).filter(isInstanceElement)
@@ -137,35 +141,29 @@ describe('appDeploymentFilter', () => {
 
   describe('deploy', () => {
     it('should successfully deploy application', async () => {
-      const appToDeploy = new InstanceElement(
-        'deploy app',
-        appType,
-        {
-          id: 'appId',
-          signOnMode: 'SAML_2_0',
-          label: 'app name',
-          status: 'ACTIVE',
-          settings: {
-            app: {
-              companySubDomain: 'subdomain',
-            },
+      const appToDeploy = new InstanceElement('deploy app', appType, {
+        id: 'appId',
+        signOnMode: 'SAML_2_0',
+        label: 'app name',
+        status: 'ACTIVE',
+        settings: {
+          app: {
+            companySubDomain: 'subdomain',
           },
-          profileEnrollment: 'profileEnrollment1',
-          accessPolicy: 'accessPolicyId',
-          assignedGroups: ['group1'],
-          _links: {
-            val: 'val',
-          },
-        }
-      )
+        },
+        profileEnrollment: 'profileEnrollment1',
+        accessPolicy: 'accessPolicyId',
+        _links: {
+          val: 'val',
+        },
+      })
       const appToDeployAfter = appToDeploy.clone()
       _.set(appToDeployAfter, ['value', 'label'], 'new label')
       _.set(appToDeployAfter, ['value', 'profileEnrollment'], 'profileEnrollment2')
-      _.set(appToDeployAfter, ['value', 'assignedGroups'], ['group2'])
       mockConnection.put.mockResolvedValue({ status: 200, data: {} })
       mockConnection.delete.mockResolvedValue({ status: 200, data: {} })
       const res = await filter.deploy([toChange({ before: appToDeploy, after: appToDeployAfter })])
-      expect(mockConnection.put).toHaveBeenCalledTimes(3)
+      expect(mockConnection.put).toHaveBeenCalledTimes(2)
       expect(mockConnection.put).toHaveBeenNthCalledWith(
         1,
         '/api/v1/apps/appId',
@@ -182,18 +180,16 @@ describe('appDeploymentFilter', () => {
         undefined,
       )
       expect(mockConnection.put).toHaveBeenNthCalledWith(
-        2, '/api/v1/apps/appId/groups/group2', {}, undefined,
-      )
-      expect(mockConnection.put).toHaveBeenNthCalledWith(
-        3, '/api/v1/apps/appId/policies/profileEnrollment2', {}, undefined,
-      )
-      expect(mockConnection.delete).toHaveBeenCalledTimes(1)
-      expect(mockConnection.delete).toHaveBeenCalledWith(
-        '/api/v1/apps/appId/groups/group1', {}, undefined
+        2,
+        '/api/v1/apps/appId/policies/profileEnrollment2',
+        {},
+        undefined,
       )
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       const createdApp = res.deployResult.appliedChanges
-        .map(getChangeData).filter(isInstanceElement).find(i => i.elemID.name === 'deploy app')
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'deploy app')
       expect(createdApp?.value).toEqual({
         id: 'appId',
         signOnMode: 'SAML_2_0',
@@ -206,18 +202,17 @@ describe('appDeploymentFilter', () => {
         },
         profileEnrollment: 'profileEnrollment2',
         accessPolicy: 'accessPolicyId',
-        assignedGroups: ['group2'],
         _links: {
           val: 'val',
         },
       })
     })
     it('should successfuly create application in status INACTIVE', async () => {
-      const appToDeploy = new InstanceElement(
-        'deploy App',
-        appType,
-        { signOnMode: 'SAML_2_0', status: 'INACTIVE', label: 'app name' }
-      )
+      const appToDeploy = new InstanceElement('deploy App', appType, {
+        signOnMode: 'SAML_2_0',
+        status: 'INACTIVE',
+        label: 'app name',
+      })
       mockConnection.post.mockResolvedValue({ status: 200, data: {} })
       await filter.deploy([toChange({ after: appToDeploy })])
       expect(mockConnection.post).toHaveBeenCalledWith(
@@ -227,22 +222,18 @@ describe('appDeploymentFilter', () => {
       )
     })
     it('should change application status for modification changes', async () => {
-      const activeApp = new InstanceElement(
-        'deploy app',
-        appType,
-        {
-          id: 'appId',
-          signOnMode: 'SAML_2_0',
-          label: 'app name',
-          customName: 'app',
-          status: 'ACTIVE',
-          settings: {
-            app: {
-              companySubDomain: 'subdomain',
-            },
+      const activeApp = new InstanceElement('deploy app', appType, {
+        id: 'appId',
+        signOnMode: 'SAML_2_0',
+        label: 'app name',
+        customName: 'app',
+        status: 'ACTIVE',
+        settings: {
+          app: {
+            companySubDomain: 'subdomain',
           },
-        }
-      )
+        },
+      })
       const inactiveApp = activeApp.clone()
       inactiveApp.value.status = 'INACTIVE'
       const changes = [
@@ -251,18 +242,8 @@ describe('appDeploymentFilter', () => {
       ]
       mockConnection.post.mockResolvedValue({ status: 200, data: {} })
       const res = await filter.deploy(changes)
-      expect(mockConnection.post).toHaveBeenNthCalledWith(
-        1,
-        '/api/v1/apps/appId/lifecycle/activate',
-        {},
-        undefined,
-      )
-      expect(mockConnection.post).toHaveBeenNthCalledWith(
-        2,
-        '/api/v1/apps/appId/lifecycle/deactivate',
-        {},
-        undefined,
-      )
+      expect(mockConnection.post).toHaveBeenNthCalledWith(1, '/api/v1/apps/appId/lifecycle/activate', {}, undefined)
+      expect(mockConnection.post).toHaveBeenNthCalledWith(2, '/api/v1/apps/appId/lifecycle/deactivate', {}, undefined)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
     })
     it('should assign customName field to custom app on addition change', async () => {
@@ -276,14 +257,12 @@ describe('appDeploymentFilter', () => {
       })
       const changes = [toChange({ after: new InstanceElement('custom app', appType, { signOnMode: 'SAML_2_0' }) })]
       const res = await filter.deploy(changes)
-      expect(mockConnection.post).toHaveBeenCalledWith(
-        '/api/v1/apps',
-        { signOnMode: 'SAML_2_0' },
-        undefined,
-      )
+      expect(mockConnection.post).toHaveBeenCalledWith('/api/v1/apps', { signOnMode: 'SAML_2_0' }, undefined)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       const customAppInstance = res.deployResult.appliedChanges
-        .map(getChangeData).filter(isInstanceElement).find(i => i.elemID.name === 'custom app')
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'custom app')
       expect(customAppInstance?.value.id).toEqual('1')
       expect(customAppInstance?.value.customName).toEqual('oktaSubdomain_link')
     })
@@ -296,11 +275,13 @@ describe('appDeploymentFilter', () => {
         status: 200,
         data: {},
       })
-      const customApp = new InstanceElement(
-        'customApp',
-        appType,
-        { id: '1a', customName: 'test', name: 'test', settings: { notes: { admin: 'note' } }, status: INACTIVE_STATUS },
-      )
+      const customApp = new InstanceElement('customApp', appType, {
+        id: '1a',
+        customName: 'test',
+        name: 'test',
+        settings: { notes: { admin: 'note' } },
+        status: INACTIVE_STATUS,
+      })
       const customAppAfter = customApp.clone()
       customAppAfter.value.settings.notes.enduser = 'another note'
       const changes = [toChange({ before: customApp, after: customAppAfter })]
@@ -311,37 +292,74 @@ describe('appDeploymentFilter', () => {
         undefined,
       )
       expect(mockConnection.post).toHaveBeenCalledTimes(2)
-      expect(mockConnection.post).toHaveBeenNthCalledWith(
-        1,
-        '/api/v1/apps/1a/lifecycle/activate',
-        {},
-        undefined
-      )
-      expect(mockConnection.post).toHaveBeenNthCalledWith(
-        2,
-        '/api/v1/apps/1a/lifecycle/deactivate',
-        {},
-        undefined
-      )
+      expect(mockConnection.post).toHaveBeenNthCalledWith(1, '/api/v1/apps/1a/lifecycle/activate', {}, undefined)
+      expect(mockConnection.post).toHaveBeenNthCalledWith(2, '/api/v1/apps/1a/lifecycle/deactivate', {}, undefined)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       const customAppInstance = res.deployResult.appliedChanges
-        .map(getChangeData).filter(isInstanceElement).find(i => i.elemID.name === 'customApp')
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'customApp')
       expect(customAppInstance?.value.status).toEqual('INACTIVE')
+    })
+    it('Should convert removed values in apps settings to null', async () => {
+      const app = new InstanceElement('app', appType, {
+        id: 'appId',
+        signOnMode: 'SAML_2_0',
+        settings: {
+          app: {
+            customDomain: 'subdomain',
+            loginUrl: 'http://example.com',
+          },
+          notes: { admin: 'admin note', endUser: 'notes' },
+          signOn: {
+            url: 'a',
+            attributeStatements: [{ type: 'a' }, { type: 'b' }],
+          },
+        },
+        credentials: {
+          scheme: 'SCHEME',
+          revealPassword: true,
+        },
+      })
+      const appAfter = app.clone()
+      delete appAfter.value.settings.notes
+      delete appAfter.value.settings.app.loginUrl
+      delete appAfter.value.credentials.revealPassword
+      delete appAfter.value.settings.signOn.attributeStatements
+      await filter.deploy([toChange({ before: app, after: appAfter })])
+      expect(mockConnection.put).toHaveBeenCalledWith(
+        '/api/v1/apps/appId',
+        {
+          signOnMode: 'SAML_2_0',
+          settings: {
+            app: {
+              customDomain: 'subdomain',
+              loginUrl: null,
+            },
+            notes: { admin: null, endUser: null },
+            signOn: { url: 'a', attributeStatements: null },
+          },
+          credentials: {
+            scheme: 'SCHEME',
+          },
+        },
+        undefined,
+      )
     })
   })
 
   describe('onDeploy', () => {
     it('should delete name field in custom applications after deployment', async () => {
-      const customSamlAfterDeploy = new InstanceElement(
-        'custom saml app',
-        appType,
-        { customName: 'oktaSubdomain_saml_link', name: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0' },
-      )
-      const customSwaAfterDeploy = new InstanceElement(
-        'custom swa app',
-        appType,
-        { customName: 'oktaSubdomain_swa_link', name: 'oktaSubdomain_swa_link', signOnMode: 'AUTO_LOGIN' },
-      )
+      const customSamlAfterDeploy = new InstanceElement('custom saml app', appType, {
+        customName: 'oktaSubdomain_saml_link',
+        name: 'oktaSubdomain_saml_link',
+        signOnMode: 'SAML_2_0',
+      })
+      const customSwaAfterDeploy = new InstanceElement('custom swa app', appType, {
+        customName: 'oktaSubdomain_swa_link',
+        name: 'oktaSubdomain_swa_link',
+        signOnMode: 'AUTO_LOGIN',
+      })
       const changes = [
         toChange({ before: customSamlAfterDeploy, after: customSamlAfterDeploy }),
         toChange({ after: customSwaAfterDeploy }),
@@ -356,11 +374,7 @@ describe('appDeploymentFilter', () => {
   })
 
   describe('isInactiveCustomAppChange', () => {
-    const customApp = new InstanceElement(
-      'custom',
-      appType,
-      { customName: 'a', id: 'aa', status: 'INACTIVE' }
-    )
+    const customApp = new InstanceElement('custom', appType, { customName: 'a', id: 'aa', status: 'INACTIVE' })
     it('should return true for custom app change in status INACTIVE', () => {
       const change = toChange({ before: customApp, after: customApp }) as ModificationChange<InstanceElement>
       expect(isInactiveCustomAppChange(change)).toEqual(true)

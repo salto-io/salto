@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isModificationChange,
+} from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { PROJECT_TYPE } from '../constants'
@@ -21,13 +29,13 @@ import { PROJECT_TYPE } from '../constants'
 export const DELETED_CATEGORY = -1
 
 export const isNeedToDeleteCategory = (change: Change<InstanceElement>): boolean =>
-  isModificationChange(change)
-    && change.data.before.value.projectCategory !== undefined
-    && change.data.after.value.projectCategory === undefined
+  isModificationChange(change) &&
+  change.data.before.value.projectCategory !== undefined &&
+  change.data.after.value.projectCategory === undefined
 
 const convertProjectCategoryToCategoryId = async (
   instance: InstanceElement,
-  projectIdToCategory: Record<string, unknown>
+  projectKeyToCategory: Record<string, unknown>,
 ): Promise<void> => {
   if (instance.value.projectCategory === undefined) {
     return
@@ -35,7 +43,7 @@ const convertProjectCategoryToCategoryId = async (
   instance.value.categoryId = isResolvedReferenceExpression(instance.value.projectCategory)
     ? (await instance.value.projectCategory.getResolvedValue()).value.id
     : instance.value.projectCategory
-  projectIdToCategory[instance.value.id] = instance.value.projectCategory
+  projectKeyToCategory[instance.value.key] = instance.value.projectCategory
   delete instance.value.projectCategory
 }
 
@@ -43,7 +51,7 @@ const convertProjectCategoryToCategoryId = async (
  * Restructures ProjectCategory to fit the deployment endpoint
  */
 const filter: FilterCreator = ({ client }) => {
-  const projectIdToCategory: Record<string, unknown> = {}
+  const projectKeyToCategory: Record<string, unknown> = {}
   return {
     name: 'projectCategoryFilter',
     preDeploy: async changes => {
@@ -58,8 +66,8 @@ const filter: FilterCreator = ({ client }) => {
               // Jira DC does not support removing projectCategory from a project
               instance.value.categoryId = DELETED_CATEGORY
             }
-            await convertProjectCategoryToCategoryId(instance, projectIdToCategory)
-          })
+            await convertProjectCategoryToCategoryId(instance, projectKeyToCategory)
+          }),
       )
     },
 
@@ -72,7 +80,7 @@ const filter: FilterCreator = ({ client }) => {
         .forEach(instance => {
           if (instance.value.categoryId !== undefined) {
             // if somehow the category not in the Record, we will at least keep the id
-            instance.value.projectCategory = projectIdToCategory[instance.value.id] ?? instance.value.categoryId
+            instance.value.projectCategory = projectKeyToCategory[instance.value.key] ?? instance.value.categoryId
             delete instance.value.categoryId
           }
         })

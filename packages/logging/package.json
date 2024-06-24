@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/logging",
-  "version": "0.3.43",
+  "version": "0.3.58",
   "license": "Apache-2.0",
   "description": "Salto Logging library",
   "repository": {
@@ -24,11 +24,13 @@
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
     "build-ts": "tsc -b && yarn clean-ts",
     "watch-ts": "tsc -b -w",
-    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn lint --fix"
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
+    "lint-fix": "yarn lint --fix",
+    "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
+    "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/lowerdash": "0.3.43",
+    "@salto-io/lowerdash": "0.3.58",
     "chalk": "^2.4.2",
     "fast-safe-stringify": "^2.0.7",
     "lodash": "^4.17.21",
@@ -45,8 +47,9 @@
     "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
-    "eslint": "^6.2.2",
+    "eslint": "^7.3.2",
     "eslint-config-airbnb": "18.0.1",
+    "eslint-config-prettier": "9.1.0",
     "eslint-plugin-header": "^3.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jest": "^22.6.4",
@@ -56,6 +59,7 @@
     "jest": "^27.4.5",
     "jest-circus": "^27.4.5",
     "jest-junit": "^12.0.0",
+    "prettier": "3.2.5",
     "tmp-promise": "^2.0.2",
     "ts-jest": "^27.1.2",
     "tsc-watch": "^2.2.1",

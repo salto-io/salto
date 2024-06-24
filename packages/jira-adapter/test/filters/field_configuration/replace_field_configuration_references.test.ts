@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -50,36 +50,28 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       },
     })
 
-    instance = new InstanceElement(
-      'instance',
-      fieldConfigType,
-      {
-        fields: [
-          {
-            id: new ReferenceExpression(
-              new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
-              {}
-            ),
-            isRequired: true,
-          },
-        ],
-      },
-    )
+    instance = new InstanceElement('instance', fieldConfigType, {
+      fields: [
+        {
+          id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'), {}),
+          isRequired: true,
+        },
+      ],
+    })
 
     fieldType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_TYPE_NAME),
     })
 
-    fieldInstance = new InstanceElement(
-      'fieldInstance',
-      fieldType,
-    )
+    fieldInstance = new InstanceElement('fieldInstance', fieldType)
 
     const elementsSource = buildElementsSourceFromElements([fieldInstance])
-    filter = replaceFieldConfigurationReferencesFilter(getFilterParams({
-      config,
-      elementsSource,
-    })) as typeof filter
+    filter = replaceFieldConfigurationReferencesFilter(
+      getFilterParams({
+        config,
+        elementsSource,
+      }),
+    ) as typeof filter
   })
 
   describe('fetch', () => {
@@ -106,17 +98,13 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
 
   describe('preDeploy onDeploy', () => {
     beforeEach(() => {
-      instance = new InstanceElement(
-        'instance',
-        fieldConfigType,
-        {
-          fields: {
-            fieldInstance: {
-              isRequired: true,
-            },
+      instance = new InstanceElement('instance', fieldConfigType, {
+        fields: {
+          fieldInstance: {
+            isRequired: true,
           },
         },
-      )
+      })
     })
     it('should convert fields to a list', async () => {
       await filter.preDeploy?.([toChange({ after: instance })])
@@ -127,20 +115,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
           isRequired: true,
         },
       })
-    })
-
-    it('should not add a field to the list if not in element source', async () => {
-      const elementsSource = buildElementsSourceFromElements([])
-      filter = replaceFieldConfigurationReferencesFilter(getFilterParams({
-        config,
-        elementsSource,
-      })) as typeof filter
-      await filter.preDeploy?.([toChange({ after: instance })])
-
-      expect(instance.value.fields).toBeArrayOfSize(0)
-
-      await filter.onDeploy?.([toChange({ after: instance })])
-      expect(instance.value.fields).toEqual({})
     })
 
     it('should do nothing if splitFieldConfiguration is true', async () => {

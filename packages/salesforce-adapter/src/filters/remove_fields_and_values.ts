@@ -1,73 +1,101 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  isObjectType, Element, isInstanceElement,
+  isObjectType,
+  Element,
+  isInstanceElement,
+  ObjectType,
 } from '@salto-io/adapter-api'
-import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { TransformFunc, transformValuesSync } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
-import { metadataType } from '../transformers/transformer'
-
-const { awu } = collections.asynciterable
+import { apiNameSync } from './utils'
 
 const TYPE_NAME_TO_FIELD_REMOVALS: Map<string, string[]> = new Map([
   ['Profile', ['tabVisibilities']],
+  ['blng__RevenueRecognitionTreatment__c', ['blng__UniqueId__c']],
+  [
+    'blng__FinancePeriod__c',
+    ['blng__Family__c', 'blng__NextOpenPeriod__c', 'blng__UniqueId__c'],
+  ],
+  ['blng__AccountBalanceSnapshot__c', ['blng__UniqueId__c']],
+  ['blng__ErrorLog__c', ['blng__UniqueId__c']],
+  ['blng__GLTreatment__c', ['blng__UniqueId__c']],
+  ['blng__Invoice__c', ['blng__UniqueId__c']],
+  ['blng__InvoiceLine__c', ['blng__UniqueId__c']],
+  ['blng__SubInvoiceLine__c', ['blng__UniqueId__c']],
+  ['blng__UsageSummary__c', ['blng__UniqueId__c']],
+  ['OrderItem', ['blng__UniqueId__c']],
 ])
 
-const removeFieldsFromTypes = async (
-  elements: Element[],
-  typeNameToFieldRemovals: Map<string, string[]>
-): Promise<void> => {
-  await awu(elements)
-    .filter(isObjectType)
-    .forEach(async type => {
-      const fieldsToRemove = typeNameToFieldRemovals.get(await metadataType(type)) ?? []
-      fieldsToRemove.forEach(fieldName => { delete type.fields[fieldName] })
-    })
+const fieldRemovalsForType = (
+  type: ObjectType,
+  typeNameToFieldRemovals: Map<string, string[]>,
+): string[] => {
+  const typeName = apiNameSync(type) ?? ''
+  return typeNameToFieldRemovals.get(typeName) ?? []
 }
 
-
-const removeValuesFromInstances = async (
+const removeFieldsFromTypes = (
   elements: Element[],
-  typeNameToFieldRemovals: Map<string, string[]>
-): Promise<void> => {
-  const removeValuesFunc: TransformFunc = async ({ value, field }) => {
+  typeNameToFieldRemovals: Map<string, string[]>,
+): void => {
+  elements.filter(isObjectType).forEach((type) => {
+    const fieldsToRemove = fieldRemovalsForType(type, typeNameToFieldRemovals)
+    fieldsToRemove.forEach((fieldName) => {
+      delete type.fields[fieldName]
+    })
+  })
+}
+
+const removeValuesFromInstances = (
+  elements: Element[],
+  typeNameToFieldRemovals: Map<string, string[]>,
+): void => {
+  const removeValuesFunc: TransformFunc = ({ value, field }) => {
     if (!field) return value
-    const fieldParent = field.parent
-    const fieldsToRemove = typeNameToFieldRemovals.get(await metadataType(fieldParent)) ?? []
+    const fieldsToRemove = fieldRemovalsForType(
+      field.parent,
+      typeNameToFieldRemovals,
+    )
     if (fieldsToRemove.includes(field.name)) {
       return undefined
     }
     return value
   }
 
-  await awu(elements)
+  elements
     .filter(isInstanceElement)
     // The below filter is temporary optimization to save calling transformValues for all instances
     // since TYPE_NAME_TO_FIELD_REMOVALS contains currently only top level types
-    .filter(async inst => typeNameToFieldRemovals.has(await metadataType(inst)))
-    .forEach(async inst => {
-      inst.value = await transformValues({
-        values: inst.value,
-        type: await inst.getType(),
-        transformFunc: removeValuesFunc,
-        strict: false,
-        allowEmpty: true,
-        pathID: inst.elemID,
-      }) || inst.value
+    .filter(
+      (inst) =>
+        fieldRemovalsForType(inst.getTypeSync(), typeNameToFieldRemovals)
+          .length > 0,
+    )
+    .forEach((inst) => {
+      inst.value =
+        transformValuesSync({
+          values: inst.value,
+          type: inst.getTypeSync(),
+          transformFunc: removeValuesFunc,
+          strict: true,
+          allowEmptyArrays: true,
+          allowEmptyObjects: true,
+          pathID: inst.elemID,
+        }) || inst.value
     })
 }
 
@@ -75,14 +103,14 @@ const removeValuesFromInstances = async (
  * Declare the remove field and values filter, this filter removes fields from ObjectTypes and
  * their corresponding instances upon fetch.
  * */
-export const makeFilter = (
-  typeNameToFieldRemovals: Map<string, string[]>,
-): LocalFilterCreator => () => ({
-  name: 'removeFieldsAndValuesFilter',
-  onFetch: async (elements: Element[]) => {
-    await removeValuesFromInstances(elements, typeNameToFieldRemovals)
-    await removeFieldsFromTypes(elements, typeNameToFieldRemovals)
-  },
-})
+export const makeFilter =
+  (typeNameToFieldRemovals: Map<string, string[]>): LocalFilterCreator =>
+  () => ({
+    name: 'removeFieldsAndValuesFilter',
+    onFetch: async (elements: Element[]) => {
+      removeValuesFromInstances(elements, typeNameToFieldRemovals)
+      removeFieldsFromTypes(elements, typeNameToFieldRemovals)
+    },
+  })
 
 export default makeFilter(TYPE_NAME_TO_FIELD_REMOVALS)

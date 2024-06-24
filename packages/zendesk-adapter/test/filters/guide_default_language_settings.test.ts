@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
@@ -28,9 +28,11 @@ import {
 
 const GUIDE_SETTINGS_API = '/hc/api/internal/general_settings'
 
-const createBrand = (name: string, id: number): InstanceElement => new InstanceElement(
-  name, new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), { id, has_help_center: true }
-)
+const createBrand = (name: string, id: number): InstanceElement =>
+  new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
+    id,
+    has_help_center: true,
+  })
 const brand1 = createBrand('brand1', 1)
 const brand2 = createBrand('brand2', 2)
 
@@ -49,13 +51,13 @@ const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', 
 client.put = jest.fn()
 client.post = jest.fn()
 client.delete = jest.fn()
-client.getSinglePage = jest.fn().mockResolvedValue({ data: 'def' })
+client.get = jest.fn().mockResolvedValue({ data: 'def' })
 
 describe('guideDefaultLanguage', () => {
   const config = { ...DEFAULT_CONFIG }
   config[FETCH_CONFIG].guide = { brands: ['.*'] }
   const filter = guideDefaultLanguage(
-    createFilterCreatorParams({ config, client, brandIdToClient: { 1: client, 2: client } })
+    createFilterCreatorParams({ config, client, brandIdToClient: { 1: client, 2: client } }),
   ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
   it('onFetch', async () => {
@@ -63,16 +65,22 @@ describe('guideDefaultLanguage', () => {
     const notDefaultSettings2 = createSettings('notDefault2', 'notDef', brand2)
 
     const elements = [
-      brand1, brand2,
-      settings1, settings2,
-      defaultSettings1, defaultSettings2,
-      notDefaultSettings1, notDefaultSettings2,
+      brand1,
+      brand2,
+      settings1,
+      settings2,
+      defaultSettings1,
+      defaultSettings2,
+      notDefaultSettings1,
+      notDefaultSettings2,
     ]
     await filter.onFetch(elements)
-    expect(settings1.value.default_locale)
-      .toMatchObject(new ReferenceExpression(defaultSettings1.elemID, defaultSettings1))
-    expect(settings2.value.default_locale)
-      .toMatchObject(new ReferenceExpression(defaultSettings2.elemID, defaultSettings2))
+    expect(settings1.value.default_locale).toMatchObject(
+      new ReferenceExpression(defaultSettings1.elemID, defaultSettings1),
+    )
+    expect(settings2.value.default_locale).toMatchObject(
+      new ReferenceExpression(defaultSettings2.elemID, defaultSettings2),
+    )
   })
   it('deploy', async () => {
     const beforeSettings = settings1.clone()

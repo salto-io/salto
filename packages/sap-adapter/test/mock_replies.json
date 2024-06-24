@@ -1,9 +1,500 @@
 [
-	{"url":"/GridTypes?$expand=texts,localized","response":{"@context":"$metadata#GridTypes(texts(),localized())","@metadataEtag":"W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"","value":[]},"headers":{},"method":"GET"},
-	{"url":"/MeasuringTypes","response":{"@context":"$metadata#MeasuringTypes","@metadataEtag":"W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"","value":[{"name":"Conventional Measurement Installation","descr":"Conventional Measurement Installation","code":"CMU"},{"name":"Intelligent Measurement System","descr":"Intelligent Measurement System","code":"IMS"},{"name":"Modern Measurement Installation","descr":"Modern Measurement Installation","code":"MMU"},{"name":"No Measurement","descr":"No Measurement","code":"NOM"}]},"headers":{},"method":"GET"},
-	{"url":"/OrdererTypes?$expand=texts,localized","response":{"@context":"$metadata#OrdererTypes(texts(),localized())","@metadataEtag":"W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"","value":[{"name":"Verteilnetzbetreiber Strom","descr":"Verteilnetzbetreiber Strom","code":"SP_DIST","texts":[],"localized":null}]},"headers":{},"method":"GET"},
-	{"url":"/PowerRangeTypes","response":{"@context":"$metadata#PowerRangeTypes","@metadataEtag":"W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"","value":[{"name":"< 30 kW","descr":"< 30 kW","code":"LESS30KW"},{"name":">= 30 kW","descr":">= 30 kW","code":"MORE30KW"}]},"headers":{},"method":"GET"},
-	{"url":"/MCIRateTypes","response":{"@context":"$metadata#MCIRateTypes","@metadataEtag":"W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"","value":[{"name":"Double rate","descr":"Double rate","code":"DR"},{"name":"Single rate","descr":"Single rate","code":"SR"}]},"headers":{},"method":"GET"},
-	{"url":"/EnergySourceTypes?$expand=texts,localized","response":{"@context":"$metadata#EnergySourceTypes(texts(),localized())","@metadataEtag":"W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"","value":[{"name":"Biomass","descr":"Biomass","code":"BIOMASS","texts":[{"locale":"de","name":"Biomasse","descr":"Biomasse","code":"BIOMASS"},{"locale":"en","name":"Biomass","descr":"Biomass","code":"BIOMASS"},{"locale":"en_US_saptrc","name":"BfeBaUxJfPDysTXFQug2hw_Biomass","descr":"oRwGjetGrQ5jjTtTM+1Vjg_Biomass","code":"BIOMASS"},{"locale":"es","name":"Biomasa","descr":"Biomasa","code":"BIOMASS"},{"locale":"fr","name":"Biomasse","descr":"Biomasse","code":"BIOMASS"},{"locale":"ja","name":"バイオマス","descr":"バイオマス","code":"BIOMASS"},{"locale":"pt","name":"Biomassa","descr":"Biomassa","code":"BIOMASS"},{"locale":"zh_CN","name":"生物质","descr":"生物质","code":"BIOMASS"}],"localized":null},{"name":"Cogeneration","descr":"Cogeneration","code":"COGENERATION","texts":[{"locale":"de","name":"Kraft-Wärme-Kopplung","descr":"Kraft-Wärme-Kopplung","code":"COGENERATION"},{"locale":"en","name":"Cogeneration","descr":"Cogeneration","code":"COGENERATION"},{"locale":"en_US_saptrc","name":"DuznOyfdyuq0B8O3YJ4qQQ_Cogeneration","descr":"pNUSHW0btXupzDPseXlewQ_Cogeneration","code":"COGENERATION"},{"locale":"es","name":"Generación conjunta","descr":"Generación conjunta","code":"COGENERATION"},{"locale":"fr","name":"Cogénération","descr":"Cogénération","code":"COGENERATION"},{"locale":"ja","name":"コージェネレーション","descr":"コージェネレーション","code":"COGENERATION"},{"locale":"pt","name":"Cogeração","descr":"Cogeração","code":"COGENERATION"},{"locale":"zh_CN","name":"联合发电","descr":"联合发电","code":"COGENERATION"}],"localized":null},{"name":"Landfill Gas","descr":"Landfill Gas","code":"GAS_LANDFILL","texts":[{"locale":"de","name":"Deponiegas","descr":"Deponiegas","code":"GAS_LANDFILL"},{"locale":"en","name":"Landfill Gas","descr":"Landfill Gas","code":"GAS_LANDFILL"},{"locale":"en_US_saptrc","name":"Dkl86dM8c1/JuCH/Z8BgXQ_Landfill Gas","descr":"ql7hpGEdfMJH8i62MWexOQ_Landfill Gas","code":"GAS_LANDFILL"},{"locale":"es","name":"Gas de vertedero","descr":"Gas de vertedero","code":"GAS_LANDFILL"},{"locale":"fr","name":"Gaz de décharge","descr":"Gaz de décharge","code":"GAS_LANDFILL"},{"locale":"ja","name":"埋立地ガス","descr":"埋立地ガス","code":"GAS_LANDFILL"},{"locale":"pt","name":"Gás de aterro sanitário","descr":"Gás de aterro sanitário","code":"GAS_LANDFILL"},{"locale":"zh_CN","name":"填埋沼气","descr":"填埋沼气","code":"GAS_LANDFILL"}],"localized":null},{"name":"Mine Gas","descr":"Mine Gas","code":"GAS_MINE","texts":[{"locale":"de","name":"Grubengas","descr":"Grubengas","code":"GAS_MINE"},{"locale":"en","name":"Mine Gas","descr":"Mine Gas","code":"GAS_MINE"},{"locale":"en_US_saptrc","name":"XJo3vBGedEx2Zu6CfU+cZA_Mine Gas","descr":"d3+thPXXyFFVrGDXymw27A_Mine Gas","code":"GAS_MINE"},{"locale":"es","name":"Gas de mina","descr":"Gas de mina","code":"GAS_MINE"},{"locale":"fr","name":"Gaz de mine","descr":"Gaz de mine","code":"GAS_MINE"},{"locale":"ja","name":"炭鉱ガス","descr":"炭鉱ガス","code":"GAS_MINE"},{"locale":"pt","name":"Gás de extração","descr":"Gás de extração","code":"GAS_MINE"},{"locale":"zh_CN","name":"矿井气","descr":"矿井气","code":"GAS_MINE"}],"localized":null},{"name":"Sewer Gas","descr":"Sewer Gas","code":"GAS_SEWER","texts":[{"locale":"de","name":"Klärgas","descr":"Klärgas","code":"GAS_SEWER"},{"locale":"en","name":"Sewer Gas","descr":"Sewer Gas","code":"GAS_SEWER"},{"locale":"en_US_saptrc","name":"uXii/BJnN9MCEoxN+9g76Q_Sewer Gas","descr":"pONkbu5FxNTvjT5WUzBd3Q_Sewer Gas","code":"GAS_SEWER"},{"locale":"es","name":"Gas de alcantarillado","descr":"Gas de alcantarillado","code":"GAS_SEWER"},{"locale":"fr","name":"Gaz d'égout","descr":"Gaz d'égout","code":"GAS_SEWER"},{"locale":"ja","name":"下水ガス","descr":"下水ガス","code":"GAS_SEWER"},{"locale":"pt","name":"Gás de esgoto","descr":"Gás de esgoto","code":"GAS_SEWER"},{"locale":"zh_CN","name":"阴沟沼气","descr":"阴沟沼气","code":"GAS_SEWER"}],"localized":null},{"name":"Geotherm","descr":"Geotherm","code":"GEOTHERM","texts":[{"locale":"de","name":"Geothermie","descr":"Geothermie","code":"GEOTHERM"},{"locale":"en","name":"Geotherm","descr":"Geotherm","code":"GEOTHERM"},{"locale":"en_US_saptrc","name":"lCXZQqVABOLwLdHeqkVZ7w_Geotherm","descr":"MdDoIiqtMp435fwVTEyngg_Geotherm","code":"GEOTHERM"},{"locale":"es","name":"Geotérmica","descr":"Geotérmica","code":"GEOTHERM"},{"locale":"fr","name":"Géothermie","descr":"Géothermie","code":"GEOTHERM"},{"locale":"ja","name":"地熱","descr":"地熱","code":"GEOTHERM"},{"locale":"pt","name":"Geotérmico","descr":"Geotérmico","code":"GEOTHERM"},{"locale":"zh_CN","name":"地热","descr":"地热","code":"GEOTHERM"}],"localized":null},{"name":"Other","descr":"Other","code":"OTHERS","texts":[{"locale":"de","name":"Sonstige","descr":"Sonstige","code":"OTHERS"},{"locale":"en","name":"Other","descr":"Other","code":"OTHERS"},{"locale":"en_US_saptrc","name":"NUcf5SsE25V4UAVu35uz6A_Other","descr":"50TDNkerzbQ2JGzlW0uYMA_Other","code":"OTHERS"},{"locale":"es","name":"Otro","descr":"Otro","code":"OTHERS"},{"locale":"fr","name":"Autre","descr":"Autre","code":"OTHERS"},{"locale":"ja","name":"その他","descr":"その他","code":"OTHERS"},{"locale":"pt","name":"Outro","descr":"Outro","code":"OTHERS"},{"locale":"zh_CN","name":"其他","descr":"其他","code":"OTHERS"}],"localized":null},{"name":"Solar Building","descr":"Solar Building","code":"SOLAR_BUILD","texts":[{"locale":"de","name":"Solarenergie an oder auf Gebäuden","descr":"Solarenergie an oder auf Gebäuden","code":"SOLAR_BUILD"},{"locale":"en","name":"Solar Building","descr":"Solar Building","code":"SOLAR_BUILD"},{"locale":"en_US_saptrc","name":"2WuNBh4SJT8cCs1NAL3ROQ_Solar Building","descr":"1xZJPiBl+Mry4HVXUCehhQ_Solar Building","code":"SOLAR_BUILD"},{"locale":"es","name":"Edificio solar","descr":"Edificio solar","code":"SOLAR_BUILD"},{"locale":"fr","name":"Bâtiment solaire","descr":"Bâtiment solaire","code":"SOLAR_BUILD"},{"locale":"ja","name":"ソーラービルディング","descr":"ソーラービルディング","code":"SOLAR_BUILD"},{"locale":"pt","name":"Construção solar","descr":"Construção solar","code":"SOLAR_BUILD"},{"locale":"zh_CN","name":"太阳能建筑","descr":"太阳能建筑","code":"SOLAR_BUILD"}],"localized":null},{"name":"Solar Field","descr":"Solar Field","code":"SOLAR_FIELD","texts":[{"locale":"de","name":"Solarenergie Freifläche","descr":"Solarenergie Freifläche","code":"SOLAR_FIELD"},{"locale":"en","name":"Solar Field","descr":"Solar Field","code":"SOLAR_FIELD"},{"locale":"en_US_saptrc","name":"09K43DlBKwmMbSWw99C2Ew_Solar Field","descr":"l5sBuARvoc1nh5lzZ0stBA_Solar Field","code":"SOLAR_FIELD"},{"locale":"es","name":"Campo solar","descr":"Campo solar","code":"SOLAR_FIELD"},{"locale":"fr","name":"Champ solaire","descr":"Champ solaire","code":"SOLAR_FIELD"},{"locale":"ja","name":"太陽光発電所","descr":"太陽光発電所","code":"SOLAR_FIELD"},{"locale":"pt","name":"Campo solar","descr":"Campo solar","code":"SOLAR_FIELD"},{"locale":"zh_CN","name":"太阳能发电场","descr":"太阳能发电场","code":"SOLAR_FIELD"}],"localized":null},{"name":"Water","descr":"Water","code":"WATER","texts":[{"locale":"de","name":"Wasser","descr":"Wasser","code":"WATER"},{"locale":"en","name":"Water","descr":"Water","code":"WATER"},{"locale":"en_US_saptrc","name":"WIXqxHKvOtoU25viOCU5wQ_Water","descr":"ll4RjRu/HZQOgOhGP2FMGg_Water","code":"WATER"},{"locale":"es","name":"Agua","descr":"Agua","code":"WATER"},{"locale":"fr","name":"Eau","descr":"Eau","code":"WATER"},{"locale":"ja","name":"水力","descr":"水力","code":"WATER"},{"locale":"pt","name":"Água","descr":"Água","code":"WATER"},{"locale":"zh_CN","name":"水","descr":"水","code":"WATER"}],"localized":null},{"name":"Wind Offshore","descr":"Wind Offshore","code":"WINDOFF","texts":[{"locale":"de","name":"Wind Offshore","descr":"Wind Offshore","code":"WINDOFF"},{"locale":"en","name":"Wind Offshore","descr":"Wind Offshore","code":"WINDOFF"},{"locale":"en_US_saptrc","name":"yg5+9WumFd9dLam3SBdpxA_Wind Offshore","descr":"LI20HN+93UeeU85qwq5cHQ_Wind Offshore","code":"WINDOFF"},{"locale":"es","name":"Viento marino","descr":"Viento marino","code":"WINDOFF"},{"locale":"fr","name":"Énergie éolienne en mer","descr":"Énergie éolienne en mer","code":"WINDOFF"},{"locale":"ja","name":"風力 (オフショア)","descr":"風力 (オフショア)","code":"WINDOFF"},{"locale":"pt","name":"Eólica offshore","descr":"Eólica offshore","code":"WINDOFF"},{"locale":"zh_CN","name":"近海风力","descr":"近海风力","code":"WINDOFF"}],"localized":null},{"name":"Wind Onshore","descr":"Wind Onshore","code":"WINDON","texts":[{"locale":"de","name":"Wind Onshore","descr":"Wind Onshore","code":"WINDON"},{"locale":"en","name":"Wind Onshore","descr":"Wind Onshore","code":"WINDON"},{"locale":"en_US_saptrc","name":"qmlBQOosxSme69FEySAthg_Wind Onshore","descr":"YSipP/HxyhZ05N9Zh//5kg_Wind Onshore","code":"WINDON"},{"locale":"es","name":"Viento terrestre","descr":"Viento terrestre","code":"WINDON"},{"locale":"fr","name":"Énergie éolienne sur terre","descr":"Énergie éolienne sur terre","code":"WINDON"},{"locale":"ja","name":"風力 (オンショア)","descr":"風力 (オンショア)","code":"WINDON"},{"locale":"pt","name":"Eólica onshore","descr":"Eólica onshore","code":"WINDON"},{"locale":"zh_CN","name":"陆地风力","descr":"陆地风力","code":"WINDON"}],"localized":null}]},"headers":{},"method":"GET"},
-	{"url":"/MCMFormulas","response":{"@context":"$metadata#MCMFormulas","@metadataEtag":"W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"","value":[{"id":"f0000000-0000-0000-0000-000000000001","idText":"F0001","expression":"Z1B","position":1,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000002","idText":"F0002","expression":"Z1L","position":2,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000003","idText":"F0003","expression":"Z1B+(Z2L-Z1L)","position":3,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000004","idText":"F0004","expression":"Z1B+saldoPOS(Z2L-Z1L)","position":4,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000005","idText":"F0005","expression":"Z2L","position":5,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000006","idText":"F0006","expression":"saldoPOS(Z1L-Z2L)","position":6,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000007","idText":"F0007","expression":"saldoPOS(Z1B-Z1L)","position":7,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000008","idText":"F0008","expression":"saldoPOS(Z1L-Z1B)","position":8,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000009","idText":"F0009","expression":"flatrate()","position":9,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000010","idText":"F0010","expression":"Z1L-Z2L","position":10,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000011","idText":"F0011","expression":"forEach(Z2, Z2L)","position":11,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000012","idText":"F0012","expression":"Z2B","position":12,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000013","idText":"F0013","expression":"forEach(Z2, Z2B)","position":13,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000014","idText":"F0014","expression":"saldoPOS(Z1L-substituteMarketLocations(Z2L))","position":14,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000015","idText":"F0015","expression":"forEach(Z3, Z3L*(Z1L/(Z2L+sum(Z3L))))","position":15,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000016","idText":"F0016","expression":"saldoPOS(saldoPOS(Z1L-sum(Z2L)-substituteMarketLocations(Z3L)))","position":16,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000050","idText":"F0050","expression":"Z1B+(sum(Z2L)-Z1L)","position":50,"expressionSubstituted":null},{"id":"f0000000-0000-0000-0000-000000000051","idText":"F0051","expression":"Z1B+saldoPOS((sum(Z2L)-Z1L))","position":51,"expressionSubstituted":null}]},"headers":{},"method":"GET"}
+  {
+    "url": "/GridTypes?$expand=texts,localized",
+    "response": {
+      "@context": "$metadata#GridTypes(texts(),localized())",
+      "@metadataEtag": "W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"",
+      "value": []
+    },
+    "headers": {},
+    "method": "GET"
+  },
+  {
+    "url": "/MeasuringTypes",
+    "response": {
+      "@context": "$metadata#MeasuringTypes",
+      "@metadataEtag": "W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"",
+      "value": [
+        {
+          "name": "Conventional Measurement Installation",
+          "descr": "Conventional Measurement Installation",
+          "code": "CMU"
+        },
+        { "name": "Intelligent Measurement System", "descr": "Intelligent Measurement System", "code": "IMS" },
+        { "name": "Modern Measurement Installation", "descr": "Modern Measurement Installation", "code": "MMU" },
+        { "name": "No Measurement", "descr": "No Measurement", "code": "NOM" }
+      ]
+    },
+    "headers": {},
+    "method": "GET"
+  },
+  {
+    "url": "/OrdererTypes?$expand=texts,localized",
+    "response": {
+      "@context": "$metadata#OrdererTypes(texts(),localized())",
+      "@metadataEtag": "W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"",
+      "value": [
+        {
+          "name": "Verteilnetzbetreiber Strom",
+          "descr": "Verteilnetzbetreiber Strom",
+          "code": "SP_DIST",
+          "texts": [],
+          "localized": null
+        }
+      ]
+    },
+    "headers": {},
+    "method": "GET"
+  },
+  {
+    "url": "/PowerRangeTypes",
+    "response": {
+      "@context": "$metadata#PowerRangeTypes",
+      "@metadataEtag": "W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"",
+      "value": [
+        { "name": "< 30 kW", "descr": "< 30 kW", "code": "LESS30KW" },
+        { "name": ">= 30 kW", "descr": ">= 30 kW", "code": "MORE30KW" }
+      ]
+    },
+    "headers": {},
+    "method": "GET"
+  },
+  {
+    "url": "/MCIRateTypes",
+    "response": {
+      "@context": "$metadata#MCIRateTypes",
+      "@metadataEtag": "W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"",
+      "value": [
+        { "name": "Double rate", "descr": "Double rate", "code": "DR" },
+        { "name": "Single rate", "descr": "Single rate", "code": "SR" }
+      ]
+    },
+    "headers": {},
+    "method": "GET"
+  },
+  {
+    "url": "/EnergySourceTypes?$expand=texts,localized",
+    "response": {
+      "@context": "$metadata#EnergySourceTypes(texts(),localized())",
+      "@metadataEtag": "W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"",
+      "value": [
+        {
+          "name": "Biomass",
+          "descr": "Biomass",
+          "code": "BIOMASS",
+          "texts": [
+            { "locale": "de", "name": "Biomasse", "descr": "Biomasse", "code": "BIOMASS" },
+            { "locale": "en", "name": "Biomass", "descr": "Biomass", "code": "BIOMASS" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "BfeBaUxJfPDysTXFQug2hw_Biomass",
+              "descr": "oRwGjetGrQ5jjTtTM+1Vjg_Biomass",
+              "code": "BIOMASS"
+            },
+            { "locale": "es", "name": "Biomasa", "descr": "Biomasa", "code": "BIOMASS" },
+            { "locale": "fr", "name": "Biomasse", "descr": "Biomasse", "code": "BIOMASS" },
+            { "locale": "ja", "name": "バイオマス", "descr": "バイオマス", "code": "BIOMASS" },
+            { "locale": "pt", "name": "Biomassa", "descr": "Biomassa", "code": "BIOMASS" },
+            { "locale": "zh_CN", "name": "生物质", "descr": "生物质", "code": "BIOMASS" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Cogeneration",
+          "descr": "Cogeneration",
+          "code": "COGENERATION",
+          "texts": [
+            { "locale": "de", "name": "Kraft-Wärme-Kopplung", "descr": "Kraft-Wärme-Kopplung", "code": "COGENERATION" },
+            { "locale": "en", "name": "Cogeneration", "descr": "Cogeneration", "code": "COGENERATION" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "DuznOyfdyuq0B8O3YJ4qQQ_Cogeneration",
+              "descr": "pNUSHW0btXupzDPseXlewQ_Cogeneration",
+              "code": "COGENERATION"
+            },
+            { "locale": "es", "name": "Generación conjunta", "descr": "Generación conjunta", "code": "COGENERATION" },
+            { "locale": "fr", "name": "Cogénération", "descr": "Cogénération", "code": "COGENERATION" },
+            { "locale": "ja", "name": "コージェネレーション", "descr": "コージェネレーション", "code": "COGENERATION" },
+            { "locale": "pt", "name": "Cogeração", "descr": "Cogeração", "code": "COGENERATION" },
+            { "locale": "zh_CN", "name": "联合发电", "descr": "联合发电", "code": "COGENERATION" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Landfill Gas",
+          "descr": "Landfill Gas",
+          "code": "GAS_LANDFILL",
+          "texts": [
+            { "locale": "de", "name": "Deponiegas", "descr": "Deponiegas", "code": "GAS_LANDFILL" },
+            { "locale": "en", "name": "Landfill Gas", "descr": "Landfill Gas", "code": "GAS_LANDFILL" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "Dkl86dM8c1/JuCH/Z8BgXQ_Landfill Gas",
+              "descr": "ql7hpGEdfMJH8i62MWexOQ_Landfill Gas",
+              "code": "GAS_LANDFILL"
+            },
+            { "locale": "es", "name": "Gas de vertedero", "descr": "Gas de vertedero", "code": "GAS_LANDFILL" },
+            { "locale": "fr", "name": "Gaz de décharge", "descr": "Gaz de décharge", "code": "GAS_LANDFILL" },
+            { "locale": "ja", "name": "埋立地ガス", "descr": "埋立地ガス", "code": "GAS_LANDFILL" },
+            {
+              "locale": "pt",
+              "name": "Gás de aterro sanitário",
+              "descr": "Gás de aterro sanitário",
+              "code": "GAS_LANDFILL"
+            },
+            { "locale": "zh_CN", "name": "填埋沼气", "descr": "填埋沼气", "code": "GAS_LANDFILL" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Mine Gas",
+          "descr": "Mine Gas",
+          "code": "GAS_MINE",
+          "texts": [
+            { "locale": "de", "name": "Grubengas", "descr": "Grubengas", "code": "GAS_MINE" },
+            { "locale": "en", "name": "Mine Gas", "descr": "Mine Gas", "code": "GAS_MINE" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "XJo3vBGedEx2Zu6CfU+cZA_Mine Gas",
+              "descr": "d3+thPXXyFFVrGDXymw27A_Mine Gas",
+              "code": "GAS_MINE"
+            },
+            { "locale": "es", "name": "Gas de mina", "descr": "Gas de mina", "code": "GAS_MINE" },
+            { "locale": "fr", "name": "Gaz de mine", "descr": "Gaz de mine", "code": "GAS_MINE" },
+            { "locale": "ja", "name": "炭鉱ガス", "descr": "炭鉱ガス", "code": "GAS_MINE" },
+            { "locale": "pt", "name": "Gás de extração", "descr": "Gás de extração", "code": "GAS_MINE" },
+            { "locale": "zh_CN", "name": "矿井气", "descr": "矿井气", "code": "GAS_MINE" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Sewer Gas",
+          "descr": "Sewer Gas",
+          "code": "GAS_SEWER",
+          "texts": [
+            { "locale": "de", "name": "Klärgas", "descr": "Klärgas", "code": "GAS_SEWER" },
+            { "locale": "en", "name": "Sewer Gas", "descr": "Sewer Gas", "code": "GAS_SEWER" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "uXii/BJnN9MCEoxN+9g76Q_Sewer Gas",
+              "descr": "pONkbu5FxNTvjT5WUzBd3Q_Sewer Gas",
+              "code": "GAS_SEWER"
+            },
+            { "locale": "es", "name": "Gas de alcantarillado", "descr": "Gas de alcantarillado", "code": "GAS_SEWER" },
+            { "locale": "fr", "name": "Gaz d'égout", "descr": "Gaz d'égout", "code": "GAS_SEWER" },
+            { "locale": "ja", "name": "下水ガス", "descr": "下水ガス", "code": "GAS_SEWER" },
+            { "locale": "pt", "name": "Gás de esgoto", "descr": "Gás de esgoto", "code": "GAS_SEWER" },
+            { "locale": "zh_CN", "name": "阴沟沼气", "descr": "阴沟沼气", "code": "GAS_SEWER" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Geotherm",
+          "descr": "Geotherm",
+          "code": "GEOTHERM",
+          "texts": [
+            { "locale": "de", "name": "Geothermie", "descr": "Geothermie", "code": "GEOTHERM" },
+            { "locale": "en", "name": "Geotherm", "descr": "Geotherm", "code": "GEOTHERM" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "lCXZQqVABOLwLdHeqkVZ7w_Geotherm",
+              "descr": "MdDoIiqtMp435fwVTEyngg_Geotherm",
+              "code": "GEOTHERM"
+            },
+            { "locale": "es", "name": "Geotérmica", "descr": "Geotérmica", "code": "GEOTHERM" },
+            { "locale": "fr", "name": "Géothermie", "descr": "Géothermie", "code": "GEOTHERM" },
+            { "locale": "ja", "name": "地熱", "descr": "地熱", "code": "GEOTHERM" },
+            { "locale": "pt", "name": "Geotérmico", "descr": "Geotérmico", "code": "GEOTHERM" },
+            { "locale": "zh_CN", "name": "地热", "descr": "地热", "code": "GEOTHERM" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Other",
+          "descr": "Other",
+          "code": "OTHERS",
+          "texts": [
+            { "locale": "de", "name": "Sonstige", "descr": "Sonstige", "code": "OTHERS" },
+            { "locale": "en", "name": "Other", "descr": "Other", "code": "OTHERS" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "NUcf5SsE25V4UAVu35uz6A_Other",
+              "descr": "50TDNkerzbQ2JGzlW0uYMA_Other",
+              "code": "OTHERS"
+            },
+            { "locale": "es", "name": "Otro", "descr": "Otro", "code": "OTHERS" },
+            { "locale": "fr", "name": "Autre", "descr": "Autre", "code": "OTHERS" },
+            { "locale": "ja", "name": "その他", "descr": "その他", "code": "OTHERS" },
+            { "locale": "pt", "name": "Outro", "descr": "Outro", "code": "OTHERS" },
+            { "locale": "zh_CN", "name": "其他", "descr": "其他", "code": "OTHERS" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Solar Building",
+          "descr": "Solar Building",
+          "code": "SOLAR_BUILD",
+          "texts": [
+            {
+              "locale": "de",
+              "name": "Solarenergie an oder auf Gebäuden",
+              "descr": "Solarenergie an oder auf Gebäuden",
+              "code": "SOLAR_BUILD"
+            },
+            { "locale": "en", "name": "Solar Building", "descr": "Solar Building", "code": "SOLAR_BUILD" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "2WuNBh4SJT8cCs1NAL3ROQ_Solar Building",
+              "descr": "1xZJPiBl+Mry4HVXUCehhQ_Solar Building",
+              "code": "SOLAR_BUILD"
+            },
+            { "locale": "es", "name": "Edificio solar", "descr": "Edificio solar", "code": "SOLAR_BUILD" },
+            { "locale": "fr", "name": "Bâtiment solaire", "descr": "Bâtiment solaire", "code": "SOLAR_BUILD" },
+            { "locale": "ja", "name": "ソーラービルディング", "descr": "ソーラービルディング", "code": "SOLAR_BUILD" },
+            { "locale": "pt", "name": "Construção solar", "descr": "Construção solar", "code": "SOLAR_BUILD" },
+            { "locale": "zh_CN", "name": "太阳能建筑", "descr": "太阳能建筑", "code": "SOLAR_BUILD" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Solar Field",
+          "descr": "Solar Field",
+          "code": "SOLAR_FIELD",
+          "texts": [
+            {
+              "locale": "de",
+              "name": "Solarenergie Freifläche",
+              "descr": "Solarenergie Freifläche",
+              "code": "SOLAR_FIELD"
+            },
+            { "locale": "en", "name": "Solar Field", "descr": "Solar Field", "code": "SOLAR_FIELD" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "09K43DlBKwmMbSWw99C2Ew_Solar Field",
+              "descr": "l5sBuARvoc1nh5lzZ0stBA_Solar Field",
+              "code": "SOLAR_FIELD"
+            },
+            { "locale": "es", "name": "Campo solar", "descr": "Campo solar", "code": "SOLAR_FIELD" },
+            { "locale": "fr", "name": "Champ solaire", "descr": "Champ solaire", "code": "SOLAR_FIELD" },
+            { "locale": "ja", "name": "太陽光発電所", "descr": "太陽光発電所", "code": "SOLAR_FIELD" },
+            { "locale": "pt", "name": "Campo solar", "descr": "Campo solar", "code": "SOLAR_FIELD" },
+            { "locale": "zh_CN", "name": "太阳能发电场", "descr": "太阳能发电场", "code": "SOLAR_FIELD" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Water",
+          "descr": "Water",
+          "code": "WATER",
+          "texts": [
+            { "locale": "de", "name": "Wasser", "descr": "Wasser", "code": "WATER" },
+            { "locale": "en", "name": "Water", "descr": "Water", "code": "WATER" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "WIXqxHKvOtoU25viOCU5wQ_Water",
+              "descr": "ll4RjRu/HZQOgOhGP2FMGg_Water",
+              "code": "WATER"
+            },
+            { "locale": "es", "name": "Agua", "descr": "Agua", "code": "WATER" },
+            { "locale": "fr", "name": "Eau", "descr": "Eau", "code": "WATER" },
+            { "locale": "ja", "name": "水力", "descr": "水力", "code": "WATER" },
+            { "locale": "pt", "name": "Água", "descr": "Água", "code": "WATER" },
+            { "locale": "zh_CN", "name": "水", "descr": "水", "code": "WATER" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Wind Offshore",
+          "descr": "Wind Offshore",
+          "code": "WINDOFF",
+          "texts": [
+            { "locale": "de", "name": "Wind Offshore", "descr": "Wind Offshore", "code": "WINDOFF" },
+            { "locale": "en", "name": "Wind Offshore", "descr": "Wind Offshore", "code": "WINDOFF" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "yg5+9WumFd9dLam3SBdpxA_Wind Offshore",
+              "descr": "LI20HN+93UeeU85qwq5cHQ_Wind Offshore",
+              "code": "WINDOFF"
+            },
+            { "locale": "es", "name": "Viento marino", "descr": "Viento marino", "code": "WINDOFF" },
+            {
+              "locale": "fr",
+              "name": "Énergie éolienne en mer",
+              "descr": "Énergie éolienne en mer",
+              "code": "WINDOFF"
+            },
+            { "locale": "ja", "name": "風力 (オフショア)", "descr": "風力 (オフショア)", "code": "WINDOFF" },
+            { "locale": "pt", "name": "Eólica offshore", "descr": "Eólica offshore", "code": "WINDOFF" },
+            { "locale": "zh_CN", "name": "近海风力", "descr": "近海风力", "code": "WINDOFF" }
+          ],
+          "localized": null
+        },
+        {
+          "name": "Wind Onshore",
+          "descr": "Wind Onshore",
+          "code": "WINDON",
+          "texts": [
+            { "locale": "de", "name": "Wind Onshore", "descr": "Wind Onshore", "code": "WINDON" },
+            { "locale": "en", "name": "Wind Onshore", "descr": "Wind Onshore", "code": "WINDON" },
+            {
+              "locale": "en_US_saptrc",
+              "name": "qmlBQOosxSme69FEySAthg_Wind Onshore",
+              "descr": "YSipP/HxyhZ05N9Zh//5kg_Wind Onshore",
+              "code": "WINDON"
+            },
+            { "locale": "es", "name": "Viento terrestre", "descr": "Viento terrestre", "code": "WINDON" },
+            {
+              "locale": "fr",
+              "name": "Énergie éolienne sur terre",
+              "descr": "Énergie éolienne sur terre",
+              "code": "WINDON"
+            },
+            { "locale": "ja", "name": "風力 (オンショア)", "descr": "風力 (オンショア)", "code": "WINDON" },
+            { "locale": "pt", "name": "Eólica onshore", "descr": "Eólica onshore", "code": "WINDON" },
+            { "locale": "zh_CN", "name": "陆地风力", "descr": "陆地风力", "code": "WINDON" }
+          ],
+          "localized": null
+        }
+      ]
+    },
+    "headers": {},
+    "method": "GET"
+  },
+  {
+    "url": "/MCMFormulas",
+    "response": {
+      "@context": "$metadata#MCMFormulas",
+      "@metadataEtag": "W/\"bbbd8ace6764e698da8fafdb576269f3b2b61c402c9a47fe5f0aa20f103780e5\"",
+      "value": [
+        {
+          "id": "f0000000-0000-0000-0000-000000000001",
+          "idText": "F0001",
+          "expression": "Z1B",
+          "position": 1,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000002",
+          "idText": "F0002",
+          "expression": "Z1L",
+          "position": 2,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000003",
+          "idText": "F0003",
+          "expression": "Z1B+(Z2L-Z1L)",
+          "position": 3,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000004",
+          "idText": "F0004",
+          "expression": "Z1B+saldoPOS(Z2L-Z1L)",
+          "position": 4,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000005",
+          "idText": "F0005",
+          "expression": "Z2L",
+          "position": 5,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000006",
+          "idText": "F0006",
+          "expression": "saldoPOS(Z1L-Z2L)",
+          "position": 6,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000007",
+          "idText": "F0007",
+          "expression": "saldoPOS(Z1B-Z1L)",
+          "position": 7,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000008",
+          "idText": "F0008",
+          "expression": "saldoPOS(Z1L-Z1B)",
+          "position": 8,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000009",
+          "idText": "F0009",
+          "expression": "flatrate()",
+          "position": 9,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000010",
+          "idText": "F0010",
+          "expression": "Z1L-Z2L",
+          "position": 10,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000011",
+          "idText": "F0011",
+          "expression": "forEach(Z2, Z2L)",
+          "position": 11,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000012",
+          "idText": "F0012",
+          "expression": "Z2B",
+          "position": 12,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000013",
+          "idText": "F0013",
+          "expression": "forEach(Z2, Z2B)",
+          "position": 13,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000014",
+          "idText": "F0014",
+          "expression": "saldoPOS(Z1L-substituteMarketLocations(Z2L))",
+          "position": 14,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000015",
+          "idText": "F0015",
+          "expression": "forEach(Z3, Z3L*(Z1L/(Z2L+sum(Z3L))))",
+          "position": 15,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000016",
+          "idText": "F0016",
+          "expression": "saldoPOS(saldoPOS(Z1L-sum(Z2L)-substituteMarketLocations(Z3L)))",
+          "position": 16,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000050",
+          "idText": "F0050",
+          "expression": "Z1B+(sum(Z2L)-Z1L)",
+          "position": 50,
+          "expressionSubstituted": null
+        },
+        {
+          "id": "f0000000-0000-0000-0000-000000000051",
+          "idText": "F0051",
+          "expression": "Z1B+saldoPOS((sum(Z2L)-Z1L))",
+          "position": 51,
+          "expressionSubstituted": null
+        }
+      ]
+    },
+    "headers": {},
+    "method": "GET"
+  }
 ]

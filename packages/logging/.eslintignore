@@ -1,5 +1,0 @@
-/dist
-*.d.ts
-*.config.js
-coverage
-/src/internal/colors/colors.ts

@@ -21,7 +21,6 @@ import {
   ReferenceExpression,
   TemplateExpression,
   toChange,
-  Element,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -31,6 +30,7 @@ import {
   REFERENCE_INDEXES_VERSION,
   ReferenceTargetIndexValue,
   updateReferenceIndexes,
+  ReferenceIndexesGetCustomReferencesFunc,
 } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
@@ -516,11 +516,10 @@ describe('updateReferenceIndexes', () => {
     })
 
     describe('When indexes are out of date', () => {
-      let inputElements: Element[]
-
+      let mockedGetCustomReferences: jest.MockedFunction<ReferenceIndexesGetCustomReferencesFunc>
       beforeEach(async () => {
-        inputElements = []
         await elementsSource.set(instance)
+        mockedGetCustomReferences = jest.fn().mockResolvedValue([])
         mapVersions.get.mockResolvedValue(0)
         await updateReferenceIndexes(
           [],
@@ -529,15 +528,12 @@ describe('updateReferenceIndexes', () => {
           mapVersions,
           elementsSource,
           true,
-          async elements => {
-            elements.forEach(e => inputElements.push(e))
-            return []
-          },
+          mockedGetCustomReferences,
         )
       })
 
       it('should invoke getCustomReferences function with all the Elements from the elementsSource', () => {
-        expect(inputElements).toEqual([instance])
+        expect(mockedGetCustomReferences).toHaveBeenCalledWith([instance])
       })
 
       it('should update referenceTargets index using the element source', () => {

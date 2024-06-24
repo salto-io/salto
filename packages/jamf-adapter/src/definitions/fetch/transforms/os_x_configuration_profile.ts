@@ -15,8 +15,7 @@
  */
 import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
-import { adjustCategoryObjectToCategoryId, adjustScriptsObjectArrayToScriptsIds, adjustServiceIdToTopLevel, adjustSiteObjectToSiteId } from './utils'
-
+import { adjustCategoryObjectToCategoryId, adjustServiceIdToTopLevel, adjustSiteObjectToSiteId } from './utils'
 
 /*
  * Adjust policy instance
@@ -25,10 +24,9 @@ export const adjust: definitions.AdjustFunction = ({ value }) => {
   if (!values.isPlainRecord(value)) {
     throw new Error('Expected value to be a record')
   }
-  ;[
+  ;;[
     adjustCategoryObjectToCategoryId,
     adjustSiteObjectToSiteId,
-    adjustScriptsObjectArrayToScriptsIds,
     adjustServiceIdToTopLevel,
   ].forEach(fn => fn(value))
   return { value }

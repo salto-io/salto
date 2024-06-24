@@ -28,6 +28,7 @@ import {
   SCRIPT_TYPE_NAME,
   SITE_TYPE_NAME,
   RESULTS,
+  OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
 } from '../../constants'
 import * as transforms from './transforms'
 
@@ -221,7 +222,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  class_minimal: {
+  [`${CLASS_TYPE_NAME}_minimal`]: {
     requests: [
       {
         endpoint: {
@@ -262,7 +263,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       context: {
         dependsOn: {
           id: {
-            parentTypeName: 'class_minimal',
+            parentTypeName: `${CLASS_TYPE_NAME}_minimal`,
             transformation: {
               root: 'id',
             },
@@ -282,7 +283,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  policy_minimal: {
+  [`${POLICY_TYPE_NAME}_minimal`]: {
     requests: [
       {
         endpoint: {
@@ -323,7 +324,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       context: {
         dependsOn: {
           id: {
-            parentTypeName: 'policy_minimal',
+            parentTypeName: `${POLICY_TYPE_NAME}_minimal`,
             transformation: {
               root: 'id',
             },
@@ -365,6 +366,60 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         elemID: {
           parts: [{ fieldName: 'packageName' }],
         },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+      },
+    },
+  },
+  [`${OS_X_CONFIGURATION_PROFILE_TYPE_NAME}_minimal`]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/osxconfigurationprofiles',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: 'os_x_configuration_profiles',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+  },
+  [OS_X_CONFIGURATION_PROFILE_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/osxconfigurationprofiles/id/{id}',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: 'os_x_configuration_profile',
+          adjust: transforms.adjustOsxConfigurationProfile,
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      context: {
+        dependsOn: {
+          id: {
+            parentTypeName: `${OS_X_CONFIGURATION_PROFILE_TYPE_NAME}_minimal`,
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'general.name' }] },
       },
       fieldCustomizations: {
         id: {

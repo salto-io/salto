@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import { ElemID, getChangeData, InstanceElement, ObjectType, toChange, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'

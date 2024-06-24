@@ -290,7 +290,6 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
           )
 
       logResponse(res)
-
       return {
         data: res.data,
         status: res.status,

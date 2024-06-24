@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { definitions } from '@salto-io/adapter-components'
+import { definitions, filterUtils } from '@salto-io/adapter-components'
+import { UserConfig } from '../config'
 
 export type AdditionalAction = never
 export type ClientOptions = 'main'
@@ -32,3 +33,5 @@ export type Options = definitions.APIDefinitionsOptions & {
 }
 
 export type EndpointPath = definitions.EndpointPath
+
+export type FilterCreator = filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterResult, {}, Options>

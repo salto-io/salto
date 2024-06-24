@@ -48,12 +48,6 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
   expirationDateTime: {
     omit: true,
   },
-  includeUsers: {
-    omit: true,
-  },
-  excludeUsers: {
-    omit: true,
-  },
   securityIdentifier: {
     omit: true,
   },

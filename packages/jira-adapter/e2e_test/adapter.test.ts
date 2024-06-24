@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 import {
+  Change,
   DeployResult,
   Element,
   getChangeData,
   InstanceElement,
   isAdditionChange,
+  isInstanceChange,
   isInstanceElement,
   isObjectType,
   ModificationChange,
   ProgressReporter,
   ReadOnlyElementsSource,
+  SaltoElementError,
+  SaltoError,
   toChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -134,6 +138,7 @@ each([
     let modifyDeployResults: DeployResult[]
     let addInstanceGroups: InstanceElement[][]
     let modifyInstanceGroups: ModificationChange<InstanceElement>[][]
+    let elements: Element[]
 
     beforeAll(async () => {
       elementsSource = buildElementsSourceFromElements(fetchedElements)
@@ -202,9 +207,9 @@ each([
     })
 
     it('fetch should return the new changes', async () => {
-      const { elements } = await adapter.fetch({
+      ;({ elements } = await adapter.fetch({
         progressReporter: { reportProgress: () => null },
-      })
+      }))
 
       const resolvedFetchedElements = await Promise.all(elements.map(e => resolveValues(e, getLookUpName)))
       const { scriptRunnerApiDefinitions } = getDefaultConfig({ isDataCenter })
@@ -245,6 +250,7 @@ each([
         .flatMap(res => res.appliedChanges)
         .filter(isAdditionChange)
         .map(change => toChange({ before: getChangeData(change) }))
+        .filter(isInstanceChange)
       removalChanges.forEach(change => {
         const instance = getChangeData(change)
         removalChanges
@@ -256,31 +262,51 @@ each([
           })
       })
 
-      addDeployResults = await Promise.all(
-        removalChanges.map(change => {
-          try {
-            return adapter.deploy({
-              changeGroup: {
-                groupID: getChangeData(change).elemID.getFullName(),
-                changes: [change],
-              },
-              progressReporter: nullProgressReporter,
-            })
-          } catch (e) {
-            if (String(e).includes('status code 404')) {
-              return {
-                errors: [],
-                appliedChanges: [],
+      const deployChanges = async (
+        changes: Change<InstanceElement>[],
+        catchCondition,
+      ): Promise<(SaltoError | SaltoElementError)[]> => {
+        const deployResults = await Promise.all(
+          changes.map(change => {
+            try {
+              return adapter.deploy({
+                changeGroup: {
+                  groupID: getChangeData(change).elemID.getFullName(),
+                  changes: [change],
+                },
+                progressReporter: nullProgressReporter,
+              })
+            } catch (e) {
+              if (catchCondition(e)) {
+                return {
+                  errors: [],
+                  appliedChanges: [],
+                }
               }
+              throw e
             }
-            throw e
-          }
-        }),
-      )
+          }),
+        )
 
-      const errors = addDeployResults.flatMap(res => res.errors)
+        return deployResults.flatMap(res => res.errors)
+      }
+
+      const errors = await deployChanges(removalChanges, e => String(e).includes('status code 404'))
       if (errors.length) {
         throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
+      }
+      const removalInstancesNames = removalChanges.map(change => getChangeData(change).elemID.getFullName())
+      const allOssCreatedElements = elements
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.name.includes('createdByOssE2e'))
+        .filter(instance => !removalInstancesNames.includes(instance.elemID.getFullName()))
+        .map(instance => toChange({ before: instance }))
+
+      const allRemovalErrors = await deployChanges(allOssCreatedElements, () => true) // don not fail on this
+      if (allRemovalErrors.length) {
+        throw new Error(
+          `Failed to clean older e2e changes: ${allRemovalErrors.map(e => safeJsonStringify(e)).join(', ')}`,
+        )
       }
     })
   })

@@ -131,13 +131,13 @@ const getChangeErrorsOnAccountSpecificValues = (
     .concat(returnGenericAccountSpecificValuesWarning ? toAccountSpecificValuesWarning(instance) : [])
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => {
+const changeValidator: NetsuiteChangeValidator = async (changes, { elementsSource }) => {
   const workflowChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .filter(change => change.data.after.elemID.typeName === WORKFLOW)
 
-  if (elementsSource === undefined || workflowChanges.length === 0) {
+  if (workflowChanges.length === 0) {
     return []
   }
   const clonedWorkflowChanges = workflowChanges.map(

@@ -16,13 +16,12 @@
 import { collections, values } from '@salto-io/lowerdash'
 import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
 import { FILE_CABINET_PATH_SEPARATOR, FINANCIAL_LAYOUT, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { ManifestDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
-import { isFileCustomizationInfo } from './utils'
+import { isFileCustomizationInfo, xmlBuilder, xmlParser } from './utils'
 
 const { makeArray } = collections.array
 const { lookupValue } = values
@@ -211,7 +210,7 @@ export const fixManifest = (
   customizationInfos: CustomizationInfo[],
   additionalDependencies: ManifestDependencies,
 ): string => {
-  const manifestXml = xmlParser.parse(manifestContent, { ignoreAttributes: false })
+  const manifestXml = xmlParser.parse(manifestContent)
 
   if (!_.isPlainObject(manifestXml.manifest)) {
     log.warn('manifest.xml is missing manifest tag')
@@ -229,9 +228,5 @@ export const fixManifest = (
   cleanInvalidDependencies(dependencies)
   addRequiredDependencies(dependencies, customizationInfos, additionalDependencies)
 
-  // eslint-disable-next-line new-cap
-  return new xmlParser.j2xParser({
-    ignoreAttributes: false,
-    format: true,
-  }).parse(manifestXml)
+  return xmlBuilder.build(manifestXml)
 }

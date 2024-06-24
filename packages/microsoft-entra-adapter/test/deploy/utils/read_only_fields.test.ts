@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-import { TYPE_NAME_TO_READ_ONLY_FIELDS } from '../../../src/change_validators'
+import {
+  TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
+  TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
+} from '../../../src/change_validators'
 import { omitReadOnlyFields } from '../../../src/definitions/deploy/utils'
-import { contextMock } from '../../mocks'
+import { contextMock, modificationChangeMock, removalChangeMock } from '../../mocks'
 
-const readOnlyTypeName = Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS)[0]
+const typeNamesWithReadOnlyFieldsOnAddition = Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION)
+const readOnlyTypeNameAddition = typeNamesWithReadOnlyFieldsOnAddition[0]
+const readOnlyTypeNameModificationOnly =
+  Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION).find(
+    typeName => !typeNamesWithReadOnlyFieldsOnAddition.includes(typeName),
+  ) ?? ''
 
 describe(`${omitReadOnlyFields.name}`, () => {
   it('should return the original value if the type name does not have readonly fields defined', () => {
@@ -29,24 +37,57 @@ describe(`${omitReadOnlyFields.name}`, () => {
     expect(omitReadOnlyFields({ typeName: 'someType', value, context: contextMock })).toEqual({ value })
   })
 
-  it('should return the original value if the action is not modify', () => {
+  it('should return the original value if the action is delete', () => {
     const value = {
       a: 1,
       b: '2',
     }
     expect(
-      omitReadOnlyFields({ typeName: readOnlyTypeName, value, context: { ...contextMock, action: 'add' } }),
+      omitReadOnlyFields({
+        typeName: readOnlyTypeNameModificationOnly,
+        value,
+        context: { ...contextMock, change: removalChangeMock },
+      }),
     ).toEqual({ value })
   })
 
-  it('should omit the read only fields', () => {
+  it('should return the original value if the readonly fields are not defined for the action', () => {
     const value = {
       a: 1,
       b: '2',
-      [TYPE_NAME_TO_READ_ONLY_FIELDS[readOnlyTypeName][0]]: 'read only',
     }
     expect(
-      omitReadOnlyFields({ typeName: readOnlyTypeName, value, context: { ...contextMock, action: 'modify' } }),
+      omitReadOnlyFields({
+        typeName: readOnlyTypeNameModificationOnly,
+        value,
+        context: contextMock,
+      }),
+    ).toEqual({ value })
+  })
+
+  it('should omit the read only fields on addition', () => {
+    const value = {
+      a: 1,
+      b: '2',
+      [TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION[readOnlyTypeNameAddition][0]]: 'read only',
+    }
+    expect(omitReadOnlyFields({ typeName: readOnlyTypeNameAddition, value, context: contextMock })).toEqual({
+      value: { a: 1, b: '2' },
+    })
+  })
+
+  it('should omit the read only fields on modification', () => {
+    const value = {
+      a: 1,
+      b: '2',
+      [TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION[readOnlyTypeNameModificationOnly][0]]: 'read only',
+    }
+    expect(
+      omitReadOnlyFields({
+        typeName: readOnlyTypeNameModificationOnly,
+        value,
+        context: { ...contextMock, change: modificationChangeMock },
+      }),
     ).toEqual({ value: { a: 1, b: '2' } })
   })
 })

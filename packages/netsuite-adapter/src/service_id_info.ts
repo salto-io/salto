@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { ElemID, Element } from '@salto-io/adapter-api'
+import { ElemID, Element, isElement } from '@salto-io/adapter-api'
 import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
 import { SCRIPT_ID } from './constants'
 import { ServiceIdRecords } from './elements_source_index/types'
+import { getElementValueOrAnnotations } from './types'
 
 const CAPTURED_SERVICE_ID = 'serviceId'
 const CAPTURED_TYPE = 'type'
@@ -106,12 +108,24 @@ export const getServiceIdsToElemIds = (element: Element): ServiceIdRecords => {
   walkOnElement({
     element,
     func: ({ value, path }) => {
-      if (path.name === SCRIPT_ID && typeof value === 'string') {
-        const parentServiceId = getClosestParentServiceId(path)
-        const resolvedServiceId = parentServiceId === undefined ? value : `${parentServiceId}.${value}`
-        parentElemIdFullNameToServiceId[path.createParentID().getFullName()] = resolvedServiceId
-        serviceIdsToElemIds[resolvedServiceId] = { elemID: path, serviceID: value }
+      const container = isElement(value) ? getElementValueOrAnnotations(value) : value
+      if (!_.isPlainObject(container)) {
+        return WALK_NEXT_STEP.RECURSE
       }
+
+      const serviceID = container[SCRIPT_ID]
+      if (typeof serviceID !== 'string') {
+        return WALK_NEXT_STEP.RECURSE
+      }
+
+      const parentServiceId = getClosestParentServiceId(path)
+      const resolvedServiceId = parentServiceId === undefined ? serviceID : `${parentServiceId}.${serviceID}`
+      parentElemIdFullNameToServiceId[path.getFullName()] = resolvedServiceId
+      serviceIdsToElemIds[resolvedServiceId] = {
+        elemID: path.idType === 'type' ? path.createNestedID('attr', SCRIPT_ID) : path.createNestedID(SCRIPT_ID),
+        serviceID,
+      }
+
       return WALK_NEXT_STEP.RECURSE
     },
   })

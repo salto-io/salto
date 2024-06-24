@@ -36,6 +36,20 @@ export const createClientDefinitions = (
             omitBody: true,
           },
         },
+        customizations: {
+          '/v1.0/groupLifecyclePolicies/{lifeCyclePolicyId}/addGroup': {
+            post: {
+              // After creating a group it takes a while for the group to be available for assigning it to a lifecycle policy
+              // See a similar issue in https://stackoverflow.com/questions/47303158/add-group-member-fails-with-404-error
+              polling: {
+                interval: 6000,
+                retries: 3,
+                checkStatus: response => response.status === 200,
+                retryOnStatus: [404],
+              },
+            },
+          },
+        },
       },
     },
   },

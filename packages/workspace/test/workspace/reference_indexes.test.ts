@@ -31,6 +31,7 @@ import {
   REFERENCE_INDEXES_VERSION,
   ReferenceTargetIndexValue,
   updateReferenceIndexes,
+  ReferenceIndexesGetCustomReferencesFunc,
   ReferenceIndexEntry,
 } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
@@ -546,8 +547,23 @@ describe('updateReferenceIndexes', () => {
     })
 
     describe('When indexes are out of date', () => {
+      let mockedGetCustomReferences: jest.MockedFunction<ReferenceIndexesGetCustomReferencesFunc>
       beforeEach(async () => {
         await elementsSource.set(instance)
+        mockedGetCustomReferences = jest.fn().mockResolvedValue([
+          // Make sure we set sourceScope correctly in the indexes
+          {
+            source: ElemID.fromFullName('test.object.instance.instance.withoutSourceScope'),
+            target: ElemID.fromFullName('test.type.instance.testSourceScope.without'),
+            type: 'weak',
+          },
+          {
+            source: ElemID.fromFullName('test.object.instance.instance.withSourceScope'),
+            target: ElemID.fromFullName('test.type.instance.testSourceScope.with'),
+            type: 'weak',
+            sourceScope: 'value',
+          },
+        ])
         mapVersions.get.mockResolvedValue(0)
         await updateReferenceIndexes(
           [],
@@ -556,22 +572,14 @@ describe('updateReferenceIndexes', () => {
           mapVersions,
           elementsSource,
           true,
-          async () => [
-            // Make sure we set sourceScope correctly in the indexes
-            {
-              source: ElemID.fromFullName('test.object.instance.instance.withoutSourceScope'),
-              target: ElemID.fromFullName('test.type.instance.testSourceScope.without'),
-              type: 'weak',
-            },
-            {
-              source: ElemID.fromFullName('test.object.instance.instance.withSourceScope'),
-              target: ElemID.fromFullName('test.type.instance.testSourceScope.with'),
-              type: 'weak',
-              sourceScope: 'value',
-            },
-          ],
+          mockedGetCustomReferences,
         )
       })
+
+      it('should invoke getCustomReferences function with all the Elements from the elementsSource', () => {
+        expect(mockedGetCustomReferences).toHaveBeenCalledWith([instance])
+      })
+
       it('should update referenceTargets index using the element source', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([

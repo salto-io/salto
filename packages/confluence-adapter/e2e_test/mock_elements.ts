@@ -16,6 +16,7 @@
 import { Values } from '@salto-io/adapter-api'
 import { e2eUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { DEFAULT_RESTRICTION } from '../src/definitions/utils'
 import { SPACE_TYPE_NAME, PAGE_TYPE_NAME, TEMPLATE_TYPE_NAME } from '../src/constants'
 
 export const uniqueFieldsPerType: Record<string, string[]> = {
@@ -38,11 +39,7 @@ const mockDefaultValues: Record<string, Values> = {
   [PAGE_TYPE_NAME]: {
     status: 'current',
     parentType: 'page',
-    restriction: [
-      {
-        operation: 'update',
-      },
-    ],
+    restriction: DEFAULT_RESTRICTION,
   },
   [TEMPLATE_TYPE_NAME]: {
     description: 'some description',

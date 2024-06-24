@@ -18,7 +18,7 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 
 export type Credentials = {
-  url: string
+  baseUrl: string
   clientId: string
   clientSecret: string
 }
@@ -26,7 +26,7 @@ export type Credentials = {
 export const credentialsType = createMatchingObjectType<Credentials>({
   elemID: new ElemID(constants.ADAPTER_NAME),
   fields: {
-    url: {
+    baseUrl: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },

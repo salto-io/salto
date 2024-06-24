@@ -16,5 +16,5 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 
 export default (): Record<string, ChangeValidator> => ({
-  // TODO: Implement change validators https://salto-io.atlassian.net/browse/SALTO-6099
+  // TODO SALTO-6099 Implement change validators
 })

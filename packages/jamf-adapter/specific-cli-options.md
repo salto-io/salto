@@ -1,15 +1,15 @@
-# serviceplaceholder CLI options
+# Jamf CLI options
 
 ## Non interactive Login Parameters
 
 Supported parameters are:
 
-- `url`
+- `baseUrl`
 - `clientId`
 - `clientSecret`
 
 ### Example
 
 ```bash
-salto account add jamf --login-parameters url=url
+salto account add jamf --login-parameters baseUrl=baseUrl
 ```

@@ -15,14 +15,14 @@
  */
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
 import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } from './types'
-import { CATEGORY_TYPE_NAME, CLASS_TYPE_NAME, PACKAGE_TYPE_NAME, SCRIPT_TYPE_NAME, SITE_TYPE_NAME } from '../constants'
+import { CATEGORY_TYPE_NAME, CLASS_TYPE_NAME, PACKAGE_TYPE_NAME, POLICY_TYPE_NAME, SCRIPT_TYPE_NAME, SITE_TYPE_NAME } from '../constants'
 
 const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategies,
   CustomReferenceSerializationStrategyName
 >[] = [
   {
-    src: { field: 'categoryId' },
+    src: { field: 'categoryId', parentTypes: [PACKAGE_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: CATEGORY_TYPE_NAME },
   },
@@ -38,13 +38,13 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     target: { type: SITE_TYPE_NAME },
   },
   {
-    src: { field: 'category' },
+    src: { field: 'category', parentTypes: [POLICY_TYPE_NAME] },
     serializationStrategy: 'id',
     sourceTransformation: 'asString',
     target: { type: CATEGORY_TYPE_NAME },
   },
   {
-    src: { field: 'scripts' },
+    src: { field: 'scripts', parentTypes: [POLICY_TYPE_NAME] },
     serializationStrategy: 'id',
     sourceTransformation: 'asString',
     target: { type: SCRIPT_TYPE_NAME },

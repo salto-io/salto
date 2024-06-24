@@ -86,7 +86,7 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onPost('url/api/oauth/token').reply(200, { access_token: 'mock_token' })
+    mockAxiosAdapter.onPost('baseUrl/api/oauth/token').reply(200, { access_token: 'mock_token', token_type: 'Bearer' })
     mockAxiosAdapter.onGet('/api/v1/api-integrations').replyOnce(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
@@ -107,7 +107,7 @@ describe('adapter', () => {
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', credentialsType, {
-              url: 'url',
+              baseUrl: 'baseUrl',
               clientId: 'clientId',
               clientSecret: 'clientSecret',
             }),
@@ -252,7 +252,6 @@ describe('adapter', () => {
     let policyToRemove: InstanceElement
 
     beforeEach(() => {
-      // TODO update to relevant changes
       buildingType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, BUILDING_TYPE_NAME) })
       classType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, CLASS_TYPE_NAME) })
       policyType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, POLICY_TYPE_NAME) })
@@ -275,7 +274,7 @@ describe('adapter', () => {
       policyToRemove = new InstanceElement('policyToRemove', policyType, { id: 19 })
       operations = adapter.operations({
         credentials: new InstanceElement('config', credentialsType, {
-          url: 'url',
+          baseUrl: 'baseUrl',
           clientId: 'clientId',
           clientSecret: 'clientSecret',
         }),

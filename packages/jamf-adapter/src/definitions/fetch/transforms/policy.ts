@@ -17,20 +17,30 @@ import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
+type HasIdType = {
+  id: number
+}
+
+const isHasIdType = (value: unknown): value is HasIdType => values.isPlainObject(value) && 'id' in value
+
 /*
  * Convert site object to site id to make reference
  */
 const adjustSiteObjectToSiteId = (value: Record<string, unknown>): void => {
-  const siteId = _.get(value, 'general.site.id')
-  _.set(value, 'general.site', siteId === -1 ? _.get(value, 'general.site.name') : siteId)
+  const site = _.get(value, 'general.site')
+  if (isHasIdType(site)) {
+    _.set(value, 'general.site', site.id === -1 ? _.get(value, 'general.site.name') : site.id)
+  }
 }
 
 /*
  * Convert category object to category id to make reference
  */
 const adjustCategoryObjectToCategoryId = (value: Record<string, unknown>): void => {
-  const categoryId = _.get(value, 'general.category.id')
-  _.set(value, 'general.category', categoryId === -1 ? _.get(value, 'general.category.name') : categoryId)
+  const category = _.get(value, 'general.category')
+  if (isHasIdType(category)) {
+_.set(value, 'general.category', category.id === -1 ? _.get(value, 'general.category.name') : category.id)
+  }
 }
 
 /*
@@ -38,7 +48,7 @@ const adjustCategoryObjectToCategoryId = (value: Record<string, unknown>): void 
  */
 const adjustScriptsObjectArrayToScriptsIds = (value: Record<string, unknown>): void => {
   const { scripts } = value
-  if (Array.isArray(scripts)) {
+  if (Array.isArray(scripts) && scripts.every(isHasIdType)) {
     value.scripts = scripts.map(({ id }) => id)
   }
 }

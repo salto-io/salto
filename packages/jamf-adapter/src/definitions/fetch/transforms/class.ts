@@ -17,6 +17,10 @@ import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
+const convertSiteObjectToSiteId = (value: Record<string, unknown>): void => {
+  value.site = _.get(value, 'site.id')
+}
+
 /*
  * Adjust function to convert site object to site id to make reference
  */
@@ -25,7 +29,6 @@ export const adjust: definitions.AdjustFunction = ({ value }) => {
   if (!values.isPlainRecord(value)) {
     throw new Error('Expected value to be a record')
   }
-  const siteId = _.get(value, 'site.id')
-  value.site = siteId
+  ;[convertSiteObjectToSiteId].forEach(func => func(value))
   return { value }
 }

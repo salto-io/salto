@@ -37,7 +37,7 @@ export const createClientDefinitions = (
       },
     },
     classicApi: {
-      httpClient: clients.main,
+      httpClient: clients.classicApi,
       endpoints: {
         default: {
           get: {

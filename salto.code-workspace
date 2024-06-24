@@ -45,10 +45,6 @@
       "path": "packages/e2e-credentials-store",
     },
     {
-      "name": "microsoft-entra-adapter",
-      "path": "packages/microsoft-entra-adapter",
-    },
-    {
       "name": "file",
       "path": "packages/file",
     },

@@ -99,14 +99,4 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
     },
     customizations: createCustomizations(),
   },
-  dependencies: [
-    // {
-    //   first: { type: 'dynamic_content_item', action: 'add' },
-    //   second: { type: 'dynamic_content_item_variant', action: 'add' },
-    // },
-    // {
-    //   first: { type: 'dynamic_content_item', action: 'remove' },
-    //   second: { type: 'dynamic_content_item_variant', action: 'remove' },
-    // },
-  ],
 })

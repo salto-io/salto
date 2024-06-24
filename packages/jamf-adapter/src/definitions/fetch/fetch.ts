@@ -27,6 +27,7 @@ import {
   POLICY_TYPE_NAME,
   SCRIPT_TYPE_NAME,
   SITE_TYPE_NAME,
+  RESULTS,
 } from '../../constants'
 import * as transforms from './transforms'
 
@@ -67,7 +68,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           path: '/api/v1/buildings',
         },
         transformation: {
-          root: 'results',
+          root: RESULTS,
         },
       },
     ],
@@ -93,7 +94,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           path: '/api/v1/departments',
         },
         transformation: {
-          root: 'results',
+          root: RESULTS,
         },
       },
     ],
@@ -119,7 +120,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           path: '/api/v1/categories',
         },
         transformation: {
-          root: 'results',
+          root: RESULTS,
         },
       },
     ],
@@ -145,7 +146,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           path: '/api/v1/scripts',
         },
         transformation: {
-          root: 'results',
+          root: RESULTS,
         },
       },
     ],
@@ -174,7 +175,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           path: '/api/v1/api-roles',
         },
         transformation: {
-          root: 'results',
+          root: RESULTS,
         },
       },
     ],
@@ -351,7 +352,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           path: '/api/v1/packages',
         },
         transformation: {
-          root: 'results',
+          root: RESULTS,
         },
       },
     ],

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable no-console */
 
 import _ from 'lodash'
 import {
@@ -173,27 +172,24 @@ const sortConditions = (
 ): void => {
   formInstances.forEach(form => {
     const conditions = form.value[conditionType]
-    console.log('hi1', conditions?.length)
     if (conditions === undefined) {
-      console.log('hi2')
       // there may not be any conditions
       return
     }
     if (isValidConditions(conditions, customFieldById)) {
-      console.log('before')
-      conditions.map(a => console.log(a.value))
       form.value[conditionType] = _.sortBy(
         conditions,
-        condition => condition.parent_field_id?.elemID?.getFullName(),
         condition =>
           _.isString(condition.value) || _.isBoolean(condition.value)
             ? condition.value
             : [customFieldById[condition.value.elemID.getFullName()].value.value],
+        condition =>
+          _.isString(condition.value) || _.isBoolean(condition.value)
+            ? condition.value
+            : condition.value.elemID.getFullName(),
+        condition => condition.parent_field_id?.elemID?.getFullName(),
       )
-      console.log('after')
-      form.value[conditionType].map((a: Condition) => console.log(a.value))
     } else {
-      console.log('hi6')
       log.warn(`could not sort conditions for ${form.elemID.getFullName()}`)
     }
   })

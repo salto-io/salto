@@ -36,7 +36,6 @@ import {
   createRefToElmWithValue,
   PlaceholderObjectType,
   placeholderReadonlyElementsSource,
-  isPlaceholderObjectType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 import { TypeReference } from '../src/values'
@@ -73,12 +72,12 @@ describe('Test elements.ts', () => {
   const ot = new ObjectType({
     elemID: otID,
     fields: {
-      numField: { refType: primNum },
-      strField: { refType: primStr },
-      refField: { refType: new TypeReference(primNum.elemID) },
+      num_field: { refType: primNum },
+      str_field: { refType: primStr },
+      ref_field: { refType: new TypeReference(primNum.elemID) },
     },
     annotationRefsOrTypes: {
-      strAnno: new TypeReference(primID, primStr),
+      str_anno: new TypeReference(primID, primStr),
     },
     annotations: {},
     metaType,
@@ -115,17 +114,17 @@ describe('Test elements.ts', () => {
     })
 
     it('should return the field types asynchronously', async () => {
-      expect(await ot.fields.numField.getType()).toBeInstanceOf(PrimitiveType)
-      expect(await ot.fields.strField.getType()).toBeInstanceOf(PrimitiveType)
+      expect(await ot.fields.num_field.getType()).toBeInstanceOf(PrimitiveType)
+      expect(await ot.fields.str_field.getType()).toBeInstanceOf(PrimitiveType)
     })
 
     it('should return the field types synchronously', () => {
-      expect(ot.fields.numField.getTypeSync()).toBeInstanceOf(PrimitiveType)
-      expect(ot.fields.strField.getTypeSync()).toBeInstanceOf(PrimitiveType)
+      expect(ot.fields.num_field.getTypeSync()).toBeInstanceOf(PrimitiveType)
+      expect(ot.fields.str_field.getTypeSync()).toBeInstanceOf(PrimitiveType)
     })
 
     it('should resolve a field reference type', async () => {
-      const fieldType = await ot.fields.refField.getType(placeholderReadonlyElementsSource)
+      const fieldType = await ot.fields.ref_field.getType(placeholderReadonlyElementsSource)
       expect(fieldType.elemID).toEqual(primID)
     })
 
@@ -182,7 +181,7 @@ describe('Test elements.ts', () => {
       annotations: {},
     })
 
-    const strField = new Field(objT, 'strField', primStr)
+    const strField = new Field(objT, 'str_field', primStr)
     const lstField = new Field(objT, 'list_field', new ListType(primStr))
     const mapField = new Field(objT, 'map_field', new MapType(primStr))
     const inst = new InstanceElement('inst', objT, { str: 'test' })
@@ -220,10 +219,8 @@ describe('Test elements.ts', () => {
       const obj = new ObjectType({
         elemID: otID,
         fields: {
-          // eslint-disable-next-line camelcase
-          numField: { refType: primNum },
-          // eslint-disable-next-line camelcase
-          strField: { refType: primStr },
+          num_field: { refType: primNum },
+          str_field: { refType: primStr },
         },
         annotationRefsOrTypes: {},
         annotations: {},
@@ -425,9 +422,9 @@ describe('Test elements.ts', () => {
     describe('getFieldsElemIDsFullName', () => {
       it('should get full name of fields in objectType', () => {
         expect(ot.getFieldsElemIDsFullName()).toEqual([
-          'test.obj.field.numField',
-          'test.obj.field.strField',
-          'test.obj.field.refField',
+          'test.obj.field.num_field',
+          'test.obj.field.str_field',
+          'test.obj.field.ref_field',
         ])
       })
     })
@@ -1241,22 +1238,6 @@ describe('Test elements.ts', () => {
     it('should return placeholder type if type is not ObjectType', async () => {
       instance = new InstanceElement('instance', BuiltinTypes.STRING as unknown as ObjectType)
       expect(await instance.getType()).toBeInstanceOf(PlaceholderObjectType)
-    })
-  })
-
-  describe('placeholder object type', () => {
-    it('should pass isPlaceholderObjectType', () => {
-      const placeholder = new PlaceholderObjectType({ elemID: new ElemID('salto', 'placeholder') })
-      expect(isPlaceholderObjectType(placeholder)).toBeTruthy()
-    })
-
-    it('should be discernable from other object types', () => {
-      const objectType = new ObjectType({ elemID: new ElemID('salto', 'object') })
-      if (isPlaceholderObjectType(objectType)) {
-        throw new Error('Not a placeholder object type.')
-      }
-      // If PlaceholderObjectTypes cannot be differentiated from ObjectTypes by TS this will not transpile.
-      expect(objectType.elemID).toBeDefined()
     })
   })
 })

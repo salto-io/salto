@@ -369,7 +369,7 @@ const validateMetaType = (metaType?: ObjectType): ObjectType | undefined => {
     return undefined
   }
 
-  if (isPlaceholderObjectType(metaType)) {
+  if (metaType instanceof PlaceholderObjectType) {
     log.warn(`Meta type with ID ${metaType.elemID.getFullName()} not found in elements source.`)
   }
 
@@ -480,10 +480,7 @@ export class ObjectType extends Element {
   }
 }
 
-export class PlaceholderObjectType extends ObjectType {
-  // This is required to allow typescript to reason about ObjectTypes which are not PlaceholderObjectTypes.
-  isPlaceholder = true
-}
+export class PlaceholderObjectType extends ObjectType {}
 
 const objectTypeOrPlaceholder = (type: TypeElement | undefined, elemID: ElemID): ObjectType => {
   // This can happen when the user has an instance like

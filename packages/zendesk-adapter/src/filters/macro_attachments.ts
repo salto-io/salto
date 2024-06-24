@@ -32,6 +32,7 @@ import {
   ReferenceExpression,
   SaltoElementError,
   StaticFile,
+  toChange,
 } from '@salto-io/adapter-api'
 import {
   normalizeFilePathPart,
@@ -50,8 +51,8 @@ import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
 import ZendeskClient from '../client/client'
-import { createAdditionalParentChanges } from './utils'
 
+const { isDefined } = values
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { isArrayOfRefExprToInstances } = references
@@ -92,13 +93,13 @@ const isAttachments = (value: unknown): value is Attachment[] => {
 }
 
 const replaceAttachmentId = (
-  parentChange: Change<InstanceElement>,
+  macroChange: Change<InstanceElement>,
   fullNameToInstance: Record<string, InstanceElement>,
 ): Change<InstanceElement> => {
-  const parentInstance = getChangeData(parentChange)
-  const attachments = parentInstance.value[ATTACHMENTS_FIELD_NAME]
+  const macroInstance = getChangeData(macroChange)
+  const attachments = macroInstance.value[ATTACHMENTS_FIELD_NAME]
   if (attachments === undefined) {
-    return parentChange
+    return macroChange
   }
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${inspectValue(attachments)}`)
@@ -106,14 +107,14 @@ const replaceAttachmentId = (
       // caught in try block
       message: 'Macro attachment field has an invalid format',
       severity: 'Error',
-      elemID: parentInstance.elemID,
+      elemID: macroInstance.elemID,
     })
   }
-  parentInstance.value[ATTACHMENTS_FIELD_NAME] = attachments.map(ref => {
+  macroInstance.value[ATTACHMENTS_FIELD_NAME] = attachments.map(ref => {
     const instance = fullNameToInstance[ref.elemID.getFullName()]
     return instance ? new ReferenceExpression(instance.elemID, instance) : ref
   })
-  return parentChange
+  return macroChange
 }
 
 const addAttachment = async (client: ZendeskClient, instance: InstanceElement): ReturnType<typeof client.post> => {
@@ -159,9 +160,9 @@ const createAttachmentInstance = ({
       content: content
         ? new StaticFile({ filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`, content })
         : undefined,
+      macros: [new ReferenceExpression(macro.elemID, macro)],
     },
     [ZENDESK, RECORDS_PATH, MACRO_ATTACHMENT_TYPE_NAME, pathName],
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(macro.elemID, macro)] },
   )
 }
 
@@ -220,37 +221,72 @@ const getAttachmentContent = async ({
   }
 }
 
-const getMacroAttachments = async ({
-  client,
+const getAttachmentsForMacro = async ({
   macro,
+  attachments,
+  client,
   attachmentType,
+  allAttachments,
 }: {
   client: ZendeskClient
   macro: InstanceElement
+  attachments: Attachment[]
   attachmentType: ObjectType
-}): Promise<(InstanceElement | SaltoElementError)[]> => {
-  // We are ok with calling get here
-  //  because a macro can be associated with up to five attachments.
-  const response = await client.get({
-    url: `/api/v2/macros/${macro.value.id}/attachments`,
-  })
-  if (Array.isArray(response.data)) {
-    log.error(
-      `Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`,
-    )
-    return []
-  }
-  const attachments = response.data.macro_attachments
-  if (!isAttachments(attachments)) {
-    return []
-  }
-  return (
+  allAttachments: (InstanceElement | SaltoElementError)[]
+}): Promise<(InstanceElement | SaltoElementError)[]> =>
+  (
     await Promise.all(
-      attachments.map(async attachment => getAttachmentContent({ client, attachment, macro, attachmentType })),
+      attachments.map(async attachment => {
+        const existingAttachment = allAttachments.find(a => isInstanceElement(a) && a.value.id === attachment.id)
+        if (existingAttachment !== undefined) {
+          // The same attachment can be used by multiple macros
+          // Instead of creating new instances, we add references to the macros field
+          const instance = existingAttachment as InstanceElement
+          instance.value.macros = instance.value.macros.concat([new ReferenceExpression(macro.elemID, macro)])
+          return []
+        }
+        return getAttachmentContent({ client, attachment, macro, attachmentType })
+      }),
     )
   )
     .flat()
     .filter(values.isDefined)
+
+const getMacroAttachments = async ({
+  macros,
+  client,
+  attachmentType,
+}: {
+  macros: InstanceElement[]
+  client: ZendeskClient
+  attachmentType: ObjectType
+}): Promise<(InstanceElement | SaltoElementError)[]> => {
+  let allAttachments: (InstanceElement | SaltoElementError)[] = []
+  // We need to create the attachments sequentially so that we can check if
+  // different macros use the same attachments
+  for await (const macro of macros) {
+    // We are ok with calling get here
+    // because a macro can be associated with up to five attachments.
+    const response = await client.get({
+      url: `/api/v2/macros/${macro.value.id}/attachments`,
+    })
+    let currentAttachments: Attachment[]
+    if (Array.isArray(response.data)) {
+      log.error(
+        `Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`,
+      )
+      currentAttachments = []
+    } else {
+      currentAttachments = !isAttachments(response.data.macro_attachments) ? [] : response.data.macro_attachments
+    }
+    if (currentAttachments.length > 0) {
+      const currentMacroAttachments = (
+        await getAttachmentsForMacro({ macro, attachments: currentAttachments, client, attachmentType, allAttachments })
+      ).flat()
+      allAttachments = allAttachments.concat(currentMacroAttachments)
+    }
+  }
+  return allAttachments
 }
 
 /**
@@ -264,11 +300,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .filter(e => e.elemID.typeName === MACRO_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value[ATTACHMENTS_FIELD_NAME]))
     const attachmentType = createAttachmentType()
-    const macroAttachmentsAndErrors = (
-      await Promise.all(
-        macrosWithAttachments.map(async macro => getMacroAttachments({ client, attachmentType, macro })),
-      )
-    ).flat()
+    const macroAttachmentsAndErrors = await getMacroAttachments({
+      macros: macrosWithAttachments,
+      client,
+      attachmentType,
+    })
     const [macroAttachments, errors] = _.partition(macroAttachmentsAndErrors, isInstanceElement)
     _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
     elements.push(attachmentType, ...macroAttachments)
@@ -289,15 +325,29 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         },
       }
     }
-    const [childrenChanges, parentChanges] = _.partition(
+    const [childrenChanges, macroChanges] = _.partition(
       relevantChanges,
       change => getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME,
     )
-    const additionalParentChanges =
-      parentChanges.length === 0 && childrenChanges.length > 0
-        ? await createAdditionalParentChanges(childrenChanges, false)
-        : []
-    if (additionalParentChanges === undefined) {
+    let additionalMacroChanges: Change<InstanceElement>[] | undefined = []
+    if (macroChanges.length === 0 && childrenChanges.length > 0) {
+      additionalMacroChanges = childrenChanges
+        .flatMap(childChange => {
+          const { macros } = getChangeData(childChange).value
+          if (!isArrayOfRefExprToInstances(macros)) {
+            return undefined
+          }
+          return macros.map(macro =>
+            toChange({
+              before: macro.value.clone(),
+              after: macro.value.clone(),
+            }),
+          )
+        })
+        .filter(isDefined)
+    }
+
+    if (additionalMacroChanges === undefined) {
       return {
         deployResult: {
           appliedChanges: [],
@@ -312,7 +362,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
-
     const childFullNameToInstance: Record<string, InstanceElement> = {}
     const resolvedChildrenChanges = await awu(childrenChanges)
       .map(change => resolveChangeElement(change, lookupFunc))
@@ -338,7 +387,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         deployResult: {
           appliedChanges: [],
           errors: [
-            ...parentChanges.map(getChangeData).map(e =>
+            ...macroChanges.map(getChangeData).map(e =>
               createSaltoElementError({
                 message: `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`,
                 severity: 'Error',
@@ -352,21 +401,21 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       }
     }
     try {
-      const additionalParentFullNames = new Set(
-        additionalParentChanges.map(getChangeData).map(inst => inst.elemID.getFullName()),
+      const additionalMacrosFullNames = new Set(
+        additionalMacroChanges.map(getChangeData).map(inst => inst.elemID.getFullName()),
       )
-      const resolvedParentChanges = await awu([...parentChanges, ...additionalParentChanges])
+      const resolvedMacroChanges = await awu([...macroChanges, ...additionalMacroChanges])
         .map(change => replaceAttachmentId(change, childFullNameToInstance))
         .map(change => resolveChangeElement(change, lookupFunc))
         .toArray()
-      const macroDeployResult = await deployChanges(resolvedParentChanges, async change => {
+      const macroDeployResult = await deployChanges(resolvedMacroChanges, async change => {
         await deployChange(change, client, config.apiDefinitions)
       })
       return {
         deployResult: {
           appliedChanges: [
             ...macroDeployResult.appliedChanges.filter(
-              change => !additionalParentFullNames.has(getChangeData(change).elemID.getFullName()),
+              change => !additionalMacrosFullNames.has(getChangeData(change).elemID.getFullName()),
             ),
             ...attachmentDeployResult.appliedChanges,
           ],

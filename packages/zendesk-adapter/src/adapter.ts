@@ -924,13 +924,13 @@ export default class ZendeskAdapter implements AdapterOperations {
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: [
           'organization_field__custom_field_options',
-          'macro_attachment',
           BRAND_LOGO_TYPE_NAME,
           CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
         ],
         // article_attachment, guide themes additions, and locales are supported in a filter
         typesWithNoDeploy: [
           'tag',
+          'macro_attachment',
           ARTICLE_ATTACHMENT_TYPE_NAME,
           GUIDE_THEME_TYPE_NAME,
           THEME_SETTINGS_TYPE_NAME,

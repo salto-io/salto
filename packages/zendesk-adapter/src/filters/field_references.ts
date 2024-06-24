@@ -847,6 +847,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'macro_attachment' },
   },
   {
+    src: { field: 'macros', parentTypes: ['macro_attachment'] },
+    serializationStrategy: 'id',
+    target: { type: 'macro' },
+  },
+  {
     src: { field: 'tag', parentTypes: FIELD_TYPE_NAMES },
     serializationStrategy: 'id',
     target: { type: 'tag' },

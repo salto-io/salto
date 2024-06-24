@@ -90,7 +90,7 @@ describe('page definitions utils', () => {
         }
         expect((await adjustPageOnModification(args)).value.id).toEqual('mockPageId')
       })
-      it('should do nothing if there is no homepageId in the shared context',  async() => {
+      it('should do nothing if there is no homepageId in the shared context', async () => {
         const args = {
           typeName: 'mockType',
           context: {

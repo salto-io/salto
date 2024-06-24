@@ -18,7 +18,10 @@ import { definitions } from '@salto-io/adapter-components'
 import { getChangeData } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 
-export const addTimeZone: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({ value, context }) => ({
+export const addTimeZone: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({
+  value,
+  context,
+}) => ({
   value: {
     schedule: { schedule_layers: [value], time_zone: _.get(context, 'additionalContext.time_zone') },
   },

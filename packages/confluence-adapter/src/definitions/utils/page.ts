@@ -37,13 +37,10 @@ const log = logger(module)
  * This function will switch the action from 'add' to 'modify' in case of homepage addition.
  */
 export const homepageAdditionToModification: ({
-                                                change,
-                                                changeGroup,
-                                                elementSource,
-                                              }: definitions.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({
-                                                                                                                                change,
-                                                                                                                                changeGroup,
-                                                                                                                              }) => {
+  change,
+  changeGroup,
+  elementSource,
+}: definitions.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({ change, changeGroup }) => {
   const spaceChange = changeGroup.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
   if (isAdditionChange(change) && spaceChange !== undefined && isInstanceChange(spaceChange)) {
     const changeData = getChangeData(change)

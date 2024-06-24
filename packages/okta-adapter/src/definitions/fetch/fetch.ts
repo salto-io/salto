@@ -647,7 +647,9 @@ const createCustomizations = ({
         endpoint: { path: '/api/v1/meta/schemas/user/{id}' },
         transformation: {
           // assign user schema id from request context to value
-          adjust: async ({ value, context }) => ({ value: { ...(_.isObject(value) ? { ...value, id: context.id } : {}) } }),
+          adjust: async ({ value, context }) => ({
+            value: { ...(_.isObject(value) ? { ...value, id: context.id } : {}) },
+          }),
         },
       },
     ],

@@ -357,7 +357,6 @@ const getAttachmentData = (
       .filter(id => id !== undefined)
       .map(Number),
   )
-
   return { inlineAttachmentsNameById, attachmentIdsFromArticleBody }
 }
 
@@ -434,7 +433,6 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         attachments.filter(isInstanceElement).filter(attachment => getName(attachment) !== undefined),
         getName,
       )
-
       const attachmentById: Record<number, InstanceElement> = _.keyBy(
         attachments.filter(isInstanceElement).filter(attachment => getId(attachment) !== undefined),
         getId,
@@ -454,7 +452,6 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         attachments,
         attachment => isInstanceElement(attachment) && allRemovedAttachmentsIds.has(getId(attachment)),
       )
-
       // If in the future articles could share attachments this would have to be changed! We delete attachments that
       // do not appear in one article, we currently do not check across all articles.
       _.remove(
@@ -464,7 +461,6 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           isInstanceElement(element) &&
           allRemovedAttachmentsIds.has(getId(element)),
       )
-
       const attachmentErrors = await getArticleAttachments({
         brandIdToClient,
         attachmentType,

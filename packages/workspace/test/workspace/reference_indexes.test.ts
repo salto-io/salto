@@ -30,6 +30,7 @@ import {
   REFERENCE_INDEXES_VERSION,
   ReferenceTargetIndexValue,
   updateReferenceIndexes,
+  ReferenceIndexesGetCustomReferencesFunc,
 } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
@@ -515,8 +516,10 @@ describe('updateReferenceIndexes', () => {
     })
 
     describe('When indexes are out of date', () => {
+      let mockedGetCustomReferences: jest.MockedFunction<ReferenceIndexesGetCustomReferencesFunc>
       beforeEach(async () => {
         await elementsSource.set(instance)
+        mockedGetCustomReferences = jest.fn().mockResolvedValue([])
         mapVersions.get.mockResolvedValue(0)
         await updateReferenceIndexes(
           [],
@@ -525,9 +528,14 @@ describe('updateReferenceIndexes', () => {
           mapVersions,
           elementsSource,
           true,
-          async () => [],
+          mockedGetCustomReferences,
         )
       })
+
+      it('should invoke getCustomReferences function with all the Elements from the elementsSource', () => {
+        expect(mockedGetCustomReferences).toHaveBeenCalledWith([instance])
+      })
+
       it('should update referenceTargets index using the element source', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([

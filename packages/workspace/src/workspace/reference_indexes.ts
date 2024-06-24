@@ -52,7 +52,7 @@ type ChangeReferences = {
 
 export type ReferenceTargetIndexValue = collections.treeMap.TreeMap<{ id: ElemID; type: ReferenceType }>
 
-type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
+export type ReferenceIndexesGetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 
 const getReferenceDetailsIdentifier = (referenceDetails: ReferenceInfo): string =>
   `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
@@ -265,7 +265,7 @@ const updateReferenceSourcesIndex = async (
 }
 
 const getIdToCustomReferences = async (
-  getCustomReferences: GetCustomReferencesFunc,
+  getCustomReferences: ReferenceIndexesGetCustomReferencesFunc,
   changes: Change<Element>[],
 ): Promise<{ before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> }> => {
   const customReferencesAfter = await getCustomReferences(
@@ -289,7 +289,7 @@ export const updateReferenceIndexes = async (
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean,
-  getCustomReferences: GetCustomReferencesFunc,
+  getCustomReferences: ReferenceIndexesGetCustomReferencesFunc,
 ): Promise<void> =>
   log.timeDebug(async () => {
     let relevantChanges = changes
@@ -312,7 +312,7 @@ export const updateReferenceIndexes = async (
       initialIndex = true
     }
 
-    const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
+    const customReferences = await getIdToCustomReferences(getCustomReferences, relevantChanges)
 
     const changeToReferences = Object.fromEntries(
       await awu(relevantChanges)

@@ -41,19 +41,34 @@ import {
   MEMBERS_FIELD_NAME,
   ODATA_ID_FIELD,
   DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
+  APP_ROLE_TYPE_NAME,
 } from '../../constants'
 import { AdditionalAction, ClientOptions } from '../types'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
-import { DeployCustomDefinitions, DeployRequestDefinition } from './types'
+import { DeployCustomDefinitions, DeployRequestDefinition, DeployableRequestDefinition } from './types'
 import {
+  adjustWrapper,
+  adjustConditionalAccessPolicy,
   adjustRoleDefinitionForDeployment,
   createCustomConditionEmptyFieldsOnAddition,
   createCustomizationsWithBasePathForDeploy,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
+  groupChangeWithItsParent,
   omitReadOnlyFields,
+  adjustParentWithAppRoles,
 } from './utils'
+
+// We use filters to handle the deployment of certain types. As a workaround, we define this request,
+// which will fail, to ensure that the CV checking for the deployment definition's existence will pass.
+const FAILURE_REQUEST: DeployableRequestDefinition = {
+  request: {
+    endpoint: {
+      path: '/failure',
+    },
+  },
+}
 
 const AUTHENTICATION_STRENGTH_POLICY_DEPLOYABLE_FIELDS = ['displayName', 'description']
 
@@ -62,13 +77,35 @@ const SERVICE_PRINCIPAL_MODIFICATION_REQUEST: DeployRequestDefinition = {
     path: '/servicePrincipals/{id}',
     method: 'patch',
   },
+  transformation: {
+    adjust: adjustParentWithAppRoles,
+  },
 }
+
+const APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION = ['web.redirectUriSettings']
 
 const APPLICATION_MODIFICATION_REQUEST: DeployRequestDefinition = {
   endpoint: {
     path: '/applications/{id}',
     method: 'patch',
   },
+  transformation: {
+    omit: APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION,
+    adjust: adjustParentWithAppRoles,
+  },
+}
+
+const APPLICATION_SECOND_MODIFICATION_ITERATION_REQUEST: DeployableRequestDefinition = {
+  request: {
+    endpoint: {
+      path: '/applications/{id}',
+      method: 'patch',
+    },
+    transformation: {
+      pick: APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION,
+    },
+  },
+  condition: createCustomConditionEmptyFieldsOnAddition(APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION),
 }
 
 // These fields cannot be specified when creating a group, but can be modified after creation
@@ -196,11 +233,13 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
+          APPLICATION_SECOND_MODIFICATION_ITERATION_REQUEST,
         ],
         modify: [
           {
             request: APPLICATION_MODIFICATION_REQUEST,
           },
+          APPLICATION_SECOND_MODIFICATION_ITERATION_REQUEST,
         ],
         remove: [
           {
@@ -212,6 +251,17 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
             },
           },
         ],
+      },
+    },
+  },
+  [APP_ROLE_TYPE_NAME]: {
+    changeGroupId: groupChangeWithItsParent,
+    requestsByAction: {
+      customizations: {
+        // Deploying an application/servicePrincipal with its appRoles is done in a single request using the definition of the application via a filter
+        add: [FAILURE_REQUEST],
+        modify: [FAILURE_REQUEST],
+        remove: [FAILURE_REQUEST],
       },
     },
   },
@@ -642,7 +692,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                adjust: adjustRoleDefinitionForDeployment,
+                adjust: adjustWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },
@@ -655,7 +705,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'patch',
               },
               transformation: {
-                adjust: adjustRoleDefinitionForDeployment,
+                adjust: adjustWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },
@@ -776,6 +826,9 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               endpoint: {
                 path: '/identity/conditionalAccess/policies',
                 method: 'post',
+              },
+              transformation: {
+                adjust: adjustWrapper(adjustConditionalAccessPolicy),
               },
             },
           },

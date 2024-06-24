@@ -17,3 +17,6 @@
 export { createDefinitionForAppRoleAssignment } from './app_role_assignment'
 export { adjustEntitiesWithExpandedMembers } from './adjust_expanded_members'
 export { createCustomizationsWithBasePath as createCustomizationsWithBasePathForFetch } from './path_adjustment'
+export { addParentIdToAppRoles } from './app_role'
+export { adjustApplication } from './application'
+export { adjustConditionalAccessPolicy } from './conditional_access_policy'

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { getChangeData, isAdditionChange } from '@salto-io/adapter-api'
+import { getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 
@@ -29,7 +29,7 @@ export const createCustomConditionEmptyFieldsOnAddition = (
   custom:
     () =>
     ({ change }) => {
-      if (!isAdditionChange(change)) {
+      if (isRemovalChange(change)) {
         return false
       }
       return _.some(fieldNames, fieldName => !_.isEmpty(_.get(getChangeData(change).value, fieldName)))

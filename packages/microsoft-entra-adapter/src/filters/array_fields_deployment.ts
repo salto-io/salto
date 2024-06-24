@@ -270,6 +270,7 @@ export const deployArrayFieldsFilterCreator =
       const { deploy, ...otherDefs } = definitions
       const { topLevelTypeName } = arrayFieldDefinition
       if (deploy === undefined) {
+        log.error('could not find deploy definitions')
         return {
           deployResult: {
             appliedChanges: [],
@@ -284,6 +285,7 @@ export const deployArrayFieldsFilterCreator =
         }
       }
       if (changeGroup === undefined) {
+        log.error('change group not provided')
         return {
           deployResult: {
             appliedChanges: [],

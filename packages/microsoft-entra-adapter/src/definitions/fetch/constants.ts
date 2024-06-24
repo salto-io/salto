@@ -30,6 +30,9 @@ export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomizat
   updated_by_id: {
     hide: true,
   },
+  parent_id: {
+    hide: true,
+  },
 
   // omit
   _links: {
@@ -45,12 +48,6 @@ export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomizat
     omit: true,
   },
   expirationDateTime: {
-    omit: true,
-  },
-  includeUsers: {
-    omit: true,
-  },
-  excludeUsers: {
     omit: true,
   },
   securityIdentifier: {

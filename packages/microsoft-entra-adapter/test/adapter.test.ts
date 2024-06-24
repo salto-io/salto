@@ -72,6 +72,7 @@ describe('Microsoft Entra adapter', () => {
 
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
           'administrativeUnit',
+          'appRole',
           'application',
           'authenticationMethodPolicy',
           'authenticationMethodPolicy__authenticationMethodConfigurations',

@@ -37,7 +37,7 @@ import { accessTokenCredentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/user_config'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
-import { GROUP_TYPE_NAME, OKTA } from '../src/constants'
+import { BRAND_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => null,
@@ -444,24 +444,43 @@ describe('adapter', () => {
     let operations: AdapterOperations
     let groupType: ObjectType
     let group1: InstanceElement
+    let brandType: ObjectType
+    let brand1: InstanceElement
 
     beforeEach(() => {
-      groupType = new ObjectType({
-        elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
-        fields: {
-          id: {
-            refType: BuiltinTypes.SERVICE_ID,
+      const types = [
+        groupType = new ObjectType({
+          elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
           },
-        },
-      })
+        }),
+        brandType = new ObjectType({
+          elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
+          fields:
+            {
+              id: {
+                refType: BuiltinTypes.SERVICE_ID,
+              }
+              ,
+            },
+        }),
+      ]
       group1 = new InstanceElement('group1', groupType, {
-        id: 'fakeid123',
+        id: 'group-fakeid1',
         objectClass: ['okta:user_group'],
         type: 'OKTA_GROUP',
         profile: {
           name: 'Engineers',
           description: 'all the engineers',
         },
+      })
+      brand1 = new InstanceElement('brand1', brandType, {
+        id: 'brand-fakeid1',
+        name: 'subdomain.example.com',
+        removePoweredByOkta: false,
       })
 
       operations = adapter.operations({
@@ -486,7 +505,7 @@ describe('adapter', () => {
       })
       expect(result.errors).toHaveLength(0)
       expect(result.appliedChanges).toHaveLength(1)
-      expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('fakeid123')
+      expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('group-fakeid1')
     })
 
     it('should successfully modify a group', async () => {
@@ -520,5 +539,59 @@ describe('adapter', () => {
       expect(result.errors).toHaveLength(0)
       expect(result.appliedChanges).toHaveLength(1)
     })
+
+    describe('deploy brand', () => {
+      it('should successfully add a brand', async () => {
+        const brandWithoutId = new InstanceElement('brand1', brandType, {
+          name: 'subdomain.example.com',
+          removePoweredByOkta: false,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [toChange({ after: brandWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        //expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>)).toBeUndefined()
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('brand-fakeid1')
+      })
+
+      it('should successfully modify a brand', async () => {
+        const updatedBrand1 = brand1.clone()
+        updatedBrand1.value.removePoweredByOkta = true
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [
+              toChange({
+                before: brand1,
+                after: updatedBrand1,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(true)
+      })
+
+      it('should successfully remove a brand', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [toChange({ before: brand1 })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+    })
+
   })
 })

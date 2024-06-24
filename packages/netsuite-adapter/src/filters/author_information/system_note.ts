@@ -192,16 +192,15 @@ const getEmployeeInternalIdsMap = async (
     .filter(name => existingEmployeeInternalIdsMap[name] === undefined)
     .map(internalId => ({ tableName: EMPLOYEE, item: internalId }))
 
-  if (employeeInternalIdsToQuery.length > 0) {
-    await updateSuiteQLTableInstances({
-      client,
-      queryBy: 'internalId',
-      itemsToQuery: employeeInternalIdsToQuery,
-      suiteQLTablesMap: {
-        [EMPLOYEE]: employeeSuiteQLTableInstance,
-      },
-    })
-  }
+  await updateSuiteQLTableInstances({
+    client,
+    queryBy: 'internalId',
+    itemsToQuery: employeeInternalIdsToQuery,
+    suiteQLTablesMap: {
+      [EMPLOYEE]: employeeSuiteQLTableInstance,
+    },
+  })
+
   return _.mapValues(getSuiteQLTableInternalIdsMap(employeeSuiteQLTableInstance), row => row.name)
 }
 

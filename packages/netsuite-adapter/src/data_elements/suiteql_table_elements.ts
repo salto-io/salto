@@ -571,13 +571,18 @@ export const updateSuiteQLTableInstances = async ({
     rows => _.uniq(rows.map(row => row.item)),
   )
 
-  await Promise.all(
-    Object.entries(itemsToQueryByTableName).map(async ([tableName, items]) =>
-      Object.assign(
-        getSuiteQLTableInternalIdsMap(suiteQLTablesMap[tableName]),
-        await getInternalIdsMap(client, queryBy, tableName, items),
+  await log.timeDebug(
+    () =>
+      Promise.all(
+        Object.entries(itemsToQueryByTableName).map(async ([tableName, items]) =>
+          Object.assign(
+            getSuiteQLTableInternalIdsMap(suiteQLTablesMap[tableName]),
+            await getInternalIdsMap(client, queryBy, tableName, items),
+          ),
+        ),
       ),
-    ),
+    'updating %d suiteql_table elements',
+    Object.keys(itemsToQueryByTableName).length,
   )
 }
 

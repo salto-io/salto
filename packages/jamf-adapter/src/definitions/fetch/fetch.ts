@@ -385,6 +385,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'os_x_configuration_profile',
+          omit: ['general.uuid', 'general.payloads'],
           adjust: transforms.adjustConfigurationProfile,
         },
       },
@@ -439,6 +440,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'configuration_profile',
+          omit: ['general.uuid', 'general.payloads'],
           adjust: transforms.adjustConfigurationProfile,
         },
       },

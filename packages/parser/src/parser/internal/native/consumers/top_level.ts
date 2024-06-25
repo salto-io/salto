@@ -72,7 +72,7 @@ const consumeType = (
   const consumedBlock = consumeBlockBody(context, elemID)
   if (baseType === Keywords.TYPE_OBJECT || baseType.includes(ElemID.NAMESPACE_SEPARATOR)) {
     let metaTypeRef: TypeReference<ObjectType> | undefined
-    if (baseType !== Keywords.TYPE_OBJECT) {
+    if (baseType.includes(ElemID.NAMESPACE_SEPARATOR)) {
       const metaElemID = ElemID.fromFullName(baseType)
       if (metaElemID.idType !== 'type') {
         context.errors.push(invalidMetaTypeError(range, baseType))
@@ -96,6 +96,9 @@ const consumeType = (
     }
   }
 
+  // If the base type token can't be resolved to a specific primitive type, we will
+  // just treat the type as unknown and add an error.
+  // No need to recover since structure is unharmed.
   let primitive = primitiveType(baseType)
   if (primitive === undefined) {
     context.errors.push(unknownPrimitiveTypeError(range, baseType))

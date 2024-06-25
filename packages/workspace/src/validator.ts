@@ -743,7 +743,13 @@ const validateField = (field: Field): ValidationError[] => {
     .flatMap(k => validateValue(field.elemID.createNestedID(k), field.annotations[k], annotationTypes[k]))
 }
 
-const validateMetaType = (elemID: ElemID, metaType?: ObjectType): ValidationError[] => {
+const validateMetaType = (element: ObjectType): ValidationError[] => {
+  if (element.metaType === undefined) {
+    return []
+  }
+
+  const { elemID } = element
+  const metaType = element.metaType.type
   if (metaType === undefined) {
     // Should never happen because we resolve the element before calling this
     log.error(`Found unresolved meta type for ${elemID.getFullName()}.`)
@@ -772,10 +778,7 @@ const validateType = (element: TypeElement): ValidationError[] => {
     .filter(k => annotationTypes[k] !== undefined)
     .flatMap(k => validateValue(element.elemID.createNestedID('attr', k), element.annotations[k], annotationTypes[k]))
   if (isObjectType(element)) {
-    let metaTypeErrors: ValidationError[] = []
-    if (element.metaType !== undefined) {
-      metaTypeErrors = validateMetaType(element.elemID, element.metaType.type)
-    }
+    const metaTypeErrors = validateMetaType(element)
     const fieldErrors = Object.values(element.fields).flatMap(elem => validateField(elem))
     return [...errors, ...metaTypeErrors, ...fieldErrors]
   }

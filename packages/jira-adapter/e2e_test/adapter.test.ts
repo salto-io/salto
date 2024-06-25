@@ -15,6 +15,7 @@
  */
 import {
   Change,
+  CORE_ANNOTATIONS,
   DeployResult,
   Element,
   getChangeData,
@@ -45,7 +46,7 @@ import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
 import { BEHAVIOR_TYPE } from '../src/constants'
-import { FIELD_TYPE_NAME } from '../src/filters/fields/constants'
+import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../src/filters/fields/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
@@ -302,6 +303,11 @@ each([
         .filter(instance => instance.elemID.name.includes('createdByOssE2e'))
         .filter(instance => !removalInstancesNames.includes(instance.elemID.getFullName()))
         .filter(instance => instance.elemID.typeName !== FIELD_TYPE_NAME || instance.value.isLocked === false) // do not delete locked fields
+        .filter(
+          instance =>
+            instance.elemID.typeName !== FIELD_CONTEXT_TYPE_NAME ||
+            instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.isLocked === false,
+        ) // do not delete contexts of locked fields
         .map(instance => toChange({ before: instance }))
 
       if (!isDataCenter) {

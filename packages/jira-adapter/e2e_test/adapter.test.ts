@@ -45,6 +45,7 @@ import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
 import { BEHAVIOR_TYPE } from '../src/constants'
+import { FIELD_TYPE_NAME } from '../src/filters/fields/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
@@ -264,7 +265,7 @@ each([
 
       const deployChanges = async (
         changes: Change<InstanceElement>[],
-        catchCondition,
+        catchCondition: (e: unknown) => boolean,
       ): Promise<(SaltoError | SaltoElementError)[]> => {
         const deployResults = await Promise.all(
           changes.map(change => {
@@ -291,7 +292,7 @@ each([
         return deployResults.flatMap(res => res.errors)
       }
 
-      const errors = await deployChanges(removalChanges, e => String(e).includes('status code 404'))
+      const errors = await deployChanges(removalChanges, (e: unknown) => String(e).includes('status code 404'))
       if (errors.length) {
         throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
       }
@@ -300,13 +301,16 @@ each([
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.name.includes('createdByOssE2e'))
         .filter(instance => !removalInstancesNames.includes(instance.elemID.getFullName()))
+        .filter(instance => instance.elemID.typeName !== FIELD_TYPE_NAME || instance.value.isLocked === false) // do not delete locked fields
         .map(instance => toChange({ before: instance }))
 
-      const allRemovalErrors = await deployChanges(allOssCreatedElements, () => true) // don not fail on this
-      if (allRemovalErrors.length) {
-        throw new Error(
-          `Failed to clean older e2e changes: ${allRemovalErrors.map(e => safeJsonStringify(e)).join(', ')}`,
-        )
+      if (!isDataCenter) {
+        const allRemovalErrors = await deployChanges(allOssCreatedElements, () => true) // do not fail on errors
+        if (allRemovalErrors.length) {
+          throw new Error(
+            `Failed to clean older e2e changes: ${allRemovalErrors.map(e => safeJsonStringify(e)).join(', ')}`,
+          )
+        }
       }
     })
   })

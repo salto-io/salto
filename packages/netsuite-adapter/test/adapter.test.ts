@@ -810,7 +810,7 @@ describe('Adapter', () => {
               scriptid: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true } },
               internalId: { refType: BuiltinTypes.SERVICE_ID, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
             },
-            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING },
+            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING, internalId: BuiltinTypes.HIDDEN_STRING },
             annotations: {
               scriptid: 'customrecord_locked1',
               source: 'soap',
@@ -825,7 +825,7 @@ describe('Adapter', () => {
               scriptid: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true } },
               internalId: { refType: BuiltinTypes.SERVICE_ID, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
             },
-            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING },
+            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING, internalId: BuiltinTypes.HIDDEN_STRING },
             annotations: {
               scriptid: 'customrecord_locked2',
               source: 'soap',

@@ -29,6 +29,7 @@ import {
   SITE_TYPE_NAME,
   RESULTS,
   OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
+  MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
 } from '../../constants'
 import * as transforms from './transforms'
 
@@ -384,7 +385,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'os_x_configuration_profile',
-          adjust: transforms.adjustOsxConfigurationProfile,
+          adjust: transforms.adjustConfigurationProfile,
         },
       },
     ],
@@ -394,6 +395,60 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         dependsOn: {
           id: {
             parentTypeName: `${OS_X_CONFIGURATION_PROFILE_TYPE_NAME}_minimal`,
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'general.name' }] },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+      },
+    },
+  },
+  [`${MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME}_minimal`]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/mobiledeviceconfigurationprofiles',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: 'configuration_profiles',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+  },
+  [MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/mobiledeviceconfigurationprofiles/id/{id}',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: 'configuration_profile',
+          adjust: transforms.adjustConfigurationProfile,
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      context: {
+        dependsOn: {
+          id: {
+            parentTypeName: `${MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME}_minimal`,
             transformation: {
               root: 'id',
             },

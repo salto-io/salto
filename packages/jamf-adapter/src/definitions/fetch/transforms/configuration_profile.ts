@@ -18,7 +18,7 @@ import { values } from '@salto-io/lowerdash'
 import { adjustCategoryObjectToCategoryId, adjustServiceIdToTopLevel, adjustSiteObjectToSiteId } from './utils'
 
 /*
- * Adjust policy instance
+ * Adjust os or mobile configuration profile instance
  */
 export const adjust: definitions.AdjustFunction = ({ value }) => {
   if (!values.isPlainRecord(value)) {

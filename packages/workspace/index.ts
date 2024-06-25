@@ -75,6 +75,7 @@ import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_sourc
 import { State } from './src/workspace/state'
 import { PathIndex, splitElementByPath, getElementsPathHints, filterByPathHint } from './src/workspace/path_index'
 import { createPathIndexForElement } from './src/path_index_fallbacks'
+import { ReferenceIndexEntry } from './src/workspace/reference_indexes'
 
 export {
   errors,
@@ -139,4 +140,5 @@ export {
   createPathIndexForElement,
   buildStaticFilesCache,
   listElementsDependenciesInWorkspace,
+  ReferenceIndexEntry,
 }

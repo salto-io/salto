@@ -212,14 +212,14 @@ salesforce {
 | [saltoManagementFieldSettings](#salto-management-field-configuration-options) | {}                                               | Configuration for managed-by-Salto field                                                                  |
 | [brokenOutgoingReferencesSettings](#broken-outgoing-references-settings)      | {}                                               | Configuration for handling broken references                                                              |
 | omittedFields                                                                 | []                                               | List of API names of fields to discard when fetching data records.                                        |
-| regenerateSaltoIds                                                            | false                                            | When set to true, the adapter will regenerate the Ids of Data Instances.                                  |
 
 #### Salto ID settings configuration options
 
-| Name                                                   | Default when undefined                            | Description                                                             |
-| ------------------------------------------------------ | ------------------------------------------------- | ----------------------------------------------------------------------- |
-| defaultIdFields                                        | N/A (required when saltoIDSettings is configured) | Default fields list for defining the data record's cross environment id |
-| [overrides](#object-id-settings-configuration-options) | []                                                | Overrides the default id fields for specific objects                    |
+| Name                                                   | Default when undefined                            | Description                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| defaultIdFields                                        | N/A (required when saltoIDSettings is configured) | Default fields list for defining the data record's cross environment id                 |
+| [overrides](#object-id-settings-configuration-options) | []                                                | Overrides the default id fields for specific objects                                    |
+| regenerateSaltoIds                                     | false                                             | When set to true, the adapter will regenerate the Ids of Data Instances on every fetch. |
 
 #### Salto Alias settings configuration options
 

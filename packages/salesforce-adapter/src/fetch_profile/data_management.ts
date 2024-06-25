@@ -176,7 +176,7 @@ export const buildDataManagement = (
     showReadOnlyValues: params.showReadOnlyValues,
     omittedFieldsForType: (name) =>
       name === undefined ? [] : makeArray(omittedFieldsByType[name]),
-    regenerateSaltoIds: params.regenerateSaltoIds ?? false,
+    regenerateSaltoIds: params.saltoIDSettings.regenerateSaltoIds ?? false,
   }
 }
 

@@ -1709,8 +1709,8 @@ describe('Custom Object Instances filter', () => {
                   includeObjects: ['.*'],
                   saltoIDSettings: {
                     defaultIdFields: ['Id'],
+                    regenerateSaltoIds: true,
                   },
-                  regenerateSaltoIds: true,
                 },
               },
             }),
@@ -1741,8 +1741,8 @@ describe('Custom Object Instances filter', () => {
                   includeObjects: ['.*'],
                   saltoIDSettings: {
                     defaultIdFields: ['Id'],
+                    regenerateSaltoIds: false,
                   },
-                  regenerateSaltoIds: false,
                 },
               },
             }),

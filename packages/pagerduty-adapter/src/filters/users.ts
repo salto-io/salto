@@ -38,6 +38,31 @@ type ScheduleLayerUser = {
   user: UserReference
 }
 
+/*
+Example structure of escalation policy:
+{
+  name: 'blabla'
+  escalation_rules: [
+    {
+      name: 'rule1',
+      targets: [
+        { type: 'user_reference', id: 'P123456' },
+        { type: 'team_reference', id: 'P123457' },
+      ]
+    }
+  ]
+}
+
+Example structure of schedule layer:
+{
+  name: 'blabla'
+  users: [
+    { user: { type: 'user_reference', id: 'P123456' } },
+    { user: { type: 'user_reference', id: 'P123458' } },
+  ]
+}
+*/
+
 const isEscalationRule = (value: unknown): value is EscalationRule => {
   const targets = _.get(value, 'targets')
   return Array.isArray(targets) && targets.every(target => _.isString(target.id) && _.isString(target.type))
@@ -59,6 +84,8 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
               const userIdentifier = target.id
               if (mapping[userIdentifier]) {
                 _.set(target, 'id', mapping[userIdentifier])
+              } else {
+                log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
               }
             }
           })
@@ -72,6 +99,8 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
           const userIdentifier = _.get(userObj, 'user.id')
           if (mapping[userIdentifier]) {
             _.set(userObj, 'user.id', mapping[userIdentifier])
+          } else {
+            log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
           }
         })
       break
@@ -80,7 +109,7 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
   }
 }
 
-export const replaceValuesForChanges = async (
+const replaceValuesForChanges = async (
   changes: Change<InstanceElement>[],
   mapping: Record<string, string>,
 ): Promise<void> => {
@@ -110,6 +139,10 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         log.debug('Converting user ids was disabled (onFetch)')
         return
       }
+      const instances = elements.filter(isInstanceElement).filter(isRelevantInstance)
+      if (_.isEmpty(instances)) {
+        return
+      }
 
       // Using casting as the difference between definitions type and RequiredDefinitions is that the fetch is not mandatory in  the definitions, but I override it.
       const users = await fetchUtils.getElements({
@@ -117,13 +150,12 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         fetchQuery,
         definitions: userDefinition as definitionsUtils.RequiredDefinitions<Options>,
       })
-      if (!users || _.isEmpty(users)) {
+      if (!users || _.isEmpty(users.elements)) {
         log.warn('Could not find any users (onFetch)')
       }
       const mapping = Object.fromEntries(
         users.elements.filter(isInstanceElement).map(user => [user.value.id, user.value.email]),
       )
-      const instances = elements.filter(isInstanceElement).filter(isRelevantInstance)
       instances.forEach(instance => {
         replaceValues(instance, mapping)
       })
@@ -143,8 +175,9 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         fetchQuery,
         definitions: userDefinition as definitionsUtils.RequiredDefinitions<Options>,
       })
-      if (!users || _.isEmpty(users)) {
+      if (!users || _.isEmpty(users.elements)) {
         log.warn('Could not find any users (onFetch)')
+        return
       }
 
       userIdToLogin = Object.fromEntries(

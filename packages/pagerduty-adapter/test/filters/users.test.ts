@@ -20,6 +20,7 @@ import {
   ADAPTER_NAME,
   ESCALATION_POLICY_TYPE_NAME,
   SCHEDULE_LAYERS_TYPE_NAME,
+  TEAM_TYPE_NAME,
   USER_TYPE_NAME,
 } from '../../src/constants'
 import { Options } from '../../src/definitions/types'
@@ -37,9 +38,13 @@ jest.mock('@salto-io/adapter-components', () => ({
 const mockedGetElements = jest.mocked(fetchUtils).getElements
 
 describe('users filter', () => {
+  let filter: filterUtils.Filter<filterUtils.FilterResult>
   const scheduleLayerType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SCHEDULE_LAYERS_TYPE_NAME) })
   const escalationPolicyType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME) })
   const userType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, USER_TYPE_NAME) })
+  const teamType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, TEAM_TYPE_NAME) })
+
+  const teamInstance = new InstanceElement('team', teamType, { id: 'P123457' })
 
   const generateElements = (withIds: boolean): InstanceElement[] => {
     const id1 = withIds ? '11111' : 'uri1@salto.io'
@@ -67,59 +72,128 @@ describe('users filter', () => {
     })
     return [layerInstance, escalationInstance]
   }
-  let filter: filterUtils.Filter<filterUtils.FilterResult>
-  beforeEach(() => {
-    filter = usersFilter({
-      elementSource: buildElementsSourceFromElements([]),
-      fetchQuery: fetchUtils.query.createMockQuery(),
-      config: { ...DEFAULT_CONFIG, fetch: { convertUsersIds: true } } as UserConfig,
-      definitions: {} as def.ApiDefinitions<Options>,
-      sharedContext: {},
-    })
+  beforeEach(async () => {
+    jest.clearAllMocks()
+  })
 
-    mockedGetElements.mockResolvedValue({
-      elements: [
-        new InstanceElement('user', userType, { id: '11111', email: 'uri1@salto.io' }),
-        new InstanceElement('user', userType, { id: '22222', email: 'uri2@salto.io' }),
-        new InstanceElement('user', userType, { id: '33333', email: 'uri3@salto.io' }),
-        new InstanceElement('user', userType, { id: '44444', email: 'uri4@salto.io' }),
-      ],
+  describe('when convertUsersIds is off', () => {
+    beforeEach(() => {
+      filter = usersFilter({
+        elementSource: buildElementsSourceFromElements([]),
+        fetchQuery: fetchUtils.query.createMockQuery(),
+        config: DEFAULT_CONFIG as UserConfig,
+        definitions: {} as def.ApiDefinitions<Options>,
+        sharedContext: {},
+      })
+    })
+    describe('onFetch', () => {
+      it('should not convert user ids into emails', async () => {
+        const elements = generateElements(true)
+        await filter.onFetch?.(elements)
+        expect(elements[0].value.users[0].user.id).toEqual('11111')
+      })
+    })
+    describe('preDeploy', () => {
+      it('should not convert emails into user ids', async () => {
+        const elements = generateElements(false)
+        await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
+        expect(elements[0].value.users[0].user.id).toEqual('uri1@salto.io')
+      })
+    })
+    describe('onDeploy', () => {
+      it('should not convert user ids into emails', async () => {
+        const elements = generateElements(true)
+        await filter.onDeploy?.(elements.map(e => toChange({ after: e })))
+        expect(elements[0].value.users[0].user.id).toEqual('11111')
+      })
     })
   })
-  describe('onFetch', () => {
-    it('should convert user ids into emails', async () => {
-      const elements = generateElements(true)
-      await filter.onFetch?.(elements)
-      expect(elements[0].value.users[0].user.id).toEqual('uri1@salto.io')
-      expect(elements[0].value.users[1].user.id).toEqual('uri2@salto.io')
-      expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('uri2@salto.io')
-      expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('uri3@salto.io')
-      expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('uri4@salto.io')
-      expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
+  describe('when convertUsersIds is on', () => {
+    beforeEach(() => {
+      filter = usersFilter({
+        elementSource: buildElementsSourceFromElements([]),
+        fetchQuery: fetchUtils.query.createMockQuery(),
+        config: { ...DEFAULT_CONFIG, fetch: { convertUsersIds: true } } as UserConfig,
+        definitions: {} as def.ApiDefinitions<Options>,
+        sharedContext: {},
+      })
     })
-  })
-  describe('preDeploy', () => {
-    it('should convert emails into user ids', async () => {
-      const elements = generateElements(false)
-      await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
-      expect(elements[0].value.users[0].user.id).toEqual('11111')
-      expect(elements[0].value.users[1].user.id).toEqual('22222')
-      expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('22222')
-      expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('33333')
-      expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('44444')
+    describe('when there are no users', () => {
+      beforeEach(() => {
+        mockedGetElements.mockResolvedValue({ elements: [] })
+      })
+      describe('onFetch', () => {
+        it('should not convert user ids into emails', async () => {
+          const elements = generateElements(true)
+          await filter.onFetch?.(elements)
+          expect(elements[0].value.users[0].user.id).toEqual('11111')
+        })
+      })
+      describe('preDeploy', () => {
+        it('should not convert emails into user ids', async () => {
+          const elements = generateElements(false)
+          await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
+          expect(elements[0].value.users[0].user.id).toEqual('uri1@salto.io')
+        })
+      })
     })
-  })
-  describe('onDeploy', () => {
-    it('should convert user ids into emails', async () => {
-      const elements = generateElements(true)
-      await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
-      await filter.onDeploy?.(elements.map(e => toChange({ after: e })))
-      expect(elements[0].value.users[0].user.id).toEqual('uri1@salto.io')
-      expect(elements[0].value.users[1].user.id).toEqual('uri2@salto.io')
-      expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('uri2@salto.io')
-      expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('uri3@salto.io')
-      expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('uri4@salto.io')
-      expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
+    describe('when there are users', () => {
+      beforeEach(() => {
+        mockedGetElements.mockResolvedValue({
+          elements: [
+            new InstanceElement('user', userType, { id: '11111', email: 'uri1@salto.io' }),
+            new InstanceElement('user', userType, { id: '22222', email: 'uri2@salto.io' }),
+            new InstanceElement('user', userType, { id: '33333', email: 'uri3@salto.io' }),
+            new InstanceElement('user', userType, { id: '44444', email: 'uri4@salto.io' }),
+          ],
+        })
+      })
+      describe('onFetch', () => {
+        it('should convert user ids into emails', async () => {
+          const elements = generateElements(true)
+          await filter.onFetch?.(elements)
+          expect(elements[0].value.users[0].user.id).toEqual('uri1@salto.io')
+          expect(elements[0].value.users[1].user.id).toEqual('uri2@salto.io')
+          expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('uri2@salto.io')
+          expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('uri3@salto.io')
+          expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('uri4@salto.io')
+          expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
+        })
+        it('should do nothing when there are no relevant instances', async () => {
+          const elements = [teamInstance]
+          await filter.onFetch?.(elements)
+          expect(mockedGetElements).not.toHaveBeenCalled()
+        })
+      })
+      describe('preDeploy', () => {
+        it('should convert emails into user ids', async () => {
+          const elements = generateElements(false)
+          await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
+          expect(elements[0].value.users[0].user.id).toEqual('11111')
+          expect(elements[0].value.users[1].user.id).toEqual('22222')
+          expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('22222')
+          expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('33333')
+          expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('44444')
+        })
+        it('should do nothing when there are no relevant changes', async () => {
+          const elements = [teamInstance]
+          await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
+          expect(mockedGetElements).not.toHaveBeenCalled()
+        })
+      })
+      describe('onDeploy', () => {
+        it('should convert user ids into emails', async () => {
+          const elements = generateElements(true)
+          await filter.preDeploy?.(elements.map(e => toChange({ after: e })))
+          await filter.onDeploy?.(elements.map(e => toChange({ after: e })))
+          expect(elements[0].value.users[0].user.id).toEqual('uri1@salto.io')
+          expect(elements[0].value.users[1].user.id).toEqual('uri2@salto.io')
+          expect(elements[1].value.escalation_rules[0].targets[0].id).toEqual('uri2@salto.io')
+          expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('uri3@salto.io')
+          expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('uri4@salto.io')
+          expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
+        })
+      })
     })
   })
 })

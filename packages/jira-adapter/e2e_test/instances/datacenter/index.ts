@@ -18,6 +18,7 @@ import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME, WORKFLOW_T
 import { findType } from '../../utils'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
+// import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createFilterValues } from './filter'
 import { createPrioritySchemeValues } from './priorityScheme'
 import { createWorkflowValues } from './workflow'

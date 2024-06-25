@@ -42,7 +42,7 @@ import {
   replaceTemplatesWithValues,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerdashValues, values } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues, values, promises } from '@salto-io/lowerdash'
 import { parserUtils } from '@salto-io/parser'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
@@ -69,6 +69,8 @@ import {
 } from './template_engines/creator'
 import { getBrandsForGuideThemes, matchBrandSubdomainFunc } from './utils'
 import { prepRef } from './article/utils'
+
+const READ_CONCURRENCY = 100
 
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
@@ -189,13 +191,14 @@ export const unzipFolderToElements = async ({
       currentDir: currentDir.folders[naclCase(firstPart)],
     })
   }
-  await Promise.all(
-    Object.entries(unzippedContents.files).map(async ([fullPath, file]): Promise<void> => {
+  await promises.array.withLimitedConcurrency<void>(
+    Object.entries(unzippedContents.files).map(([fullPath, file]): (() => Promise<void>) => async () => {
       if (!file.dir) {
         const pathParts = fullPath.split('/')
         await addFile({ fullPath, pathParts, file, currentDir: elements })
       }
     }),
+    READ_CONCURRENCY,
   )
   return elements
 }

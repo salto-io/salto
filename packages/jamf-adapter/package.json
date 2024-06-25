@@ -41,7 +41,6 @@
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
     "node-html-parser": "^6.1.5",
-    "qs": "^6.10.1",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {

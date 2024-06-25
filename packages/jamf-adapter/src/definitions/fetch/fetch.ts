@@ -33,23 +33,8 @@ import {
 import * as transforms from './transforms'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
-  created_at: {
-    hide: true,
-  },
-  updated_at: {
-    hide: true,
-  },
-  created_by_id: {
-    hide: true,
-  },
-  updated_by_id: {
-    hide: true,
-  },
 }
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
-  _links: {
-    omit: true,
-  },
 }
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }

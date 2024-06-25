@@ -16,18 +16,18 @@
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
-type HasIdType = {
+type WithIdType = {
   id: number
 }
 
-const isHasIdType = (value: unknown): value is HasIdType => values.isPlainObject(value) && 'id' in value
+const isWithIdType = (value: unknown): value is WithIdType => values.isPlainObject(value) && 'id' in value
 
 /*
  * Convert site object to site id to make reference
  */
 export const adjustSiteObjectToSiteId = (value: Record<string, unknown>): void => {
   const site = _.get(value, 'general.site')
-  if (isHasIdType(site)) {
+  if (isWithIdType(site)) {
     _.set(value, 'general.site', site.id === -1 ? _.get(value, 'general.site.name') : site.id)
   }
 }
@@ -37,7 +37,7 @@ export const adjustSiteObjectToSiteId = (value: Record<string, unknown>): void =
  */
 export const adjustCategoryObjectToCategoryId = (value: Record<string, unknown>): void => {
   const category = _.get(value, 'general.category')
-  if (isHasIdType(category)) {
+  if (isWithIdType(category)) {
     _.set(value, 'general.category', category.id === -1 ? _.get(value, 'general.category.name') : category.id)
   }
 }
@@ -47,7 +47,7 @@ export const adjustCategoryObjectToCategoryId = (value: Record<string, unknown>)
  */
 export const adjustScriptsObjectArrayToScriptsIds = (value: Record<string, unknown>): void => {
   const { scripts } = value
-  if (Array.isArray(scripts) && scripts.every(isHasIdType)) {
+  if (Array.isArray(scripts) && scripts.every(isWithIdType)) {
     value.scripts = scripts.map(({ id }) => id)
   }
 }

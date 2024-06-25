@@ -39,7 +39,9 @@ describe('custom record type transformer', () => {
         scriptid: 'customrecord1',
         source: 'soap',
       })
-      expect(Object.keys(customRecordType.annotationRefTypes)).toEqual(Object.keys(type.fields).concat('source'))
+      expect(Object.keys(customRecordType.annotationRefTypes)).toEqual(
+        Object.keys(type.fields).concat('source', 'internalId'),
+      )
       expect(Object.keys(customRecordType.fields)).toEqual([SCRIPT_ID, INTERNAL_ID, 'translationsList'])
       expect(customRecordType.path).toEqual([NETSUITE, CUSTOM_RECORDS_PATH, 'customrecord1'])
     })

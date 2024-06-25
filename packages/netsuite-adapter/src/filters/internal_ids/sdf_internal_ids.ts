@@ -26,7 +26,6 @@ import {
   isInstanceChange,
   isInstanceElement,
   isObjectType,
-  TypeReference,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
@@ -117,20 +116,6 @@ const queryRecordIds = async (
     scriptid: res.scriptid,
     id: 'id' in res ? res.id : res.internalid,
   }))
-}
-
-const addInternalIdAnnotationToCustomRecordTypes = (elements: Element[]): void => {
-  elements
-    .filter(isObjectType)
-    .filter(isCustomRecordType)
-    .forEach(object => {
-      if (_.isUndefined(object.annotationRefTypes[INTERNAL_ID])) {
-        object.annotationRefTypes[INTERNAL_ID] = new TypeReference(
-          BuiltinTypes.HIDDEN_STRING.elemID,
-          BuiltinTypes.HIDDEN_STRING,
-        )
-      }
-    })
 }
 
 const isSavedSearch = (element: Element): boolean => element.elemID.typeName === SAVED_SEARCH
@@ -287,7 +272,6 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       return
     }
     addInternalIdFieldToSupportedType(elements)
-    addInternalIdAnnotationToCustomRecordTypes(elements)
 
     const instances = elements.filter(isInstanceElement).filter(isSupportedInstance)
     await addInternalIdToInstances(client, instances)

@@ -211,7 +211,6 @@ describe('sdf internal ids tests', () => {
       expect(otherCustomFieldInstance.value.internalId).toBe('5')
     })
     it('should add field to object', () => {
-      expect(customRecordType.annotationRefTypes.internalId).toBeDefined()
       expect(clientScriptType.fields.internalId).toBeDefined()
     })
   })

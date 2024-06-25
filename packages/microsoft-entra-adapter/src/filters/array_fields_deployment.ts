@@ -249,7 +249,8 @@ const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsO
 }
 
 /**
- *
+ * Create a filter that deploys array fields.
+ * The filter will deploy the top level change and then deploy the array field changes, which can be either additions or removals.
  */
 export const deployArrayFieldsFilterCreator =
   ({

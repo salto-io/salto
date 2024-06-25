@@ -18,7 +18,9 @@ import { elements, definitions } from '@salto-io/adapter-components'
 export type UserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
-}>
+}> & {
+  convertUsersIds?: boolean
+}
 
 export type UserConfig = definitions.UserConfig<
   never,
@@ -27,9 +29,12 @@ export type UserConfig = definitions.UserConfig<
   definitions.UserDeployConfig
 >
 
+export const DEFAULT_CONVERT_USERS_IDS_VALUE = false
+
 export const DEFAULT_CONFIG: UserConfig = {
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
+    convertUsersIds: DEFAULT_CONVERT_USERS_IDS_VALUE,
   },
 }

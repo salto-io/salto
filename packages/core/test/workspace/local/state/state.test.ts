@@ -35,7 +35,6 @@ import { mockFunction, setupTmpDir } from '@salto-io/test-utils'
 import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
 import * as stateFunctions from '../../../../src/local-workspace/state/state'
 import { getTopLevelElements } from '../../../common/elements'
-import { version as currentSaltoVersion } from '../../../../src/generated/version.json'
 import { mockStaticFilesSource } from '../../../common/state'
 import { inMemRemoteMapCreator } from '../../../common/helpers'
 import { getHashFromHashes, StateContentProvider } from '../../../../src/local-workspace/state/content_providers'
@@ -47,24 +46,17 @@ const { toMD5 } = hash
 
 type MockStateContentArgs = {
   elements: Element[]
-  date?: Date
   pathIndexLine?: string
-  version?: string
   extraLine?: string
 }
 const mockStateContent = async ({
   elements,
-  date,
   pathIndexLine = '[]',
-  version = '0.0.1',
   extraLine,
 }: MockStateContentArgs): Promise<Buffer> => {
   const elementsLine = await serialization.serialize(elements)
-  const dateLine = safeJsonStringify({ [elements[0].elemID.adapter]: date ?? new Date() })
-  const lines = [elementsLine, dateLine, pathIndexLine]
-  if (version !== undefined) {
-    lines.push(safeJsonStringify(version))
-  }
+  const accountsLine = safeJsonStringify(elements[0].elemID.adapter)
+  const lines = [elementsLine, accountsLine, pathIndexLine]
   if (extraLine !== undefined) {
     lines.push(extraLine)
   }
@@ -108,25 +100,17 @@ describe('localState', () => {
     let sfElements: Element[]
     let nsElements: Element[]
     let initialStateHash: string | undefined
-    let sfUpdateDate: Date
-    let nsUpdateDate: Date
     const pathPrefix = 'multiple_files'
     let mapCreator: remoteMap.RemoteMapCreator
     beforeEach(async () => {
       nsElements = getTopLevelElements('netsuite')
       sfElements = getTopLevelElements('salesforce')
-      sfUpdateDate = new Date('2023-02-01T00:00:00.000Z')
-      nsUpdateDate = new Date('2023-02-02T00:00:00.000Z')
       contentProvider = mockContentProvider({
         [`${pathPrefix}/netsuite`]: await mockStateContent({
           elements: nsElements,
-          date: nsUpdateDate,
-          version: '0.1.23',
         }),
         [`${pathPrefix}/salesforce`]: await mockStateContent({
           elements: sfElements,
-          date: sfUpdateDate,
-          version: '0.0.1',
         }),
       })
       mapCreator = inMemRemoteMapCreator()
@@ -143,18 +127,6 @@ describe('localState', () => {
       it('should return both accounts', async () => {
         await expect(state.existingAccounts()).resolves.toHaveLength(2)
       })
-    })
-    describe('getAccountsUpdateDates', () => {
-      it('should return account update dates', async () => {
-        expect(await state.getAccountsUpdateDates()).toEqual({
-          netsuite: nsUpdateDate,
-          salesforce: sfUpdateDate,
-        })
-      })
-    })
-
-    it('should return the lowest version of any state file', async () => {
-      await expect(state.getStateSaltoVersion()).resolves.toEqual('0.0.1')
     })
     describe('flush when nothing changed', () => {
       it('should not write new content', async () => {
@@ -178,11 +150,6 @@ describe('localState', () => {
             })),
           ),
         )
-      })
-      it('should update the state salto version', async () => {
-        // TODO: this is not really the correct behavior, we should only really update the salto version
-        // on fetch, and only for the services that got fetched
-        await expect(state.getStateSaltoVersion()).resolves.toEqual(currentSaltoVersion)
       })
       it('should set new hash value', async () => {
         await expect(state.getHash()).resolves.not.toEqual(initialStateHash)
@@ -341,10 +308,6 @@ describe('localState', () => {
       expect(stateHash).toBeUndefined()
     })
 
-    it('getStateSaltoVersion should be undefined', async () => {
-      await expect(state.getStateSaltoVersion()).resolves.toBeUndefined()
-    })
-
     it('existingAccounts should be an empty list', async () => {
       await expect(state.existingAccounts()).resolves.toHaveLength(0)
     })
@@ -408,12 +371,6 @@ describe('localState', () => {
       expect(fromState.length).toBe(0)
     })
 
-    describe('getUpdateDate', () => {
-      it('should return an empty object', async () => {
-        await expect(state.getAccountsUpdateDates()).resolves.toEqual({})
-      })
-    })
-
     describe('calculateHash', () => {
       describe('when cache is changed in memory', () => {
         let origHash: string | undefined
@@ -448,9 +405,9 @@ describe('localState', () => {
     let contentProvider: jest.Mocked<StateContentProvider>
     beforeEach(async () => {
       contentProvider = mockContentProvider({
-        'env/noVersion': await mockStateContent({ elements: getTopLevelElements(), version: undefined }),
+        'env/noVersion': await mockStateContent({ elements: getTopLevelElements() }),
         'env/extraLine': await mockStateContent({ elements: getTopLevelElements('extra'), extraLine: '"more data?"' }),
-        'env/emptyVersion': await mockStateContent({ elements: getTopLevelElements('noVersion'), version: '' }),
+        'env/emptyVersion': await mockStateContent({ elements: getTopLevelElements('noVersion') }),
       })
       state = localState('malformed', '', inMemRemoteMapCreator(), contentProvider)
     })

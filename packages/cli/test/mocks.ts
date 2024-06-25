@@ -69,7 +69,6 @@ import commandDefinitions from '../src/commands/index'
 import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'
 import { Spinner, SpinnerCreator } from '../src/types'
 import { getCliTelemetry } from '../src/telemetry'
-import { version as currentVersion } from '../src/generated/version.json'
 
 const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
@@ -326,11 +325,8 @@ export const mockWorkspace = ({
     elements: createInMemoryElementSource(getElements()),
     pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-    accountsUpdateDate: new InMemoryRemoteMap(),
-    saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: currentVersion }] as {
-      key: wsState.StateMetadataKey
-      value: string
-    }[]),
+    accounts: new InMemoryRemoteMap([{ key: 'account_names', value: accounts }]),
+    saltoMetadata: new InMemoryRemoteMap<string, wsState.StateMetadataKey>(),
     staticFilesSource: mockStateStaticFilesSource(),
   })
   const stateByEnv = Object.fromEntries(envs.map(env => [env, wsState.buildInMemState(mockStateData)]))
@@ -402,12 +398,7 @@ export const mockWorkspace = ({
     updateServiceCredentials: mockFunction<Workspace['updateServiceCredentials']>(),
     updateAccountConfig: mockFunction<Workspace['updateAccountConfig']>(),
     updateServiceConfig: mockFunction<Workspace['updateServiceConfig']>(),
-    getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(async accountName => ({
-      serviceName: accountName,
-      accountName,
-      status: 'Nonexistent',
-      date: undefined,
-    })),
+
     getAllChangedByAuthors: mockFunction<Workspace['getAllChangedByAuthors']>(),
     getChangedElementsByAuthors: mockFunction<Workspace['getChangedElementsByAuthors']>(),
     promote: mockFunction<Workspace['promote']>(),

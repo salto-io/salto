@@ -24,10 +24,6 @@ export const adjust: definitions.AdjustFunction = ({ value }) => {
   if (!values.isPlainRecord(value)) {
     throw new Error('Expected value to be a record')
   }
-  ;;[
-    adjustCategoryObjectToCategoryId,
-    adjustSiteObjectToSiteId,
-    adjustServiceIdToTopLevel,
-  ].forEach(fn => fn(value))
+  ;[adjustCategoryObjectToCategoryId, adjustSiteObjectToSiteId, adjustServiceIdToTopLevel].forEach(fn => fn(value))
   return { value }
 }

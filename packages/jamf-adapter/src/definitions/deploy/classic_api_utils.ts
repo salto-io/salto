@@ -28,7 +28,7 @@ import { AdditionalAction, ClientOptions } from '../types'
 export const createClassicApiDefinitionsForType = (
   typeName: string,
   plural: string,
-  shouldConvertIdToNumber?: boolean
+  shouldConvertIdToNumber?: boolean,
 ): Partial<definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>> => ({
   requestsByAction: {
     customizations: {

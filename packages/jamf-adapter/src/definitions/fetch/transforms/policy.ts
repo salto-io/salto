@@ -15,8 +15,12 @@
  */
 import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
-import { adjustCategoryObjectToCategoryId, adjustScriptsObjectArrayToScriptsIds, adjustServiceIdToTopLevel, adjustSiteObjectToSiteId } from './utils'
-
+import {
+  adjustCategoryObjectToCategoryId,
+  adjustScriptsObjectArrayToScriptsIds,
+  adjustServiceIdToTopLevel,
+  adjustSiteObjectToSiteId,
+} from './utils'
 
 /*
  * Adjust policy instance

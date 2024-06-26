@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import {promises} from '@salto-io/lowerdash'
+import { promises } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'

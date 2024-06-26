@@ -170,7 +170,7 @@ describe('automationFetchFilter', () => {
     })
 
     it('should fetch automations from the service in jira dc', async () => {
-      const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(true)
       client = cli
       connection = conn
       conn.get.mockImplementation(async url => {
@@ -458,7 +458,7 @@ describe('automationFetchFilter', () => {
     })
   })
   it('should warn if response is 403', async () => {
-    const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(true)
     client = cli
     connection = conn
 
@@ -487,7 +487,7 @@ describe('automationFetchFilter', () => {
     })
   })
   it('should warn if response is 405', async () => {
-    const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(true)
     client = cli
     connection = conn
 
@@ -516,7 +516,7 @@ describe('automationFetchFilter', () => {
     })
   })
   it('should adjust elemID correctly when projects is part of idFields', async () => {
-    const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(true)
     client = cli
     connection = conn
     conn.get.mockImplementation(async url => {
@@ -543,7 +543,7 @@ describe('automationFetchFilter', () => {
     expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName_projectName')
   })
   it('should not include project name in elemID if not part of idFields', async () => {
-    const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(true)
     client = cli
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     const apiDefinitions = config.apiDefinitions.types.Automation.transformation as TransformationConfig

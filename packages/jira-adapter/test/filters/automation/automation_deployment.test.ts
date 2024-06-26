@@ -374,7 +374,7 @@ describe('automationDeploymentFilter', () => {
     })
 
     it('should create automation in jira DC', async () => {
-      const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(true)
       client = cli
       connection = conn
 
@@ -623,7 +623,7 @@ describe('automationDeploymentFilter', () => {
     })
 
     it('should delete automation in jira DC', async () => {
-      const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(true)
       client = cli
       connection = conn
 
@@ -702,7 +702,7 @@ describe('automationDeploymentFilter', () => {
       })
 
       it('should add a label to automation in jira DC', async () => {
-        const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+        const { client: cli, connection: conn } = mockClient(true)
         client = cli
         connection = conn
 
@@ -738,7 +738,7 @@ describe('automationDeploymentFilter', () => {
       })
 
       it('should delete an automation label in jira DC', async () => {
-        const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+        const { client: cli, connection: conn } = mockClient(true)
         client = cli
         connection = conn
 

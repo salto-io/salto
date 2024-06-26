@@ -21,15 +21,18 @@ import {
   ChangeError,
   isAdditionOrModificationChange,
   isAdditionChange,
+  getAllChangeData,
 } from '@salto-io/adapter-api'
 import { ACTIVE_STATUS, USER_TYPE_NAME } from '../constants'
 
-const ALLOWED_STATUS_ON_ADDITION = ['STAGED', 'PROVISIONED']
+const ALLOWED_STATUSES_ON_ADDITION = ['STAGED', 'PROVISIONED']
+const ALLOWED_STATUSES_ON_ACTIVATION = [ACTIVE_STATUS, 'SUSPENDED', 'LOCKED_OUT']
 
 /**
  * Validate User status on creation and modifications:
  *  - User can only be created with STAGED or PROVISIONED status, as activation requires a user step or setting up password by the admin.
- *  - User can only be modified to status ACTIVE, if it's previous status was SUSPENDED or LOCKED_OUT
+ *  - User can only be modified to status ACTIVE, if its previous status was SUSPENDED or LOCKED_OUT
+ *  - When user status is DEPROVISIONED, it can only be modified to PROVISIONED
  */
 export const userStatusValidator: ChangeValidator = async changes => {
   const userChanges = changes
@@ -43,7 +46,7 @@ export const userStatusValidator: ChangeValidator = async changes => {
 
   const [additionChanges, modificationChanges] = _.partition(userChanges, isAdditionChange)
   const additionChangeErrors = additionChanges
-    .filter(change => !ALLOWED_STATUS_ON_ADDITION.includes(getChangeData(change).value.status))
+    .filter(change => !ALLOWED_STATUSES_ON_ADDITION.includes(getChangeData(change).value.status))
     .map(change => ({
       elemID: getChangeData(change).elemID,
       severity: 'Error' as ChangeError['severity'],
@@ -52,13 +55,13 @@ export const userStatusValidator: ChangeValidator = async changes => {
     }))
 
   const activationModificationErrors = modificationChanges
+    .map(getAllChangeData)
     .filter(
-      change =>
-        ![ACTIVE_STATUS, 'SUSPENDED', 'LOCKED_OUT'].includes(change.data.before?.value.status) &&
-        getChangeData(change).value.status === ACTIVE_STATUS,
+      ([before, after]) =>
+        !ALLOWED_STATUSES_ON_ACTIVATION.includes(before.value.status) && after.value.status === ACTIVE_STATUS,
     )
-    .map(change => ({
-      elemID: getChangeData(change).elemID,
+    .map(([, instance]) => ({
+      elemID: instance.elemID,
       severity: 'Error' as ChangeError['severity'],
       message: 'User activation is not supported',
       detailedMessage:
@@ -66,13 +69,13 @@ export const userStatusValidator: ChangeValidator = async changes => {
     }))
 
   const deprovisionedModificationErrors = modificationChanges
+    .map(getAllChangeData)
     .filter(
-      change =>
-        change.data.before?.value.status === 'DEPROVISIONED' &&
-        !['PROVISIONED', 'DEPROVISIONED'].includes(getChangeData(change).value.status),
+      ([before, after]) =>
+        before.value.status === 'DEPROVISIONED' && !['PROVISIONED', 'DEPROVISIONED'].includes(after.value.status),
     )
-    .map(change => ({
-      elemID: getChangeData(change).elemID,
+    .map(([, instance]) => ({
+      elemID: instance.elemID,
       severity: 'Error' as ChangeError['severity'],
       message: 'DEPROVISIONED status can only be changed to PROVISIONED',
       detailedMessage:

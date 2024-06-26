@@ -37,22 +37,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         customizations: {
           add: [
             {
-              request: { endpoint: { path: '/api/v1/users', method: 'post', queryArgs: { activate: 'false' } } },
-              condition: {
-                custom:
-                  () =>
-                  ({ change }) =>
+              request: { 
+                endpoint: { path: '/api/v1/users', method: 'post', queryArgs: { activate: '{activate}' } },
+                context: {
+                  custom: () => ({ change }) => ({
                     // To create user in STAGED status, we need to provide 'activate=false' query param
-                    getChangeData(change).value.status === 'STAGED',
-              },
-            },
-            {
-              request: { endpoint: { path: '/api/v1/users', method: 'post', queryArgs: { activate: 'true' } } },
-              condition: {
-                custom:
-                  () =>
-                  ({ change }) =>
-                    getChangeData(change).value.status !== 'STAGED',
+                    activate: getChangeData(change).value.status === 'STAGED' ? 'false' : 'true',
+                  })
+                }
               },
             },
           ],
@@ -85,7 +77,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     getChangeData(change).value.status === 'SUSPENDED',
               },
             },
-            // unsuspend a user, and change its to status active
+            // unsuspend a user, and change its status to active
             {
               request: {
                 endpoint: { path: '/api/v1/users/{id}/lifecycle/unsuspend', method: 'post' },
@@ -99,7 +91,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     getChangeData(change).value.status === 'ACTIVE',
               },
             },
-            // unlock a user, and change its to status active
+            // unlock a user, and change its status to active
             {
               request: {
                 endpoint: { path: '/api/v1/users/{id}/lifecycle/unlock', method: 'post' },

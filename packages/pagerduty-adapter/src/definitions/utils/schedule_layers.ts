@@ -17,10 +17,29 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { getChangeData } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
+
+export const addStartTime = (value: unknown): Record<string, unknown> => {
+  if (!lowerdashValues.isPlainRecord(value)) {
+    throw new Error('Can not adjust when the value is not an object')
+  }
+  return { ...value, start: value.rotation_virtual_start }
+}
+
+export const addStartToLayers: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value }) => {
+  if (!lowerdashValues.isPlainRecord(value)) {
+    throw new Error('Can not adjust when the value is not an object')
+  }
+  const layers = _.get(value, 'schedule.schedule_layers')
+  if (!Array.isArray(layers)) {
+    throw new Error('Can not adjust when the layers are not an array')
+  }
+  return { value: _.set(value, 'schedule.schedule_layers', layers.map(addStartTime)) }
+}
 
 export const addTimeZone: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value, context }) => ({
   value: {
-    schedule: { schedule_layers: [value], time_zone: _.get(context, 'additionalContext.time_zone') },
+    schedule: { schedule_layers: [addStartTime(value)], time_zone: _.get(context, 'additionalContext.time_zone') },
   },
 })
 

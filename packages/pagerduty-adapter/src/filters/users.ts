@@ -19,7 +19,7 @@ import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salt
 import { collections } from '@salto-io/lowerdash'
 import { filterUtils, fetch as fetchUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME, SCHEDULE_LAYERS_TYPE_NAME } from '../constants'
+import { ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME, SCHEDULE_LAYERS_TYPE_NAME, SCHEDULE_TYPE_NAME } from '../constants'
 import { Options } from '../definitions/types'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, UserConfig } from '../config'
 import { USER_FETCH_DEFINITIONS, isRelevantInstance } from '../users_utils'
@@ -103,6 +103,20 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
             log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
           }
         })
+      break
+    case SCHEDULE_TYPE_NAME:
+      makeArray(instance.value.schedule_layers).forEach(scheduleLayer => {
+        makeArray(scheduleLayer.resValue.value.users)
+          .filter(isScheduleLayerUser)
+          .forEach(userObj => {
+            const userIdentifier = _.get(userObj, 'user.id')
+            if (mapping[userIdentifier]) {
+              _.set(userObj, 'user.id', mapping[userIdentifier])
+            } else {
+              log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
+            }
+          })
+      })
       break
     default:
       break

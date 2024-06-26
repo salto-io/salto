@@ -3144,7 +3144,7 @@ export type FilterContext = {
 
 export const validateFetchConfig = (
   fetchConfigPath: string,
-  userFetchConfig: definitions.UserFetchConfig,
+  userFetchConfig: definitions.UserFetchConfig<{ customNameMappingOptions: string }>,
   adapterApiConfig: configUtils.AdapterApiConfig,
 ): void =>
   validateDuckTypeFetchConfig(

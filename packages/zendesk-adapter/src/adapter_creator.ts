@@ -26,7 +26,7 @@ import {
   client as clientUtils,
   combineCustomReferenceGetters,
   config as configUtils,
-  definitions,
+  definitions as definitionsUtils,
 } from '@salto-io/adapter-components'
 import ZendeskAdapter from './adapter'
 import {
@@ -56,9 +56,9 @@ import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig, mergeWithDefaultConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig, updateElemIDDefinitions } = definitionsUtils
 const { validateDuckTypeApiDefinitionConfig } = configUtils
-const { validateDefaultMissingUserFallbackConfig } = definitions
+const { validateDefaultMissingUserFallbackConfig } = definitionsUtils
 
 /*
 
@@ -113,6 +113,7 @@ const isValidUser = (user: string): boolean => EMAIL_REGEX.test(user)
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
+  const useNewInfra = config?.value.fetch.useNewInfra
   const isGuideDisabled = config?.value.fetch.guide === undefined
   DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
     ? DEFAULT_CONFIG.apiDefinitions.supportedTypes
@@ -123,6 +124,15 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   ) as configUtils.AdapterDuckTypeApiConfig
 
   const fetch = mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
+  if (useNewInfra === true) {
+    const dummyConfig = config?.clone()
+    const updatedElemIDs = updateElemIDDefinitions(dummyConfig?.value?.apiDefinitions)
+    if (updatedElemIDs?.elemID !== undefined) {
+      const mergedElemIDConfig = _.merge(_.pick(fetch, 'elemID'), updatedElemIDs)
+
+      fetch.elemID = mergedElemIDConfig.elemID
+    }
+  }
 
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,

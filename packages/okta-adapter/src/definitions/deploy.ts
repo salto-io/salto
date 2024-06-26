@@ -37,14 +37,16 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         customizations: {
           add: [
             {
-              request: { 
+              request: {
                 endpoint: { path: '/api/v1/users', method: 'post', queryArgs: { activate: '{activate}' } },
                 context: {
-                  custom: () => ({ change }) => ({
-                    // To create user in STAGED status, we need to provide 'activate=false' query param
-                    activate: getChangeData(change).value.status === 'STAGED' ? 'false' : 'true',
-                  })
-                }
+                  custom:
+                    () =>
+                    ({ change }) => ({
+                      // To create user in STAGED status, we need to provide 'activate=false' query param
+                      activate: getChangeData(change).value.status === 'STAGED' ? 'false' : 'true',
+                    }),
+                },
               },
             },
           ],

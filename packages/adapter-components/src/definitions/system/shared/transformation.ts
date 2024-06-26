@@ -49,7 +49,9 @@ export type SingleValueTransformationFunction<
   TContext = ContextParams,
   TSourceVal = Values,
   TTargetVal extends unknown = Values,
-> = (item: GeneratedItem<ContextParams & TContext, TSourceVal>) => Promise<GeneratedItem<TContext, TTargetVal> | undefined>
+> = (
+  item: GeneratedItem<ContextParams & TContext, TSourceVal>,
+) => Promise<GeneratedItem<TContext, TTargetVal> | undefined>
 
 export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTargetVal extends unknown = Values> = (
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,

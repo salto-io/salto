@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 import { ResponseValue } from '../../client'
 import { ContextParams, GeneratedItem } from '../../definitions/system/shared'
 import { ApiDefinitions, DefQuery, queryWithDefault } from '../../definitions'
@@ -32,7 +33,6 @@ import {
   ResolvePaginationOptionsType,
 } from '../../definitions/system'
 import { FetchRequestDefinition } from '../../definitions/system/fetch'
-import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 
 const log = logger(module)
 
@@ -57,15 +57,17 @@ const createExtractor = <ClientOptions extends string>(
 ): ItemExtractor => {
   const transform = createValueTransformer(extractorDef.transformation)
   return async pages =>
-    awu(pages).flatMap(async page =>
-      collections.array.makeArray(
-        await transform({
-          value: page,
-          typeName,
-          context: extractorDef.context ?? {},
-        }),
-      ),
-    ).toArray()
+    awu(pages)
+      .flatMap(async page =>
+        collections.array.makeArray(
+          await transform({
+            value: page,
+            typeName,
+            context: extractorDef.context ?? {},
+          }),
+        ),
+      )
+      .toArray()
 }
 
 export const getRequester = <Options extends APIDefinitionsOptions>({

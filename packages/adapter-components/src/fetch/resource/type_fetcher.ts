@@ -18,6 +18,8 @@ import objectHash from 'object-hash'
 import { ElemID, Values, isPrimitiveValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
+import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 import { ElementQuery } from '../query'
 import { Requester } from '../request/requester'
 import { TypeResourceFetcher, ValueGeneratedItem } from '../types'
@@ -42,7 +44,7 @@ export const replaceParams = (origValue: string, paramValues: Record<string, unk
     return replacement.toString()
   })
 
-const calculateContextArgs = ({
+const calculateContextArgs = async ({
   contextDef,
   initialRequestContext,
   contextResources,
@@ -50,22 +52,28 @@ const calculateContextArgs = ({
   contextDef?: FetchResourceDefinition['context']
   initialRequestContext?: Record<string, unknown>
   contextResources: Record<string, ValueGeneratedItem[] | undefined>
-}): Record<string, unknown[]> => {
+}): Promise<Record<string, unknown[]>> => {
   const { dependsOn } = contextDef ?? {}
   const predefinedArgs = _.mapValues(initialRequestContext, collections.array.makeArray)
   const remainingDependsOnArgs: Record<string, DependsOnDefinition> = _.omit(dependsOn, Object.keys(predefinedArgs))
-  const dependsOnArgs = _(remainingDependsOnArgs)
-    .mapValues(arg =>
-      contextResources[arg.parentTypeName]
-        ?.flatMap(item =>
-          createValueTransformer<{}, Values>(arg.transformation)({
+  const dependsOnArgs = _(
+    await mapValuesAsync(remainingDependsOnArgs, async arg =>
+      awu(contextResources[arg.parentTypeName] ?? [])
+        .flatMap(async item => {
+          const transformed = await createValueTransformer<{}, Values>(arg.transformation)({
             typeName: arg.parentTypeName,
             value: { ...item.value, ...item.context },
             context: item.context,
-          }),
-        )
-        .filter(lowerdashValues.isDefined),
-    )
+          })
+          if (!_.isArray(transformed)) {
+            return [transformed] ?? []
+          }
+          return transformed
+        })
+        .filter(lowerdashValues.isDefined)
+        .toArray(),
+    ),
+  )
     .pickBy(lowerdashValues.isDefined)
     .mapValues(values => _.uniqBy(values, objectHash))
     .value()
@@ -128,7 +136,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
       return { success: true }
     }
 
-    const contextPossibleArgs = calculateContextArgs({
+    const contextPossibleArgs = await calculateContextArgs({
       contextDef: def.context,
       initialRequestContext,
       contextResources,
@@ -170,23 +178,24 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         ? // fake grouping to avoid merging
           Object.fromEntries(allFragments.map((fragment, idx) => [idx, [fragment]]))
         : _.groupBy(allFragments, ({ value }) => toServiceID(value))
-      const mergedFragments = _(groupedFragments)
-        .mapValues(fragments => ({
-          typeName,
-          // concat arrays
-          value: _.mergeWith({}, ...fragments.map(fragment => fragment.value), (first: unknown, second: unknown) =>
-            Array.isArray(first) && Array.isArray(second) ? first.concat(second) : undefined,
-          ),
-          context: {
-            fragments,
-          },
-        }))
-        .mapValues(item =>
+      const mergedFragments = mapValuesAsync(
+        _(groupedFragments)
+          .mapValues(fragments => ({
+            typeName,
+            // concat arrays
+            value: _.mergeWith({}, ...fragments.map(fragment => fragment.value), (first: unknown, second: unknown) =>
+              Array.isArray(first) && Array.isArray(second) ? first.concat(second) : undefined,
+            ),
+            context: {
+              fragments,
+            },
+          }))
+          .value(),
+        async item =>
           collections.array.makeArray(
-            createValueTransformer<{ fragments: GeneratedItem[] }, Values>(def.mergeAndTransform)(item),
+            await createValueTransformer<{ fragments: GeneratedItem[] }, Values>(def.mergeAndTransform)(item),
           ),
-        )
-        .value()
+      )
 
       Object.values(mergedFragments)
         .flat()

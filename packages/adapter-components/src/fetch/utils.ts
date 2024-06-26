@@ -17,9 +17,9 @@ import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 import { TransformDefinition, TransformFunction, SingleValueTransformationFunction } from '../definitions/system/shared'
 import { DATA_FIELD_ENTIRE_OBJECT } from '../definitions'
-import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 
 const log = logger(module)
 
@@ -60,7 +60,9 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
     if (adjust === undefined) {
       return transformedItems
     }
-    return awu(transformedItems).map(async transformedItem => ({ ...transformedItem, ...await adjust(transformedItem) })).toArray()
+    return awu(transformedItems)
+      .map(async transformedItem => ({ ...transformedItem, ...(await adjust(transformedItem)) }))
+      .toArray()
   }
   if (!def.single) {
     return transformItem

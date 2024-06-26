@@ -62,8 +62,8 @@ type ItemExtractor = (
 const createExtractor = (transformationDef?: TransformDefinition<ChangeAndContext>): ItemExtractor => {
   // default single to true for deploy if not explicitly specified
   const transform = createValueTransformer(_.defaults({}, transformationDef, { single: true }))
-  return ({ value, ...args }) => {
-    const res = transform({
+  return async ({ value, ...args }) => {
+    const res = await transform({
       value,
       typeName: getChangeData(args.change).elemID.typeName,
       context: { ...args },
@@ -99,7 +99,7 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
   }
 }
 
-const extractDataToApply = ({
+const extractDataToApply = async ({
   definition,
   changeAndContext,
   response,
@@ -107,12 +107,12 @@ const extractDataToApply = ({
   definition: TransformDefinition<ChangeAndContext, Values>
   changeAndContext: ChangeAndContext
   response: Response<ResponseValue | ResponseValue[]>
-}): Values | undefined => {
+}): Promise<Values | undefined> => {
   const { change } = changeAndContext
   const { elemID } = getChangeData(change)
   const extractor = createValueTransformer(definition)
   const dataToApply = collections.array.makeArray(
-    extractor({
+    await extractor({
       value: response.data,
       typeName: getChangeData(change).elemID.typeName,
       context: changeAndContext,
@@ -142,7 +142,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
   if (copyFromResponse?.additional !== undefined) {
     _.assign(
       dataToApply,
-      extractDataToApply({
+      await extractDataToApply({
         definition: copyFromResponse.additional,
         changeAndContext,
         response,
@@ -160,7 +160,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
     if (serviceIDFieldNames.length > 0) {
       _.assign(
         dataToApply,
-        extractDataToApply({
+        await extractDataToApply({
           definition: {
             pick: serviceIDFieldNames,
             // reverse the transformation used for the request
@@ -272,7 +272,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
 
     const data = mergedEndpointDef.omitBody
       ? undefined
-      : extractor({
+      : await extractor({
           change,
           ...changeContext,
           additionalContext,

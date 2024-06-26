@@ -1695,6 +1695,76 @@ describe('Custom Object Instances filter', () => {
     })
   })
 
+  describe('regenerateSaltoIds', () => {
+    const ID_FROM_SERVICE = 'a0C8d000008r49lEAA'
+    let instances: InstanceElement[]
+    describe('when regenerateSaltoIds is true', () => {
+      beforeEach(async () => {
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                data: {
+                  includeObjects: ['.*'],
+                  saltoIDSettings: {
+                    defaultIdFields: ['Id'],
+                    regenerateSaltoIds: true,
+                  },
+                },
+              },
+            }),
+          },
+        }) as FilterType
+        connection.query = jest.fn().mockResolvedValue({
+          records: [{ Id: ID_FROM_SERVICE, Name: 'Test' }],
+        })
+        const elements: Element[] = [mockTypes.SBQQ__Template__c]
+        await filter.onFetch(elements)
+        instances = elements.filter(isInstanceElement)
+      })
+      it('should not use the getElemIdFunc', () => {
+        expect(instances).toHaveLength(1)
+        expect(instances[0].elemID.name).toEqual(ID_FROM_SERVICE)
+      })
+    })
+
+    describe('when regenerateSaltoIds is false', () => {
+      beforeEach(async () => {
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                data: {
+                  includeObjects: ['.*'],
+                  saltoIDSettings: {
+                    defaultIdFields: ['Id'],
+                    regenerateSaltoIds: false,
+                  },
+                },
+              },
+            }),
+          },
+        }) as FilterType
+        connection.query = jest.fn().mockResolvedValue({
+          records: [{ Id: ID_FROM_SERVICE, Name: 'Test' }],
+        })
+        const elements: Element[] = [mockTypes.SBQQ__Template__c]
+        await filter.onFetch(elements)
+        instances = elements.filter(isInstanceElement)
+      })
+      it('should use the getElemIdFunc', () => {
+        expect(instances).toHaveLength(1)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${ID_FROM_SERVICE}`,
+        )
+      })
+    })
+  })
+
   describe('Aliases', () => {
     let instances: InstanceElement[]
 

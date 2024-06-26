@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
+import _, { isArray } from 'lodash'
 import objectHash from 'object-hash'
 import { ElemID, Values, isPrimitiveValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -30,6 +30,8 @@ import { ARG_PLACEHOLDER_MATCHER } from '../request'
 import { DependsOnDefinition } from '../../definitions/system/fetch/dependencies'
 import { serviceIDKeyCreator } from '../element/id_utils'
 import { ElementGenerator } from '../element/element'
+import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
+import { isDefined } from '@salto-io/lowerdash/dist/src/values'
 
 const log = logger(module)
 
@@ -42,7 +44,7 @@ export const replaceParams = (origValue: string, paramValues: Record<string, unk
     return replacement.toString()
   })
 
-const calculateContextArgs = ({
+const calculateContextArgs = async ({
   contextDef,
   initialRequestContext,
   contextResources,
@@ -50,25 +52,39 @@ const calculateContextArgs = ({
   contextDef?: FetchResourceDefinition['context']
   initialRequestContext?: Record<string, unknown>
   contextResources: Record<string, ValueGeneratedItem[] | undefined>
-}): Record<string, unknown[]> => {
+}): Promise<Record<string, unknown[]>> => {
   const { dependsOn } = contextDef ?? {}
   const predefinedArgs = _.mapValues(initialRequestContext, collections.array.makeArray)
   const remainingDependsOnArgs: Record<string, DependsOnDefinition> = _.omit(dependsOn, Object.keys(predefinedArgs))
-  const dependsOnArgs = _(remainingDependsOnArgs)
-    .mapValues(arg =>
-      contextResources[arg.parentTypeName]
-        ?.flatMap(item =>
-          createValueTransformer<{}, Values>(arg.transformation)({
+
+  const dependsOnArgs: Record<string, any> = {}
+  const promises: Array<Promise<void>> = []
+  for (const [key, arg] of Object.entries(remainingDependsOnArgs)) {
+    promises.push((async () => {
+      const value = awu(contextResources[arg.parentTypeName] ?? [])
+        .filter(isDefined)
+        .flatMap(async item => {
+          const transformed = await createValueTransformer<{}, Values>(arg.transformation)({
             typeName: arg.parentTypeName,
             value: { ...item.value, ...item.context },
             context: item.context,
-          }),
-        )
-        .filter(lowerdashValues.isDefined),
-    )
-    .pickBy(lowerdashValues.isDefined)
-    .mapValues(values => _.uniqBy(values, objectHash))
-    .value()
+          })
+          if (transformed === undefined) {
+            return []
+          }
+          if (!isArray(transformed)) {
+            return [transformed]
+          }
+          return transformed
+        })
+        .filter(lowerdashValues.isDefined)
+        .toArray()
+
+      if (value !== undefined) {
+        dependsOnArgs[key] = _.uniqBy(value as any, objectHash)
+      }
+    })())
+  }
 
   return _.defaults(
     {},
@@ -128,7 +144,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
       return { success: true }
     }
 
-    const contextPossibleArgs = calculateContextArgs({
+    const contextPossibleArgs = await calculateContextArgs({
       contextDef: def.context,
       initialRequestContext,
       contextResources,
@@ -181,9 +197,9 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
             fragments,
           },
         }))
-        .mapValues(item =>
+        .mapValues(async item =>
           collections.array.makeArray(
-            createValueTransformer<{ fragments: GeneratedItem[] }, Values>(def.mergeAndTransform)(item),
+            await createValueTransformer<{ fragments: GeneratedItem[] }, Values>(def.mergeAndTransform)(item),
           ),
         )
         .value()

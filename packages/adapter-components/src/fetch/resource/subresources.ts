@@ -28,14 +28,15 @@ type NestedResourceFetcher = (
   item: ValueGeneratedItem,
 ) => Promise<Record<string, ValueGeneratedItem[] | ValueGeneratedItem>>
 
-const extractRecurseIntoContext = (
+const extractRecurseIntoContext = async (
   item: ValueGeneratedItem,
   recurseIntoDef: RecurseIntoDefinition,
-): Record<string, unknown> => {
+): Promise<Record<string, unknown>> => {
   const { args: contextArgs } = recurseIntoDef.context
-  const context = _.mapValues(contextArgs, contextDef => {
+  // TODO: does this actually support async?
+  const context = _.mapValues(contextArgs, async contextDef => {
     const transformer = createValueTransformer(contextDef)
-    const transformedItem = transformer(item)
+    const transformedItem = await transformer(item)
     if (Array.isArray(transformedItem)) {
       return transformedItem.map(({ value }) => value)
     }

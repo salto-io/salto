@@ -43,13 +43,13 @@ export type GeneratedItem<TContext = ContextParams, TVal = unknown> = {
 
 export type TransformFunction<TContext = ContextParams, TSourceVal = Values, TTargetVal extends unknown = Values> = (
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,
-) => GeneratedItem<TContext, TTargetVal>[]
+) => Promise<GeneratedItem<TContext, TTargetVal>[]>
 
 export type SingleValueTransformationFunction<
   TContext = ContextParams,
   TSourceVal = Values,
   TTargetVal extends unknown = Values,
-> = (item: GeneratedItem<ContextParams & TContext, TSourceVal>) => GeneratedItem<TContext, TTargetVal> | undefined
+> = (item: GeneratedItem<ContextParams & TContext, TSourceVal>) => Promise<GeneratedItem<TContext, TTargetVal> | undefined>
 
 export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTargetVal extends unknown = Values> = (
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,

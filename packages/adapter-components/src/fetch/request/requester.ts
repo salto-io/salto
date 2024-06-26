@@ -32,6 +32,7 @@ import {
   ResolvePaginationOptionsType,
 } from '../../definitions/system'
 import { FetchRequestDefinition } from '../../definitions/system/fetch'
+import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 
 const log = logger(module)
 
@@ -48,23 +49,23 @@ export type Requester<ClientOptions extends string> = {
   }) => Promise<ValueGeneratedItem[]>
 }
 
-type ItemExtractor = (pages: ResponseValue[]) => GeneratedItem[]
+type ItemExtractor = (pages: ResponseValue[]) => Promise<GeneratedItem[]>
 
 const createExtractor = <ClientOptions extends string>(
   extractorDef: FetchRequestDefinition<ClientOptions>,
   typeName: string,
 ): ItemExtractor => {
   const transform = createValueTransformer(extractorDef.transformation)
-  return pages =>
-    pages.flatMap(page =>
+  return async pages =>
+    awu(pages).flatMap(async page =>
       collections.array.makeArray(
-        transform({
+        await transform({
           value: page,
           typeName,
           context: extractorDef.context ?? {},
         }),
       ),
-    )
+    ).toArray()
 }
 
 export const getRequester = <Options extends APIDefinitionsOptions>({
@@ -162,9 +163,10 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
       polling: mergedEndpointDef.polling,
     })
 
-    const itemsWithContext = pagesWithContext
-      .map(({ context, pages }) => ({ items: extractorCreator(context)(pages), context }))
-      .flatMap(({ items, context }) => items.flatMap(item => ({ ...item, context })))
+    const itemsWithContext = await awu(pagesWithContext)
+      .map(async ({ context, pages }) => ({ items: await extractorCreator(context)(pages), context }))
+      .flatMap(async ({ items, context }) => items.flatMap(item => ({ ...item, context })))
+      .toArray()
     return itemsWithContext.filter(item => {
       if (!lowerdashValues.isPlainRecord(item.value)) {
         log.warn(

@@ -225,10 +225,19 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
   // eslint-disable-next-line class-methods-use-this
   protected clearValuesFromResponseData(responseData: Values, url: string): Values {
     const OMITTED_PLACEHOLER = '<OMITTED>'
+    const cleanUsersData = (key: string, val: unknown): unknown => {
+      if (key === 'profile' && _.isObject(val)) {
+        return _.pick(val, 'login')
+      }
+      if (['recovery_question', 'password'].includes(key)) {
+        return OMITTED_PLACEHOLER
+      }
+      return undefined
+    }
     const URL_TO_OMIT_FUNC: Record<string, (key: string, val: unknown) => unknown> = {
       '/api/v1/idps': key => (key === 'credentials' ? OMITTED_PLACEHOLER : undefined),
       '/api/v1/authenticators': key => (['sharedSecret', 'secretKey'].includes(key) ? OMITTED_PLACEHOLER : undefined),
-      '/api/v1/users': (key, val) => (key === 'profile' && _.isObject(val) ? _.pick(val, 'login') : undefined),
+      '/api/v1/users': cleanUsersData,
     }
     if (!Object.keys(URL_TO_OMIT_FUNC).includes(url)) {
       return responseData

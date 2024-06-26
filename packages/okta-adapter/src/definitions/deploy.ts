@@ -16,6 +16,7 @@
 
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
+import { getChangeData, isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from './types'
 import { GROUP_TYPE_NAME } from '../constants'
 
@@ -30,7 +31,136 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     [GROUP_TYPE_NAME]: { bulkPath: '/api/v1/groups' },
   })
 
-  const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {}
+  const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    User: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: { endpoint: { path: '/api/v1/users', method: 'post', queryArgs: { activate: 'false' } } },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    // To create user in STAGED status, we need to provide 'activate=false' query param
+                    getChangeData(change).value.status === 'STAGED',
+              },
+            },
+            {
+              request: { endpoint: { path: '/api/v1/users', method: 'post', queryArgs: { activate: 'true' } } },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    getChangeData(change).value.status !== 'STAGED',
+              },
+            },
+          ],
+          modify: [
+            // activate user
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{id}/lifecycle/activate', method: 'post' },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    ['STAGED', 'DEPROVISIONED'].includes(change.data.before.value.status) &&
+                    getChangeData(change).value.status === 'PROVISIONED',
+              },
+            },
+            // suspend user
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{id}/lifecycle/suspend', method: 'post' },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'ACTIVE' &&
+                    getChangeData(change).value.status === 'SUSPENDED',
+              },
+            },
+            // unsuspend a user, and change its to status active
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{id}/lifecycle/unsuspend', method: 'post' },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'SUSPENDED' &&
+                    getChangeData(change).value.status === 'ACTIVE',
+              },
+            },
+            // unlock a user, and change its to status active
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{id}/lifecycle/unlock', method: 'post' },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'LOCKED_OUT' &&
+                    getChangeData(change).value.status === 'ACTIVE',
+              },
+            },
+            // update all user properties except status
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{id}', method: 'post' },
+                transformation: { omit: ['status'] },
+              },
+              condition: {
+                skipIfIdentical: true,
+              },
+            },
+            // deactivate user, must be last because deactivated users cannot be updated
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{id}/lifecycle/deactivate', method: 'post' },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.stauts !== 'DEPROVISIONED' &&
+                    getChangeData(change).value.status === 'DEPROVISIONED',
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{id}/lifecycle/deactivate', method: 'post' },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    // user must be in status DEPROVISIONED before it can be deleted
+                    getChangeData(change).value.status !== 'DEPROVISIONED',
+              },
+            },
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+    },
+  }
 
   return _.merge(standardRequestDefinitions, customDefinitions)
 }

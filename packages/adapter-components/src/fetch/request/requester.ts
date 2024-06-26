@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 import { ResponseValue } from '../../client'
 import { ContextParams, GeneratedItem } from '../../definitions/system/shared'
 import { ApiDefinitions, DefQuery, queryWithDefault } from '../../definitions'
@@ -34,6 +33,7 @@ import {
 } from '../../definitions/system'
 import { FetchRequestDefinition } from '../../definitions/system/fetch'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 export type Requester<ClientOptions extends string> = {

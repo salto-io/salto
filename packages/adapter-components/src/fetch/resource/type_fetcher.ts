@@ -17,9 +17,7 @@ import _ from 'lodash'
 import objectHash from 'object-hash'
 import { ElemID, Values, isPrimitiveValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
-import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
+import { promises, collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementQuery } from '../query'
 import { Requester } from '../request/requester'
 import { TypeResourceFetcher, ValueGeneratedItem } from '../types'
@@ -33,6 +31,8 @@ import { DependsOnDefinition } from '../../definitions/system/fetch/dependencies
 import { serviceIDKeyCreator } from '../element/id_utils'
 import { ElementGenerator } from '../element/element'
 
+const { awu } = collections.asynciterable
+const { mapValuesAsync } = promises.object
 const log = logger(module)
 
 export const replaceParams = (origValue: string, paramValues: Record<string, unknown>): string =>

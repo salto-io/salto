@@ -44,12 +44,18 @@ export const USER_FETCH_DEFINITIONS = {
   },
 }
 
-export const isRelevantInstance = (instance: InstanceElement): boolean => {
+export const isRelevantInstanceForFetch = (instance: InstanceElement): boolean => {
   if (
     instance.elemID.typeName === SCHEDULE_LAYERS_TYPE_NAME ||
-    instance.elemID.typeName === ESCALATION_POLICY_TYPE_NAME ||
-    instance.elemID.typeName === SCHEDULE_TYPE_NAME
+    instance.elemID.typeName === ESCALATION_POLICY_TYPE_NAME
   ) {
+    return true
+  }
+  return false
+}
+
+export const isRelevantInstance = (instance: InstanceElement): boolean => {
+  if (isRelevantInstanceForFetch(instance) || instance.elemID.typeName === SCHEDULE_TYPE_NAME) {
     return true
   }
   return false

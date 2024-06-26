@@ -219,6 +219,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     [SCHEDULE_TYPE_NAME]: {
+      referenceResolution: {
+        when: 'early',
+      },
       requestsByAction: {
         customizations: {
           add: [

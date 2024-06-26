@@ -22,7 +22,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME, SCHEDULE_LAYERS_TYPE_NAME, SCHEDULE_TYPE_NAME } from '../constants'
 import { Options } from '../definitions/types'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, UserConfig } from '../config'
-import { USER_FETCH_DEFINITIONS, isRelevantInstance } from '../users_utils'
+import { USER_FETCH_DEFINITIONS, isRelevantInstance, isRelevantInstanceForFetch } from '../users_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -108,7 +108,7 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
       break
     case SCHEDULE_TYPE_NAME:
       makeArray(instance.value.schedule_layers).forEach(scheduleLayer => {
-        makeArray(scheduleLayer.resValue.value.users)
+        makeArray(scheduleLayer.users)
           .filter(isScheduleLayerUser)
           .forEach(userObj => replaceUserInUserObject(userObj, mapping))
       })
@@ -148,7 +148,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         log.debug('Converting user ids was disabled (onFetch)')
         return
       }
-      const instances = elements.filter(isInstanceElement).filter(isRelevantInstance)
+      const instances = elements.filter(isInstanceElement).filter(isRelevantInstanceForFetch)
       if (_.isEmpty(instances)) {
         return
       }

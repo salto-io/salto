@@ -18,9 +18,12 @@ import { definitions } from '@salto-io/adapter-components'
 import { getChangeData } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 
-export const addStartTime = (value: unknown): Record<string, unknown> => {
-  if (!lowerdashValues.isPlainRecord(value)) {
+const log = logger(module)
+
+const addStartTime = (value: unknown): Record<string, unknown> => {
+  if (!lowerdashValues.isPlainRecord(value) || value.rotation_virtual_start === undefined) {
     throw new Error('Can not adjust when the value is not an object')
   }
   return { ...value, start: value.rotation_virtual_start }
@@ -32,7 +35,8 @@ export const addStartToLayers: definitions.AdjustFunction<definitions.deploy.Cha
   }
   const layers = _.get(value, 'schedule.schedule_layers')
   if (!Array.isArray(layers)) {
-    throw new Error('Can not adjust when the layers are not an array')
+    log.trace('No schedule layers found')
+    return { value }
   }
   return { value: _.set(value, 'schedule.schedule_layers', layers.map(addStartTime)) }
 }

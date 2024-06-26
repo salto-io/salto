@@ -215,10 +215,7 @@ export const serializeStream = async <T = Element>(
   const resolveCircles = (v: any): any =>
     isPrimitiveType(v)
       ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
-      : new ObjectType({
-          elemID: v.elemID,
-          metaType: v.metaType !== undefined ? new TypeReference<ObjectType>(v.metaType.elemID) : undefined,
-        })
+      : new ObjectType({ elemID: v.elemID })
   const referenceTypeReplacer = (e: TypeReference): TypeReference & SerializedClass => {
     if (referenceSerializerMode === 'keepRef') {
       if (isType(e.type) && !isContainerType(e.type)) {

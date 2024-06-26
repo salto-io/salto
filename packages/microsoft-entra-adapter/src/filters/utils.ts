@@ -16,7 +16,7 @@
 
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { isReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { ODATA_TYPE_FIELD_NACL_CASE, ODATA_ID_FIELD_NACL_CASE } from '../constants'
 import { NAME_ID_FIELD } from '../definitions/fetch/constants'
 import { MapArrayValueToChangeData } from './array_fields_deployment'
@@ -30,15 +30,18 @@ export const mapMemberRefToChangeData: MapArrayValueToChangeData = value => {
     throw new Error('Invalid member reference, missing id reference or OData type')
   }
 
-  const refValue = _.get(memberRef, 'resValue.value')
-  validatePlainObject(refValue, 'member reference value')
-  const id = _.get(refValue, 'id')
+  const refInstance = memberRef.value
+  if (!isInstanceElement(refInstance)) {
+    throw new Error('Invalid member reference value, expecting instance element')
+  }
+
+  const id = _.get(refInstance.value, 'id')
   if (!_.isString(id)) {
     throw new Error('Invalid member reference value, missing id')
   }
   return {
     id,
-    name: `${_.get(refValue, NAME_ID_FIELD.fieldName)}_${odataType}`,
+    name: `${_.get(refInstance.value, NAME_ID_FIELD.fieldName)}_${odataType}`,
     [ODATA_ID_FIELD_NACL_CASE]: `https://graph.microsoft.com/v1.0/groups/${id}`,
   }
 }

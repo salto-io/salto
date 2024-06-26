@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-import {
-  MEMBERS_FIELD_NAME,
-  ADAPTER_NAME,
-  DIRECTORY_ROLE_TYPE_NAME,
-  DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
-} from '../constants'
+import { MEMBERS_FIELD_NAME, DIRECTORY_ROLE_TYPE_NAME, DIRECTORY_ROLE_MEMBERS_TYPE_NAME } from '../constants'
 import { mapMemberRefToChangeData } from './utils'
 import { deployArrayFieldsFilterCreator } from './array_fields_deployment'
 
 export const deployDirectoryRoleMembersFilter = deployArrayFieldsFilterCreator({
-  adapterName: ADAPTER_NAME,
   topLevelTypeName: DIRECTORY_ROLE_TYPE_NAME,
   fieldName: MEMBERS_FIELD_NAME,
   fieldTypeName: DIRECTORY_ROLE_MEMBERS_TYPE_NAME,

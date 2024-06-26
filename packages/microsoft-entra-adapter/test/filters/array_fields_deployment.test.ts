@@ -44,7 +44,6 @@ describe('deploy array fields filter', () => {
 
   const mockValueMapper = jest.fn().mockImplementation(val => ({ id: val, name: val }))
   const filterParams: DeployArrayFieldFilterParams = {
-    adapterName: 'test-adapter',
     topLevelTypeName: TOP_LEVEL_TYPE_NAME,
     fieldName: FIELD_NAME,
     fieldTypeName: FIELD_TYPE_NAME,
@@ -168,7 +167,7 @@ describe('deploy array fields filter', () => {
       }) as FilterType
     ).deploy([], { changes: [], groupID: 'a' })
     expect(res.deployResult.errors).toHaveLength(1)
-    expect(res.deployResult.errors[0].message).toEqual('missing deploy definitions')
+    expect(res.deployResult.errors[0].message).toEqual('Deploy not supported')
     expect(res.deployResult.errors[0].severity).toEqual('Error')
     expect(res.deployResult.appliedChanges).toHaveLength(0)
   })
@@ -176,7 +175,7 @@ describe('deploy array fields filter', () => {
   it('Should return SaltoError if the changeGroup is not provided', async () => {
     const res = await filter.deploy([])
     expect(res.deployResult.errors).toHaveLength(1)
-    expect(res.deployResult.errors[0].message).toEqual('change group not provided')
+    expect(res.deployResult.errors[0].message).toEqual('Deploy not supported')
     expect(res.deployResult.errors[0].severity).toEqual('Error')
     expect(res.deployResult.appliedChanges).toHaveLength(0)
   })
@@ -194,9 +193,7 @@ describe('deploy array fields filter', () => {
     expect(res.deployResult.errors).toHaveLength(1)
     expect(isSaltoElementError(res.deployResult.errors[0])).toEqual(true)
     expect((res.deployResult.errors[0] as SaltoElementError).elemID).toEqual(instance.elemID)
-    expect(res.deployResult.errors[0].message).toEqual(
-      "Failed to calculate diff for myAdapter.parentTestType.instance.parentName, expected testFieldName to be an array, got before:[] and after:'This is not an array'",
-    )
+    expect(res.deployResult.errors[0].message).toEqual('Invalid format: expected testFieldName to be an array')
     expect(res.deployResult.errors[0].severity).toEqual('Error')
     expect(res.deployResult.appliedChanges).toHaveLength(0)
   })
@@ -214,9 +211,7 @@ describe('deploy array fields filter', () => {
     expect(res.deployResult.errors).toHaveLength(1)
     expect(isSaltoElementError(res.deployResult.errors[0])).toEqual(true)
     expect((res.deployResult.errors[0] as SaltoElementError).elemID).toEqual(instanceAfter.elemID)
-    expect(res.deployResult.errors[0].message).toEqual(
-      "Failed to calculate diff for myAdapter.parentTestType.instance.parentName, expected testFieldName to be an array, got before:'This is not an array' and after:[ 'This is an array' ]",
-    )
+    expect(res.deployResult.errors[0].message).toEqual('Invalid format: expected testFieldName to be an array')
     expect(res.deployResult.errors[0].severity).toEqual('Error')
     expect(res.deployResult.appliedChanges).toHaveLength(0)
   })

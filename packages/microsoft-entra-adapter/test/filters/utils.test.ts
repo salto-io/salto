@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-import { ElemID, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { mapMemberRefToChangeData } from '../../src/filters/utils'
 import { ODATA_ID_FIELD_NACL_CASE, ODATA_TYPE_FIELD_NACL_CASE } from '../../src/constants'
 
 describe(`${mapMemberRefToChangeData}`, () => {
-  const idRef = new ReferenceExpression(new ElemID('adapter', 'someType', 'instance'), {
-    value: { id: 'id1', displayName: 'name1' },
+  const typeID = new ElemID('adapter', 'someType')
+  const refInstance = new InstanceElement('refInstance', new ObjectType({ elemID: typeID }), {
+    id: 'id1',
+    displayName: 'name1',
   })
+  const idRef = new ReferenceExpression(new ElemID('adapter', 'someType', 'instance', 'myInstance'), refInstance)
   const memberRef = {
     id: idRef,
     [ODATA_TYPE_FIELD_NACL_CASE]: 'type1',

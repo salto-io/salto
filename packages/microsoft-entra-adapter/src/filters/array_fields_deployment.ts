@@ -42,9 +42,16 @@ import {
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { types } from '@salto-io/lowerdash'
-import { elementExpressionStringifyReplacer, inspectValue, safeJsonStringify, filter } from '@salto-io/adapter-utils'
+import {
+  elementExpressionStringifyReplacer,
+  inspectValue,
+  safeJsonStringify,
+  filter,
+  applyFunctionToChangeData,
+} from '@salto-io/adapter-utils'
 import { Options } from '../definitions/types'
 import { UserConfig } from '../config'
+import { ADAPTER_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -56,18 +63,12 @@ export type ArrayElementChangeData = {
 
 export type MapArrayValueToChangeData = (value: unknown) => ArrayElementChangeData
 
-type ArrayFieldDefinition = {
+export type DeployArrayFieldFilterParams = {
+  topLevelTypeName: string
   fieldTypeName: string
   fieldName: string
   valueMapper: MapArrayValueToChangeData
 }
-
-type CommonDefinition = {
-  adapterName: string
-  topLevelTypeName: string
-}
-
-export type DeployArrayFieldFilterParams = CommonDefinition & ArrayFieldDefinition
 
 type AdditionOrModificationChange = AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
 
@@ -89,17 +90,22 @@ const mapArrayValuesAndCalculateDiff = ({
   const beforeValues = isModificationChange(change) ? _.get(change.data.before.value, fieldName, []) : []
   const afterValues = _.get(change.data.after.value, fieldName, [])
   if (!_.isArray(beforeValues) || !_.isArray(afterValues)) {
-    throw new Error(
-      `Failed to calculate diff for ${getChangeData(change).elemID.getFullName()}, expected ${fieldName} to be an array, got before:${inspectValue(beforeValues)} and after:${inspectValue(afterValues)}`,
+    log.error(
+      'Failed to calculate diff for %s, expected %s to be an array, got before:%s and after:%s',
+      getChangeData(change).elemID.getFullName(),
+      fieldName,
+      inspectValue(beforeValues),
+      inspectValue(afterValues),
     )
+    throw new Error(`Invalid format: expected ${fieldName} to be an array`)
   }
 
-  const [resolvedBeforeValues, resolvedAfterValues] = [beforeValues, afterValues].map(arrayValues =>
+  const [deployableDataBefore, deployableDataAfter] = [beforeValues, afterValues].map(arrayValues =>
     arrayValues.map(valueMapper),
   )
-  const overlappingValues = _.intersectionWith(resolvedBeforeValues, resolvedAfterValues, isEqualValues)
-  const valuesToDelete = _.differenceWith(resolvedBeforeValues, overlappingValues, isEqualValues)
-  const valuesToAdd = _.differenceWith(resolvedAfterValues, overlappingValues, isEqualValues)
+  const overlappingValues = _.intersectionWith(deployableDataBefore, deployableDataAfter, isEqualValues)
+  const valuesToDelete = _.differenceWith(deployableDataBefore, overlappingValues, isEqualValues)
+  const valuesToAdd = _.differenceWith(deployableDataAfter, overlappingValues, isEqualValues)
   return { valuesToDelete, valuesToAdd }
 }
 
@@ -147,7 +153,7 @@ const calculateAppliedChangesOnArrayField = ({
   attemptedValuesToAdd,
 }: {
   change: AdditionOrModificationChange
-  arrayFieldDefinition: ArrayFieldDefinition
+  arrayFieldDefinition: DeployArrayFieldFilterParams
   deployResult: DeployResult
   attemptedValuesToDelete: ArrayElementChangeData[]
   attemptedValuesToAdd: ArrayElementChangeData[]
@@ -176,10 +182,10 @@ const calculateAppliedChangesOnArrayField = ({
 
 const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsOptions>({
   change,
-  arrayFieldDefinitionsWithTopLevel,
+  arrayFieldDefinition,
   ...args
 }: Omit<DeployArrayFieldInput<Options>, 'filterParams'> & {
-  arrayFieldDefinitionsWithTopLevel: DeployArrayFieldFilterParams
+  arrayFieldDefinition: DeployArrayFieldFilterParams
 }): Promise<DeployResult> => {
   const topLevelChangeData = getChangeData(change)
   let valuesToDelete: ArrayElementChangeData[]
@@ -187,15 +193,15 @@ const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsO
   try {
     ;({ valuesToDelete, valuesToAdd } = mapArrayValuesAndCalculateDiff({
       change,
-      ...arrayFieldDefinitionsWithTopLevel,
+      ...arrayFieldDefinition,
     }))
   } catch (e) {
     log.error(
       'Failed to calculate diff for %s %s, skipping %s deploy filter on %s %s',
-      arrayFieldDefinitionsWithTopLevel.fieldName,
+      arrayFieldDefinition.fieldName,
       topLevelChangeData.elemID.getFullName(),
-      arrayFieldDefinitionsWithTopLevel.fieldName,
-      arrayFieldDefinitionsWithTopLevel.topLevelTypeName,
+      arrayFieldDefinition.fieldName,
+      arrayFieldDefinition.topLevelTypeName,
       topLevelChangeData.elemID.getFullName(),
     )
     return {
@@ -216,7 +222,7 @@ const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsO
   )
 
   const fieldObjectType = new ObjectType({
-    elemID: new ElemID(arrayFieldDefinitionsWithTopLevel.adapterName, arrayFieldDefinitionsWithTopLevel.fieldTypeName),
+    elemID: new ElemID(ADAPTER_NAME, arrayFieldDefinition.fieldTypeName),
   })
 
   const createChangeCommonParams = {
@@ -234,14 +240,17 @@ const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsO
     ...args,
   })
 
-  const appliedChangesOnArray = calculateAppliedChangesOnArrayField({
-    change,
-    arrayFieldDefinition: arrayFieldDefinitionsWithTopLevel,
-    deployResult,
-    attemptedValuesToDelete: valuesToDelete,
-    attemptedValuesToAdd: valuesToAdd,
+  await applyFunctionToChangeData(change, instance => {
+    instance.value[arrayFieldDefinition.fieldName] = calculateAppliedChangesOnArrayField({
+      change,
+      arrayFieldDefinition,
+      deployResult,
+      attemptedValuesToDelete: valuesToDelete,
+      attemptedValuesToAdd: valuesToAdd,
+    })
+    return instance
   })
-  change.data.after.value[arrayFieldDefinitionsWithTopLevel.fieldName] = appliedChangesOnArray
+
   return {
     appliedChanges: [change],
     errors: [],
@@ -255,14 +264,14 @@ const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsO
 export const deployArrayFieldsFilterCreator =
   ({
     convertError = deployment.defaultConvertError,
-    ...specificTypeParams
+    ...arrayFieldDefinition
   }: Pick<filters.FilterCreationArgs<Options, UserConfig>, 'convertError'> &
     DeployArrayFieldFilterParams): filterUtils.AdapterFilterCreator<{}, filter.FilterResult, {}, Options> =>
   ({ definitions, elementSource, sharedContext }) => ({
     name: 'deployArrayFieldsFilter',
     deploy: async (changes, changeGroup) => {
       const { deploy, ...otherDefs } = definitions
-      const { topLevelTypeName, ...arrayFieldDefinition } = specificTypeParams
+      const { topLevelTypeName } = arrayFieldDefinition
       if (deploy === undefined) {
         return {
           deployResult: {
@@ -270,7 +279,7 @@ export const deployArrayFieldsFilterCreator =
             errors: [
               {
                 severity: 'Error',
-                message: 'missing deploy definitions',
+                message: 'Deploy not supported',
               },
             ],
           },
@@ -284,7 +293,7 @@ export const deployArrayFieldsFilterCreator =
             errors: [
               {
                 severity: 'Error',
-                message: 'change group not provided',
+                message: 'Deploy not supported',
               },
             ],
           },
@@ -325,16 +334,12 @@ export const deployArrayFieldsFilterCreator =
           log.debug(
             'successfully deployed %s, starting to deploy %s',
             changeData.elemID.getFullName(),
-            arrayFieldDefinition,
+            safeJsonStringify(arrayFieldDefinition),
           )
           return deployArrayField({
             change,
             ...deployArgsWithoutChanges,
-            arrayFieldDefinitionsWithTopLevel: {
-              ...arrayFieldDefinition,
-              adapterName: specificTypeParams.adapterName,
-              topLevelTypeName,
-            },
+            arrayFieldDefinition,
           })
         }),
       )

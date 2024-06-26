@@ -1,5 +1,5 @@
 /*
- *                      Copyright 2020 Salto Labs Ltd.
+ *                      Copyright 2024 Salto Labs Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
@@ -13,20 +13,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const deepMerge = require('../../build_utils/deep_merge')
-
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'microsoft-entra-adapter',
-  displayName: 'microsoft-entra-adapter',
-  rootDir: `${__dirname}`,
-  collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
-  coverageThreshold: {
-    global: {
-      branches: 91.69,
-      functions: 92.86,
-      lines: 95.66,
-      statements: 93.31,
-    },
-  },
-})
+export { deployAdministrativeUnitMembersFilter } from './deploy_administrative_unit_members'
+export { deployDirectoryRoleMembersFilter } from './deploy_directory_role_members'

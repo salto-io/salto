@@ -1,5 +1,5 @@
 /*
- *                      Copyright 2020 Salto Labs Ltd.
+ *                      Copyright 2024 Salto Labs Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const deepMerge = require('../../build_utils/deep_merge')
 
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'microsoft-entra-adapter',
-  displayName: 'microsoft-entra-adapter',
-  rootDir: `${__dirname}`,
-  collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
-  coverageThreshold: {
-    global: {
-      branches: 91.69,
-      functions: 92.86,
-      lines: 95.66,
-      statements: 93.31,
-    },
-  },
+import { MEMBERS_FIELD_NAME, DIRECTORY_ROLE_TYPE_NAME, DIRECTORY_ROLE_MEMBERS_TYPE_NAME } from '../constants'
+import { mapMemberRefToChangeData } from './utils'
+import { deployArrayFieldsFilterCreator } from './array_fields_deployment'
+
+export const deployDirectoryRoleMembersFilter = deployArrayFieldsFilterCreator({
+  topLevelTypeName: DIRECTORY_ROLE_TYPE_NAME,
+  fieldName: MEMBERS_FIELD_NAME,
+  fieldTypeName: DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
+  valueMapper: mapMemberRefToChangeData,
 })

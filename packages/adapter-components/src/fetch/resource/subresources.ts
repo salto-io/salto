@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import {promises} from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
@@ -22,6 +23,7 @@ import { createValueTransformer } from '../utils'
 import { RecurseIntoDefinition } from '../../definitions/system/fetch/dependencies'
 import { ElementGenerator } from '../element/element'
 
+const { mapValuesAsync } = promises.object
 const log = logger(module)
 
 type NestedResourceFetcher = (
@@ -33,8 +35,7 @@ const extractRecurseIntoContext = async (
   recurseIntoDef: RecurseIntoDefinition,
 ): Promise<Record<string, unknown>> => {
   const { args: contextArgs } = recurseIntoDef.context
-  // TODO: does this actually support async?
-  const context = _.mapValues(contextArgs, async contextDef => {
+  const context = mapValuesAsync(contextArgs, async contextDef => {
     const transformer = createValueTransformer(contextDef)
     const transformedItem = await transformer(item)
     if (Array.isArray(transformedItem)) {

@@ -15,11 +15,12 @@
  */
 import { fetch as fetchUtils, definitions as def, filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import {
   ADAPTER_NAME,
   ESCALATION_POLICY_TYPE_NAME,
   SCHEDULE_LAYERS_TYPE_NAME,
+  SCHEDULE_TYPE_NAME,
   TEAM_TYPE_NAME,
   USER_TYPE_NAME,
 } from '../../src/constants'
@@ -41,6 +42,7 @@ describe('users filter', () => {
   let filter: filterUtils.Filter<filterUtils.FilterResult>
   const scheduleLayerType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SCHEDULE_LAYERS_TYPE_NAME) })
   const escalationPolicyType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME) })
+  const scheduleType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SCHEDULE_TYPE_NAME) })
   const userType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, USER_TYPE_NAME) })
   const teamType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, TEAM_TYPE_NAME) })
 
@@ -54,6 +56,15 @@ describe('users filter', () => {
     const layerInstance = new InstanceElement('layer', scheduleLayerType, {
       users: [{ user: { id: id1, type: 'user_reference' } }, { user: { id: id2, type: 'user_reference' } }],
     })
+    const layerInstance2 = new InstanceElement('layer', scheduleLayerType, {
+      users: [{ user: { id: id3, type: 'user_reference' } }],
+    })
+    const scheduleInstance = new InstanceElement('schedule', scheduleType, {
+      timezone: 'uri',
+      id: 'uri',
+      schedule_layers: [new ReferenceExpression(layerInstance2.elemID, layerInstance2)],
+    })
+
     const escalationInstance = new InstanceElement('escalation', escalationPolicyType, {
       escalation_rules: [
         {
@@ -70,7 +81,7 @@ describe('users filter', () => {
         },
       ],
     })
-    return [layerInstance, escalationInstance]
+    return [layerInstance, escalationInstance, scheduleInstance]
   }
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -158,6 +169,7 @@ describe('users filter', () => {
           expect(elements[1].value.escalation_rules[0].targets[1].id).toEqual('uri3@salto.io')
           expect(elements[1].value.escalation_rules[1].targets[0].id).toEqual('uri4@salto.io')
           expect(elements[1].value.escalation_rules[1].targets[1].id).toEqual('11111')
+          expect(elements[2].value.schedule_layers[0].resValue.value.users[0].user.id).toEqual('uri3@salto.io')
         })
         it('should do nothing when there are no relevant instances', async () => {
           const elements = [teamInstance]

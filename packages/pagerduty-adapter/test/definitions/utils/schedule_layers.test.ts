@@ -25,7 +25,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { addTimeZone, shouldChangeLayer } from '../../../src/definitions/utils/schedule_layers'
+import { addStartToLayers, addTimeZone, shouldChangeLayer } from '../../../src/definitions/utils/schedule_layers'
 import { ADAPTER_NAME, SCHEDULE_LAYERS_TYPE_NAME, SCHEDULE_TYPE_NAME } from '../../../src/constants'
 
 describe('schedule layers definitions utils', () => {
@@ -35,6 +35,7 @@ describe('schedule layers definitions utils', () => {
       const change = toChange({
         after: new InstanceElement('aaa', new ObjectType({ elemID: new ElemID('salto', 'type') }), {
           something: 'else',
+          rotation_virtual_start: '2021-01-01T00:00:00Z',
         }),
       })
       item = {
@@ -51,12 +52,62 @@ describe('schedule layers definitions utils', () => {
           elementSource: buildElementsSourceFromElements([]),
           sharedContext: {},
         },
-        value: { something: 'else' },
+        value: { something: 'else', rotation_virtual_start: '2021-01-01T00:00:00Z' },
       }
     })
     it('should add time zone from additionalContext', () => {
       expect(addTimeZone(item).value).toEqual({
-        schedule: { schedule_layers: [{ something: 'else' }], time_zone: 'Tel Aviv' },
+        schedule: {
+          schedule_layers: [
+            { something: 'else', rotation_virtual_start: '2021-01-01T00:00:00Z', start: '2021-01-01T00:00:00Z' },
+          ],
+          time_zone: 'Tel Aviv',
+        },
+      })
+    })
+  })
+
+  describe('addStartToLayers', () => {
+    beforeEach(() => {
+      const change = toChange({
+        after: new InstanceElement('aaa', new ObjectType({ elemID: new ElemID('salto', 'type') }), {
+          schedule: {
+            schedule_layers: [
+              { rotation_virtual_start: '2021-01-01T00:00:00Z' },
+              { rotation_virtual_start: '2021-01-01T00:00:00Z' },
+            ],
+          },
+        }),
+      })
+      item = {
+        typeName: 'mockType',
+        context: {
+          change,
+          changeGroup: {
+            groupID: 'a',
+            changes: [change],
+          },
+          elementSource: buildElementsSourceFromElements([]),
+          sharedContext: {},
+        },
+        value: {
+          schedule: {
+            schedule_layers: [
+              { rotation_virtual_start: '2021-01-01T00:00:00Z' },
+              { rotation_virtual_start: '2021-01-01T00:00:00Z' },
+            ],
+          },
+        },
+      }
+    })
+    it('should add start time to all layers', () => {
+      expect(addStartToLayers(item).value).toEqual({
+        schedule: {
+          schedule_layers: [
+            { rotation_virtual_start: '2021-01-01T00:00:00Z', start: '2021-01-01T00:00:00Z' },
+            { rotation_virtual_start: '2021-01-01T00:00:00Z', start: '2021-01-01T00:00:00Z' },
+          ],
+        },
       })
     })
   })

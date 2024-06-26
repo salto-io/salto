@@ -73,6 +73,15 @@ const isScheduleLayerUser = (value: unknown): value is ScheduleLayerUser => {
   return _.isPlainObject(user) && _.isString(user.id) && _.isString(user.type)
 }
 
+const replaceUserInUserObject = (userObj: ScheduleLayerUser | UserReference, mapping: Record<string, string>): void => {
+  const userIdentifier = _.get(userObj, 'user.id')
+  if (mapping[userIdentifier]) {
+    _.set(userObj, 'user.id', mapping[userIdentifier])
+  } else {
+    log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
+  }
+}
+
 const replaceValues = (instance: InstanceElement, mapping: Record<string, string>): void => {
   switch (instance.elemID.typeName) {
     case ESCALATION_POLICY_TYPE_NAME:
@@ -95,27 +104,13 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
     case SCHEDULE_LAYERS_TYPE_NAME:
       makeArray(instance.value.users)
         .filter(isScheduleLayerUser)
-        .forEach(userObj => {
-          const userIdentifier = _.get(userObj, 'user.id')
-          if (mapping[userIdentifier]) {
-            _.set(userObj, 'user.id', mapping[userIdentifier])
-          } else {
-            log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
-          }
-        })
+        .forEach(userObj => replaceUserInUserObject(userObj, mapping))
       break
     case SCHEDULE_TYPE_NAME:
       makeArray(instance.value.schedule_layers).forEach(scheduleLayer => {
         makeArray(scheduleLayer.resValue.value.users)
           .filter(isScheduleLayerUser)
-          .forEach(userObj => {
-            const userIdentifier = _.get(userObj, 'user.id')
-            if (mapping[userIdentifier]) {
-              _.set(userObj, 'user.id', mapping[userIdentifier])
-            } else {
-              log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
-            }
-          })
+          .forEach(userObj => replaceUserInUserObject(userObj, mapping))
       })
       break
     default:
@@ -166,6 +161,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       })
       if (!users || _.isEmpty(users.elements)) {
         log.warn('Could not find any users (onFetch)')
+        return
       }
       const mapping = Object.fromEntries(
         users.elements.filter(isInstanceElement).map(user => [user.value.id, user.value.email]),

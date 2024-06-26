@@ -48,6 +48,7 @@ import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
 import {
+  APEX_CLASS_METADATA_TYPE,
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
   DEFAULT_MAX_CONCURRENT_API_REQUESTS,
@@ -76,6 +77,8 @@ const { toMD5 } = hash
 const log = logger(module)
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } =
   clientUtils
+
+const {awu} = collections.asynciterable
 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
@@ -628,6 +631,27 @@ export const validateCredentials = async (
 
 type DeployProgressCallback = (inProgressResult: DeployResult) => void
 
+
+type ListApexClassesParams = {
+  client: SalesforceClient
+  sinceDate: string
+}
+
+const TYPES_WITH_CUSTOM_LIST_FUNC = [
+  APEX_CLASS_METADATA_TYPE,
+] as const
+
+export type TypeWithCustomListFunc = typeof TYPES_WITH_CUSTOM_LIST_FUNC[number]
+
+
+type CustomListFuncParams = {
+  client: SalesforceClient
+  sinceDate?: string
+}
+export type CustomListFunc = (params: CustomListFuncParams) => Promise<FileProperties[]>
+
+export type CustomListFuncByType = Partial<Record<TypeWithCustomListFunc, CustomListFunc>>
+
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
@@ -642,8 +666,10 @@ export default class SalesforceClient {
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
   private readonly filePropsByType: Record<string, FileProperties[]>
+  private customListFuncByType: CustomListFuncByType
 
   constructor({ credentials, connection, config }: SalesforceClientOpts) {
+    this.customListFuncByType = {}
     this.credentials = credentials
     this.config = config
     this.retryOptions = createRetryOptions(
@@ -685,6 +711,11 @@ export default class SalesforceClient {
       config?.readMetadataChunkSize,
     )
     this.filePropsByType = {}
+  }
+
+
+  set setCustomListFuncByType(customListFuncByType: CustomListFuncByType) {
+    this.customListFuncByType = customListFuncByType
   }
 
   private retryOnBadResponse = <T extends object>(

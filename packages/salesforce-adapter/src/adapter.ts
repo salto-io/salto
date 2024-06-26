@@ -583,6 +583,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         client: this.client,
         metadataQuery: buildFilePropsMetadataQuery(baseQuery),
       })
+    const customListFuncByType = 
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,

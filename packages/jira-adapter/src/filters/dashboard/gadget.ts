@@ -47,7 +47,7 @@ const log = logger(module)
 
 export type InstantToPropertiesResponse = {
   instance: InstanceElement
-  PromisePromisePropertyValues: Promise<Record<string, Promise<Value>>>
+  promisePropertyValues: Promise<Record<string, Promise<Value>>>
 }
 
 const getSubTypes = (): {
@@ -150,7 +150,7 @@ export const getDashboardPropertiesAsync = (client: JiraClient, elements: Elemen
     .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
     .map(instance => ({
       instance,
-      PromisePromisePropertyValues: getAPIResponse(client, instance),
+      promisePropertyValues: getAPIResponse(client, instance),
     }))
 
 const filter: FilterCreator = ({ client, config, adapterContext }) => ({
@@ -159,7 +159,7 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
     const instantsToPropertiesResponse: InstantToPropertiesResponse[] = adapterContext.dashboardPropertiesPromise
 
     await Promise.all(
-      instantsToPropertiesResponse.map(async ({ instance, PromisePromisePropertyValues }) => {
+      instantsToPropertiesResponse.map(async ({ instance, promisePropertyValues: PromisePromisePropertyValues }) => {
         const propertyValues = Object.fromEntries(
           await Promise.all(
             Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),

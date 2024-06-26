@@ -95,7 +95,7 @@ describe('dashboardLayoutFilter', () => {
       expect(response).toHaveLength(0)
     })
 
-    it('should return empty list if there is no instances of Dashboard type in the elements', async () => {
+    it('should return empty list if there is no Dashboard instances in the elements', async () => {
       const response = getDashboardLayoutsAsync(client, config, [dashboardType]) as InstanceToResponse[]
       expect(response).toHaveLength(0)
     })

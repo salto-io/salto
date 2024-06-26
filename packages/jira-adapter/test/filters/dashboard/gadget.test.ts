@@ -149,50 +149,22 @@ describe('gadgetFilter', () => {
       responsePromise = getDashboardPropertiesAsync(client, elements)
     })
     it('should return the dashboard properties', async () => {
-      const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
-          instanceMap,
-          await Promise.all(
-            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
-          ),
-        ]),
-      )
-
-      expect(response).toHaveLength(1)
-      expect(response[0][0]).toBe(instance)
-      expect(response[0][1]).toEqual([
-        ['key1', 'value1'],
-        ['key2', 'value2'],
-      ])
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toBe('value1')
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toBe('value2')
     })
 
     it('should return empty list if the elements are not instances', async () => {
-      const response = await Promise.all(
-        (getDashboardPropertiesAsync(client, [dashboardGadgetType]) as InstantToPropertiesResponse[]).map(
-          async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
-            instanceMap,
-            await Promise.all(
-              Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
-            ),
-          ],
-        ),
-      )
-      expect(response).toHaveLength(0)
+      responsePromise = getDashboardPropertiesAsync(client, [dashboardGadgetType])
+      expect(responsePromise).toHaveLength(0)
     })
 
     it('should return empty list if the request threw an error', async () => {
       connection.get.mockRejectedValue(new Error('error'))
-      const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
-          instanceMap,
-          await Promise.all(
-            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
-          ),
-        ]),
-      )
-      expect(response).toHaveLength(1)
-      expect(response[0][0]).toBe(instance)
-      expect(response[0][1]).toEqual([])
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(await responsePromise[0].promisePropertyValues).toEqual({})
     })
     it('should return empty list when got invalid response from keys request', async () => {
       connection.get.mockImplementation(async (url: string) => {
@@ -223,36 +195,20 @@ describe('gadgetFilter', () => {
 
         throw new Error('Unexpected url')
       })
-      const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
-          instanceMap,
-          await Promise.all(
-            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
-          ),
-        ]),
-      )
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', undefined)
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', undefined)
 
-      expect(response[0][0]).toBe(instance)
-      expect(response[0][1]).toEqual([])
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(await responsePromise[0].promisePropertyValues).toEqual({})
     })
     it('should not add properties when keys request failed', async () => {
       connection.get.mockRejectedValue(new Error('Failed to get keys'))
-
-      const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
-          instanceMap,
-          await Promise.all(
-            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
-          ),
-        ]),
-      )
-
-      expect(response[0][0]).toBe(instance)
-      expect(response[0][1]).toEqual([])
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(await responsePromise[0].promisePropertyValues).toEqual({})
     })
 
     it('should not add properties when got invalid response from values request', async () => {
@@ -292,20 +248,10 @@ describe('gadgetFilter', () => {
         throw new Error('Unexpected url')
       })
 
-      const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
-          instanceMap,
-          await Promise.all(
-            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
-          ),
-        ]),
-      )
-
-      expect(response[0][0]).toBe(instance)
-      expect(response[0][1]).toEqual([
-        ['key1', undefined],
-        ['key2', 'value2'],
-      ])
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toBe(undefined)
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toBe('value2')
     })
 
     it('should not add properties when values request failed', async () => {
@@ -342,20 +288,10 @@ describe('gadgetFilter', () => {
         throw new Error('Unexpected url')
       })
 
-      const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
-          instanceMap,
-          await Promise.all(
-            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
-          ),
-        ]),
-      )
-
-      expect(response[0][0]).toBe(instance)
-      expect(response[0][1]).toEqual([
-        ['key1', undefined],
-        ['key2', 'value2'],
-      ])
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toBe(undefined)
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toBe('value2')
     })
   })
   describe('onFetch', () => {

@@ -23,6 +23,7 @@ import {
   ObjectType,
   ReferenceExpression,
   toChange,
+  Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
@@ -56,7 +57,7 @@ describe('gadgetFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
   let elements: Element[]
-  let adapterContext: { dashboardPropertiesPromise: InstantToPropertiesResponse[] }
+  let adapterContext: Values = {}
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
@@ -149,11 +150,14 @@ describe('gadgetFilter', () => {
     })
     it('should return the dashboard properties', async () => {
       const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
           instanceMap,
-          await promisePropertyValue,
+          await Promise.all(
+            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+          ),
         ]),
       )
+
       expect(response).toHaveLength(1)
       expect(response[0][0]).toBe(instance)
       expect(response[0][1]).toEqual([
@@ -165,7 +169,12 @@ describe('gadgetFilter', () => {
     it('should return empty list if the elements are not instances', async () => {
       const response = await Promise.all(
         (getDashboardPropertiesAsync(client, [dashboardGadgetType]) as InstantToPropertiesResponse[]).map(
-          async ({ instance: instanceMap, promisePropertyValue }) => [instanceMap, await promisePropertyValue],
+          async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
+            instanceMap,
+            await Promise.all(
+              Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+            ),
+          ],
         ),
       )
       expect(response).toHaveLength(0)
@@ -174,9 +183,11 @@ describe('gadgetFilter', () => {
     it('should return empty list if the request threw an error', async () => {
       connection.get.mockRejectedValue(new Error('error'))
       const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
           instanceMap,
-          await promisePropertyValue,
+          await Promise.all(
+            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+          ),
         ]),
       )
       expect(response).toHaveLength(1)
@@ -213,9 +224,11 @@ describe('gadgetFilter', () => {
         throw new Error('Unexpected url')
       })
       const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
           instanceMap,
-          await promisePropertyValue,
+          await Promise.all(
+            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+          ),
         ]),
       )
 
@@ -230,9 +243,11 @@ describe('gadgetFilter', () => {
       connection.get.mockRejectedValue(new Error('Failed to get keys'))
 
       const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
           instanceMap,
-          await promisePropertyValue,
+          await Promise.all(
+            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+          ),
         ]),
       )
 
@@ -278,9 +293,11 @@ describe('gadgetFilter', () => {
       })
 
       const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
           instanceMap,
-          await promisePropertyValue,
+          await Promise.all(
+            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+          ),
         ]),
       )
 
@@ -326,9 +343,11 @@ describe('gadgetFilter', () => {
       })
 
       const response = await Promise.all(
-        responsePromise.map(async ({ instance: instanceMap, promisePropertyValue }) => [
+        responsePromise.map(async ({ instance: instanceMap, PromisePromisePropertyValues }) => [
           instanceMap,
-          await promisePropertyValue,
+          await Promise.all(
+            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+          ),
         ]),
       )
 

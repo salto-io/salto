@@ -47,7 +47,7 @@ const log = logger(module)
 
 export type InstantToPropertiesResponse = {
   instance: InstanceElement
-  promisePropertyValue: Promise<[string, Value][]>
+  PromisePromisePropertyValues: Promise<Record<string, Promise<Value>>>
 }
 
 const getSubTypes = (): {
@@ -136,11 +136,12 @@ const getPropertyValue = async (instance: InstanceElement, key: string, client: 
   }
 }
 
-const getAPIResponse = async (client: JiraClient, instance: InstanceElement): Promise<[string, Value][]> => {
+const getAPIResponse = async (
+  client: JiraClient,
+  instance: InstanceElement,
+): Promise<Record<string, Promise<Value>>> => {
   const keys = await getPropertiesKeys(instance, client)
-  return Promise.all(keys.map(async key => [key, await getPropertyValue(instance, key, client)])) as Promise<
-    [string, Value][]
-  >
+  return Object.fromEntries(keys.map(key => [key, getPropertyValue(instance, key, client)]))
 }
 
 export const getDashboardPropertiesAsync = (client: JiraClient, elements: Element[]): InstantToPropertiesResponse[] =>
@@ -149,7 +150,7 @@ export const getDashboardPropertiesAsync = (client: JiraClient, elements: Elemen
     .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
     .map(instance => ({
       instance,
-      promisePropertyValue: getAPIResponse(client, instance),
+      PromisePromisePropertyValues: getAPIResponse(client, instance),
     }))
 
 const filter: FilterCreator = ({ client, config, adapterContext }) => ({
@@ -158,9 +159,13 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
     const instantsToPropertiesResponse: InstantToPropertiesResponse[] = adapterContext.dashboardPropertiesPromise
 
     await Promise.all(
-      instantsToPropertiesResponse.map(async ({ instance, promisePropertyValue }) => {
-        const properties = Object.fromEntries(await promisePropertyValue)
-        instance.value.properties = _.pickBy(properties, values.isDefined)
+      instantsToPropertiesResponse.map(async ({ instance, PromisePromisePropertyValues }) => {
+        const propertyValues = Object.fromEntries(
+          await Promise.all(
+            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+          ),
+        )
+        instance.value.properties = _.pickBy(propertyValues, values.isDefined)
       }),
     )
 

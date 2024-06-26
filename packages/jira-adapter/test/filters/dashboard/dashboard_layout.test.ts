@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, Element, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -34,7 +34,7 @@ describe('dashboardLayoutFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
   let elements: Element[]
-  let adapterContext: { dashboardLayoutPromise: InstanceToResponse[] }
+  let adapterContext: Values = {}
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
@@ -95,7 +95,7 @@ describe('dashboardLayoutFilter', () => {
       expect(response).toHaveLength(0)
     })
 
-    it('should return empty list if there is no instances of DASHBOARD_TYPE in the elements', async () => {
+    it('should return empty list if there is no instances of Dashboard type in the elements', async () => {
       const response = getDashboardLayoutsAsync(client, config, [dashboardType]) as InstanceToResponse[]
       expect(response).toHaveLength(0)
     })
@@ -108,12 +108,12 @@ describe('dashboardLayoutFilter', () => {
   })
   describe('onFetch', () => {
     it('should add layout to the instance', async () => {
-      const Apiresponse = Promise.resolve<clientUtils.Response<clientUtils.ResponseValue>>({
+      const Apiresponse = {
         status: 200,
         data: {
           layout: 'AAA',
         },
-      })
+      }
       adapterContext.dashboardLayoutPromise = [{ instance, PromiseResponse: Apiresponse }]
       await filter.onFetch(elements)
       expect(instance.value.layout).toBe('AAA')
@@ -133,7 +133,7 @@ describe('dashboardLayoutFilter', () => {
     })
 
     it('should not add layout when dashboardLayoutPromise is undefined', async () => {
-      const Errorresponse = Promise.resolve(undefined)
+      const Errorresponse = undefined
       adapterContext.dashboardLayoutPromise = [{ instance, PromiseResponse: Errorresponse }]
       await filter.onFetch(elements)
 
@@ -141,10 +141,10 @@ describe('dashboardLayoutFilter', () => {
       expect(connection.get).not.toHaveBeenCalled()
     })
     it('should not add layout if response is invalid', async () => {
-      const Apiresponse = Promise.resolve<clientUtils.Response<clientUtils.ResponseValue[]>>({
+      const Apiresponse = {
         status: 200,
         data: [],
-      })
+      }
       adapterContext.dashboardLayoutPromise = [{ instance, PromiseResponse: Apiresponse }]
       await filter.onFetch(elements)
       expect(instance.value.layout).toBeUndefined()

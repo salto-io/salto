@@ -97,7 +97,7 @@ describe('automationLabelFetchFilter', () => {
     })
 
     it('should fetch automation labels in Jira DC', async () => {
-      const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(true)
       client = cli
       connection = conn
 
@@ -207,7 +207,7 @@ describe('automationLabelFetchFilter', () => {
     })
   })
   it('should warn if response is 403', async () => {
-    const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(true)
     client = cli
     connection = conn
 
@@ -236,7 +236,7 @@ describe('automationLabelFetchFilter', () => {
     })
   })
   it('should warn if response is 405', async () => {
-    const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(true)
     client = cli
     connection = conn
 

@@ -276,6 +276,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       url: GET_CLOUD_ID_URL,
     })
     if (!isCloudIdResponse(response.data)) {
+      this.cloudId = undefined // This invalidates cloudId cache.
       throw new Error(`'Failed to get cloud id, received invalid response' ${response.data}`)
     }
     return response.data.cloudId
@@ -283,6 +284,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
 
   public async getCloudId(): Promise<string> {
     if (this.cloudId === undefined) {
+      // Caches result/promise so that future calls await on the same request.
       this.cloudId = this.getCloudIdPromise()
     }
     return this.cloudId

@@ -96,10 +96,11 @@ const consumeType = (
     }
   }
 
+  let primitive = primitiveType(baseType)
+
   // If the base type token can't be resolved to a specific primitive type, we will
   // just treat the type as unknown and add an error.
   // No need to recover since structure is unharmed.
-  let primitive = primitiveType(baseType)
   if (primitive === undefined) {
     context.errors.push(unknownPrimitiveTypeError(range, baseType))
     primitive = PrimitiveTypes.UNKNOWN

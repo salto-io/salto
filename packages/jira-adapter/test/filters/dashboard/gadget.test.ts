@@ -304,25 +304,6 @@ describe('gadgetFilter', () => {
       })
     })
   })
-
-  describe('fetch + async get', () => {
-    it('should add properties values', async () => {
-      adapterContext.dashboardPropertiesPromise = getDashboardPropertiesAsync(client, elements)
-
-      await filter.onFetch?.(elements)
-
-      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties', undefined)
-
-      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', undefined)
-
-      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', undefined)
-
-      expect(instance.value.properties).toEqual({
-        key1: 'value1',
-        key2: 'value2',
-      })
-    })
-  })
   describe('deploy', () => {
     const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
 

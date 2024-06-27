@@ -47,7 +47,7 @@ export type Guide = {
 export type OmitInactiveConfig = definitions.DefaultWithCustomizations<boolean>
 
 export type ZendeskFetchConfig = definitions.UserFetchConfig<{
-  customNameMappingOptions: string
+  customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
 }> & {
   enableMissingReferences?: boolean
@@ -83,7 +83,7 @@ export type ZendeskApiConfig = configUtils.AdapterApiConfig<
 >
 
 export type ZendeskUserConfig = definitions.UserConfig<
-  string,
+  never,
   ZendeskClientConfig,
   ZendeskFetchConfig,
   ZendeskDeployConfig

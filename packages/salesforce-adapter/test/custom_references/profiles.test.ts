@@ -15,9 +15,9 @@
  */
 import {
   ElemID,
-  Field,
   FixElementsFunc,
   InstanceElement,
+  ObjectType,
   ReferenceExpression,
   ReferenceInfo,
   Values,
@@ -26,10 +26,13 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
+  API_NAME,
   CUSTOM_APPLICATION_METADATA_TYPE,
+  CUSTOM_OBJECT,
   FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
   LAYOUT_TYPE_ID_METADATA_TYPE,
+  METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
@@ -932,11 +935,16 @@ describe('profiles', () => {
     describe('when references are resolved', () => {
       beforeEach(() => {
         const elementsSource = buildElementsSourceFromElements([
-          new Field(
-            mockTypes.Account,
-            'testField__c',
-            mockTypes.AccountSettings,
-          ),
+          new ObjectType({
+            elemID: new ElemID('salesforce', 'Account'),
+            fields: {
+              testField__c: { refType: mockTypes.AccountSettings },
+            },
+            annotations: {
+              [METADATA_TYPE]: CUSTOM_OBJECT,
+              [API_NAME]: 'Account',
+            },
+          }),
           new InstanceElement(
             'SomeApplication',
             mockTypes.CustomApplication,
@@ -949,7 +957,6 @@ describe('profiles', () => {
             mockTypes.Layout,
             {},
           ),
-          mockTypes.Account,
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
           new InstanceElement(
             'Case_SomeCaseRecordType',
@@ -962,7 +969,7 @@ describe('profiles', () => {
         })
       })
 
-      it('should drop fields', async () => {
+      it('should not drop fields', async () => {
         const { fixedElements, errors } = await fixElementsFunc([
           profileInstance,
         ])

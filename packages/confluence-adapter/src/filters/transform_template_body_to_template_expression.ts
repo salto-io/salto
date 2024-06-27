@@ -144,7 +144,8 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       instances.forEach(inst => {
         if (inst.elemID.typeName === SPACE_TYPE_NAME) {
           indices.spaceByKey[inst.value.key] = inst
-        } else if (inst.elemID.typeName === PAGE_TYPE_NAME) {
+        }
+        if (inst.elemID.typeName === PAGE_TYPE_NAME) {
           const spaceRef = inst.value.spaceId
           if (!isReferenceExpression(spaceRef)) {
             return

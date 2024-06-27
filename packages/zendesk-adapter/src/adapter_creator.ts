@@ -28,6 +28,7 @@ import {
   config as configUtils,
   definitions,
 } from '@salto-io/adapter-components'
+import { inspectValue } from '@salto-io/adapter-utils'
 import ZendeskAdapter from './adapter'
 import {
   Credentials,
@@ -128,9 +129,12 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     const configForNewInfra = config?.clone()
     const updatedElemIDs = updateElemIDDefinitions(configForNewInfra?.value?.apiDefinitions)
     if (updatedElemIDs?.elemID !== undefined) {
+      if (fetch.elemID !== undefined) {
+        log.debug('fetch.elemId is defined and is going to be merged with data from the api_definition')
+      }
       const mergedElemIDConfig = _.merge(_.pick(fetch, 'elemID'), updatedElemIDs)
-
       fetch.elemID = mergedElemIDConfig.elemID
+      log.debug(`elemId config has changes and equal to: ${inspectValue(fetch.elemID)}`)
     }
   }
 

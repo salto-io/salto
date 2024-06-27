@@ -78,6 +78,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       client,
       customSettingsMap,
       config,
+      false,
     )
     elements.push(...instances)
     return {

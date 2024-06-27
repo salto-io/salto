@@ -35,7 +35,6 @@ import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
-import { OMIT_CREDS_HEADER } from '../../user_utils'
 
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created: { omit: true },
@@ -991,8 +990,8 @@ const createCustomizations = ({
     requests: [
       {
         endpoint: {
-          path: '/api/v1/users',
-          headers: OMIT_CREDS_HEADER,
+          // The search query is needed to fetch deprovisioned users
+          path: '/api/v1/users?search=id+pr',
         },
       },
     ],
@@ -1011,6 +1010,14 @@ const createCustomizations = ({
         activated: { omit: true },
         _links: { omit: true },
         type: { fieldType: 'UserTypeRef' },
+      },
+    },
+  },
+  UserCredentials: {
+    element: {
+      fieldCustomizations: {
+        recovery_question: { omit: true },
+        password: { omit: true },
       },
     },
   },

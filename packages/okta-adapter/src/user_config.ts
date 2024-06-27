@@ -72,6 +72,7 @@ const changeValidatorNames = [
   'domainAddition',
   'domainModification',
   'appUserSchemaBaseChanges',
+  'userStatusChanges',
 ] as const
 
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]

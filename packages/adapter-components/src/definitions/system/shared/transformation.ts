@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { types } from '@salto-io/lowerdash'
-import { Values } from '@salto-io/adapter-api'
+import { Value, Values } from '@salto-io/adapter-api'
 import { HTTPEndpointIdentifier, RequestArgs } from '../requests/types'
 import { ArgsWithCustomizer } from './types'
 
@@ -68,7 +68,7 @@ export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTarg
  *   if single is true, the first result of the transformation will be returned from the resulting array
  *   (and undefined will be returned if the array is empty). if single is false, the result will be returned as-is.
  */
-export type TransformDefinition<TContext = ContextParams, TTargetVal = Values> = {
+export type TransformDefinition<TContext = ContextParams, TTargetVal = Values | Value> = {
   // return field name (can customize e.g. to "type => types")
   root?: string
   pick?: string[]

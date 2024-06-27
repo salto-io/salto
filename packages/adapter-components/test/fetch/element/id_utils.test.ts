@@ -248,6 +248,29 @@ describe('id utils', () => {
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual(['myAdapter', 'Records', 'myType', 'thisIsACuteCustomName'])
     })
+    it('should calculate correct path when extendParent is true', () => {
+      const parent = new InstanceElement('parent_name@s', new ObjectType({ elemID: typeID }))
+      expect(
+        getElemPath({
+          def: {
+            pathParts: [
+              {
+                parts: [{ fieldName: 'a', mapping: 'customTest' }],
+                extendsParent: true,
+              },
+            ],
+          },
+          typeID,
+          elemIDCreator: createElemIDFunc({
+            elemIDDef: {
+              parts: [{ fieldName: 'a' }],
+            },
+            typeID,
+            customNameMappingFunctions: {},
+          }),
+        })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent }),
+      ).toEqual(['myAdapter', 'Records', 'myType', 'parent_name__A'])
+    })
     it('should set path to settings folder if singleton', () => {
       expect(
         getElemPath({

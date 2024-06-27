@@ -70,6 +70,7 @@ import {
   walkOnElement,
   WalkOnFunc,
   walkOnValue,
+  elementAnnotationTypes,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
@@ -1198,7 +1199,7 @@ const getServiceIdsFromAnnotations = (annotationRefTypes: TypeMap, annotations: 
 
 const getObjectServiceId = async (objectType: ObjectType, elementsSource: ReadOnlyElementsSource): Promise<string> => {
   const serviceIds = getServiceIdsFromAnnotations(
-    await objectType.getAnnotationTypes(elementsSource),
+    await elementAnnotationTypes(objectType, elementsSource),
     objectType.annotations,
     objectType.elemID,
   )
@@ -1214,7 +1215,7 @@ const getFieldServiceId = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<string> => {
   const serviceIds = getServiceIdsFromAnnotations(
-    await (await field.getType(elementsSource)).getAnnotationTypes(elementsSource),
+    await elementAnnotationTypes(field, elementsSource),
     field.annotations,
     field.elemID,
   )
@@ -1273,7 +1274,7 @@ export const createElemIdGetter = async (
   const serviceIdToStateElemId = await generateServiceIdToStateElemId(elements, src)
   // Here we expect the serviceName to come from the service. So, it's not aware of the
   // account name of the relevant account. However, the map we search in was built to
-  // accomodate this. The only thing we need is to make sure that we change the ElemID
+  // accommodate this. The only thing we need is to make sure that we change the ElemID
   // we get from the map back to fit the service name.
   return (serviceName: string, serviceIds: ServiceIds, name: string): ElemID => {
     const elemID = serviceIdToStateElemId[toServiceIdsString(serviceIds)]

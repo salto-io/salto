@@ -359,11 +359,29 @@ export type FieldDefinition = {
   annotations?: Values
 }
 
+const validateMetaType = (metaType?: ObjectType): ObjectType | undefined => {
+  if (metaType === undefined) {
+    return undefined
+  }
+
+  if (!isObjectType(metaType)) {
+    log.error(`Got an invalid meta type which is not an object type with ${(metaType as Element).elemID}.`)
+    return undefined
+  }
+
+  if (metaType instanceof PlaceholderObjectType) {
+    log.warn(`Meta type with ID ${metaType.elemID.getFullName()} not found in elements source.`)
+  }
+
+  return metaType
+}
+
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
 export class ObjectType extends Element {
   fields: FieldMap
+  metaType: TypeReference<ObjectType> | undefined
   isSettings: boolean
 
   constructor({
@@ -371,6 +389,7 @@ export class ObjectType extends Element {
     fields = {},
     annotationRefsOrTypes = {},
     annotations = {},
+    metaType = undefined,
     isSettings = false,
     path = undefined,
   }: {
@@ -378,6 +397,7 @@ export class ObjectType extends Element {
     fields?: Record<string, FieldDefinition>
     annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
+    metaType?: TypeOrRef<ObjectType>
     isSettings?: boolean
     path?: ReadonlyArray<string>
   }) {
@@ -386,6 +406,9 @@ export class ObjectType extends Element {
       fields,
       (fieldDef, name) => new Field(this, name, getRefType(fieldDef.refType), fieldDef.annotations),
     )
+    if (metaType !== undefined) {
+      this.metaType = getRefType(metaType)
+    }
     this.isSettings = isSettings
   }
 
@@ -404,9 +427,30 @@ export class ObjectType extends Element {
         _.mapValues(this.fields, f => f.elemID.getFullName()),
         _.mapValues(other.fields, f => f.elemID.getFullName()),
       ) &&
+      this.isMetaTypeEqual(other) &&
       _.isEqual(this.isSettings, other.isSettings) &&
       _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n], options)))
     )
+  }
+
+  isMetaTypeEqual(other: ObjectType): boolean {
+    if (this.metaType === undefined && other.metaType === undefined) {
+      return true
+    }
+
+    if (this.metaType === undefined || other.metaType === undefined) {
+      return false
+    }
+
+    return this.metaType.elemID.isEqual(other.metaType.elemID)
+  }
+
+  async getMetaType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType | undefined> {
+    return validateMetaType(await this.metaType?.getResolvedValue(elementsSource))
+  }
+
+  getMetaTypeSync(): ObjectType | undefined {
+    return validateMetaType(this.metaType?.getResolvedValueSync())
   }
 
   /**
@@ -421,6 +465,7 @@ export class ObjectType extends Element {
       fields: this.cloneFields(),
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
+      metaType: this.metaType?.clone(),
       isSettings,
       path: this.path !== undefined ? [...this.path] : undefined,
     })
@@ -457,6 +502,7 @@ const validateType = (type: TypeElement | undefined, elemID: ElemID): TypeElemen
   }
   return type
 }
+
 export class InstanceElement extends Element {
   public refType: TypeReference<ObjectType>
   constructor(

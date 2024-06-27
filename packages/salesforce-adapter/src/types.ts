@@ -187,6 +187,7 @@ type ObjectAliasSettings = {
 export type SaltoIDSettings = {
   defaultIdFields: string[]
   overrides?: ObjectIdSettings[]
+  regenerateSaltoIds?: boolean
 }
 
 export type SaltoAliasSettings = {
@@ -259,6 +260,9 @@ const saltoIDSettingsType = new ObjectType({
     },
     overrides: {
       refType: new ListType(objectIdSettings),
+    },
+    regenerateSaltoIds: {
+      refType: BuiltinTypes.BOOLEAN,
     },
   } as Record<keyof SaltoIDSettings, FieldDefinition>,
   annotations: {
@@ -377,6 +381,7 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
+  regenerateSaltoIds?: boolean
 }
 
 export type FetchParameters = {
@@ -1071,6 +1076,7 @@ export type DataManagement = {
   showReadOnlyValues?: boolean
   managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
   omittedFieldsForType: (name: string) => string[]
+  regenerateSaltoIds: boolean
 }
 
 export type FetchProfile = {

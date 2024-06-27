@@ -60,5 +60,5 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
   if (_.isEmpty(overrides)) {
     return definitions
   }
-  return _.mergeWith({}, definitions, overrides, customMerge)
+  return _.mergeWith(definitions, overrides, customMerge)
 }

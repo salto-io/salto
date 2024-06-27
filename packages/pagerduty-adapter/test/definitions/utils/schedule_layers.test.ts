@@ -54,8 +54,8 @@ describe('schedule layers definitions utils', () => {
         value: { something: 'else' },
       }
     })
-    it('should add time zone from additionalContext', () => {
-      expect(addTimeZone(item).value).toEqual({
+    it('should add time zone from additionalContext', async () => {
+      expect((await addTimeZone(item)).value).toEqual({
         schedule: { schedule_layers: [{ something: 'else' }], time_zone: 'Tel Aviv' },
       })
     })

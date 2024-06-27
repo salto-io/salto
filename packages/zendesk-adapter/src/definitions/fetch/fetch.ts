@@ -225,6 +225,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/rules/automations/{id}' },
         elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
         singleton: true,
       },
       fieldCustomizations: {

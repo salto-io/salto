@@ -66,7 +66,7 @@ const calculateContextArgs = async ({
             context: item.context,
           })
           if (!_.isArray(transformed)) {
-            return [transformed] ?? []
+            return transformed !== undefined ? [transformed] : []
           }
           return transformed
         })
@@ -178,7 +178,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         ? // fake grouping to avoid merging
           Object.fromEntries(allFragments.map((fragment, idx) => [idx, [fragment]]))
         : _.groupBy(allFragments, ({ value }) => toServiceID(value))
-      const mergedFragments = mapValuesAsync(
+      const mergedFragments = await mapValuesAsync(
         _(groupedFragments)
           .mapValues(fragments => ({
             typeName,

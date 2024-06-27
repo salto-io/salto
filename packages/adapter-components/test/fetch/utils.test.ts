@@ -40,9 +40,9 @@ describe('fetch utils', () => {
       }
     })
     describe('when def combines multiple args', () => {
-      it('should transform values based on the provided definitions', () => {
+      it('should transform values based on the provided definitions', async () => {
         const func = createValueTransformer({ root: 'a', nestUnderField: 'b', pick: ['x', 'y', 'z'], omit: ['z'] })
-        expect(func(item)).toEqual([
+        expect(await func(item)).toEqual([
           {
             context: {},
             typeName: 't',
@@ -54,11 +54,11 @@ describe('fetch utils', () => {
           },
         ])
       })
-      it('should not modify item if no customizations are provided, but still convert to array', () => {
-        expect(createValueTransformer({})(item)).toEqual([item])
-        expect(createValueTransformer()(item)).toEqual([item])
+      it('should not modify item if no customizations are provided, but still convert to array', async () => {
+        expect(await createValueTransformer({})(item)).toEqual([item])
+        expect(await createValueTransformer()(item)).toEqual([item])
       })
-      it('should apply adjust after the other steps, and add context and typeName if not returned from adjust', () => {
+      it('should apply adjust after the other steps, and add context and typeName if not returned from adjust', async () => {
         const func = createValueTransformer({
           root: 'a',
           nestUnderField: 'b',
@@ -67,7 +67,7 @@ describe('fetch utils', () => {
             value: lowerdashValues.isPlainObject(value) ? _.mapKeys(value, (_v, key) => key.toUpperCase()) : 'unknown',
           }),
         })
-        expect(func(item)).toEqual([
+        expect(await func(item)).toEqual([
           {
             context: {},
             typeName: 't',
@@ -84,15 +84,15 @@ describe('fetch utils', () => {
           },
         ])
       })
-      it('should give precedence to properties returned from adjust', () => {
+      it('should give precedence to properties returned from adjust', async () => {
         const func = createValueTransformer({
-          adjust: ({ value, context, typeName }) => ({
+          adjust: async ({ value, context, typeName }) => ({
             context,
             typeName,
             value: lowerdashValues.isPlainObject(value) ? _.mapKeys(value, (_v, key) => key.toUpperCase()) : 'unknown',
           }),
         })
-        expect(func(item)).toEqual([
+        expect(await func(item)).toEqual([
           {
             context: {},
             typeName: 't',
@@ -110,9 +110,9 @@ describe('fetch utils', () => {
           },
         ])
       })
-      it('should return a single item if single=true and item has single value', () => {
+      it('should return a single item if single=true and item has single value', async () => {
         const func = createValueTransformer({ root: 'a', omit: ['z'], single: true })
-        expect(func(item)).toEqual({
+        expect(await func(item)).toEqual({
           context: {},
           typeName: 't',
           value: {
@@ -120,13 +120,13 @@ describe('fetch utils', () => {
           },
         })
       })
-      it('should return undefined if single=true and item array is empty', () => {
+      it('should return undefined if single=true and item array is empty', async () => {
         const func = createValueTransformer({ root: 'a', single: true })
-        expect(func({ context: {}, typeName: 't', value: { a: [] } })).toBeUndefined()
+        expect(await func({ context: {}, typeName: 't', value: { a: [] } })).toBeUndefined()
       })
-      it('should return first value if single=true and item array is longer', () => {
+      it('should return first value if single=true and item array is longer', async () => {
         const func = createValueTransformer({ root: 'a', single: true })
-        expect(func({ context: {}, typeName: 't', value: { a: [1, 2] } })).toEqual({
+        expect(await func({ context: {}, typeName: 't', value: { a: [1, 2] } })).toEqual({
           context: {},
           typeName: 't',
           value: 1,

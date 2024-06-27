@@ -75,26 +75,26 @@ const createExtractor = (transformationDef?: TransformDefinition<ChangeAndContex
   }
 }
 
-const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndContext) => boolean) => {
+const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndContext) => Promise<boolean>) => {
   const { custom, transformForCheck, skipIfIdentical } = conditionDef ?? {}
   if (custom !== undefined) {
-    return custom({ skipIfIdentical, transformForCheck })
+    return async input => custom({ skipIfIdentical, transformForCheck })(input)
   }
   if (skipIfIdentical === false) {
-    return () => true
+    return async () => true
   }
   // note: no need to add a default for the value of single,
   // since the comparison will return the same value when working with two arrays vs two individual items
   const transform = createValueTransformer(transformForCheck)
-  return args => {
+  return async args => {
     const { change } = args
     if (!isModificationChange(change)) {
       return true
     }
     const { typeName } = change.data.after.elemID
     return !isEqualValues(
-      transform({ value: change.data.before.value, typeName, context: args }),
-      transform({ value: change.data.after.value, typeName, context: args }),
+      await transform({ value: change.data.before.value, typeName, context: args }),
+      await transform({ value: change.data.after.value, typeName, context: args }),
     )
   }
 }
@@ -176,17 +176,17 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
   return dataToApply
 }
 
-const extractExtraContextToApply = <ClientOptions extends string>({
+const extractExtraContextToApply = async <ClientOptions extends string>({
   requestDef,
   response,
   ...changeAndContext
 }: {
   requestDef: DeployableRequestDefinition<ClientOptions>
   response: Response<ResponseValue | ResponseValue[]>
-} & ChangeAndContext): Values | undefined => {
+} & ChangeAndContext): Promise<Values | undefined> => {
   const { toSharedContext } = requestDef.copyFromResponse ?? {}
   if (toSharedContext !== undefined) {
-    const dataToApply = extractDataToApply({
+    const dataToApply = await extractDataToApply({
       definition: toSharedContext,
       changeAndContext,
       response,
@@ -364,7 +364,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
         throw new Error(`Invalid request for change ${elemID.getFullName()} action ${action}`)
       }
       const checkFunc = createCheck(condition)
-      if (!checkFunc(args)) {
+      if (!await checkFunc(args)) {
         if (!request.earlySuccess) {
           const { client, path, method } = request.endpoint
           log.trace(
@@ -395,7 +395,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
           )
           _.assign(getChangeData(change).value, dataToApply)
         }
-        const extraContextToApply = extractExtraContextToApply({ ...args, requestDef: def, response: res })
+        const extraContextToApply = await extractExtraContextToApply({ ...args, requestDef: def, response: res })
         if (extraContextToApply !== undefined) {
           log.trace(
             'applying the following value to extra context in group %s from change %s: %s',

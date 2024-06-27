@@ -35,7 +35,7 @@ const extractRecurseIntoContext = async (
   recurseIntoDef: RecurseIntoDefinition,
 ): Promise<Record<string, unknown>> => {
   const { args: contextArgs } = recurseIntoDef.context
-  const context = mapValuesAsync(contextArgs, async contextDef => {
+  const context = await mapValuesAsync(contextArgs, async contextDef => {
     const transformer = createValueTransformer(contextDef)
     const transformedItem = await transformer(item)
     if (Array.isArray(transformedItem)) {
@@ -91,7 +91,7 @@ export const recurseIntoSubresources =
           Object.entries(def.recurseInto ?? {})
             .filter(([_fieldName, { conditions }]) => shouldRecurseIntoEntry(item.value, item.context, conditions))
             .map(async ([fieldName, recurseDef]) => {
-              const nestedRequestContext = extractRecurseIntoContext(item, recurseDef)
+              const nestedRequestContext = await extractRecurseIntoContext(item, recurseDef)
               const typeFetcher = typeFetcherCreator({
                 typeName: recurseDef.typeName,
                 context: { ...item.context, ...nestedRequestContext },

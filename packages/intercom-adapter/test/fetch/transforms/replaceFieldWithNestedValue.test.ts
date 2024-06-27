@@ -26,9 +26,9 @@ describe('replaceFieldWithNestedValue', () => {
   describe('When the value is not an object', () => {
     it('Should throw an error', async () => {
       const fieldAdjustment = { fieldName: 'field1', nestedField: 'nestedField1', fallbackValue: 'fallback1' }
-      await expect(async () => replaceFieldWithNestedValue(fieldAdjustment)({ ...generatedItem, value: 'item1' })).rejects.toThrow(
-        'Unexpected item value: "item1", expected object',
-      )
+      await expect(async () =>
+        replaceFieldWithNestedValue(fieldAdjustment)({ ...generatedItem, value: 'item1' }),
+      ).rejects.toThrow('Unexpected item value: "item1", expected object')
     })
   })
 

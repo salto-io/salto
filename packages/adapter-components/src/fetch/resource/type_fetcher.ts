@@ -15,9 +15,9 @@
  */
 import _ from 'lodash'
 import objectHash from 'object-hash'
-import { ElemID, Values, isPrimitiveValue } from '@salto-io/adapter-api'
+import { ElemID, isPrimitiveValue, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { promises, collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementQuery } from '../query'
 import { Requester } from '../request/requester'
 import { TypeResourceFetcher, ValueGeneratedItem } from '../types'
@@ -179,18 +179,16 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
           Object.fromEntries(allFragments.map((fragment, idx) => [idx, [fragment]]))
         : _.groupBy(allFragments, ({ value }) => toServiceID(value))
       const mergedFragments = await mapValuesAsync(
-        _(groupedFragments)
-          .mapValues(fragments => ({
-            typeName,
-            // concat arrays
-            value: _.mergeWith({}, ...fragments.map(fragment => fragment.value), (first: unknown, second: unknown) =>
-              Array.isArray(first) && Array.isArray(second) ? first.concat(second) : undefined,
-            ),
-            context: {
-              fragments,
-            },
-          }))
-          .value(),
+        _.mapValues(groupedFragments, fragments => ({
+          typeName,
+          // concat arrays
+          value: _.mergeWith({}, ...fragments.map(fragment => fragment.value), (first: unknown, second: unknown) =>
+            Array.isArray(first) && Array.isArray(second) ? first.concat(second) : undefined,
+          ),
+          context: {
+            fragments,
+          },
+        })),
         async item =>
           collections.array.makeArray(
             await createValueTransformer<{ fragments: GeneratedItem[] }, Values>(def.mergeAndTransform)(item),

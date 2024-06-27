@@ -364,7 +364,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
         throw new Error(`Invalid request for change ${elemID.getFullName()} action ${action}`)
       }
       const checkFunc = createCheck(condition)
-      if (!await checkFunc(args)) {
+      if (!(await checkFunc(args))) {
         if (!request.earlySuccess) {
           const { client, path, method } = request.endpoint
           log.trace(

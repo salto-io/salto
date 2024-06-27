@@ -57,7 +57,7 @@ export const createClassicApiDefinitionsForType = (
               },
             },
             transformation: {
-              adjust:  async({ value }) => {
+              adjust: async ({ value }) => {
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
                 }
@@ -79,7 +79,7 @@ export const createClassicApiDefinitionsForType = (
               },
             },
             transformation: {
-              adjust:  async({ value }) => {
+              adjust: async ({ value }) => {
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
                 }

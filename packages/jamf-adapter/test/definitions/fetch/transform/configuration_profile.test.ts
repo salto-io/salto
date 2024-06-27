@@ -17,7 +17,9 @@ import { adjustConfigurationProfile } from '../../../../src/definitions/fetch/tr
 
 describe('adjust configuration profile', () => {
   it('should throw an error if value is not a record', async () => {
-    await expect(adjustConfigurationProfile({ value: 'not a record', context: {}, typeName: 'typeName' })).rejects.toThrow()
+    await expect(
+      adjustConfigurationProfile({ value: 'not a record', context: {}, typeName: 'typeName' }),
+    ).rejects.toThrow()
   })
   describe('adjustCategoryObjectToCategoryId', () => {
     it('should convert category object to category id', async () => {

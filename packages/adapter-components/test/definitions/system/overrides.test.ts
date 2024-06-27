@@ -16,13 +16,12 @@
 import _ from 'lodash'
 import { setupEnvVar } from '@salto-io/test-utils'
 import { Values } from '@salto-io/adapter-api'
+import { APIDefinitionsOptions, RequiredDefinitions } from '../../../src/definitions/system'
 import {
-  APIDefinitionsOptions,
   DEFINITIONS_OVERRIDES,
-  RequiredDefinitions,
   getParsedDefinitionsOverrides,
   mergeDefinitionsWithOverrides,
-} from '../../../src/definitions/system'
+} from '../../../src/definitions/system/overrides'
 
 describe('overrides', () => {
   describe('getParsedDefinitionsOverrides', () => {

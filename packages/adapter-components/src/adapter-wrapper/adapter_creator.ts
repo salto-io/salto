@@ -35,9 +35,8 @@ import {
   APIDefinitionsOptions,
   ResolveClientOptionsType,
   ResolveCustomNameMappingOptionsType,
-  getParsedDefinitionsOverrides,
-  mergeDefinitionsWithOverrides,
 } from '../definitions'
+import { getParsedDefinitionsOverrides, mergeDefinitionsWithOverrides } from '../definitions/system/overrides'
 import { RequiredDefinitions } from '../definitions/system/types'
 import { AdapterFilterCreator, FilterResult } from '../filter_utils'
 import { defaultValidateCredentials } from '../credentials'

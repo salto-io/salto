@@ -20,6 +20,7 @@ export const CORE_FLAG_PREFIX = 'SALTO_'
 export const CORE_FLAGS = {
   skipResolveTypesInElementSource: 'SKIP_RESOLVE_TYPES_IN_ELEMENT_SOURCE',
   autoMergeDisabled: 'AUTO_MERGE_DISABLE',
+  compareListItems: 'COMPARE_LIST_ITEMS',
 } as const
 
 type CoreFlagName = types.ValueOf<typeof CORE_FLAGS>

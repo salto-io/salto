@@ -40,6 +40,7 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import {
+  filterChangesForApply,
   getRelevantNamesFromChange,
   resolvePath,
   safeJsonStringify,
@@ -837,7 +838,8 @@ const buildNaclFilesSource = (
     )
   }
 
-  const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+  const updateNaclFiles = async (inputChanges: DetailedChange[]): Promise<ChangeSet<Change>> => {
+    const changes = filterChangesForApply(inputChanges)
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)

@@ -20,6 +20,7 @@ import {
   AdapterOperations,
   AdapterOperationsContext,
   AdditionChange,
+  CompareOptions,
   CORE_ANNOTATIONS,
   DetailedChange,
   DetailedChangeWithBaseChange,
@@ -136,6 +137,7 @@ export const getDetailedChanges = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
+  compareOptions?: CompareOptions,
 ): Promise<Iterable<DetailedChangeWithBaseChange>> =>
   wu(
     (
@@ -144,6 +146,7 @@ export const getDetailedChanges = async (
         after,
         dependencyChangers: [],
         topLevelFilters,
+        compareOptions,
       })
     ).itemsByEvalOrder(),
   )
@@ -171,7 +174,11 @@ const getDetailedChangeTree = async (
   topLevelFilters: IDFilter[],
   origin: WorkspaceDetailedChangeOrigin,
 ): Promise<DetailedChangeTreeResult> => {
-  const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
+  const changes = wu(
+    await getDetailedChanges(before, after, topLevelFilters, {
+      compareListItems: getCoreFlagBool(CORE_FLAGS.compareListItems),
+    }),
+  ).toArray()
   const changesTree = new collections.treeMap.TreeMap(
     changes.map(change => [change.id.getFullName(), [{ change, origin }]]),
   )
@@ -187,20 +194,25 @@ type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChang
 const toChangesWithPath =
   (accountElementByFullName: (id: ElemID) => Promise<Element[]> | Element[]): ChangeTransformFunction =>
   async change => {
-    const changeID: ElemID = change.change.id
-    if (!changeID.isTopLevel() && change.change.action === 'add') {
+    const oldLocationChangeId = change.change.elemIDs?.before ?? change.change.id
+    const newLocationChangeId = change.change.elemIDs?.after ?? change.change.id
+    if (
+      !newLocationChangeId.isTopLevel() &&
+      // in case of order change we want to calculate the new location unrelated to the old location
+      (change.change.action === 'add' || !oldLocationChangeId.isEqual(newLocationChangeId))
+    ) {
       const path = findNestedElementPath(
-        changeID,
-        await accountElementByFullName(changeID.createTopLevelParentID().parent),
+        newLocationChangeId,
+        await accountElementByFullName(newLocationChangeId.createTopLevelParentID().parent),
       )
       log.trace(
-        `addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`,
+        `addition change for nested ${newLocationChangeId.idType} with id ${newLocationChangeId.getFullName()}, path found ${path?.join('/')}`,
       )
       return path ? [_.merge({}, change, { change: { path } })] : [change]
     }
-    const originalElements = await accountElementByFullName(changeID)
+    const originalElements = await accountElementByFullName(newLocationChangeId)
     if (originalElements.length === 0) {
-      log.trace(`no original elements found for change element id ${changeID.getFullName()}`)
+      log.trace(`no original elements found for change element id ${newLocationChangeId.getFullName()}`)
       return [change]
     }
     // Replace merged element with original elements that have a path hint

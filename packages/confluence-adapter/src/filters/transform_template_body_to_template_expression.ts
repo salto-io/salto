@@ -137,25 +137,22 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
     name: 'templateBodyToTemplateExpressionFilter',
     onFetch: async elements => {
       const instances = elements.filter(isInstanceElement)
-      const indices: PossibleRefsInTemplateIndices = instances.reduce<PossibleRefsInTemplateIndices>(
-        (acc, inst) => {
+      const indices: PossibleRefsInTemplateIndices = {
+        spaceByKey: {},
+        pageBySpaceFullNameAndTitle: {},
+      }
+      instances.forEach(
+        inst => {
           if (inst.elemID.typeName === SPACE_TYPE_NAME) {
-            acc.spaceByKey[inst.value.key] = inst
+            indices.spaceByKey[inst.value.key] = inst
           } else if (inst.elemID.typeName === PAGE_TYPE_NAME) {
             const spaceRef = inst.value.spaceId
             if (!isReferenceExpression(spaceRef)) {
-              return acc
+              return
             }
-            acc.pageBySpaceFullNameAndTitle[inst.value.spaceId.elemID.getFullName()] = {
-              ...acc.pageBySpaceFullNameAndTitle[inst.value.spaceId.elemID.getFullName()],
-              [inst.value.title]: inst,
-            }
+            const spaceFullName = spaceRef.elemID.getFullName()
+            indices.pageBySpaceFullNameAndTitle[spaceFullName] = _.merge(indices.pageBySpaceFullNameAndTitle[spaceFullName], { [inst.value.title]: inst, })
           }
-          return acc
-        },
-        {
-          spaceByKey: {},
-          pageBySpaceFullNameAndTitle: {},
         },
       )
 

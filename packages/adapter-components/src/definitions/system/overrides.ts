@@ -16,22 +16,14 @@
 import _ from 'lodash'
 import { Value, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { types } from '@salto-io/lowerdash'
 import { RequiredDefinitions } from './types'
 import { APIDefinitionsOptions } from './api'
 
 const log = logger(module)
+export const DEFINITIONS_OVERRIDES = 'DEFINITION_OVERRIDES'
 
-export const DEFINITIONS_FLAGS = {
-  definitionOverride: 'DEFINITION_OVERRIDE',
-} as const
-
-type CoreFlagName = types.ValueOf<typeof DEFINITIONS_FLAGS>
-
-const getFlag = (flagName: CoreFlagName): string | undefined => process.env[flagName]
-
-export const getParsedFlag = (flagName: CoreFlagName): Values => {
-  const flagValue = getFlag(flagName)
+export const getParsedDefinitionsOverrides = (): Values => {
+  const flagValue = process.env[DEFINITIONS_OVERRIDES]
   let parsedFlagValue: unknown
   try {
     parsedFlagValue = flagValue === undefined ? undefined : JSON.parse(flagValue)
@@ -65,6 +57,8 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     }
     return srcValue
   }
-
+  if (_.isEmpty(overrides)) {
+    return definitions
+  }
   return _.mergeWith({}, definitions, overrides, customMerge)
 }

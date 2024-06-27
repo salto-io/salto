@@ -35,8 +35,7 @@ import {
   APIDefinitionsOptions,
   ResolveClientOptionsType,
   ResolveCustomNameMappingOptionsType,
-  getParsedFlag,
-  DEFINITIONS_FLAGS,
+  getParsedDefinitionsOverrides,
   mergeDefinitionsWithOverrides,
 } from '../definitions'
 import { RequiredDefinitions } from '../definitions/system/types'
@@ -129,7 +128,7 @@ export const createAdapter = <
         }),
       )
       const adapterDefinitions = definitionsCreator({ clients, userConfig: config, credentials })
-      const definitionOverrides = getParsedFlag(DEFINITIONS_FLAGS.definitionOverride)
+      const definitionOverrides = getParsedDefinitionsOverrides()
       const definitions = mergeDefinitionsWithOverrides(adapterDefinitions, definitionOverrides)
       const resolverCreator = getResolverCreator(definitions)
       const fixElements = customizeFixElements

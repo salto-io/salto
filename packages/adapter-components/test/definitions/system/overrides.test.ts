@@ -18,27 +18,27 @@ import { setupEnvVar } from '@salto-io/test-utils'
 import { Values } from '@salto-io/adapter-api'
 import {
   APIDefinitionsOptions,
-  DEFINITIONS_FLAGS,
+  DEFINITIONS_OVERRIDES,
   RequiredDefinitions,
-  getParsedFlag,
+  getParsedDefinitionsOverrides,
   mergeDefinitionsWithOverrides,
 } from '../../../src/definitions/system'
 
 describe('overrides', () => {
-  describe('getParsedFlag', () => {
-    const flagName = DEFINITIONS_FLAGS.definitionOverride
+  describe('getParsedDefinitionsOverrides', () => {
+    const flagName = DEFINITIONS_OVERRIDES
 
     describe('when flag is not set', () => {
       setupEnvVar(flagName, undefined)
       it('should return empty object', () => {
-        expect(getParsedFlag(flagName)).toEqual({})
+        expect(getParsedDefinitionsOverrides()).toEqual({})
       })
     })
 
     describe('when the flag has syntax error', () => {
       setupEnvVar(flagName, '{"name": "Alice" "age": 25}')
       it('should return empty object', () => {
-        expect(getParsedFlag(flagName)).toEqual({})
+        expect(getParsedDefinitionsOverrides()).toEqual({})
       })
     })
 
@@ -62,7 +62,7 @@ describe('overrides', () => {
       }`
       setupEnvVar(flagName, jsonString)
       it('should return an object', () => {
-        const parsed = getParsedFlag(flagName)
+        const parsed = getParsedDefinitionsOverrides()
         expect(parsed.name).toEqual('Uri')
         expect(parsed.address.street).toEqual('123 Main St')
         expect(parsed.courses[0].title).toEqual('Introduction to Magic')
@@ -131,6 +131,11 @@ describe('overrides', () => {
         ],
       },
     } as unknown as RequiredDefinitions<APIDefinitionsOptions>
+
+    it('should return the original definitions if no overrides are provided', () => {
+      const merged = mergeDefinitionsWithOverrides(mockedDefinitions, {})
+      expect(merged).toEqual(mockedDefinitions)
+    })
     it('should add a type to the fetch config', () => {
       const overrides: Values = {
         fetch: {
@@ -172,6 +177,12 @@ describe('overrides', () => {
               team: {
                 requests: [
                   {
+                    endpoint: {
+                      path: '/teams',
+                      queryArgs: {
+                        wow: 'wee',
+                      },
+                    },
                     transformation: {
                       root: 'teams',
                     },

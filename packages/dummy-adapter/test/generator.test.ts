@@ -308,6 +308,7 @@ describe('elements generator', () => {
       const elements = await generateElements(testParams, mockProgressReporter)
       expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj')).toBeDefined()
       expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj.instance.envEnvInst')).toBeDefined()
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvMeta')).toBeDefined()
       expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj')).toBeDefined()
       expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj.instance.EnvInst')).toBeDefined()
     })

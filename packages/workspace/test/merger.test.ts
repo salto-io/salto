@@ -22,11 +22,13 @@ import {
   PrimitiveTypes,
   TypeElement,
   Variable,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mergeElements, DuplicateAnnotationError, mergeSingleElement } from '../src/merger'
 import {
   ConflictingFieldTypesError,
+  ConflictingMetaTypeError,
   DuplicateAnnotationFieldDefinitionError,
   DuplicateAnnotationTypeError,
 } from '../src/merger/internal/object_types'
@@ -83,6 +85,11 @@ describe('merger', () => {
     fields: {
       field2: { refType: BuiltinTypes.NUMBER },
     },
+  })
+
+  const metaTypeConflict = new ObjectType({
+    elemID: baseElemID,
+    metaType: new TypeReference(new ElemID('salto', 'otherMeta')),
   })
 
   const fieldUpdate = new ObjectType({
@@ -229,6 +236,16 @@ describe('merger', () => {
       expect(errors[0]).toBeInstanceOf(ConflictingFieldTypesError)
       expect(errors[0].message).toContain(BuiltinTypes.STRING.elemID.getFullName())
       expect(errors[0].message).toContain(BuiltinTypes.NUMBER.elemID.getFullName())
+      expect(String(errors[0])).toEqual(errors[0].message)
+    })
+
+    it('returns an error when meta types have conflicting types', async () => {
+      const elements = [base, metaTypeConflict]
+      const errors = await awu((await mergeElements(awu(elements))).errors.values())
+        .flat()
+        .toArray()
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(ConflictingMetaTypeError)
       expect(String(errors[0])).toEqual(errors[0].message)
     })
   })

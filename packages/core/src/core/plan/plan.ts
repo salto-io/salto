@@ -210,7 +210,7 @@ const isEqualsNode = async (
 
   if (isObjectType(node1) && isObjectType(node2)) {
     // We don't check fields for object types since they have their own nodes.
-    return true
+    return node1.isMetaTypeEqual(node2)
   }
 
   if (isPrimitiveType(node1) && isPrimitiveType(node2)) {

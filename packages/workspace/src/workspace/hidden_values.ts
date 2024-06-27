@@ -675,6 +675,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
           annotations: diffAnno,
           fields: diffFields,
           path: fullElem.path,
+          metaType: fullElem.metaType,
           isSettings: fullElem.isSettings,
         }) as unknown as T)
   }

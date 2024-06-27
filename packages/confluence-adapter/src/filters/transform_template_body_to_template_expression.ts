@@ -141,20 +141,21 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         spaceByKey: {},
         pageBySpaceFullNameAndTitle: {},
       }
-      instances.forEach(
-        inst => {
-          if (inst.elemID.typeName === SPACE_TYPE_NAME) {
-            indices.spaceByKey[inst.value.key] = inst
-          } else if (inst.elemID.typeName === PAGE_TYPE_NAME) {
-            const spaceRef = inst.value.spaceId
-            if (!isReferenceExpression(spaceRef)) {
-              return
-            }
-            const spaceFullName = spaceRef.elemID.getFullName()
-            indices.pageBySpaceFullNameAndTitle[spaceFullName] = _.merge(indices.pageBySpaceFullNameAndTitle[spaceFullName], { [inst.value.title]: inst, })
+      instances.forEach(inst => {
+        if (inst.elemID.typeName === SPACE_TYPE_NAME) {
+          indices.spaceByKey[inst.value.key] = inst
+        } else if (inst.elemID.typeName === PAGE_TYPE_NAME) {
+          const spaceRef = inst.value.spaceId
+          if (!isReferenceExpression(spaceRef)) {
+            return
           }
-        },
-      )
+          const spaceFullName = spaceRef.elemID.getFullName()
+          indices.pageBySpaceFullNameAndTitle[spaceFullName] = _.merge(
+            indices.pageBySpaceFullNameAndTitle[spaceFullName],
+            { [inst.value.title]: inst },
+          )
+        }
+      })
 
       const templateInstances = instances.filter(inst => TEMPLATE_TYPE_NAMES.includes(inst.elemID.typeName))
       templateInstances.forEach(templateInst => {

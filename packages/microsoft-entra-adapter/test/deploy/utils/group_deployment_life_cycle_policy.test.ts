@@ -56,16 +56,16 @@ describe(`${getGroupLifecyclePolicyGroupModificationRequest.name}`, () => {
   })
 
   describe('adjust function', () => {
-    it('when the value is not a plain object', () => {
+    it('when the value is not a plain object', async () => {
       const { transformation } = getGroupLifecyclePolicyGroupModificationRequest('add')
-      expect(() =>
-        transformation?.adjust?.({ value: 'not an object', typeName: 'group', context: contextMock }),
+      expect(
+        () => await transformation?.adjust?.({ value: 'not an object', typeName: 'group', context: contextMock }),
       ).toThrow()
     })
 
-    it('should return the object id as the group id', () => {
+    it('should return the object id as the group id', async () => {
       const { transformation } = getGroupLifecyclePolicyGroupModificationRequest('add')
-      const adjustedItem = transformation?.adjust?.({
+      const adjustedItem = await transformation?.adjust?.({
         value: { id: 'id1', anotherField: ['ignoreThis'] },
         typeName: 'group',
         context: contextMock,

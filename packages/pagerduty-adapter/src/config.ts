@@ -29,7 +29,7 @@ export type UserConfig = definitions.UserConfig<
   definitions.UserDeployConfig
 >
 
-export const DEFAULT_CONVERT_USERS_IDS_VALUE = false
+export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
 
 export const DEFAULT_CONFIG: UserConfig = {
   fetch: {

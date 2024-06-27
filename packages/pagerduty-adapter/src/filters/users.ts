@@ -19,10 +19,10 @@ import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salt
 import { collections } from '@salto-io/lowerdash'
 import { filterUtils, fetch as fetchUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME, SCHEDULE_LAYERS_TYPE_NAME } from '../constants'
+import { ADAPTER_NAME, ESCALATION_POLICY_TYPE_NAME, SCHEDULE_LAYERS_TYPE_NAME, SCHEDULE_TYPE_NAME } from '../constants'
 import { Options } from '../definitions/types'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, UserConfig } from '../config'
-import { USER_FETCH_DEFINITIONS, isRelevantInstance } from '../users_utils'
+import { USER_FETCH_DEFINITIONS, isRelevantInstance, isRelevantInstanceForFetch } from '../users_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -73,6 +73,15 @@ const isScheduleLayerUser = (value: unknown): value is ScheduleLayerUser => {
   return _.isPlainObject(user) && _.isString(user.id) && _.isString(user.type)
 }
 
+const replaceUserInUserObject = (userObj: ScheduleLayerUser | UserReference, mapping: Record<string, string>): void => {
+  const userIdentifier = _.get(userObj, 'user.id')
+  if (mapping[userIdentifier]) {
+    _.set(userObj, 'user.id', mapping[userIdentifier])
+  } else {
+    log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
+  }
+}
+
 const replaceValues = (instance: InstanceElement, mapping: Record<string, string>): void => {
   switch (instance.elemID.typeName) {
     case ESCALATION_POLICY_TYPE_NAME:
@@ -95,14 +104,14 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
     case SCHEDULE_LAYERS_TYPE_NAME:
       makeArray(instance.value.users)
         .filter(isScheduleLayerUser)
-        .forEach(userObj => {
-          const userIdentifier = _.get(userObj, 'user.id')
-          if (mapping[userIdentifier]) {
-            _.set(userObj, 'user.id', mapping[userIdentifier])
-          } else {
-            log.debug(`Could not find user with id ${userIdentifier} in the mapping`)
-          }
-        })
+        .forEach(userObj => replaceUserInUserObject(userObj, mapping))
+      break
+    case SCHEDULE_TYPE_NAME:
+      makeArray(instance.value.schedule_layers).forEach(scheduleLayer => {
+        makeArray(scheduleLayer.users)
+          .filter(isScheduleLayerUser)
+          .forEach(userObj => replaceUserInUserObject(userObj, mapping))
+      })
       break
     default:
       break
@@ -139,7 +148,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
         log.debug('Converting user ids was disabled (onFetch)')
         return
       }
-      const instances = elements.filter(isInstanceElement).filter(isRelevantInstance)
+      const instances = elements.filter(isInstanceElement).filter(isRelevantInstanceForFetch)
       if (_.isEmpty(instances)) {
         return
       }
@@ -152,6 +161,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       })
       if (!users || _.isEmpty(users.elements)) {
         log.warn('Could not find any users (onFetch)')
+        return
       }
       const mapping = Object.fromEntries(
         users.elements.filter(isInstanceElement).map(user => [user.value.id, user.value.email]),

@@ -77,7 +77,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   },
   // privilege is a closed list so we do not need to fetch it
   domain: {
-    requests: [{
+    requests: [
       {
         endpoint: {
           path: '/admin/directory/v1/customer/my_customer/domains',
@@ -86,8 +86,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           root: 'domains',
         },
       },
-    ]},
-   
+    ],
     resource: {
       directFetch: true,
       serviceIDFields: ['domainName'],

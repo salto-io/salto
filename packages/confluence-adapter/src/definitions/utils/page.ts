@@ -23,13 +23,14 @@ import {
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { SPACE_TYPE_NAME } from '../../constants'
 import { AdditionalAction } from '../types'
 import { validateValue } from './generic'
-import { reduceAsync } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 
+
+const { reduceAsync } = collections.asynciterable
 const log = logger(module)
 
 /**
@@ -38,10 +39,13 @@ const log = logger(module)
  * This function will switch the action from 'add' to 'modify' in case of homepage addition.
  */
 export const homepageAdditionToModification: ({
-  change,
-  changeGroup,
-  elementSource,
-}: definitions.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({ change, changeGroup }) => {
+                                                change,
+                                                changeGroup,
+                                                elementSource,
+                                              }: definitions.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({
+                                                                                                                                change,
+                                                                                                                                changeGroup,
+                                                                                                                              }) => {
   const spaceChange = changeGroup.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
   if (isAdditionChange(change) && spaceChange !== undefined && isInstanceChange(spaceChange)) {
     const changeData = getChangeData(change)

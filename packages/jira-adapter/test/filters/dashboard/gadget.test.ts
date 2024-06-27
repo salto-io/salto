@@ -57,24 +57,14 @@ describe('gadgetFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
   let elements: Element[]
+  let paginator: clientUtils.Paginator
   let adapterContext: Values = {}
 
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient()
+    const { client: cli, connection: conn } = mockClient()
+    paginator = mockClient().paginator
     client = cli
     connection = conn
-    adapterContext = {
-      dashboardPropertiesPromise: [],
-    }
-    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = gadgetFilter(
-      getFilterParams({
-        client,
-        paginator,
-        config,
-        adapterContext,
-      }),
-    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     dashboardGadgetType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_GADGET_TYPE),
@@ -102,7 +92,18 @@ describe('gadgetFilter', () => {
         ],
       },
     )
-
+    adapterContext = {
+      dashboardPropertiesPromise: [{ instance, promisePropertyValues: { key1: 'value1', key2: 'value2' } }],
+    }
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    filter = gadgetFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        adapterContext,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
     connection.get.mockImplementation(async (url: string) => {
       if (url.endsWith('/properties')) {
         return {
@@ -150,9 +151,9 @@ describe('gadgetFilter', () => {
     })
     it('should return the dashboard properties', async () => {
       expect(responsePromise).toHaveLength(1)
-      expect(responsePromise[0].instance.value.id).toBe('1')
-      expect(await (await responsePromise[0].promisePropertyValues).key1).toBe('value1')
-      expect(await (await responsePromise[0].promisePropertyValues).key2).toBe('value2')
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toEqual('value1')
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toEqual('value2')
     })
 
     it('should return empty list if the elements are not instances', async () => {
@@ -163,7 +164,7 @@ describe('gadgetFilter', () => {
     it('should return empty list if the request threw an error', async () => {
       connection.get.mockRejectedValue(new Error('error'))
       expect(responsePromise).toHaveLength(1)
-      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(responsePromise[0].instance.value.id).toEqual('1')
       expect(await responsePromise[0].promisePropertyValues).toEqual({})
     })
     it('should return empty list when got invalid response from keys request', async () => {
@@ -201,13 +202,13 @@ describe('gadgetFilter', () => {
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', undefined)
 
       expect(responsePromise).toHaveLength(1)
-      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(responsePromise[0].instance.value.id).toEqual('1')
       expect(await responsePromise[0].promisePropertyValues).toEqual({})
     })
     it('should not add properties when keys request failed', async () => {
       connection.get.mockRejectedValue(new Error('Failed to get keys'))
       expect(responsePromise).toHaveLength(1)
-      expect(responsePromise[0].instance.value.id).toBe('1')
+      expect(responsePromise[0].instance.value.id).toEqual('1')
       expect(await responsePromise[0].promisePropertyValues).toEqual({})
     })
 
@@ -249,9 +250,9 @@ describe('gadgetFilter', () => {
       })
 
       expect(responsePromise).toHaveLength(1)
-      expect(responsePromise[0].instance.value.id).toBe('1')
-      expect(await (await responsePromise[0].promisePropertyValues).key1).toBe(undefined)
-      expect(await (await responsePromise[0].promisePropertyValues).key2).toBe('value2')
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toEqual(undefined)
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toEqual('value2')
     })
 
     it('should not add properties when values request failed', async () => {
@@ -289,12 +290,19 @@ describe('gadgetFilter', () => {
       })
 
       expect(responsePromise).toHaveLength(1)
-      expect(responsePromise[0].instance.value.id).toBe('1')
-      expect(await (await responsePromise[0].promisePropertyValues).key1).toBe(undefined)
-      expect(await (await responsePromise[0].promisePropertyValues).key2).toBe('value2')
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toEqual(undefined)
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toEqual('value2')
     })
   })
   describe('onFetch', () => {
+    it('should add dashboard properties to the instance', async () => {
+      await filter.onFetch?.(elements)
+      expect(instance.value.properties).toEqual({
+        key1: 'value1',
+        key2: 'value2',
+      })
+    })
     it('should add deployment annotations to properties field', async () => {
       elements = [dashboardGadgetType]
       await filter.onFetch?.(elements)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { Values } from '@salto-io/adapter-api'
+import { Value, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types } from '@salto-io/lowerdash'
 import { RequiredDefinitions } from './types'
@@ -23,7 +23,7 @@ import { APIDefinitionsOptions } from './api'
 const log = logger(module)
 
 export const DEFINITIONS_FLAGS = {
-  definitionOverride: 'SKIP_RESOLVE_TYPES_IN_ELEMENT_SOURCE',
+  definitionOverride: 'DEFINITION_OVERRIDE',
 } as const
 
 type CoreFlagName = types.ValueOf<typeof DEFINITIONS_FLAGS>
@@ -44,16 +44,15 @@ export const getParsedFlag = (flagName: CoreFlagName): Values => {
   }
   if (parsedFlagValue !== undefined && typeof parsedFlagValue === 'object') {
     return parsedFlagValue as Values
-  } else {
-    return {}
   }
+  return {}
 }
 
 export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOptions>(
   definitions: RequiredDefinitions<Options>,
   overrides: Values,
 ): RequiredDefinitions<Options> => {
-  const customMerge = (objValue: any, srcValue: any): any => {
+  const customMerge = (objValue: Value, srcValue: Value): Value => {
     if (_.isArray(objValue)) {
       return srcValue
     }

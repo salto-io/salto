@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import { setupEnvVar } from '@salto-io/test-utils'
+import { Values } from '@salto-io/adapter-api'
 import {
   APIDefinitionsOptions,
   DEFINITIONS_FLAGS,
@@ -96,7 +97,7 @@ describe('overrides', () => {
                   },
                   transformation: {
                     root: 'teams',
-                    adjust: (item: { value: any }) => {
+                    adjust: (item: { value: Values }) => {
                       const { value } = item
                       return {
                         value: {
@@ -131,7 +132,7 @@ describe('overrides', () => {
       },
     } as unknown as RequiredDefinitions<APIDefinitionsOptions>
     it('should add a type to the fetch config', () => {
-      const overrides = {
+      const overrides: Values = {
         fetch: {
           instances: {
             customizations: {

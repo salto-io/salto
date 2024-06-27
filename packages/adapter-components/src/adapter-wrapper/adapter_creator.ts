@@ -35,6 +35,9 @@ import {
   APIDefinitionsOptions,
   ResolveClientOptionsType,
   ResolveCustomNameMappingOptionsType,
+  getParsedFlag,
+  DEFINITIONS_FLAGS,
+  mergeDefinitionsWithOverrides,
 } from '../definitions'
 import { RequiredDefinitions } from '../definitions/system/types'
 import { AdapterFilterCreator, FilterResult } from '../filter_utils'
@@ -125,7 +128,9 @@ export const createAdapter = <
           clientDefaults,
         }),
       )
-      const definitions = definitionsCreator({ clients, userConfig: config, credentials })
+      const adapterDefinitions = definitionsCreator({ clients, userConfig: config, credentials })
+      const definitionOverrides = getParsedFlag(DEFINITIONS_FLAGS.definitionOverride)
+      const definitions = mergeDefinitionsWithOverrides(adapterDefinitions, definitionOverrides)
       const resolverCreator = getResolverCreator(definitions)
       const fixElements = customizeFixElements
         ? combineElementFixers(customizeFixElements({ config, elementsSource: context.elementsSource }))

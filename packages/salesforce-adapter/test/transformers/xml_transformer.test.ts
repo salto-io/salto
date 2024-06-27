@@ -17,7 +17,7 @@ import { isStaticFile, StaticFile } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import JSZip from 'jszip'
-import xmlParser from 'fast-xml-parser'
+import { XMLParser } from 'fast-xml-parser'
 import { RetrieveResult, FileProperties } from '@salto-io/jsforce'
 import {
   fromRetrieveResult,
@@ -40,6 +40,7 @@ import {
 
 describe('XML Transformer', () => {
   describe('createDeployPackage', () => {
+    const xmlParser = new XMLParser()
     const getZipFiles = async (
       pkg: DeployPackage,
     ): Promise<Record<string, string>> => {
@@ -95,7 +96,7 @@ describe('XML Transformer', () => {
       const profileValues = {
         fullName: 'TestProfile',
         num: 12,
-        str: 'str <> bla',
+        str: 'str <&> bla',
         b: true,
       }
       beforeEach(async () => {
@@ -145,18 +146,19 @@ describe('XML Transformer', () => {
       describe('serialized xml file', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let values: any
-        beforeAll(() => {
-          values = xmlParser.parse(
-            zipFiles[`${packageName}/profiles/TestProfile.profile`],
-          )
+        let zipFile: string
+        beforeEach(() => {
+          zipFile = zipFiles[`${packageName}/profiles/TestProfile.profile`]
+          values = xmlParser.parse(zipFile)
         })
         it('should write serialized values to instance xml file', () => {
           expect(values).toMatchObject({
             Profile: _.omit(profileValues, ['fullName', 'str']),
           })
         })
-        it('should encode special XML characters', () => {
-          expect(values.Profile.str).toEqual('str &#x3C;&#x3E; bla')
+        it('should support special XML characters', () => {
+          expect(zipFile).toMatch(/&lt;&amp;&gt;/)
+          expect(values.Profile.str).toEqual('str <&> bla')
         })
       })
     })
@@ -436,6 +438,7 @@ describe('XML Transformer', () => {
                 '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n' +
                 '    <apiVersion>47.0</apiVersion>\n' +
                 '    <status>Active</status>\n' +
+                "    <description>An Apex class to read &amp; enjoy.\r\nIt's sure nice to have some special characters &lt;here&gt;.\rVery nice.</description>\n" +
                 '</ApexClass>\n',
             },
             {
@@ -466,6 +469,9 @@ describe('XML Transformer', () => {
         expect(metadataInfo.fullName).toEqual('MyApexClass')
         expect(metadataInfo.apiVersion).toEqual(47)
         expect(metadataInfo.status).toEqual('Active')
+        expect(metadataInfo.description).toEqual(
+          "An Apex class to read & enjoy.\r\nIt's sure nice to have some special characters <here>.\rVery nice.",
+        )
         expect(isStaticFile(metadataInfo.content)).toEqual(true)
         const contentStaticFile = metadataInfo.content as StaticFile
         expect(await contentStaticFile.getContent()).toEqual(

@@ -199,12 +199,26 @@ export type ReferenceMapping = {
  */
 export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<ReferenceMapping[]>
 
-export type ReferenceType = 'strong' | 'weak'
+export const REFERENCE_TYPES = ['strong', 'weak'] as const
+export type ReferenceType = (typeof REFERENCE_TYPES)[number]
 
+export const REFERENCE_SOURCE_SCOPES = ['baseId', 'value'] as const
+export type ReferenceSourceScope = (typeof REFERENCE_SOURCE_SCOPES)[number]
+export const DEFAULT_SOURCE_SCOPE: ReferenceSourceScope = 'baseId'
+
+/**
+ * **sourceScope**
+ *
+ * The source scope states what part of the reference source actually depends on the target.
+ * - When it is "baseId" it means the existence of the whole "base element" which includes the source depends on the target
+ * - When it is "value" it means that only the value specified by the sourceId depends on the target
+ * - Defaults to {@link DEFAULT_SOURCE_SCOPE}
+ */
 export type ReferenceInfo = {
   source: ElemID
   target: ElemID
   type: ReferenceType
+  sourceScope?: ReferenceSourceScope
 }
 
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>

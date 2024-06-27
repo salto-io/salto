@@ -37,7 +37,10 @@ import {
   RECORD_TYPE_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
-import { isInstanceOfTypeSync } from '../filters/utils'
+import {
+  extractFlatCustomObjectFields,
+  isInstanceOfTypeSync,
+} from '../filters/utils'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -286,6 +289,7 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
       ),
       target,
       type: 'weak',
+      sourceScope: 'value',
     }),
   )
 
@@ -329,8 +333,9 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
       ...profiles.map(profileEntriesTargets),
     )
     const elementNames = new Set(
-      await awu(await elementsSource.list())
-        .map((elemID) => elemID.getFullName())
+      await awu(await elementsSource.getAll())
+        .flatMap(extractFlatCustomObjectFields)
+        .map((elem) => elem.elemID.getFullName())
         .toArray(),
     )
     const brokenReferenceFields = Object.keys(

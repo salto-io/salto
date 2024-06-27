@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import he from 'he'
-import parser from 'fast-xml-parser'
+import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import {
   RetrieveResult,
   FileProperties,
@@ -318,18 +317,22 @@ export const isComplexType = (
 ): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
+  ignoreDeclaration: true,
+  tagValueProcessor: (_name, val) => val.replace(/&#xD;/g, '\r'),
+})
+
 export const xmlToValues = (
   xmlAsString: string,
 ): { values: Values; typeName: string } => {
-  const parsedXml = parser.parse(xmlAsString, {
-    ignoreAttributes: false,
-    attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
-    tagValueProcessor: (val) => he.decode(val),
-  })
+  // SF do not encode their CRs and the XML parser converts them to LFs, so we preserve them.
+  const parsedXml = parser.parse(xmlAsString.replace(/\r/g, '&#xD;'))
 
   const parsedEntries = Object.entries<Values>(parsedXml)
   if (parsedEntries.length !== 1) {
-    // Should never happen
+    // Should never happen.
     log.debug(
       'Found %d root nodes in xml: %s',
       parsedEntries.length,
@@ -506,13 +509,14 @@ export const fromRetrieveResult = async (
   return instances.filter(isDefined)
 }
 
+const builder = new XMLBuilder({
+  attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
+  ignoreAttributes: false,
+})
+
 const toMetadataXml = (name: string, values: Values): string =>
   // eslint-disable-next-line new-cap
-  new parser.j2xParser({
-    attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: (val) => he.encode(String(val)),
-  }).parse({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
+  builder.build({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
 
 const cloneValuesWithAttributePrefixes = async (
   instance: InstanceElement,

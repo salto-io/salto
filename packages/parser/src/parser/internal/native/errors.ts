@@ -33,6 +33,9 @@ export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): P
     token ? `Unknown primitive type '${token}'.` : 'Expected a primitive type definition, using unknown.',
   )
 
+export const invalidMetaTypeError = (range: SourceRange, token: string): ParseError =>
+  createError(range, 'Invalid meta type', `Meta type ${token} is invalid, must be an object type.`)
+
 export const invalidFieldsInPrimitiveType = (range: SourceRange): ParseError =>
   createError(
     range,

@@ -88,7 +88,7 @@ const validateRemovableChange = async (
   return undefined
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements) =>
+const changeValidator: NetsuiteChangeValidator = async changes =>
   awu(changes)
     .filter(isRemovalChange)
     .map(getChangeData)

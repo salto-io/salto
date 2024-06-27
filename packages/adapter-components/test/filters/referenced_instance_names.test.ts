@@ -127,6 +127,13 @@ describe('referenced instances', () => {
         bookId: { refType: BuiltinTypes.NUMBER },
       },
     })
+    const pathWithExtendParentType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'pathWithExtendParent'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        first: { refType: BuiltinTypes.STRING },
+      },
+    })
     const rootBook = new InstanceElement('rootBook', bookType, {
       id: 123,
       parent_book_id: 'ROOT',
@@ -300,6 +307,19 @@ describe('referenced instances', () => {
       },
     )
 
+    const pathWithExtendParentInstance = new InstanceElement(
+      'pathWithExtendParent',
+      pathWithExtendParentType,
+      {
+        id: 321,
+        first: 'fiRst',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(nestingParent.elemID, nestingParent),
+      },
+    )
+
     return [
       recipeType,
       bookType,
@@ -334,6 +354,8 @@ describe('referenced instances', () => {
       differentMappingFunctionInstance,
       complicatedPathType,
       complicatedPathInstance,
+      pathWithExtendParentType,
+      pathWithExtendParentInstance,
     ]
   }
   const lowercaseName: NameMappingOptions = 'lowercase'
@@ -622,6 +644,35 @@ describe('referenced instances', () => {
               },
             },
           },
+          pathWithExtendParent: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  parts: [{ fieldName: 'bookId', isReference: true }],
+                },
+                path: {
+                  pathParts: [
+                    {
+                      parts: [
+                        {
+                          fieldName: 'id',
+                        },
+                      ],
+                    },
+                    {
+                      parts: [
+                        {
+                          fieldName: 'first',
+                        },
+                      ],
+                      extendsParent: true,
+                    },
+                  ],
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -668,6 +719,7 @@ describe('referenced instances', () => {
         'myAdapter.noIdFields.instance.no_idFieldsParent',
         'myAdapter.notNestingParent.instance.notNestingParent',
         'myAdapter.notStandaloneNestedField.instance.notNestingParent__fishyName',
+        'myAdapter.pathWithExtendParent.instance.pathWithExtendParent',
         'myAdapter.recipe.instance.recipe123_123_ROOT',
         'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
         'myAdapter.recipe.instance.recipe456_456_123_ROOT',
@@ -700,6 +752,7 @@ describe('referenced instances', () => {
         'myAdapter/Records/folder/recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
         'myAdapter/Records/noIdFields/no_idFieldsParent',
         'myAdapter/Records/notStandaloneNestedField/notNestingParent__fishyName',
+        'myAdapter/Records/pathWithExtendParent/321/nestingParent__fiRst',
         'myAdapter/Records/recipe/recipe123_123_ROOT',
         'myAdapter/Records/recipe/recipe123_123_ROOT__lastRecipe_456_123_ROOT',
         'myAdapter/Records/recipe/recipe456_456_123_ROOT',
@@ -719,7 +772,7 @@ describe('referenced instances', () => {
         .filter(isInstanceElement)
         .map(i => i.elemID.getFullName())
         .sort()
-      expect(result.length).toEqual(37)
+      expect(result.length).toEqual(39)
       expect(sortedResult).toEqual([
         'myAdapter.book.instance.123_ROOT',
         'myAdapter.book.instance.456_123_ROOT',
@@ -738,6 +791,7 @@ describe('referenced instances', () => {
         'myAdapter.noIdFields.instance.no_idFieldsParent',
         'myAdapter.notNestingParent.instance.notNestingParent',
         'myAdapter.notStandaloneNestedField.instance.notNestingParent__fishyName',
+        'myAdapter.pathWithExtendParent.instance.pathWithExtendParent',
         'myAdapter.recipe.instance.recipe123_123_ROOT',
         'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
         'myAdapter.recipe.instance.recipe456_456_123_ROOT',
@@ -780,7 +834,7 @@ describe('referenced instances', () => {
     })
     it('should not change name for duplicate elemIDs', async () => {
       const result = (await addReferencesToInstanceNames(elements, defQuery)).filter(isInstanceElement)
-      expect(result.length).toEqual(24)
+      expect(result.length).toEqual(25)
       expect(result.map(e => e.elemID.getFullName()).sort()).toEqual([
         'myAdapter.book.instance.123_ROOT',
         'myAdapter.book.instance.456_123_ROOT',
@@ -799,6 +853,7 @@ describe('referenced instances', () => {
         'myAdapter.noIdFields.instance.no_idFieldsParent',
         'myAdapter.notNestingParent.instance.notNestingParent',
         'myAdapter.notStandaloneNestedField.instance.notNestingParent__fishyName',
+        'myAdapter.pathWithExtendParent.instance.pathWithExtendParent',
         'myAdapter.recipe.instance.recipe123_123_ROOT',
         'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
         'myAdapter.recipe.instance.recipe456_456_123_ROOT',

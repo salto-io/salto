@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import analyticsSilentFailureValidator from '../../src/change_validators/analytics_post_deploy_notification'
 import { parsedDatasetType } from '../../src/type_parsers/analytics_parsers/parsed_dataset'
 import { parsedWorkbookType } from '../../src/type_parsers/analytics_parsers/parsed_workbook'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import NetsuiteClient from '../../src/client/client'
+import { fullFetchConfig } from '../../src/config/config_creator'
+import mockSdfClient from '../client/sdf_client'
 
 describe('analytics post deploy notification', () => {
+  const baseParams = {
+    deployReferencedElements: false,
+    elementsSource: buildElementsSourceFromElements([]),
+    config: {
+      fetch: fullFetchConfig(),
+    },
+    client: new NetsuiteClient(mockSdfClient()),
+  }
   const firstDataset = new InstanceElement('dataset 1', parsedDatasetType().type, {
     scriptid: 'custDataset 1',
   })
@@ -44,10 +55,7 @@ describe('analytics post deploy notification', () => {
         toChange({ before: firstDataset }),
         toChange({ before: firstWorkbook }),
       ],
-      undefined,
-      undefined,
-      undefined,
-      client,
+      { ...baseParams, client },
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -60,10 +68,7 @@ describe('analytics post deploy notification', () => {
         toChange({ before: firstDataset, after: firstDataset }),
         toChange({ after: secondDataset }),
       ],
-      undefined,
-      undefined,
-      undefined,
-      client,
+      { ...baseParams, client },
     )
     expect(changeErrors).toHaveLength(2)
   })
@@ -75,9 +80,7 @@ describe('analytics post deploy notification', () => {
         toChange({ before: firstWorkbook, after: firstWorkbook }),
         toChange({ after: secondWorkbook }),
       ],
-      undefined,
-      undefined,
-      undefined,
+      baseParams,
     )
     expect(changeErrors).toHaveLength(2)
   })

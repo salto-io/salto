@@ -51,6 +51,7 @@ type DeployChangeParam = {
   fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>
   elementsSource?: ReadOnlyElementsSource
+  allowedStatusCodesOnRemoval?: number[]
   serviceIdSetter?: (instance: InstanceElement, serviceIdField: string, response: clientUtils.ResponseValue) => void
 }
 
@@ -81,6 +82,7 @@ export const defaultDeployChange = async ({
   fieldsToIgnore = [],
   additionalUrlVars,
   elementsSource,
+  allowedStatusCodesOnRemoval,
   serviceIdSetter = defaultServiceIdSetter,
 }: DeployChangeParam): Promise<clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource)
@@ -107,6 +109,7 @@ export const defaultDeployChange = async ({
     fieldsToIgnore,
     additionalUrlVars,
     elementsSource,
+    allowedStatusCodesOnRemoval,
   })
 
   if (isAdditionChange(change)) {

@@ -16,13 +16,23 @@
 
 import _ from 'lodash'
 import { validatePlainObject } from '@salto-io/adapter-utils'
-import { TYPE_NAME_TO_READ_ONLY_FIELDS } from '../../../change_validators'
+import {
+  TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
+  TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
+} from '../../../change_validators'
 import { AdjustFunction } from '../types'
 
 export const omitReadOnlyFields: AdjustFunction = ({ typeName, value, context }) => {
   validatePlainObject(value, typeName)
-  const readOnlyFieldsToOmit = TYPE_NAME_TO_READ_ONLY_FIELDS[typeName]
-  if (readOnlyFieldsToOmit === undefined || context.action !== 'modify') {
+  if (context.change.action === 'remove') {
+    return { value }
+  }
+
+  const readOnlyFieldsToOmit =
+    context.change.action === 'add'
+      ? TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION[typeName]
+      : TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION[typeName]
+  if (readOnlyFieldsToOmit === undefined) {
     return { value }
   }
   return { value: _.omit(value, readOnlyFieldsToOmit) }

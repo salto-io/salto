@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ObjectType, InstanceElement } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { ObjectType, InstanceElement, ConfigCreator, ElemID } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { defaultParams, DUMMY_ADAPTER } from '../src/generator'
 import DummyAdapter from '../src/adapter'
@@ -49,5 +49,15 @@ describe('adapter creator', () => {
         elementsSource: buildElementsSourceFromElements([]),
       }),
     ).toBeInstanceOf(DummyAdapter)
+  })
+
+  describe('configCreator', () => {
+    it('should return the default config regardless of input', async () => {
+      const creator = adapter.configCreator as ConfigCreator
+      expect(creator).toBeDefined()
+      const defaultConfig = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, adapter.configType as ObjectType)
+      const createdConfig = await creator.getConfig(new InstanceElement('input', creator.optionsType, {}))
+      expect(createdConfig).toEqual(defaultConfig)
+    })
   })
 })

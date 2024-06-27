@@ -122,9 +122,14 @@ const dumpElementBlock = (
     return dumpFieldBlock(elem, functions, valuePromiseWatchers)
   }
   if (isObjectType(elem)) {
+    const labels = [dumpElemID(elem.elemID)]
+    if (elem.metaType !== undefined) {
+      labels.push(Keywords.TYPE_INHERITANCE_SEPARATOR, dumpElemID(elem.metaType.elemID))
+    }
+
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
-      labels: [dumpElemID(elem.elemID)],
+      labels,
       attrs: dumpAttributes(elem.annotations, functions, valuePromiseWatchers),
       blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes).concat(
         Object.values(elem.fields).map(field => dumpFieldBlock(field, functions, valuePromiseWatchers)),

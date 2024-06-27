@@ -130,8 +130,13 @@ describe('Confluence adapter E2E', () => {
         .filter(isInstanceChange)
 
       const removalChanges = appliedChanges.map(change => toChange({ before: getChangeData(change) }))
-
-      await e2eUtils.deployChangesForE2e(adapterAttr, removalChanges)
+      // Making sure space removal is the last one,
+      // O.W page and template will be deleted in the service when we delete their father space
+      const sortedRemovalChanges = [
+        ...removalChanges.filter(change => getChangeData(change).elemID.typeName !== SPACE_TYPE_NAME),
+        ...removalChanges.filter(change => getChangeData(change).elemID.typeName === SPACE_TYPE_NAME),
+      ]
+      await e2eUtils.deployChangesForE2e(adapterAttr, sortedRemovalChanges)
       if (credLease.return) {
         await credLease.return()
       }

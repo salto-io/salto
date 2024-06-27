@@ -73,7 +73,7 @@ export const oauthClientCredentialsBearerToken = async ({
   )
   const { token_type: tokenType, access_token: accessToken, expires_in: expiresIn } = res.data
   log.debug('received access token: type %s, expires in %s', tokenType, expiresIn)
-  if (tokenType !== BEARER_TOKEN_TYPE) {
+  if (String(tokenType).toLowerCase() !== BEARER_TOKEN_TYPE.toLowerCase()) {
     throw new Error(`Unsupported token type ${tokenType}`)
   }
   return {

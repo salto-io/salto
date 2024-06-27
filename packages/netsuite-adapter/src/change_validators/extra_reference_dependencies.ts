@@ -53,7 +53,7 @@ export const getReferencedElementsForReferrers = async (
     .toArray()
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, deployReferencedElements = false) => {
+const changeValidator: NetsuiteChangeValidator = async (changes, { deployReferencedElements }) => {
   const sdfChangesData = changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)

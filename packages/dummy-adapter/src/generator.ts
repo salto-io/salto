@@ -395,7 +395,7 @@ export const generateElements = async (
   const getListLength = (): number => normalRandom(params.listLengthMean, params.listLengthStd) + 1
 
   const getSingleLine = (): string => stringLinesOpts[Math.floor(randomGen() * stringLinesOpts.length)]
-  const getMultiLine = (numOflines: number): string => arrayOf(numOflines, getSingleLine).join('\n')
+  const getMultiLine = (numOfLines: number): string => arrayOf(numOfLines, getSingleLine).join('\n')
   const generateBoolean = (): boolean => randomGen() < 0.5
   const generateNumber = (): number => Math.floor(randomGen() * 1000)
   const generateString = (): string =>
@@ -831,6 +831,17 @@ export const generateElements = async (
       },
     })
 
+    const sharedMeta = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'EnvMeta'),
+      annotationRefsOrTypes: {
+        SharedAnno: BuiltinTypes.STRING,
+        SharedButDiffAnno: BuiltinTypes.STRING,
+        [`${envID}Anno`]: BuiltinTypes.STRING,
+        SharedHidden: BuiltinTypes.HIDDEN_STRING,
+        DiffHidden: BuiltinTypes.HIDDEN_STRING,
+      },
+      path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvMeta'],
+    })
     const sharedObj = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'EnvObj'),
       fields: {
@@ -852,13 +863,6 @@ export const generateElements = async (
             name: 'test',
           },
         },
-      },
-      annotationRefsOrTypes: {
-        ShardAnno: BuiltinTypes.STRING,
-        SharedButDiffAnno: BuiltinTypes.STRING,
-        [`${envID}Anno`]: BuiltinTypes.STRING,
-        SharedHidden: BuiltinTypes.HIDDEN_STRING,
-        DiffHidden: BuiltinTypes.HIDDEN_STRING,
       },
       annotations: {
         SharedAnno: 'AnnoValue',
@@ -897,6 +901,7 @@ export const generateElements = async (
           },
         ],
       },
+      metaType: sharedMeta,
       path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
     })
     const sharedInst = new InstanceElement(
@@ -952,7 +957,7 @@ export const generateElements = async (
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvInst_alias`,
       },
     )
-    const res = [envSpecificInst, sharedObj, sharedInst, PrimWithHiddenAnnos]
+    const res = [envSpecificInst, sharedMeta, sharedObj, sharedInst, PrimWithHiddenAnnos]
     if (!process.env.SALTO_OMIT) {
       res.push(envSpecificObj)
     }
@@ -961,7 +966,7 @@ export const generateElements = async (
 
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })
-  const primtiveTypes = await generatePrimitiveTypes()
+  const primitiveTypes = await generatePrimitiveTypes()
   progressReporter.reportProgress({ message: 'Generating types' })
   const types = await generateTypes()
   progressReporter.reportProgress({ message: 'Generating objects' })
@@ -980,7 +985,7 @@ export const generateElements = async (
   const elementsToExclude = new Set(params.elementsToExclude ?? [])
   return [
     ...defaultTypes,
-    ...primtiveTypes,
+    ...primitiveTypes,
     ...types,
     ...records,
     ...objects,

@@ -28,8 +28,9 @@ import { references } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
+import { OBJECT_TYPE_TYPE } from '../constants'
 
-const TYPES_TO_IGNORE = [FIELD_CONTEXT_TYPE_NAME]
+const TYPES_TO_IGNORE = [FIELD_CONTEXT_TYPE_NAME, OBJECT_TYPE_TYPE]
 
 export const removalsDependencyChanger: DependencyChanger = async changes => {
   const removalsChanges = _(Array.from(changes.entries()))

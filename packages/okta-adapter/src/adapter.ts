@@ -92,7 +92,7 @@ import {
 } from './constants'
 import { getLookUpNameCreator } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances, shouldConvertUserIds } from './user_utils'
-import { isClassicEngineOrg } from './utils'
+import { isClassicEngineOrg, logUsersCount } from './utils'
 import { createFixElementFunctions } from './fix_elements'
 import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch'
 import { createDeployDefinitions } from './definitions/deploy'
@@ -344,6 +344,7 @@ export default class OktaAdapter implements AdapterOperations {
     const { errors: oauthError, configChanges: oauthConfigChange } = this.handleOAuthLogin()
     const { elements, errors, configChanges: getElementsConfigChanges } = await this.getElements()
 
+    await logUsersCount(elements, this.client)
     const usersPromise = shouldConvertUserIds(this.fetchQuery, this.userConfig)
       ? getUsers(
           this.paginator,

@@ -17,7 +17,14 @@ import _ from 'lodash'
 import { ElemID, isRemovalChange, toChange, Element, DetailedChangeWithBaseChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
+import {
+  pathIndex,
+  filterByPathHint,
+  ElementSelector,
+  elementSource,
+  remoteMap,
+  ReferenceIndexEntry,
+} from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 import { ChangeWithDetails } from './plan/plan_item'
 
@@ -56,7 +63,7 @@ export function createRestoreChanges(
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors: ElementSelector[] | undefined,
   accounts: readonly string[] | undefined,
   resultType: 'changes',
@@ -65,7 +72,7 @@ export function createRestoreChanges(
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors?: ElementSelector[],
   accounts?: readonly string[],
   resultType?: 'detailedChanges',
@@ -74,7 +81,7 @@ export async function createRestoreChanges(
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors: ElementSelector[] = [],
   accounts?: readonly string[],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges',

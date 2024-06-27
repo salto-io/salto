@@ -39,13 +39,16 @@ import {
 import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
 import filterCreator from '../../src/filters/workflow_account_specific_values'
 import { RemoteFilterOpts } from '../../src/filter'
+import { getUpdatedSuiteQLNameToInternalIdsMap } from '../../src/account_specific_values_resolver'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 const runSavedSearchQueryMock = jest.fn()
 const runRecordsQueryMock = jest.fn()
+const runSuiteQLMock = jest.fn()
 const client = {
   runSavedSearchQuery: runSavedSearchQueryMock,
   runRecordsQuery: runRecordsQueryMock,
+  runSuiteQL: runSuiteQLMock,
 } as unknown as NetsuiteClient
 
 describe('workflow account specific values filter', () => {
@@ -113,7 +116,7 @@ describe('workflow account specific values filter', () => {
             },
           }),
       },
-      elementsSource: buildElementsSourceFromElements(suiteQLInstances),
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: true,
       config: await getDefaultAdapterConfig(),
     }
@@ -386,6 +389,7 @@ describe('workflow account specific values filter', () => {
             ],
           },
         ])
+        runSuiteQLMock.mockResolvedValue([])
         await filterCreator(filterOpts).onFetch?.(elements)
       })
       it('should call runSavedSearchQuery with right params', () => {
@@ -885,10 +889,13 @@ describe('workflow account specific values filter', () => {
           },
         },
       })
-      await filterCreator(filterOpts).preDeploy?.([
-        toChange({ after: workflowInstance1 }),
-        toChange({ after: workflowInstance2 }),
-      ])
+      const changes = [toChange({ after: workflowInstance1 }), toChange({ after: workflowInstance2 })]
+      const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(
+        client,
+        buildElementsSourceFromElements(suiteQLInstances),
+        changes,
+      )
+      await filterCreator({ ...filterOpts, suiteQLNameToInternalIdsMap }).preDeploy?.(changes)
     })
     it('should resolve account specific values', () => {
       expect(workflowInstance1.value).toEqual({

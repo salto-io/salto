@@ -126,7 +126,7 @@ describe('XML Attributes Filter', () => {
       ])
     })
 
-    it('should remove the XML_ATTRIBUTE_PREFIX prefix from keys when type has attributes', async () => {
+    it('should remove the XML_ATTRIBUTE_PREFIX prefix from keys when type has attributes', () => {
       expect(instanceWithAttributes.value[isAttributeTrue]).toEqual(
         isAttributeTrue,
       )
@@ -143,7 +143,7 @@ describe('XML Attributes Filter', () => {
       ).toEqual(noIsAttribute)
     })
 
-    it('should not remove the XML_ATTRIBUTE_PREFIX prefix from keys when type has no attributes', async () => {
+    it('should not remove the XML_ATTRIBUTE_PREFIX prefix from keys when type has no attributes', () => {
       expect(instanceWithoutAttributes.value[isAttributeTrue]).toBeUndefined()
       expect(instanceWithoutAttributes.value[isAttributeFalse]).toBeUndefined()
       expect(instanceWithoutAttributes.value[noIsAttribute]).toBeUndefined()
@@ -158,7 +158,7 @@ describe('XML Attributes Filter', () => {
       ).toEqual(noIsAttribute)
     })
 
-    it('should remove the XML_ATTRIBUTE_PREFIX prefix from nested fields', async () => {
+    it('should remove the XML_ATTRIBUTE_PREFIX prefix from nested fields', () => {
       const nestedField =
         instanceWithNestedAttributes.value[fieldWithAttributes]
       expect(nestedField[isAttributeTrue]).toEqual(isAttributeTrue)
@@ -173,7 +173,7 @@ describe('XML Attributes Filter', () => {
       )
     })
 
-    it('should remove the XML_ATTRIBUTE_PREFIX prefix from nested fields even for a type without attributes', async () => {
+    it('should remove the XML_ATTRIBUTE_PREFIX prefix from nested fields even for a type without attributes', () => {
       const nestedField =
         instanceWithNestedAttributes.value[fieldWithoutAttributes]
       expect(nestedField[isAttributeTrue]).toEqual(isAttributeTrue)
@@ -186,6 +186,15 @@ describe('XML Attributes Filter', () => {
       expect(nestedField[withAttributePrefix(noIsAttribute)]).toEqual(
         noIsAttribute,
       )
+    })
+
+    it('should put attribute fields first', () => {
+      expect(Object.keys(instanceWithAttributes.value)).toEqual([
+        isAttributeTrue,
+        INSTANCE_FULL_NAME_FIELD,
+        withAttributePrefix(isAttributeFalse),
+        withAttributePrefix(noIsAttribute),
+      ])
     })
   })
 })

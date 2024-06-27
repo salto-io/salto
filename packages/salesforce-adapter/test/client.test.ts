@@ -672,7 +672,7 @@ describe('salesforce client', () => {
         accountId: '',
         isProduction: undefined,
         accountType: undefined,
-        extraInformation: { orgId: '' },
+        extraInformation: { orgId: '', instanceUrl: '' },
       })
     })
     describe('isProduction and accountType', () => {
@@ -709,7 +709,7 @@ describe('salesforce client', () => {
               accountId: 'https://url.com/',
               isProduction: false,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
+              extraInformation: { orgId: '', instanceUrl: 'https://url.com/' },
             })
           })
         })
@@ -727,7 +727,7 @@ describe('salesforce client', () => {
               accountId: 'https://url.com/',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
+              extraInformation: { orgId: '', instanceUrl: 'https://url.com/' },
             })
           })
           it('should throw an error when there is no instanceUrl', async () => {
@@ -756,7 +756,7 @@ describe('salesforce client', () => {
               accountId: '',
               isProduction: true,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
+              extraInformation: { orgId: '', instanceUrl: 'https://url.com/' },
             })
           })
         })
@@ -774,7 +774,7 @@ describe('salesforce client', () => {
               accountId: '',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
+              extraInformation: { orgId: '', instanceUrl: 'https://url.com/' },
             })
           })
         })

@@ -20,6 +20,7 @@ import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 import { ReadOnlyRemoteMap } from './remote_map'
+import { ReferenceIndexEntry } from './reference_indexes'
 
 const { withLimitedConcurrency } = promises.array
 const { asynciterable } = collections
@@ -77,7 +78,7 @@ const match = (elemId: ElemID, selector: ElementSelector, includeNested = false)
 const matchWithReferenceBy = async (
   elemId: ElemID,
   selector: ElementSelector,
-  referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   includeNested = false,
 ): Promise<boolean> => {
   const { referencedBy } = selector
@@ -91,7 +92,7 @@ const matchWithReferenceBy = async (
             : elemId.createTopLevelParentID()
           ).parent.getFullName(),
         )) ?? []
-      ).some(id => match(id, referencedBy, true)))
+      ).some(entry => match(entry.id, referencedBy, true)))
   )
 }
 
@@ -146,7 +147,7 @@ export const selectElementsBySelectors = ({
 }: {
   elementIds: AsyncIterable<ElemID>
   selectors: ElementSelector[]
-  referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>
   includeNested?: boolean
 }): AsyncIterable<ElemID> => {
   if (selectors.length === 0) {
@@ -287,7 +288,7 @@ export const selectElementIdsByTraversal = async ({
 }: {
   selectors: ElementSelector[]
   source: ElementsSource
-  referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>
   compact?: boolean
 }): Promise<AsyncIterable<ElemID>> =>
   log.timeDebug(async () => {

@@ -382,6 +382,9 @@ export const mockWorkspace = ({
     getReferenceSourcesIndex: mockFunction<Workspace['getReferenceSourcesIndex']>(),
     getElementOutgoingReferences: mockFunction<Workspace['getElementOutgoingReferences']>().mockResolvedValue([]),
     getElementIncomingReferences: mockFunction<Workspace['getElementIncomingReferences']>().mockResolvedValue([]),
+    getElementIncomingReferenceInfos: mockFunction<Workspace['getElementIncomingReferenceInfos']>().mockResolvedValue(
+      [],
+    ),
     getElementAuthorInformation: mockFunction<Workspace['getElementAuthorInformation']>().mockResolvedValue({}),
     getElementsAuthorsById: mockFunction<Workspace['getElementsAuthorsById']>().mockResolvedValue({}),
     getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([]),

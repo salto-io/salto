@@ -63,6 +63,8 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement => {
       annotationRefsOrTypes: annotationRefTypes,
       annotations,
       fields,
+      metaType: src.metaType,
+      isSettings: src.isSettings,
     })
   }
   return new PrimitiveType({

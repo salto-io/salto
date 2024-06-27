@@ -35,6 +35,7 @@ import {
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMap } from '../src/workspace/remote_map'
 import { createMockRemoteMap } from './utils'
+import { ReferenceIndexEntry } from '../src/workspace/reference_indexes'
 
 const { awu } = collections.asynciterable
 
@@ -123,7 +124,7 @@ const selectElements = async ({
     selectElementsBySelectors({
       elementIds: awu(elements),
       selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
-      referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+      referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
       includeNested,
     }),
   ).toArray()
@@ -369,7 +370,7 @@ describe('select elements recursively', () => {
       await selectElementIdsByTraversal({
         selectors,
         source: createInMemoryElementSource(testElements),
-        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
         compact,
       }),
     ).toArray()
@@ -461,7 +462,7 @@ describe('select elements recursively', () => {
       await selectElementIdsByTraversal({
         selectors,
         source: createInMemoryElementSource([mockInstance, mockType]),
-        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
         compact: false,
       }),
     ).toArray()
@@ -476,7 +477,7 @@ describe('select elements recursively', () => {
       await selectElementIdsByTraversal({
         selectors,
         source: createInMemoryElementSource([mockInstance, mockType]),
-        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
         compact: false,
       }),
     ).toArray()
@@ -488,7 +489,7 @@ describe('select elements recursively', () => {
 })
 
 describe('referencedBy', () => {
-  let referenceSourcesIndex: RemoteMap<ElemID[]>
+  let referenceSourcesIndex: RemoteMap<ReferenceIndexEntry[]>
 
   const objectType = new ObjectType({
     elemID: new ElemID('salesforce', 'type'),
@@ -507,7 +508,7 @@ describe('referencedBy', () => {
   })
 
   beforeEach(() => {
-    referenceSourcesIndex = new InMemoryRemoteMap<ElemID[]>()
+    referenceSourcesIndex = new InMemoryRemoteMap<ReferenceIndexEntry[]>()
   })
 
   it('should return referenced instances', async () => {
@@ -517,7 +518,7 @@ describe('referencedBy', () => {
     selector.referencedBy = referencedBy
 
     await referenceSourcesIndex.set('salesforce.type.instance.inst1', [
-      new ElemID('workato', 'type', 'instance', 'inst1', 'val'),
+      { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val'), type: 'strong' },
     ])
 
     const elements = [new InstanceElement('inst1', objectType), new InstanceElement('inst2', objectType)]
@@ -536,9 +537,11 @@ describe('referencedBy', () => {
   describe('when a field is referenced', () => {
     beforeEach(async () => {
       await referenceSourcesIndex.set('salesforce.type.field.field1', [
-        new ElemID('workato', 'type', 'instance', 'inst1', 'val'),
+        { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val'), type: 'strong' },
       ])
-      await referenceSourcesIndex.set('salesforce.type', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
+      await referenceSourcesIndex.set('salesforce.type', [
+        { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val'), type: 'strong' },
+      ])
     })
 
     it('should return the type of the referenced field', async () => {
@@ -581,8 +584,12 @@ describe('referencedBy', () => {
   })
 
   it('should return referenced types', async () => {
-    await referenceSourcesIndex.set('salesforce.type', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
-    await referenceSourcesIndex.set('salesforce.type2', [new ElemID('workato', 'type', 'instance', 'inst1', 'val2')])
+    await referenceSourcesIndex.set('salesforce.type', [
+      { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val'), type: 'strong' },
+    ])
+    await referenceSourcesIndex.set('salesforce.type2', [
+      { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val2'), type: 'strong' },
+    ])
 
     const [selector] = createElementSelectors(['salesforce.*']).validSelectors
     const [referencedBy] = createElementSelectors(['workato.*.instance.*.val']).validSelectors

@@ -26,7 +26,7 @@ import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { removeIdenticalValues } from '../filters/data_instances_diff'
 import { isDataObjectType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID } from '../constants'
-import { getSuiteQLNameToInternalIdsMap } from '../data_elements/suiteql_table_elements'
+import { MissingInternalId } from '../data_elements/suiteql_table_elements'
 import { getResolvedAccountSpecificValue, getUnknownTypeReferencesMap } from '../filters/data_account_specific_values'
 import { NetsuiteChangeValidator } from './types'
 import { cloneChange } from './utils'
@@ -48,30 +48,42 @@ const getPathsWithUnresolvedAccountSpecificValue = (instance: InstanceElement): 
   return fieldsWithUnresolvedAccountSpecificValue
 }
 
-const getResolvingErrors = ({
+export const getResolvingErrors = ({
   instance,
-  unknownTypeReferencesMap,
-  suiteQLTablesMap,
+  unknownTypeReferencesMap = {},
+  suiteQLNameToInternalIdsMap,
 }: {
   instance: InstanceElement
-  unknownTypeReferencesMap: Record<string, Record<string, string[]>>
-  suiteQLTablesMap: Record<string, Record<string, string[]>>
-}): ChangeError[] => {
+  unknownTypeReferencesMap?: Record<string, Record<string, string[]>>
+  suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
+}): { changeErrors: ChangeError[]; missingInternalIds: MissingInternalId[] } => {
   const changeErrors: ChangeError[] = []
+  const missingInternalIds: MissingInternalId[] = []
   walkOnElement({
     element: instance,
     func: ({ path, value }) => {
-      const { error } = getResolvedAccountSpecificValue(path, value, unknownTypeReferencesMap, suiteQLTablesMap)
+      const { error, missingInternalId } = getResolvedAccountSpecificValue(
+        path,
+        value,
+        unknownTypeReferencesMap,
+        suiteQLNameToInternalIdsMap,
+      )
       if (error !== undefined) {
         changeErrors.push(error)
+      }
+      if (missingInternalId !== undefined) {
+        missingInternalIds.push(missingInternalId)
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return changeErrors
+  return { changeErrors, missingInternalIds }
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource, config) => {
+const changeValidator: NetsuiteChangeValidator = async (
+  changes,
+  { elementsSource, config, suiteQLNameToInternalIdsMap },
+) => {
   const relevantChangedInstances = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -90,11 +102,10 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
     return []
   }
 
-  if (config?.fetch.resolveAccountSpecificValues !== false && elementsSource !== undefined) {
+  if (config.fetch.resolveAccountSpecificValues !== false) {
     const unknownTypeReferencesMap = await getUnknownTypeReferencesMap(elementsSource)
-    const suiteQLTablesMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
-    return relevantChangedInstances.flatMap(instance =>
-      getResolvingErrors({ instance, unknownTypeReferencesMap, suiteQLTablesMap }),
+    return relevantChangedInstances.flatMap(
+      instance => getResolvingErrors({ instance, unknownTypeReferencesMap, suiteQLNameToInternalIdsMap }).changeErrors,
     )
   }
 

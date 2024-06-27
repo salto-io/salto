@@ -73,7 +73,7 @@ describe('page definitions utils', () => {
         expect((await adjustPageOnModification(args)).value.version).toEqual({ number: 2 })
       })
     })
-    describe('updateHomepageId', async () => {
+    describe('updateHomepageId', () => {
       it('should do nothing if there is no space change in the change group', async () => {
         const args = {
           typeName: 'mockType',

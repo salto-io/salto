@@ -54,7 +54,7 @@ describe('mapArrayFieldToNestedValues', () => {
       it('Should throw an error', async () => {
         const fieldAdjustments = [{ fieldName: 'field1', nestedField: 'nestedField1', fallbackValue: 'fallback1' }]
         const item = { field1: 'item1' }
-        expect(mapArrayFieldToNestedValues(fieldAdjustments)({ ...generatedItem, value: item })).rejects.toThrow(
+        await expect(mapArrayFieldToNestedValues(fieldAdjustments)({ ...generatedItem, value: item })).rejects.toThrow(
           'Unexpected item value for mapNestedArrayToFields: item1, expected array',
         )
       })

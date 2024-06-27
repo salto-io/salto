@@ -28,6 +28,7 @@ import _ from 'lodash'
 import { SPACE_TYPE_NAME } from '../../constants'
 import { AdditionalAction } from '../types'
 import { validateValue } from './generic'
+import { reduceAsync } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 
 const log = logger(module)
 
@@ -128,8 +129,9 @@ const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndC
 export const adjustPageOnModification: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async args => {
   const value = validateValue(args.value)
   const argsWithValidatedValue = { ...args, value }
-  return [increasePageVersion, updateHomepageId].reduce(
-    (input, func) => ({ ...argsWithValidatedValue, ...func(input) }),
+  return reduceAsync(
+    [increasePageVersion, updateHomepageId],
+    async (input, func) => ({ ...argsWithValidatedValue, ...(await func(input)) }),
     argsWithValidatedValue,
   )
 }

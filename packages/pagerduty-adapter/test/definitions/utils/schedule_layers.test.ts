@@ -100,8 +100,8 @@ describe('schedule layers definitions utils', () => {
         },
       }
     })
-    it('should add start time to all layers', () => {
-      expect(addStartToLayers(item).value).toEqual({
+    it('should add start time to all layers', async () => {
+      expect((await addStartToLayers(item)).value).toEqual({
         schedule: {
           schedule_layers: [
             { rotation_virtual_start: '2021-01-01T00:00:00Z', start: '2021-01-01T00:00:00Z' },

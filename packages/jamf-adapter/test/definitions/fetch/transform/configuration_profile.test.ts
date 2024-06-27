@@ -16,17 +16,17 @@
 import { adjustConfigurationProfile } from '../../../../src/definitions/fetch/transforms'
 
 describe('adjust configuration profile', () => {
-  it('should throw an error if value is not a record', () => {
-    expect(() => adjustConfigurationProfile({ value: 'not a record', context: {}, typeName: 'typeName' })).toThrow()
+  it('should throw an error if value is not a record', async () => {
+    await expect(adjustConfigurationProfile({ value: 'not a record', context: {}, typeName: 'typeName' })).rejects.toThrow()
   })
   describe('adjustCategoryObjectToCategoryId', () => {
-    it('should convert category object to category id', () => {
+    it('should convert category object to category id', async () => {
       const value = {
         a: 'a',
         general: { category: { id: 'category-id', anotherField: 'bla' } },
         b: 'b',
       }
-      expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).toEqual({
+      await expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).resolves.toEqual({
         value: {
           a: 'a',
           general: { category: 'category-id' },
@@ -36,13 +36,13 @@ describe('adjust configuration profile', () => {
     })
   })
   describe('adjustSiteObjectToSiteId', () => {
-    it('should convert site object to site id', () => {
+    it('should convert site object to site id', async () => {
       const value = {
         a: 'a',
         general: { site: { id: 'site-id', anotherField: 'bla' } },
         b: 'b',
       }
-      expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).toEqual({
+      await expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).resolves.toEqual({
         value: {
           a: 'a',
           general: { site: 'site-id' },
@@ -52,13 +52,13 @@ describe('adjust configuration profile', () => {
     })
   })
   describe('adjustServiceIdToTopLevel', () => {
-    it('should extract id field from being under "general" field to be top level', () => {
+    it('should extract id field from being under "general" field to be top level', async () => {
       const value = {
         a: 'a',
         general: { id: 'service-id', anotherField: 'bla' },
         b: 'b',
       }
-      expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).toEqual({
+      await expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).resolves.toEqual({
         value: {
           a: 'a',
           id: 'service-id',

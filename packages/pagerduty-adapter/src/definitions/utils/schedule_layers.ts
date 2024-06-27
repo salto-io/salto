@@ -29,7 +29,7 @@ const addStartTime = (value: unknown): Record<string, unknown> => {
   return { ...value, start: value.rotation_virtual_start }
 }
 
-export const addStartToLayers: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value }) => {
+export const addStartToLayers: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({ value }) => {
   if (!lowerdashValues.isPlainRecord(value)) {
     throw new Error('Can not adjust when the value is not an object')
   }

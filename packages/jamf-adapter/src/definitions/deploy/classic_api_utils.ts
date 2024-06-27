@@ -37,7 +37,7 @@ export const createClassicApiDefinitionsForType = (
           copyFromResponse: {
             additional: {
               root: typeName,
-              adjust: ({ value }) => {
+              adjust: async ({ value }) => {
                 if (!_.isString(value)) {
                   throw new Error('Expected value to be a string')
                 }
@@ -57,7 +57,7 @@ export const createClassicApiDefinitionsForType = (
               },
             },
             transformation: {
-              adjust: ({ value }) => {
+              adjust:  async({ value }) => {
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
                 }
@@ -79,7 +79,7 @@ export const createClassicApiDefinitionsForType = (
               },
             },
             transformation: {
-              adjust: ({ value }) => {
+              adjust:  async({ value }) => {
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
                 }

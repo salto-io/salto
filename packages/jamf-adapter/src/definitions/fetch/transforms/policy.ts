@@ -25,7 +25,7 @@ import {
 /*
  * Adjust policy instance
  */
-export const adjust: definitions.AdjustFunction = ({ value }) => {
+export const adjust: definitions.AdjustFunction = async ({ value }) => {
   if (!values.isPlainRecord(value)) {
     throw new Error('Expected value to be a record')
   }

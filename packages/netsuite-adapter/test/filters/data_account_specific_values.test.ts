@@ -26,8 +26,9 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
+import NetsuiteClient from '../../src/client/client'
 import { FILE, NETSUITE, RECORD_REF } from '../../src/constants'
-import { LocalFilterOpts } from '../../src/filter'
+import { RemoteFilterOpts } from '../../src/filter'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { fullFetchConfig } from '../../src/config/config_creator'
 import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
@@ -35,6 +36,14 @@ import filterCreator, {
   UNKNOWN_TYPE_REFERENCES_ELEM_ID,
   UNKNOWN_TYPE_REFERENCES_TYPE_NAME,
 } from '../../src/filters/data_account_specific_values'
+
+const runSuiteQLMock = jest.fn()
+const runSavedSearchQueryMock = jest.fn()
+const client = {
+  runSuiteQL: runSuiteQLMock,
+  runSavedSearchQuery: runSavedSearchQueryMock,
+  isSuiteAppConfigured: () => true,
+} as unknown as NetsuiteClient
 
 describe('data account specific values filter', () => {
   let dataType: ObjectType
@@ -46,7 +55,7 @@ describe('data account specific values filter', () => {
   let taxScheduleSuiteQLTableInstance: InstanceElement
   let unknownTypeReferencesType: ObjectType
   let existingUnknownTypeReferencesInstance: InstanceElement
-  let filterOpts: LocalFilterOpts
+  let filterOpts: RemoteFilterOpts
 
   beforeEach(async () => {
     accountType = new ObjectType({ elemID: new ElemID(NETSUITE, 'account') })
@@ -79,10 +88,9 @@ describe('data account specific values filter', () => {
       },
     })
     filterOpts = {
+      client,
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
       elementsSource: buildElementsSourceFromElements([
-        suiteQLTableType,
-        suiteQLTableInstance,
         unknownTypeReferencesType,
         existingUnknownTypeReferencesInstance,
       ]),
@@ -341,6 +349,12 @@ describe('data account specific values filter', () => {
         },
         [naclCase('someType.fileField')]: {
           1010: 'File Reference',
+        },
+      }
+      filterOpts.suiteQLNameToInternalIdsMap = {
+        account: {
+          'Account 1': ['1'],
+          'Account 2': ['2'],
         },
       }
     })

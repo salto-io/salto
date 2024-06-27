@@ -27,9 +27,9 @@ import {
   toChange,
   Value,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP, resolvePath } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP, resolvePath, setPath } from '@salto-io/adapter-utils'
 import { ACCOUNT_SPECIFIC_VALUE, INIT_CONDITION, WORKFLOW } from '../constants'
-import { resolveWorkflowsAccountSpecificValues } from '../filters/workflow_account_specific_values'
+import { getResolvedAccountSpecificValues } from '../filters/workflow_account_specific_values'
 import { NetsuiteChangeValidator } from './types'
 import { toAccountSpecificValuesWarning } from './account_specific_values'
 
@@ -131,7 +131,7 @@ const getChangeErrorsOnAccountSpecificValues = (
     .concat(returnGenericAccountSpecificValuesWarning ? toAccountSpecificValuesWarning(instance) : [])
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, { elementsSource }) => {
+const changeValidator: NetsuiteChangeValidator = async (changes, { suiteQLNameToInternalIdsMap }) => {
   const workflowChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
@@ -148,12 +148,18 @@ const changeValidator: NetsuiteChangeValidator = async (changes, { elementsSourc
       }) as AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   )
 
-  const resolveWarnings = await resolveWorkflowsAccountSpecificValues(
-    clonedWorkflowChanges.map(getChangeData),
-    elementsSource,
-  )
+  const allResolveWarnings = clonedWorkflowChanges.flatMap(change => {
+    const instance = getChangeData(change)
+    const { resolvedAccountSpecificValues, resolveWarnings } = getResolvedAccountSpecificValues(
+      instance,
+      suiteQLNameToInternalIdsMap,
+    )
+    resolvedAccountSpecificValues.forEach(({ path, value }) => setPath(instance, path, value))
+    return resolveWarnings
+  })
+
   const accountSpecificValuesErrors = clonedWorkflowChanges.flatMap(getChangeErrorsOnAccountSpecificValues)
-  return resolveWarnings.concat(accountSpecificValuesErrors)
+  return allResolveWarnings.concat(accountSpecificValuesErrors)
 }
 
 export default changeValidator

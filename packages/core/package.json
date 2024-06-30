@@ -17,15 +17,13 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "clean-ts": "../../build_utils/clean-old-ts.sh",
-    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
+    "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "test": "jest",
     "clean": "rm -rf ./dist .eslintcache  ./src/generated",
-    "clean-ts-test": "yarn clean-ts && yarn test",
-    "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
-    "build-ts": "tsc -b && yarn clean-ts",
+    "watch-test": "yarn tsc-watch",
+    "build-ts": "tsc -b",
     "watch-ts": "tsc -b -w",
-    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
     "lint-fix": "yarn lint --fix",
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
@@ -119,6 +117,7 @@
     "prettier": "3.2.5",
     "ts-jest": "^27.1.5",
     "tsc-watch": "^2.2.1",
+    "turbo": "^2.0.6",
     "typescript": "4.8.4",
     "wait-for-expect": "^3.0.2"
   }

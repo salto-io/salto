@@ -43,7 +43,7 @@ import {
   GROUP_TYPE_NAME,
   OKTA,
   DOMAIN_TYPE_NAME,
-  USERTYPE_TYPE_NAME, DEVICE_ASSURANCE_TYPE_NAME, SMS_TEMPLATE_TYPE_NAME,
+  USERTYPE_TYPE_NAME, DEVICE_ASSURANCE_TYPE_NAME, SMS_TEMPLATE_TYPE_NAME, LINKS_FIELD,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -798,7 +798,7 @@ describe('adapter', () => {
         userType = new InstanceElement('userType', userTypeType, {
           id: 'usertype-fakeid1',
           name: 'superuser',
-          _links: {
+          [LINKS_FIELD]: {
             'schema': {
               'rel': 'schema',
               'href': 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
@@ -811,7 +811,7 @@ describe('adapter', () => {
       it('should successfully add a user type', async () => {
         const userTypeWithoutId = userType.clone()
         delete userTypeWithoutId.value.id
-        delete userTypeWithoutId.value._links
+        delete userTypeWithoutId.value[LINKS_FIELD]
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'userType',
@@ -822,7 +822,7 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('usertype-fakeid1')
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value._links).toEqual({
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value[LINKS_FIELD]).toEqual({
             'schema': {
               'rel': 'schema',
               'href': 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',

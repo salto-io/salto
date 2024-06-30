@@ -128,7 +128,7 @@ describe('page definitions utils', () => {
       })
     })
     describe('adjustUserReferencesOnPageReverse', () => {
-      it('should adjust user references on page', () => {
+      it('should adjust user references on page', async () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -147,7 +147,7 @@ describe('page definitions utils', () => {
           },
         }
         const adjustUserReferencesOnPageReverse = createAdjustUserReferencesReverse(PAGE_TYPE_NAME)
-        expect(adjustUserReferencesOnPageReverse(args).value).toEqual({
+        expect((await adjustUserReferencesOnPageReverse(args)).value).toEqual({
           authorId: 'authorId',
           ownerId: 'ownerId',
           notUser: 'not',
@@ -273,14 +273,14 @@ describe('page definitions utils', () => {
       expect(putHomepageIdInAdditionContext(args)).toEqual({ id: 'homepageId' })
     })
     describe('adjustUserReferencesOnPage', () => {
-      it('should adjust user references on page', () => {
+      it('should adjust user references on page', async () => {
         const args = {
           typeName: 'page',
           context: {},
           value: { authorId: 'authorId', ownerId: 'ownerId', notUser: 'not' },
         }
         const adjustUserReferencesOnPage = createAdjustUserReferences(PAGE_TYPE_NAME)
-        expect(adjustUserReferencesOnPage(args).value).toEqual({
+        expect((await adjustUserReferencesOnPage(args)).value).toEqual({
           authorId: { accountId: 'authorId', displayName: 'authorId' },
           ownerId: { accountId: 'ownerId', displayName: 'ownerId' },
           notUser: 'not',

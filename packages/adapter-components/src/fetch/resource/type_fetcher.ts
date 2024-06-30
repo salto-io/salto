@@ -58,20 +58,17 @@ const calculateContextArgs = async ({
   const remainingDependsOnArgs: Record<string, DependsOnDefinition> = _.omit(dependsOn, Object.keys(predefinedArgs))
   const dependsOnArgs = _(
     await mapValuesAsync(remainingDependsOnArgs, async arg =>
-      awu(contextResources[arg.parentTypeName] ?? [])
-        .flatMap(async item => {
-          const transformed = await createValueTransformer<{}, Values>(arg.transformation)({
-            typeName: arg.parentTypeName,
-            value: { ...item.value, ...item.context },
-            context: item.context,
-          })
-          if (!_.isArray(transformed)) {
-            return transformed !== undefined ? [transformed] : []
-          }
-          return transformed
-        })
-        .filter(lowerdashValues.isDefined)
-        .toArray(),
+      _.flatten(
+        await Promise.all(
+          (contextResources[arg.parentTypeName] ?? []).map(async item =>
+            createValueTransformer<{}, Values>(arg.transformation)({
+              typeName: arg.parentTypeName,
+              value: { ...item.value, ...item.context },
+              context: item.context,
+            }),
+          ),
+        ),
+      ).filter(lowerdashValues.isDefined),
     ),
   )
     .pickBy(lowerdashValues.isDefined)

@@ -33,7 +33,6 @@ import {
 } from '../../definitions/system'
 import { FetchRequestDefinition } from '../../definitions/system/fetch'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 export type Requester<ClientOptions extends string> = {
@@ -57,17 +56,19 @@ const createExtractor = <ClientOptions extends string>(
 ): ItemExtractor => {
   const transform = createValueTransformer(extractorDef.transformation)
   return async pages =>
-    awu(pages)
-      .flatMap(async page =>
-        collections.array.makeArray(
-          await transform({
-            value: page,
-            typeName,
-            context: extractorDef.context ?? {},
-          }),
+    _.flatten(
+      await Promise.all(
+        pages.map(async page =>
+          collections.array.makeArray(
+            await transform({
+              value: page,
+              typeName,
+              context: extractorDef.context ?? {},
+            }),
+          ),
         ),
-      )
-      .toArray()
+      ),
+    )
 }
 
 export const getRequester = <Options extends APIDefinitionsOptions>({
@@ -165,10 +166,14 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
       polling: mergedEndpointDef.polling,
     })
 
-    const itemsWithContext = await awu(pagesWithContext)
-      .map(async ({ context, pages }) => ({ items: await extractorCreator(context)(pages), context }))
-      .flatMap(async ({ items, context }) => items.flatMap(item => ({ ...item, context })))
-      .toArray()
+    const itemsWithContext = (
+      await Promise.all(
+        pagesWithContext.map(async ({ context, pages }) => ({
+          items: await extractorCreator(context)(pages),
+          context,
+        })),
+      )
+    ).flatMap(({ items, context }) => items.map(item => ({ ...item, context })))
     return itemsWithContext.filter(item => {
       if (!lowerdashValues.isPlainRecord(item.value)) {
         log.warn(

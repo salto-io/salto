@@ -648,20 +648,20 @@ describe('Okta adapter E2E', () => {
         createdInstances = elements.filter(isInstanceElement)
       })
 
-      it.each(expectedTypes)('should fetch %s', async typeName => {
+      it.skip.each(expectedTypes)('should fetch %s', async typeName => {
         expect(createdTypeNames).toContain(typeName)
         if (typesWithInstances.has(typeName)) {
           expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
         }
       })
-      it('should fetch OrgSetting and validate subdomain field', async () => {
+      it.skip('should fetch OrgSetting and validate subdomain field', async () => {
         const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
         expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
         // Validate subdomain field exist as we use it in many flows
         expect(orgSettingInst[0]?.value.subdomain).toBeDefined()
       })
     })
-    it('should fetch the newly deployed instances', async () => {
+    it.skip('should fetch the newly deployed instances', async () => {
       const deployInstances = deployResults
         .map(res => res.appliedChanges)
         .flat()

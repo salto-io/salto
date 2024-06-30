@@ -1284,7 +1284,7 @@ const createElemIdGetter = async (
   }
 }
 
-const createElemIdGetters = async (
+export const createElemIdGetters = async (
   workspace: Workspace,
   accountToServiceNameMap: Record<string, string>,
   elementsSource: ReadOnlyElementsSource,

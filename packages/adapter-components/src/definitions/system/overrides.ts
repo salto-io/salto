@@ -20,7 +20,7 @@ import { RequiredDefinitions } from './types'
 import { APIDefinitionsOptions } from './api'
 
 const log = logger(module)
-export const DEFINITIONS_OVERRIDES = 'DEFINITION_OVERRIDES'
+export const DEFINITIONS_OVERRIDES = 'SALTO_DEFINITION_OVERRIDES'
 
 export const getParsedDefinitionsOverrides = (): Values => {
   const flagValue = process.env[DEFINITIONS_OVERRIDES]
@@ -48,17 +48,23 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     if (_.isArray(objValue)) {
       return srcValue
     }
-    if (srcValue === null) {
-      return undefined // Remove the property
-    }
     if (_.isObject(objValue) && _.isObject(srcValue)) {
-      const result = _.mergeWith({}, objValue, srcValue, customMerge)
-      return _.isEmpty(result) ? undefined : result // Remove empty objects
+      return _.mergeWith({}, objValue, srcValue, customMerge)
     }
     return srcValue
   }
   if (_.isEmpty(overrides)) {
     return definitions
   }
-  return _.mergeWith(definitions, overrides, customMerge)
+  const merged = _.mergeWith(definitions, overrides, customMerge)
+  const removeNullObjects = (obj: any): any => {
+    if (_.isArray(obj)) {
+      return obj.map(removeNullObjects)
+    } else if (_.isObject(obj)) {
+      const cleanedObj = _.omitBy(obj, _.isNull)
+      return _.mapValues(cleanedObj, removeNullObjects)
+    }
+    return obj
+  }
+  return removeNullObjects(merged)
 }

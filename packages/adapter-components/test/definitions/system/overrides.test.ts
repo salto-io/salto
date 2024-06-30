@@ -166,6 +166,7 @@ describe('overrides', () => {
       }
       const merged = mergeDefinitionsWithOverrides(mockedDefinitions, overrides)
       expect(merged.fetch.instances.customizations?.group).toBeDefined()
+      expect(merged.fetch.instances.customizations?.team).toBeDefined()
     })
     it('should disable a custom function', () => {
       expect(mockedDefinitions.fetch.instances.customizations?.team?.requests?.[0].transformation?.adjust).toBeDefined()
@@ -238,6 +239,19 @@ describe('overrides', () => {
         overrides.fetch.instances.default.element.topLevel.elemID,
       )
       expect(merged.fetch.instances.default?.element?.topLevel?.singleton).toBeTruthy()
+    })
+    it('should remove a type from the fetch config', () => {
+      const overrides = {
+        fetch: {
+          instances: {
+            customizations: {
+              team: null,
+            },
+          },
+        },
+      }
+      const merged = mergeDefinitionsWithOverrides(mockedDefinitions, overrides)
+      expect(merged.fetch.instances.customizations?.team).toBeUndefined()
     })
   })
 })

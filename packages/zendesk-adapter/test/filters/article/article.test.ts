@@ -621,6 +621,26 @@ describe('article filter', () => {
       ])
     })
 
+    it('should pass the correct params to deployChange for user_segment_id', async () => {
+      const id = 2
+      mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
+      const clonedArticle = articleInstance.clone()
+      clonedArticle.value.user_segment_ids = [123]
+      clonedArticle.value.user_segment_id = 123
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedArticle } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedArticle } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['translations', 'attachments', 'user_segment_id'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedArticle } }])
+    })
+
     it('should pass the correct params to deployChange on remove', async () => {
       const id = 2
       const clonedArticle = articleInstance.clone()

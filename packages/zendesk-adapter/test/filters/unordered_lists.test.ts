@@ -304,6 +304,41 @@ describe('Unordered lists filter', () => {
         { id: 'a', position: 1 },
       ],
     })
+    const referenceA = new ReferenceExpression(new ElemID('zendesk', 'test', 'instance', 'a'))
+    const referenceB = new ReferenceExpression(new ElemID('zendesk', 'test', 'instance', 'b'))
+    const referenceC = new ReferenceExpression(new ElemID('zendesk', 'test', 'instance', 'c'))
+    const workspaceWithMacros = new InstanceElement('workspaceWithMacros', workspaceType, {
+      macro_ids: [referenceC, 'd', referenceA, referenceB],
+      selected_macros: [
+        {
+          id: referenceC,
+        },
+        {
+          id: referenceA,
+        },
+        {
+          id: 'd',
+        },
+        {
+          id: referenceB,
+        },
+      ],
+    })
+    const invalidWorkspaceWithMacros = new InstanceElement('invalidWorkspaceWithMacros', workspaceType, {
+      macro_ids: [referenceC, referenceA, referenceB],
+      selected_macros: [
+        {
+          id: referenceC,
+        },
+        {},
+        {
+          id: referenceA,
+        },
+        {
+          id: referenceB,
+        },
+      ],
+    })
 
     const routingAttributeValueA = new InstanceElement('routingAttributeValueA', routingAttributeValueType, {
       name: 'A',
@@ -367,6 +402,8 @@ describe('Unordered lists filter', () => {
       routingAttributeValueA,
       routingAttributeValueB,
       routingAttribute,
+      workspaceWithMacros,
+      invalidWorkspaceWithMacros,
     ]
   }
 
@@ -588,11 +625,13 @@ describe('Unordered lists filter', () => {
   })
   describe('workspace', () => {
     let instance: InstanceElement
+    let allWorkspaces: InstanceElement[]
     beforeAll(() => {
-      ;[instance] = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === WORKSPACE_TYPE_NAME)
+      allWorkspaces = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === WORKSPACE_TYPE_NAME)
     })
 
     it('should sort apps by position', async () => {
+      ;[instance] = allWorkspaces.filter(e => e.elemID.name === 'workspaceWithNoApps')
       expect(instance.value.apps).toHaveLength(4)
       expect(instance.value.apps[0].position).toEqual(1)
       expect(instance.value.apps[0].id.elemID.getFullName()).toEqual('zendesk.d')
@@ -602,6 +641,30 @@ describe('Unordered lists filter', () => {
       expect(instance.value.apps[2].position).toEqual(2)
       expect(instance.value.apps[3].id).toEqual('c')
       expect(instance.value.apps[3].position).toEqual(3)
+    })
+    it('should sort macros ids correctly', async () => {
+      ;[instance] = allWorkspaces.filter(e => e.elemID.name === 'workspaceWithMacros')
+      expect(instance.value.macro_ids).toHaveLength(4)
+      expect(instance.value.macro_ids[0]).toEqual('d')
+      expect(instance.value.macro_ids[1].elemID.name).toEqual('a')
+      expect(instance.value.macro_ids[2].elemID.name).toEqual('b')
+      expect(instance.value.macro_ids[3].elemID.name).toEqual('c')
+    })
+    it('should sort selected macros correctly', async () => {
+      ;[instance] = allWorkspaces.filter(e => e.elemID.name === 'workspaceWithMacros')
+      expect(instance.value.selected_macros).toHaveLength(4)
+      expect(instance.value.selected_macros[0].id).toEqual('d')
+      expect(instance.value.selected_macros[1].id.elemID.name).toEqual('a')
+      expect(instance.value.selected_macros[2].id.elemID.name).toEqual('b')
+      expect(instance.value.selected_macros[3].id.elemID.name).toEqual('c')
+    })
+    it('should do nothing if selected macros is invalid', async () => {
+      ;[instance] = allWorkspaces.filter(e => e.elemID.name === 'invalidWorkspaceWithMacros')
+      expect(instance.value.selected_macros).toHaveLength(4)
+      expect(instance.value.selected_macros[0].id.elemID.name).toEqual('c')
+      expect(instance.value.selected_macros[1]).toEqual({})
+      expect(instance.value.selected_macros[2].id.elemID.name).toEqual('a')
+      expect(instance.value.selected_macros[3].id.elemID.name).toEqual('b')
     })
   })
   describe('routing attribute', () => {

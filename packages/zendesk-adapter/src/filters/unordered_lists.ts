@@ -182,6 +182,10 @@ const sortConditions = (
           _.isString(condition.value) || _.isBoolean(condition.value)
             ? condition.value
             : [customFieldById[condition.value.elemID.getFullName()].value.value],
+        condition =>
+          _.isString(condition.value) || _.isBoolean(condition.value)
+            ? condition.value
+            : condition.value.elemID.getFullName(),
         condition => condition.parent_field_id?.elemID?.getFullName(),
       )
     } else {
@@ -267,6 +271,44 @@ const orderArticleLabelNames = (instances: InstanceElement[]): void => {
     })
 }
 
+const orderMacroIds = (workspace: InstanceElement): void => {
+  const macroIds = workspace.value.macro_ids
+  if (_.isArray(macroIds)) {
+    workspace.value.macro_ids = _.sortBy(macroIds, id => {
+      if (isReferenceExpression(id)) {
+        return id.elemID.getFullName()
+      }
+      return id
+    })
+  } else {
+    log.trace(`macro_ids in workspace ${workspace.elemID.getFullName()} is not an array`)
+  }
+}
+const orderSelectedMacros = (workspace: InstanceElement): void => {
+  const selectedMacros = workspace.value.selected_macros
+  if (_.isArray(selectedMacros) && selectedMacros.every(macro => macro.id !== undefined)) {
+    workspace.value.selected_macros = _.sortBy(selectedMacros, macro => {
+      if (isReferenceExpression(macro.id)) {
+        return macro.id.elemID.getFullName()
+      }
+      return macro.id
+    })
+  } else {
+    log.trace(
+      `selected macros in workspace ${workspace.elemID.getFullName()} is not an array or one of the macros does not have an id`,
+    )
+  }
+}
+
+const orderMacrosInWorkspace = (instances: InstanceElement[]): void => {
+  instances
+    .filter(e => e.elemID.typeName === WORKSPACE_TYPE_NAME)
+    .forEach(workspace => {
+      orderMacroIds(workspace)
+      orderSelectedMacros(workspace)
+    })
+}
+
 const orderAppInstallationsInWorkspace = (instances: InstanceElement[]): void => {
   instances
     .filter(e => e.elemID.typeName === WORKSPACE_TYPE_NAME)
@@ -299,6 +341,7 @@ const filterCreator: FilterCreator = () => ({
     orderArticleLabelNames(instances)
     orderAppInstallationsInWorkspace(instances)
     orderRoutingAttributes(instances)
+    orderMacrosInWorkspace(instances)
   },
 })
 

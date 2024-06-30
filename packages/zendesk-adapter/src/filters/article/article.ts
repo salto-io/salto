@@ -399,6 +399,11 @@ const calculateAndRemoveDeletedAttachments = ({
   return allRemovedAttachmentsIds
 }
 
+const shouldIgnoreUserSegment = (change: Change<InstanceElement>): boolean => {
+  const data = getChangeData(change)
+  return data.value.user_segment_ids !== undefined && data.value.user_segment_id !== undefined
+}
+
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
@@ -504,6 +509,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         const fieldsToIgnore = ['translations', 'attachments']
         if (!isAdditionChange(change)) {
           fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
+        }
+        // we have user_segment_id and user_segment_ids in the article and we can't deploy an article with both
+        if (shouldIgnoreUserSegment(change)) {
+          fieldsToIgnore.push('user_segment_id')
         }
         await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
         const articleInstance = getChangeData(change)

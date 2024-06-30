@@ -37,10 +37,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   >({
     [GROUP_TYPE_NAME]: { bulkPath: '/api/v1/groups' },
     [BRAND_TYPE_NAME]: { bulkPath: '/api/v1/brands' },
-    [DOMAIN_TYPE_NAME]: { bulkPath: '/api/v1/domains' },
-    [USERTYPE_TYPE_NAME]: { bulkPath: '/api/v1/meta/types/user' },
-    [SMS_TEMPLATE_TYPE_NAME]: { bulkPath: '/api/v1/templates/sms' },
-    [DEVICE_ASSURANCE_TYPE_NAME]: { bulkPath: '/api/v1/device-assurances' },
+    // [DOMAIN_TYPE_NAME]: { bulkPath: '/api/v1/domains' },
+    // [USERTYPE_TYPE_NAME]: { bulkPath: '/api/v1/meta/types/user' },
+    // [SMS_TEMPLATE_TYPE_NAME]: { bulkPath: '/api/v1/templates/sms' },
+    // [DEVICE_ASSURANCE_TYPE_NAME]: { bulkPath: '/api/v1/device-assurances' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {

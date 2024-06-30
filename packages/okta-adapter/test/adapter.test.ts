@@ -43,7 +43,7 @@ import {
   GROUP_TYPE_NAME,
   OKTA,
   DOMAIN_TYPE_NAME,
-  USERTYPE_TYPE_NAME, DEVICE_ASSURANCE_TYPE_NAME,
+  USERTYPE_TYPE_NAME, DEVICE_ASSURANCE_TYPE_NAME, SMS_TEMPLATE_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -877,7 +877,7 @@ describe('adapter', () => {
       let smsTemplate: InstanceElement
       beforeEach(() => {
         smsTemplateType = new ObjectType({
-          elemID: new ElemID(OKTA, DOMAIN_TYPE_NAME),
+          elemID: new ElemID(OKTA, SMS_TEMPLATE_TYPE_NAME),
           fields: {
             id: {
               refType: BuiltinTypes.SERVICE_ID,
@@ -886,6 +886,7 @@ describe('adapter', () => {
         })
         smsTemplate = new InstanceElement('smsTemplate', smsTemplateType, {
           id: 'smstemplate-fakeid1',
+          name: 'Custom',
         })
       })
 
@@ -906,7 +907,7 @@ describe('adapter', () => {
 
       it('should successfully modify an sms template', async () => {
         const updatedSmsTemplate = smsTemplate.clone()
-        updatedSmsTemplate.value.removePoweredByOkta = true
+        updatedSmsTemplate.value.name = 'Other'
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'smsTemplate',
@@ -922,8 +923,8 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
-          true,
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
+          'Other',
         )
       })
 

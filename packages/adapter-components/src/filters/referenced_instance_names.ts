@@ -210,7 +210,7 @@ const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
   elements: Element[],
   fetchDefinitionByType: Record<string, InstanceFetchApiDefinitions<TOptions>>,
 ): DAG<{ instance: InstanceElement; index: number }> => {
-  const duplicateElemIds = new Set(findDuplicates(elements.map(i => i.elemID.getFullName())))
+  const duplicateElemIds = new Set(findDuplicates(elements.filter(isInstanceElement).map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
   const isDuplicateInstance = (instanceFullName: string): boolean => {
     if (duplicateElemIds.has(instanceFullName)) {

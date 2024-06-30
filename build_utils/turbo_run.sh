@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-TURBO_CONCURRENCY="${TURBO_CONCURRENCY:-8}"
+TURBO_CONCURRENCY="${TURBO_CONCURRENCY:-"100%"}"
 
 if [ -n "$CI" ]; then
 
@@ -14,7 +14,7 @@ if [ -n "$CI" ]; then
 
   if [ -f "$container_cpu_quota" ] && [ -f "$container_cpu_scale" ]; then
 
-    # if CI runs in containers, so finding the total allotted CPU is trickier
+    # when CI runs in containers, finding the total allotted CPU is trickier
     TURBO_CONCURRENCY="$(awk -v quota="$(cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us)" -v period="$(cat /sys/fs/cgroup/cpu/cpu.cfs_period_us)" 'BEGIN { printf "%.0f\n", (quota / period) * 0.5 }')"
 
   fi

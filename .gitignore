@@ -18,9 +18,11 @@ Thumbs.db
 junit.xml
 
 # yarn
-yarn-error.log
-/.yarn/
-.yarnrc.yml
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
 
 # salto logs
 logsalto.log

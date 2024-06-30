@@ -268,9 +268,6 @@ describe('file', () => {
         let dir: string
         let dirTmp: tmp.DirectoryResult
 
-        // beforeEach(async () => {
-        // })
-
         it('removes the dir', async () => {
           dirTmp = await tmp.dir()
           dir = dirTmp.path
@@ -282,8 +279,6 @@ describe('file', () => {
           }
         })
 
-        // afterEach(async () => {
-        // })
       })
     })
 

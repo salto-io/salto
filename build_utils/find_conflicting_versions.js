@@ -58,13 +58,14 @@ const main = async () => {
     {},
   )
 
-  // jest-circus: create-react-app does is using jest 27 via but jest-circus v27 was not installed
-  const ignoreDeps = [/^jest-circus$/]
+  const ignoreDeps = [] 
   const mismatchedVersions = filterValues(
     depsVersions,
     (versions, key) => !ignoreDeps.some(element => key.match(element)) && Object.keys(versions).length > 1
   )
-  console.log(mismatchedVersions)
+  if (mismatchedVersions) {
+    console.log(mismatchedVersions)
+  }
 
   const numberOfMismatches = Object.keys(mismatchedVersions).length
   if (numberOfMismatches === 0) {

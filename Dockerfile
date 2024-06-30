@@ -3,16 +3,15 @@ WORKDIR /app
 
 RUN \
     apt update && \
-    apt install -y openssl build-essential libgssapi-krb5-2 git ccache
+    apt install -y openssl build-essential libgssapi-krb5-2 git ccache python3
 
 COPY . .
-RUN echo "Updating yarn" && YARN_IGNORE_NODE=1 yarn set version 3.1.0
-RUN \
-    echo "Setting up yarnrc" && \
-    yarn config set cacheFolder .yarn/cache && \
-    yarn config set nodeLinker node-modules
 
-RUN echo "Running yarn install" && yarn 
+RUN echo "Updating yarn" && \
+    corepack enable
+
+RUN echo "Running yarn install" && \
+    yarn --immutable
 
 RUN \
     echo "Running yarn build" && \

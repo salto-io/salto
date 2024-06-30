@@ -36,10 +36,8 @@ commands:
   restore_node_modules:
     description: restore node modules
     steps:
-      - run:
-          name: restore node modules
-          command: echo ''
       - restore_cache:
+          name: restore node modules
           keys:
             - &node-modules-cache node-modules-v4-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - node-modules-v2-{{ arch }}}-{{ .Branch }}
@@ -48,10 +46,8 @@ commands:
   restore_yarn_cache:
     description: restore yarn cache
     steps:
-      - run:
-          name: restore yarn cache
-          command: echo ''
       - restore_cache:
+          name: restore yarn cache
           keys:
             - &yarn-cache yarn-cache-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - yarn-cache-v2-{{ arch }}}-{{ .Branch }}
@@ -60,10 +56,8 @@ commands:
   restore_turbo_cache:
     description: load a turbocache
     steps:
-      - run:
-          name: load a turbocache
-          command: echo ''
       - restore_cache:
+          name: load a turbocache
           keys:
             - &turbo-cache turbo-cache-v2-{{ .Branch }}-{{ epoch }}
             - turbo-cache-v2-{{ .Branch }}
@@ -72,33 +66,30 @@ commands:
   store_yarn_cache:
     description: cache store yarn cache
     steps:
-      - run:
-          name: cache store yarn cache
-          command: echo ''
       - save_cache:
+          name: cache store yarn cache
           key: *yarn-cache
+          when: always
           paths:
             - /mnt/ramdisk/project/.yarn
 
   store_node_modules:
     description: cache store node_modules
     steps:
-      - run:
-          name: cache store node_modules
-          command: echo ''
       - save_cache:
+          name: cache store node_modules
           key: *node-modules-cache
+          when: always
           paths:
             - /mnt/ramdisk/project/node_modules
 
   store_turbo_cache:
     description: cache store turbo cache
     steps:
-      - run:
-          name: cache store turbo cache
-          command: echo ''
       - save_cache:
+          name: cache store turbo cache
           key: *turbo-cache
+          when: always
           paths:
             - /mnt/ramdisk/project/.turbo
 
@@ -109,12 +100,8 @@ commands:
           name: set up yarn berry
           command: |
             sudo corepack enable
-            yarn set version 3.1.0
-            yarn config set cacheFolder /mnt/ramdisk/project/.yarn/cache
-            yarn config set nodeLinker node-modules
-            build_utils/import-plugins.js
-          environment:
-            YARN_IGNORE_NODE: 1
+          env:
+            YARN_CACHE_FOLDER: /mnt/ramdisk/project/.yarn/cache
 
   run_e2e_tests:
     parameters:

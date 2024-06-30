@@ -175,6 +175,7 @@ export const isAdapterSuccessInstallResult = (result: AdapterInstallResult): res
 
 export type AccountInfo = {
   accountId: string
+  accountUrl?: string
   accountType?: string
   isProduction?: boolean
   extraInformation?: Record<string, string>

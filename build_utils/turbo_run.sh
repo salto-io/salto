@@ -6,9 +6,6 @@ if [ -n "$CI" ]; then
   # new TURBO UI crashes when running in CI context
   export TURBO_UI=false
 
-  # avoid creating local cache in CI (because we don't want to persist it)
-  export TURBO_REMOTE_ONLY=true
-
   # running in CI with 100% CPU will OOM
   TURBO_CONCURRENCY="50%"
 
@@ -22,9 +19,14 @@ if [ -n "$CI" ]; then
 
   fi
 
-fi
+  yarn turbo run "$@" \
+    --concurrency="$TURBO_CONCURRENCY"
 
-yarn turbo run "$@" \
-  --token="${TURBO_TOKEN:-NOPE}" \
-  --team="${TURBO_TEAM:-SaltoDev}" \
-  --concurrency="$TURBO_CONCURRENCY"
+else
+
+  yarn turbo run "$@" \
+    --token="${TURBO_TOKEN:-NOPE}" \
+    --team="${TURBO_TEAM:-SaltoDev}" \
+    --concurrency="$TURBO_CONCURRENCY"
+
+fi

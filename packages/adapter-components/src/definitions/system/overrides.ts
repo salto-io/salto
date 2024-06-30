@@ -57,10 +57,11 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     return definitions
   }
   const merged = _.mergeWith(definitions, overrides, customMerge)
-  const removeNullObjects = (obj: any): any => {
+  const removeNullObjects = (obj: Value): Value => {
     if (_.isArray(obj)) {
       return obj.map(removeNullObjects)
-    } else if (_.isObject(obj)) {
+    }
+    if (_.isObject(obj)) {
       const cleanedObj = _.omitBy(obj, _.isNull)
       return _.mapValues(cleanedObj, removeNullObjects)
     }

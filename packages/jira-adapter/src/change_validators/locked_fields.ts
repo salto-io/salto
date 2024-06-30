@@ -13,31 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeValidator, getChangeData, InstanceElement, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceElement, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
-import { FIELD_TYPE_NAME, IS_LOCKED, SERVICE } from '../filters/fields/constants'
+import { FIELD_TYPE_NAME, IS_LOCKED, SERVICE, WORK_CATEGORY_FIELD } from '../filters/fields/constants'
+import { isRelatedToSpecifiedTerms } from '../common/fields'
 
-const log = logger(module)
 const { awu } = collections.asynciterable
-export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: string[]): boolean => {
-  const includesTerm = (term: string): boolean =>
-    instance.value.name?.includes(term) || instance.value.description?.includes(term)
-
-  if (terms.some(includesTerm)) {
-    log.debug(`Found a field related to specified term in ${instance.elemID.getFullName()}. Planning to deploy it.`)
-    return true
-  }
-  return false
-}
 
 export const lockedFieldsValidator: ChangeValidator = async changes =>
   awu(changes)
-    .filter(isInstanceChange)
     .map(getChangeData)
+    .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
-    .filter(instance => instance.value?.[IS_LOCKED] === true)
-    .filter(instance => !isRelatedToSpecifiedTerms(instance, [SERVICE]))
+    .filter(instance => instance.value[IS_LOCKED] === true)
+    .filter(instance => !isRelatedToSpecifiedTerms(instance, [SERVICE, WORK_CATEGORY_FIELD]))
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,

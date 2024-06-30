@@ -246,6 +246,7 @@ export type FetchFunc = (
   accounts?: string[],
   ignoreStateElemIdMapping?: boolean,
   withChangesDetection?: boolean,
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[],
 ) => Promise<FetchResult>
 
 export type FetchFromWorkspaceFuncParams = {
@@ -261,10 +262,11 @@ export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Pro
 
 export const fetch: FetchFunc = async (
   workspace,
-  progressEmitter?,
-  accounts?,
-  ignoreStateElemIdMapping?,
-  withChangesDetection?,
+  progressEmitter,
+  accounts,
+  ignoreStateElemIdMapping,
+  withChangesDetection,
+  ignoreStateElemIdMappingForSelectors,
 ) => {
   log.debug('fetch starting..')
   const fetchAccounts = accounts ?? workspace.accounts()
@@ -275,6 +277,7 @@ export const fetch: FetchFunc = async (
     accountToServiceNameMap,
     await workspace.elements(),
     ignoreStateElemIdMapping,
+    ignoreStateElemIdMappingForSelectors,
   )
   const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
 
@@ -417,6 +420,7 @@ type CalculatePatchArgs = {
   toDir: string
   accountName: string
   ignoreStateElemIdMapping?: boolean
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[]
 }
 
 export const calculatePatch = async ({
@@ -425,6 +429,7 @@ export const calculatePatch = async ({
   toDir,
   accountName,
   ignoreStateElemIdMapping,
+  ignoreStateElemIdMappingForSelectors,
 }: CalculatePatchArgs): Promise<FetchResult> => {
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const adapterName = accountToServiceNameMap[accountName]
@@ -443,6 +448,7 @@ export const calculatePatch = async ({
     accountToServiceNameMap,
     elementSource.createInMemoryElementSource(resolvedWSElements),
     ignoreStateElemIdMapping,
+    ignoreStateElemIdMappingForSelectors,
   )
   const adapterContext = adaptersCreatorConfigs[accountName]
 

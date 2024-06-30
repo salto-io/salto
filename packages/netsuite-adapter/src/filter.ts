@@ -31,6 +31,7 @@ export type LocalFilterOpts = {
   timeZoneAndFormat?: TimeZoneAndFormat
   changesGroupId?: string
   fetchTime?: Date
+  suiteQLNameToInternalIdsMap?: Record<string, Record<string, string[]>>
 }
 
 export type RemoteFilterOpts = LocalFilterOpts & {

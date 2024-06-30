@@ -194,6 +194,9 @@ export const defaultDeployChange = async (
     }
   }
 
+  if (apiDefinitions.types[getChangeData(change).elemID.typeName] === undefined) {
+    throw new Error(`No deployment configuration found for type ${getChangeData(change).elemID.typeName}`)
+  }
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
     const response = await deployment.deployChange({

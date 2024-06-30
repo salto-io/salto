@@ -360,12 +360,7 @@ const validateAdditionalDependencies = ({
   }
 }
 
-const validateFetchConfig = ({
-  include,
-  exclude,
-  fieldsToOmit,
-  skipResolvingAccountSpecificValuesToTypes,
-}: Record<keyof FetchParams, unknown>): void => {
+const validateFetchConfig = ({ include, exclude, fieldsToOmit }: Record<keyof FetchParams, unknown>): void => {
   validateDefined(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validateFetchParameters(include)
@@ -381,17 +376,6 @@ const validateFetchConfig = ({
 
   if (fieldsToOmit !== undefined) {
     validateFieldsToOmitConfig(fieldsToOmit)
-  }
-
-  if (skipResolvingAccountSpecificValuesToTypes !== undefined) {
-    validateArrayOfStrings(skipResolvingAccountSpecificValuesToTypes, [
-      CONFIG.fetch,
-      FETCH_PARAMS.skipResolvingAccountSpecificValuesToTypes,
-    ])
-    validateRegularExpressions(skipResolvingAccountSpecificValuesToTypes, [
-      CONFIG.fetch,
-      FETCH_PARAMS.skipResolvingAccountSpecificValuesToTypes,
-    ])
   }
 }
 
@@ -423,16 +407,12 @@ const validateDeployParams = ({
 const validateSuiteAppClientParams = ({
   suiteAppConcurrencyLimit,
   httpTimeoutLimitInMinutes,
-  maxRecordsPerSuiteQLTable,
 }: Record<keyof SuiteAppClientConfig, unknown>): void => {
   if (suiteAppConcurrencyLimit !== undefined) {
     validateNumber(suiteAppConcurrencyLimit, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.suiteAppConcurrencyLimit])
   }
   if (httpTimeoutLimitInMinutes !== undefined) {
     validateNumber(httpTimeoutLimitInMinutes, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.httpTimeoutLimitInMinutes])
-  }
-  if (maxRecordsPerSuiteQLTable !== undefined) {
-    validateMaxInstancesPerType(maxRecordsPerSuiteQLTable, { validateInvalidTypes: false })
   }
 }
 

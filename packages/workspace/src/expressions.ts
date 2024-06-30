@@ -218,7 +218,7 @@ const getResolveFunctions = ({
       pendingAsyncOperations.push(
         pendingResolve.then(resolveResult => {
           if (resolveResult === undefined) {
-            setTypeOnReference(typeReference, resolveResult)
+            setTypeOnReference(typeReference, undefined)
           } else {
             const resolvedType = getResolvedType(
               typeReference.elemID,
@@ -351,6 +351,9 @@ export const resolve = (
             Object.values(element.annotationRefTypes).forEach(resolveTypeReference)
           }
           if (isObjectType(element)) {
+            if (element.metaType !== undefined) {
+              resolveTypeReference(element.metaType)
+            }
             Object.values(element.fields).forEach(field => resolveTypeReference(field.refType))
           }
           if (isContainerType(element)) {

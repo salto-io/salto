@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { getChangeData } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { addTimeZone, shouldChangeLayer } from '../utils/schedule_layers'
+import { addStartToLayers, addTimeZone, shouldChangeLayer } from '../utils/schedule_layers'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   BUSINESS_SERVICE_TYPE_NAME,
@@ -38,7 +38,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   >({
     [BUSINESS_SERVICE_TYPE_NAME]: { bulkPath: '/business_services', nestUnderField: 'business_service' },
     [ESCALATION_POLICY_TYPE_NAME]: { bulkPath: '/escalation_policies', nestUnderField: 'escalation_policy' },
-    [SCHEDULE_TYPE_NAME]: { bulkPath: '/schedules', nestUnderField: 'schedule' },
     [TEAM_TYPE_NAME]: { bulkPath: '/teams', nestUnderField: 'team' },
   })
 
@@ -212,6 +211,53 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 transformForCheck: {
                   pick: ['eventOrchestrationsRouter'],
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [SCHEDULE_TYPE_NAME]: {
+      referenceResolution: {
+        when: 'early',
+      },
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules',
+                  method: 'post',
+                },
+                transformation: {
+                  nestUnderField: 'schedule',
+                  adjust: addStartToLayers,
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  nestUnderField: 'schedule',
+                  adjust: addStartToLayers,
                 },
               },
             },

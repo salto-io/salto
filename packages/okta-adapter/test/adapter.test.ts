@@ -37,7 +37,7 @@ import { accessTokenCredentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/user_config'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
-import { GROUP_TYPE_NAME, OKTA } from '../src/constants'
+import { USER_TYPE_NAME, BRAND_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => null,
@@ -442,28 +442,8 @@ describe('adapter', () => {
   })
   describe('deploy', () => {
     let operations: AdapterOperations
-    let groupType: ObjectType
-    let group1: InstanceElement
 
     beforeEach(() => {
-      groupType = new ObjectType({
-        elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
-        fields: {
-          id: {
-            refType: BuiltinTypes.SERVICE_ID,
-          },
-        },
-      })
-      group1 = new InstanceElement('group1', groupType, {
-        id: 'fakeid123',
-        objectClass: ['okta:user_group'],
-        type: 'OKTA_GROUP',
-        profile: {
-          name: 'Engineers',
-          description: 'all the engineers',
-        },
-      })
-
       operations = adapter.operations({
         credentials: new InstanceElement('config', accessTokenCredentialsType, {
           baseUrl: 'https://test.okta.com',
@@ -474,51 +454,253 @@ describe('adapter', () => {
       })
     })
 
-    it('should successfully add a group', async () => {
-      const groupWithoutId = group1.clone()
-      delete groupWithoutId.value.id
-      const result = await operations.deploy({
-        changeGroup: {
-          groupID: 'group',
-          changes: [toChange({ after: groupWithoutId })],
-        },
-        progressReporter: nullProgressReporter,
+    describe('deploy group', () => {
+      let groupType: ObjectType
+      let group1: InstanceElement
+      beforeEach(() => {
+        groupType = new ObjectType({
+          elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        group1 = new InstanceElement('group1', groupType, {
+          id: 'group-fakeid1',
+          objectClass: ['okta:user_group'],
+          type: 'OKTA_GROUP',
+          profile: {
+            name: 'Engineers',
+            description: 'all the engineers',
+          },
+        })
       })
-      expect(result.errors).toHaveLength(0)
-      expect(result.appliedChanges).toHaveLength(1)
-      expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('fakeid123')
+
+      it('should successfully add a group', async () => {
+        const groupWithoutId = group1.clone()
+        delete groupWithoutId.value.id
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [toChange({ after: groupWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('group-fakeid1')
+      })
+
+      it('should successfully modify a group', async () => {
+        const updatedGroup1 = group1.clone()
+        updatedGroup1.value.name = 'Programmers'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [
+              toChange({
+                before: group1,
+                after: updatedGroup1,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+
+      it('should successfully remove a group', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [toChange({ before: group1 })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
     })
 
-    it('should successfully modify a group', async () => {
-      const updatedGroup1 = group1.clone()
-      updatedGroup1.value.name = 'Programmers'
-      const result = await operations.deploy({
-        changeGroup: {
-          groupID: 'group',
-          changes: [
-            toChange({
-              before: group1,
-              after: updatedGroup1,
-            }),
-          ],
-        },
-        progressReporter: nullProgressReporter,
+    describe('deploy brand', () => {
+      let brandType: ObjectType
+      let brand1: InstanceElement
+      beforeEach(() => {
+        brandType = new ObjectType({
+          elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        brand1 = new InstanceElement('brand1', brandType, {
+          id: 'brand-fakeid1',
+          name: 'subdomain.example.com',
+          removePoweredByOkta: false,
+        })
       })
 
-      expect(result.errors).toHaveLength(0)
-      expect(result.appliedChanges).toHaveLength(1)
+      it('should successfully add a brand', async () => {
+        const brandWithoutId = new InstanceElement('brand1', brandType, {
+          name: 'subdomain.example.com',
+          removePoweredByOkta: false,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [toChange({ after: brandWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('brand-fakeid1')
+      })
+
+      it('should successfully modify a brand', async () => {
+        const updatedBrand1 = brand1.clone()
+        updatedBrand1.value.removePoweredByOkta = true
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [
+              toChange({
+                before: brand1,
+                after: updatedBrand1,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
+          true,
+        )
+      })
+
+      it('should successfully remove a brand', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [toChange({ before: brand1 })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
     })
 
-    it('should successfully remove a group', async () => {
-      const result = await operations.deploy({
-        changeGroup: {
-          groupID: 'group',
-          changes: [toChange({ before: group1 })],
-        },
-        progressReporter: nullProgressReporter,
+    describe('deploy users', () => {
+      let userType: ObjectType
+      beforeEach(() => {
+        userType = new ObjectType({
+          elemID: new ElemID(OKTA, USER_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
       })
-      expect(result.errors).toHaveLength(0)
-      expect(result.appliedChanges).toHaveLength(1)
+
+      it('should successfully add a user', async () => {
+        const user1 = new InstanceElement('user1', userType, {
+          status: 'STAGED',
+          profile: {
+            login: 'a@a',
+            email: 'a@a',
+            firstName: 'a',
+            lastName: 'a',
+          },
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: user1.elemID.getFullName(),
+            changes: [toChange({ after: user1 })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(mockAxiosAdapter.history.post.length).toBe(1)
+        const addUserReq = mockAxiosAdapter.history.post[0]
+        expect(addUserReq.url).toEqual('/api/v1/users')
+        expect(addUserReq.params).toEqual({ activate: 'false' })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0]).elemID.getFullName()).toEqual('okta.User.instance.user1')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('fakeid123')
+      })
+      it('should successfully modify a user', async () => {
+        const user1 = new InstanceElement('user1', userType, {
+          id: 'fakeid123',
+          status: 'STAGED',
+          profile: {
+            login: 'a@a',
+            email: 'a@a',
+            firstName: 'a',
+            lastName: 'a',
+          },
+        })
+        const updatedUser1 = user1.clone()
+        updatedUser1.value.profile.firstName = 'b'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: user1.elemID.getFullName(),
+            changes: [
+              toChange({
+                before: user1,
+                after: updatedUser1,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(mockAxiosAdapter.history.post.length).toBe(1)
+        const deactivateReq = mockAxiosAdapter.history.post[0]
+        expect(deactivateReq.url).toEqual('/api/v1/users/fakeid123')
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0]).elemID.getFullName()).toEqual('okta.User.instance.user1')
+      })
+      it('should successfully remove a user', async () => {
+        const user1 = new InstanceElement('user1', userType, {
+          id: 'fakeid123',
+          status: 'PROVISIONED',
+          profile: {
+            login: 'a@a',
+            email: 'a@a',
+            firstName: 'a',
+            lastName: 'a',
+          },
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: user1.elemID.getFullName(),
+            changes: [toChange({ before: user1 })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(mockAxiosAdapter.history.post.length).toBe(1)
+        const deactivateReq = mockAxiosAdapter.history.post[0]
+        expect(deactivateReq.url).toEqual('/api/v1/users/fakeid123/lifecycle/deactivate')
+        expect(mockAxiosAdapter.history.delete.length).toBe(1)
+        const deleteReq = mockAxiosAdapter.history.delete[0]
+        expect(deleteReq.url).toEqual('/api/v1/users/fakeid123')
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0]).elemID.getFullName()).toEqual('okta.User.instance.user1')
+      })
     })
   })
 })

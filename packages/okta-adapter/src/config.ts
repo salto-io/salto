@@ -479,28 +479,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  Brand: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}',
-        method: 'put',
-        urlParamsToFields: {
-          brandId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}',
-        method: 'delete',
-        urlParamsToFields: {
-          brandId: 'id',
-        },
-      },
-    },
-  },
   BrandTheme: {
     deployRequests: {
       add: {

@@ -125,17 +125,25 @@ describe('State/cache serialization', () => {
         refType: strMapType,
       },
     },
+    annotations: {
+      LeadConvertSettings: {
+        account: [
+          {
+            input: 'bla',
+            output: 'foo',
+          },
+        ],
+      },
+    },
   })
 
-  model.annotate({
-    LeadConvertSettings: {
-      account: [
-        {
-          input: 'bla',
-          output: 'foo',
-        },
-      ],
-    },
+  const metaType = new ObjectType({
+    elemID: new ElemID('salto', 'meta'),
+  })
+
+  const simpleObject = new ObjectType({
+    elemID: new ElemID('salto', 'simple_object'),
+    metaType,
   })
 
   const instance = new InstanceElement('me', model, { name: 'me', num: 7 }, ['path', 'test'], { test: 'annotation' })
@@ -211,6 +219,7 @@ describe('State/cache serialization', () => {
     numType,
     boolType,
     model,
+    simpleObject,
     strListType,
     strMapType,
     variable,
@@ -232,7 +241,7 @@ describe('State/cache serialization', () => {
     expect(serialized).not.toMatch(subInstance.constructor.name)
   })
 
-  it('should serialize and deserialize elem id correctly without saving the fullname', async () => {
+  it('should serialize and deserialize elem id correctly without saving the full name', async () => {
     const serialized = await serialize([subInstance])
     expect(serialized).not.toContain(subInstance.elemID.getFullName())
     const deserialized = await deserialize(serialized)
@@ -360,15 +369,20 @@ describe('State/cache serialization', () => {
     beforeAll(async () => {
       deserializedElements = await deserialize(await serialize(elements))
     })
-    it('should deserialize type correctly', async () => {
+    it('should deserialize type correctly', () => {
       expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model)).toBeTruthy()
     })
-    it('should deserialize field correctly', async () => {
+    it('should deserialize type with meta type correctly', () => {
+      expect(
+        deserializedElements.find(elem => elem.elemID.isEqual(simpleObject.elemID))?.isEqual(simpleObject),
+      ).toBeTruthy()
+    })
+    it('should deserialize field correctly', () => {
       expect(
         deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField),
       ).toBeTruthy()
     })
-    it('should deserialize instance correctly', async () => {
+    it('should deserialize instance correctly', () => {
       expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance)).toBeTruthy()
     })
   })
@@ -377,15 +391,20 @@ describe('State/cache serialization', () => {
     beforeAll(async () => {
       deserializedElements = await deserializeParsed(JSON.parse(await serialize(elements)))
     })
-    it('should deserialize type correctly', async () => {
+    it('should deserialize type correctly', () => {
       expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model)).toBeTruthy()
     })
-    it('should deserialize field correctly', async () => {
+    it('should deserialize type with meta type correctly', () => {
+      expect(
+        deserializedElements.find(elem => elem.elemID.isEqual(simpleObject.elemID))?.isEqual(simpleObject),
+      ).toBeTruthy()
+    })
+    it('should deserialize field correctly', () => {
       expect(
         deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField),
       ).toBeTruthy()
     })
-    it('should deserialize instance correctly', async () => {
+    it('should deserialize instance correctly', () => {
       expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance)).toBeTruthy()
     })
   })

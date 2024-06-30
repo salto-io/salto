@@ -41,6 +41,7 @@ import { domainAdditionValidator } from './domain_addition'
 import { domainModificationValidator } from './domain_modification'
 import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
 import { brandThemeRemovalValidator } from './brand_theme_removal'
+import { userStatusValidator } from './user_status'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -114,6 +115,7 @@ export default ({
     appUserSchemaRemoval: appUserSchemaRemovalValidator,
     domainAddition: domainAdditionValidator,
     domainModification: domainModificationValidator,
+    userStatusChanges: userStatusValidator,
   }
 
   return createChangeValidator({

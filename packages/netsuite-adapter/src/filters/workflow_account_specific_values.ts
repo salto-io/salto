@@ -21,7 +21,6 @@ import {
   Element,
   ElemID,
   InstanceElement,
-  ReadOnlyElementsSource,
   Value,
   Values,
   getChangeData,
@@ -32,7 +31,7 @@ import {
   ReferenceExpression,
   ChangeError,
 } from '@salto-io/adapter-api'
-import { WALK_NEXT_STEP, resolvePath, walkOnElement, walkOnValue } from '@salto-io/adapter-utils'
+import { WALK_NEXT_STEP, resolvePath, setPath, walkOnElement, walkOnValue } from '@salto-io/adapter-utils'
 import NetsuiteClient from '../client/client'
 import { RemoteFilterCreator } from '../filter'
 import {
@@ -54,9 +53,10 @@ import {
   QueryRecordSchema,
 } from '../client/suiteapp_client/types'
 import {
+  MissingInternalId,
   SUITEQL_TABLE,
-  getSuiteQLNameToInternalIdsMap,
   getSuiteQLTableInternalIdsMap,
+  updateSuiteQLTableInstances,
 } from '../data_elements/suiteql_table_elements'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { captureServiceIdInfo } from '../service_id_info'
@@ -107,6 +107,23 @@ type GetFieldTypeIDFunc = (params: {
   isFieldWithAccountSpecificValue: boolean
   selectRecordTypeMap: Record<string, unknown>
 }) => string | string[] | undefined
+
+type AccountSpecificValueToTransform = {
+  field: QueryRecordField
+  value: Values
+  internalId: string
+}
+
+type ResolvedAccountSpecificValue = {
+  path: ElemID
+  value: string
+}
+
+type ResolvedAccountSpecificValuesResult = {
+  resolvedAccountSpecificValues: ResolvedAccountSpecificValue[]
+  resolveWarnings: ChangeError[]
+  missingInternalIds: MissingInternalId[]
+}
 
 const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, string> = {
   STDITEMTAXSCHEDULE: TAX_SCHEDULE,
@@ -484,7 +501,7 @@ const getWorkflowIdsToQuery = async (
   return _.uniq(result.map(row => row.internalid[0].value))
 }
 
-const query = async (
+const runRecordsQuery = async (
   client: NetsuiteClient,
   instances: InstanceElement[],
   queryRecords: QueryRecord[],
@@ -516,30 +533,22 @@ const isResolvedAccountSpecificValue = (name: string): boolean =>
 const getResolvedAccountSpecificValue = (name: string): string =>
   name.slice(RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX.length, name.length - RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX.length)
 
-const setFieldValue = (
+const getNameByInternalId = (
   field: QueryRecordField,
-  value: Values,
   internalId: string,
   suiteQLTablesMap: Record<string, InstanceElement>,
-): void => {
-  const { name } =
-    makeArray(field.type)
-      .map(typeName => getSuiteQLTableInternalIdsMap(suiteQLTablesMap[typeName])[internalId])
-      .find(res => res !== undefined) ?? {}
-  if (name === undefined) {
-    log.warn('could not find internal id %s of type %s', internalId, field.type)
-    return
-  }
-  value[field.name] = toResolvedAccountSpecificValue(name)
-}
+): string | undefined =>
+  makeArray(field.type)
+    .map(typeName => getSuiteQLTableInternalIdsMap(suiteQLTablesMap[typeName])[internalId])
+    .find(res => res !== undefined)?.name
 
-const setParametersValues = (
+const getParametersAccountSpecificValueToTransform = (
   instance: InstanceElement,
   value: Values,
   formulaWithInternalIds: string,
   suiteQLTablesMap: Record<string, InstanceElement>,
   selectRecordTypeMap: Record<string, unknown>,
-): void => {
+): AccountSpecificValueToTransform[] => {
   const params = getConditionParameters(value[INIT_CONDITION])
     // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles)
     // but only params that have selectrecordtype are represented with internalid in the formula
@@ -554,47 +563,55 @@ const setParametersValues = (
       params.length,
       formulaWithInternalIds,
     )
-    return
+    return []
   }
-  _.sortBy(params, param => value[INIT_CONDITION][FORMULA].indexOf(`"${param.name}"`)).forEach((param, index) => {
-    if (param.value === ACCOUNT_SPECIFIC_VALUE) {
-      const internalId = internalIds[index]
-      const paramType = getQueryRecordFieldType(instance, param, 'value', suiteQLTablesMap, selectRecordTypeMap)
-      if (paramType !== undefined) {
-        setFieldValue({ name: 'value', type: paramType }, param, internalId, suiteQLTablesMap)
-      }
+  const sortedParams = _.sortBy(params, param => value[INIT_CONDITION][FORMULA].indexOf(`"${param.name}"`))
+  return sortedParams.flatMap((param, index) => {
+    if (param.value !== ACCOUNT_SPECIFIC_VALUE) {
+      return []
     }
+    const internalId = internalIds[index]
+    const paramType = getQueryRecordFieldType(instance, param, 'value', suiteQLTablesMap, selectRecordTypeMap)
+    if (paramType === undefined) {
+      return []
+    }
+    return { field: { name: 'value', type: paramType }, value: param, internalId }
   })
 }
 
-const setValuesInInstance = (
+const getAccountSpecificValueToTransform = (
   instance: InstanceElement,
   record: QueryRecord,
   results: QueryRecordResponse[],
   suiteQLTablesMap: Record<string, InstanceElement>,
   selectRecordTypeMap: Record<string, unknown>,
-): void => {
+): AccountSpecificValueToTransform[] => {
   const innerValue = record.elemID.isTopLevel() ? instance.value : resolvePath(instance, record.elemID)
   const innerResult = getInnerResult(results, record.path)
   if (innerResult === undefined) {
     log.warn('missing record %s in path %s: %o', record.serviceId, record.path.join('.'), results)
-    return
+    return []
   }
-  record.fields.forEach(field => {
+  return record.fields.flatMap(field => {
     const internalId = innerResult.body[field.name]
     if (internalId === undefined || internalId === '') {
       log.warn('missing field %s in record %s: %o', field.name, record.serviceId, innerResult.body)
-      return
+      return []
     }
     if (typeof internalId !== 'string') {
       log.warn('field %s in record %s is not a string: %o', field.name, record.serviceId, internalId)
-      return
+      return []
     }
     if (field.type === FORMULA_PARAMS) {
-      setParametersValues(instance, innerValue, internalId, suiteQLTablesMap, selectRecordTypeMap)
-    } else {
-      setFieldValue(field, innerValue, internalId, suiteQLTablesMap)
+      return getParametersAccountSpecificValueToTransform(
+        instance,
+        innerValue,
+        internalId,
+        suiteQLTablesMap,
+        selectRecordTypeMap,
+      )
     }
+    return { field, value: innerValue, internalId }
   })
 }
 
@@ -612,11 +629,14 @@ const toMultipleInternalIdsWarning = (elemID: ElemID, name: string, internalId: 
   detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}). Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite`,
 })
 
-const resolveAccountSpecificValues = (
+export const getResolvedAccountSpecificValues = (
   instance: InstanceElement,
-  suiteQLTablesMap: Record<string, Record<string, string[]>>,
-): ChangeError[] => {
+  suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>,
+): ResolvedAccountSpecificValuesResult => {
+  const resolvedAccountSpecificValues: ResolvedAccountSpecificValue[] = []
   const resolveWarnings: ChangeError[] = []
+  const missingInternalIds: MissingInternalId[] = []
+
   const resolveAccountSpecificValueForField = (
     path: ElemID,
     value: Values,
@@ -627,8 +647,8 @@ const resolveAccountSpecificValues = (
       return
     }
     const name = getResolvedAccountSpecificValue(fieldValue)
-    const fieldType = getQueryRecordFieldType(instance, value, field, suiteQLTablesMap, {})
-    const internalIds = _.uniq(makeArray(fieldType).flatMap(type => suiteQLTablesMap[type][name] ?? []))
+    const fieldType = getQueryRecordFieldType(instance, value, field, suiteQLNameToInternalIdsMap, {})
+    const internalIds = _.uniq(makeArray(fieldType).flatMap(type => suiteQLNameToInternalIdsMap[type][name] ?? []))
     const internalId = internalIds[0]
     if (internalIds.length === 0) {
       log.warn(
@@ -638,13 +658,14 @@ const resolveAccountSpecificValues = (
         value,
       )
       resolveWarnings.push(toMissingInternalIdWarning(path, name, field))
-      value[field] = ACCOUNT_SPECIFIC_VALUE
+      makeArray(fieldType).forEach(type => missingInternalIds.push({ tableName: type, name }))
+      resolvedAccountSpecificValues.push({ path: path.createNestedID(field), value: ACCOUNT_SPECIFIC_VALUE })
     } else {
       if (internalIds.length > 1) {
         log.warn('there are several internal ids for name %s - using the first: %d', name, internalId)
         resolveWarnings.push(toMultipleInternalIdsWarning(path, name, internalId))
       }
-      value[field] = internalId
+      resolvedAccountSpecificValues.push({ path: path.createNestedID(field), value: internalId })
     }
   }
 
@@ -661,15 +682,7 @@ const resolveAccountSpecificValues = (
     },
   })
 
-  return resolveWarnings
-}
-
-export const resolveWorkflowsAccountSpecificValues = async (
-  workflowInstances: InstanceElement[],
-  elementsSource: ReadOnlyElementsSource,
-): Promise<ChangeError[]> => {
-  const suiteQLNameToInternalIdsMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
-  return workflowInstances.flatMap(instance => resolveAccountSpecificValues(instance, suiteQLNameToInternalIdsMap))
+  return { resolvedAccountSpecificValues, resolveWarnings, missingInternalIds }
 }
 
 const getSelectRecordTypeMap = async (
@@ -686,7 +699,12 @@ const getSelectRecordTypeMap = async (
   return selectRecordTypeMap
 }
 
-const filterCreator: RemoteFilterCreator = ({ client, elementsSource, elementsSourceIndex, isPartial }) => ({
+const filterCreator: RemoteFilterCreator = ({
+  client,
+  elementsSourceIndex,
+  isPartial,
+  suiteQLNameToInternalIdsMap = {},
+}) => ({
   name: 'workflowAccountSpecificValues',
   remote: true,
   onFetch: async elements => {
@@ -709,21 +727,43 @@ const filterCreator: RemoteFilterCreator = ({ client, elementsSource, elementsSo
       return
     }
 
-    await Promise.all(
-      _.chunk(queryRecords, RECORDS_PER_QUERY).map(async (chunk: InstanceWithQueryRecords[]): Promise<void> => {
-        const chunkRecords = chunk.flatMap(item => item.records)
-        const results = (await query(client, workflowInstances, chunkRecords)) ?? []
-        if (results.length === 0) {
-          log.warn('skipping setting values due to empty result of query records: %o', chunkRecords)
-          return
-        }
-        chunk.forEach(({ instance, records }) => {
-          records.forEach(record => {
-            setValuesInInstance(instance, record, results, suiteQLTablesMap, selectRecordTypeMap)
-          })
-        })
-      }),
+    const results = await Promise.all(
+      _.chunk(queryRecords, RECORDS_PER_QUERY).map(chunk =>
+        runRecordsQuery(
+          client,
+          workflowInstances,
+          chunk.flatMap(item => item.records),
+        ),
+      ),
+    ).then(result => result.flatMap(res => res ?? []))
+
+    const accountSpecificValuesToTransform = queryRecords.flatMap(({ instance, records }) =>
+      records.flatMap(record =>
+        getAccountSpecificValueToTransform(instance, record, results, suiteQLTablesMap, selectRecordTypeMap),
+      ),
     )
+
+    const internalIdsToQuery = accountSpecificValuesToTransform.flatMap(({ field, internalId }) =>
+      getNameByInternalId(field, internalId, suiteQLTablesMap) === undefined
+        ? makeArray(field.type).map(tableName => ({ tableName, item: internalId }))
+        : [],
+    )
+
+    await updateSuiteQLTableInstances({
+      client,
+      queryBy: 'internalId',
+      itemsToQuery: internalIdsToQuery,
+      suiteQLTablesMap,
+    })
+
+    accountSpecificValuesToTransform.forEach(({ field, value, internalId }) => {
+      const name = getNameByInternalId(field, internalId, suiteQLTablesMap)
+      if (name === undefined) {
+        log.warn('could not find internal id %s of type %s', internalId, field.type)
+        return
+      }
+      value[field.name] = toResolvedAccountSpecificValue(name)
+    })
   },
   preDeploy: async changes => {
     const workflowInstances = changes
@@ -734,7 +774,11 @@ const filterCreator: RemoteFilterCreator = ({ client, elementsSource, elementsSo
     if (workflowInstances.length === 0) {
       return
     }
-    await resolveWorkflowsAccountSpecificValues(workflowInstances, elementsSource)
+    workflowInstances.forEach(instance =>
+      getResolvedAccountSpecificValues(instance, suiteQLNameToInternalIdsMap).resolvedAccountSpecificValues.forEach(
+        ({ path, value }) => setPath(instance, path, value),
+      ),
+    )
   },
 })
 

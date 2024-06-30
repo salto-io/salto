@@ -205,7 +205,7 @@ describe('change validator', () => {
         changes,
         client,
         DEFAULT_OPTIONS.additionalDependencies,
-        DEFAULT_OPTIONS.filtersRunner,
+        expect.any(Function),
       )
     })
     it('should call netsuiteClientValidation with only valid changes', async () => {
@@ -232,7 +232,7 @@ describe('change validator', () => {
         [validChange],
         client,
         DEFAULT_OPTIONS.additionalDependencies,
-        DEFAULT_OPTIONS.filtersRunner,
+        expect.any(Function),
       )
     })
   })

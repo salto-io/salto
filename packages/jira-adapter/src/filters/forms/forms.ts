@@ -16,6 +16,7 @@
 
 import {
   CORE_ANNOTATIONS,
+  Element,
   Change,
   InstanceElement,
   ReferenceExpression,
@@ -38,7 +39,7 @@ import {
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { resolveValues } from '@salto-io/adapter-components'
+import { resolveValues, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
 import { getCloudId } from '../automation/cloud_id'
@@ -47,9 +48,25 @@ import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 import { getLookUpName } from '../../reference_mapping'
+import { JiraConfig } from '../../config/config'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+
+export type ClientResponse = clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
+
+export type ProjectToFormsRes = {
+  project: InstanceElement
+  formResponse: clientUtils.ResponseValue
+  formRequest: Promise<ClientResponse>
+}
+export type ProjectForms = {
+  projectToFormsRequests: Promise<(ProjectToFormsRes[] | undefined)[]>
+  projectsWithoutForms: string[]
+}
+
+const isExpectedPermissionError = (response: ClientResponse): boolean =>
+  response.status === 200 && response.data.length === 0
 
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
@@ -91,17 +108,78 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
   }
 }
 
+export const getFormsRequestsAsync = async (
+  client: JiraClient,
+  config: JiraConfig,
+  fetchQuery: elementUtils.query.ElementQuery,
+  elements: Element[],
+): Promise<ProjectForms> => {
+  const projectForms: ProjectForms = {
+    projectToFormsRequests: Promise.resolve([]),
+    projectsWithoutForms: [],
+  }
+
+  if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
+    return projectForms
+  }
+
+  const cloudId = await getCloudId(client)
+
+  const jsmProjects = elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
+    .filter(project => project.value.projectTypeKey === SERVICE_DESK)
+
+  projectForms.projectToFormsRequests = Promise.all(
+    jsmProjects.map(async project => {
+      try {
+        const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
+        const res = await client.get({ url })
+        if (!isFormsResponse(res)) {
+          if (isExpectedPermissionError(res)) {
+            projectForms.projectsWithoutForms.push(project.elemID.name)
+          } else {
+            log.error(
+              `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
+            )
+          }
+          return undefined
+        }
+        return res.data.map(formResponse => {
+          const projectToFormsRes = {
+            project,
+            formResponse,
+            formRequest: client.get({
+              url: `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`,
+            }),
+          }
+          return projectToFormsRes
+        })
+      } catch (e) {
+        log.error(
+          `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(e)}`,
+        )
+        if (e.response?.status === 403) {
+          projectForms.projectsWithoutForms.push(project.elemID.name)
+        }
+        return undefined
+      }
+    }),
+  )
+
+  return projectForms
+}
+
 /*
  * This filter fetches all forms from Jira Service Management and creates an instance element for each form.
  * We use filter because we need to use cloudId which is not available in the infrastructure.
  */
-const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
+const filter: FilterCreator = ({ config, client, adapterContext }) => ({
   name: 'formsFilter',
-  onFetch: async elements => {
-    if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
-      return { errors: [] }
-    }
-    const cloudId = await getCloudId(client)
+  onFetch: async (elements: Element[]) => {
+    const formsRequestsAsync: ProjectForms = await adapterContext.formsPromise
+    const errors: SaltoError[] = []
+
     const { formType, subTypes } = createFormType()
     setTypeDeploymentAnnotations(formType)
     await addAnnotationRecursively(formType, CORE_ANNOTATIONS.CREATABLE)
@@ -111,73 +189,46 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     subTypes.forEach(subType => {
       elements.push(subType)
     })
-
-    const jsmProjects = elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
-      .filter(project => project.value.projectTypeKey === SERVICE_DESK)
-
-    const errors: SaltoError[] = []
-    const projectsWithoutForms: string[] = []
-    const projectsWithUntitledForms: Set<string> = new Set()
-    const forms = (
+    const projectsWithUntitledForms = new Set()
+    ;(
       await Promise.all(
-        jsmProjects.flatMap(async project => {
-          try {
-            const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-            const res = await client.get({ url })
-            if (!isFormsResponse(res)) {
-              log.debug(
-                `Didn't fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
-              )
+        (await formsRequestsAsync.projectToFormsRequests)
+          .filter(isDefined)
+          .flatMap(projectToFormsRequests => projectToFormsRequests)
+          .map(async ({ project, formResponse, formRequest }) => {
+            const formRes = await formRequest
+            if (!isDetailedFormsResponse(formRes?.data)) {
+              projectsWithUntitledForms.add(project.elemID.name)
               return undefined
             }
-            return await Promise.all(
-              res.data.map(async formResponse => {
-                const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-                const detailedRes = await client.get({ url: detailedUrl })
-                if (!isDetailedFormsResponse(detailedRes.data)) {
-                  projectsWithUntitledForms.add(project.elemID.name)
-                  return undefined
-                }
-                const name = naclCase(`${project.value.key}_${formResponse.name}`)
-                const formValue = detailedRes.data
-                const parentPath = project.path ?? []
-                const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
-                if (jsmDuckTypeApiDefinitions === undefined) {
-                  return undefined
-                }
-                return new InstanceElement(
-                  name,
-                  formType,
-                  formValue,
-                  [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
-                  {
-                    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
-                  },
-                )
-              }),
-            )
-          } catch (e) {
-            log.error(
-              `Failed to fetch forms for project ${project.value.name} with the following response: ${inspectValue(e)}`,
-            )
-            if (e.response?.status === 403) {
-              projectsWithoutForms.push(project.elemID.name)
+
+            const name = naclCase(`${project.value.key}_${formResponse.name}`)
+            const formValue = formRes.data
+            const parentPath = project.path ?? []
+            const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
+            if (jsmDuckTypeApiDefinitions === undefined) {
+              return undefined
             }
-            return undefined
-          }
-        }),
+            return new InstanceElement(
+              name,
+              formType,
+              formValue,
+              [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
+              {
+                [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
+              },
+            )
+          }),
       )
     )
-      .flat()
       .filter(isDefined)
-    forms.forEach(form => {
-      form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
-      elements.push(form)
-    })
-    if (projectsWithoutForms.length > 0) {
-      const message = `Unable to fetch forms for the following projects: ${projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
+      .forEach(form => {
+        form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
+        elements.push(form)
+      })
+
+    if (formsRequestsAsync.projectsWithoutForms.length > 0) {
+      const message = `Unable to fetch forms for the following projects: ${formsRequestsAsync.projectsWithoutForms.join(', ')}. This issue is likely due to insufficient permissions.`
       log.debug(message)
       errors.push({
         message,

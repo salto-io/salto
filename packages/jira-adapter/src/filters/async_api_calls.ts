@@ -15,12 +15,14 @@
  */
 import { FilterCreator } from '../filter'
 import { getLayoutRequestsAsync } from './layouts/issue_layout'
+import { getFormsRequestsAsync } from './forms/forms'
 
 // Filter to start the async API calls
 const filter: FilterCreator = ({ client, config, fetchQuery, adapterContext }) => ({
   name: 'asyncAPICalls',
   onFetch: async elements => {
     adapterContext.layoutsPromise = getLayoutRequestsAsync(client, config, fetchQuery, elements)
+    adapterContext.formsPromise = getFormsRequestsAsync(client, config, fetchQuery, elements)
   },
 })
 

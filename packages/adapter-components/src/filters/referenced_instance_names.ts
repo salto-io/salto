@@ -207,9 +207,9 @@ const updateAllReferences = ({
 
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
 const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
-  instances: InstanceElement[],
-  fetchDefinitionInstanceName: Record<string, InstanceFetchApiDefinitions<TOptions>>,
-): DAG<InstanceElement> => {
+  instances: Element[],
+  fetchDefinitionByType: Record<string, InstanceFetchApiDefinitions<TOptions>>,
+): DAG<{ instance: InstanceElement; index: number }> => {
   const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
   const isDuplicateInstance = (instanceFullName: string): boolean => {
@@ -220,9 +220,12 @@ const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
     return false
   }
 
-  const graph = new DAG<InstanceElement>()
-  instances.forEach(instance => {
-    const { elemID } = fetchDefinitionInstanceName[instance.elemID.getFullName()]?.element?.topLevel ?? {}
+  const graph = new DAG<{ instance: InstanceElement; index: number }>()
+  instances.forEach((instance, index) => {
+    if (!isInstanceElement(instance)) {
+      return
+    }
+    const { elemID } = fetchDefinitionByType[instance.elemID.typeName]?.element?.topLevel ?? {}
     const parts = elemID?.parts ?? []
     const extendsParent = elemID?.extendsParent
     if (extendsParent || parts.some(part => part.isReference)) {
@@ -232,7 +235,7 @@ const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
         const nameDependencies = getInstanceNameDependencies(instance, parts, extendsParent).filter(
           instanceName => !isDuplicateInstance(instanceName),
         )
-        graph.addNode(instance.elemID.getFullName(), nameDependencies, instance)
+        graph.addNode(instance.elemID.getFullName(), nameDependencies, { instance, index })
       }
     }
   })
@@ -305,11 +308,8 @@ export const addReferencesToInstanceNames = async <TOptions extends APIDefinitio
   const instances = elements.filter(isInstanceElement)
   const fetchDefinitionByType = defQuery.getAll()
   const nameToInstance = _.keyBy(instances, i => i.elemID.getFullName())
-  const instanceNameToDefinition = _(nameToInstance)
-    .mapValues(value => fetchDefinitionByType[value.elemID.typeName])
-    .value()
 
-  const graph = createGraph(instances, instanceNameToDefinition)
+  const graph = createGraph(elements, fetchDefinitionByType)
 
   const elemIdsToRename = new Set(wu(graph.nodeData.keys()).map(instanceName => instanceName.toString()))
   const referenceIndex = createReferenceIndex(instances, elemIdsToRename)
@@ -317,9 +317,9 @@ export const addReferencesToInstanceNames = async <TOptions extends APIDefinitio
     if (!elemIdsToRename.has(graphNode.toString())) {
       return
     }
-    const instanceFetchDefinitions = instanceNameToDefinition[graphNode.toString()]
-    if (instanceFetchDefinitions !== undefined) {
-      const instance = graph.getData(graphNode)
+    const { instance, index } = graph.getData(graphNode)
+    const typeFetchDefinitions = fetchDefinitionByType[instance.elemID.typeName]
+    if (typeFetchDefinitions !== undefined) {
       const originalFullName = instance.elemID.getFullName()
       const { newName, newPath } = calculateInstanceNewNameAndPath(
         instance,
@@ -339,9 +339,7 @@ export const addReferencesToInstanceNames = async <TOptions extends APIDefinitio
       if (nameToInstance[originalFullName] !== undefined) {
         nameToInstance[originalFullName] = newInstance
       }
-
-      const originalInstanceIdx = elements.findIndex(e => e.elemID.getFullName() === originalFullName)
-      elements.splice(originalInstanceIdx, 1, newInstance)
+      elements.splice(index, 1, newInstance)
     }
   })
   return elements

@@ -510,6 +510,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         if (!isAdditionChange(change)) {
           fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
         }
+        // we have user_segment_id and user_segment_ids in the article and we can't deploy an article with both
         if (shouldIgnoreUserSegment(change)) {
           fieldsToIgnore.push('user_segment_id')
         }

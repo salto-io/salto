@@ -16,9 +16,9 @@
 
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { GetInsightsFunc, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
-import { AUTOMATION_TYPE } from '../constants'
+import { ElemID, GetInsightsFunc, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression, WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
+import { AUTOMATION_TYPE, JIRA } from '../constants'
 
 const { makeArray } = collections.array
 
@@ -26,8 +26,22 @@ const AUTOMATION = 'automation'
 
 const isAutomationInstance = (instance: InstanceElement): boolean => instance.elemID.typeName === AUTOMATION_TYPE
 
-const isAutomationWithoutProjects = (instance: InstanceElement): boolean =>
-  makeArray(instance.value.projects).length === 0
+const getAutomationProjects = (instance: InstanceElement): Value[] =>
+  makeArray(instance.value.projects)
+    .map(project => project.projectId)
+    .filter(projectId => projectId !== undefined)
+
+const getAutomationsWithMissingProjects = (
+  instances: InstanceElement[],
+): { missingAllProjects: InstanceElement[]; missingSomeProjects: InstanceElement[] } => {
+  const automationsWithMissingProjects = instances.filter(instance =>
+    getAutomationProjects(instance).some(project => !isResolvedReferenceExpression(project)),
+  )
+  const [missingAllProjects, missingSomeProjects] = _.partition(automationsWithMissingProjects, instance =>
+    getAutomationProjects(instance).every(project => !isResolvedReferenceExpression(project)),
+  )
+  return { missingAllProjects, missingSomeProjects }
+}
 
 const isAutomationReferenceDeletedFields = (instance: InstanceElement): boolean => {
   let result = false
@@ -55,24 +69,36 @@ const isAutomationReferenceDeletedFields = (instance: InstanceElement): boolean 
   return result
 }
 
-const isAutomationSendEmailOutsideOrg = (instance: InstanceElement): boolean =>
-  makeArray(instance.value.components).find(
-    component =>
-      component.component === 'ACTION' &&
-      component.type === 'jira.issue.outgoing.email' &&
-      // I'm not sure about this logic
-      (makeArray(component.value?.to).find(recipient => recipient.type === 'FREE') !== undefined ||
-        makeArray(component.value?.cc).find(recipient => recipient.type === 'FREE') !== undefined ||
-        makeArray(component.value?.bcc).find(recipient => recipient.type === 'FREE') !== undefined),
-  ) !== undefined
+const getDomainFromRecipient = (recipient: Value): string[] =>
+  recipient?.type === 'FREE' && _.isString(recipient?.value) ? [recipient.value.split('@')[1]] : []
+
+const getOutgoingEmailDomains = (instances: InstanceElement[]): string[] =>
+  _.uniq(
+    instances.flatMap(instance =>
+      makeArray(instance.value.components)
+        .filter(component => component.component === 'ACTION' && component.type === 'jira.issue.outgoing.email')
+        .flatMap(component =>
+          makeArray(component.value?.to).concat(makeArray(component.value?.cc)).concat(makeArray(component.value?.bcc)),
+        )
+        .flatMap(getDomainFromRecipient),
+    ),
+  )
 
 const getInsights: GetInsightsFunc = elements => {
   const automationInstances = elements.filter(isInstanceElement).filter(isAutomationInstance)
 
-  const automationsWithoutProjects = automationInstances.filter(isAutomationWithoutProjects).map(instance => ({
+  const { missingAllProjects, missingSomeProjects } = getAutomationsWithMissingProjects(automationInstances)
+
+  const missingAllProjectsInsights = missingAllProjects.map(instance => ({
     path: instance.elemID,
-    ruleId: `${AUTOMATION}.noProjects`,
-    message: 'Automation without projects',
+    ruleId: `${AUTOMATION}.missingAllProjects`,
+    message: 'Automation missing all projects',
+  }))
+
+  const missingSomeProjectsInsights = missingSomeProjects.map(instance => ({
+    path: instance.elemID,
+    ruleId: `${AUTOMATION}.missingSomeProjects`,
+    message: 'Automation missing some projects',
   }))
 
   const automationsReferenceDeletedFields = automationInstances
@@ -83,13 +109,16 @@ const getInsights: GetInsightsFunc = elements => {
       message: 'Automation referenece deleted field',
     }))
 
-  const automationsSendEmailOutsideOrg = automationInstances.filter(isAutomationSendEmailOutsideOrg).map(instance => ({
-    path: instance.elemID,
-    ruleId: `${AUTOMATION}.emailOutsideOrg`,
-    message: 'Automation send email to users outside the organization',
+  const outgoingEmailDomains = getOutgoingEmailDomains(automationInstances).map(domain => ({
+    path: new ElemID(JIRA, AUTOMATION),
+    ruleId: `${AUTOMATION}.outgoingEmailDomain`,
+    message: `Automations send email to users in domain ${domain}`,
   }))
 
-  return automationsWithoutProjects.concat(automationsReferenceDeletedFields).concat(automationsSendEmailOutsideOrg)
+  return missingAllProjectsInsights
+    .concat(missingSomeProjectsInsights)
+    .concat(automationsReferenceDeletedFields)
+    .concat(outgoingEmailDomains)
 }
 
 export default getInsights

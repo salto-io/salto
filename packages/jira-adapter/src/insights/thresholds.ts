@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-import { ElemID, GetInsightsFunc, isInstanceElement } from '@salto-io/adapter-api'
-import { JIRA, WORKFLOW_TYPE_NAME } from '../constants'
+import { GetInsightsFunc, isInstanceElement } from '@salto-io/adapter-api'
 import { isWorkflowInstance } from '../filters/workflowV2/types'
-import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 import { isFieldInstance } from './custom_fields'
 
 const THRESHOLD = 'threshold'
@@ -25,18 +23,19 @@ const THRESHOLD = 'threshold'
 const getInsights: GetInsightsFunc = elements => {
   const instances = elements.filter(isInstanceElement)
 
-  return [
-    {
-      path: new ElemID(JIRA, WORKFLOW_TYPE_NAME),
-      ruleId: `${THRESHOLD}.workflows`,
-      message: `Account has ${instances.filter(isWorkflowInstance).length} workflows`,
-    },
-    {
-      path: new ElemID(JIRA, FIELD_TYPE_NAME),
-      ruleId: `${THRESHOLD}.fields`,
-      message: `Account has ${instances.filter(isFieldInstance).length} fields`,
-    },
-  ]
+  const workflowsThreshold = instances.filter(isWorkflowInstance).map(instance => ({
+    path: instance.elemID,
+    ruleId: `${THRESHOLD}.workflows`,
+    message: 'Workflows Threshold',
+  }))
+
+  const fieldsThreshold = instances.filter(isFieldInstance).map(instance => ({
+    path: instance.elemID,
+    ruleId: `${THRESHOLD}.fields`,
+    message: 'Fields Threshold',
+  }))
+
+  return workflowsThreshold.concat(fieldsThreshold)
 }
 
 export default getInsights

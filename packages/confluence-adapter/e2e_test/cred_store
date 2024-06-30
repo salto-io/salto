@@ -5,6 +5,6 @@ const adapter = require('./credentials_store/adapter').default
 
 cli.main({
   adapters: {
-    netsuite: adapter,
+    confluence: adapter,
   },
 })

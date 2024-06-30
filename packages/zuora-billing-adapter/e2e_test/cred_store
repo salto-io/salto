@@ -1,6 +1,10 @@
-#!/usr/bin/env node
-require('@salto-io/e2e-credentials-store').cli.main({
+#!/usr/bin/env ts-node
+
+const { cli } = require('@salto-io/e2e-credentials-store')
+const adapter = require('./credentials_store/adapter').default
+
+cli.main({
   adapters: {
-    zuora_billing: require('../dist/e2e_test/credentials_store/adapter').default,
+    zuora_billing: adapter,
   },
 })

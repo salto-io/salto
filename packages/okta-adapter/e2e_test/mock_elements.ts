@@ -204,8 +204,7 @@ export const mockDefaultValues: Record<string, Values> = {
   },
   [BRAND_TYPE_NAME]: {
     removePoweredByOkta: false,
-    agreeToCustomPrivacyPolicy: false,
-    isDefault: false,
+    agreeToCustomPrivacyPolicy: true,
   },
   [BRAND_THEME_TYPE_NAME]: {
     primaryColorHex: '#1662dd',

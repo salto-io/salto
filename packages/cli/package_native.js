@@ -44,7 +44,7 @@ const fontFiles = require('./dist/src/fonts').fontFiles
  * and the binaries you uploaded should be used automatically.
  * */
 
-const BUILD_NODE_EXECUTABLE = false
+const BUILD_NODE_EXECUTABLE = process.env.BUILD_NODE_EXECUTABLE ? true : false
 
 const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
@@ -56,6 +56,7 @@ const TARGET_PLATFORMS = {
   mac: {},
 } // alpine not included for now
 const PREBUILT_REMOTE_URL = 'https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/'
+const PYTHON3_PATH = process.env.PYTHON3_PATH
 
 const resources = [
   ...fontFiles.values(),
@@ -66,6 +67,7 @@ const resources = [
 
 const BASE_NEXE_CONFIG = {
   loglevel: 'verbose',
+  python: PYTHON3_PATH,
   resources,
   ...(BUILD_NODE_EXECUTABLE ? { build: true, make: ['--jobs=4'] } : {}),
 }

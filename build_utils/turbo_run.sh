@@ -18,15 +18,7 @@ if [ -n "$CI" ]; then
     TURBO_CONCURRENCY="$(awk -v quota="$(cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us)" -v period="$(cat /sys/fs/cgroup/cpu/cpu.cfs_period_us)" 'BEGIN { printf "%.0f\n", (quota / period) * 0.5 }')"
 
   fi
-
-  yarn turbo run "$@" \
-    --concurrency="$TURBO_CONCURRENCY"
-
-else
-
-  yarn turbo run "$@" \
-    --token="${TURBO_TOKEN:-NOPE}" \
-    --team="${TURBO_TEAM:-SaltoDev}" \
-    --concurrency="$TURBO_CONCURRENCY"
-
 fi
+
+yarn turbo run "$@" \
+  --concurrency="$TURBO_CONCURRENCY"

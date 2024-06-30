@@ -357,7 +357,8 @@ export const updateNaclFileData = async (
   const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
     const elem = change.action === 'remove' ? undefined : change.data.after
     const changeKey = change.id.name
-    const isListElement = changeKey.match(/^\d+$/) !== null
+    const isListElement =
+      !change.id.isAnnotationTypeID() && !change.id.createParentID().isBaseID() && isIndexPathPart(changeKey)
     const initialIndentationLevel = change.location.start.col - 1
     const indentationLevel = initialIndentationLevel / 2 + (change.requiresIndent ? 1 : 0)
 

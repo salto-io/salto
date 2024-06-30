@@ -194,25 +194,20 @@ type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChang
 const toChangesWithPath =
   (accountElementByFullName: (id: ElemID) => Promise<Element[]> | Element[]): ChangeTransformFunction =>
   async change => {
-    const oldLocationChangeId = change.change.elemIDs?.before ?? change.change.id
-    const newLocationChangeId = change.change.elemIDs?.after ?? change.change.id
-    if (
-      !newLocationChangeId.isTopLevel() &&
-      // in case of order change we want to calculate the new location unrelated to the old location
-      (change.change.action === 'add' || !oldLocationChangeId.isEqual(newLocationChangeId))
-    ) {
+    const changeID: ElemID = change.change.id
+    if (!changeID.isTopLevel() && change.change.action === 'add') {
       const path = findNestedElementPath(
-        newLocationChangeId,
-        await accountElementByFullName(newLocationChangeId.createTopLevelParentID().parent),
+        changeID,
+        await accountElementByFullName(changeID.createTopLevelParentID().parent),
       )
       log.trace(
-        `addition change for nested ${newLocationChangeId.idType} with id ${newLocationChangeId.getFullName()}, path found ${path?.join('/')}`,
+        `addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`,
       )
       return path ? [_.merge({}, change, { change: { path } })] : [change]
     }
-    const originalElements = await accountElementByFullName(newLocationChangeId)
+    const originalElements = await accountElementByFullName(changeID)
     if (originalElements.length === 0) {
-      log.trace(`no original elements found for change element id ${newLocationChangeId.getFullName()}`)
+      log.trace(`no original elements found for change element id ${changeID.getFullName()}`)
       return [change]
     }
     // Replace merged element with original elements that have a path hint

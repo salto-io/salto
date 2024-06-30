@@ -27,9 +27,9 @@ import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../../src/cons
 import {
   adjustPageOnModification,
   putHomepageIdInAdditionContext,
-  adjustUserReferencesOnPage,
-  adjustUserReferencesOnPageReverse,
   homepageAdditionToModification,
+  createAdjustUserReferencesReverse,
+  createAdjustUserReferences,
 } from '../../../src/definitions/utils'
 
 describe('page definitions utils', () => {
@@ -146,6 +146,7 @@ describe('page definitions utils', () => {
             notUser: 'not',
           },
         }
+        const adjustUserReferencesOnPageReverse = createAdjustUserReferencesReverse(PAGE_TYPE_NAME)
         expect(adjustUserReferencesOnPageReverse(args).value).toEqual({
           authorId: 'authorId',
           ownerId: 'ownerId',
@@ -278,6 +279,7 @@ describe('page definitions utils', () => {
           context: {},
           value: { authorId: 'authorId', ownerId: 'ownerId', notUser: 'not' },
         }
+        const adjustUserReferencesOnPage = createAdjustUserReferences(PAGE_TYPE_NAME)
         expect(adjustUserReferencesOnPage(args).value).toEqual({
           authorId: { accountId: 'authorId', displayName: 'authorId' },
           ownerId: { accountId: 'ownerId', displayName: 'ownerId' },

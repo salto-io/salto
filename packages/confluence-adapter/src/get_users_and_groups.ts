@@ -21,6 +21,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Options } from './definitions/types'
 import { ADAPTER_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME } from './constants'
+import { USERS_PAGE_SIZE } from './definitions/requests/pagination'
 
 const log = logger(module)
 
@@ -70,11 +71,15 @@ const USERS_FETCH_DEF: definitionsUtils.fetch.InstanceFetchApiDefinitions<Option
   requests: [
     {
       endpoint: {
+        client: 'users_client',
         method: 'get',
-        path: '/wiki/rest/api/user/bulk?accountId={idsToQuery}',
+        path: '/rest/api/3/users/search',
+        queryArgs: {
+          maxResults: USERS_PAGE_SIZE,
+        },
       },
       transformation: {
-        root: 'results',
+        pick: ['accountId', 'displayName'],
       },
     },
   ],
@@ -87,7 +92,6 @@ const CUSTOMIZATION_DEF: Record<string, definitionsUtils.fetch.InstanceFetchApiD
 
 export const getUsersAndGroups = async (
   definitions: definitionsUtils.ApiDefinitions<Options>,
-  userIds: string[],
 ): Promise<{ usersIndex: Record<string, User>; groupsIndex: Record<string, Group> }> => {
   const { fetch } = definitions
   if (fetch === undefined) {
@@ -113,12 +117,11 @@ export const getUsersAndGroups = async (
     typeName: string,
     filterFn: (item: unknown) => item is T,
     idKey: string,
-    idsToQuery?: string[],
   ): Promise<Record<string, T>> => {
     try {
       const result = await requester.requestAllForResource({
         callerIdentifier: { typeName },
-        contextPossibleArgs: { idsToQuery: [(idsToQuery ?? []).join('&accountId=')] },
+        contextPossibleArgs: {},
       })
       return _.keyBy(result.map(item => item.value).filter(filterFn), idKey)
     } catch (e) {
@@ -128,7 +131,7 @@ export const getUsersAndGroups = async (
   }
   const [groupsIndex, usersIndex] = await Promise.all([
     callSingleResource<Group>(GROUP_TYPE_NAME, isGroup, 'id'),
-    callSingleResource<User>(USER_TYPE_NAME, isUser, 'accountId', userIds),
+    callSingleResource<User>(USER_TYPE_NAME, isUser, 'accountId'),
   ])
   return { groupsIndex, usersIndex }
 }

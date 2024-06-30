@@ -80,6 +80,7 @@ describe('groupsAndUsersFilter', () => {
           targetType: 'targetType2',
         },
       ],
+      authorId: { accountId: 'userId1' },
     })
     const pageInst = new InstanceElement('page', pageObjectType, {
       authorId: { accountId: 'userId1', displayName: 'userId1' },
@@ -112,11 +113,10 @@ describe('groupsAndUsersFilter', () => {
       elements = generateElements()
       await filter.onFetch?.(elements)
     })
-    it('should call getUsersAndGroups with the correct userIds', () => {
-      expect(mockGetUsersAndGroups).toHaveBeenCalledWith(mockDefinitions, ['userId1', 'idNotExists', 'userId2'])
-    })
     it('should adjust users and groups references on space instances', () => {
+      expect(mockGetUsersAndGroups).toHaveBeenCalledWith(mockDefinitions)
       expect(elements.find(elem => elem.elemID.typeName === SPACE_TYPE_NAME)?.value).toEqual({
+        authorId: { accountId: 'userId1', displayName: 'user1' },
         permissions: [
           {
             type: 'user',

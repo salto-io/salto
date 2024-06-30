@@ -65,6 +65,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
 
   initialClients: {
     main: undefined,
+    users_client: undefined,
   },
 
   clientDefaults: {

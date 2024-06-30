@@ -61,17 +61,16 @@ describe('getUsersAndGroups', () => {
     user1Id: { accountId: 'user1Id', emailAddress: 'user1@email.com', displayName: 'user1' },
     user2Id: { accountId: 'user2Id', emailAddress: 'user2@email.com', displayName: 'user2' },
   }
-  const userIds = ['user1Id', 'user2Id']
 
   beforeEach(() => {
     jest.clearAllMocks()
   })
   it('should throw an error when there is no fetch definition', async () => {
-    await expect(getUsersAndGroups({ ...mockDefinitions, fetch: undefined }, userIds)).rejects.toThrow()
+    await expect(getUsersAndGroups({ ...mockDefinitions, fetch: undefined })).rejects.toThrow()
   })
   it('should return empty indices when failed to fetch groups and users', async () => {
     mockRequestAllResources.mockRejectedValue(new Error('Failed to fetch'))
-    expect(await getUsersAndGroups(mockDefinitions, userIds)).toEqual({
+    expect(await getUsersAndGroups(mockDefinitions)).toEqual({
       groupsIndex: {},
       usersIndex: {},
     })
@@ -80,7 +79,7 @@ describe('getUsersAndGroups', () => {
     mockRequestAllResources
       .mockRejectedValueOnce(new Error('Failed to fetch groups'))
       .mockResolvedValueOnce(mockUsersResponse)
-    expect(await getUsersAndGroups(mockDefinitions, userIds)).toEqual({
+    expect(await getUsersAndGroups(mockDefinitions)).toEqual({
       groupsIndex: {},
       usersIndex: expectedUsersIndex,
     })
@@ -89,14 +88,14 @@ describe('getUsersAndGroups', () => {
     mockRequestAllResources
       .mockResolvedValueOnce(mockGroupsResponse)
       .mockRejectedValueOnce(new Error('Failed to fetch users'))
-    expect(await getUsersAndGroups(mockDefinitions, userIds)).toEqual({
+    expect(await getUsersAndGroups(mockDefinitions)).toEqual({
       groupsIndex: expectedGroupsIndex,
       usersIndex: {},
     })
   })
   it('should return user and group indices when succeed to fetch groups and users', async () => {
     mockRequestAllResources.mockReturnValueOnce(mockGroupsResponse).mockReturnValueOnce(mockUsersResponse)
-    expect(await getUsersAndGroups(mockDefinitions, userIds)).toEqual({
+    expect(await getUsersAndGroups(mockDefinitions)).toEqual({
       groupsIndex: expectedGroupsIndex,
       usersIndex: expectedUsersIndex,
     })

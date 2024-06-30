@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
-import { adjustLabelsToIdsFunc, adjustRestriction, adjustUserReferencesOnPage } from '../utils'
+import { adjustLabelsToIdsFunc, adjustRestriction, createAdjustUserReferences } from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
@@ -108,6 +108,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
+          adjust: createAdjustUserReferences(SPACE_TYPE_NAME),
         },
       },
     ],
@@ -236,7 +237,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         transformation: {
           root: 'results',
           omit: ['position'],
-          adjust: adjustUserReferencesOnPage,
+          adjust: createAdjustUserReferences(PAGE_TYPE_NAME),
         },
       },
     ],

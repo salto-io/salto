@@ -20,7 +20,7 @@ import { AdditionalAction, ClientOptions } from '../types'
 import {
   addSpaceKey,
   adjustPageOnModification,
-  adjustUserReferencesOnPageReverse,
+  createAdjustUserReferencesReverse,
   homepageAdditionToModification,
   putHomepageIdInAdditionContext,
   shouldDeleteRestrictionOnPageModification,
@@ -90,7 +90,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['restriction', 'version'],
-                  adjust: adjustUserReferencesOnPageReverse,
+                  adjust: createAdjustUserReferencesReverse(PAGE_TYPE_NAME),
                 },
               },
             },
@@ -208,6 +208,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['permissions', 'homepage'],
+                  adjust: createAdjustUserReferencesReverse(SPACE_TYPE_NAME),
                 },
               },
               copyFromResponse: {
@@ -232,6 +233,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['permissions'],
+                  adjust: createAdjustUserReferencesReverse(SPACE_TYPE_NAME),
                 },
               },
             },

@@ -672,7 +672,7 @@ describe('salesforce client', () => {
         accountId: '',
         isProduction: undefined,
         accountType: undefined,
-        extraInformation: { orgId: '', instanceUrl: '' },
+        extraInformation: { orgId: '' },
       })
     })
     describe('isProduction and accountType', () => {
@@ -707,9 +707,10 @@ describe('salesforce client', () => {
               await validateCredentials(sandboxCredentials, 3, connection),
             ).toEqual({
               accountId: 'https://url.com/',
+              accountUrl: 'https://url.com/',
               isProduction: false,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '', instanceUrl: 'https://url.com/' },
+              extraInformation: { orgId: '' },
             })
           })
         })
@@ -725,9 +726,10 @@ describe('salesforce client', () => {
               await validateCredentials(sandboxCredentials, 3, connection),
             ).toEqual({
               accountId: 'https://url.com/',
+              accountUrl: 'https://url.com/',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '', instanceUrl: 'https://url.com/' },
+              extraInformation: { orgId: '' },
             })
           })
           it('should throw an error when there is no instanceUrl', async () => {
@@ -754,9 +756,10 @@ describe('salesforce client', () => {
               await validateCredentials(credentials, 3, connection),
             ).toEqual({
               accountId: '',
+              accountUrl: 'https://url.com/',
               isProduction: true,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '', instanceUrl: 'https://url.com/' },
+              extraInformation: { orgId: '' },
             })
           })
         })
@@ -772,9 +775,10 @@ describe('salesforce client', () => {
               await validateCredentials(credentials, 3, connection),
             ).toEqual({
               accountId: '',
+              accountUrl: 'https://url.com/',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '', instanceUrl: 'https://url.com/' },
+              extraInformation: { orgId: '' },
             })
           })
         })

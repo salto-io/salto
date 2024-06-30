@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import _, { isArray } from 'lodash'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, strings, promises } from '@salto-io/lowerdash'
 import {
@@ -399,12 +399,9 @@ const calculateAndRemoveDeletedAttachments = ({
   return allRemovedAttachmentsIds
 }
 
-const userSegmentToIgnore = (change: Change<InstanceElement>): 'user_segment_id' | 'user_segment_ids' => {
+const shouldIgnoreUserSegment = (change: Change<InstanceElement>): boolean => {
   const data = getChangeData(change)
-  if (isArray(data.value.user_segment_ids) && !_.isEmpty(data.value.user_segment_ids)) {
-    return 'user_segment_ids'
-  }
-  return 'user_segment_id'
+  return data.value.user_segment_ids !== undefined && data.value.user_segment_id !== undefined
 }
 
 /**
@@ -513,7 +510,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         if (!isAdditionChange(change)) {
           fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
         }
-        fieldsToIgnore.push(userSegmentToIgnore(change))
+        if (shouldIgnoreUserSegment(change)) {
+          fieldsToIgnore.push('user_segment_id')
+        }
         await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
         const articleInstance = getChangeData(change)
         if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {

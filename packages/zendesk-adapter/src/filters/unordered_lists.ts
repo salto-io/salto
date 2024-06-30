@@ -182,6 +182,10 @@ const sortConditions = (
           _.isString(condition.value) || _.isBoolean(condition.value)
             ? condition.value
             : [customFieldById[condition.value.elemID.getFullName()].value.value],
+        condition =>
+          _.isString(condition.value) || _.isBoolean(condition.value)
+            ? condition.value
+            : condition.value.elemID.getFullName(),
         condition => condition.parent_field_id?.elemID?.getFullName(),
       )
     } else {

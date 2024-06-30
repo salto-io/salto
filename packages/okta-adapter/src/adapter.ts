@@ -57,7 +57,6 @@ import defaultDeployFilter from './filters/default_deploy'
 import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
-import userTypeFilter from './filters/user_type'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import accessPolicyRuleConstraintsFilter from './filters/access_policy_rule_constraints'
@@ -109,7 +108,6 @@ const log = logger(module)
 
 const DEFAULT_FILTERS = [
   standardRolesFilter, // TODO SALTO-5607 - move to infra
-  userTypeFilter,
   userSchemaFilter,
   authorizationRuleFilter,
   // should run before fieldReferencesFilter

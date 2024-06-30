@@ -447,29 +447,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  Domain: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/domains',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/domains/{domainId}',
-        method: 'put',
-        urlParamsToFields: {
-          domainId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/domains/{domainId}',
-        method: 'delete',
-        urlParamsToFields: {
-          domainId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
   OrgSetting: {
     deployRequests: {
       modify: {
@@ -712,51 +689,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  UserType: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/meta/types/user',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/meta/types/user/{typeId}',
-        method: 'put',
-        urlParamsToFields: {
-          typeId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/meta/types/user/{typeId}',
-        method: 'delete',
-        urlParamsToFields: {
-          typeId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
-  SmsTemplate: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/templates/sms',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/templates/sms/{templateId}',
-        method: 'put',
-        urlParamsToFields: {
-          templateId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/templates/sms/{templateId}',
-        urlParamsToFields: {
-          templateId: 'id',
-        },
-        method: 'delete',
-      },
-    },
-  },
   ProfileMapping: {
     deployRequests: {
       add: {
@@ -835,29 +767,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       modify: {
         url: '/api/v1/rate-limit-settings/admin-notifications',
         method: 'put',
-      },
-    },
-  },
-  DeviceAssurance: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/device-assurances',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/device-assurances/{deviceAssuranceId}',
-        method: 'put',
-        urlParamsToFields: {
-          deviceAssuranceId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/device-assurances/{deviceAssuranceId}',
-        method: 'delete',
-        urlParamsToFields: {
-          deviceAssuranceId: 'id',
-        },
-        omitRequestBody: true,
       },
     },
   },

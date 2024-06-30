@@ -85,10 +85,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 context: {
                   custom:
                     () =>
-                      ({ change }) => ({
-                        // To create user in STAGED status, we need to provide 'activate=false' query param
-                        activate: getChangeData(change).value.status === 'STAGED' ? 'false' : 'true',
-                      }),
+                    ({ change }) => ({
+                      // To create user in STAGED status, we need to provide 'activate=false' query param
+                      activate: getChangeData(change).value.status === 'STAGED' ? 'false' : 'true',
+                    }),
                 },
               },
             },
@@ -102,10 +102,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      ['STAGED', 'DEPROVISIONED'].includes(change.data.before.value.status) &&
-                      getChangeData(change).value.status === 'PROVISIONED',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    ['STAGED', 'DEPROVISIONED'].includes(change.data.before.value.status) &&
+                    getChangeData(change).value.status === 'PROVISIONED',
               },
             },
             // suspend user
@@ -116,10 +116,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      change.data.before.value.status === 'ACTIVE' &&
-                      getChangeData(change).value.status === 'SUSPENDED',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'ACTIVE' &&
+                    getChangeData(change).value.status === 'SUSPENDED',
               },
             },
             // unsuspend a user, and change its status to active
@@ -130,10 +130,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      change.data.before.value.status === 'SUSPENDED' &&
-                      getChangeData(change).value.status === 'ACTIVE',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'SUSPENDED' &&
+                    getChangeData(change).value.status === 'ACTIVE',
               },
             },
             // unlock a user, and change its status to active
@@ -144,10 +144,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      change.data.before.value.status === 'LOCKED_OUT' &&
-                      getChangeData(change).value.status === 'ACTIVE',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'LOCKED_OUT' &&
+                    getChangeData(change).value.status === 'ACTIVE',
               },
             },
             // update all user properties except status
@@ -168,10 +168,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      change.data.before.value.stauts !== 'DEPROVISIONED' &&
-                      getChangeData(change).value.status === 'DEPROVISIONED',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.stauts !== 'DEPROVISIONED' &&
+                    getChangeData(change).value.status === 'DEPROVISIONED',
               },
             },
           ],
@@ -183,9 +183,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      // user must be in status DEPROVISIONED before it can be deleted
-                      getChangeData(change).value.status !== 'DEPROVISIONED',
+                  ({ change }) =>
+                    // user must be in status DEPROVISIONED before it can be deleted
+                    getChangeData(change).value.status !== 'DEPROVISIONED',
               },
             },
             {

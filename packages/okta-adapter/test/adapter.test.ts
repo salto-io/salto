@@ -28,7 +28,8 @@ import {
   Change,
   getChangeData,
   ProgressReporter,
-  BuiltinTypes, ReferenceExpression,
+  BuiltinTypes,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -43,7 +44,10 @@ import {
   GROUP_TYPE_NAME,
   OKTA,
   DOMAIN_TYPE_NAME,
-  USERTYPE_TYPE_NAME, DEVICE_ASSURANCE_TYPE_NAME, SMS_TEMPLATE_TYPE_NAME, LINKS_FIELD,
+  USERTYPE_TYPE_NAME,
+  DEVICE_ASSURANCE_TYPE_NAME,
+  SMS_TEMPLATE_TYPE_NAME,
+  LINKS_FIELD,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -799,10 +803,10 @@ describe('adapter', () => {
           id: 'usertype-fakeid1',
           name: 'superuser',
           [LINKS_FIELD]: {
-            'schema': {
-              'rel': 'schema',
-              'href': 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
-              'method': 'GET',
+            schema: {
+              rel: 'schema',
+              href: 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
+              method: 'GET',
             },
           },
         })
@@ -823,18 +827,17 @@ describe('adapter', () => {
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('usertype-fakeid1')
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value[LINKS_FIELD]).toEqual({
-            'schema': {
-              'rel': 'schema',
-              'href': 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
-              'method': 'GET',
-            },
-            'self': {
-              'rel': 'self',
-              'href': 'https://salto.okta.com/api/v1/meta/types/user/usertype-fakeid1',
-              'method': 'GET',
-            },
+          schema: {
+            rel: 'schema',
+            href: 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
+            method: 'GET',
           },
-        )
+          self: {
+            rel: 'self',
+            href: 'https://salto.okta.com/api/v1/meta/types/user/usertype-fakeid1',
+            method: 'GET',
+          },
+        })
       })
 
       it('should successfully modify a user type', async () => {
@@ -902,7 +905,9 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('smstemplate-fakeid1')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'smstemplate-fakeid1',
+        )
       })
 
       it('should successfully modify an sms template', async () => {
@@ -923,9 +928,7 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
-          'Other',
-        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('Other')
       })
 
       it('should successfully remove an sms template', async () => {
@@ -970,7 +973,9 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('deviceassurance-fakeid1')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'deviceassurance-fakeid1',
+        )
       })
 
       it('should successfully modify a device assurance', async () => {

@@ -44,6 +44,42 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    /*
+    [USERTYPE_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/meta/types/user', method: 'post' },
+              },
+              copyFromResponse: {
+                additional: {
+                  pick: ['_links']
+                }
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/meta/types/user/{id}', method: 'put' },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/meta/types/user/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+        }
+      },
+    },
+
+     */
     User: {
       requestsByAction: {
         customizations: {

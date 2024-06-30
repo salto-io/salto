@@ -787,7 +787,7 @@ describe('adapter', () => {
       let userTypeType: ObjectType
       let userType: InstanceElement
       beforeEach(() => {
-        userType = new ObjectType({
+        userTypeType = new ObjectType({
           elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
           fields: {
             id: {
@@ -795,14 +795,23 @@ describe('adapter', () => {
             },
           },
         })
-        userType = new InstanceElement('domain', userTypeType, {
+        userType = new InstanceElement('userType', userTypeType, {
           id: 'usertype-fakeid1',
+          name: 'superuser',
+          _links: {
+            'schema': {
+              'rel': 'schema',
+              'href': 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
+              'method': 'GET',
+            },
+          },
         })
       })
 
       it('should successfully add a user type', async () => {
         const userTypeWithoutId = userType.clone()
         delete userTypeWithoutId.value.id
+        delete userTypeWithoutId.value._links
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'userType',
@@ -813,10 +822,23 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('usertype-fakeid1')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value._links).toEqual({
+            'schema': {
+              'rel': 'schema',
+              'href': 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
+              'method': 'GET',
+            },
+            'self': {
+              'rel': 'self',
+              'href': 'https://salto.okta.com/api/v1/meta/types/user/usertype-fakeid1',
+              'method': 'GET',
+            },
+          },
+        )
       })
 
       it('should successfully modify a user type', async () => {
-        const updatedUserType = domain.clone()
+        const updatedUserType = userType.clone()
         updatedUserType.value.removePoweredByOkta = true
         const result = await operations.deploy({
           changeGroup: {

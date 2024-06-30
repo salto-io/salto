@@ -623,9 +623,10 @@ export const validateCredentials = async (
   }
   return {
     accountId: getAccountID(credentials, orgId, instanceUrl),
+    accountUrl: instanceUrl,
     accountType,
     isProduction,
-    extraInformation: { orgId, instanceUrl: instanceUrl ?? '' },
+    extraInformation: { orgId },
   }
 }
 

@@ -28,7 +28,7 @@ import {
   Change,
   getChangeData,
   ProgressReporter,
-  BuiltinTypes,
+  BuiltinTypes, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -450,6 +450,9 @@ describe('adapter', () => {
   describe('deploy', () => {
     let operations: AdapterOperations
 
+    let brandType: ObjectType
+    let brand1: InstanceElement
+
     beforeEach(() => {
       operations = adapter.operations({
         credentials: new InstanceElement('config', accessTokenCredentialsType, {
@@ -458,6 +461,20 @@ describe('adapter', () => {
         }),
         config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
         elementsSource: buildElementsSourceFromElements([]),
+      })
+
+      brandType = new ObjectType({
+        elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      brand1 = new InstanceElement('brand1', brandType, {
+        id: 'brand-fakeid1',
+        name: 'subdomain.example.com',
+        removePoweredByOkta: false,
       })
     })
 
@@ -533,24 +550,6 @@ describe('adapter', () => {
     })
 
     describe('deploy brand', () => {
-      let brandType: ObjectType
-      let brand1: InstanceElement
-      beforeEach(() => {
-        brandType = new ObjectType({
-          elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
-        brand1 = new InstanceElement('brand1', brandType, {
-          id: 'brand-fakeid1',
-          name: 'subdomain.example.com',
-          removePoweredByOkta: false,
-        })
-      })
-
       it('should successfully add a brand', async () => {
         const brandWithoutId = new InstanceElement('brand1', brandType, {
           name: 'subdomain.example.com',
@@ -725,6 +724,7 @@ describe('adapter', () => {
           id: 'domain-fakeid1',
           domain: 'subdomain.example.com',
           validationStatus: 'NOT_STARTED',
+          brandId: new ReferenceExpression(brand1.elemID, brand1),
         })
       })
 
@@ -744,8 +744,13 @@ describe('adapter', () => {
       })
 
       it('should successfully modify a domain', async () => {
+        // Domains may only modify their brand, so we'll test that.
+        const brand2 = new InstanceElement('brand2', brandType, {
+          id: 'brand-fakeid2',
+          name: 'subdomain2.example.com',
+        })
         const updatedDomain = domain.clone()
-        //updatedDomain.value.removePoweredByOkta = true
+        updatedDomain.value.brandId = new ReferenceExpression(brand2.elemID, brand2)
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'domain',
@@ -761,8 +766,8 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
-          true,
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.brandId.value.value.id).toEqual(
+          'brand-fakeid2',
         )
       })
 
@@ -812,7 +817,7 @@ describe('adapter', () => {
 
       it('should successfully modify a user type', async () => {
         const updatedUserType = domain.clone()
-        //updatedDomain.value.removePoweredByOkta = true
+        updatedUserType.value.removePoweredByOkta = true
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'userType',
@@ -879,7 +884,7 @@ describe('adapter', () => {
 
       it('should successfully modify an sms template', async () => {
         const updatedSmsTemplate = smsTemplate.clone()
-        //updatedDomain.value.removePoweredByOkta = true
+        updatedSmsTemplate.value.removePoweredByOkta = true
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'smsTemplate',
@@ -946,7 +951,7 @@ describe('adapter', () => {
 
       it('should successfully modify a device assurance', async () => {
         const updatedDeviceAssurance = deviceAssurance.clone()
-        //updatedDomain.value.removePoweredByOkta = true
+        updatedDeviceAssurance.value.removePoweredByOkta = true
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'deviceAssurance',

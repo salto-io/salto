@@ -31,7 +31,6 @@ import { DependsOnDefinition } from '../../definitions/system/fetch/dependencies
 import { serviceIDKeyCreator } from '../element/id_utils'
 import { ElementGenerator } from '../element/element'
 
-const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
 const log = logger(module)
 

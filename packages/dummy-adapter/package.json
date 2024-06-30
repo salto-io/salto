@@ -19,13 +19,11 @@
   "scripts": {
     "build": "yarn generate && yarn lint && yarn build-ts",
     "test": "jest",
-    "clean": "rm -rf ./dist .eslintcache",
-    "clean-ts": "../../build_utils/clean-old-ts.sh",
-    "clean-ts-test": "yarn clean-ts && yarn test",
-    "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
+    "clean": "../../build_utils/turbo_run.sh clean",
+    "watch-test": "yarn tsc-watch",
     "build-ts": "tsc -b",
     "watch-ts": "tsc -b -w",
-    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
     "lint-fix": "yarn lint --fix",
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
@@ -63,6 +61,7 @@
     "jest-junit": "^12.3.0",
     "prettier": "3.2.5",
     "ts-jest": "^27.1.5",
+    "turbo": "^2.0.6",
     "typescript": "4.8.4"
   }
 }

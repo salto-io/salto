@@ -4013,6 +4013,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -4065,6 +4066,7 @@ __metadata:
     soap: ^0.44.0
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
@@ -4111,6 +4113,7 @@ __metadata:
     truncate-utf8-bytes: ^1.0.2
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
@@ -4211,6 +4214,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^27.1.2
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -4433,6 +4437,7 @@ __metadata:
     supertest: ^5.0.0
     tmp-promise: ^2.0.2
     ts-jest: ^27.1.5
+    turbo: ^2.0.6
     typescript: 4.8.4
     wait-for-expect: ^3.0.2
     webpack: ^5.75.0
@@ -14642,6 +14647,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -14732,6 +14738,7 @@ fast-xml-parser@4.0.11:
     stream-json: ^1.7.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
     wait-for-expect: ^3.0.2
@@ -14763,6 +14770,7 @@ fast-xml-parser@4.0.11:
     lodash: ^4.17.21
     prettier: 3.2.5
     ts-jest: ^27.1.5
+    turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
@@ -14800,6 +14808,7 @@ fast-xml-parser@4.0.11:
     readdirp: ^3.1.1
     seedrandom: ^3.0.5
     ts-jest: ^27.1.5
+    turbo: ^2.0.6
     typescript: 4.8.4
     unique-names-generator: ^4.3.1
   languageName: unknown
@@ -14838,6 +14847,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     yargs: ^13.3.0
   languageName: unknown
@@ -14875,6 +14885,7 @@ fast-xml-parser@4.0.11:
     tmp-promise: ^2.0.2
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -14916,6 +14927,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
   languageName: unknown
@@ -14955,6 +14967,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -15004,6 +15017,7 @@ fast-xml-parser@4.0.11:
     semver: ^7.3.2
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
@@ -15073,6 +15087,7 @@ fast-xml-parser@4.0.11:
     lodash: ^4.17.21
     prettier: 3.2.5
     ts-jest: ^27.1.5
+    turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
@@ -15111,6 +15126,7 @@ fast-xml-parser@4.0.11:
     tmp-promise: ^2.0.2
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
@@ -15144,6 +15160,7 @@ fast-xml-parser@4.0.11:
     stacktrace-parser: ^0.1.9
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
@@ -15183,6 +15200,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -15245,6 +15263,7 @@ fast-xml-parser@4.0.11:
     shell-quote: ^1.7.3
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
@@ -15298,6 +15317,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
@@ -15339,6 +15359,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -15376,6 +15397,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
@@ -15413,6 +15435,7 @@ fast-xml-parser@4.0.11:
     jest-junit: ^12.3.0
     prettier: 3.2.5
     ts-jest: ^27.1.5
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
   languageName: unknown
@@ -15479,6 +15502,7 @@ fast-xml-parser@4.0.11:
     requestretry: ^7.1.0
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
@@ -15526,6 +15550,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -15564,6 +15589,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -15602,6 +15628,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -15647,6 +15674,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
@@ -15687,6 +15715,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -15732,6 +15761,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
   languageName: unknown
@@ -15787,6 +15817,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     uuid: ^8.3.0
     wu: ^2.1.0
@@ -15826,6 +15857,7 @@ fast-xml-parser@4.0.11:
     prettier: 3.2.5
     ts-jest: ^27.1.5
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
   languageName: unknown
   linkType: soft
@@ -18908,25 +18940,6 @@ fast-xml-parser@4.0.11:
   languageName: node
   linkType: hard
 
-"concurrently@npm:^5.2.0":
-  version: 5.2.0
-  resolution: "concurrently@npm:5.2.0"
-  dependencies:
-    chalk: ^2.4.2
-    date-fns: ^2.0.1
-    lodash: ^4.17.15
-    read-pkg: ^4.0.1
-    rxjs: ^6.5.2
-    spawn-command: ^0.0.2-1
-    supports-color: ^6.1.0
-    tree-kill: ^1.2.2
-    yargs: ^13.3.0
-  bin:
-    concurrently: bin/concurrently.js
-  checksum: e01809b9f410b9f1557072e41effbabea0ccae2aedefe5b7107025916701feed987f178ef41be10b2474ec1ba0e856345a64b08010bab67b3b3599073dad58a5
-  languageName: node
-  linkType: hard
-
 "config-chain@npm:^1.1.11":
   version: 1.1.12
   resolution: "config-chain@npm:1.1.12"
@@ -19311,13 +19324,6 @@ fast-xml-parser@4.0.11:
     whatwg-mimetype: ^2.3.0
     whatwg-url: ^8.0.0
   checksum: 97caf828aac25e25e04ba6869db0f99c75e6859bb5b424ada28d3e7841941ebf08ddff3c1b1bb4585986bd507a5d54c2a716853ea6cb98af877400e637393e71
-  languageName: node
-  linkType: hard
-
-"date-fns@npm:^2.0.1":
-  version: 2.14.0
-  resolution: "date-fns@npm:2.14.0"
-  checksum: a4cf0866525f9a6825206b6e8805794f66c6eb49bc77d28e64edc29a2bde725024f10822b90f3fd5302b1621fa84686afe46e499df0315127af8aa85bca4356f
   languageName: node
   linkType: hard
 
@@ -27250,17 +27256,6 @@ fast-xml-parser@4.0.11:
   languageName: node
   linkType: hard
 
-"read-pkg@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "read-pkg@npm:4.0.1"
-  dependencies:
-    normalize-package-data: ^2.3.2
-    parse-json: ^4.0.0
-    pify: ^3.0.0
-  checksum: 56193535486c50a0a40039e4a92f68676362f5a7160628ca4d856c62509e125220f69c562a32940dcc51e3dcd38211af69756bbb5b8a1aed1d09be1bedd1e1a5
-  languageName: node
-  linkType: hard
-
 "read-pkg@npm:^5.2.0":
   version: 5.2.0
   resolution: "read-pkg@npm:5.2.0"
@@ -27671,15 +27666,6 @@ fast-xml-parser@4.0.11:
   languageName: node
   linkType: hard
 
-"rxjs@npm:^6.5.2":
-  version: 6.5.5
-  resolution: "rxjs@npm:6.5.5"
-  dependencies:
-    tslib: ^1.9.0
-  checksum: fc578fc34b73e5f35bfdd71cabf73113453e87917aecead0f3459e4403c4c4a41871c726271d9b6fe4a5e966efb02f7b1a5db2fc08dbe9ba5e239368e15adc5f
-  languageName: node
-  linkType: hard
-
 "rxjs@npm:^7.5.5":
   version: 7.5.7
   resolution: "rxjs@npm:7.5.7"
@@ -27714,10 +27700,9 @@ fast-xml-parser@4.0.11:
   version: 0.0.0-use.local
   resolution: "salto-io@workspace:."
   dependencies:
-    concurrently: ^5.2.0
     jsonc-parser: ^2.2.1
     lerna: ^5.6.2
-    turbo: ^2.0.1
+    turbo: ^2.0.6
   languageName: unknown
   linkType: soft
 
@@ -27755,6 +27740,7 @@ fast-xml-parser@4.0.11:
     readdirp: ^3.1.1
     tmp-promise: ^2.0.2
     ts-jest: ^27.1.5
+    turbo: ^2.0.6
     typescript: 4.8.4
     vsce: ^2.9.2
     vscode-test: ^1.0.2
@@ -28284,13 +28270,6 @@ fast-xml-parser@4.0.11:
   version: 0.7.3
   resolution: "source-map@npm:0.7.3"
   checksum: cd24efb3b8fa69b64bf28e3c1b1a500de77e84260c5b7f2b873f88284df17974157cc88d386ee9b6d081f08fdd8242f3fc05c953685a6ad81aad94c7393dedea
-  languageName: node
-  linkType: hard
-
-"spawn-command@npm:^0.0.2-1":
-  version: 0.0.2-1
-  resolution: "spawn-command@npm:0.0.2-1"
-  checksum: 2cac8519332193d1ed37d57298c4a1f73095e9edd20440fbab4aa47f531da83831734f2b51c44bb42b2747bf3485dec3fa2b0a1003f74c67561f2636622e328b
   languageName: node
   linkType: hard
 
@@ -28832,15 +28811,6 @@ fast-xml-parser@4.0.11:
   languageName: node
   linkType: hard
 
-"supports-color@npm:^6.1.0":
-  version: 6.1.0
-  resolution: "supports-color@npm:6.1.0"
-  dependencies:
-    has-flag: ^3.0.0
-  checksum: 74358f9535c83ee113fbaac354b11e808060f6e7d8722082ee43af3578469134e89d00026dce2a6b93ce4e5b89d0e9a10f638b2b9f64c7838c2fb2883a47b3d5
-  languageName: node
-  linkType: hard
-
 "supports-color@npm:^7.0.0, supports-color@npm:^7.2.0":
   version: 7.2.0
   resolution: "supports-color@npm:7.2.0"
@@ -29194,15 +29164,6 @@ fast-xml-parser@4.0.11:
   languageName: node
   linkType: hard
 
-"tree-kill@npm:^1.2.2":
-  version: 1.2.2
-  resolution: "tree-kill@npm:1.2.2"
-  bin:
-    tree-kill: cli.js
-  checksum: 49117f5f410d19c84b0464d29afb9642c863bc5ba40fcb9a245d474c6d5cc64d1b177a6e6713129eb346b40aebb9d4631d967517f9fbe8251c35b21b13cd96c7
-  languageName: node
-  linkType: hard
-
 "treeverse@npm:^2.0.0":
   version: 2.0.0
   resolution: "treeverse@npm:2.0.0"
@@ -29352,58 +29313,58 @@ fast-xml-parser@4.0.11:
   languageName: node
   linkType: hard
 
-"turbo-darwin-64@npm:2.0.4":
-  version: 2.0.4
-  resolution: "turbo-darwin-64@npm:2.0.4"
+"turbo-darwin-64@npm:2.0.6":
+  version: 2.0.6
+  resolution: "turbo-darwin-64@npm:2.0.6"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-darwin-arm64@npm:2.0.4":
-  version: 2.0.4
-  resolution: "turbo-darwin-arm64@npm:2.0.4"
+"turbo-darwin-arm64@npm:2.0.6":
+  version: 2.0.6
+  resolution: "turbo-darwin-arm64@npm:2.0.6"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo-linux-64@npm:2.0.4":
-  version: 2.0.4
-  resolution: "turbo-linux-64@npm:2.0.4"
+"turbo-linux-64@npm:2.0.6":
+  version: 2.0.6
+  resolution: "turbo-linux-64@npm:2.0.6"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-linux-arm64@npm:2.0.4":
-  version: 2.0.4
-  resolution: "turbo-linux-arm64@npm:2.0.4"
+"turbo-linux-arm64@npm:2.0.6":
+  version: 2.0.6
+  resolution: "turbo-linux-arm64@npm:2.0.6"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo-windows-64@npm:2.0.4":
-  version: 2.0.4
-  resolution: "turbo-windows-64@npm:2.0.4"
+"turbo-windows-64@npm:2.0.6":
+  version: 2.0.6
+  resolution: "turbo-windows-64@npm:2.0.6"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-windows-arm64@npm:2.0.4":
-  version: 2.0.4
-  resolution: "turbo-windows-arm64@npm:2.0.4"
+"turbo-windows-arm64@npm:2.0.6":
+  version: 2.0.6
+  resolution: "turbo-windows-arm64@npm:2.0.6"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo@npm:^2.0.1":
-  version: 2.0.4
-  resolution: "turbo@npm:2.0.4"
+"turbo@npm:^2.0.6":
+  version: 2.0.6
+  resolution: "turbo@npm:2.0.6"
   dependencies:
-    turbo-darwin-64: 2.0.4
-    turbo-darwin-arm64: 2.0.4
-    turbo-linux-64: 2.0.4
-    turbo-linux-arm64: 2.0.4
-    turbo-windows-64: 2.0.4
-    turbo-windows-arm64: 2.0.4
+    turbo-darwin-64: 2.0.6
+    turbo-darwin-arm64: 2.0.6
+    turbo-linux-64: 2.0.6
+    turbo-linux-arm64: 2.0.6
+    turbo-windows-64: 2.0.6
+    turbo-windows-arm64: 2.0.6
   dependenciesMeta:
     turbo-darwin-64:
       optional: true
@@ -29419,7 +29380,7 @@ fast-xml-parser@4.0.11:
       optional: true
   bin:
     turbo: bin/turbo
-  checksum: eade7410cdd53f503c7038dbf6f56bda0fca8a0ac94c4889e1a514bad5b67df415ed1b3b28ea74a371a3b16b912f68083554a32784e729dc97aef4f9c580c0e9
+  checksum: c6d8dffd89d923021ef1b319d7aa7649ab1cace15f2cbea542aae890c94eaa78634474598be8da9d8299b07a14ae175fba62539966426b8d11bc23b6e2d642c4
   languageName: node
   linkType: hard
 

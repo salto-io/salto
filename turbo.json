@@ -13,9 +13,7 @@
       "cache": false
     },
     "lint": {
-      "outputs": [
-        ".lint.cache"
-      ]
+      "outputs": []
     },
     "check-format": {
       "outputs": [

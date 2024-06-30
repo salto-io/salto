@@ -33,6 +33,7 @@ describe('gzip', () => {
     }
     expect(hadError).toBeTruthy()
   }
+
   const expectRejectWithIncorrectHeaderException = async <TResult>(p: () => Promise<TResult>): Promise<void> => {
     let hadError = false
     try {
@@ -50,6 +51,12 @@ describe('gzip', () => {
     let destTmp: tmp.FileResult
     let dest: string
 
+    afterEach(async () => {
+      if (destTmp) {
+        await destTmp.cleanup()
+      }
+    })
+
     describe('when the file does not exist', () => {
       it('should reject with ErrnoException', async () => {
         await expectRejectWithErrnoException(() => getStream(gzip.createGZipReadStream('nosuchfile')))
@@ -64,16 +71,10 @@ describe('gzip', () => {
         await file.writeFile(dest, await promisify(zlibGzip)(content))
       })
 
-      afterEach(async () => {
-        await destTmp.cleanup()
-      })
-
-      describe('when all is well with the file', () => {
-        it('should return its contents', async () => {
-          expect(await file.exists(dest)).toBeTruthy()
-          const r = await getStream(gzip.createGZipReadStream(dest))
-          expect(content).toEqual(r)
-        })
+      it('should return its contents', async () => {
+        expect(await file.exists(dest)).toBeTruthy()
+        const r = await getStream(gzip.createGZipReadStream(dest))
+        expect(content).toEqual(r)
       })
     })
 
@@ -82,10 +83,6 @@ describe('gzip', () => {
         destTmp = await tmp.file()
         dest = destTmp.path
         await file.copyFile(source, dest)
-      })
-
-      afterEach(async () => {
-        await destTmp.cleanup()
       })
 
       it('should throw error', async () => {
@@ -121,7 +118,9 @@ describe('gzip', () => {
     })
 
     afterEach(async () => {
-      await destTmp.cleanup()
+      if (destTmp) {
+        await destTmp.cleanup()
+      }
     })
 
     const expectedContents = 'a'
@@ -192,7 +191,9 @@ describe('gzip', () => {
     })
 
     afterEach(async () => {
-      await destTmp.cleanup()
+      if (destTmp) {
+        await destTmp.cleanup()
+      }
     })
 
     describe('when writing to file and reading as zip', () => {

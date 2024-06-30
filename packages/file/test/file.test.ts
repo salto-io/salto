@@ -33,6 +33,7 @@ describe('file', () => {
     }
     expect(hadError).toBeTruthy()
   }
+
   describe('stat', () => {
     describe('when the file does not exist', () => {
       it('should reject with ErrnoException', async () => {
@@ -42,7 +43,6 @@ describe('file', () => {
 
     describe('when the file exists', () => {
       it('should return its stats', async () => {
-        // can't compare all stats since aTime and aTimeMs might differ slightly
         const r = (await file.stat(__filename)).ctime
         expect(r).toEqual((await promisify(fs.stat)(__filename)).ctime)
       })
@@ -58,7 +58,6 @@ describe('file', () => {
 
     describe('when the file exists', () => {
       it('should return its stats', () => {
-        // can't compare all stats since aTime and aTimeMs might differ slightly
         const r = file.statSync(__filename).ctime
         expect(r).toEqual(fs.statSync(__filename).ctime)
       })
@@ -269,16 +268,22 @@ describe('file', () => {
         let dir: string
         let dirTmp: tmp.DirectoryResult
 
-        beforeEach(async () => {
-          dirTmp = await tmp.dir()
-          dir = dirTmp.path
-          await fs.promises.copyFile(__filename, path.join(dir, 'a_file'))
-          await file.rm(dir)
+        // beforeEach(async () => {
+        // })
+        
+        it('removes the dir', async () => {
+            dirTmp = await tmp.dir()
+            dir = dirTmp.path
+            await fs.promises.copyFile(__filename, path.join(dir, 'a_file'))
+            await file.rm(dir)
+            expect(await file.exists(dir)).toBeFalsy()
+            if (await file.exists(dir)) {
+              await dirTmp.cleanup()
+            }
         })
 
-        it('removes the dir', async () => {
-          expect(await file.exists(dir)).toBeFalsy()
-        })
+        // afterEach(async () => {
+        // })
       })
     })
 
@@ -351,6 +356,7 @@ describe('file', () => {
       })
     })
   })
+
   describe('isEmptyDir', () => {
     let dir: string
 

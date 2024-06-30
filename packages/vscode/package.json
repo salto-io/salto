@@ -110,7 +110,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^27.5.2",
     "@types/vscode": "^1.36",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
@@ -123,14 +123,14 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^27.4.5",
-    "jest-circus": "^27.4.5",
-    "jest-mock": "^27.4.2",
-    "jest-util": "^27.4.2",
+    "jest": "^27.5.1",
+    "jest-circus": "^27.5.1",
+    "jest-mock": "^27.5.1",
+    "jest-util": "^27.5.1",
     "prettier": "3.2.5",
     "readdirp": "^3.1.1",
     "tmp-promise": "^2.0.2",
-    "ts-jest": "^27.1.2",
+    "ts-jest": "^27.1.5",
     "typescript": "4.8.4",
     "vsce": "^2.9.2",
     "vscode-test": "^1.0.2"

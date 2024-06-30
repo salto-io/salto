@@ -207,10 +207,10 @@ const updateAllReferences = ({
 
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
 const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
-  instances: Element[],
+  elements: Element[],
   fetchDefinitionByType: Record<string, InstanceFetchApiDefinitions<TOptions>>,
 ): DAG<{ instance: InstanceElement; index: number }> => {
-  const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
+  const duplicateElemIds = new Set(findDuplicates(elements.map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
   const isDuplicateInstance = (instanceFullName: string): boolean => {
     if (duplicateElemIds.has(instanceFullName)) {
@@ -221,7 +221,7 @@ const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
   }
 
   const graph = new DAG<{ instance: InstanceElement; index: number }>()
-  instances.forEach((instance, index) => {
+  elements.forEach((instance, index) => {
     if (!isInstanceElement(instance)) {
       return
     }

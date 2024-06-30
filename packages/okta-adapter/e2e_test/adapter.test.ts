@@ -86,12 +86,12 @@ jest.setTimeout(1000 * 60 * 10)
 const TEST_PREFIX = 'Test'
 
 const createInstance = ({
-                          typeName,
-                          valuesOverride,
-                          types,
-                          parent,
-                          name,
-                        }: {
+  typeName,
+  valuesOverride,
+  types,
+  parent,
+  name,
+}: {
   typeName: string
   valuesOverride: Values
   types: ObjectType[]
@@ -125,10 +125,7 @@ const createInstance = ({
   )
 }
 
-const createChangesForDeploy = async (
-  types: ObjectType[],
-  testSuffix: string,
-): Promise<Change[]> => {
+const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): Promise<Change[]> => {
   const createName = (type: string): string => `${TEST_PREFIX}${type}${testSuffix}`
 
   const groupInstance = createInstance({
@@ -282,8 +279,7 @@ const createChangesForDeploy = async (
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => {
-  },
+  reportProgress: () => {},
 }
 
 const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<DeployResult[]> => {
@@ -344,12 +340,14 @@ const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement
     })
 }
 
-const getChangesForInitialCleanup = async (
-  elements: Element[],
-): Promise<Change<InstanceElement>[]> => {
+const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<InstanceElement>[]> => {
   const removalChanges: Change<InstanceElement>[] = elements
     .filter(isInstanceElement)
-    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX) || (inst.elemID.typeName === DOMAIN_TYPE_NAME && inst.value.id !== 'default'))
+    .filter(
+      inst =>
+        inst.elemID.name.startsWith(TEST_PREFIX) ||
+        (inst.elemID.typeName === DOMAIN_TYPE_NAME && inst.value.id !== 'default'),
+    )
     .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
     .map(instance => toChange({ before: instance }))
 

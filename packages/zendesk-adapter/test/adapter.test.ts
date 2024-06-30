@@ -1221,6 +1221,62 @@ describe('adapter', () => {
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
       })
+      it('should generate the right elements on fetch with new infra, with elemID customization', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+              username: 'user123',
+              password: 'token456',
+              subdomain: 'myBrand',
+            }),
+            config: new InstanceElement('config', configType, {
+              [FETCH_CONFIG]: {
+                include: [
+                  {
+                    type: 'group',
+                  },
+                ],
+                exclude: [],
+                guide: {
+                  brands: ['.*'],
+                },
+                useNewInfra: true,
+                omitInactive: {
+                  default: false,
+                  customizations: {},
+                },
+              },
+              [API_DEFINITIONS_CONFIG]: {
+                types: {
+                  group: {
+                    transformation: {
+                      idFields: ['default', 'name'],
+                    },
+                  },
+                },
+              },
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
+
+        expect(
+          elements
+            .map(e => e.elemID.getFullName())
+            .filter(a => a.includes('group'))
+            .sort(),
+        ).toEqual([
+          'zendesk.group',
+          'zendesk.group.instance.false_Support2',
+          'zendesk.group.instance.false_Support4',
+          'zendesk.group.instance.false_Support5',
+          'zendesk.group.instance.true_Support',
+          'zendesk.groups',
+          'zendesk.permission_group',
+          'zendesk.permission_groups',
+        ])
+      })
       it('should not generate tags when excluded', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter

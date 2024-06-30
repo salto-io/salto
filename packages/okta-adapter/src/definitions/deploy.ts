@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { getChangeData, isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from './types'
-import { GROUP_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, GROUP_TYPE_NAME } from '../constants'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -29,6 +29,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     ClientOptions
   >({
     [GROUP_TYPE_NAME]: { bulkPath: '/api/v1/groups' },
+    [BRAND_TYPE_NAME]: { bulkPath: '/api/v1/brands' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {

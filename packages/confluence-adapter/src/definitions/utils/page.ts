@@ -25,9 +25,10 @@ import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { SPACE_TYPE_NAME } from '../../constants'
+import { PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../constants'
 import { AdditionalAction } from '../types'
 import { validateValue } from './generic'
+import { createAdjustUserReferencesReverse } from './users'
 
 const { reduceAsync } = collections.asynciterable
 const log = logger(module)
@@ -123,6 +124,8 @@ const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndC
   return { value }
 }
 
+const adjustUserReferencesOnPageReverse = createAdjustUserReferencesReverse(PAGE_TYPE_NAME)
+
 /**
  * AdjustFunction that runs all page modification adjust functions.
  */
@@ -130,7 +133,7 @@ export const adjustPageOnModification: definitions.AdjustFunction<definitions.de
   const value = validateValue(args.value)
   const argsWithValidatedValue = { ...args, value }
   return reduceAsync(
-    [increasePageVersion, updateHomepageId],
+    [increasePageVersion, updateHomepageId, adjustUserReferencesOnPageReverse],
     async (input, func) => ({ ...argsWithValidatedValue, ...(await func(input)) }),
     argsWithValidatedValue,
   )

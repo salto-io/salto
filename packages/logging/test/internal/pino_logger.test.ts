@@ -392,6 +392,7 @@ describe('pino based logger', () => {
             initialConfig.globalTags = logTags
             logger = createLogger()
             logger.assignGlobalTags({ newTag: 'data', superNewTag: 'tag', functionTag: () => 5 })
+            logger.assignTags({ newTag: 'overridden' })
             await logLine({ level: 'warn' })
           })
           it('should contain old tags', () => {
@@ -406,7 +407,7 @@ describe('pino based logger', () => {
             expect(line).toContain('hello { world: true }')
           })
           it('should contain new logTags also', async () => {
-            expect(line).toContain('newTag="data"')
+            expect(line).toContain('newTag="overridden"')
             expect(line).toContain('functionTag=5')
             expect(line).toContain('superNewTag="tag"')
           })

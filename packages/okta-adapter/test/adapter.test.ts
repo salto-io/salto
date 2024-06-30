@@ -954,6 +954,7 @@ describe('adapter', () => {
         })
         deviceAssurance = new InstanceElement('deviceAssurance', deviceAssuranceType, {
           id: 'deviceassurance-fakeid1',
+          name: 'deviceassurance1',
         })
       })
 
@@ -974,7 +975,7 @@ describe('adapter', () => {
 
       it('should successfully modify a device assurance', async () => {
         const updatedDeviceAssurance = deviceAssurance.clone()
-        updatedDeviceAssurance.value.removePoweredByOkta = true
+        updatedDeviceAssurance.value.name = 'deviceassurance2'
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'deviceAssurance',
@@ -990,8 +991,8 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
-          true,
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
+          'deviceassurance2',
         )
       })
 

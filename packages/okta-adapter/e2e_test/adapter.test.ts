@@ -549,7 +549,6 @@ describe('Okta adapter E2E', () => {
           expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
         }
       })
-      // eslint-disable-next-line jest/no-disabled-tests
       it('should fetch OrgSetting and validate subdomain field', async () => {
         const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
         expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type

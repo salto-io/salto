@@ -27,21 +27,25 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { resolveChangeElement } from '@salto-io/adapter-components'
-
+import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import Joi from 'joi'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 
-const { awu } = collections.asynciterable
+const { isDefined } = lowerDashValues
 
 const KANBAN_TYPE = 'kanban'
 export const COLUMNS_CONFIG_FIELD = 'columnConfig'
+
+export type InstanceToPromiseResponse = {
+  instance: InstanceElement
+  promiseResponse: Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> | undefined
+}
 
 const log = logger(module)
 
@@ -151,9 +155,12 @@ export const deployColumns = async (
   }
 }
 
-const removeRedundantColumns = async (instance: InstanceElement, client: JiraClient): Promise<void> => {
+const getColumnName = (
+  instance: InstanceElement,
+  client: JiraClient,
+): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> | undefined => {
   if (instance.value.type !== KANBAN_TYPE) {
-    return
+    return undefined
   }
 
   log.info(
@@ -167,43 +174,54 @@ const removeRedundantColumns = async (instance: InstanceElement, client: JiraCli
   // So we need to check if it's a redundant columns or it was really
   // added by the user.
   if (instance.value[COLUMNS_CONFIG_FIELD].columns[0]?.name !== 'Backlog') {
-    return
+    return undefined
   }
 
   log.info(`${instance.elemID.getFullName()} has two backlog columns`)
-  const columnsName = await getColumnsName(instance.value.id, client)
 
-  if (columnsName === undefined) {
-    return
-  }
-
-  if (columnsName[1] !== 'Backlog') {
-    log.info(`${instance.elemID.getFullName()} removing second backlog column`)
-    instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
-  } else {
-    log.info(`${instance.elemID.getFullName()} leaving second backlog column`)
-  }
+  return client.get({
+    url: `/rest/agile/1.0/board/${instance.value.id}/configuration`,
+  })
 }
 
-const filter: FilterCreator = ({ config, client }) => ({
+export const filterBoardColumns = (client: JiraClient, elements: Element[]): InstanceToPromiseResponse[] =>
+  elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === BOARD_TYPE_NAME)
+    .filter(instance => instance.value.config?.[COLUMNS_CONFIG_FIELD] !== undefined)
+    .map(instance => {
+      instance.value[COLUMNS_CONFIG_FIELD] = instance.value.config[COLUMNS_CONFIG_FIELD]
+      delete instance.value.config[COLUMNS_CONFIG_FIELD]
+      instance.value[COLUMNS_CONFIG_FIELD].columns.forEach((column: Values) => {
+        if (column.statuses !== undefined) {
+          column.statuses = column.statuses.map((status: Values) => status.id)
+        }
+      })
+      const promiseResponse = getColumnName(instance, client)
+      if (promiseResponse === undefined) {
+        return undefined
+      }
+      return { instance, promiseResponse }
+    })
+    .filter(isDefined)
+
+const filter: FilterCreator = ({ config, adapterContext }) => ({
   name: 'boardColumnsFilter',
   onFetch: async (elements: Element[]) => {
-    await awu(elements)
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === BOARD_TYPE_NAME)
-      .filter(instance => instance.value.config?.[COLUMNS_CONFIG_FIELD] !== undefined)
-      .forEach(async instance => {
-        instance.value[COLUMNS_CONFIG_FIELD] = instance.value.config[COLUMNS_CONFIG_FIELD]
-        delete instance.value.config[COLUMNS_CONFIG_FIELD]
+    const instancesToPromiseColumnName: InstanceToPromiseResponse[] = adapterContext.boardsPromise
 
-        instance.value[COLUMNS_CONFIG_FIELD].columns.forEach((column: Values) => {
-          if (column.statuses !== undefined) {
-            column.statuses = column.statuses.map((status: Values) => status.id)
-          }
-        })
-
-        await removeRedundantColumns(instance, client)
-      })
+    instancesToPromiseColumnName.map(async instanceToPromiseColumnName => {
+      const response = await instanceToPromiseColumnName.promiseResponse
+      if (response !== undefined && isBoardConfigResponse(response.data)) {
+        const columnsName = response.data[COLUMNS_CONFIG_FIELD].columns.map(({ name }) => name)
+        if (columnsName[1] !== 'Backlog') {
+          log.info(`${instanceToPromiseColumnName.instance.elemID.getFullName()} removing second backlog column`)
+          instanceToPromiseColumnName.instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
+        } else {
+          log.info(`${instanceToPromiseColumnName.instance.elemID.getFullName()} leaving second backlog column`)
+        }
+      }
+    })
 
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping board columns filter because private API is not enabled')

@@ -15,12 +15,14 @@
  */
 import { FilterCreator } from '../filter'
 import { getLayoutRequestsAsync } from './layouts/issue_layout'
+import { filterBoardColumns } from './board/board_columns'
 
 // Filter to start the async API calls
 const filter: FilterCreator = ({ client, config, fetchQuery, adapterContext }) => ({
   name: 'asyncAPICalls',
   onFetch: async elements => {
     adapterContext.layoutsPromise = getLayoutRequestsAsync(client, config, fetchQuery, elements)
+    adapterContext.boardsPromise = filterBoardColumns(client, elements)
   },
 })
 

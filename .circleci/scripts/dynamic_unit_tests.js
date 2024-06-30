@@ -15,7 +15,7 @@
  */
 
 const { execSync } = require('child_process')
-const { writeFileSync, existsSync, readdirSync } = require('fs')
+const { writeFileSync, existsSync } = require('fs')
 const path = require('path')
 
 const hasTests = (location) => {
@@ -32,10 +32,8 @@ const getWorkspacesWithTests = () => {
 }
 
 const main = () => {
-
   const workspacesToTest = getWorkspacesWithTests()
-  console.log('Packages to test:', workspacesToTest)
-
+  console.log('Packages to test: ', workspacesToTest)
   const workspacesToTestFilePath = path.join(__dirname, '..', 'ut_packages_to_test.txt')
   writeFileSync(workspacesToTestFilePath, workspacesToTest.join('\n'))
 }

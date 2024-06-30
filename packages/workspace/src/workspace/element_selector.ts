@@ -45,10 +45,6 @@ export type ElementIDToValue = {
   element: Value
 }
 
-type ElementIDContainer = {
-  elemID: ElemID
-}
-
 // get the full name including handling for settings instances ('_config')
 const getElemIDFullNameParts = (elemID: ElemID): string[] => {
   const fullNameParts = elemID.getFullNameParts()
@@ -99,11 +95,6 @@ const matchWithReferenceBy = async (
 const createRegex = (selector: string, caseInSensitive: boolean): RegExp =>
   new RegExp(`^(${selector.replace(/\*/g, '[^\\.]*')})$`, caseInSensitive ? 'i' : undefined)
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-function isElementContainer(value: any): value is ElementIDContainer {
-  return value && value.elemID && value.elemID instanceof ElemID
-}
-
 const isWildcardSelector = (selector: string): boolean => selector.includes('*')
 
 const hasReferencedBy = (selector: ElementSelector): boolean => selector.referencedBy !== undefined
@@ -139,6 +130,19 @@ export const selectElementsBySelectorsWithoutReferences = ({
   return elementIds.filter(elementId => selectors.some(selector => match(elementId, selector, includeNested)))
 }
 
+export const isElementIdMatchSelectors = ({
+  elemId,
+  selectors,
+  referenceSourcesIndex,
+  includeNested,
+}: {
+  elemId: ElemID
+  selectors: ElementSelector[]
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+  includeNested?: boolean
+}): Promise<boolean> =>
+  awu(selectors).some(selector => matchWithReferenceBy(elemId, selector, referenceSourcesIndex, includeNested))
+
 export const selectElementsBySelectors = ({
   elementIds,
   selectors,
@@ -153,15 +157,8 @@ export const selectElementsBySelectors = ({
   if (selectors.length === 0) {
     return elementIds
   }
-  return awu(elementIds).filter(obj =>
-    awu(selectors).some(selector =>
-      matchWithReferenceBy(
-        isElementContainer(obj) ? obj.elemID : (obj as ElemID),
-        selector,
-        referenceSourcesIndex,
-        includeNested,
-      ),
-    ),
+  return awu(elementIds).filter(elemId =>
+    isElementIdMatchSelectors({ elemId, selectors, referenceSourcesIndex, includeNested }),
   )
 }
 

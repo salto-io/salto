@@ -82,8 +82,9 @@ import {
   expressions,
   merger,
   pathIndex,
+  ReferenceIndexEntry,
   remoteMap,
-  selectElementsBySelectors,
+  isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
 } from '@salto-io/workspace'
@@ -1284,6 +1285,33 @@ const createElemIdGetter = async (
   }
 }
 
+const getElementsToMaintain = async (
+  accountToServiceNameMap: Record<string, string>,
+  account: string,
+  elementsSource: ReadOnlyElementsSource,
+  ignoreStateElemIdMappingForSelectors: ElementSelector[],
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
+): Promise<AsyncIterable<Element>> => {
+  if (ignoreStateElemIdMappingForSelectors.length === 0 && Object.keys(accountToServiceNameMap).length === 1) {
+    return elementsSource.getAll()
+  }
+
+  const accountElementIDs = awu(await elementsSource.list()).filter(elemId => elemId.adapter === account)
+  const elementIDsToMaintain =
+    ignoreStateElemIdMappingForSelectors.length === 0
+      ? accountElementIDs
+      : accountElementIDs.filter(
+          async elemId =>
+            !(await isElementIdMatchSelectors({
+              elemId,
+              selectors: ignoreStateElemIdMappingForSelectors,
+              referenceSourcesIndex,
+            })),
+        )
+
+  return elementIDsToMaintain.map(elemId => elementsSource.get(elemId))
+}
+
 export const createElemIdGetters = async (
   workspace: Workspace,
   accountToServiceNameMap: Record<string, string>,
@@ -1294,24 +1322,16 @@ export const createElemIdGetters = async (
   if (ignoreStateElemIdMapping && ignoreStateElemIdMappingForSelectors.length === 0) {
     return {}
   }
-  const ignoreStateElemIdMappingForElements = new Set(
-    ignoreStateElemIdMapping
-      ? await awu(
-          selectElementsBySelectors({
-            elementIds: await elementsSource.list(),
-            selectors: ignoreStateElemIdMappingForSelectors,
-            referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
-          }),
-        )
-          .map(elemId => elemId.getFullName())
-          .toArray()
-      : [],
-  )
+  const referenceSourcesIndex = await workspace.getReferenceSourcesIndex()
   return mapValuesAsync(accountToServiceNameMap, async (_service, account) =>
     createElemIdGetter(
-      awu(await elementsSource.getAll())
-        .filter(e => e.elemID.adapter === account)
-        .filter(e => !ignoreStateElemIdMappingForElements.has(e.elemID.getFullName())),
+      await getElementsToMaintain(
+        accountToServiceNameMap,
+        account,
+        elementsSource,
+        ignoreStateElemIdMappingForSelectors,
+        referenceSourcesIndex,
+      ),
       workspace.state(),
     ),
   )

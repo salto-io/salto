@@ -121,13 +121,16 @@ describe('adapter', () => {
           'confluence.page.instance.Omri_Farkash_Getting_started_in_Confluence@susss',
           'confluence.page.instance.Omri_Farkash_Overview@su',
           'confluence.page.instance.Omri_Farkash_This_is_my_page_yay@sussss',
+          'confluence.page__authorId',
           'confluence.page__body',
+          'confluence.page__ownerId',
           'confluence.page__restriction',
           'confluence.page__restriction__restrictions',
           'confluence.page__version',
           'confluence.space',
           'confluence.space.instance.My_first_space@s',
           'confluence.space.instance.Omri_Farkash@s',
+          'confluence.space__authorId',
           'confluence.space__permissionInternalIdMap',
           'confluence.space__permissions',
         ])
@@ -205,7 +208,6 @@ describe('adapter', () => {
     beforeEach(() => {
       spaceType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'space') })
       pageType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'page') })
-      // globalTemplateType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'global_template') })
       space1 = new InstanceElement('space1', spaceType, { name: 'space1', key: 'spaceKey', id: 11 })
       page1 = new InstanceElement('My_page@s', pageType, {
         title: 'My page',

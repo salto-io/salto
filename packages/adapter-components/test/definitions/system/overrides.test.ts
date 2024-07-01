@@ -17,57 +17,10 @@ import _ from 'lodash'
 import { setupEnvVar } from '@salto-io/test-utils'
 import { Values } from '@salto-io/adapter-api'
 import { APIDefinitionsOptions, RequiredDefinitions } from '../../../src/definitions/system'
-import {
-  DEFINITIONS_OVERRIDES,
-  getParsedDefinitionsOverrides,
-  mergeDefinitionsWithOverrides,
-} from '../../../src/definitions/system/overrides'
+import { DEFINITIONS_OVERRIDES, mergeDefinitionsWithOverrides } from '../../../src/definitions/system/overrides'
 
 describe('overrides', () => {
   const overridesEnvVar = DEFINITIONS_OVERRIDES
-
-  describe('getParsedDefinitionsOverrides', () => {
-    describe('when overrides are not set', () => {
-      setupEnvVar(overridesEnvVar, undefined)
-      it('should return empty object', () => {
-        expect(getParsedDefinitionsOverrides()).toEqual({})
-      })
-    })
-
-    describe('when the overrides has syntax error', () => {
-      setupEnvVar(overridesEnvVar, '{"name": "Alice" "age": 25}')
-      it('should return empty object', () => {
-        expect(getParsedDefinitionsOverrides()).toEqual({})
-      })
-    })
-
-    describe('when overrides are set correctly', () => {
-      const jsonString = `{
-        "name": "Uri",
-        "address": {
-            "street": "123 Main St",
-            "city": "Wonderland"
-        },
-        "courses": [
-            {
-                "title": "Introduction to Magic",
-                "completed": true
-            },
-            {
-                "title": "Advanced Magic",
-                "completed": false
-            }
-        ]
-      }`
-      setupEnvVar(overridesEnvVar, jsonString)
-      it('should return an object', () => {
-        const parsed = getParsedDefinitionsOverrides()
-        expect(parsed.name).toEqual('Uri')
-        expect(parsed.address.street).toEqual('123 Main St')
-        expect(parsed.courses[0].title).toEqual('Introduction to Magic')
-      })
-    })
-  })
 
   describe('mergeDefinitionsWithOverrides', () => {
     const mockedDefinitions = {
@@ -132,11 +85,22 @@ describe('overrides', () => {
     } as unknown as RequiredDefinitions<APIDefinitionsOptions>
 
     describe('when no overrides are provided', () => {
+      setupEnvVar(overridesEnvVar, undefined)
+
       it('should return the original definitions if no overrides are provided', () => {
         const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
         expect(merged).toEqual(mockedDefinitions)
       })
     })
+
+    describe('when the overrides has syntax error', () => {
+      setupEnvVar(overridesEnvVar, '{"name": "Alice" "age": 25}')
+      it('should return empty object', () => {
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
+        expect(merged).toEqual(mockedDefinitions)
+      })
+    })
+
     describe('when adding a new type to the fetch definition', () => {
       const jsonString = `{
         "fetch": {
@@ -262,9 +226,7 @@ describe('overrides', () => {
       setupEnvVar(overridesEnvVar, jsonString)
       it('should edit the elemId field only', () => {
         const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
-        expect(merged.fetch.instances.default?.element?.topLevel?.elemID).toEqual(
-          getParsedDefinitionsOverrides().fetch.instances.default.element.topLevel.elemID,
-        )
+        expect(merged.fetch.instances.default?.element?.topLevel?.elemID).toEqual({ parts: [{ fieldName: 'newName' }] })
         expect(merged.fetch.instances.default?.element?.topLevel?.singleton).toBeTruthy()
       })
     })

@@ -22,7 +22,7 @@ import { APIDefinitionsOptions } from './api'
 const log = logger(module)
 export const DEFINITIONS_OVERRIDES = 'SALTO_DEFINITIONS_OVERRIDES'
 
-export const getParsedDefinitionsOverrides = (): Values => {
+const getParsedDefinitionsOverrides = (): Values => {
   const overrides = process.env[DEFINITIONS_OVERRIDES]
   try {
     const parsedOverrides = overrides === undefined ? undefined : JSON.parse(overrides)
@@ -54,15 +54,13 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     if (_.isArray(objValue)) {
       return srcValue
     }
-    if (_.isObject(objValue) && _.isObject(srcValue)) {
-      return _.mergeWith({}, objValue, srcValue, customMerge)
-    }
-    return srcValue
+    return undefined
   }
   const overrides = getParsedDefinitionsOverrides()
   if (_.isEmpty(overrides)) {
     return definitions
   }
+  log.trace('Definitions overrides:', overrides)
   const cloneDefinitions = _.cloneDeep(definitions)
   const merged = _.mergeWith(cloneDefinitions, overrides, customMerge)
   const removeNullObjects = (obj: Value): Value => {
@@ -75,5 +73,7 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     }
     return obj
   }
-  return removeNullObjects(merged)
+  const afterRemoveNullObjects = removeNullObjects(merged)
+  log.trace('Merged definitions with overrides:', afterRemoveNullObjects)
+  return afterRemoveNullObjects
 }

@@ -264,6 +264,7 @@ jobs:
 
     steps:
       - checkout
+      - restore_node_modules
       - restore_turbo_cache:
           cache_name: lint
       - setup_yarn
@@ -299,19 +300,23 @@ jobs:
 
     steps:
       - restore_intermediate
-      - restore_yarn_cache
       - setup_yarn
       - restore_node_modules
+      - restore_turbo_cache:
+          cache_name: jest_ut
       - run:
           name: << parameters.package_name >> unit tests
           command: |
             PACKAGE=$(echo "<< parameters.package_name >>" | cut -d':' -f2)
-            yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
+            yarn test --filter="$PACKAGE..."
+            # yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
 
       - store_test_results:
           path: reports
+      - store_turbo_cache:
+          cache_name: jest_ut
 
       - coveralls/upload:
           parallel: true
@@ -520,7 +525,7 @@ workflows:
 
       - prettier:
           requires:
-            - install
+            - compile
 
       - test_cli_mac:
           requires:

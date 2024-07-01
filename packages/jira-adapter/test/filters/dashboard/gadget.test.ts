@@ -57,14 +57,14 @@ describe('gadgetFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
   let elements: Element[]
-  let paginator: clientUtils.Paginator
   let adapterContext: Values = {}
 
   beforeEach(async () => {
-    const { client: cli, connection: conn } = mockClient()
-    paginator = mockClient().paginator
+    const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
+
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     dashboardGadgetType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_GADGET_TYPE),
@@ -95,7 +95,6 @@ describe('gadgetFilter', () => {
     adapterContext = {
       dashboardPropertiesPromise: [{ instance, promisePropertyValues: { key1: 'value1', key2: 'value2' } }],
     }
-    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     filter = gadgetFilter(
       getFilterParams({
         client,

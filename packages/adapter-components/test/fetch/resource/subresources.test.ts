@@ -37,7 +37,7 @@ describe('subresources', () => {
             context: {
               args: {
                 id: { root: 'id' },
-                domain: { adjust: () => ({ value: ['custom'] }) },
+                domain: { adjust: async () => ({ value: ['custom'] }) },
                 context: { root: 'nested', pick: ['nestedId'], single: true },
               },
             },

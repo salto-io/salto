@@ -40,18 +40,24 @@ describe(`${createDefinitionForAppRoleAssignment.name}`, () => {
       adjust = definitions.someType.requestsByAction.customizations?.add?.[0].request.transformation?.adjust
     })
 
-    it('should throw an error if the item value is not a plain object', () => {
-      expect(() => adjust?.({ value: 'not an object', typeName: 'someType', context: contextMock })).toThrow()
+    it('should throw an error if the item value is not a plain object', async () => {
+      await expect(async () =>
+        adjust?.({ value: 'not an object', typeName: 'someType', context: contextMock }),
+      ).rejects.toThrow()
     })
 
-    it('should throw an error if the parent_id is not a string', () => {
-      expect(() =>
+    it('should throw an error if the parent_id is not a string', async () => {
+      await expect(async () =>
         adjust?.({ value: {}, typeName: 'someType', context: { ...contextMock, additionalContext: { parent_id: 1 } } }),
-      ).toThrow()
+      ).rejects.toThrow()
     })
 
-    it('should add the parent_id to the value as a principalId', () => {
-      const adjustedItem = adjust?.({ value: { someField: 'someValue' }, typeName: 'someType', context: contextMock })
+    it('should add the parent_id to the value as a principalId', async () => {
+      const adjustedItem = await adjust?.({
+        value: { someField: 'someValue' },
+        typeName: 'someType',
+        context: contextMock,
+      })
       expect(adjustedItem?.value).toEqual({ someField: 'someValue', principalId: 'parent_id' })
     })
   })

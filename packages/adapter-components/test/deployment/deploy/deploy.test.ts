@@ -41,7 +41,7 @@ jest.mock('../../../src/deployment/deploy/requester', () => ({
 describe('deployChanges', () => {
   let changes: Change<InstanceElement>[]
   let definitions: types.PickyRequired<
-    ApiDefinitions<{ additionalAction: 'activate' | 'deactivate' }>,
+    ApiDefinitions<{ additionalAction: 'activate' | 'deactivate' | 'unused-action' }>,
     'clients' | 'deploy'
   >
   let client: MockInterface<HTTPReadClientInterface & HTTPWriteClientInterface>
@@ -108,6 +108,8 @@ describe('deployChanges', () => {
               actionDependencies: [
                 { first: 'add', second: 'activate' },
                 { first: 'deactivate', second: 'remove' },
+                // Unused actions deps shouldn't affect deployment.
+                { first: 'unused-action', second: 'add' },
               ],
             },
             someOtherType: {

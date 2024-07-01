@@ -92,6 +92,20 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
       })
     })
     defQuery.query(typeName)?.actionDependencies?.forEach(({ first, second }) => {
+      // Action dependencies are transitive, so we need to add all the
+      // dependencies to the graph - even for actions that aren't used in the
+      // current change group. These actions won't have a node in the graph at
+      // this point, so we manually add these missing nodes.
+      ;[first, second].forEach(n => {
+        const id = toNodeID(typeName, n)
+        if (!graph.has(id)) {
+          graph.addNode(id, [], {
+            action: n as ActionName | AdditionalAction,
+            typeActionChanges: [],
+            typeName,
+          })
+        }
+      })
       graph.addEdge(toNodeID(typeName, second), toNodeID(typeName, first))
     })
   })

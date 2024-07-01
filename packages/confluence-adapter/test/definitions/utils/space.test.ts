@@ -16,7 +16,6 @@
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import {
-  createAdjustUserReferences,
   createPermissionUniqueKey,
   isPermissionObject,
   restructurePermissionsAndCreateInternalIdMap,
@@ -245,20 +244,6 @@ describe('space definitions utils', () => {
       })
       const change = toChange({ after: spaceInstance })
       expect(await spaceChangeGroupWithItsHomepage(change)).toEqual('confluence.page.instance.mockPageName')
-    })
-  })
-  describe('adjustUserReferencesOnSpace', () => {
-    it('should adjust user references on space', async () => {
-      const args = {
-        typeName: SPACE_TYPE_NAME,
-        context: {},
-        value: { authorId: 'authorId', notUser: 'not' },
-      }
-      const adjustUserReferencesOnPage = createAdjustUserReferences(SPACE_TYPE_NAME)
-      expect((await adjustUserReferencesOnPage(args)).value).toEqual({
-        authorId: { accountId: 'authorId', displayName: 'authorId' },
-        notUser: 'not',
-      })
     })
   })
 })

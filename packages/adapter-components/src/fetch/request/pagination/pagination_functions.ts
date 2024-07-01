@@ -27,7 +27,7 @@ const log = logger(module)
 const getItems = (value: ResponseValue | ResponseValue[], dataField: string): unknown[] =>
   collections.array
     .makeArray(value)
-    .map(item => (dataField === DATA_FIELD_ENTIRE_OBJECT ? item : _.get(item, dataField)))
+    .map(item => (dataField === DATA_FIELD_ENTIRE_OBJECT ? _.get(item, dataField) : item))
 
 /**
  * Make paginated requests using the specified pagination field
@@ -83,12 +83,12 @@ export const pageOffsetPagination = ({
   firstPage,
   paginationField,
   pageSize,
-  dataField = DATA_FIELD_ENTIRE_OBJECT,
+  dataField,
 }: {
   firstPage: number
   paginationField: string
   pageSize: number
-  dataField?: string
+  dataField: string
 }): PaginationFunction => {
   const nextPageFullPages: PaginationFunction = ({ currentParams, responseData }) => {
     const items = getItems(responseData, dataField)

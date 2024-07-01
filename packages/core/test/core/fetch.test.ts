@@ -2289,12 +2289,12 @@ describe('fetch from workspace', () => {
         })
         idGetter = idGetters.salesforce
       })
-      it('should not get elem id for element that match ignoreStateElemIdMappingForSelectors', async () => {
+      it('should return a new elemID for element that match ignoreStateElemIdMappingForSelectors', async () => {
         expect(idGetter('salesforce', toServiceId(typeToIgnore), 'newInst')).toEqual(
           new ElemID('salesforce', 'newInst'),
         )
       })
-      it('should get elem id for element that does not match ignoreStateElemIdMappingForSelectors', async () => {
+      it('should return existing elemID for element that does not match ignoreStateElemIdMappingForSelectors', async () => {
         expect(idGetter('salesforce', toServiceId(type), 'newInst')).toEqual(instance.elemID)
       })
     })

@@ -264,6 +264,7 @@ jobs:
 
     steps:
       - checkout
+      - restore_yarn_cache
       - restore_node_modules
       - restore_turbo_cache:
           cache_name: lint
@@ -304,6 +305,7 @@ jobs:
       - restore_node_modules
       - restore_turbo_cache:
           cache_name: jest_ut
+      - restore_yarn_cache
       - run:
           name: << parameters.package_name >> unit tests
           command: |

@@ -36,17 +36,5 @@ export const createClientDefinitions = (
         customizations: {},
       },
     },
-    users_client: {
-      httpClient: clients.users_client,
-      endpoints: {
-        default: {
-          get: {
-            pagination: 'usersPagination',
-            readonly: true,
-          },
-        },
-        customizations: {},
-      },
-    },
   },
 })

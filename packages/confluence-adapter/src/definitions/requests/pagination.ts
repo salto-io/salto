@@ -16,9 +16,7 @@
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ClientOptions, PaginationOptions } from '../types'
 
-const { cursorPagination, pageOffsetPagination } = fetchUtils.request.pagination
-
-export const USERS_PAGE_SIZE = '1000'
+const { cursorPagination } = fetchUtils.request.pagination
 
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   cursor: {
@@ -26,14 +24,6 @@ export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinit
       cursorPagination({
         pathChecker: (endpointPath, nextPath) => endpointPath === nextPath || endpointPath === `/wiki${nextPath}`,
         paginationField: '_links.next',
-      }),
-  },
-  usersPagination: {
-    funcCreator: () =>
-      pageOffsetPagination({
-        firstPage: 0,
-        pageSize: Number(USERS_PAGE_SIZE),
-        paginationField: 'startAt',
       }),
   },
 }

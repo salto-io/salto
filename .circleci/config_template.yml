@@ -487,7 +487,7 @@ workflows:
 
       - prettier:
           requires:
-            - compile
+            - build
 
       - test_cli_mac:
           requires:
@@ -503,14 +503,12 @@ workflows:
 
       - package_cli:
           requires:
-            - compile
-            - lint
+            - build
             - unit_test
 
       - package_vscode_extension:
           requires:
-            - compile
-            - lint
+            - build
             - unit_test
 
       - sync_s3_pkg_latest:
@@ -525,8 +523,7 @@ workflows:
               only:
                 - main
           requires:
-            - compile
-            - lint
+            - build
             - unit_test
             # <NEEDS_E2E_TEST_REQUIREMENT>
             # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>
@@ -538,8 +535,7 @@ workflows:
               only:
                 - main
           requires:
-            - compile
-            - lint
+            - build
             - unit_test
             # <NEEDS_E2E_TEST_REQUIREMENT>
             # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>

@@ -60,7 +60,8 @@ commands:
       - restore_cache:
           name: restore yarn cache
           keys:
-            - &yarn-cache yarn-cache-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - &yarn-cache yarn-cache-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}-{{ checksum ".yarn/install-state.gz" }}
+            - yarn-cache-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - yarn-cache-v2-{{ arch }}}-{{ .Branch }}
             - yarn-cache-v2-{{ arch }}}-main
 

@@ -829,12 +829,12 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value[LINKS_FIELD]).toEqual({
           schema: {
             rel: 'schema',
-            href: 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
+            href: 'https://<sanitized>/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
             method: 'GET',
           },
           self: {
             rel: 'self',
-            href: 'https://salto.okta.com/api/v1/meta/types/user/usertype-fakeid1',
+            href: 'https://<sanitized>/api/v1/meta/types/user/usertype-fakeid1',
             method: 'GET',
           },
         })

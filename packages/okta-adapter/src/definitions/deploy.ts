@@ -23,6 +23,7 @@ import {
   DEVICE_ASSURANCE_TYPE_NAME,
   DOMAIN_TYPE_NAME,
   GROUP_TYPE_NAME,
+  LINKS_FIELD,
   SMS_TEMPLATE_TYPE_NAME,
   USERTYPE_TYPE_NAME,
 } from '../constants'
@@ -53,7 +54,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
               copyFromResponse: {
                 additional: {
-                  pick: ['_links'],
+                  pick: [LINKS_FIELD],
                 },
               },
             },

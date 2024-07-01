@@ -31,6 +31,7 @@ import {
   selectElementIdsByTraversal,
   selectElementsBySelectorsWithoutReferences,
   ElementSelector,
+  isElementIdMatchSelectors,
 } from '../src/workspace/element_selector'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMap } from '../src/workspace/remote_map'
@@ -109,6 +110,24 @@ const mockInstance = new InstanceElement(
   ['yes', 'this', 'is', 'path'],
 )
 
+const isElemIdMatchSelectors = ({
+  elemId,
+  selectors,
+  caseInsensitive = false,
+  includeNested = false,
+}: {
+  elemId: ElemID
+  selectors: string[]
+  caseInsensitive?: boolean
+  includeNested?: boolean
+}): Promise<boolean> =>
+  isElementIdMatchSelectors({
+    elemId,
+    selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
+    referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
+    includeNested,
+  })
+
 const selectElements = async ({
   elements,
   selectors,
@@ -145,6 +164,79 @@ const selectElementsWitoutRef = ({
   })
 
 describe('element selector', () => {
+  describe('isElemIdMatchSelectors', () => {
+    it('should handle asterisks in adapter and type', async () => {
+      const elements = [
+        new ElemID('salesforce', 'sometype'),
+        new ElemID('salesforce', 'othertype'),
+        new ElemID('otheradapter', 'othertype'),
+        new ElemID('salesforce', 'othertype', 'instance'),
+      ]
+      const selectors = ['*.*']
+      expect(await isElemIdMatchSelectors({ elemId: elements[0], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[1], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[2], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[3], selectors })).toBeFalsy()
+    })
+
+    it('should only select specific type when given specific type element', async () => {
+      const elements = [
+        new ElemID('salesforce', 'sometype'),
+        new ElemID('salesforce', 'sometypewithsameprefix'),
+        new ElemID('otheradapter', 'othertype'),
+        new ElemID('salesforce', 'othertype', 'instance', 'y'),
+        new ElemID('salesforce', 'sometype', 'instance', 'x'),
+      ]
+      const selectors = ['salesforce.sometype']
+      expect(await isElemIdMatchSelectors({ elemId: elements[0], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[1], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[2], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[3], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[4], selectors })).toBeFalsy()
+    })
+
+    it('should only select specific types when given multiple typeNames', async () => {
+      const elements = [
+        new ElemID('salesforce', 'sometype'),
+        new ElemID('salesforce', 'sometypewithsameprefix'),
+        new ElemID('salesforce', 'withsamesuffixsometype'),
+        new ElemID('salesforce', 'othertype'),
+        new ElemID('salesforce', 'othertypewithsameprefix'),
+        new ElemID('salesforce', 'withsamesuffixothertype'),
+        new ElemID('otheradapter', 'sometype'),
+        new ElemID('otheradapter', 'othertype'),
+        new ElemID('salesforce', 'othertype', 'instance', 'y'),
+        new ElemID('salesforce', 'sometype', 'instance', 'x'),
+      ]
+      const selectors = ['salesforce.sometype|othertype']
+      expect(await isElemIdMatchSelectors({ elemId: elements[0], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[1], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[2], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[3], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[4], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[5], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[6], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[7], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[8], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[9], selectors })).toBeFalsy()
+    })
+
+    it('should handle asterisks in field type and instance name', async () => {
+      const elements = [
+        new ElemID('salesforce', 'sometype', 'instance', 'one_instance'),
+        new ElemID('salesforce', 'sometype', 'instance', 'second_instance_specialchar@s'),
+        new ElemID('salesforce', 'othertype', 'type', 'typename'),
+        new ElemID('otheradapter', 'othertype', 'instance', 'some_other_instance2'),
+        new ElemID('salesforce', 'othertype', 'instance', 'some_other_instance'),
+      ]
+      const selectors = ['salesforce.*.instance.*']
+      expect(await isElemIdMatchSelectors({ elemId: elements[0], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[1], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[2], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[3], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[4], selectors })).toBeTruthy()
+    })
+  })
   it('should handle asterisks in adapter and type', async () => {
     const elements = [
       new ElemID('salesforce', 'sometype'),

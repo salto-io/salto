@@ -42,6 +42,8 @@ import {
   toChange,
   isModificationChange,
   toServiceIdsString,
+  ElemIdGetter,
+  ServiceIds,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -2224,26 +2226,27 @@ describe('fetch from workspace', () => {
   })
 
   describe('elem id getters test', () => {
+    const toServiceId = (type: ObjectType): ServiceIds => ({
+      serviceIdField: '1',
+      [OBJECT_SERVICE_ID]: toServiceIdsString({
+        [OBJECT_NAME]: type.elemID.getFullName(),
+      }),
+    })
+
     it('should translate id to new account name', async () => {
       const type = new ObjectType({
         elemID: new ElemID('salesforceAccountName', 'obj'),
         fields: { serviceIdField: { refType: BuiltinTypes.SERVICE_ID } },
       })
       const instance = new InstanceElement('existingInst', type, { serviceIdField: '1' })
-      const { salesforceAccountName: idGetter } = await createElemIdGetters(
-        mockWorkspace({ stateElements: [type, instance] }),
-        { salesforceAccountName: 'salesforce' },
-        createElementSource([type, instance]),
-        false,
-        [],
-      )
-      const serviceIds = {
-        serviceIdField: '1',
-        [OBJECT_SERVICE_ID]: toServiceIdsString({
-          [OBJECT_NAME]: type.elemID.getFullName(),
-        }),
-      }
-      expect(idGetter('salesforce', serviceIds, 'newInst')).toEqual(
+      const { salesforceAccountName: idGetter } = await createElemIdGetters({
+        workspace: mockWorkspace({ stateElements: [type, instance] }),
+        accountToServiceNameMap: { salesforceAccountName: 'salesforce' },
+        elementsSource: createElementSource([type, instance]),
+        ignoreStateElemIdMapping: false,
+        ignoreStateElemIdMappingForSelectors: [],
+      })
+      expect(idGetter('salesforce', toServiceId(type), 'newInst')).toEqual(
         createAdapterReplacedID(instance.elemID, 'salesforce'),
       )
     })
@@ -2253,16 +2256,18 @@ describe('fetch from workspace', () => {
         fields: { serviceIdField: { refType: BuiltinTypes.SERVICE_ID } },
       })
       const instance = new InstanceElement('existingInst', type, { serviceIdField: '1' })
-      const idGetters = await createElemIdGetters(
-        mockWorkspace({ stateElements: [type, instance] }),
-        { salesforce: 'salesforce' },
-        createElementSource([type, instance]),
-        true,
-        [],
-      )
+      const idGetters = await createElemIdGetters({
+        workspace: mockWorkspace({ stateElements: [type, instance] }),
+        accountToServiceNameMap: { salesforce: 'salesforce' },
+        elementsSource: createElementSource([type, instance]),
+        ignoreStateElemIdMapping: true,
+        ignoreStateElemIdMappingForSelectors: [],
+      })
       expect(idGetters).toEqual({})
     })
-    it('should not get elem id for elements that match ignoreStateElemIdMappingForSelectors', async () => {
+    describe('ignore state elemId mapping for selectors', () => {
+      let idGetter: ElemIdGetter
+
       const type = new ObjectType({
         elemID: new ElemID('salesforce', 'obj'),
         fields: { serviceIdField: { refType: BuiltinTypes.SERVICE_ID } },
@@ -2273,29 +2278,25 @@ describe('fetch from workspace', () => {
       })
       const instance = new InstanceElement('existingInst', type, { serviceIdField: '1' })
       const instanceToIgnore = new InstanceElement('existingInst', typeToIgnore, { serviceIdField: '1' })
-      const { salesforce: idGetter } = await createElemIdGetters(
-        mockWorkspace({ stateElements: [type, typeToIgnore, instance, instanceToIgnore] }),
-        { salesforce: 'salesforce' },
-        createElementSource([type, typeToIgnore, instance, instanceToIgnore]),
-        true,
-        [createElementSelector('salesforce.obj_ignore.instance.*')],
-      )
-      const serviceIds = {
-        serviceIdField: '1',
-        [OBJECT_SERVICE_ID]: toServiceIdsString({
-          [OBJECT_NAME]: type.elemID.getFullName(),
-        }),
-      }
-      const serviceIdsToIgnore = {
-        serviceIdField: '1',
-        [OBJECT_SERVICE_ID]: toServiceIdsString({
-          [OBJECT_NAME]: typeToIgnore.elemID.getFullName(),
-        }),
-      }
-      expect(idGetter('salesforce', serviceIds, 'newInst')).toEqual(
-        createAdapterReplacedID(instance.elemID, 'salesforce'),
-      )
-      expect(idGetter('salesforce', serviceIdsToIgnore, 'newInst')).toEqual(new ElemID('salesforce', 'newInst'))
+
+      beforeEach(async () => {
+        const idGetters = await createElemIdGetters({
+          workspace: mockWorkspace({ stateElements: [type, typeToIgnore, instance, instanceToIgnore] }),
+          accountToServiceNameMap: { salesforce: 'salesforce' },
+          elementsSource: createElementSource([type, typeToIgnore, instance, instanceToIgnore]),
+          ignoreStateElemIdMapping: true,
+          ignoreStateElemIdMappingForSelectors: [createElementSelector('salesforce.obj_ignore.instance.*')],
+        })
+        idGetter = idGetters.salesforce
+      })
+      it('should not get elem id for element that match ignoreStateElemIdMappingForSelectors', async () => {
+        expect(idGetter('salesforce', toServiceId(typeToIgnore), 'newInst')).toEqual(
+          new ElemID('salesforce', 'newInst'),
+        )
+      })
+      it('should get elem id for element that does not match ignoreStateElemIdMappingForSelectors', async () => {
+        expect(idGetter('salesforce', toServiceId(type), 'newInst')).toEqual(instance.elemID)
+      })
     })
   })
 })

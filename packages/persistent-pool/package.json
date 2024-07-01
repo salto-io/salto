@@ -19,7 +19,7 @@
     "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "build-ts": "tsc -b",
     "test": "jest",
-    "clean": "../../build_utils/turbo_run.sh clean",
+    "clean": "rm -rf ./dist .eslintcache",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn lint --fix",

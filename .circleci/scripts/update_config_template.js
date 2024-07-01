@@ -34,7 +34,7 @@ const generateE2eMatrix = (templateName, outputName) => {
   const e2eTestMatrix = `
       - e2e_tests:
           requires:
-            - compile
+            - build
           matrix:
             alias: e2e_tests_without_java
             parameters:
@@ -46,7 +46,7 @@ const generateE2eMatrix = (templateName, outputName) => {
   const e2eTestMatrixWithJava = `
       - e2e_tests:
           requires:
-            - compile
+            - build
           matrix:
             alias: e2e_tests_with_java
             parameters:
@@ -79,7 +79,7 @@ const generateUtMatrix = (templateName, outputName) => {
   const utMatrix = `
       - unit_test:
           requires:
-            - compile
+            - build
           name: unit_tests-<< matrix.package_name >>
           matrix:
             parameters:

@@ -83,7 +83,7 @@
     "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "build-ts": "tsc -b",
     "watch-ts": "tsc -b -w",
-    "clean": "../../build_utils/turbo_run.sh clean",
+    "clean": "rm -rf ./dist .eslintcache",
     "test": "jest --passWithNoTests",
     "e2e-test": "RUN_E2E_TESTS=1 jest",
     "watch-test": "yarn tsc-watch",

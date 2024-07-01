@@ -40,7 +40,7 @@ commands:
       - restore_cache:
           name: restore node modules
           keys:
-            - &node-modules-cache node-modules-v4-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - &node-modules-cache node-modules-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - node-modules-v2-{{ arch }}}-{{ .Branch }}
             - node-modules-v2-{{ arch }}}-main
   
@@ -99,7 +99,6 @@ commands:
           when: always
           paths:
             - /mnt/ramdisk/project/.turbo
-
 
   setup_yarn:
     description: set up yarn berry
@@ -223,12 +222,12 @@ jobs:
       - restore_yarn_cache
       - setup_yarn
       - run: 
-          name: install node_modules with yarn
+          name: link node_modules
           command: yarn --immutable
       - store_yarn_cache
       - store_node_modules
 
-  compile:
+  build:
     docker:
       - image: cimg/node:18.9
 
@@ -241,47 +240,14 @@ jobs:
       - checkout
       - restore_node_modules
       - restore_turbo_cache:
-          cache_name: compile
+          cache_name: build
       - setup_yarn
       - run:
-          name: prebuild
-          command: yarn pre-build
-      - run:
-          name: compile
-          command: yarn build-ts
+          name: build and lint
+          command: yarn build
       - store_turbo_cache:
-          cache_name: compile
+          cache_name: build
       - store_intermediate
-
-  lint:
-    docker:
-      - image: cimg/node:18.9
-
-    resource_class: xlarge
-    working_directory: /mnt/ramdisk/project
-    environment:
-      TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
-
-    steps:
-      - checkout
-      - restore_node_modules
-      - restore_turbo_cache:
-          cache_name: lint
-      - setup_yarn
-
-      - run:
-          # eslint will verify that the license header exists on the linted source files, this step is
-          # to verify that other non-linted files also contains the license header (and therefore this is
-          # in the 'build' job)
-          name: verify that the license header is prepended to the non eslint'd source files
-          command: build_utils/verify_license_header.sh
-
-      - run:
-          name: lint
-          command: yarn lint
-
-      - store_turbo_cache:
-          cache_name: lint
 
   unit_test:
     parameters:
@@ -300,15 +266,14 @@ jobs:
 
     steps:
       - restore_intermediate
-      - setup_yarn
       - restore_node_modules
+      - setup_yarn
       - restore_turbo_cache:
           cache_name: jest_ut
       - run:
           name: << parameters.package_name >> unit tests
           command: |
-            PACKAGE=$(echo "<< parameters.package_name >>" | cut -d':' -f2)
-            yarn test --filter="$PACKAGE..."
+            yarn test --filter="$(echo "<< parameters.package_name >>" | cut -d':' -f2)..."
             # yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
@@ -337,8 +302,8 @@ jobs:
 
     steps:
       - restore_intermediate
-      - setup_yarn
       - restore_node_modules
+      - setup_yarn
 
       - run:
           name: check format with prettier
@@ -352,8 +317,8 @@ jobs:
 
     steps:
       - restore_intermediate
-      - setup_yarn
       - restore_node_modules
+      - setup_yarn
 
       - add_ssh_keys:
           fingerprints:
@@ -380,8 +345,8 @@ jobs:
     working_directory: /mnt/ramdisk/project
     steps:
       - restore_intermediate
-      - setup_yarn
       - restore_node_modules
+      - setup_yarn
       - run_e2e_tests:
           package_name: <<parameters.package_name>>
           should_install_java: <<parameters.should_install_java>>     
@@ -393,8 +358,8 @@ jobs:
 
     steps:
       - restore_intermediate
-      - setup_yarn
       - restore_node_modules
+      - setup_yarn
       - run:
           environment:
             PYTHON: '/usr/bin/python3'
@@ -442,8 +407,8 @@ jobs:
 
     steps:
       - restore_intermediate
-      - setup_yarn
       - restore_node_modules
+      - setup_yarn
 
       - run:
           name: Create a VSIX file
@@ -483,8 +448,8 @@ jobs:
 
     steps:
       - restore_intermediate
-      - setup_yarn
       - restore_node_modules
+      - setup_yarn
 
       - run:
           name: Set NPM token
@@ -509,10 +474,7 @@ workflows:
   commit:
     jobs:
       - install
-      - compile:
-          requires:
-            - install
-      - lint:
+      - build:
           requires:
             - install
       # <TEST_MATRIX_UT>
@@ -525,7 +487,7 @@ workflows:
 
       - prettier:
           requires:
-            - compile
+            - build
 
       - test_cli_mac:
           requires:
@@ -541,14 +503,12 @@ workflows:
 
       - package_cli:
           requires:
-            - compile
-            - lint
+            - build
             - unit_test
 
       - package_vscode_extension:
           requires:
-            - compile
-            - lint
+            - build
             - unit_test
 
       - sync_s3_pkg_latest:
@@ -563,8 +523,7 @@ workflows:
               only:
                 - main
           requires:
-            - compile
-            - lint
+            - build
             - unit_test
             # <NEEDS_E2E_TEST_REQUIREMENT>
             # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>
@@ -576,8 +535,7 @@ workflows:
               only:
                 - main
           requires:
-            - compile
-            - lint
+            - build
             - unit_test
             # <NEEDS_E2E_TEST_REQUIREMENT>
             # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>

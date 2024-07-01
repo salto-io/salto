@@ -50,6 +50,7 @@ describe('client_http_client', () => {
         pageSize: { get: 123 },
         rateLimit: { total: -1, get: 3, deploy: 4 },
         maxRequestsPerMinute: -1,
+        delayPerRequestMS: 0,
         retry: {
           maxAttempts: 3,
           retryDelay: 123,

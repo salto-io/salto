@@ -36,7 +36,12 @@ import {
 import customPathsFilterCreator from './filters/custom_paths'
 import { createFixElementFunctions } from './fix_elements'
 
-const { validateCredentials, DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const {
+  validateCredentials,
+  DEFAULT_RETRY_OPTS,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+} = clientUtils
 
 const { defaultCredentialsFromConfig } = credentials
 
@@ -49,6 +54,7 @@ const clientDefaults = {
     deploy: 100,
   },
   maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
   retry: DEFAULT_RETRY_OPTS,
 }
 

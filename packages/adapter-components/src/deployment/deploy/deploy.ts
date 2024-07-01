@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import Bottleneck from 'bottleneck'
+// import Bottleneck from 'bottleneck'
+import PQueue from 'p-queue'
 import {
   Change,
   ElemID,
@@ -37,6 +38,7 @@ import { createDependencyGraph } from './graph'
 import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType } from '../../definitions/system/api'
+// import { rateLimitWrapper } from '../../client/rate_limit'
 
 const log = logger(module)
 
@@ -123,10 +125,17 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       changeContext.changeGroup.groupID,
     )
     const { concurrency } = defQuery.query(String(typeName)) ?? {}
-    const limiter = new Bottleneck({
-      maxConcurrent: (concurrency ?? RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS) > 0 ? concurrency : null,
-    })
-    const limitedDeployChange = limiter.wrap(deploySingleChange)
+    // const limiter = new Bottleneck({
+    //   maxConcurrent: (concurrency ?? RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS) > 0 ? concurrency : null,
+    // })
+    // const limitedDeployChange = limiter.wrap(deploySingleChange)
+    const bucket =
+      (concurrency ?? RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS) > 0 ? new PQueue({ concurrency }) : new PQueue()
+    const limiterWrap =
+      <R>(f: (args: R) => Promise<void>): ((args: R) => Promise<void>) =>
+      async (args: R) =>
+        bucket.add(() => f(args))
+    const limitedDeployChange = limiterWrap(deploySingleChange)
 
     const applied = (
       await Promise.all(

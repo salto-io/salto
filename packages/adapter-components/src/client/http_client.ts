@@ -102,6 +102,7 @@ export type ClientDefaults<TRateLimitConfig extends ClientRateLimitConfig> = {
   retry: Required<ClientRetryConfig>
   rateLimit: Required<TRateLimitConfig>
   maxRequestsPerMinute: number
+  delayPerRequestMS: number
   pageSize: Required<ClientPageSizeConfig>
   timeout?: ClientTimeoutConfig
 }

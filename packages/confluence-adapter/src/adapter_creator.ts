@@ -28,7 +28,8 @@ import customPathsFilterCreator from './filters/custom_paths'
 import deploySpaceAndPermissionsFilterCreator from './filters/deploy_space_and_permissions'
 import createChangeValidator from './change_validator'
 
-const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
+const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS } =
+  client
 const { defaultCredentialsFromConfig } = credentials
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
@@ -72,6 +73,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       deploy: 2,
     },
     maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+    delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
     retry: DEFAULT_RETRY_OPTS,
   },
   customConvertError,

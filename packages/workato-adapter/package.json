@@ -19,7 +19,7 @@
   "scripts": {
     "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "test": "jest",
-    "clean": "../../build_utils/turbo_run.sh clean",
+    "clean": "rm -rf ./dist .eslintcache",
     "watch-test": "yarn tsc-watch",
     "build-ts": "tsc -b",
     "watch-ts": "tsc -b -w",

@@ -9,9 +9,6 @@
         "^build-ts"
       ]
     },
-    "clean": {
-      "cache": false
-    },
     "lint": {
       "outputs": []
     },
@@ -23,7 +20,9 @@
     "test": {
       "dependsOn": ["^test"],
       "outputs": ["coverage/**"]
+    },
+    "clean": {
+      "cache": false
     }
-
   }
 }

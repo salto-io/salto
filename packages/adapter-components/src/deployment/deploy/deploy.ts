@@ -36,7 +36,6 @@ import { createDependencyGraph } from './graph'
 import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType } from '../../definitions/system/api'
-// import { rateLimitWrapper } from '../../client/rate_limit'
 
 const log = logger(module)
 

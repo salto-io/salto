@@ -20,29 +20,35 @@ import { RequiredDefinitions } from './types'
 import { APIDefinitionsOptions } from './api'
 
 const log = logger(module)
-export const DEFINITIONS_OVERRIDES = 'SALTO_DEFINITION_OVERRIDES'
+export const DEFINITIONS_OVERRIDES = 'SALTO_DEFINITIONS_OVERRIDES'
 
 export const getParsedDefinitionsOverrides = (): Values => {
-  const flagValue = process.env[DEFINITIONS_OVERRIDES]
-  let parsedFlagValue: unknown
+  const overrides = process.env[DEFINITIONS_OVERRIDES]
   try {
-    parsedFlagValue = flagValue === undefined ? undefined : JSON.parse(flagValue)
+    const parsedOverrides = overrides === undefined ? undefined : JSON.parse(overrides)
+    if (parsedOverrides !== undefined && typeof parsedOverrides === 'object') {
+      return parsedOverrides as Values
+    }
   } catch (e) {
     if (e instanceof SyntaxError) {
-      log.error('There was a syntax error in the JSON while parsing a flag:', e.message)
+      log.error('There was a syntax error in the JSON while parsing the overrides:', e.message)
     } else {
-      log.error('An unknown error occurred while parsing a flag:', e)
+      log.error('An unknown error occurred while parsing the overrides:', e)
     }
-  }
-  if (parsedFlagValue !== undefined && typeof parsedFlagValue === 'object') {
-    return parsedFlagValue as Values
   }
   return {}
 }
 
+/**
+ * merge definitions with overrides from the environment variable SALTO_DEFINITIONS_OVERRIDES
+ * the merge is done as follows:
+ * - overrides takes precedence over definitions
+ * - when merging an array the overrides array is used instead of the definitions array completely (no merge)
+ * - when merging an object the overrides object is merged with the definitions object recursively
+ * - we can use null to remove a field from the definitions as we override the original value with null and then remove it
+ */
 export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOptions>(
   definitions: RequiredDefinitions<Options>,
-  overrides: Values,
 ): RequiredDefinitions<Options> => {
   const customMerge = (objValue: Value, srcValue: Value): Value => {
     if (_.isArray(objValue)) {
@@ -53,10 +59,12 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     }
     return srcValue
   }
+  const overrides = getParsedDefinitionsOverrides()
   if (_.isEmpty(overrides)) {
     return definitions
   }
-  const merged = _.mergeWith(definitions, overrides, customMerge)
+  const cloneDefinitions = _.cloneDeep(definitions)
+  const merged = _.mergeWith(cloneDefinitions, overrides, customMerge)
   const removeNullObjects = (obj: Value): Value => {
     if (_.isArray(obj)) {
       return obj.map(removeNullObjects)

@@ -24,24 +24,24 @@ import {
 } from '../../../src/definitions/system/overrides'
 
 describe('overrides', () => {
+  const overridesEnvVar = DEFINITIONS_OVERRIDES
+
   describe('getParsedDefinitionsOverrides', () => {
-    const flagName = DEFINITIONS_OVERRIDES
-
-    describe('when flag is not set', () => {
-      setupEnvVar(flagName, undefined)
+    describe('when overrides are not set', () => {
+      setupEnvVar(overridesEnvVar, undefined)
       it('should return empty object', () => {
         expect(getParsedDefinitionsOverrides()).toEqual({})
       })
     })
 
-    describe('when the flag has syntax error', () => {
-      setupEnvVar(flagName, '{"name": "Alice" "age": 25}')
+    describe('when the overrides has syntax error', () => {
+      setupEnvVar(overridesEnvVar, '{"name": "Alice" "age": 25}')
       it('should return empty object', () => {
         expect(getParsedDefinitionsOverrides()).toEqual({})
       })
     })
 
-    describe('when flag is set correctly', () => {
+    describe('when overrides are set correctly', () => {
       const jsonString = `{
         "name": "Uri",
         "address": {
@@ -59,7 +59,7 @@ describe('overrides', () => {
             }
         ]
       }`
-      setupEnvVar(flagName, jsonString)
+      setupEnvVar(overridesEnvVar, jsonString)
       it('should return an object', () => {
         const parsed = getParsedDefinitionsOverrides()
         expect(parsed.name).toEqual('Uri')
@@ -131,127 +131,158 @@ describe('overrides', () => {
       },
     } as unknown as RequiredDefinitions<APIDefinitionsOptions>
 
-    it('should return the original definitions if no overrides are provided', () => {
-      const merged = mergeDefinitionsWithOverrides(mockedDefinitions, {})
-      expect(merged).toEqual(mockedDefinitions)
+    describe('when no overrides are provided', () => {
+      it('should return the original definitions if no overrides are provided', () => {
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
+        expect(merged).toEqual(mockedDefinitions)
+      })
     })
-    it('should add a type to the fetch config', () => {
-      const overrides: Values = {
-        fetch: {
-          instances: {
-            customizations: {
-              group: {
-                requests: [
+    describe('when adding a new type to the fetch definition', () => {
+      const jsonString = `{
+        "fetch": {
+          "instances": {
+            "customizations": {
+              "group": {
+                "requests": [
                   {
-                    endpoint: {
-                      path: '/groups',
+                    "endpoint": {
+                      "path": "/groups"
                     },
-                    transformation: {
-                      root: 'groups',
-                    },
-                  },
+                    "transformation": {
+                      "root": "groups"
+                    }
+                  }
                 ],
-                resource: {
-                  directFetch: true,
+                "resource": {
+                  "directFetch": true
                 },
-                element: {
-                  topLevel: {
-                    isTopLevel: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      }
-      const merged = mergeDefinitionsWithOverrides(mockedDefinitions, overrides)
-      expect(merged.fetch.instances.customizations?.group).toBeDefined()
-      expect(merged.fetch.instances.customizations?.team).toBeDefined()
+                "element": {
+                  "topLevel": {
+                    "isTopLevel": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`
+      setupEnvVar(overridesEnvVar, jsonString)
+      it('should add a type to the fetch config', () => {
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
+        expect(merged.fetch.instances.customizations?.group).toBeDefined()
+        expect(merged.fetch.instances.customizations?.team).toBeDefined()
+      })
     })
-    it('should disable a custom function', () => {
-      expect(mockedDefinitions.fetch.instances.customizations?.team?.requests?.[0].transformation?.adjust).toBeDefined()
-      const overrides = {
-        fetch: {
-          instances: {
-            customizations: {
-              team: {
-                requests: [
+    describe('when providing a new array field in the request fetch definition', () => {
+      const jsonString = `{
+        "fetch": {
+          "instances": {
+            "customizations": {
+              "team": {
+                "requests": [
                   {
-                    endpoint: {
-                      path: '/teams',
-                      queryArgs: {
-                        wow: 'wee',
-                      },
+                    "endpoint": {
+                      "path": "/teams",
+                      "queryArgs": {
+                        "wow": "wee"
+                      }
                     },
-                    transformation: {
-                      root: 'teams',
-                    },
-                  },
-                ],
-              },
-            },
-          },
-        },
-      }
-      const merged = mergeDefinitionsWithOverrides(mockedDefinitions, overrides)
-      expect(merged.fetch.instances.customizations?.team?.element).toEqual(
-        mockedDefinitions.fetch.instances.customizations?.team?.element,
-      )
-      expect(merged.fetch.instances.customizations?.team?.resource).toEqual(
-        mockedDefinitions.fetch.instances.customizations?.team?.resource,
-      )
-      expect(merged.fetch.instances.customizations?.team?.requests?.[0].transformation?.root).toEqual(
-        mockedDefinitions.fetch.instances.customizations?.team?.requests?.[0].transformation?.root,
-      )
-      expect(merged.fetch.instances.customizations?.team?.requests?.[0].transformation?.adjust).toBeUndefined()
+                    "transformation": {
+                      "root": "teams"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }`
+      setupEnvVar(overridesEnvVar, jsonString)
+
+      it('should disable a custom function', () => {
+        expect(
+          mockedDefinitions.fetch.instances.customizations?.team?.requests?.[0].transformation?.adjust,
+        ).toBeDefined()
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
+        expect(merged.fetch.instances.customizations?.team?.element).toEqual(
+          mockedDefinitions.fetch.instances.customizations?.team?.element,
+        )
+        expect(merged.fetch.instances.customizations?.team?.resource).toEqual(
+          mockedDefinitions.fetch.instances.customizations?.team?.resource,
+        )
+        expect(merged.fetch.instances.customizations?.team?.requests?.[0].transformation?.root).toEqual(
+          mockedDefinitions.fetch.instances.customizations?.team?.requests?.[0].transformation?.root,
+        )
+        expect(merged.fetch.instances.customizations?.team?.requests?.[0].transformation?.adjust).toBeUndefined()
+      })
     })
-    it('should override the reference parent type', () => {
-      const overrides = {
-        references: {
-          rules: [
+    describe('when providing a new reference rule', () => {
+      const jsonString = `{
+        "references": {
+          "rules": [
             {
-              src: { field: 'id', parentTypes: ['parent2'] },
-              serializationStrategy: 'id',
-              target: { type: 'myType' },
-            },
-          ],
-        },
-      }
-      const merged = mergeDefinitionsWithOverrides(mockedDefinitions, overrides)
-      expect(merged.references?.rules[0].src.parentTypes).toEqual(['parent2'])
-    })
-    it('should edit the elemId field only', () => {
-      const overrides = {
-        fetch: {
-          instances: {
-            default: {
-              element: {
-                topLevel: {
-                  elemID: { parts: [{ fieldName: 'newName' }] },
-                },
+              "src": {
+                "field": "id",
+                "parentTypes": ["parent2"]
               },
-            },
-          },
-        },
-      }
-      const merged = mergeDefinitionsWithOverrides(mockedDefinitions, overrides)
-      expect(merged.fetch.instances.default?.element?.topLevel?.elemID).toEqual(
-        overrides.fetch.instances.default.element.topLevel.elemID,
-      )
-      expect(merged.fetch.instances.default?.element?.topLevel?.singleton).toBeTruthy()
+              "serializationStrategy": "id",
+              "target": {
+                "type": "myType"
+              }
+            }
+          ]
+        }
+      }`
+      setupEnvVar(overridesEnvVar, jsonString)
+      it('should override the reference parent type', () => {
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
+        expect(merged.references?.rules[0].src.parentTypes).toEqual(['parent2'])
+      })
     })
-    it('should remove a type from the fetch config', () => {
-      const overrides = {
-        fetch: {
-          instances: {
-            customizations: {
-              team: null,
-            },
-          },
-        },
-      }
-      const merged = mergeDefinitionsWithOverrides(mockedDefinitions, overrides)
-      expect(merged.fetch.instances.customizations?.team).toBeUndefined()
+    describe('when editing an object field in the fetch definition', () => {
+      const jsonString = `{
+        "fetch": {
+          "instances": {
+            "default": {
+              "element": {
+                "topLevel": {
+                  "elemID": {
+                    "parts": [
+                      {
+                        "fieldName": "newName"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`
+      setupEnvVar(overridesEnvVar, jsonString)
+      it('should edit the elemId field only', () => {
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
+        expect(merged.fetch.instances.default?.element?.topLevel?.elemID).toEqual(
+          getParsedDefinitionsOverrides().fetch.instances.default.element.topLevel.elemID,
+        )
+        expect(merged.fetch.instances.default?.element?.topLevel?.singleton).toBeTruthy()
+      })
+    })
+    describe('when setting an existing field to null', () => {
+      const jsonString = `{
+        "fetch": {
+          "instances": {
+            "customizations": {
+              "team": null
+            }
+          }
+        }
+      }`
+      setupEnvVar(overridesEnvVar, jsonString)
+      it('should remove a type from the fetch config', () => {
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
+        expect(merged.fetch.instances.customizations?.team).toBeUndefined()
+      })
     })
   })
 })

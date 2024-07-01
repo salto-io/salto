@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.60",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^27.5.2",
     "@types/lodash": "^4.14.168",
     "@types/moxios": "^0.4.10",
     "@types/object-hash": "^3.0.0",

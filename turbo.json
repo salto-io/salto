@@ -19,6 +19,11 @@
       "outputs": [
         ".check-format.cache"
       ]
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": ["coverage/**"]
     }
+
   }
 }

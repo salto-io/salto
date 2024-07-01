@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.60",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^27.5.2",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",
     "@types/parse-link-header": "^2.0.0",

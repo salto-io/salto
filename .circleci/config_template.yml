@@ -9,18 +9,6 @@ orbs:
   macos: circleci/macos@2.5.1
 
 commands:
-  store_intermediate:
-    description: store intermediate artifacts between steps
-    steps:
-      - run:
-          name: store intermediate artifacts between steps
-          command: |
-            mkdir -p .workspace
-            tar --exclude='./.workspace' --exclude='coverage' --exclude='./node_modules' --exclude="./.yarn" --exclude="./.yarnrc.yml" --exclude="./.turbo" -czf .workspace/workspace.tar.gz .
-      - persist_to_workspace:
-          root: .workspace
-          paths:
-            - workspace.tar.gz
   
   restore_intermediate:
     description: restore intermediate artifacts between steps
@@ -33,6 +21,19 @@ commands:
             tar -xzf .workspace/workspace.tar.gz
             rm .workspace/workspace.tar.gz
 
+  store_intermediate:
+    description: store intermediate artifacts between steps
+    steps:
+      - run:
+          name: store intermediate artifacts between steps
+          command: |
+            mkdir -p .workspace
+            tar --exclude='./.workspace' --exclude='coverage' --exclude='./node_modules' --exclude="./.yarn" --exclude="./.yarnrc.yml" --exclude="./.turbo" -czf .workspace/workspace.tar.gz .
+      - persist_to_workspace:
+          root: .workspace
+          paths:
+            - workspace.tar.gz
+
   restore_node_modules:
     description: restore node modules
     steps:
@@ -43,6 +44,16 @@ commands:
             - node-modules-v2-{{ arch }}}-{{ .Branch }}
             - node-modules-v2-{{ arch }}}-main
   
+  store_node_modules:
+    description: cache store node_modules
+    steps:
+      - save_cache:
+          name: cache store node_modules
+          key: *node-modules-cache
+          when: always
+          paths:
+            - /mnt/ramdisk/project/node_modules
+
   restore_yarn_cache:
     description: restore yarn cache
     steps:
@@ -52,16 +63,6 @@ commands:
             - &yarn-cache yarn-cache-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - yarn-cache-v2-{{ arch }}}-{{ .Branch }}
             - yarn-cache-v2-{{ arch }}}-main
-
-  restore_turbo_cache:
-    description: load a turbocache
-    steps:
-      - restore_cache:
-          name: load a turbocache
-          keys:
-            - &turbo-cache turbo-cache-v2-{{ .Branch }}-{{ epoch }}
-            - turbo-cache-v2-{{ .Branch }}
-            - turbo-cache-v2-main
 
   store_yarn_cache:
     description: cache store yarn cache
@@ -73,25 +74,32 @@ commands:
           paths:
             - /mnt/ramdisk/project/.yarn
 
-  store_node_modules:
-    description: cache store node_modules
+  restore_turbo_cache:
+    description: load a turbocache
+    parameters:
+      cache_name:
+        type: string
     steps:
-      - save_cache:
-          name: cache store node_modules
-          key: *node-modules-cache
-          when: always
-          paths:
-            - /mnt/ramdisk/project/node_modules
+      - restore_cache:
+          name: load turbocache for << parameters.cache_name >>
+          keys:
+            - &turbo-cache turbo-cache-v1-<< parameters.cache_name >>-{{ .Branch }}-{{ epoch }}
+            - turbo-cache-v1-<< parameters.cache_name >>-{{ .Branch }}
+            - turbo-cache-v1-<< parameters.cache_name >>-main
 
   store_turbo_cache:
     description: cache store turbo cache
+    parameters:
+      cache_name:
+        type: string
     steps:
       - save_cache:
-          name: cache store turbo cache
+          name: store turbocache for << parameters.cache_name >>
           key: *turbo-cache
           when: always
           paths:
             - /mnt/ramdisk/project/.turbo
+
 
   setup_yarn:
     description: set up yarn berry
@@ -203,27 +211,63 @@ commands:
             ../<< parameters.exe_name >> init -e env1
 
 jobs:
-  build:
+  install:
+    docker:
+      - image: cimg/node:18.9
+
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - checkout
+      - restore_yarn_cache
+      - setup_yarn
+      - run: 
+          name: install node_modules with yarn
+          command: yarn --immutable
+      - store_yarn_cache
+      - store_node_modules
+
+  compile:
     docker:
       - image: cimg/node:18.9
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
     environment:
-      TURBO_TEAM: CircleDev
-      TURBO_UI: false  
       TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
 
     steps:
       - checkout
-      - restore_yarn_cache
-      - restore_turbo_cache
-
+      - restore_node_modules
+      - restore_turbo_cache:
+          cache_name: compile
+      - setup_yarn
       - run:
-          name: remove empty directories from the packages dir
-          command: |
-            find ./packages -mindepth 1 -maxdepth 1 -type d '!' -exec test -e "{}/package.json" ';' -print \
-              | xargs --no-run-if-empty rm -r
+          name: prebuild
+          command: yarn pre-build
+      - run:
+          name: compile
+          command: yarn build-ts
+      - store_turbo_cache:
+          cache_name: compile
+      - store_intermediate
+
+  lint:
+    docker:
+      - image: cimg/node:18.9
+
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+    environment:
+      TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
+
+    steps:
+      - checkout
+      - restore_node_modules
+      - restore_turbo_cache:
+          cache_name: lint
+      - setup_yarn
 
       - run:
           # eslint will verify that the license header exists on the linted source files, this step is
@@ -232,21 +276,12 @@ jobs:
           name: verify that the license header is prepended to the non eslint'd source files
           command: build_utils/verify_license_header.sh
 
-      - setup_yarn
-
-      - run: 
-          name: install node_modules with yarn
-          command: yarn --immutable
-
-      - store_yarn_cache
-      - store_node_modules
-
       - run:
-          name: build the project
-          command: yarn build
+          name: lint
+          command: yarn lint
 
-      - store_turbo_cache
-      - store_intermediate
+      - store_turbo_cache:
+          cache_name: lint
 
   unit_test:
     parameters:
@@ -265,19 +300,23 @@ jobs:
 
     steps:
       - restore_intermediate
-      - restore_yarn_cache
       - setup_yarn
       - restore_node_modules
+      - restore_turbo_cache:
+          cache_name: jest_ut
       - run:
           name: << parameters.package_name >> unit tests
           command: |
             PACKAGE=$(echo "<< parameters.package_name >>" | cut -d':' -f2)
-            yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
+            yarn test --filter="$PACKAGE..."
+            # yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
 
       - store_test_results:
           path: reports
+      - store_turbo_cache:
+          cache_name: jest_ut
 
       - coveralls/upload:
           parallel: true
@@ -469,7 +508,13 @@ jobs:
 workflows:
   commit:
     jobs:
-      - build
+      - install
+      - compile:
+          requires:
+            - install
+      - lint:
+          requires:
+            - install
       # <TEST_MATRIX_UT>
       # <TEST_MATRIX_E2E>
       # <TEST_MATRIX_E2E_JAVA>
@@ -480,7 +525,7 @@ workflows:
 
       - prettier:
           requires:
-            - build
+            - compile
 
       - test_cli_mac:
           requires:
@@ -496,12 +541,14 @@ workflows:
 
       - package_cli:
           requires:
-            - build
+            - compile
+            - lint
             - unit_test
 
       - package_vscode_extension:
           requires:
-            - build
+            - compile
+            - lint
             - unit_test
 
       - sync_s3_pkg_latest:
@@ -516,7 +563,8 @@ workflows:
               only:
                 - main
           requires:
-            - build
+            - compile
+            - lint
             - unit_test
             # <NEEDS_E2E_TEST_REQUIREMENT>
             # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>
@@ -528,7 +576,8 @@ workflows:
               only:
                 - main
           requires:
-            - build
+            - compile
+            - lint
             - unit_test
             # <NEEDS_E2E_TEST_REQUIREMENT>
             # <NEEDS_E2E_TEST_REQUIREMENT_JAVA>

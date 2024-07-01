@@ -51,7 +51,7 @@
   "devDependencies": {
     "@salto-io/e2e-credentials-store": "0.3.60",
     "@salto-io/test-utils": "0.3.60",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^27.5.2",
     "@types/lodash": "^4.14.168",
     "@types/pako": "^1.0.1",
     "@types/semver": "^7.3.3",
@@ -71,7 +71,7 @@
     "jest": "^27.5.1",
     "jest-circus": "^27.5.1",
     "jest-each": "^26.6.2",
-    "jest-extended": "^1.2.1",
+    "jest-extended": "^1.2.0",
     "jest-junit": "^12.3.0",
     "prettier": "3.2.5",
     "ts-jest": "^27.1.5",

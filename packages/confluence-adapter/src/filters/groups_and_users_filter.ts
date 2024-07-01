@@ -41,9 +41,11 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       if (TYPE_NAMES_WITH_USERS.includes(inst.elemID.typeName)) {
         const userFields = TYPE_NAME_TO_USER_FIELDS[inst.elemID.typeName]
         userFields.forEach(field => {
-          inst.value[field] = {
-            accountId: inst.value[field].accountId,
-            displayName: usersIndex[inst.value[field].accountId]?.displayName ?? FALLBACK_DISPLAY_NAME,
+          if (inst.value[field] !== undefined)  {
+            inst.value[field] = {
+              accountId: inst.value[field].accountId,
+              displayName: usersIndex[inst.value[field].accountId]?.displayName ?? FALLBACK_DISPLAY_NAME,
+            }
           }
         })
       }

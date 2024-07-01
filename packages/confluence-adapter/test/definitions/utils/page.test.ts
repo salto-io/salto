@@ -26,8 +26,10 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
 import {
   adjustPageOnModification,
-  homepageAdditionToModification,
   putHomepageIdInAdditionContext,
+  homepageAdditionToModification,
+  createAdjustUserReferencesReverse,
+  createAdjustUserReferences,
 } from '../../../src/definitions/utils'
 
 describe('page definitions utils', () => {
@@ -123,6 +125,33 @@ describe('page definitions utils', () => {
           value: getChangeData(pageChange).value,
         }
         expect((await adjustPageOnModification(args)).value.id).toEqual('homepageId')
+      })
+    })
+    describe('adjustUserReferencesOnPageReverse', () => {
+      it('should adjust user references on page', async () => {
+        const args = {
+          typeName: 'mockType',
+          context: {
+            elementSource: buildElementsSourceFromElements([]),
+            changeGroup: {
+              changes: [],
+              groupID: 'group-id',
+            },
+            sharedContext: {},
+            change: pageChange,
+          },
+          value: {
+            authorId: { accountId: 'authorId', displayName: 'authorId' },
+            ownerId: { accountId: 'ownerId', displayName: 'ownerId' },
+            notUser: 'not',
+          },
+        }
+        const adjustUserReferencesOnPageReverse = createAdjustUserReferencesReverse(PAGE_TYPE_NAME)
+        expect((await adjustUserReferencesOnPageReverse(args)).value).toEqual({
+          authorId: 'authorId',
+          ownerId: 'ownerId',
+          notUser: 'not',
+        })
       })
     })
   })
@@ -242,6 +271,21 @@ describe('page definitions utils', () => {
         },
       }
       expect(putHomepageIdInAdditionContext(args)).toEqual({ id: 'homepageId' })
+    })
+    describe('adjustUserReferencesOnPage', () => {
+      it('should adjust user references on page', async () => {
+        const args = {
+          typeName: 'page',
+          context: {},
+          value: { authorId: 'authorId', ownerId: 'ownerId', notUser: 'not' },
+        }
+        const adjustUserReferencesOnPage = createAdjustUserReferences(PAGE_TYPE_NAME)
+        expect((await adjustUserReferencesOnPage(args)).value).toEqual({
+          authorId: { accountId: 'authorId', displayName: 'authorId' },
+          ownerId: { accountId: 'ownerId', displayName: 'ownerId' },
+          notUser: 'not',
+        })
+      })
     })
   })
 })

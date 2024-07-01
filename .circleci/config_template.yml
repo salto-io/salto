@@ -40,7 +40,7 @@ commands:
       - restore_cache:
           name: restore node modules
           keys:
-            - &node-modules-cache node-modules-v4-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - &node-modules-cache node-modules-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - node-modules-v2-{{ arch }}}-{{ .Branch }}
             - node-modules-v2-{{ arch }}}-main
   

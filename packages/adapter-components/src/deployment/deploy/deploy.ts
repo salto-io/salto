@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-// import Bottleneck from 'bottleneck'
-import PQueue from 'p-queue'
 import {
   Change,
   ElemID,
@@ -33,7 +31,7 @@ import { types, values } from '@salto-io/lowerdash'
 import { APIDefinitionsOptions, ApiDefinitions, queryWithDefault } from '../../definitions'
 import { ChangeAndContext } from '../../definitions/system/deploy'
 import { getRequester } from './requester'
-import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../../client'
+import { RateLimiter } from '../../client'
 import { createDependencyGraph } from './graph'
 import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
@@ -125,17 +123,9 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       changeContext.changeGroup.groupID,
     )
     const { concurrency } = defQuery.query(String(typeName)) ?? {}
-    // const limiter = new Bottleneck({
-    //   maxConcurrent: (concurrency ?? RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS) > 0 ? concurrency : null,
-    // })
-    // const limitedDeployChange = limiter.wrap(deploySingleChange)
-    const bucket =
-      (concurrency ?? RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS) > 0 ? new PQueue({ concurrency }) : new PQueue()
-    const limiterWrap =
-      <R>(f: (args: R) => Promise<void>): ((args: R) => Promise<void>) =>
-      async (args: R) =>
-        bucket.add(() => f(args))
-    const limitedDeployChange = limiterWrap(deploySingleChange)
+
+    const bucket = new RateLimiter({ maxConcurrentCalls: concurrency })
+    const limitedDeployChange = bucket.wrap(deploySingleChange)
 
     const applied = (
       await Promise.all(

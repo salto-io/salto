@@ -29,6 +29,7 @@ import {
   getChangeData,
   ProgressReporter,
   BuiltinTypes,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -37,7 +38,17 @@ import { accessTokenCredentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/user_config'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
-import { USER_TYPE_NAME, BRAND_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../src/constants'
+import {
+  USER_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  OKTA,
+  DOMAIN_TYPE_NAME,
+  USERTYPE_TYPE_NAME,
+  DEVICE_ASSURANCE_TYPE_NAME,
+  SMS_TEMPLATE_TYPE_NAME,
+  LINKS_FIELD,
+} from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => null,
@@ -443,6 +454,9 @@ describe('adapter', () => {
   describe('deploy', () => {
     let operations: AdapterOperations
 
+    let brandType: ObjectType
+    let brand1: InstanceElement
+
     beforeEach(() => {
       operations = adapter.operations({
         credentials: new InstanceElement('config', accessTokenCredentialsType, {
@@ -451,6 +465,20 @@ describe('adapter', () => {
         }),
         config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
         elementsSource: buildElementsSourceFromElements([]),
+      })
+
+      brandType = new ObjectType({
+        elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      brand1 = new InstanceElement('brand1', brandType, {
+        id: 'brand-fakeid1',
+        name: 'subdomain.example.com',
+        removePoweredByOkta: false,
       })
     })
 
@@ -526,24 +554,6 @@ describe('adapter', () => {
     })
 
     describe('deploy brand', () => {
-      let brandType: ObjectType
-      let brand1: InstanceElement
-      beforeEach(() => {
-        brandType = new ObjectType({
-          elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
-        brand1 = new InstanceElement('brand1', brandType, {
-          id: 'brand-fakeid1',
-          name: 'subdomain.example.com',
-          removePoweredByOkta: false,
-        })
-      })
-
       it('should successfully add a brand', async () => {
         const brandWithoutId = new InstanceElement('brand1', brandType, {
           name: 'subdomain.example.com',
@@ -700,6 +710,307 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0]).elemID.getFullName()).toEqual('okta.User.instance.user1')
+      })
+    })
+    describe('deploy domain', () => {
+      let domainType: ObjectType
+      let domain: InstanceElement
+      beforeEach(() => {
+        domainType = new ObjectType({
+          elemID: new ElemID(OKTA, DOMAIN_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        domain = new InstanceElement('domain', domainType, {
+          id: 'domain-fakeid1',
+          domain: 'subdomain.example.com',
+          validationStatus: 'NOT_STARTED',
+          brandId: new ReferenceExpression(brand1.elemID, brand1),
+        })
+      })
+
+      it('should successfully add a domain', async () => {
+        const domainWithoutId = domain.clone()
+        delete domainWithoutId.value.id
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'domain',
+            changes: [toChange({ after: domainWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('domain-fakeid1')
+      })
+
+      it('should successfully modify a domain', async () => {
+        // Domains may only modify their brand, so we'll test that.
+        const brand2 = new InstanceElement('brand2', brandType, {
+          id: 'brand-fakeid2',
+          name: 'subdomain2.example.com',
+        })
+        const updatedDomain = domain.clone()
+        updatedDomain.value.brandId = new ReferenceExpression(brand2.elemID, brand2)
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'domain',
+            changes: [
+              toChange({
+                before: domain,
+                after: updatedDomain,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.brandId.value.value.id).toEqual(
+          'brand-fakeid2',
+        )
+      })
+
+      it('should successfully remove a domain', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'domain',
+            changes: [toChange({ before: domain })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+    })
+    describe('deploy user type', () => {
+      let userTypeType: ObjectType
+      let userType: InstanceElement
+      beforeEach(() => {
+        userTypeType = new ObjectType({
+          elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        userType = new InstanceElement('userType', userTypeType, {
+          id: 'usertype-fakeid1',
+          name: 'superuser',
+          [LINKS_FIELD]: {
+            schema: {
+              rel: 'schema',
+              href: 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
+              method: 'GET',
+            },
+          },
+        })
+      })
+
+      it('should successfully add a user type', async () => {
+        const userTypeWithoutId = userType.clone()
+        delete userTypeWithoutId.value.id
+        delete userTypeWithoutId.value[LINKS_FIELD]
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'userType',
+            changes: [toChange({ after: userTypeWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('usertype-fakeid1')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value[LINKS_FIELD]).toEqual({
+          schema: {
+            rel: 'schema',
+            href: 'https://<sanitized>/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
+            method: 'GET',
+          },
+          self: {
+            rel: 'self',
+            href: 'https://<sanitized>/api/v1/meta/types/user/usertype-fakeid1',
+            method: 'GET',
+          },
+        })
+      })
+
+      it('should successfully modify a user type', async () => {
+        const updatedUserType = userType.clone()
+        updatedUserType.value.removePoweredByOkta = true
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'userType',
+            changes: [
+              toChange({
+                before: userType,
+                after: updatedUserType,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
+          true,
+        )
+      })
+
+      it('should successfully remove a user type', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'domain',
+            changes: [toChange({ before: userType })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+    })
+    describe('deploy sms template', () => {
+      let smsTemplateType: ObjectType
+      let smsTemplate: InstanceElement
+      beforeEach(() => {
+        smsTemplateType = new ObjectType({
+          elemID: new ElemID(OKTA, SMS_TEMPLATE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        smsTemplate = new InstanceElement('smsTemplate', smsTemplateType, {
+          id: 'smstemplate-fakeid1',
+          name: 'Custom',
+        })
+      })
+
+      it('should successfully add an sms template', async () => {
+        const smsTemplateWithoutId = smsTemplate.clone()
+        delete smsTemplateWithoutId.value.id
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'smsTemplate',
+            changes: [toChange({ after: smsTemplateWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'smstemplate-fakeid1',
+        )
+      })
+
+      it('should successfully modify an sms template', async () => {
+        const updatedSmsTemplate = smsTemplate.clone()
+        updatedSmsTemplate.value.name = 'Other'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'smsTemplate',
+            changes: [
+              toChange({
+                before: smsTemplate,
+                after: updatedSmsTemplate,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('Other')
+      })
+
+      it('should successfully remove an sms template', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'smsTemplate',
+            changes: [toChange({ before: smsTemplate })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+    })
+    describe('deploy device assurance', () => {
+      let deviceAssuranceType: ObjectType
+      let deviceAssurance: InstanceElement
+      beforeEach(() => {
+        deviceAssuranceType = new ObjectType({
+          elemID: new ElemID(OKTA, DEVICE_ASSURANCE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        deviceAssurance = new InstanceElement('deviceAssurance', deviceAssuranceType, {
+          id: 'deviceassurance-fakeid1',
+          name: 'deviceassurance1',
+        })
+      })
+
+      it('should successfully add a device assurance', async () => {
+        const deviceAssuranceWithoutId = deviceAssurance.clone()
+        delete deviceAssuranceWithoutId.value.id
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'deviceAssurance',
+            changes: [toChange({ after: deviceAssuranceWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'deviceassurance-fakeid1',
+        )
+      })
+
+      it('should successfully modify a device assurance', async () => {
+        const updatedDeviceAssurance = deviceAssurance.clone()
+        updatedDeviceAssurance.value.name = 'deviceassurance2'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'deviceAssurance',
+            changes: [
+              toChange({
+                before: deviceAssurance,
+                after: updatedDeviceAssurance,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
+          'deviceassurance2',
+        )
+      })
+
+      it('should successfully remove a device assurance', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'deviceAssurance',
+            changes: [toChange({ before: deviceAssurance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
       })
     })
   })

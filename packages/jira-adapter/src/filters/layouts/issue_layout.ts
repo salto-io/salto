@@ -146,7 +146,8 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
                 .map(
                   (issueTypeMapping: issueTypeMappingStruct) =>
                     screensSchemesToDefaultOrViewScreens[issueTypeMapping.screenSchemeId],
-                ).filter(isDefined),
+                )
+                .filter(isDefined),
             ),
           ],
         ]

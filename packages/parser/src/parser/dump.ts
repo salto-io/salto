@@ -189,7 +189,12 @@ export const dumpSingleAnnotationType = (name: string, refType: TypeReference, i
 export const dumpAnnotationTypes = (annotationRefTypes: ReferenceMap, indentationLevel = 0): string =>
   hclDump(wrapBlocks(dumpAnnotationTypesBlock(annotationRefTypes)), indentationLevel)
 
-export const dumpValues = async (value: Value, functions: Functions, indentationLevel = 0): Promise<string> => {
+export const dumpValues = async (
+  value: Value,
+  functions: Functions,
+  indentationLevel = 0,
+  endChar = '\n',
+): Promise<string> => {
   // Note that since this function can receive a primitive / func obj
   // as the value param, we need to create a mock parent for the value
   // promise watchers logic to work
@@ -201,5 +206,5 @@ export const dumpValues = async (value: Value, functions: Functions, indentation
   addValuePromiseWatcher(valuePromiseWatchers, defaultParent, defaultKey)
   await replaceValuePromises(valuePromiseWatchers)
   const valueWithSerializedFunctions = defaultParent[defaultKey]
-  return dumpValue(valueWithSerializedFunctions, indentationLevel).join('\n').concat('\n')
+  return dumpValue(valueWithSerializedFunctions, indentationLevel).join('\n').concat(endChar)
 }

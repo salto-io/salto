@@ -33,7 +33,7 @@ export const INDENTATION = '  '
 export const MULTILINE_STRING_PREFIX = "'''\n"
 export const MULTILINE_STRING_SUFFIX = "\n'''"
 
-const createIndentation = (indentationLevel: number): string => INDENTATION.repeat(indentationLevel)
+export const createIndentation = (indentationLevel: number): string => INDENTATION.repeat(indentationLevel)
 
 const dumpWord = (word: string, indentationLevel = 0): string => {
   // word needs to be escaped if it will not be parsed back as a single word token

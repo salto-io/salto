@@ -31,10 +31,11 @@ import {
   isStaticFile,
   TypeReference,
   isTypeReference,
-  AdditionChange,
+  toChange,
+  isIndexPathPart,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
-import { inspectValue, getPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { inspectValue, getPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, resolvePath } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 
@@ -46,7 +47,10 @@ const log = logger(module)
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
 
-export type Location = parser.SourceRange & { indexInParent?: number }
+export type Location = parser.SourceRange & {
+  indexInParent?: number
+  newInParent?: boolean
+}
 
 export type DetailedChangeWithSource = DetailedChange & {
   location: Location
@@ -61,17 +65,18 @@ type PositionInParent = {
   indexInParent?: number
 }
 
-const getPositionInParent = <T>(change: DetailedChange<T> & AdditionChange<T>): PositionInParent => {
+const getPositionInParent = (change: DetailedChange): PositionInParent => {
   if (change.baseChange === undefined) {
     log.warn('No base change: %s', inspectValue(change))
     return { followingElementIDs: [] }
   }
 
+  const changeId = change.elemIDs?.after ?? change.id
   const changeData = getChangeData(change)
   const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
-  const pathInParent = getPath(parent, change.id)
+  const pathInParent = getPath(parent, changeId)
   if (pathInParent === undefined) {
-    log.warn('Could not get path for %s in parent: %s', change.id.getFullName(), inspectValue(parent))
+    log.warn('Could not get path for %s in parent: %s', changeId.getFullName(), inspectValue(parent))
     return { followingElementIDs: [] }
   }
   if (pathInParent.length === 0) {
@@ -83,13 +88,13 @@ const getPositionInParent = <T>(change: DetailedChange<T> & AdditionChange<T>): 
   if (!_.isObjectLike(container)) {
     log.warn(
       'Got non object container at path %s: %s',
-      change.id.createParentID().getFullName(),
+      changeId.createParentID().getFullName(),
       inspectValue(container),
     )
     return { followingElementIDs: [] }
   }
 
-  const elementName = change.id.name
+  const elementName = changeId.name
   const containerKeys = Object.keys(container)
   const index = containerKeys.indexOf(elementName)
   if (index === -1) {
@@ -98,9 +103,74 @@ const getPositionInParent = <T>(change: DetailedChange<T> & AdditionChange<T>): 
   }
 
   return {
-    followingElementIDs: containerKeys.slice(index + 1).map(k => change.id.createSiblingID(k)),
+    followingElementIDs: containerKeys.slice(index + 1).map(k => changeId.createSiblingID(k)),
     indexInParent: index,
   }
+}
+
+const fixLastListItemChange = (
+  change: DetailedChangeWithSource,
+  sourceMap: ReadonlyMap<string, parser.SourceRange[]>,
+): DetailedChangeWithSource[] => {
+  if (change.baseChange === undefined) {
+    log.warn('No base change: %s', inspectValue(change))
+    return [change]
+  }
+
+  if (change.baseChange.action !== 'modify') {
+    return [change]
+  }
+
+  const oldLocationChangeId = change.elemIDs?.before ?? change.id
+  const newLocationChangeId = change.elemIDs?.after ?? change.id
+
+  if (!isIndexPathPart(oldLocationChangeId.name) || !isIndexPathPart(newLocationChangeId.name)) {
+    return [change]
+  }
+
+  const beforeContainer = resolvePath(change.baseChange.data.before, oldLocationChangeId.createParentID())
+  const afterContainer = resolvePath(change.baseChange.data.after, newLocationChangeId.createParentID())
+  if (!_.isArray(beforeContainer) || !_.isArray(afterContainer)) {
+    return [change]
+  }
+
+  if (afterContainer.length >= beforeContainer.length) {
+    return [change]
+  }
+
+  const oldLocationIndex = Number(oldLocationChangeId.name)
+  const newLocationIndex = Number(newLocationChangeId.name)
+  const oldLastItemIndex = beforeContainer.length - 1
+  const newLastItemIndex = afterContainer.length - 1
+
+  // we create a change for the last item with a modified location
+  if (oldLocationIndex === oldLastItemIndex) {
+    const newLastItemChangeId = newLocationChangeId.createSiblingID(String(newLastItemIndex))
+    const newLastItem = afterContainer[newLastItemIndex]
+    const [oldLastItemLocation] = sourceMap.get(oldLocationChangeId.getFullName()) ?? []
+    const [newLastItemLocation] = sourceMap.get(newLastItemChangeId.getFullName()) ?? []
+    if (newLastItemLocation === undefined || oldLastItemLocation === undefined) {
+      return [change]
+    }
+    const fixedLocation = { ...newLastItemLocation, end: oldLastItemLocation.end }
+    const newLastItemChangeWithFixedLocation = {
+      id: newLastItemChangeId,
+      ...toChange({ before: newLastItem, after: newLastItem }),
+      location: fixedLocation,
+    }
+    // in case that the last item moved upper in the list we want to return the original change too
+    if (newLocationIndex < newLastItemIndex) {
+      return [change, newLastItemChangeWithFixedLocation]
+    }
+    return [newLastItemChangeWithFixedLocation]
+  }
+
+  // we ignore the new last item change and the following removed items
+  if (newLocationIndex >= newLastItemIndex) {
+    return []
+  }
+
+  return [change]
 }
 
 export const getChangeLocations = (
@@ -122,71 +192,76 @@ export const getChangeLocations = (
     }
   }
 
-  const findLocations = (): { location: Location; requiresIndent?: boolean }[] => {
-    if (change.action !== 'add') {
-      // We want to get the location of the existing element
-      const possibleLocations = sourceMap.get(change.id.getFullName()) ?? []
-      if (change.action === 'remove') {
-        return possibleLocations.map(location => ({
+  const newLocationChangeId = change.elemIDs?.after ?? change.id
+  if (sourceMap.has(newLocationChangeId.getFullName())) {
+    // We want to get the location of the existing element
+    const possibleLocations = sourceMap.get(newLocationChangeId.getFullName()) ?? []
+    if (change.action === 'remove') {
+      return possibleLocations
+        .map(location => ({
+          ...change,
           location,
         }))
-      }
-      if (possibleLocations.length > 0) {
-        // TODO: figure out how to choose the correct location if there is more than one option
-        return [{ location: possibleLocations[0] }]
-      }
-    } else if (!change.id.isTopLevel()) {
-      const fileName = createFileNameFromPath(change.path)
-      const { followingElementIDs, indexInParent } = getPositionInParent(change)
-      const possibleFollowingElementsRange = followingElementIDs
-        .flatMap(elemID => sourceMap.get(elemID.getFullName()))
-        .filter(isDefined)
-        .find(sr => sr.filename === fileName)
-      if (possibleFollowingElementsRange !== undefined) {
-        // Returning the start location of the first element following the one we are adding in the same file
-        return [
-          {
-            location: {
-              filename: fileName,
-              start: possibleFollowingElementsRange.start,
-              end: possibleFollowingElementsRange.start,
-              indexInParent,
-            },
-          },
-        ]
-      }
-
-      // If we can't find an element after this one in the parent we put it at the end
-      const parentID = change.id.createParentID()
-      const possibleLocations = sourceMap.get(parentID.getFullName()) ?? []
-      if (possibleLocations.length > 0) {
-        const foundInPath = possibleLocations.find(sr => sr.filename === fileName)
-        // When adding a nested change we need to increase one level of indentation because
-        // we get the placement of the closing brace of the next line. The closing brace will
-        // be indented one line less then wanted change.
-        // TODO: figure out how to choose the correct location if there is more than one option
-        return [{ location: lastNestedLocation(foundInPath ?? possibleLocations[0]), requiresIndent: true }]
-      }
-      log.error('No possible locations found for %s.', parentID.getFullName())
+        .flatMap(c => fixLastListItemChange(c, sourceMap))
     }
-    // Fallback to using the path from the element itself
-    const naclFilePath = change.path ?? getChangeData(change).path
-    const endOfFileLocation = { col: 1, line: Infinity, byte: Infinity }
-    return [
-      {
-        location: {
-          filename: createFileNameFromPath(naclFilePath),
-          start: endOfFileLocation,
-          end: endOfFileLocation,
+    if (possibleLocations.length > 0) {
+      // TODO: figure out how to choose the correct location if there is more than one option
+      return fixLastListItemChange({ ...change, location: possibleLocations[0] }, sourceMap)
+    }
+  } else if (!newLocationChangeId.isTopLevel()) {
+    const fileName = createFileNameFromPath(change.path)
+    const { followingElementIDs, indexInParent } = getPositionInParent(change)
+    const possibleFollowingElementsRange = followingElementIDs
+      .flatMap(elemID => sourceMap.get(elemID.getFullName()))
+      .filter(isDefined)
+      .find(sr => sr.filename === fileName)
+    if (possibleFollowingElementsRange !== undefined) {
+      // Returning the start location of the first element following the one we are adding in the same file
+      return [
+        {
+          ...change,
+          location: {
+            filename: fileName,
+            start: possibleFollowingElementsRange.start,
+            end: possibleFollowingElementsRange.start,
+            indexInParent,
+          },
         },
-      },
-    ]
-  }
+      ]
+    }
 
-  return findLocations().map(location => ({
-    ...change,
-    ...location,
-  }))
+    // If we can't find an element after this one in the parent we put it at the end
+    const parentID = newLocationChangeId.createParentID()
+    const possibleLocations = sourceMap.get(parentID.getFullName()) ?? []
+    if (possibleLocations.length > 0) {
+      const foundInPath = possibleLocations.find(sr => sr.filename === fileName)
+      // When adding a nested change we need to increase one level of indentation because
+      // we get the placement of the closing brace of the next line. The closing brace will
+      // be indented one line less then wanted change.
+      // TODO: figure out how to choose the correct location if there is more than one option
+      return [
+        {
+          ...change,
+          location: { ...lastNestedLocation(foundInPath ?? possibleLocations[0]), indexInParent, newInParent: true },
+          requiresIndent: true,
+        },
+      ]
+    }
+    log.error('No possible locations found for %s.', parentID.getFullName())
+  }
+  // Fallback to using the path from the element itself
+  const naclFilePath = change.path ?? getChangeData(change).path
+  const endOfFileLocation = { col: 1, line: Infinity, byte: Infinity }
+  return [
+    {
+      ...change,
+      location: {
+        filename: createFileNameFromPath(naclFilePath),
+        start: endOfFileLocation,
+        end: endOfFileLocation,
+      },
+    },
+  ]
 }
 
 const fixEdgeIndentation = (data: string, action: ActionName, initialIndentationLevel: number): string => {
@@ -281,40 +356,50 @@ export const updateNaclFileData = async (
 
   const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
     const elem = change.action === 'remove' ? undefined : change.data.after
-    let newData: string
-    let indentationLevel = (change.location.start.col - 1) / 2
-    if (change.requiresIndent) {
-      indentationLevel += 1
-    }
-    if (elem !== undefined) {
-      const changeKey = change.id.name
-      const isListElement = changeKey.match(/^\d+$/) !== null
+    const changeKey = change.id.name
+    const isListElement =
+      !change.id.isAnnotationTypeID() && !change.id.createParentID().isBaseID() && isIndexPathPart(changeKey)
+    const initialIndentationLevel = change.location.start.col - 1
+    const indentationLevel = initialIndentationLevel / 2 + (change.requiresIndent ? 1 : 0)
+
+    const innerGetNewData = async (): Promise<string> => {
       if (change.id.isAnnotationTypeID()) {
         if (isType(elem) || isTypeReference(elem)) {
-          newData = parser.dumpSingleAnnotationType(changeKey, new TypeReference(elem.elemID), indentationLevel)
-        } else {
-          newData = parser.dumpAnnotationTypes(elem, indentationLevel)
+          return parser.dumpSingleAnnotationType(changeKey, new TypeReference(elem.elemID), indentationLevel)
         }
-      } else if (isElement(elem)) {
-        newData = await parser.dumpElements([elem], functions, indentationLevel)
-      } else if (isListElement) {
-        newData = await parser.dumpValues(elem, functions, indentationLevel)
-      } else {
-        // We create a "dummy object" as the scope in which we are going to write this value
-        // We do this because we need to dump the key as well as the value and this is the easiest
-        // way to ensure we remain consistent
-        const dumpedObj = await parser.dumpValues({ [changeKey]: elem }, functions, indentationLevel - 1)
-        // once we have the "new scope", we want to take just the serialized values because the
-        // brackets already exist in the original scope.
-        newData = removeBracketLines(dumpedObj)
+        return parser.dumpAnnotationTypes(elem, indentationLevel)
       }
-      newData = fixEdgeIndentation(newData, change.action, change.location.start.col - 1)
-    } else {
-      // This is a removal, we want to replace the original content with an empty string
-      newData = ''
+      if (isElement(elem)) {
+        return parser.dumpElements([elem], functions, indentationLevel)
+      }
+      // We create a "dummy object" as the scope in which we are going to write this value
+      // We do this because we need to dump the key as well as the value and this is the easiest
+      // way to ensure we remain consistent
+      const dumpedObj = await parser.dumpValues({ [changeKey]: elem }, functions, indentationLevel - 1)
+      // once we have the "new scope", we want to take just the serialized values because the
+      // brackets already exist in the original scope.
+      return removeBracketLines(dumpedObj)
     }
+
+    const getNewData = async (): Promise<string> => {
+      if (isListElement) {
+        if (elem === undefined) {
+          return `\n${parser.createIndentation(indentationLevel)}`
+        }
+        return fixEdgeIndentation(
+          await parser.dumpValues(elem, functions, indentationLevel, change.location.newInParent ? ',\n' : ''),
+          change.location.newInParent ? 'add' : 'modify',
+          initialIndentationLevel,
+        )
+      }
+      if (elem === undefined) {
+        return ''
+      }
+      return fixEdgeIndentation(await innerGetNewData(), change.action, initialIndentationLevel)
+    }
+
     return {
-      newData,
+      newData: await getNewData(),
       start: change.location.start.byte,
       end: change.location.end.byte,
       indexInParent: change.location.indexInParent,

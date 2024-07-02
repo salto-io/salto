@@ -24,10 +24,9 @@ describe('lockedFieldsValidator', () => {
 
   beforeEach(() => {
     type = new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) })
-    instance = new InstanceElement('instance', type)
+    instance = new InstanceElement('instance', type, { isLocked: true })
   })
   it('should return an error if a field is locked', async () => {
-    instance.value.isLocked = true
     expect(
       await lockedFieldsValidator([
         toChange({
@@ -46,6 +45,7 @@ describe('lockedFieldsValidator', () => {
   })
 
   it('should not return an error if field is not locked', async () => {
+    instance.value.isLocked = false
     expect(
       await lockedFieldsValidator([
         toChange({
@@ -55,7 +55,15 @@ describe('lockedFieldsValidator', () => {
     ).toEqual([])
   })
   it('should not return an error if field is locked but related to JSM project', async () => {
-    instance.value.name = 'service'
+    instance.value.type = 'com.atlassian.servicedesk:sd-sla-field'
+    expect(
+      await lockedFieldsValidator([
+        toChange({
+          after: instance,
+        }),
+      ]),
+    ).toEqual([])
+    instance.value.type = 'com.atlassian.jira.plugins.work-category-field:work-category-field-cftype'
     expect(
       await lockedFieldsValidator([
         toChange({

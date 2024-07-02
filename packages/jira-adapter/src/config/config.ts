@@ -250,6 +250,7 @@ export type ChangeValidatorName =
   | 'boardColumnConfig'
   | 'automationToAssets'
   | 'addJsmProject'
+  | 'jsmLockedFields'
   | 'deleteLabelAtttribute'
   | 'jsmPermissions'
 
@@ -313,6 +314,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     defaultAttributeValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
     addJsmProject: { refType: BuiltinTypes.BOOLEAN },
+    jsmLockedFields: { refType: BuiltinTypes.BOOLEAN },
     deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
     jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
   },

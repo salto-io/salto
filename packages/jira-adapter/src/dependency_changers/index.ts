@@ -24,7 +24,6 @@ import { removalsDependencyChanger } from './removals'
 import { workflowDependencyChanger } from './workflow'
 import { fieldContextDependencyChanger } from './field_contexts'
 import { fieldConfigurationDependencyChanger } from './field_configuration'
-import { jsmProjectToJsmFieldDependencyChanger } from './jsm_project_to_jsm_field'
 import { rootObjectTypeToObjectSchemaDependencyChanger } from './root_object_type_to_schema'
 import { issueLayoutDependencyChanger } from './issue_layout_dependency'
 import { objectTypeParentDependencyChanger } from './object_type_parent'
@@ -43,7 +42,6 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   projectContextsDependencyChanger,
   fieldContextDependencyChanger,
   fieldConfigurationDependencyChanger,
-  jsmProjectToJsmFieldDependencyChanger,
   issueLayoutDependencyChanger,
 ]
 

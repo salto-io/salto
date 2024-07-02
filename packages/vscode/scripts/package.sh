@@ -1,11 +1,21 @@
 #!/bin/bash
 
+if ! command -v rsync &> /dev/null
+then
+    if [[ "$CI" == "1" ]]
+    then
+        sudo apt update && sudo apt install -y rsync
+    else
+        echo "Error: rsync is not installed."
+        exit 1
+    fi
+fi
+
 set -xeuo pipefail
 shopt -s extglob
 
 yarn workspaces focus salto-vscode
 
-sudo apt update && sudo apt install -y rsync
 
 rm -rf ./tmp_pkg
 mkdir -p ./tmp_pkg && cp ../../LICENSE . && vsce package --yarn -o ./tmp_pkg/salto.vsix && rm -f LICENSE

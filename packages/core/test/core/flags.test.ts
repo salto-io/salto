@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import { setupEnvVar } from '@salto-io/test-utils'
 import { getCoreFlag, getCoreFlagBool, CORE_FLAGS, CORE_FLAG_PREFIX } from '../../src/core/flags'
 

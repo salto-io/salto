@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'jest-extended'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   BuiltinTypes,

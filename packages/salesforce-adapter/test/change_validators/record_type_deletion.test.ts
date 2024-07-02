@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'jest-extended'
 import { ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import recordTypeChangeValidator from '../../src/change_validators/record_type_deletion'
 import { CUSTOM_OBJECT } from '../../src/constants'

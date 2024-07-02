@@ -13,24 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const deepMerge = require('../../build_utils/deep_merge')
 
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'salto',
-  displayName: 'salto',
-  rootDir: `${__dirname}`,
-  collectCoverageFrom: [
-    '!**/hcl.ts', // Generated parser file
-    '!<rootDir>/index.ts',
-  ],
-  // coverageThreshold: {
-  //   // Slowly start increasing here, never decrease!
-  //   global: {
-  //     branches: 83.22,
-  //     functions: 88.79,
-  //     lines: 85,
-  //     statements: 90,
-  //   },
-  // },
-  setupFilesAfterEnv: ['jest-extended/all'],
-})
+import { GetInsightsFunc } from '@salto-io/adapter-api'
+import supportAddressesInsights from './support_addresses'
+import triggersInsights from './triggers'
+import automationsInsights from './automations'
+import accountFeaturesInsights from './account_features'
+import accountSettingsInsights from './account_settings'
+
+const getInsights: GetInsightsFunc = elements =>
+  supportAddressesInsights(elements)
+    .concat(triggersInsights(elements))
+    .concat(automationsInsights(elements))
+    .concat(accountFeaturesInsights(elements))
+    .concat(accountSettingsInsights(elements))
+
+export default getInsights

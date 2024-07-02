@@ -31,6 +31,7 @@ import { SCRIPT_RUNNER_API_DEFINITIONS } from './constants'
 import { configCreator } from './config_creator'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
+import getInsights from './insights'
 
 const log = logger(module)
 const { createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
@@ -145,4 +146,5 @@ export const adapter: Adapter = {
   getCustomReferences: combineCustomReferenceGetters(
     _.mapValues(weakReferenceHandlers, handler => handler.findWeakReferences),
   ),
+  getInsights,
 }

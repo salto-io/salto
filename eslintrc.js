@@ -155,6 +155,9 @@ module.exports = {
         '@typescript-eslint/ban-ts-ignore': [0],
         'max-classes-per-file': [0],
         'import/no-unresolved': [0], // unable to read paths from tsconfig.json
+        'import/no-cycle': [0], // airbnb rules collide with node-18 types
+        'import/default': [0], // airbnb rules collide with node-18 types
+        'import/named': [0], // airbnb rules collide with node-18 types
       },
     },
   ],

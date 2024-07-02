@@ -39,9 +39,10 @@ docker run salto-cli
 
 ### Building from source
 
-  1. Install Node.js 14 (for M1 Macs use 14.15). You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
-  2. Install [yarn 1](https://yarnpkg.com/en/docs/install).
-  3. Fetch dependencies and build:
+  1. Install Node.js 18.9.0. You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
+  2. Run Corepack: `corepack enable` to install and set up the relevant yarn version
+  3. Verify Yarn and Node.js versions using `node -v` (should be 18.9.x) and `yarn -v` (should be 3.1.0)
+  4. Fetch dependencies and build:
 
 ```bash
 $ yarn

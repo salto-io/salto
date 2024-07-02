@@ -174,7 +174,7 @@ describe('RateLimiter', () => {
 
     const tasks = [() => asyncTask(1), () => asyncTask(2), () => asyncTask(3)]
 
-    const results = await rateLimiter.addAll(tasks)
+    const results = await Promise.all(rateLimiter.addAll(tasks))
 
     expect(results).toEqual([1, 2, 3])
     expect(asyncTask).toHaveBeenCalledWith(1)

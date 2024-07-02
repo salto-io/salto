@@ -176,6 +176,22 @@ export class RateLimiter {
   }
 
   /**
+   * Wraps a given task with counters bookkeeping.
+   * @param task The task to wrapped with bookkeeping.
+   * @returns A function that returns a promise resolving to the result of the task
+   */
+  private wrapWithBookKeeping<T>(task: () => Promise<T>): () => Promise<T> {
+    return async (): Promise<T> => {
+      this.counters.pending -= 1
+      this.counters.running += 1
+      const res = await task()
+      this.counters.running -= 1
+      this.counters.done += 1
+      return res
+    }
+  }
+
+  /**
    * Adds a task to the queue. If a delay is configured in the options,
    * the task will be delayed by the specified amount of milliseconds.
    * @param task The task to be added to the queue.
@@ -183,7 +199,8 @@ export class RateLimiter {
    */
   async add<T>(task: () => Promise<T>): Promise<T> {
     this.counters.total += 1
-    return this.queue.add(this.getDelayedTask(task))
+    this.counters.pending += 1
+    return this.queue.add(this.getDelayedTask(this.wrapWithBookKeeping(task)))
   }
 
   /**
@@ -191,10 +208,8 @@ export class RateLimiter {
    * @param tasks The tasks to be added to the queue.
    * @returns A promise that resolves when all tasks are completed.
    */
-  async addAll<T>(tasks: Array<() => Promise<T>>): Promise<T[]> {
-    this.counters.total += tasks.length
-    const delayedTasks = tasks.map(task => this.getDelayedTask(task))
-    return this.queue.addAll(delayedTasks)
+  addAll<T>(tasks: Array<() => Promise<T>>): Promise<T>[] {
+    return tasks.map(task => this.add(task))
   }
 
   /**
@@ -221,10 +236,7 @@ export class RateLimiter {
    */
   getCounters(): RateLimiterCounters {
     return {
-      total: this.counters.total,
-      running: this.queue.pending,
-      pending: this.queue.size,
-      done: this.counters.total - this.queue.pending - this.queue.size,
+      ...this.counters,
     }
   }
 
@@ -247,5 +259,6 @@ export class RateLimiter {
    */
   clear(): void {
     this.queue.clear()
+    this.counters.pending = 0
   }
 }

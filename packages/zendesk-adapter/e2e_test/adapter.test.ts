@@ -882,7 +882,7 @@ describe('Zendesk adapter E2E', () => {
       })
 
       const attachmentName = createName('attachment')
-      const fileName = `nacl${attachmentName}.png`
+      const fileName = `nacl${attachmentName}`
       const articleAttachment = createInstanceElement({
         type: ARTICLE_ATTACHMENT_TYPE_NAME,
         valuesOverride: {
@@ -898,7 +898,7 @@ describe('Zendesk adapter E2E', () => {
         parent: articleInstance,
         name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${fileName}_false`,
       })
-      const inlineFileName = `naclTwo${attachmentName}.png`
+      const inlineFileName = `naclTwo${attachmentName}`
       const articleInlineAttachment = createInstanceElement({
         type: ARTICLE_ATTACHMENT_TYPE_NAME,
         valuesOverride: {

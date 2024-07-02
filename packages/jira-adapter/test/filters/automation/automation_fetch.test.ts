@@ -77,19 +77,6 @@ describe('automationFetchFilter', () => {
     throw new Error(`Unexpected url ${url}`)
   }
 
-  const mockGetIdResponse = (url: string): Value => {
-    if (url === GET_CLOUD_ID_URL) {
-      return {
-        status: 200,
-        data: {
-          cloudId: DEFAULT_CLOUD_ID,
-        },
-      }
-    }
-
-    throw new Error(`Unexpected url ${url}`)
-  }
-
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient(false, DEFAULT_CLOUD_ID)
     client = cli
@@ -616,11 +603,10 @@ describe('automationFetchFilter', () => {
     expect(elements[1].elemID.getFullName()).toEqual('jira.Automation.instance.automationName_projectName')
   })
   it('should fail if retry response is 504 and passed retries count', async () => {
-    const { client: cli, connection: conn } = mockClient(false)
+    const { client: cli, connection: conn } = mockClient(false, DEFAULT_CLOUD_ID)
     client = cli
     connection = conn
     conn.post.mockClear()
-    conn.get.mockImplementationOnce(mockGetIdResponse) // for cloud id
     conn.post.mockImplementation(async () => {
       throw new HTTPError('failed', { data: {}, status: 504 })
     })
@@ -635,15 +621,13 @@ describe('automationFetchFilter', () => {
         ) as filterUtils.FilterWith<'onFetch'>
       ).onFetch(elements),
     ).rejects.toThrow()
-    expect(conn.get.mock.calls.length).toEqual(1) // 1 for cloud id,
     expect(conn.post.mock.calls.length).toEqual(5) // 5 times for automation as we have 4 retries
   })
   it('should fail without retries if error is not http', async () => {
-    const { client: cli, connection: conn } = mockClient(false)
+    const { client: cli, connection: conn } = mockClient(false, DEFAULT_CLOUD_ID)
     client = cli
     connection = conn
     conn.post.mockClear()
-    conn.get.mockImplementationOnce(mockGetIdResponse) // for cloud id
     conn.post.mockImplementation(async () => {
       throw new Error('failed')
     })
@@ -657,7 +641,6 @@ describe('automationFetchFilter', () => {
         ) as filterUtils.FilterWith<'onFetch'>
       ).onFetch(elements),
     ).rejects.toThrow()
-    expect(conn.get.mock.calls.length).toEqual(1) // 1 for cloud id
     expect(conn.post.mock.calls.length).toEqual(1)
   })
   describe('component with assets in automation', () => {

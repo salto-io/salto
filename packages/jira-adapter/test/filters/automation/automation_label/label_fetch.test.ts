@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, Element, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -22,7 +22,7 @@ import { DEFAULT_CLOUD_ID, getFilterParams, mockClient } from '../../../utils'
 import automationLabelFetchFilter from '../../../../src/filters/automation/automation_label/label_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
 import { JIRA } from '../../../../src/constants'
-import JiraClient from '../../../../src/client/client'
+import JiraClient, { GET_CLOUD_ID_URL } from '../../../../src/client/client'
 import { createAutomationLabelType } from '../../../../src/filters/automation/automation_label/types'
 
 describe('automationLabelFetchFilter', () => {
@@ -177,6 +177,22 @@ describe('automationLabelFetchFilter', () => {
 
       const automation = elements[0]
       expect(automation.elemID.getFullName()).toEqual('jira.AutomationLabel.instance.someName')
+    })
+
+    it('should throw if tenantId not in response', async () => {
+      connection.get.mockImplementation((url: string): Value => {
+        if (url === GET_CLOUD_ID_URL) {
+          return {
+            status: 200,
+            data: { some_field: '' },
+          }
+        }
+
+        throw new Error(`Unexpected url ${url}`)
+      })
+
+      const elements = [] as Element[]
+      await expect(filter.onFetch(elements)).rejects.toThrow()
     })
 
     it('should throw if automation label response is not valid', async () => {

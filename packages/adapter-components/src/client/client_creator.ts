@@ -17,7 +17,11 @@ import _ from 'lodash'
 import { AdapterHTTPClient, ClientDefaults, ClientOpts } from './http_client'
 import { ClientRateLimitConfig } from '../definitions'
 import { ConnectionCreator } from './http_connection'
-import { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from './constants'
+import {
+  DEFAULT_RETRY_OPTS,
+  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+} from './constants'
 
 interface ClientConstructor<Credentials> {
   new (args: {
@@ -35,6 +39,7 @@ const CLIENT_UNLIMITED_DEFAULTS: Omit<ClientDefaults<ClientRateLimitConfig>, 'pa
     deploy: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   },
   maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
   retry: DEFAULT_RETRY_OPTS,
 }
 

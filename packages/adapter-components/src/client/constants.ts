@@ -28,3 +28,4 @@ export const DEFAULT_TIMEOUT_OPTS: Required<ClientTimeoutConfig> = {
 }
 
 export const RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS = -1
+export const RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS = 3

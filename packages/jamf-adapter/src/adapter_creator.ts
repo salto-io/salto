@@ -60,6 +60,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       deploy: 5,
     },
     maxRequestsPerMinute: client.RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+    delayPerRequestMS: client.RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
     retry: client.DEFAULT_RETRY_OPTS,
   },
 })

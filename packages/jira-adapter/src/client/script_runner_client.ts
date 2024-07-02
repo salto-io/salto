@@ -25,7 +25,12 @@ const log = logger(module)
 
 const NO_LICENSE_ERROR_CODE = 402
 
-const { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const {
+  DEFAULT_RETRY_OPTS,
+  DEFAULT_TIMEOUT_OPTS,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+} = clientUtils
 
 // The below default values are taken from Jira and were not verified for ScriptRunner
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
@@ -52,6 +57,7 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
       retry: DEFAULT_RETRY_OPTS,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })

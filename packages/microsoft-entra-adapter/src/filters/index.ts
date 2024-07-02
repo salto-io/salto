@@ -15,3 +15,4 @@
  */
 export { deployAdministrativeUnitMembersFilter } from './deploy_administrative_unit_members'
 export { deployDirectoryRoleMembersFilter } from './deploy_directory_role_members'
+export { appRolesFilter } from './app_role'

@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
+import { validatePlainObject } from '@salto-io/adapter-utils'
 import {
   ADMINISTRATIVE_UNIT_TYPE_NAME,
   APPLICATION_TYPE_NAME,
@@ -41,6 +42,7 @@ import {
   MEMBERS_FIELD_NAME,
   ODATA_ID_FIELD,
   DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
+  APPLICATION_OAUTH_2_PERMISSION_SCOPES_TYPE_NAME,
 } from '../../constants'
 import { AdditionalAction, ClientOptions } from '../types'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
@@ -54,6 +56,7 @@ import {
   getGroupLifecyclePolicyGroupModificationRequest,
   omitReadOnlyFields,
 } from './utils'
+import { oauth2ScopeWithItsApplication } from './utils/application'
 
 const AUTHENTICATION_STRENGTH_POLICY_DEPLOYABLE_FIELDS = ['displayName', 'description']
 
@@ -212,6 +215,17 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
             },
           },
         ],
+      },
+    },
+  },
+  [APPLICATION_OAUTH_2_PERMISSION_SCOPES_TYPE_NAME]: {
+    changeGroupId: oauth2ScopeWithItsApplication,
+    requestsByAction: {
+      customizations: {
+        // Deploying an application with its oauth2PermissionScopes is done in a single request using the definition of the application
+        add: [],
+        modify: [],
+        remove: [],
       },
     },
   },
@@ -776,6 +790,25 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               endpoint: {
                 path: '/identity/conditionalAccess/policies',
                 method: 'post',
+              },
+              transformation: {
+                adjust: ({ value }) => {
+                  validatePlainObject(value, CONDITIONAL_ACCESS_POLICY_TYPE_NAME)
+                  return {
+                    value: {
+                      ...value,
+                      conditions: {
+                        ..._.get(value, 'conditions', {}),
+                        users: {
+                          ..._.get(value, 'conditions.users', {}),
+                          // We store the includeUsers field only on specific conditions.
+                          // However, this field is required on addition, so we set it to a default of 'none' when it's not specified.
+                          includeUsers: _.get(value, 'conditions.users.includeUsers') ?? ['none'],
+                        },
+                      },
+                    },
+                  }
+                },
               },
             },
           },

@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { validatePlainObject } from '@salto-io/adapter-utils'
+import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { UserFetchConfig } from '../../config'
 import { Options } from '../types'
 import {
@@ -53,6 +53,10 @@ import {
   DOMAIN_TYPE_NAME,
   PERMISSION_GRANT_POLICY_TYPE_NAME,
   CROSS_TENANT_ACCESS_POLICY_TYPE_NAME,
+  OAUTH_2_PERMISSION_SCOPES_FIELD_NAME,
+  APPLICATION_OAUTH_2_PERMISSION_SCOPES_TYPE_NAME,
+  APPLICATION_API_TYPE_NAME,
+  APP_ROLE_TYPE_NAME,
 } from '../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { FetchCustomizations } from './types'
@@ -68,6 +72,16 @@ import {
   createCustomizationsWithBasePathForFetch,
   createDefinitionForAppRoleAssignment,
 } from './utils'
+
+const APP_ROLES_FIELD_CUSTOMIZATIONS = {
+  standalone: {
+    typeName: APP_ROLE_TYPE_NAME,
+    nestPathUnderParent: true,
+  },
+  sort: {
+    properties: [{ path: 'displayName' }, { path: 'value' }],
+  },
+}
 
 const graphV1Customizations: FetchCustomizations = {
   [GROUP_TYPE_NAME]: {
@@ -234,7 +248,22 @@ const graphV1Customizations: FetchCustomizations = {
         endpoint: {
           path: '/applications',
         },
-        transformation: DEFAULT_TRANSFORMATION,
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          adjust: ({ value }) => {
+            validatePlainObject(value, 'application')
+            const identifierUris = _.get(value, 'identifierUris', [])
+            validateArray(identifierUris, 'identifierUris')
+
+            return {
+              value: {
+                ...value,
+                // We filter out the api://appId uri, as it's default and not deployable between envs
+                identifierUris: identifierUris.filter(uri => uri !== `api://${_.get(value, 'appId')}`),
+              },
+            }
+          },
+        },
       },
     ],
     resource: {
@@ -249,12 +278,33 @@ const graphV1Customizations: FetchCustomizations = {
         appId: {
           hide: true,
         },
-        [APP_ROLES_FIELD_NAME]: {
-          sort: {
-            properties: [{ path: 'displayName' }, { path: 'value' }],
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+      },
+    },
+  },
+  [APPLICATION_API_TYPE_NAME]: {
+    element: {
+      fieldCustomizations: {
+        [OAUTH_2_PERMISSION_SCOPES_FIELD_NAME]: {
+          standalone: {
+            typeName: APPLICATION_OAUTH_2_PERMISSION_SCOPES_TYPE_NAME,
+            nestPathUnderParent: true,
+            referenceFromParent: false,
           },
         },
       },
+    },
+  },
+  [APPLICATION_OAUTH_2_PERMISSION_SCOPES_TYPE_NAME]: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          extendsParent: true,
+          parts: [{ fieldName: 'adminConsentDisplayName' }, { fieldName: 'adminConsentDisplayName' }],
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
   [SERVICE_PRINCIPAL_TYPE_NAME]: {
@@ -270,7 +320,6 @@ const graphV1Customizations: FetchCustomizations = {
             'appDescription',
             'appDisplayName',
             'applicationTemplateId',
-            'appRoles',
             'customSecurityAttributes',
             'disabledByMicrosoftStatus',
             'homepage',
@@ -326,7 +375,20 @@ const graphV1Customizations: FetchCustomizations = {
             referenceFromParent: false,
           },
         },
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
       },
+    },
+  },
+  [APP_ROLE_TYPE_NAME]: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          extendsParent: true,
+          parts: [NAME_ID_FIELD, { fieldName: 'value' }],
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
   [SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME]: createDefinitionForAppRoleAssignment('servicePrincipals'),
@@ -766,7 +828,28 @@ const graphBetaCustomizations: FetchCustomizations = {
         endpoint: {
           path: '/identity/conditionalAccess/policies',
         },
-        transformation: DEFAULT_TRANSFORMATION,
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          adjust: ({ value }) => {
+            validatePlainObject(value, CONDITIONAL_ACCESS_POLICY_TYPE_NAME)
+            const includeUsers = _.get(value, 'conditions.users.includeUsers', [])
+            const excludeUsers = _.get(value, 'conditions.users.excludeUsers', [])
+            return {
+              value: {
+                ...value,
+                conditions: {
+                  ...value.conditions,
+                  users: {
+                    ..._.get(value, 'conditions.users'),
+                    // We don't handle users, and therefore will include this field only if it doesn't include user ids
+                    includeUsers: _.isEqual(includeUsers, ['All']) ? includeUsers : undefined,
+                    excludeUsers: _.isEqual(excludeUsers, ['All']) ? excludeUsers : undefined,
+                  },
+                },
+              },
+            }
+          },
+        },
       },
     ],
     resource: {

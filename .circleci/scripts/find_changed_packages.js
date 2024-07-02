@@ -32,34 +32,31 @@ const getWorkspacesInfo = () => {
 }
 
 const generateDependencyMapping = workspaceInfo => {
-  const dependencyMapping = {}
-  // Add the package as a dependency of itself
-  Object.keys(workspaceInfo).forEach(packageName => (dependencyMapping[packageName] = [packageName]))
-  const stack = []
+  const packageNames = Object.keys(workspaceInfo)
 
-  Object.keys(workspaceInfo).forEach(packageName => {
-    stack.push(packageName)
-
-    while (stack.length > 0) {
-      const currentPackage = stack.pop()
-
-      const packageWorkspaceInfo = workspaceInfo[currentPackage]
-      if (!packageWorkspaceInfo || !packageWorkspaceInfo.workspaceDependencies) continue
-
-      packageWorkspaceInfo.workspaceDependencies.forEach(dependency => {
-        if (!dependencyMapping[dependency].includes(currentPackage)) {
-          dependencyMapping[currentPackage].forEach(innerDependency => {
-            if (!dependencyMapping[dependency].includes(innerDependency)) {
-              dependencyMapping[dependency].push(innerDependency)
-            }
-          })
-          stack.push(dependency)
-        }
-      })
+  const directAffectedPackages = Object.fromEntries(
+    packageNames.map(packageName => [packageName, new Set([packageName])])
+  )
+  Object.entries(workspaceInfo).forEach(([packageName, packageInfo]) => {
+    if (Array.isArray(packageInfo.workspaceDependencies)) {
+      packageInfo.workspaceDependencies.forEach(dep => directAffectedPackages[dep]?.add(packageName))
     }
   })
 
-  return dependencyMapping
+  const getRecursiveAffectedPackages = (package, affectedPackages = new Set()) => {
+    const packagesToAdd = Array.from(directAffectedPackages[package] ?? [])
+      .filter(dep => !affectedPackages.has(dep))
+
+    packagesToAdd.forEach(dep => affectedPackages.add(dep))
+    packagesToAdd.forEach(dep => getRecursiveAffectedPackages(dep, affectedPackages))
+    return Array.from(affectedPackages)
+  }
+
+  const recursiveAffectedPackages = Object.fromEntries(
+    packageNames.map(packageName => [packageName, getRecursiveAffectedPackages(packageName)])
+  )
+
+  return recursiveAffectedPackages
 }
 
 const hasE2eTests = packageName => {

@@ -121,8 +121,8 @@ describe('deploy xml utils tests', () => {
 
   it('should only explictly add objects that dont have circular dependencies or dependent on cycle', async () => {
     const testNode4 = new GraphNode<SDFObjectNode>('fullName4', {
-      serviceid: 'scriptid4',
       changeType: 'addition',
+      serviceid: 'scriptid4',
       customizationInfo: { scriptId: 'scriptid4', typeName: '', values: {} } as CustomizationInfo,
     })
     testGraph.addNodes([testNode4] as GraphNode<Node>[])

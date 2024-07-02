@@ -385,6 +385,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         updatedFetchQuery,
         this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
         this.userConfig.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
+        this.userConfig.fetch.forceFileCabinetExclude ?? false,
       )
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result

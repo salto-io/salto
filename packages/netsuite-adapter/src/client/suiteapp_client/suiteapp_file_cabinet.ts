@@ -391,13 +391,24 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
           path: fullPathParts(folder, idToFolder),
           ...folder,
         })),
-        // remove excluded folders before creating the query
-        folder => {
-          const fileCabinetFullPath = `${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`
-          return query.isFileMatch(fileCabinetFullPath) || query.isParentFolderMatch(fileCabinetFullPath)
-        },
+        // remove excluded folders before creating the files query
+        folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`),
       )
       log.debug('removed the following %d folder before querying files: %o', removedFolders.length, removedFolders)
+
+      // SALTO-6145: remove this to exclude relevant folders
+      const foldersThatShouldBeRemoved = removedFolders.filter(folder =>
+        query.isParentFolderMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`),
+      )
+      if (foldersThatShouldBeRemoved.length > 0) {
+        log.warn(
+          'the following %d folders should be removed too: %o',
+          foldersThatShouldBeRemoved.length,
+          foldersThatShouldBeRemoved,
+        )
+        foldersThatShouldBeRemoved.forEach(folder => filteredFolderResults.push(folder))
+      }
+
       const filesResults =
         filteredFolderResults.length > 0
           ? await queryFiles(

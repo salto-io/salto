@@ -327,6 +327,7 @@ export type Workspace = {
   }): Promise<StaticFile | undefined>
   getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
   getElemIdsByStaticFilePaths(filePaths?: Set<string>, envName?: string): Promise<Record<string, string>>
+  getElemIdsByStaticFilePathsNew(filePaths?: Set<string>, envName?: string): Promise<Record<string, string[]>>
   getAliases(envName?: string): Promise<ReadOnlyRemoteMap<string>>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>
@@ -1226,22 +1227,29 @@ export const loadWorkspace = async (
     )
     return result.filter(values.isDefined).flat()
   }
-  const getElemIdsByStaticFilePaths = async (
+  const getElemIdsByStaticFilePathsNew = async (
     filePaths?: Set<string>,
     envName?: string,
-  ): Promise<Record<string, string>> => {
+  ): Promise<Record<string, string[]>> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
-    return Object.fromEntries(
-      await awu(currentWorkspaceState.states[env].referencedStaticFiles.entries())
-        .flatMap(({ key: id, value: fileNames }) =>
-          fileNames
-            .filter(filename => filePaths === undefined || filePaths.has(filename))
-            .map(filename => [filename, id]),
-        )
-        .toArray(),
-    )
+    const idsAndFileByFileName = await awu(currentWorkspaceState.states[env].referencedStaticFiles.entries())
+      .flatMap(({ key: id, value: fileNames }) =>
+        fileNames
+          .filter(filename => filePaths === undefined || filePaths.has(filename))
+          .map(filename => ({ filename, id })),
+      )
+      .groupBy(({ filename }) => filename)
+    return _.mapValues(idsAndFileByFileName, idAndFiles => idAndFiles.map(({ id }) => id))
   }
+  const getElemIdsByStaticFilePaths = async (
+    filePaths: Set<string>,
+    envName?: string,
+  ): Promise<Record<string, string>> => {
+    const res = await getElemIdsByStaticFilePathsNew(filePaths, envName)
+    return _.mapValues(res, ids => ids[0])
+  }
+
   const getAliases = async (envName?: string): Promise<ReadOnlyRemoteMap<string>> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
@@ -1654,6 +1662,7 @@ export const loadWorkspace = async (
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,
+    getElemIdsByStaticFilePathsNew,
     getAliases,
     isChangedAtIndexEmpty,
   }

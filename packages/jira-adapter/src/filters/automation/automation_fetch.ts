@@ -46,7 +46,6 @@ import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
 import { JiraConfig } from '../../config/config'
-import { getCloudId } from './cloud_id'
 import { convertRuleScopeValueToProjects } from './automation_structure'
 
 const AUTOMATION_RETRY_CODES = [504, 502]
@@ -242,7 +241,7 @@ export const getAutomations = async (client: JiraClient, config: JiraConfig): Pr
         })
       ).data as Values[])
     : postPaginated(
-        `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rules`,
+        `/gateway/api/automation/internal-api/jira/${await client.getCloudId()}/pro/rest/GLOBAL/rules`,
         client,
         config.fetch.automationPageSize ?? config.client.pageSize?.get ?? DEFAULT_PAGE_SIZE,
       )

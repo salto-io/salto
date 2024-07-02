@@ -20,7 +20,6 @@ import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { JIRA, AUTOMATION_LABEL_TYPE, fetchFailedWarnings } from '../../../constants'
 import { FilterCreator } from '../../../filter'
-import { getCloudId } from '../cloud_id'
 import { createAutomationLabelType } from './types'
 import { LABELS_POST_RESPONSE_SCHEME, LabelsResponse } from './label_deployment'
 
@@ -69,7 +68,7 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
       // get labels
       const url = client.isDataCenter
         ? '/rest/cb-automation/latest/rule-label'
-        : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
+        : `/gateway/api/automation/internal-api/jira/${await client.getCloudId()}/pro/rest/GLOBAL/rule-labels`
       const response = await client.get({ url })
       if (!isLabelsGetResponse(response.data)) {
         log.error('Failed to get automation labels, received invalid response')

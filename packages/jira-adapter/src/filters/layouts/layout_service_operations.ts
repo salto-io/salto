@@ -31,7 +31,7 @@ import { FilterResult } from '@salto-io/adapter-utils/src/filter'
 import _ from 'lodash'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 import { JiraConfig } from '../../config/config'
-import JiraClient, { graphQLResponseType } from '../../client/client'
+import JiraClient, { GQL_BASE_URL_GIRA, graphQLResponseType } from '../../client/client'
 import { QUERY, QUERY_JSM } from './layout_queries'
 import {
   ISSUE_LAYOUT_CONFIG_ITEM_SCHEME,
@@ -99,7 +99,7 @@ export const getLayoutResponse = async ({
   client: JiraClient
   typeName: LayoutTypeName
 }): Promise<graphQLResponseType> => {
-  const baseUrl = '/rest/gira/1'
+  const baseUrl = GQL_BASE_URL_GIRA
   try {
     const query = LAYOUT_TYPE_NAME_TO_DETAILS[typeName]?.query
     if (query === undefined) {

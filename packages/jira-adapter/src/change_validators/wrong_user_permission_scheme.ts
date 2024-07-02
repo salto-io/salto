@@ -21,6 +21,7 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { isPermissionSchemeStructure, PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
@@ -51,6 +52,18 @@ export const wrongUserPermissionSchemeValidator: (client: JiraClient, config: Ji
       return []
     }
     const { baseUrl } = client
+
+    const permissionsSchemeChanges = changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(
+        element => element.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME && element.value.permissions !== undefined,
+      )
+
+    if (_.isEmpty(permissionsSchemeChanges)) {
+      return []
+    }
     const rawUserMap = await getUsersMap(elementsSource)
     if (rawUserMap === undefined) {
       return []
@@ -58,18 +71,11 @@ export const wrongUserPermissionSchemeValidator: (client: JiraClient, config: Ji
     const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
     const wrongUserPermissionSchemePredicate = wrongUserPermissionSchemePredicateCreator(userMap)
-    return changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(
-        element => element.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME && element.value.permissions !== undefined,
-      )
-      .flatMap(element =>
-        element.value.permissions.flatMap((permission: PermissionHolder) =>
-          isPermissionSchemeStructure(permission) && wrongUserPermissionSchemePredicate(permission)
-            ? createChangeError(element, permission, baseUrl)
-            : [],
-        ),
-      )
+    return permissionsSchemeChanges.flatMap(element =>
+      element.value.permissions.flatMap((permission: PermissionHolder) =>
+        isPermissionSchemeStructure(permission) && wrongUserPermissionSchemePredicate(permission)
+          ? createChangeError(element, permission, baseUrl)
+          : [],
+      ),
+    )
   }

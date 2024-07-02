@@ -261,6 +261,16 @@ export const accountIdValidator: (client: JiraClient, config: JiraConfig) => Cha
     if (!(config.fetch.convertUsersIds ?? true)) {
       return []
     }
+
+    const accountIdChanges = changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .map(change => getChangeData(change))
+      .filter(isDeployableAccountIdType)
+
+    if (_.isEmpty(accountIdChanges)) {
+      return []
+    }
     const { baseUrl, isDataCenter } = client
     const rawUserMap = await getUsersMap(elementsSource)
     if (rawUserMap === undefined) {
@@ -269,11 +279,7 @@ export const accountIdValidator: (client: JiraClient, config: JiraConfig) => Cha
     const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
     const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
-    return changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .map(change => getChangeData(change))
-      .filter(isDeployableAccountIdType)
+    return accountIdChanges
       .map(element =>
         createChangeErrorsForAccountIdIssues(element, userMap, baseUrl, isDataCenter, config, defaultUserExist),
       )

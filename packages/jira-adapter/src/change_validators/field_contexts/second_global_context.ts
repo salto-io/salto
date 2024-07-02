@@ -72,25 +72,13 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
   }
   const fieldToGlobalContextCount: Record<string, number> = {}
   const fieldToImplicitGlobalContextCount: Record<string, number> = {}
-  const fillFieldToGlobalContextCount = async (): Promise<void> =>
-    awu(await elementSource.getAll())
-      .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-      .filter(isInstanceElement)
-      .filter(instance => instance.value.isGlobalContext)
-      .forEach(async instance => {
-        const fieldElemId = getParentElemID(instance)
-        const fieldName = fieldElemId.getFullName()
-        if (fieldToGlobalContextCount[fieldName] === undefined) {
-          fieldToGlobalContextCount[fieldName] = 1
-        } else {
-          fieldToGlobalContextCount[fieldName] += 1
-        }
-      })
+  const projectsChanges = await awu(changes)
+    .filter(isInstanceChange)
+    .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
+    .toArray()
   const fillFieldContextToProjectChangeData = async (): Promise<Map<string, ProjectChangesData>> => {
     const fieldContextToProjectChangeData = new Map<string, ProjectChangesData>()
-    await awu(changes)
-      .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
+    await awu(projectsChanges)
       .filter(isRemovalOrModificationChange)
       .forEach(async change => {
         await awu(change.data.before.value.fieldContexts ?? [])
@@ -121,16 +109,32 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     return fieldContextToProjectChangeData
   }
 
-  const globalContextList = await awu(changes)
+  const globalContextChanges = await awu(changes)
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
     .filter(instance => instance.value.isGlobalContext)
     .toArray()
-  const globalContextElemIdsSet = new Set(globalContextList.map(instance => instance.elemID.getFullName()))
 
-  await fillFieldToGlobalContextCount()
+  if (globalContextChanges.length !== 0 || projectsChanges.length !== 0) {
+    await awu(await elementSource.getAll())
+      .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(isInstanceElement)
+      .filter(instance => instance.value.isGlobalContext)
+      .forEach(async instance => {
+        const fieldElemId = getParentElemID(instance)
+        const fieldName = fieldElemId.getFullName()
+        if (fieldToGlobalContextCount[fieldName] === undefined) {
+          fieldToGlobalContextCount[fieldName] = 1
+        } else {
+          fieldToGlobalContextCount[fieldName] += 1
+        }
+      })
+  }
+
+  const globalContextElemIdsSet = new Set(globalContextChanges.map(instance => instance.elemID.getFullName()))
+
   const fieldContextToProjectChangesData = await fillFieldContextToProjectChangeData()
 
   Array.from(fieldContextToProjectChangesData)
@@ -158,8 +162,8 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
       projectChanges.map(change => createProjectErrorMessage(getChangeData(change).elemID, fieldContextName)),
     )
 
-  if (globalContextList.length > 0) {
-    const secondGlobalContextErrorMessages = globalContextList
+  if (globalContextChanges.length > 0) {
+    const secondGlobalContextErrorMessages = globalContextChanges
       .map(instance => ({ context: instance, field: getParent(instance) }))
       .map(contextAndField => {
         if (fieldToGlobalContextCount[contextAndField.field.elemID.getFullName()] > 1) {

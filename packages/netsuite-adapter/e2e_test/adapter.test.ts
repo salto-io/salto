@@ -675,6 +675,9 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should add alias to elements', async () => {
+        const ignoreCustomRecordInstanceAlias = (type: ObjectType): boolean =>
+          isCustomRecordType(type) && (type.annotations[CORE_ANNOTATIONS.HIDDEN] || !type.annotations.includename)
+
         const relevantElements = fetchResult.elements.filter(
           element =>
             isInstanceElement(element) ||
@@ -686,17 +689,8 @@ describe('Netsuite adapter E2E with real account', () => {
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
           // some sub-instances don't have alias
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
+          .filter(element => !isInstanceElement(element) || !ignoreCustomRecordInstanceAlias(element.getTypeSync()))
           .filter(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] !== true)
-          .filter(element => {
-            if (!isInstanceElement(element)) {
-              return true
-            }
-            const type = element.getTypeSync()
-            if (!isCustomRecordType(type)) {
-              return true
-            }
-            return type.annotations[CORE_ANNOTATIONS.HIDDEN] !== true
-          })
 
         expect(elementsWithoutAlias.map(element => element.elemID.getFullName())).toEqual([])
       })

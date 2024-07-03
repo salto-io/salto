@@ -243,7 +243,7 @@ describe('overrides', () => {
       setupEnvVar(overridesEnvVar, jsonString)
       it('should remove a type from the fetch config', () => {
         const merged = mergeDefinitionsWithOverrides(mockedDefinitions)
-        expect(merged.fetch.instances.customizations?.team).toBeUndefined()
+        expect(merged.fetch.instances.customizations?.team).toBeNull()
       })
     })
   })

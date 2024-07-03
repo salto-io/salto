@@ -56,6 +56,7 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     }
     return undefined
   }
+  log.debug('starting to merge definitions with overrides')
   const overrides = getParsedDefinitionsOverrides()
   if (_.isEmpty(overrides)) {
     return definitions
@@ -63,17 +64,6 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
   log.debug('Definitions overrides:', overrides)
   const cloneDefinitions = _.cloneDeep(definitions)
   const merged = _.mergeWith(cloneDefinitions, overrides, customMerge)
-  const removeNullObjects = (obj: Value): Value => {
-    if (_.isArray(obj)) {
-      return obj.map(removeNullObjects)
-    }
-    if (_.isObject(obj)) {
-      const cleanedObj = _.omitBy(obj, _.isNull)
-      return _.mapValues(cleanedObj, removeNullObjects)
-    }
-    return obj
-  }
-  const afterRemoveNullObjects = removeNullObjects(merged)
-  log.debug('Merged definitions with overrides:', afterRemoveNullObjects)
-  return afterRemoveNullObjects
+  log.debug('Merged definitions with overrides:', merged)
+  return merged
 }

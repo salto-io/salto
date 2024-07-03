@@ -22,7 +22,7 @@ import {
 } from '../../../change_validators'
 import { AdjustFunction } from '../types'
 
-export const omitReadOnlyFields: AdjustFunction = ({ typeName, value, context }) => {
+export const omitReadOnlyFields: AdjustFunction = async ({ typeName, value, context }) => {
   validatePlainObject(value, typeName)
   if (context.change.action === 'remove') {
     return { value }

@@ -38,20 +38,6 @@ describe('netsuite config creator', () => {
   })
 
   describe('fetch target', () => {
-    it('should keep query without custom records', () => {
-      config.value.fetchTarget = {
-        types: {
-          addressForm: ['aaa.*', 'bbb.*'],
-        },
-        filePaths: ['eee.*', 'fff.*'],
-      }
-      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
-        types: {
-          addressForm: ['aaa.*', 'bbb.*'],
-        },
-        filePaths: ['eee.*', 'fff.*'],
-      })
-    })
     it('should add custom record types to "types"', () => {
       config.value.fetchTarget = {
         types: {
@@ -68,6 +54,7 @@ describe('netsuite config creator', () => {
           customrecordtype: ['customrecord2', 'customrecord1'],
           customsegment: [],
         },
+        filePaths: [],
         customRecords: {
           customrecord1: ['.*'],
         },
@@ -84,6 +71,7 @@ describe('netsuite config creator', () => {
           customrecordtype: ['customrecord1'],
           customsegment: [],
         },
+        filePaths: [],
         customRecords: {
           customrecord1: ['.*'],
         },
@@ -100,9 +88,50 @@ describe('netsuite config creator', () => {
           customrecordtype: ['customrecord_cseg1'],
           customsegment: ['cseg1'],
         },
+        filePaths: [],
         customRecords: {
           customrecord_cseg1: ['.*'],
         },
+      })
+    })
+    it('should add parent folders to filePaths', () => {
+      config.value.fetchTarget = {
+        filePaths: ['/SuiteScripts/file.txt'],
+      }
+      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
+        types: {
+          customrecordtype: [],
+          customsegment: [],
+        },
+        filePaths: ['/SuiteScripts/file.txt', '/SuiteScripts/'],
+        customRecords: {},
+      })
+    })
+    it('should add "all folders matcher" when fetchTarget includes a file extension', () => {
+      config.value.fetchTarget = {
+        filePaths: ['.*\\.js'],
+      }
+      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
+        types: {
+          customrecordtype: [],
+          customsegment: [],
+        },
+        filePaths: ['.*\\.js', '.*/'],
+        customRecords: {},
+      })
+    })
+    it('should ignore invalid parent folder regex', () => {
+      config.value.fetchTarget = {
+        // extracting "/Templates/[^/" creates an invalid regex
+        filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html'],
+      }
+      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
+        types: {
+          customrecordtype: [],
+          customsegment: [],
+        },
+        filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html', '/SuiteScripts/'],
+        customRecords: {},
       })
     })
   })

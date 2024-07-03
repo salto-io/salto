@@ -20,13 +20,14 @@ import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { TransformDefinition, TransformFunction, SingleValueTransformationFunction } from '../definitions/system/shared'
 import { DATA_FIELD_ENTIRE_OBJECT } from '../definitions'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const createValueTransformer = <TContext extends Record<string, unknown>, TSource extends Values>(
   def?: TransformDefinition<TContext, unknown>,
 ): TransformFunction<TContext, TSource, unknown> | SingleValueTransformationFunction<TContext, TSource, unknown> => {
   if (def === undefined) {
-    return item => [item]
+    return async item => [item]
   }
 
   const root = (value: unknown): unknown =>
@@ -45,7 +46,7 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
       ? _.set({}, def.nestUnderField, value)
       : value
 
-  const transformItem: TransformFunction<TContext, TSource, unknown> = item => {
+  const transformItem: TransformFunction<TContext, TSource, unknown> = async item => {
     const transformedValues = _(collections.array.makeArray(root(item.value)))
       .map(pick)
       .map(omit)
@@ -59,13 +60,15 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
     if (adjust === undefined) {
       return transformedItems
     }
-    return transformedItems.map(transformedItem => ({ ...transformedItem, ...adjust(transformedItem) }))
+    return awu(transformedItems)
+      .map(async transformedItem => ({ ...transformedItem, ...(await adjust(transformedItem)) }))
+      .toArray()
   }
   if (!def.single) {
     return transformItem
   }
-  return item => {
-    const res = transformItem(item)
+  return async item => {
+    const res = await transformItem(item)
     if (res.length !== 1) {
       log.warn('expected single item of type %s but transformation resulted in %d items', res.length)
     }

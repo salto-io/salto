@@ -1404,7 +1404,7 @@ describe('Adapter', () => {
 
     it('should use suiteAppFileCabinet importFileCabinet and pass it the right params', async () => {
       await adapter.fetch(mockFetchOpts)
-      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(expect.anything(), 3, ['.*\\.(csv|pdf|png)'])
+      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(expect.anything(), 3, ['.*\\.(csv|pdf|png)'], false)
     })
 
     it('should not create serverTime elements when getSystemInformation returns undefined', async () => {

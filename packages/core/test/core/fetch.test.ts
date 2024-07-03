@@ -41,10 +41,19 @@ import {
   isStaticFile,
   toChange,
   isModificationChange,
+  toServiceIdsString,
+  ElemIdGetter,
+  ServiceIds,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { elementSource, pathIndex, remoteMap, createAdapterReplacedID } from '@salto-io/workspace'
+import {
+  elementSource,
+  pathIndex,
+  remoteMap,
+  createAdapterReplacedID,
+  createElementSelector,
+} from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { mockWorkspace } from '../common/workspace'
 import {
@@ -54,8 +63,8 @@ import {
   FetchProgressEvents,
   getAdaptersFirstFetchPartial,
   fetchChangesFromWorkspace,
-  createElemIdGetter,
   calcFetchChanges,
+  createElemIdGetters,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
@@ -2216,14 +2225,78 @@ describe('fetch from workspace', () => {
     })
   })
 
-  describe('elem id getter test', () => {
-    it('translated id to new account name', async () => {
-      const objID = new ElemID('salesforce', 'obj')
-      const obj = new ObjectType({
+  describe('elem id getters test', () => {
+    const toServiceId = (type: ObjectType): ServiceIds => ({
+      serviceIdField: '1',
+      [OBJECT_SERVICE_ID]: toServiceIdsString({
+        [OBJECT_NAME]: type.elemID.getFullName(),
+      }),
+    })
+
+    it('should translate id to new account name', async () => {
+      const type = new ObjectType({
         elemID: new ElemID('salesforceAccountName', 'obj'),
+        fields: { serviceIdField: { refType: BuiltinTypes.SERVICE_ID } },
       })
-      const idGetter = await createElemIdGetter(awu([obj]), createElementSource([]))
-      expect(idGetter('salesforce', { [OBJECT_SERVICE_ID]: objID.getFullName() }, 'obj')).toEqual(objID)
+      const instance = new InstanceElement('existingInst', type, { serviceIdField: '1' })
+      const { salesforceAccountName: idGetter } = await createElemIdGetters({
+        workspace: mockWorkspace({ stateElements: [type, instance] }),
+        accountToServiceNameMap: { salesforceAccountName: 'salesforce' },
+        elementsSource: createElementSource([type, instance]),
+        ignoreStateElemIdMapping: false,
+        ignoreStateElemIdMappingForSelectors: [],
+      })
+      expect(idGetter('salesforce', toServiceId(type), 'newInst')).toEqual(
+        createAdapterReplacedID(instance.elemID, 'salesforce'),
+      )
+    })
+    it('should return empty getters when ignoreStateElemIdMapping is true', async () => {
+      const type = new ObjectType({
+        elemID: new ElemID('salesforce', 'obj'),
+        fields: { serviceIdField: { refType: BuiltinTypes.SERVICE_ID } },
+      })
+      const instance = new InstanceElement('existingInst', type, { serviceIdField: '1' })
+      const idGetters = await createElemIdGetters({
+        workspace: mockWorkspace({ stateElements: [type, instance] }),
+        accountToServiceNameMap: { salesforce: 'salesforce' },
+        elementsSource: createElementSource([type, instance]),
+        ignoreStateElemIdMapping: true,
+        ignoreStateElemIdMappingForSelectors: [],
+      })
+      expect(idGetters).toEqual({})
+    })
+    describe('ignore state elemId mapping for selectors', () => {
+      let idGetter: ElemIdGetter
+
+      const type = new ObjectType({
+        elemID: new ElemID('salesforce', 'obj'),
+        fields: { serviceIdField: { refType: BuiltinTypes.SERVICE_ID } },
+      })
+      const typeToIgnore = new ObjectType({
+        elemID: new ElemID('salesforce', 'obj_ignore'),
+        fields: { serviceIdField: { refType: BuiltinTypes.SERVICE_ID } },
+      })
+      const instance = new InstanceElement('existingInst', type, { serviceIdField: '1' })
+      const instanceToIgnore = new InstanceElement('existingInst', typeToIgnore, { serviceIdField: '1' })
+
+      beforeEach(async () => {
+        const idGetters = await createElemIdGetters({
+          workspace: mockWorkspace({ stateElements: [type, typeToIgnore, instance, instanceToIgnore] }),
+          accountToServiceNameMap: { salesforce: 'salesforce' },
+          elementsSource: createElementSource([type, typeToIgnore, instance, instanceToIgnore]),
+          ignoreStateElemIdMapping: true,
+          ignoreStateElemIdMappingForSelectors: [createElementSelector('salesforce.obj_ignore.instance.*')],
+        })
+        idGetter = idGetters.salesforce
+      })
+      it('should return a new elemID for element that match ignoreStateElemIdMappingForSelectors', async () => {
+        expect(idGetter('salesforce', toServiceId(typeToIgnore), 'newInst')).toEqual(
+          new ElemID('salesforce', 'newInst'),
+        )
+      })
+      it('should return existing elemID for element that does not match ignoreStateElemIdMappingForSelectors', async () => {
+        expect(idGetter('salesforce', toServiceId(type), 'newInst')).toEqual(instance.elemID)
+      })
     })
   })
 })

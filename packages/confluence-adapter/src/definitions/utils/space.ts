@@ -88,7 +88,7 @@ export const restructurePermissionsAndCreateInternalIdMap = (value: Record<strin
  */
 export const spaceMergeAndTransformAdjust: definitions.AdjustFunction<{
   fragments: definitions.GeneratedItem[]
-}> = item => {
+}> = async item => {
   const value = validateValue(item.value)
   restructurePermissionsAndCreateInternalIdMap(value)
   return { value }

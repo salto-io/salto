@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 import { FilterCreator } from '../filter'
+import { getDashboardLayoutsAsync } from './dashboard/dashboard_layout'
+import { getDashboardPropertiesAsync } from './dashboard/gadget'
 import { getLayoutRequestsAsync } from './layouts/issue_layout'
 
 // Filter to start the async API calls
@@ -21,6 +23,8 @@ const filter: FilterCreator = ({ client, config, fetchQuery, adapterContext }) =
   name: 'asyncAPICalls',
   onFetch: async elements => {
     adapterContext.layoutsPromise = getLayoutRequestsAsync(client, config, fetchQuery, elements)
+    adapterContext.dashboardLayoutPromise = getDashboardLayoutsAsync(client, config, elements)
+    adapterContext.dashboardPropertiesPromise = getDashboardPropertiesAsync(client, elements)
   },
 })
 

@@ -28,7 +28,7 @@ export const getGroupLifecyclePolicyGroupModificationRequest = (action: 'add' | 
   },
   transformation: {
     pick: ['id'],
-    adjust: ({ value }) => {
+    adjust: async ({ value }) => {
       validatePlainObject(value, GROUP_TYPE_NAME)
       return {
         value: {

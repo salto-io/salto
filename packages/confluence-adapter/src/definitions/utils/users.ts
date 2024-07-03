@@ -23,7 +23,7 @@ import { validateValue } from './generic'
  * AdjustFunction that runs upon fetch and change user references structure
  * so object type will be aligned with the structure yield by "groups_and_users_filter".
  */
-export const createAdjustUserReferences: (typeName: string) => definitions.AdjustFunction = typeName => args => {
+export const createAdjustUserReferences: (typeName: string) => definitions.AdjustFunction = typeName => async args => {
   const value = validateValue(args.value)
   const userFields = TYPE_NAME_TO_USER_FIELDS[typeName]
   userFields.forEach(field => {
@@ -40,7 +40,7 @@ export const createAdjustUserReferences: (typeName: string) => definitions.Adjus
  */
 export const createAdjustUserReferencesReverse: (
   typeName: string,
-) => definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = typeName => args => {
+) => definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = typeName => async args => {
   const value = validateValue(args.value)
   const userFields = TYPE_NAME_TO_USER_FIELDS[typeName]
   userFields.forEach(field => {

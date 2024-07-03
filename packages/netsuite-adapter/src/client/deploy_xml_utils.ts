@@ -27,7 +27,12 @@ const log = logger(module)
 const PROJECT_ROOT_TILDE_PREFIX = `${osPath.sep}~`
 
 export const reorderDeployXml = (deployContent: string, dependencyGraph: Graph<SDFObjectNode>): string => {
-  const nodesInCycle = new Set(dependencyGraph.findCycle())
+  const nodesInCycle = new Set(
+    dependencyGraph
+      .findCycle()
+      .flatMap(node => dependencyGraph.getNodeDependencies(node))
+      .map(node => node.id),
+  )
   log.debug(
     'The following %d objects will not be written explicity in the deploy xml since they contain a cycle: %o',
     nodesInCycle.size,

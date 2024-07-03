@@ -18,7 +18,15 @@ import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { getChangeData, isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from './types'
-import { BRAND_TYPE_NAME, GROUP_TYPE_NAME } from '../constants'
+import {
+  BRAND_TYPE_NAME,
+  DEVICE_ASSURANCE_TYPE_NAME,
+  DOMAIN_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  LINKS_FIELD,
+  SMS_TEMPLATE_TYPE_NAME,
+  USERTYPE_TYPE_NAME,
+} from '../constants'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -30,9 +38,44 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   >({
     [GROUP_TYPE_NAME]: { bulkPath: '/api/v1/groups' },
     [BRAND_TYPE_NAME]: { bulkPath: '/api/v1/brands' },
+    [DOMAIN_TYPE_NAME]: { bulkPath: '/api/v1/domains' },
+    [SMS_TEMPLATE_TYPE_NAME]: { bulkPath: '/api/v1/templates/sms' },
+    [DEVICE_ASSURANCE_TYPE_NAME]: { bulkPath: '/api/v1/device-assurances' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    [USERTYPE_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/meta/types/user', method: 'post' },
+              },
+              copyFromResponse: {
+                additional: {
+                  pick: [LINKS_FIELD],
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/meta/types/user/{id}', method: 'put' },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/meta/types/user/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+    },
     User: {
       requestsByAction: {
         customizations: {

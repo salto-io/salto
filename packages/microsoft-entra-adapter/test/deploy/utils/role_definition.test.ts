@@ -19,55 +19,55 @@ import { adjustRoleDefinitionForDeployment } from '../../../src/definitions/depl
 import { contextMock } from '../../mocks'
 
 describe(`${adjustRoleDefinitionForDeployment.name}`, () => {
-  it('should throw an error if the value is not an object', () => {
+  it('should throw an error if the value is not an object', async () => {
     const roleDefinition = 'not an object'
-    expect(() =>
+    await expect(
       adjustRoleDefinitionForDeployment({
         value: roleDefinition,
         typeName: ROLE_DEFINITION_TYPE_NAME,
         context: contextMock,
       }),
-    ).toThrow()
+    ).rejects.toThrow()
   })
 
-  it('should throw an error if rolePermissions field is not an array', () => {
+  it('should throw an error if rolePermissions field is not an array', async () => {
     const roleDefinition = {
       rolePermissions: 'not an array',
     }
-    expect(() =>
+    await expect(
       adjustRoleDefinitionForDeployment({
         value: roleDefinition,
         typeName: ROLE_DEFINITION_TYPE_NAME,
         context: contextMock,
       }),
-    ).toThrow()
+    ).rejects.toThrow()
   })
 
-  it('should not throw an error if rolePermissions field does not exist', () => {
+  it('should not throw an error if rolePermissions field does not exist', async () => {
     const roleDefinition = {}
-    expect(() =>
+    await expect(
       adjustRoleDefinitionForDeployment({
         value: roleDefinition,
         typeName: ROLE_DEFINITION_TYPE_NAME,
         context: contextMock,
       }),
-    ).not.toThrow()
+    ).resolves.not.toThrow()
   })
 
-  it('should throw an error if one of the rolePermissions is not an object', () => {
+  it('should throw an error if one of the rolePermissions is not an object', async () => {
     const roleDefinition = {
       rolePermissions: ['not an object'],
     }
-    expect(() =>
+    await expect(
       adjustRoleDefinitionForDeployment({
         value: roleDefinition,
         typeName: ROLE_DEFINITION_TYPE_NAME,
         context: contextMock,
       }),
-    ).toThrow()
+    ).rejects.toThrow()
   })
 
-  it('should return the roleDefinition with the correct format', () => {
+  it('should return the roleDefinition with the correct format', async () => {
     const roleDefinition = {
       rolePermissions: [
         {
@@ -77,13 +77,13 @@ describe(`${adjustRoleDefinitionForDeployment.name}`, () => {
         },
       ],
     }
-    expect(
+    await expect(
       adjustRoleDefinitionForDeployment({
         value: roleDefinition,
         typeName: ROLE_DEFINITION_TYPE_NAME,
         context: contextMock,
       }),
-    ).toEqual({
+    ).resolves.toEqual({
       value: {
         rolePermissions: [
           {

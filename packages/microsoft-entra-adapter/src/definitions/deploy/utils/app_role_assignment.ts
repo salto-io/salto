@@ -38,7 +38,7 @@ export const createDefinitionForAppRoleAssignment = ({
               },
               transformation: {
                 omit: ['id'],
-                adjust: ({ value, context }) => {
+                adjust: async ({ value, context }) => {
                   validatePlainObject(value, typeName)
                   const parentId = _.get(context, 'additionalContext.parent_id')
                   if (!_.isString(parentId)) {

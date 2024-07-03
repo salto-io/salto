@@ -119,5 +119,33 @@ describe('new Fields and Objects FLS Change Validator', () => {
         ),
       })
     })
+
+    describe('CustomMetadata object addition', () => {
+      beforeEach(() => {
+        addedObject = createCustomObjectType('TestType__mdt', {
+          annotations: { [API_NAME]: 'TestType__mdt' },
+          fields: {
+            TestField__c: { refType: BuiltinTypes.STRING },
+          },
+        })
+        changes = [addedObject, ...Object.values(addedObject.fields)].map(
+          (element) => toChange({ after: element }),
+        )
+      })
+      it('should create FLS info on the added object only', async () => {
+        const errors = await changeValidator(changes)
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toEqual({
+          elemID: addedObject.elemID,
+          severity: 'Info',
+          message: expect.stringContaining(
+            'Read/write access to this Custom Object will be granted to the following profile: Admin',
+          ),
+          detailedMessage: expect.stringContaining(
+            DEFAULT_FLS_PROFILES.join(', '),
+          ),
+        })
+      })
+    })
   })
 })

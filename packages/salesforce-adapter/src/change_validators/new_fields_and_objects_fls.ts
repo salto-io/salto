@@ -23,8 +23,11 @@ import {
   isObjectType,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { isCustom } from '../transformers/transformer'
-import { apiNameSync, getFLSProfiles } from '../filters/utils'
+import {
+  apiNameSync,
+  getFLSProfiles,
+  isStandardObjectSync,
+} from '../filters/utils'
 import { SalesforceConfig } from '../types'
 
 const profileNameOrNumberOfProfiles = (profiles: string[]): string =>
@@ -61,7 +64,8 @@ const changeValidator =
       .filter(isAdditionChange)
       .map(getChangeData)
       .filter(isObjectType)
-      .filter((objectType) => isCustom(apiNameSync(objectType)))
+      // Additions of Standard Objects are invalid and should be handled as part of the standardFieldOrObjectAdditionsOrDeletions Change Validator
+      .filter((objectType) => !isStandardObjectSync(objectType))
     const addedCustomObjectsApiNames = new Set(
       addedCustomObjects.map((customObject) => apiNameSync(customObject)),
     )

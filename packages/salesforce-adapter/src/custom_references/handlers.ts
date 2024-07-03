@@ -35,11 +35,13 @@ import {
 import { profilesHandler } from './profiles'
 import { managedElementsHandler } from './managed_elements'
 import { permissionSetsHandler } from './permission_sets'
+import { rulesAndConditionsHandler } from './rules_and_conditions'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   profiles: profilesHandler,
   managedElements: managedElementsHandler,
   permisisonSets: permissionSetsHandler,
+  rulesAndConditions: rulesAndConditionsHandler,
 }
 
 const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
@@ -47,6 +49,7 @@ const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
     profiles: true,
     managedElements: true,
     permisisonSets: true,
+    rulesAndConditions: true,
   }
 
 export const customReferencesConfiguration = (

@@ -56,6 +56,7 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     }
     return undefined
   }
+  log.debug('starting to merge definitions with overrides')
   const overrides = getParsedDefinitionsOverrides()
   if (_.isEmpty(overrides)) {
     return definitions
@@ -67,7 +68,7 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     if (_.isArray(obj)) {
       return obj.map(removeNullObjects)
     }
-    if (_.isObject(obj)) {
+    if (_.isPlainObject(obj)) {
       const cleanedObj = _.omitBy(obj, _.isNull)
       return _.mapValues(cleanedObj, removeNullObjects)
     }

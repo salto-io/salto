@@ -71,7 +71,6 @@ import { defaultAttributeValidator } from './assets/default_attribute'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 import { addJsmProjectValidator } from './adding_jsm_project'
 import { jsmPermissionsValidator } from './jsm/jsm_permissions'
-import { jsmLockedFieldsValidator } from './jsm/jsm_locked_fields'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
 
@@ -136,7 +135,6 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     automationToAssets: automationToAssetsValidator(config),
     defaultAttributeValidator: defaultAttributeValidator(config, client),
     addJsmProject: addJsmProjectValidator,
-    jsmLockedFields: jsmLockedFieldsValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
   }

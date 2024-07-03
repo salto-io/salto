@@ -88,6 +88,7 @@ const updatedFetchTarget = (config: NetsuiteConfig): NetsuiteQueryParameters | u
     .filter(path => path !== FILE_CABINET_PATH_SEPARATOR)
     // in case that the query was like ".*\.js" (all js files), we want to query all folders
     .map(path => (path === '' ? `.*${FILE_CABINET_PATH_SEPARATOR}` : path))
+    .filter(regex.isValidRegex)
   const updatedFilePaths = _.uniq(filePaths.concat(filePathsFolders))
 
   return {

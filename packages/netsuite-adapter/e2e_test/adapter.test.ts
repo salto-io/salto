@@ -686,6 +686,7 @@ describe('Netsuite adapter E2E with real account', () => {
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
           // some sub-instances don't have alias
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
+          .filter(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] !== true)
           .filter(element => {
             if (!isInstanceElement(element)) {
               return true
@@ -697,7 +698,7 @@ describe('Netsuite adapter E2E with real account', () => {
             return type.annotations[CORE_ANNOTATIONS.HIDDEN] !== true
           })
 
-        expect(elementsWithoutAlias.every(elem => elem.annotations[CORE_ANNOTATIONS.HIDDEN])).toBeTruthy()
+        expect(elementsWithoutAlias.map(element => element.elemID.getFullName())).toEqual([])
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {

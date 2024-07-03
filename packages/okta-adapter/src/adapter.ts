@@ -46,7 +46,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { CLIENT_CONFIG, FETCH_CONFIG, OLD_API_DEFINITIONS_CONFIG } from './config'
-import { configType, getExcludeUserConfigSuggestion, OktaUserConfig, OktaUserFetchConfig } from './user_config'
+import { configType, OktaUserConfig } from './user_config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -57,7 +57,6 @@ import defaultDeployFilter from './filters/default_deploy'
 import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
-import userTypeFilter from './filters/user_type'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import accessPolicyRuleConstraintsFilter from './filters/access_policy_rule_constraints'
@@ -109,7 +108,6 @@ const log = logger(module)
 
 const DEFAULT_FILTERS = [
   standardRolesFilter, // TODO SALTO-5607 - move to infra
-  userTypeFilter,
   userSchemaFilter,
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
@@ -166,25 +164,6 @@ export interface OktaAdapterParams {
   adminClient?: OktaClient
 }
 
-/**
- * Temporary adjusment to support migration of User type into the exclude list
- */
-const createElementQueryWithUserType = (
-  fetchConfig: OktaUserFetchConfig,
-  criteria: Record<string, elementUtils.query.QueryCriterion>,
-): elementUtils.query.ElementQuery => {
-  const isUserExcluded = fetchConfig.exclude.find(fetchEnrty => fetchEnrty.type === USER_TYPE_NAME)
-  const isUserIncluded = fetchConfig.include.find(fetchEntry => fetchEntry.type === USER_TYPE_NAME)
-  const updatedConfig =
-    !isUserExcluded && !isUserIncluded
-      ? {
-          ...fetchConfig,
-          exclude: fetchConfig.exclude.concat({ type: USER_TYPE_NAME }),
-        }
-      : fetchConfig
-  return elementUtils.query.createElementQuery(updatedConfig, criteria)
-}
-
 export default class OktaAdapter implements AdapterOperations {
   private createFiltersRunner: (usersPromise?: Promise<User[]>) => Required<Filter>
   private client: OktaClient
@@ -239,7 +218,7 @@ export default class OktaAdapter implements AdapterOperations {
       }),
     }
 
-    this.fetchQuery = createElementQueryWithUserType(this.userConfig.fetch, fetchCriteria)
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
 
@@ -361,7 +340,6 @@ export default class OktaAdapter implements AdapterOperations {
     const configChanges = (getElementsConfigChanges ?? [])
       .concat(classicOrgConfigSuggestion ?? [])
       .concat(oauthConfigChange ?? [])
-      .concat(getExcludeUserConfigSuggestion(this.configInstance) ?? [])
     const updatedConfig =
       !_.isEmpty(configChanges) && this.configInstance
         ? definitionsUtils.getUpdatedConfigFromConfigChanges({

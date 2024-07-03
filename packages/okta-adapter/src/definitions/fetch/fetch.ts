@@ -27,7 +27,7 @@ import {
   CUSTOM_NAME_FIELD,
   MFA_RULE_TYPE_NAME,
   IDP_RULE_TYPE_NAME,
-  DEVICE_ASSURANCE,
+  DEVICE_ASSURANCE_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
 } from '../../constants'
@@ -276,7 +276,7 @@ const createCustomizations = ({
           path: '/api/v1/apps',
         },
         transformation: {
-          adjust: ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
+          adjust: async ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
         },
       },
     ],
@@ -400,7 +400,7 @@ const createCustomizations = ({
       {
         endpoint: { path: '/api/v1/apps/{appId}/groups' },
         transformation: {
-          adjust: ({ value, context }) => ({
+          adjust: async ({ value, context }) => ({
             value: {
               ...(_.isObject(value)
                 ? {
@@ -463,7 +463,7 @@ const createCustomizations = ({
               },
               transformation: {
                 root: 'mappings',
-                adjust: ({ value }) => ({
+                adjust: async ({ value }) => ({
                   value: {
                     ...(isGroupPushEntry(value)
                       ? {
@@ -646,7 +646,9 @@ const createCustomizations = ({
         endpoint: { path: '/api/v1/meta/schemas/user/{id}' },
         transformation: {
           // assign user schema id from request context to value
-          adjust: ({ value, context }) => ({ value: { ...(_.isObject(value) ? { ...value, id: context.id } : {}) } }),
+          adjust: async ({ value, context }) => ({
+            value: { ...(_.isObject(value) ? { ...value, id: context.id } : {}) },
+          }),
         },
       },
     ],
@@ -1166,7 +1168,7 @@ const createCustomizations = ({
 })
 
 export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
-  DEVICE_ASSURANCE,
+  DEVICE_ASSURANCE_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,

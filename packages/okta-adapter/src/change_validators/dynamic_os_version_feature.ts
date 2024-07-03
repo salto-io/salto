@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { ChangeValidator, getChangeData, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
-import { DEVICE_ASSURANCE, FEATURE_TYPE_NAME } from '../constants'
+import { DEVICE_ASSURANCE_TYPE_NAME, FEATURE_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -48,7 +48,7 @@ export const dynamicOSVersionFeatureValidator: ChangeValidator = async (changes,
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === DEVICE_ASSURANCE)
+    .filter(instance => instance.elemID.typeName === DEVICE_ASSURANCE_TYPE_NAME)
     .filter(instance => DYNAMIC_OS_VERSION_PATH_OPTIONS.some(path => _.get(instance.value, path) !== undefined))
 
   if (_.isEmpty(relevantDeviceAssuranceInstances)) {

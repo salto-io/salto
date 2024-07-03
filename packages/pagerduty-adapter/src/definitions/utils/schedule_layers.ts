@@ -29,7 +29,7 @@ const addStartTime = (value: unknown): Record<string, unknown> => {
   return { ...value, start: value.rotation_virtual_start }
 }
 
-export const addStartToLayers: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value }) => {
+export const addStartToLayers: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({ value }) => {
   if (!lowerdashValues.isPlainRecord(value)) {
     throw new Error('Can not adjust when the value is not an object')
   }
@@ -41,7 +41,10 @@ export const addStartToLayers: definitions.AdjustFunction<definitions.deploy.Cha
   return { value: _.set(value, 'schedule.schedule_layers', layers.map(addStartTime)) }
 }
 
-export const addTimeZone: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value, context }) => ({
+export const addTimeZone: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({
+  value,
+  context,
+}) => ({
   value: {
     schedule: { schedule_layers: [addStartTime(value)], time_zone: _.get(context, 'additionalContext.time_zone') },
   },

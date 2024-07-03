@@ -16,17 +16,17 @@
 import { adjustPolicy } from '../../../../src/definitions/fetch/transforms'
 
 describe('adjust policy', () => {
-  it('should throw an error if value is not a record', () => {
-    expect(() => adjustPolicy({ value: 'not a record', context: {}, typeName: 'policy' })).toThrow()
+  it('should throw an error if value is not a record', async () => {
+    await expect(adjustPolicy({ value: 'not a record', context: {}, typeName: 'policy' })).rejects.toThrow()
   })
   describe('adjustCategoryObjectToCategoryId', () => {
-    it('should convert category object to category id', () => {
+    it('should convert category object to category id', async () => {
       const value = {
         a: 'a',
         general: { category: { id: 'category-id', anotherField: 'bla' } },
         b: 'b',
       }
-      expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).toEqual({
+      await expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).resolves.toEqual({
         value: {
           a: 'a',
           general: { category: 'category-id' },
@@ -36,13 +36,13 @@ describe('adjust policy', () => {
     })
   })
   describe('adjustSiteObjectToSiteId', () => {
-    it('should convert site object to site id', () => {
+    it('should convert site object to site id', async () => {
       const value = {
         a: 'a',
         general: { site: { id: 'site-id', anotherField: 'bla' } },
         b: 'b',
       }
-      expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).toEqual({
+      await expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).resolves.toEqual({
         value: {
           a: 'a',
           general: { site: 'site-id' },
@@ -52,14 +52,14 @@ describe('adjust policy', () => {
     })
   })
   describe('adjustScriptsObjectArrayToScriptsIds', () => {
-    it('should convert scripts object array to scripts ids', () => {
+    it('should convert scripts object array to scripts ids', async () => {
       const value = {
         a: 'a',
         general: {},
         scripts: [{ id: 'script-id' }, { id: 'script-id2' }],
         b: 'b',
       }
-      expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).toEqual({
+      await expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).resolves.toEqual({
         value: {
           a: 'a',
           general: {},
@@ -70,13 +70,13 @@ describe('adjust policy', () => {
     })
   })
   describe('adjustServiceIdToTopLevel', () => {
-    it('should extract id field from being under "general" field to be top level', () => {
+    it('should extract id field from being under "general" field to be top level', async () => {
       const value = {
         a: 'a',
         general: { id: 'service-id', anotherField: 'bla' },
         b: 'b',
       }
-      expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).toEqual({
+      await expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).resolves.toEqual({
         value: {
           a: 'a',
           id: 'service-id',

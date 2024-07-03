@@ -116,6 +116,8 @@ export type FetchParams = {
   addImportantValues?: boolean
   addLockedCustomRecordTypes?: boolean
   resolveAccountSpecificValues?: boolean
+  // SALTO-6145: should be removed
+  forceFileCabinetExclude?: boolean
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -130,6 +132,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addImportantValues: 'addImportantValues',
   addLockedCustomRecordTypes: 'addLockedCustomRecordTypes',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
+  forceFileCabinetExclude: 'forceFileCabinetExclude',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -573,6 +576,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addImportantValues: { refType: BuiltinTypes.BOOLEAN },
     addLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
+    forceFileCabinetExclude: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

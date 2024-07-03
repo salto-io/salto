@@ -246,6 +246,7 @@ export type FetchFunc = (
   accounts?: string[],
   ignoreStateElemIdMapping?: boolean,
   withChangesDetection?: boolean,
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[],
 ) => Promise<FetchResult>
 
 export type FetchFromWorkspaceFuncParams = {
@@ -261,21 +262,23 @@ export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Pro
 
 export const fetch: FetchFunc = async (
   workspace,
-  progressEmitter?,
-  accounts?,
-  ignoreStateElemIdMapping?,
-  withChangesDetection?,
+  progressEmitter,
+  accounts,
+  ignoreStateElemIdMapping,
+  withChangesDetection,
+  ignoreStateElemIdMappingForSelectors,
 ) => {
   log.debug('fetch starting..')
   const fetchAccounts = accounts ?? workspace.accounts()
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
-  const { currentConfigs, adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup(
+  const { currentConfigs, adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
     workspace,
     fetchAccounts,
     accountToServiceNameMap,
-    await workspace.elements(),
+    elementsSource: await workspace.elements(),
     ignoreStateElemIdMapping,
-  )
+    ignoreStateElemIdMappingForSelectors,
+  })
   const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
 
   if (progressEmitter) {
@@ -330,12 +333,12 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   log.debug('fetch starting from workspace..')
   const fetchAccounts = services ?? accounts ?? workspace.accounts()
 
-  const { currentConfigs } = await getFetchAdapterAndServicesSetup(
+  const { currentConfigs } = await getFetchAdapterAndServicesSetup({
     workspace,
     fetchAccounts,
-    getAccountToServiceNameMap(workspace, fetchAccounts),
-    await workspace.elements(),
-  )
+    accountToServiceNameMap: getAccountToServiceNameMap(workspace, fetchAccounts),
+    elementsSource: await workspace.elements(),
+  })
 
   const {
     changes,
@@ -417,6 +420,7 @@ type CalculatePatchArgs = {
   toDir: string
   accountName: string
   ignoreStateElemIdMapping?: boolean
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[]
 }
 
 export const calculatePatch = async ({
@@ -425,6 +429,7 @@ export const calculatePatch = async ({
   toDir,
   accountName,
   ignoreStateElemIdMapping,
+  ignoreStateElemIdMappingForSelectors,
 }: CalculatePatchArgs): Promise<FetchResult> => {
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const adapterName = accountToServiceNameMap[accountName]
@@ -437,13 +442,14 @@ export const calculatePatch = async ({
   }
   const wsElements = await workspace.elements()
   const resolvedWSElements = await expressions.resolve(await awu(await wsElements.getAll()).toArray(), wsElements)
-  const { adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup(
+  const { adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
     workspace,
-    [accountName],
+    fetchAccounts: [accountName],
     accountToServiceNameMap,
-    elementSource.createInMemoryElementSource(resolvedWSElements),
+    elementsSource: elementSource.createInMemoryElementSource(resolvedWSElements),
     ignoreStateElemIdMapping,
-  )
+    ignoreStateElemIdMappingForSelectors,
+  })
   const adapterContext = adaptersCreatorConfigs[accountName]
 
   const loadElementsAndMerge = async (

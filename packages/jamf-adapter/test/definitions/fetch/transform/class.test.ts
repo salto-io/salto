@@ -17,16 +17,16 @@
 import { adjustClass } from '../../../../src/definitions/fetch/transforms'
 
 describe('adjust class', () => {
-  it('should throw an error if value is not a record', () => {
-    expect(() => adjustClass({ value: 'not a record', context: {}, typeName: 'class' })).toThrow()
+  it('should throw an error if value is not a record', async () => {
+    await expect(adjustClass({ value: 'not a record', context: {}, typeName: 'class' })).rejects.toThrow()
   })
-  it('should convert site object to site id', () => {
+  it('should convert site object to site id', async () => {
     const value = {
       a: 'a',
       site: { id: 'site-id', anotherField: 'bla' },
       b: 'b',
     }
-    expect(adjustClass({ value, context: {}, typeName: 'class' })).toEqual({
+    await expect(adjustClass({ value, context: {}, typeName: 'class' })).resolves.toEqual({
       value: {
         a: 'a',
         site: 'site-id',

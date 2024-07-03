@@ -38,8 +38,8 @@ type DFSParameters<T> = {
   visited: Set<string>
   resultArray?: GraphNode<T>[]
   // optional parameters for cycle detection
-  path?: string[]
-  cycle?: string[]
+  path?: GraphNode<T>[]
+  cycle?: GraphNode<T>[]
 }
 
 export class Graph<T> {
@@ -61,7 +61,7 @@ export class Graph<T> {
   private dfs(dfsParams: DFSParameters<T>): void {
     const { node, visited, resultArray = [], path = [], cycle = [] } = dfsParams
     if (visited.has(node.id)) {
-      const cycleStartIndex = path.indexOf(node.id)
+      const cycleStartIndex = path.findIndex(nodeInPath => nodeInPath.id === node.id)
       if (cycleStartIndex !== -1) {
         // node is visited & in path mean its a cycle
         cycle.push(...path.slice(cycleStartIndex))
@@ -70,7 +70,7 @@ export class Graph<T> {
     }
     visited.add(node.id)
     node.edges.forEach(dependency => {
-      this.dfs({ node: dependency, visited, resultArray, path: path.concat(node.id), cycle })
+      this.dfs({ node: dependency, visited, resultArray, path: path.concat(node), cycle })
     })
     resultArray.push(node)
   }
@@ -112,9 +112,9 @@ export class Graph<T> {
     }
   }
 
-  findCycle(): string[] {
+  findCycle(): GraphNode<T>[] {
     const visited = new Set<string>()
-    const nodesInCycle: string[] = []
+    const nodesInCycle: GraphNode<T>[] = []
 
     Array.from(this.nodes.values()).forEach(node => {
       if (!visited.has(node.id)) {

@@ -406,7 +406,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'schemas',
-          adjust: item => {
+          adjust: async item => {
             const { value } = item
             if (!(lowerdashValues.isPlainRecord(value) && Array.isArray(value.fields))) {
               throw new Error('Expected schema to be an object')

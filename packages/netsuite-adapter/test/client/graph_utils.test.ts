@@ -56,7 +56,7 @@ describe('graph utils tests', () => {
   it('should find the cycle in the graph and return its nodes', async () => {
     const cycleNodes = testGraph.findCycle()
     expect(cycleNodes).toHaveLength(2)
-    expect(cycleNodes).toEqual([testNode1.value.name, testNode2.value.name])
+    expect(cycleNodes).toEqual([testNode1, testNode2])
   })
 
   it('should remove node from graph and edges from nodes', async () => {

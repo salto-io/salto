@@ -76,7 +76,7 @@ describe('restriction definitions utils', () => {
     })
   })
   describe('adjustRestriction', () => {
-    it('should remove redundant fields in user restrictions and extract items from the results fields', () => {
+    it('should remove redundant fields in user restrictions and extract items from the results fields', async () => {
       const item = {
         typeName: 'mockType',
         context: {},
@@ -129,7 +129,7 @@ describe('restriction definitions utils', () => {
           },
         },
       }
-      expect(adjustRestriction(item).value).toEqual({
+      expect((await adjustRestriction(item)).value).toEqual({
         restrictions: {
           user: [
             {
@@ -160,13 +160,13 @@ describe('restriction definitions utils', () => {
         },
       })
     })
-    it('should return empty group and user restrictions if there are no restrictions', () => {
+    it('should return empty group and user restrictions if there are no restrictions', async () => {
       const item = {
         typeName: 'mockType',
         context: {},
         value: {},
       }
-      expect(adjustRestriction(item).value).toEqual({
+      expect((await adjustRestriction(item)).value).toEqual({
         restrictions: {
           user: undefined,
           group: undefined,

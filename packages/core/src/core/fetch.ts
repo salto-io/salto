@@ -77,11 +77,14 @@ import {
   adaptersConfigSource as acs,
   createAdapterReplacedID,
   createPathIndexForElement,
+  ElementSelector,
   elementSource,
   expressions,
   merger,
   pathIndex,
+  ReferenceIndexEntry,
   remoteMap,
+  isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
 } from '@salto-io/workspace'
@@ -1267,11 +1270,11 @@ export const generateServiceIdToStateElemId = async (
       .toArray(),
   )
 
-export const createElemIdGetter = async (
+const createElemIdGetter = async (
   elements: AsyncIterable<Element>,
-  src: ReadOnlyElementsSource,
+  elementsSource: ReadOnlyElementsSource,
 ): Promise<ElemIdGetter> => {
-  const serviceIdToStateElemId = await generateServiceIdToStateElemId(elements, src)
+  const serviceIdToStateElemId = await generateServiceIdToStateElemId(elements, elementsSource)
   // Here we expect the serviceName to come from the service. So, it's not aware of the
   // account name of the relevant account. However, the map we search in was built to
   // accommodate this. The only thing we need is to make sure that we change the ElemID
@@ -1282,28 +1285,103 @@ export const createElemIdGetter = async (
   }
 }
 
-export const getFetchAdapterAndServicesSetup = async (
-  workspace: Workspace,
-  fetchServices: string[],
-  accountToServiceNameMap: Record<string, string>,
-  elementsSource: ReadOnlyElementsSource,
-  ignoreStateElemIdMapping?: boolean,
-): Promise<{
+const getElementsToMaintain = async ({
+  accountToServiceNameMap,
+  account,
+  elementsSource,
+  ignoreStateElemIdMapping,
+  ignoreStateElemIdMappingForSelectors,
+  referenceSourcesIndex,
+}: {
+  accountToServiceNameMap: Record<string, string>
+  account: string
+  elementsSource: ReadOnlyElementsSource
+  ignoreStateElemIdMapping: boolean
+  ignoreStateElemIdMappingForSelectors: ElementSelector[]
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+}): Promise<AsyncIterable<Element>> => {
+  const maintainAllElements = !ignoreStateElemIdMapping || ignoreStateElemIdMappingForSelectors.length === 0
+
+  if (maintainAllElements && Object.keys(accountToServiceNameMap).length === 1) {
+    return elementsSource.getAll()
+  }
+
+  const accountElementIDs = awu(await elementsSource.list()).filter(elemId => elemId.adapter === account)
+  const elementIDsToMaintain = maintainAllElements
+    ? accountElementIDs
+    : accountElementIDs.filter(
+        async elemId =>
+          !(await isElementIdMatchSelectors({
+            elemId,
+            selectors: ignoreStateElemIdMappingForSelectors,
+            referenceSourcesIndex,
+          })),
+      )
+
+  return elementIDsToMaintain.map(elemId => elementsSource.get(elemId))
+}
+
+export const createElemIdGetters = async ({
+  workspace,
+  accountToServiceNameMap,
+  elementsSource,
+  ignoreStateElemIdMapping,
+  ignoreStateElemIdMappingForSelectors,
+}: {
+  workspace: Workspace
+  accountToServiceNameMap: Record<string, string>
+  elementsSource: ReadOnlyElementsSource
+  ignoreStateElemIdMapping: boolean
+  ignoreStateElemIdMappingForSelectors: ElementSelector[]
+}): Promise<Record<string, ElemIdGetter>> => {
+  if (ignoreStateElemIdMapping && ignoreStateElemIdMappingForSelectors.length === 0) {
+    return {}
+  }
+  const referenceSourcesIndex = await workspace.getReferenceSourcesIndex()
+  return mapValuesAsync(accountToServiceNameMap, async (_service, account) =>
+    createElemIdGetter(
+      await getElementsToMaintain({
+        accountToServiceNameMap,
+        account,
+        elementsSource,
+        ignoreStateElemIdMapping,
+        ignoreStateElemIdMappingForSelectors,
+        referenceSourcesIndex,
+      }),
+      workspace.state(),
+    ),
+  )
+}
+
+export const getFetchAdapterAndServicesSetup = async ({
+  workspace,
+  fetchAccounts,
+  accountToServiceNameMap,
+  elementsSource,
+  ignoreStateElemIdMapping = false,
+  ignoreStateElemIdMappingForSelectors = [],
+}: {
+  workspace: Workspace
+  fetchAccounts: string[]
+  accountToServiceNameMap: Record<string, string>
+  elementsSource: ReadOnlyElementsSource
+  ignoreStateElemIdMapping?: boolean
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[]
+}): Promise<{
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
 }> => {
-  const elemIDGetters = ignoreStateElemIdMapping
-    ? {}
-    : await mapValuesAsync(accountToServiceNameMap, async (_service, account) =>
-        createElemIdGetter(
-          awu(await elementsSource.getAll()).filter(e => e.elemID.adapter === account),
-          workspace.state(),
-        ),
-      )
+  const elemIDGetters = await createElemIdGetters({
+    workspace,
+    accountToServiceNameMap,
+    elementsSource,
+    ignoreStateElemIdMapping,
+    ignoreStateElemIdMappingForSelectors,
+  })
   const resolveTypes = !getCoreFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
-    fetchServices,
-    await workspace.accountCredentials(fetchServices),
+    fetchAccounts,
+    await workspace.accountCredentials(fetchAccounts),
     workspace.accountConfig.bind(workspace),
     elementsSource,
     accountToServiceNameMap,

@@ -253,6 +253,7 @@ export type ChangeValidatorName =
   | 'addJsmProject'
   | 'deleteLabelAtttribute'
   | 'jsmPermissions'
+  | 'fieldContextOptions'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -316,6 +317,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     addJsmProject: { refType: BuiltinTypes.BOOLEAN },
     deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
     jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
+    fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

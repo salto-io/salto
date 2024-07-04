@@ -48,10 +48,8 @@ export const fieldContextOptionsValidator: ChangeValidator = async (changes, ele
   return (
     await Promise.all(
       options.map(async option => {
+        // using elementsSource.get to get the after value of the parent context if it was changed as well
         const context = await elementSource.get(getParent(option).elemID)
-        if (!isInstanceElement(context)) {
-          return undefined
-        }
         const contextOptions = context.value.options
         if (!Array.isArray(contextOptions)) {
           return getError(option, context)

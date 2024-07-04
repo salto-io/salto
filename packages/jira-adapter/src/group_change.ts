@@ -25,6 +25,7 @@ import {
   SECURITY_LEVEL_TYPE,
   WORKFLOW_TYPE_NAME,
 } from './constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME } from './filters/fields/constants'
 
 export const getWorkflowGroup: deployment.grouping.ChangeIdFunction = async change =>
   isModificationChange(change) && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
@@ -54,6 +55,17 @@ const getFieldConfigItemGroup: deployment.grouping.ChangeIdFunction = async chan
   const parent = getParent(instance)
 
   return `${parent.elemID.getFullName()} items`
+}
+
+const getFieldContextAndOptionGroup: deployment.grouping.ChangeIdFunction = async change => {
+  const instance = getChangeData(change)
+  if (instance.elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME) {
+    return undefined
+  }
+
+  const context = getParent(instance)
+
+  return context.elemID.getFullName()
 }
 
 const getScriptListenersGroup: deployment.grouping.ChangeIdFunction = async change =>
@@ -90,4 +102,5 @@ export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getScriptedFragmentsGroup,
   getQueuesAdditionByProjectGroup,
   getAttributeAdditionByObjectTypeGroup,
+  getFieldContextAndOptionGroup,
 ])

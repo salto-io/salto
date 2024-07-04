@@ -333,6 +333,23 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
+      serviceIdField: 'id',
+      idFields: ['contextName', 'value'],
+    },
+    // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator
+    deployRequests: {
+      modify: {
+        url: '',
+        method: 'put',
+      },
+      add: {
+        url: '',
+        method: 'post',
+      },
+      remove: {
+        url: '',
+        method: 'delete',
+      },
     },
   },
 

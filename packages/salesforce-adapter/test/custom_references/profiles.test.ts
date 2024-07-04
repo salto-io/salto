@@ -924,9 +924,10 @@ describe('profiles', () => {
           {
             elemID: profileInstance.elemID,
             severity: 'Info',
-            message: 'Dropping profile fields which reference missing types',
+            message:
+              'Omitting profile entries which reference unavailable types',
             detailedMessage:
-              'The profile has 8 fields which reference types which are not available in the workspace.',
+              'The profile has entries which reference types which are not available in the environment and will not be deployed.',
           },
         ])
       })
@@ -1050,9 +1051,10 @@ describe('profiles', () => {
           {
             elemID: profileInstance.elemID,
             severity: 'Info',
-            message: 'Dropping profile fields which reference missing types',
+            message:
+              'Omitting profile entries which reference unavailable types',
             detailedMessage:
-              'The profile has 4 fields which reference types which are not available in the workspace.',
+              'The profile has entries which reference types which are not available in the environment and will not be deployed.',
           },
         ])
       })

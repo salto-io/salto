@@ -46,6 +46,7 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import { getMockValues, uniqueFieldsPerType } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
+import { DEFAULT_CONFIG } from '../src/config'
 
 const log = logger(module)
 
@@ -57,7 +58,7 @@ const fieldsToOmitOnComparisonPerType: Record<string, string[]> = {
   [TEMPLATE_TYPE_NAME]: [],
 }
 
-const fetchDefinitions = createFetchDefinitions()
+const fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG)
 
 const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
   const mockDefaultValues = getMockValues(testSuffix)

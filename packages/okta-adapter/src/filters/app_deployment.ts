@@ -53,8 +53,8 @@ import {
   deployEdges,
   deployStatusChange,
   getOktaError,
-  isActivationChange,
-  isDeactivationChange,
+  isActivation,
+  isDeactivation,
 } from '../deployment'
 
 const log = logger(module)
@@ -93,7 +93,7 @@ export const isAppResponse = createSchemeGuard<Application>(
   'Received an invalid application response',
 )
 
-const isCustomApp = (value: Values, subdomain: string): boolean =>
+export const isCustomApp = (value: Values, subdomain: string): boolean =>
   [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) &&
   value.name !== undefined &&
   // custom app names starts with subdomain and '_'
@@ -140,7 +140,7 @@ const deployApp = async (
   try {
     if (
       isModificationChange(change) &&
-      (isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status }) ||
+      (isActivation({ before: change.data.before.value.status, after: change.data.after.value.status }) ||
         // Custom app must be activated before applying any other changes
         isInactiveCustomAppChange(change))
     ) {
@@ -163,7 +163,7 @@ const deployApp = async (
 
     if (
       isModificationChange(change) &&
-      (isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status }) ||
+      (isDeactivation({ before: change.data.before.value.status, after: change.data.after.value.status }) ||
         isInactiveCustomAppChange(change))
     ) {
       log.debug(`Changing status to ${INACTIVE_STATUS}, for instance ${getChangeData(change).elemID.getFullName()}`)

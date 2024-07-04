@@ -27,7 +27,7 @@ import {
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
-import { isActivationChange } from '../deployment'
+import { isActivation } from '../deployment'
 import { getParentApp } from '../change_validators/app_schema_with_inactive_app'
 
 const createDependencyChange = (
@@ -36,7 +36,7 @@ const createDependencyChange = (
 ): DependencyChange[] => {
   // We check for isActivationChange because the default behavior of deploy is app user schema before app.
   if (
-    !isActivationChange({
+    !isActivation({
       before: appChange.change.data.before.value.status,
       after: appChange.change.data.after.value.status,
     })

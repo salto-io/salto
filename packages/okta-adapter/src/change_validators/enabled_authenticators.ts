@@ -27,7 +27,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { AUTHENTICATOR_TYPE_NAME, MFA_POLICY_TYPE_NAME } from '../constants'
-import { isDeactivationChange } from '../deployment'
+import { isDeactivation } from '../deployment'
 
 const log = logger(module)
 
@@ -94,7 +94,7 @@ export const enabledAuthenticatorsValidator: ChangeValidator = async (changes, e
     .filter(isModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === AUTHENTICATOR_TYPE_NAME)
     .filter(change =>
-      isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status }),
+      isDeactivation({ before: change.data.before.value.status, after: change.data.after.value.status }),
     )
     .map(getChangeData)
 

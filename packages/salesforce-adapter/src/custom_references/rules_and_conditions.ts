@@ -19,7 +19,6 @@ import {
   isReferenceExpression,
   ReferenceInfo,
 } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -28,7 +27,6 @@ import {
   CPQ_ERROR_CONDITION,
   CPQ_INDEX_FIELD,
   CPQ_PRICE_CONDITION,
-  CPQ_PRICE_CONDITION_RULE_FIELD,
   CPQ_PRICE_RULE,
   CPQ_PRODUCT_RULE,
   CPQ_QUOTE_TERM,
@@ -118,7 +116,7 @@ const createReferencesFromRuleInstance = (
   if (!_.isString(condition)) {
     return []
   }
-  const regexMatch = condition.match(/[-+]?\d+/g)
+  const regexMatch = condition.match(/?\d+/g)
   if (regexMatch == null) {
     return []
   }

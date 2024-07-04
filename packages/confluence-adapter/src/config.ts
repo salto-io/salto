@@ -18,7 +18,7 @@ import { elements, definitions } from '@salto-io/adapter-components'
 export type UserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
-}> & { managePagesForSpaces: string[] }
+}> & { managePagesForSpaces?: string[] }
 
 export type UserConfig = definitions.UserConfig<
   never,
@@ -31,6 +31,5 @@ export const DEFAULT_CONFIG: UserConfig = {
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
-    managePagesForSpaces: ['.*'],
   },
 }

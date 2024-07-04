@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { InstanceElement, ReferenceInfo } from '@salto-io/adapter-api'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -96,6 +97,7 @@ type CreateReferencesFromDefArgs = {
 
 const isConditionOfRuleFunc = (rule: InstanceElement, ruleField: string) => (condition: InstanceElement): boolean => {
   const ruleId = condition.value[ruleField]
+  log.debug('ruleId: %s', inspectValue(ruleId))
   return _.isString(ruleId) && ruleId === apiNameSync(rule)
 }
 

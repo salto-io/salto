@@ -16,7 +16,7 @@
 
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import { getChangeData, isModificationChange } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from './types'
 import {
   BRAND_TYPE_NAME,
@@ -37,13 +37,46 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     ClientOptions
   >({
     [GROUP_TYPE_NAME]: { bulkPath: '/api/v1/groups' },
-    [BRAND_TYPE_NAME]: { bulkPath: '/api/v1/brands' },
     [DOMAIN_TYPE_NAME]: { bulkPath: '/api/v1/domains' },
     [SMS_TEMPLATE_TYPE_NAME]: { bulkPath: '/api/v1/templates/sms' },
     [DEVICE_ASSURANCE_TYPE_NAME]: { bulkPath: '/api/v1/device-assurances' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    [BRAND_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands', method: 'post' },
+                // Brand addition only requires the name field. Other fields
+                // are set by a subsequent modify action.
+                transformation: {
+                  pick: ['name'],
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{id}', method: 'put' },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      actionDependencies: [{ first: 'add', second: 'modify' }],
+    },
     [USERTYPE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {

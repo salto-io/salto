@@ -352,10 +352,6 @@ const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement
 }
 
 const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<InstanceElement>[]> => {
-  log.info(
-    'All elements: %s',
-    elements.filter(isInstanceElement).map(inst => inst.elemID.getFullName()),
-  )
   const removalChanges: Change<InstanceElement>[] = elements
     .filter(isInstanceElement)
     .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))

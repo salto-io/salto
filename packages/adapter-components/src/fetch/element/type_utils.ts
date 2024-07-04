@@ -252,11 +252,10 @@ export const overrideFieldTypes = <Options extends FetchApiDefinitionsOptions>({
         }
         const field = type.fields[fieldName]
         if (field === undefined) {
-          log.debug('field %s.%s is undefined, not applying customizations', typeName, fieldName)
           return
         }
         if (restrictions) {
-          log.debug('applying restrictions to field %s.%s', type.elemID.name, fieldName)
+          log.trace('applying restrictions to field %s.%s', type.elemID.name, fieldName)
           field.annotate({ [CORE_ANNOTATIONS.RESTRICTION]: createRestriction(restrictions) })
         }
       })
@@ -290,17 +289,16 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
       Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
         const field = type.fields[fieldName]
         if (field === undefined) {
-          log.debug('field %s.%s is undefined, not applying customizations', typeName, fieldName)
           return
         }
         const { hide, standalone, omit } = customization
         if (hide) {
-          log.debug('hiding field %s.%s', type.elemID.name, fieldName)
+          log.trace('hiding field %s.%s', type.elemID.name, fieldName)
 
           field.annotate({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
         }
         if (omit || standalone?.referenceFromParent === false) {
-          log.debug('omitting field %s.%s from type', type.elemID.name, fieldName)
+          log.trace('omitting field %s.%s from type', type.elemID.name, fieldName)
           // the field's value is removed when constructing the value in extractStandaloneInstances
           delete type.fields[fieldName]
         }

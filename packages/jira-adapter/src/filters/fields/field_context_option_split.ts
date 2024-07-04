@@ -60,7 +60,8 @@ const getOptionInstancesFromContext = async (
       })
       optionInstance.path = context.path && [
         ...context.path,
-        pathNaclCase(naclCase(`${context.value.name}_${FIELD_CONTEXT_OPTIONS_FILE_NAME}`)),
+        pathNaclCase(naclCase(`${context.elemID.name}_${FIELD_CONTEXT_OPTIONS_FILE_NAME}`)),
+        // TODO: we should consider remove the context.elemID.name from the name because it is very long
       ]
 
       return optionInstance
@@ -110,9 +111,7 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
     )
 
     contexts.forEach(context => {
-      if (context.path !== undefined) {
-        context.path = [...context.path, context.path[context.path.length - 1]]
-      }
+      context.path = context.path && [...context.path, context.path[context.path.length - 1]]
     })
 
     options.forEach(option => elements.push(option))

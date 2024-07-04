@@ -31,6 +31,7 @@ import {
   SECURITY_SCHEME_TYPE,
   WORKFLOW_TYPE_NAME,
 } from '../src/constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../src/filters/fields/constants'
 
 describe('group change', () => {
   let workflowType: ObjectType
@@ -50,6 +51,14 @@ describe('group change', () => {
   let fieldConfigurationItemInstance3: InstanceElement
   let fieldConfiguration1: InstanceElement
   let fieldConfiguration2: InstanceElement
+
+  let fieldContextType: ObjectType
+  let fieldContextOptionType: ObjectType
+  let fieldContextOptionInstance1: InstanceElement
+  let fieldContextOptionInstance2: InstanceElement
+  let fieldContextOptionInstance3: InstanceElement
+  let fieldContextInstance1: InstanceElement
+  let fieldContextInstance2: InstanceElement
 
   beforeEach(() => {
     workflowType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
@@ -102,6 +111,44 @@ describe('group change', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldConfiguration2.elemID, fieldConfiguration2)],
+      },
+    )
+
+    fieldContextType = new ObjectType({
+      elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),
+    })
+    fieldContextOptionType = new ObjectType({
+      elemID: new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME),
+    })
+
+    fieldContextInstance1 = new InstanceElement('parent1', fieldContextType)
+    fieldContextInstance2 = new InstanceElement('parent2', fieldContextType)
+
+    fieldContextOptionInstance1 = new InstanceElement(
+      'fieldContextOptionInstance1',
+      fieldContextOptionType,
+      {},
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldContextInstance1.elemID, fieldContextInstance1)],
+      },
+    )
+    fieldContextOptionInstance2 = new InstanceElement(
+      'fieldContextOptionInstance2',
+      fieldContextOptionType,
+      {},
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldContextInstance1.elemID, fieldContextInstance1)],
+      },
+    )
+    fieldContextOptionInstance3 = new InstanceElement(
+      'fieldContextOptionInstance3',
+      fieldContextOptionType,
+      {},
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldContextInstance2.elemID, fieldContextInstance2)],
       },
     )
   })
@@ -234,6 +281,77 @@ describe('group change', () => {
             fieldConfigurationItemInstance1.elemID.getFullName(),
             toChange({
               after: fieldConfigurationItemInstance1,
+            }),
+          ],
+        ]),
+      ),
+    ).rejects.toThrow()
+  })
+  it('should group field context options with the context', async () => {
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            fieldContextInstance1.elemID.getFullName(),
+            toChange({
+              after: fieldContextInstance1,
+            }),
+          ],
+          [
+            fieldContextInstance2.elemID.getFullName(),
+            toChange({
+              after: fieldContextInstance2,
+            }),
+          ],
+          [
+            fieldContextOptionInstance1.elemID.getFullName(),
+            toChange({
+              after: fieldContextOptionInstance1,
+            }),
+          ],
+          [
+            fieldContextOptionInstance2.elemID.getFullName(),
+            toChange({
+              after: fieldContextOptionInstance2,
+            }),
+          ],
+          [
+            fieldContextOptionInstance3.elemID.getFullName(),
+            toChange({
+              after: fieldContextOptionInstance3,
+            }),
+          ],
+        ]),
+      )
+    ).changeGroupIdMap
+
+    expect(changeGroupIds.get(fieldContextInstance1.elemID.getFullName())).toBe(
+      fieldContextInstance1.elemID.getFullName(),
+    )
+    expect(changeGroupIds.get(fieldContextInstance2.elemID.getFullName())).toBe(
+      fieldContextInstance2.elemID.getFullName(),
+    )
+
+    expect(changeGroupIds.get(fieldContextOptionInstance1.elemID.getFullName())).toBe(
+      fieldContextInstance1.elemID.getFullName(),
+    )
+    expect(changeGroupIds.get(fieldContextOptionInstance2.elemID.getFullName())).toBe(
+      fieldContextInstance1.elemID.getFullName(),
+    )
+    expect(changeGroupIds.get(fieldContextOptionInstance3.elemID.getFullName())).toBe(
+      fieldContextInstance2.elemID.getFullName(),
+    )
+  })
+
+  it('should throw if field context option does not have parent', async () => {
+    delete fieldContextOptionInstance1.annotations[CORE_ANNOTATIONS.PARENT]
+    await expect(
+      getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            fieldContextOptionInstance1.elemID.getFullName(),
+            toChange({
+              after: fieldContextOptionInstance1,
             }),
           ],
         ]),

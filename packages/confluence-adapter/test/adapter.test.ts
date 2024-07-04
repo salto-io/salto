@@ -118,7 +118,7 @@ describe('adapter', () => {
           'confluence.blog_post__version',
           'confluence.global_template',
           'confluence.page',
-          'confluence.page.instance.Omri_Farkash_Getting_started_in_Confluence@susss',
+          'confluence.page.instance.My_first_space_Getting_started_in_Confluence@ssusss',
           'confluence.page.instance.Omri_Farkash_Overview@su',
           'confluence.page.instance.Omri_Farkash_This_is_my_page_yay@sussss',
           'confluence.page__authorId',
@@ -161,7 +161,7 @@ describe('adapter', () => {
             'This_is_my_page_yay',
             'This_is_my_page_yay',
           ],
-          'Omri_Farkash_Getting_started_in_Confluence@susss': [
+          'My_first_space_Getting_started_in_Confluence@ssusss': [
             'confluence',
             'Records',
             'space',

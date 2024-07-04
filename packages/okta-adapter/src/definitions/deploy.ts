@@ -74,7 +74,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action])
+      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
     [USERTYPE_TYPE_NAME]: {

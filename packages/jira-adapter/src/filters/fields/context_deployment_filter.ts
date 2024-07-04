@@ -128,17 +128,19 @@ const getOptionFromReference = (
   optionFullNameToChangeRecord: Record<string, Change<InstanceElement>>,
   beforeOrAfter: BeforeOrAfter,
 ): [string, Values] | undefined => {
+  // const option = Object.prototype.hasOwnProperty.call(optionFullNameToChangeRecord, optionRef.elemID.getFullName())
+  //   ? _.get(optionFullNameToChangeRecord[optionRef.elemID.getFullName()].data, beforeOrAfter)
+  //   : optionRef.value
+  // const optionValue = _.omit(option.value, CONTEXT_NAME_FIELD)
+  // return [optionValue.value, { ...optionValue, position: index + 1 }]
   if (Object.prototype.hasOwnProperty.call(optionFullNameToChangeRecord, optionRef.elemID.getFullName())) {
     const optionChange = optionFullNameToChangeRecord[optionRef.elemID.getFullName()]
-    if (Object.prototype.hasOwnProperty.call(optionChange.data, beforeOrAfter)) {
-      const option = _.get(optionChange.data, beforeOrAfter)
-      const optionValue = _.omit(option.value, CONTEXT_NAME_FIELD)
-      return [optionValue.value, { ...optionValue, position: index + 1 }]
-    }
-    return undefined
+    const option = _.get(optionChange.data, beforeOrAfter)
+    const optionValue = _.omit(option.value, CONTEXT_NAME_FIELD)
+    return [optionValue.value, { ...optionValue, position: index + 1 }]
   }
-  const option = optionRef.value
-  return [option.value.value, { ...option.value, position: index + 1 }]
+  const optionValue = _.omit(optionRef.value.value, CONTEXT_NAME_FIELD)
+  return [optionValue.value, { ...optionValue, position: index + 1 }]
 }
 const setOptionsToOriginal = (
   context: InstanceElement | undefined,

@@ -66,6 +66,7 @@ describe('fieldContextDeployment', () => {
         optionId: { refType: BuiltinTypes.STRING },
         disabled: { refType: BuiltinTypes.STRING },
         contextName: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
+        contextName: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
         position: { refType: BuiltinTypes.NUMBER },
       },
     })
@@ -211,153 +212,250 @@ describe('fieldContextDeployment', () => {
       expect(deployContextChangeMock).not.toHaveBeenCalled()
     })
   })
-  // describe('options', () => {
-  //   let context: InstanceElement
-  //   let optionInstance1: InstanceElement
-  //   let optionInstance2: InstanceElement
-  //   beforeEach(() => {
-  //     context = new InstanceElement('context1', contextType, {})
-  //     optionInstance1 = new InstanceElement(
-  //       'option1',
-  //       optionType,
-  //       {
-  //         value: 'val1',
-  //         id: '1',
-  //         disabled: 'false',
-  //       },
-  //       undefined,
-  //       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(context.elemID, context, context)] },
-  //     )
-  //     optionInstance2 = new InstanceElement(
-  //       'option2',
-  //       optionType,
-  //       {
-  //         value: 'val2',
-  //         id: '2',
-  //         disabled: 'false',
-  //       },
-  //       undefined,
-  //       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(context.elemID, context, context)] },
-  //     )
-  //     context.value.options = [
-  //       new ReferenceExpression(optionInstance1.elemID, optionInstance1, optionInstance1),
-  //       new ReferenceExpression(optionInstance2.elemID, optionInstance2, optionInstance2),
-  //     ]
-  //   })
-  //   it('should transform options with their changed data', async () => {
-  //     const change = toChange({ after: context })
-  //     const contextToDeploy = new InstanceElement('context1', contextType, {
-  //       options: {
-  //         val1: {
-  //           value: 'val1',
-  //           id: '1',
-  //           disabled: 'false',
-  //           position: 1,
-  //         },
-  //         val2: {
-  //           value: 'val2',
-  //           id: '2',
-  //           disabled: 'false',
-  //           position: 2,
-  //         },
-  //       },
-  //     })
-  //     await filter.deploy([change])
-  //     expect(deployContextChangeMock).toHaveBeenCalledWith(
-  //       toChange({ after: contextToDeploy }),
-  //       client,
-  //       getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-  //       paginator,
-  //       expect.anything(),
-  //     )
-  //   })
-  //   it('should transform additioned options to their original form', async () => {
-  //     const before = context.clone()
-  //     before.value.options.pop()
-  //     const contextChange = toChange({ before, after: context })
-  //     const optionChange = toChange({ after: optionInstance2 })
+  describe('Deploy context for locked field', () => {
+    let fieldInstcnae: InstanceElement
+    let contextInstance: InstanceElement
+    let mockGet: jest.SpyInstance
+    beforeEach(() => {
+      const { client: cli } = mockClient(false)
+      client = cli
+      mockGet = jest.spyOn(client, 'get')
+      fieldInstcnae = new InstanceElement('field', fieldType, {
+        name: 'field_1',
+        description: 'auto-created by jira service',
+        type: 'com.atlassian.servicedesk:vp-origin',
+        isLocked: true,
+      })
+      contextInstance = new InstanceElement(
+        'context',
+        contextType,
+        {
+          name: 'context_1',
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(fieldInstcnae.elemID, fieldInstcnae),
+        },
+      )
+    })
+    it('should deploy custom field context with jsm locked field if it was created in the service', async () => {
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [
+            {
+              id: '1',
+              name: 'context_1',
+              isGlobalContext: true,
+            },
+          ],
+        },
+      })
+      filter = contextDeploymentFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
+      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
+      const res = await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(change.data.after.value.id).toEqual('1')
+    })
+    it('should not deploy custom field context with jsm locked field f it was not created in the service', async () => {
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [
+            {
+              id: '1',
+              name: 'context_1',
+              isGlobalContext: true,
+            },
+          ],
+        },
+      })
+      filter = contextDeploymentFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
+      contextInstance.value.name = 'context_2'
+      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
+      const res = await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+    })
+    it('should not deploy custom field context with jsm locked field if it is a bad response', async () => {
+      mockGet.mockResolvedValue({
+        status: 404,
+        data: {
+          errorMessages: ['The component with id 1 does not exist.'],
+        },
+      })
+      filter = contextDeploymentFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
+      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
+      const res = await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+    })
+  })
+  describe('options', () => {
+    let context: InstanceElement
+    let optionInstance1: InstanceElement
+    let optionInstance2: InstanceElement
+    beforeEach(() => {
+      context = new InstanceElement('context1', contextType, {})
+      optionInstance1 = new InstanceElement(
+        'option1',
+        optionType,
+        {
+          value: 'val1',
+          id: '1',
+          disabled: 'false',
+          contextName: 'context1',
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(context.elemID, context, context)] },
+      )
+      optionInstance2 = new InstanceElement(
+        'option2',
+        optionType,
+        {
+          value: 'val2',
+          id: '2',
+          disabled: 'false',
+          contextName: 'context1',
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(context.elemID, context, context)] },
+      )
+      context.value.options = [
+        new ReferenceExpression(optionInstance1.elemID, optionInstance1, optionInstance1),
+        new ReferenceExpression(optionInstance2.elemID, optionInstance2, optionInstance2),
+      ]
+    })
+    it('should transform options with their changed data', async () => {
+      const change = toChange({ after: context })
+      const contextToDeploy = new InstanceElement('context1', contextType, {
+        options: {
+          val1: {
+            value: 'val1',
+            id: '1',
+            disabled: 'false',
+            position: 1,
+          },
+          val2: {
+            value: 'val2',
+            id: '2',
+            disabled: 'false',
+            position: 2,
+          },
+        },
+      })
+      await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledWith(
+        toChange({ after: contextToDeploy }),
+        client,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        paginator,
+        expect.anything(),
+      )
+    })
+    it('should transform additioned options to their original form', async () => {
+      const before = context.clone()
+      before.value.options.pop()
+      const contextChange = toChange({ before, after: context })
+      const optionChange = toChange({ after: optionInstance2 })
 
-  //     const beforeContextToDeploy = new InstanceElement('context1', contextType, {
-  //       options: {
-  //         val1: {
-  //           value: 'val1',
-  //           id: '1',
-  //           disabled: 'false',
-  //           position: 1,
-  //         },
-  //       },
-  //     })
-  //     const afterContextToDeploy = new InstanceElement('context1', contextType, {
-  //       options: {
-  //         val1: {
-  //           value: 'val1',
-  //           id: '1',
-  //           disabled: 'false',
-  //           position: 1,
-  //         },
-  //         val2: {
-  //           value: 'val2',
-  //           id: '2',
-  //           disabled: 'false',
-  //           position: 2,
-  //         },
-  //       },
-  //     })
-  //     await filter.deploy([contextChange, optionChange])
-  //     expect(deployContextChangeMock).toHaveBeenCalledWith(
-  //       toChange({ before: beforeContextToDeploy, after: afterContextToDeploy }),
-  //       client,
-  //       getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-  //       paginator,
-  //       expect.anything(),
-  //     )
-  //   })
-  //   it('should transform modified options to their original form', async () => {
-  //     const contextChange = toChange({ before: context, after: context })
-  //     const option1After = optionInstance1.clone()
-  //     option1After.value.value = 'val1_new'
-  //     const optionChange = toChange({ before: optionInstance1, after: option1After })
+      const beforeContextToDeploy = new InstanceElement('context1', contextType, {
+        options: {
+          val1: {
+            value: 'val1',
+            id: '1',
+            disabled: 'false',
+            position: 1,
+          },
+        },
+      })
+      const afterContextToDeploy = new InstanceElement('context1', contextType, {
+        options: {
+          val1: {
+            value: 'val1',
+            id: '1',
+            disabled: 'false',
+            position: 1,
+          },
+          val2: {
+            value: 'val2',
+            id: '2',
+            disabled: 'false',
+            position: 2,
+          },
+        },
+      })
+      await filter.deploy([contextChange, optionChange])
+      expect(deployContextChangeMock).toHaveBeenCalledWith(
+        toChange({ before: beforeContextToDeploy, after: afterContextToDeploy }),
+        client,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        paginator,
+        expect.anything(),
+      )
+    })
+    it('should transform modified options to their original form', async () => {
+      const contextChange = toChange({ before: context, after: context })
+      const option1After = optionInstance1.clone()
+      option1After.value.value = 'val1_new'
+      const optionChange = toChange({ before: optionInstance1, after: option1After })
 
-  //     const beforeContextToDeploy = new InstanceElement('context1', contextType, {
-  //       options: {
-  //         val1: {
-  //           value: 'val1',
-  //           id: '1',
-  //           disabled: 'false',
-  //           position: 1,
-  //         },
-  //         val2: {
-  //           value: 'val2',
-  //           id: '2',
-  //           disabled: 'false',
-  //           position: 2,
-  //         },
-  //       },
-  //     })
-  //     const afterContextToDeploy = new InstanceElement('context1', contextType, {
-  //       options: {
-  //         val1_new: {
-  //           value: 'val1_new',
-  //           id: '1',
-  //           disabled: 'false',
-  //           position: 1,
-  //         },
-  //         val2: {
-  //           value: 'val2',
-  //           id: '2',
-  //           disabled: 'false',
-  //           position: 2,
-  //         },
-  //       },
-  //     })
-  //     await filter.deploy([contextChange, optionChange])
-  //     expect(deployContextChangeMock).toHaveBeenCalledWith(
-  //       toChange({ before: beforeContextToDeploy, after: afterContextToDeploy }),
-  //       client,
-  //       getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-  //       paginator,
-  //       expect.anything(),
-  //     )
-  //   })
-  // })
+      const beforeContextToDeploy = new InstanceElement('context1', contextType, {
+        options: {
+          val1: {
+            value: 'val1',
+            id: '1',
+            disabled: 'false',
+            position: 1,
+          },
+          val2: {
+            value: 'val2',
+            id: '2',
+            disabled: 'false',
+            position: 2,
+          },
+        },
+      })
+      const afterContextToDeploy = new InstanceElement('context1', contextType, {
+        options: {
+          val1_new: {
+            value: 'val1_new',
+            id: '1',
+            disabled: 'false',
+            position: 1,
+          },
+          val2: {
+            value: 'val2',
+            id: '2',
+            disabled: 'false',
+            position: 2,
+          },
+        },
+      })
+      await filter.deploy([contextChange, optionChange])
+      expect(deployContextChangeMock).toHaveBeenCalledWith(
+        toChange({ before: beforeContextToDeploy, after: afterContextToDeploy }),
+        client,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        paginator,
+        expect.anything(),
+      )
+    })
+  })
 })

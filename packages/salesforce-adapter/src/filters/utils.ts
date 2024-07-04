@@ -190,7 +190,8 @@ const fullApiNameSync = (elem: Readonly<Element>): string | undefined => {
   if (isInstanceElement(elem)) {
     return isCustomObjectSync(elem.getTypeSync())
       ? elem.value[CUSTOM_OBJECT_ID_FIELD]
-      : elem.value[INSTANCE_FULL_NAME_FIELD]
+      : elem.value[INSTANCE_FULL_NAME_FIELD] ??
+          elem.value[CUSTOM_OBJECT_ID_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
 }

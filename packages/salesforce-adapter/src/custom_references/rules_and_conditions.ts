@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, ReferenceInfo } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  isInstanceElement,
+  isReferenceExpression,
+  ReferenceInfo,
+} from '@salto-io/adapter-api'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
@@ -22,10 +27,19 @@ import {
   CPQ_ADVANCED_CONDITION_FIELD,
   CPQ_ERROR_CONDITION,
   CPQ_INDEX_FIELD,
+  CPQ_PRICE_CONDITION,
+  CPQ_PRICE_CONDITION_RULE_FIELD,
+  CPQ_PRICE_RULE,
   CPQ_PRODUCT_RULE,
+  CPQ_QUOTE_TERM,
+  CPQ_QUOTE_TERM_FIELD,
   CPQ_RULE_FIELD,
+  CPQ_TERM_CONDITON,
+  SBAA_ADVANCED_CONDITION_FIELD,
+  SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
+  SBAA_INDEX_FIELD,
 } from '../constants'
-import { apiNameSync, isInstanceOfCustomObjectSync } from '../filters/utils'
 import { WeakReferencesHandler } from '../types'
 
 const log = logger(module)
@@ -45,6 +59,7 @@ type RuleAndConditionDef = {
 }
 
 const defs: RuleAndConditionDef[] = [
+  // CPQ Product Rules
   {
     rule: {
       apiName: CPQ_PRODUCT_RULE,
@@ -54,6 +69,42 @@ const defs: RuleAndConditionDef[] = [
       apiName: CPQ_ERROR_CONDITION,
       indexField: CPQ_INDEX_FIELD,
       ruleField: CPQ_RULE_FIELD,
+    },
+  },
+  // CPQ Quote Terms
+  {
+    rule: {
+      apiName: CPQ_QUOTE_TERM,
+      customConditionField: CPQ_ADVANCED_CONDITION_FIELD,
+    },
+    condition: {
+      apiName: CPQ_TERM_CONDITON,
+      indexField: CPQ_INDEX_FIELD,
+      ruleField: CPQ_QUOTE_TERM_FIELD,
+    },
+  },
+  // CPQ Price Rules
+  {
+    rule: {
+      apiName: CPQ_PRICE_RULE,
+      customConditionField: CPQ_ADVANCED_CONDITION_FIELD,
+    },
+    condition: {
+      apiName: CPQ_PRICE_CONDITION,
+      indexField: CPQ_INDEX_FIELD,
+      ruleField: CPQ_RULE_FIELD,
+    },
+  },
+  // SBAA Approval Rules
+  {
+    rule: {
+      apiName: SBAA_APPROVAL_RULE,
+      customConditionField: SBAA_ADVANCED_CONDITION_FIELD,
+    },
+    condition: {
+      apiName: SBAA_APPROVAL_CONDITION,
+      indexField: SBAA_INDEX_FIELD,
+      ruleField: SBAA_APPROVAL_RULE,
     },
   },
 ]
@@ -67,14 +118,17 @@ const createReferencesFromRuleInstance = (
   if (!_.isString(condition)) {
     return []
   }
-  const indexes = condition.match(/[-+]?\d+/g)
-  if (indexes == null) {
+  const regexMatch = condition.match(/[-+]?\d+/g)
+  if (regexMatch == null) {
     return []
   }
+  // We should avoid creating mutliple references to the same condition
+  // e.g. the following custom condition is valid: "0 OR (0 AND 1)"
+  const indexes = _.uniq(Array.from(regexMatch.values()))
   return indexes
     .map<ReferenceInfo | undefined>((index) => {
-      const indexInstance = conditionsByIndex[index]
-      if (indexInstance === undefined) {
+      const conditionInstance = conditionsByIndex[index]
+      if (conditionInstance === undefined) {
         log.warn(
           `Could not find condition with index ${index} for rule ${ruleInstance.elemID.getFullName()}`,
         )
@@ -82,7 +136,7 @@ const createReferencesFromRuleInstance = (
       }
       return {
         source: ruleInstance.elemID,
-        target: indexInstance.elemID,
+        target: conditionInstance.elemID,
         type: 'strong',
       }
     })
@@ -91,47 +145,60 @@ const createReferencesFromRuleInstance = (
 
 type CreateReferencesFromDefArgs = {
   def: RuleAndConditionDef
-  dataInstancesByType: Record<string, InstanceElement[]>
+  instancesByType: Record<string, InstanceElement[]>
 }
 
+const isConditionOfRuleFunc =
+  (rule: InstanceElement, ruleField: string) =>
+  (condition: InstanceElement): boolean => {
+    const ruleRef = condition.value[ruleField]
+    return (
+      isReferenceExpression(ruleRef) &&
+      ruleRef.elemID.getFullName() === rule.elemID.getFullName()
+    )
+  }
 
-const isConditionOfRuleFunc = (rule: InstanceElement, ruleField: string) => (condition: InstanceElement): boolean => {
-  const ruleId = condition.value[ruleField]
-  log.debug('ruleId: %s', inspectValue(ruleId))
-  return _.isString(ruleId) && ruleId === apiNameSync(rule)
-}
-
-const getConditionIndex = (condition: InstanceElement, indexField: string): string => {
+const getConditionIndex = (
+  condition: InstanceElement,
+  indexField: string,
+): number => {
   const index = condition.value[indexField]
-  return _.isString(index) ? index : ''
+  return _.isNumber(index) ? index : -1
 }
 
 const createReferencesFromDef = ({
   def,
-  dataInstancesByType,
+  instancesByType,
 }: CreateReferencesFromDefArgs): ReferenceInfo[] => {
-  const rules = dataInstancesByType[def.rule.apiName]
+  const rules = instancesByType[def.rule.apiName]
   if (rules === undefined) {
     return []
   }
-  return rules.flatMap(rule => {
-    const isConditionOfCurrentRule = isConditionOfRuleFunc(rule, def.condition.ruleField)
-    const ruleConditions = makeArray(dataInstancesByType[def.condition.apiName]).filter(isConditionOfCurrentRule)
-    const conditionsByIndex = _.keyBy(ruleConditions, condition => getConditionIndex(condition, def.condition.indexField))
+  return rules.flatMap((rule) => {
+    const isConditionOfCurrentRule = isConditionOfRuleFunc(
+      rule,
+      def.condition.ruleField,
+    )
+    const ruleConditions = makeArray(
+      instancesByType[def.condition.apiName],
+    ).filter(isConditionOfCurrentRule)
+    const conditionsByIndex = _.keyBy(ruleConditions, (condition) =>
+      getConditionIndex(condition, def.condition.indexField),
+    )
     return createReferencesFromRuleInstance(rule, conditionsByIndex, def)
   })
-
 }
 
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements,
 ) => {
-  const dataInstancesByType = _.groupBy(
-    elements.filter(isInstanceOfCustomObjectSync),
-    (e) => apiNameSync(e.getTypeSync()),
+  log.debug('rules and conditions handler started')
+  const instancesByType = _.groupBy(
+    elements.filter(isInstanceElement),
+    (e) => e.elemID.typeName,
   )
   const references = defs.flatMap((def) =>
-    createReferencesFromDef({ def, dataInstancesByType }),
+    createReferencesFromDef({ def, instancesByType }),
   )
   log.debug('generated %d references', references.length)
   return references

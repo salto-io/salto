@@ -33,3 +33,11 @@ export const DEFAULT_CONFIG: UserConfig = {
     hideTypes: true,
   },
 }
+
+export const DEFAULT_CONFIG_WITH_PAGES: UserConfig = {
+  fetch: {
+    ...elements.query.INCLUDE_ALL_CONFIG,
+    hideTypes: true,
+    managePagesForSpaces: ['.*'],
+  },
+}

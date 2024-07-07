@@ -46,7 +46,7 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import { getMockValues, uniqueFieldsPerType } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
-import { DEFAULT_CONFIG } from '../src/config'
+import { DEFAULT_CONFIG_WITH_PAGES } from '../src/config'
 
 const log = logger(module)
 
@@ -58,7 +58,7 @@ const fieldsToOmitOnComparisonPerType: Record<string, string[]> = {
   [TEMPLATE_TYPE_NAME]: [],
 }
 
-const fetchDefinitions = createFetchDefinitions({ fetch: { ...DEFAULT_CONFIG.fetch, managePagesForSpaces: ['.*'] } })
+const fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG_WITH_PAGES)
 
 const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
   const mockDefaultValues = getMockValues(testSuffix)
@@ -108,7 +108,10 @@ describe('Confluence adapter E2E', () => {
     beforeAll(async () => {
       log.resetLogCount()
       credLease = await credsLease()
-      adapterAttr = realAdapter({ credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) })
+      adapterAttr = realAdapter(
+        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
+        DEFAULT_CONFIG_WITH_PAGES,
+      )
       const fetchBeforeCleanupResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })

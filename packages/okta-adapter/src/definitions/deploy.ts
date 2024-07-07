@@ -139,11 +139,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: '/api/v1/apps/{applicationId}',
+                  path: '/api/v1/apps/{id}',
                   method: 'put',
-                },
-                context: {
-                  applicationId: '{id}',
                 },
                 transformation: {
                   adjust: async ({ value }) => ({

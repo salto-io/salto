@@ -17,7 +17,7 @@ import { ObjectType, ElemID, toChange, ChangeGroup, InstanceElement, getChangeDa
 import { definitions as definitionsUtils, fetch, filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import deploySpaceAndPermissions from '../../src/filters/deploy_space_and_permissions'
-import { UserConfig } from '../../src/config'
+import { DEFAULT_CONFIG, UserConfig } from '../../src/config'
 import { Options } from '../../src/definitions/types'
 import { ADAPTER_NAME, SPACE_TYPE_NAME } from '../../src/constants'
 import { createDeployDefinitions, createFetchDefinitions } from '../../src/definitions'
@@ -49,7 +49,7 @@ describe('deploySpaceAndPermissions', () => {
   const spaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SPACE_TYPE_NAME) })
   const notSpaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'notSpace') })
   const notSpaceChange = toChange({ after: new InstanceElement('mock', notSpaceObjectType) })
-  const fetchDef = createFetchDefinitions()
+  const fetchDef = createFetchDefinitions(DEFAULT_CONFIG)
   const deployDef = createDeployDefinitions()
   const mockChangeGroup = {} as ChangeGroup
   const mockDefinitions = {

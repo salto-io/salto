@@ -474,6 +474,8 @@ export const CPQ_PRODUCT_OPTION = 'SBQQ__ProductOption__c'
 export const CPQ_PRICE_SCHEDULE = 'SBQQ__PriceSchedule__c'
 export const CPQ_DISCOUNT_SCHEDULE = 'SBQQ__DiscountSchedule__c'
 export const CPQ_SUBSCRIPTION = 'SBQQ__Subscription__c'
+export const CPQ_QUOTE_TERM = 'SBQQ__QuoteTerm__c'
+export const CPQ_TERM_CONDITION = 'SBQQ__TermCondition__c'
 
 // CPQ Fields
 export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'
@@ -566,6 +568,8 @@ export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP =
   groupIdForInstanceChangeGroup('add', 'Custom PriceRule and PriceCondition')
 export const ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP =
   groupIdForInstanceChangeGroup('add', 'Custom ProductRule and ErrorCondition')
+  export const ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP =
+  groupIdForInstanceChangeGroup('add', 'Custom QuoteTerm and TermCondition')
 
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 

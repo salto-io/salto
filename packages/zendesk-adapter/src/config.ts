@@ -2979,6 +2979,7 @@ export type ChangeValidatorName =
   | 'duplicateRoutingAttributeValue'
   | 'ticketFieldDeactivation'
   | 'duplicateIdFieldValues'
+  | 'duplicateDynamicContentItem'
   | 'notEnabledMissingReferences'
   | 'conditionalTicketFields'
   | 'dynamicContentDeletion'
@@ -3057,6 +3058,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
     ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
     duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
+    duplicateDynamicContentItem: { refType: BuiltinTypes.BOOLEAN },
     notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     conditionalTicketFields: { refType: BuiltinTypes.BOOLEAN },
     dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },

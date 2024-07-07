@@ -120,6 +120,20 @@ describe('netsuite config creator', () => {
         customRecords: {},
       })
     })
+    it('should ignore invalid parent folder regex', () => {
+      config.value.fetchTarget = {
+        // extracting "/Templates/[^/" creates an invalid regex
+        filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html'],
+      }
+      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
+        types: {
+          customrecordtype: [],
+          customsegment: [],
+        },
+        filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html', '/SuiteScripts/'],
+        customRecords: {},
+      })
+    })
   })
 
   describe('include custom records', () => {

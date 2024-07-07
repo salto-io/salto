@@ -46,11 +46,11 @@ const { isDefined } = values
 
 type RuleAndConditionDef = {
   rule: {
-    apiName: string
+    typeApiName: string
     customConditionField: string
   }
   condition: {
-    apiName: string
+    typeApiName: string
     indexField: string
     ruleField: string
   }
@@ -60,11 +60,11 @@ const defs: RuleAndConditionDef[] = [
   // CPQ Product Rules
   {
     rule: {
-      apiName: CPQ_PRODUCT_RULE,
+      typeApiName: CPQ_PRODUCT_RULE,
       customConditionField: CPQ_ADVANCED_CONDITION_FIELD,
     },
     condition: {
-      apiName: CPQ_ERROR_CONDITION,
+      typeApiName: CPQ_ERROR_CONDITION,
       indexField: CPQ_INDEX_FIELD,
       ruleField: CPQ_RULE_FIELD,
     },
@@ -72,11 +72,11 @@ const defs: RuleAndConditionDef[] = [
   // CPQ Quote Terms
   {
     rule: {
-      apiName: CPQ_QUOTE_TERM,
+      typeApiName: CPQ_QUOTE_TERM,
       customConditionField: CPQ_ADVANCED_CONDITION_FIELD,
     },
     condition: {
-      apiName: CPQ_TERM_CONDITON,
+      typeApiName: CPQ_TERM_CONDITON,
       indexField: CPQ_INDEX_FIELD,
       ruleField: CPQ_QUOTE_TERM_FIELD,
     },
@@ -84,11 +84,11 @@ const defs: RuleAndConditionDef[] = [
   // CPQ Price Rules
   {
     rule: {
-      apiName: CPQ_PRICE_RULE,
+      typeApiName: CPQ_PRICE_RULE,
       customConditionField: CPQ_ADVANCED_CONDITION_FIELD,
     },
     condition: {
-      apiName: CPQ_PRICE_CONDITION,
+      typeApiName: CPQ_PRICE_CONDITION,
       indexField: CPQ_INDEX_FIELD,
       ruleField: CPQ_RULE_FIELD,
     },
@@ -96,11 +96,11 @@ const defs: RuleAndConditionDef[] = [
   // SBAA Approval Rules
   {
     rule: {
-      apiName: SBAA_APPROVAL_RULE,
+      typeApiName: SBAA_APPROVAL_RULE,
       customConditionField: SBAA_ADVANCED_CONDITION_FIELD,
     },
     condition: {
-      apiName: SBAA_APPROVAL_CONDITION,
+      typeApiName: SBAA_APPROVAL_CONDITION,
       indexField: SBAA_INDEX_FIELD,
       ruleField: SBAA_APPROVAL_RULE,
     },
@@ -163,7 +163,7 @@ const createReferencesFromDef = ({
   def: RuleAndConditionDef
   instancesByType: Record<string, InstanceElement[]>
 }): ReferenceInfo[] => {
-  const rules = instancesByType[def.rule.apiName]
+  const rules = instancesByType[def.rule.typeApiName]
   if (rules === undefined) {
     return []
   }
@@ -173,15 +173,17 @@ const createReferencesFromDef = ({
       def.condition.ruleField,
     )
     const ruleConditions = makeArray(
-      instancesByType[def.condition.apiName],
+      instancesByType[def.condition.typeApiName],
     ).filter(isConditionOfCurrentRule)
-    const conditionsByIndex: Record<number, InstanceElement> = {}
-    ruleConditions.forEach((condition) => {
+    const conditionsByIndex = ruleConditions.reduce<
+      Record<number, InstanceElement>
+    >((acc, condition) => {
       const index = getConditionIndex(condition, def.condition.indexField)
       if (index !== undefined) {
-        conditionsByIndex[index] = condition
+        acc[index] = condition
       }
-    })
+      return acc
+    }, {})
     return createReferencesFromRuleInstance(rule, conditionsByIndex, def)
   })
 }

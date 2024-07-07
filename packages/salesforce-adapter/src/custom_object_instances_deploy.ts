@@ -89,6 +89,8 @@ import {
   CPQ_ERROR_CONDITION,
   CPQ_ERROR_CONDITION_RULE_FIELD,
   ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+  CPQ_QUOTE_TERM,
+  ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
 } from './constants'
 import {
   getIdFields,
@@ -1198,6 +1200,22 @@ const deployAddCustomProductRulesAndConditions = async (
     client,
     dataManagement,
   )
+
+  const deployAddCustomQuoteTermsAndConditions = async (
+    changes: ReadonlyArray<Change<InstanceElement>>,
+    client: SalesforceClient,
+    dataManagement: DataManagement | undefined,
+  ): Promise<DeployResult> =>
+    deployRulesAndConditionsGroup(
+      CPQ_QUOTE_TERM,
+      CPQ_CONDITIONS_MET,
+      CPQ_ERROR_CONDITION,
+      CPQ_ERROR_CONDITION_RULE_FIELD,
+      changes,
+      ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
+      client,
+      dataManagement,
+    )
 
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,

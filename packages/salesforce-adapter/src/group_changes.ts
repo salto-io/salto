@@ -179,7 +179,8 @@ export const getChangeGroupIds: ChangeGroupIdFunction = async (changes) => {
     getAddCpqCustomPriceRuleAndConditionGroupChangeIds(changes)
   const customProductRuleAndConditionChangeIds =
     getAddCpqCustomProductRuleAndConditionGroupChangeIds(changes)
-  const customQuoteTermsAndConditionsChangeIds = getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds(changes)
+  const customQuoteTermsAndConditionsChangeIds =
+    getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds(changes)
   wu(changes.entries()).forEach(([changeId, change]) => {
     let groupId: string
     if (customApprovalRuleAndConditionChangeIds.has(changeId)) {

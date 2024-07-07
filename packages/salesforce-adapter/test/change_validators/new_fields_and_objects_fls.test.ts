@@ -22,7 +22,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
-import { createCustomObjectType } from '../utils'
+import { createCustomMetadataType, createCustomObjectType } from '../utils'
 import creator from '../../src/change_validators/new_fields_and_objects_fls'
 import { API_NAME, DEFAULT_FLS_PROFILES } from '../../src/constants'
 
@@ -122,7 +122,7 @@ describe('new Fields and Objects FLS Change Validator', () => {
 
     describe('CustomMetadata object addition', () => {
       beforeEach(() => {
-        addedObject = createCustomObjectType('TestType__mdt', {
+        addedObject = createCustomMetadataType('TestType__mdt', {
           annotations: { [API_NAME]: 'TestType__mdt' },
           fields: {
             TestField__c: { refType: BuiltinTypes.STRING },

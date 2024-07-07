@@ -26,6 +26,8 @@ import {
 import {
   apiNameSync,
   getFLSProfiles,
+  isCustomMetadataRecordTypeSync,
+  isCustomObjectSync,
   isStandardObjectSync,
 } from '../filters/utils'
 import { SalesforceConfig } from '../types'
@@ -60,12 +62,17 @@ const changeValidator =
   async (changes) => {
     const flsProfiles = getFLSProfiles(config)
 
+    // CustomObjects and CustomMetadata types
     const addedCustomObjects = changes
       .filter(isAdditionChange)
       .map(getChangeData)
       .filter(isObjectType)
       // Additions of Standard Objects are invalid and should be handled as part of the standardFieldOrObjectAdditionsOrDeletions Change Validator
-      .filter((objectType) => !isStandardObjectSync(objectType))
+      .filter(
+        (objectType) =>
+          isCustomMetadataRecordTypeSync(objectType) ||
+          (isCustomObjectSync(objectType) && !isStandardObjectSync(objectType)),
+      )
     const addedCustomObjectsApiNames = new Set(
       addedCustomObjects.map((customObject) => apiNameSync(customObject)),
     )

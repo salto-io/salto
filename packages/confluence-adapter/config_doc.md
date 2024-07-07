@@ -84,12 +84,12 @@ confluence {
 
 ## Fetch configuration options
 
-| Name                                | Default when undefined | Description                                                         |
-| ----------------------------------- | ---------------------- | ------------------------------------------------------------------- |
+| Name                                                       | Default when undefined | Description                                                         |
+| ---------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------- |
 | [include](#fetch-entry-options)                            | [{ type = ".*" }]      | List of entries to determine what instances to include in the fetch |
 | [exclude](#fetch-entry-options)                            | []                     | List of entries to determine what instances to exclude in the fetch |
-| [elemID](#element-id-customization)                        | {}                     | Allows customizing element IDs for specific types                 |
-| [managePagesForSpaces](#fetch-pages-from-predefine-spaces) | []                     | Space names to fetch pages from                                   |
+| [elemID](#element-id-customization)                        | {}                     | Allows customizing element IDs for specific types                   |
+| [managePagesForSpaces](#fetch-pages-from-predefine-spaces) | []                     | Space names to fetch pages from                                     |
 
 ## Fetch entry options
 

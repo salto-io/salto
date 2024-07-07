@@ -1211,7 +1211,7 @@ const deployAddCustomQuoteTermsAndConditions = async (
 ): Promise<DeployResult> =>
   deployRulesAndConditionsGroup(
     CPQ_QUOTE_TERM,
-    CPQ_ADVANCED_CONDITION_FIELD,
+    CPQ_CONDITIONS_MET,
     CPQ_TERM_CONDITION,
     CPQ_RULE_FIELD,
     changes,

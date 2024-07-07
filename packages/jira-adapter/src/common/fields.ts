@@ -13,10 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export const FIELD_TYPE_NAME = 'Field'
-export const FIELD_CONTEXT_TYPE_NAME = 'CustomFieldContext'
-export const FIELD_CONTEXT_DEFAULT_TYPE_NAME = 'CustomFieldContextDefaultValue'
-export const FIELD_CONTEXT_OPTION_TYPE_NAME = 'CustomFieldContextOption'
-export const IS_LOCKED = 'isLocked'
-export const SERVICE = 'service'
-export const WORK_CATEGORY_FIELD = 'work-category-field'
+import { InstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
+export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: string[]): boolean => {
+  const includesTerm = (term: string): boolean => instance.value.type?.includes(term)
+
+  if (terms.some(includesTerm)) {
+    log.debug(`Found a field related to specified term in ${instance.elemID.getFullName()}.`)
+    return true
+  }
+  return false
+}

@@ -38,6 +38,10 @@ const TYPE_NAME_TO_FIELD_REMOVALS: Map<string, string[]> = new Map([
   ['blng__SubInvoiceLine__c', ['blng__UniqueId__c']],
   ['blng__UsageSummary__c', ['blng__UniqueId__c']],
   ['OrderItem', ['blng__UniqueId__c']],
+  [
+    'blng__FinancePeriod__c',
+    ['blng__FinancePeriodFamily__c', 'blng__ReferenceId__c'],
+  ],
 ])
 
 const fieldRemovalsForType = (

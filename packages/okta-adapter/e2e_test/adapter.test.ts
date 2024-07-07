@@ -263,6 +263,16 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
     parent: app,
     name: naclCase(`${app.elemID.name}__${groupInstance.elemID.name}`),
   })
+  const brand = createInstance({
+    typeName: BRAND_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('brand'),
+      // Brand addition is split into two calls (`add` with name, `modify` with
+      // other fields), so we override some arbitrary value to cover both calls.
+      removePoweredByOkta: true,
+    },
+  })
   return [
     toChange({ after: groupInstance }),
     toChange({ after: anotherGroupInstance }),
@@ -274,6 +284,7 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
     toChange({ after: profileEnrollmentRule }),
     toChange({ after: app }),
     toChange({ after: appGroupAssignment }),
+    toChange({ after: brand }),
   ]
 }
 
@@ -343,11 +354,7 @@ const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement
 const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<InstanceElement>[]> => {
   const removalChanges: Change<InstanceElement>[] = elements
     .filter(isInstanceElement)
-    .filter(
-      inst =>
-        inst.elemID.name.startsWith(TEST_PREFIX) ||
-        (inst.elemID.typeName === DOMAIN_TYPE_NAME && inst.value.id !== 'default'),
-    )
+    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
     .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
     .map(instance => toChange({ before: instance }))
 
@@ -380,6 +387,19 @@ const getHiddenFieldsToOmit = (
 }
 
 describe('Okta adapter E2E', () => {
+  expect.extend({
+    toHaveEqualValues(received: Values, expected: InstanceElement) {
+      const pass = isEqualValues(received, expected.value)
+      return {
+        pass,
+        message: () =>
+          `Received unexpected result when fetching instance: ${expected.elemID.getFullName()}.\n` +
+          `Expected value: ${inspectValue(expected.value, { depth: 7 })},\n` +
+          `Received value: ${inspectValue(received, { depth: 7 })}`,
+      }
+    },
+  })
+
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
     let adapterAttr: Reals
@@ -421,7 +441,7 @@ describe('Okta adapter E2E', () => {
       })
       fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG, true)
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
-      await deployCleanup(adapterAttr, types, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
+      await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 
       const changesToDeploy = await createChangesForDeploy(types, testSuffix)
       await deployAndFetch(changesToDeploy)
@@ -572,16 +592,7 @@ describe('Okta adapter E2E', () => {
         // Omit hidden fields that are not written to nacl after deployment
         const fieldsToOmit = getHiddenFieldsToOmit(fetchDefinitions, deployedInstance.elemID.typeName)
         const originalValue = _.omit(instance?.value, fieldsToOmit)
-        const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
-        if (!isEqualResult) {
-          log.error(
-            'Received unexpected result when deploying instance: %s. Deployed value: %s , Received value after fetch: %s',
-            deployedInstance.elemID.getFullName(),
-            inspectValue(deployedInstance.value, { depth: 7 }),
-            inspectValue(originalValue, { depth: 7 }),
-          )
-        }
-        expect(isEqualResult).toBeTruthy()
+        expect(originalValue).toHaveEqualValues(deployedInstance)
       })
     })
   })

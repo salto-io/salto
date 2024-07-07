@@ -737,18 +737,21 @@ export const mockTypes = {
     },
   }),
   [constants.CPQ_QUOTE_TERM]: CPQ_QUOTE_TERM_TYPE,
-  [constants.CPQ_TERM_CONDITION]: createCustomObjectType(constants.CPQ_TERM_CONDITION, {
-    fields: {
-      [constants.CPQ_QUOTE_TERM]: {
-        refType: Types.primitiveDataTypes.Lookup,
-        annotations: {
-          [FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [FIELD_ANNOTATIONS.CREATABLE]: true,
-          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+  [constants.CPQ_TERM_CONDITION]: createCustomObjectType(
+    constants.CPQ_TERM_CONDITION,
+    {
+      fields: {
+        [constants.CPQ_QUOTE_TERM]: {
+          refType: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
         },
       },
     },
-  }),
+  ),
 }
 
 export const lwcJsResourceContent =

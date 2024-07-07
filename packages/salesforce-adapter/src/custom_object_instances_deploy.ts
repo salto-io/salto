@@ -91,9 +91,7 @@ import {
   ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
   CPQ_QUOTE_TERM,
   ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
-  CPQ_ADVANCED_CONDITION_FIELD,
   CPQ_TERM_CONDITION,
-  CPQ_RULE_FIELD,
 } from './constants'
 import {
   getIdFields,
@@ -1213,7 +1211,7 @@ const deployAddCustomQuoteTermsAndConditions = async (
     CPQ_QUOTE_TERM,
     CPQ_CONDITIONS_MET,
     CPQ_TERM_CONDITION,
-    CPQ_RULE_FIELD,
+    CPQ_QUOTE_TERM,
     changes,
     ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
     client,

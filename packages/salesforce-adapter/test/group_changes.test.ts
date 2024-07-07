@@ -473,13 +473,9 @@ describe('Group changes function', () => {
           [CPQ_CONDITIONS_MET]: 'Custom',
         },
       )
-      const rule = new InstanceElement(
-        'Rule',
-        mockTypes[CPQ_QUOTE_TERM],
-        {
-          [CPQ_CONDITIONS_MET]: 'All',
-        },
-      )
+      const rule = new InstanceElement('Rule', mockTypes[CPQ_QUOTE_TERM], {
+        [CPQ_CONDITIONS_MET]: 'All',
+      })
       const customCondition = new InstanceElement(
         'CustomCondition',
         mockTypes[CPQ_TERM_CONDITION],
@@ -494,18 +490,10 @@ describe('Group changes function', () => {
         'Condition',
         mockTypes[CPQ_TERM_CONDITION],
         {
-          [CPQ_QUOTE_TERM]: new ReferenceExpression(
-            rule.elemID,
-            rule,
-          ),
+          [CPQ_QUOTE_TERM]: new ReferenceExpression(rule.elemID, rule),
         },
       )
-      const addedInstances = [
-        customRule,
-        rule,
-        customCondition,
-        condition,
-      ]
+      const addedInstances = [customRule, rule, customCondition, condition]
       const changeMap = new Map<string, Change>()
       addedInstances.forEach((instance) => {
         changeMap.set(instance.elemID.name, toChange({ after: instance }))

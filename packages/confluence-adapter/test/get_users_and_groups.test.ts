@@ -18,6 +18,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../src/definitions/types'
 import { createDeployDefinitions, createFetchDefinitions } from '../src/definitions'
 import { getUsersAndGroups } from '../src/get_users_and_groups'
+import { DEFAULT_CONFIG } from '../src/config'
 
 const mockRequestAllResources = jest.fn()
 
@@ -37,7 +38,7 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 describe('getUsersAndGroups', () => {
-  const fetchDef = createFetchDefinitions()
+  const fetchDef = createFetchDefinitions(DEFAULT_CONFIG)
   const deployDef = createDeployDefinitions()
   const mockDefinitions = {
     fetch: fetchDef,

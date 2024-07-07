@@ -58,7 +58,7 @@ const fieldsToOmitOnComparisonPerType: Record<string, string[]> = {
   [TEMPLATE_TYPE_NAME]: [],
 }
 
-const fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG)
+const fetchDefinitions = createFetchDefinitions({ fetch: { ...DEFAULT_CONFIG.fetch, managePagesForSpaces: ['.*'] } })
 
 const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
   const mockDefaultValues = getMockValues(testSuffix)

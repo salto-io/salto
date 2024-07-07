@@ -156,7 +156,7 @@ const createCustomizations = (
           conditions: [
             {
               fromField: 'name',
-              match: userConfig.fetch.managePagesForSpaces ?? ['.*'],
+              match: userConfig.fetch.managePagesForSpaces ?? [],
             },
           ],
           context: {

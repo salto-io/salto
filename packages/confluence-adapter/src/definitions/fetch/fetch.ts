@@ -151,22 +151,26 @@ const createCustomizations = (
             },
           },
         },
-        pages: {
-          typeName: PAGE_TYPE_NAME,
-          conditions: [
-            {
-              fromField: 'name',
-              match: userConfig.fetch.managePagesForSpaces ?? [],
-            },
-          ],
-          context: {
-            args: {
-              spaceId: {
-                root: 'id',
+        ...(userConfig.fetch.managePagesForSpaces !== undefined
+          ? {
+              pages: {
+                typeName: PAGE_TYPE_NAME,
+                conditions: [
+                  {
+                    fromField: 'name',
+                    match: userConfig.fetch.managePagesForSpaces ?? [],
+                  },
+                ],
+                context: {
+                  args: {
+                    spaceId: {
+                      root: 'id',
+                    },
+                  },
+                },
               },
-            },
-          },
-        },
+            }
+          : {}),
       },
     },
     element: {

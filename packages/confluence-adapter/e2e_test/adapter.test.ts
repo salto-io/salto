@@ -33,7 +33,7 @@ import {
 import { buildElementsSourceFromElements, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { e2eUtils } from '@salto-io/adapter-components'
+import { e2eUtils, elements as elementsUtils } from '@salto-io/adapter-components'
 import {
   SPACE_TYPE_NAME,
   PAGE_TYPE_NAME,
@@ -46,7 +46,15 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import { getMockValues, uniqueFieldsPerType } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
-import { DEFAULT_CONFIG_WITH_PAGES } from '../src/config'
+import { UserConfig } from '../src/config'
+
+export const DEFAULT_CONFIG_WITH_PAGES: UserConfig = {
+  fetch: {
+    ...elementsUtils.query.INCLUDE_ALL_CONFIG,
+    hideTypes: true,
+    managePagesForSpaces: ['.*'],
+  },
+}
 
 const log = logger(module)
 

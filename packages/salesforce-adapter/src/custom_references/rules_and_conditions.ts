@@ -109,22 +109,22 @@ const defs: RuleAndConditionDef[] = [
 
 const createReferencesFromRuleInstance = (
   ruleInstance: InstanceElement,
-  conditionsByIndex: Record<string, InstanceElement>,
+  conditionsByIndex: Record<number, InstanceElement>,
   def: RuleAndConditionDef,
 ): ReferenceInfo[] => {
   const condition = ruleInstance.value[def.rule.customConditionField]
   if (!_.isString(condition)) {
     return []
   }
-  const regexMatch = condition.match(/?\d+/g)
+  const regexMatch = condition.match(/(?<!\S)\d+(?!\S)/g)
   if (regexMatch == null) {
     return []
   }
   // We should avoid creating mutliple references to the same condition
   // e.g. the following custom condition is valid: "0 OR (0 AND 1)"
-  const indexes = _.uniq(Array.from(regexMatch.values()))
+  const indexes = _.uniq(Array.from(regexMatch.values())).map(Number)
   return indexes
-    .map<ReferenceInfo | undefined>((index) => {
+    .map((index): ReferenceInfo | undefined => {
       const conditionInstance = conditionsByIndex[index]
       if (conditionInstance === undefined) {
         log.warn(
@@ -141,33 +141,28 @@ const createReferencesFromRuleInstance = (
     .filter(isDefined)
 }
 
-type CreateReferencesFromDefArgs = {
-  def: RuleAndConditionDef
-  instancesByType: Record<string, InstanceElement[]>
-}
-
 const isConditionOfRuleFunc =
   (rule: InstanceElement, ruleField: string) =>
   (condition: InstanceElement): boolean => {
     const ruleRef = condition.value[ruleField]
-    return (
-      isReferenceExpression(ruleRef) &&
-      ruleRef.elemID.getFullName() === rule.elemID.getFullName()
-    )
+    return isReferenceExpression(ruleRef) && ruleRef.elemID.isEqual(rule.elemID)
   }
 
 const getConditionIndex = (
   condition: InstanceElement,
   indexField: string,
-): number => {
+): number | undefined => {
   const index = condition.value[indexField]
-  return _.isNumber(index) ? index : -1
+  return _.isNumber(index) ? index : undefined
 }
 
 const createReferencesFromDef = ({
   def,
   instancesByType,
-}: CreateReferencesFromDefArgs): ReferenceInfo[] => {
+}: {
+  def: RuleAndConditionDef
+  instancesByType: Record<string, InstanceElement[]>
+}): ReferenceInfo[] => {
   const rules = instancesByType[def.rule.apiName]
   if (rules === undefined) {
     return []
@@ -180,9 +175,13 @@ const createReferencesFromDef = ({
     const ruleConditions = makeArray(
       instancesByType[def.condition.apiName],
     ).filter(isConditionOfCurrentRule)
-    const conditionsByIndex = _.keyBy(ruleConditions, (condition) =>
-      getConditionIndex(condition, def.condition.indexField),
-    )
+    const conditionsByIndex: Record<number, InstanceElement> = {}
+    ruleConditions.forEach((condition) => {
+      const index = getConditionIndex(condition, def.condition.indexField)
+      if (index !== undefined) {
+        conditionsByIndex[index] = condition
+      }
+    })
     return createReferencesFromRuleInstance(rule, conditionsByIndex, def)
   })
 }

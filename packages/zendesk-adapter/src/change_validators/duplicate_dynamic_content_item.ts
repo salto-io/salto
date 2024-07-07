@@ -15,6 +15,7 @@
  */
 import {
   Change,
+  ChangeError,
   ChangeValidator,
   getChangeData,
   InstanceElement,
@@ -33,6 +34,14 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean => {
   return instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME
 }
 
+const toError = (field: string, instance: InstanceElement, conflictingElements: string[]): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Error',
+  message: `Cannot do this change since this dynamic content item ${field} is already in use`,
+  detailedMessage: `The dynamic content item ${field} '${instance.value[field]}' is already used by the following elements:
+${conflictingElements.join(', ')}. Please change the ${field} of the dynamic content item and try again.`,
+})
+
 export const duplicateDynamicContentItemValidator: ChangeValidator = async (changes, elementSource) => {
   const relevantChanges = changes
     .filter(isInstanceChange)
@@ -45,20 +54,24 @@ export const duplicateDynamicContentItemValidator: ChangeValidator = async (chan
   return awu(relevantChanges)
     .map(async change => {
       const instance = getChangeData(change)
-      const conflictedInstanceNames = relevantInstances
-        .filter(relevantInstance => relevantInstance.value.name.toLowerCase() === instance.value.name.toLowerCase())
-        .filter(relevantInstance => relevantInstance.elemID.getFullName() !== instance.elemID.getFullName())
-        .map(relevantInstance => relevantInstance.elemID.getFullName())
+      const getConflictedInstances = (field: string): string[] =>
+        relevantInstances
+          .filter(
+            relevantInstance => relevantInstance.value[field]?.toLowerCase() === instance.value[field]?.toLowerCase(),
+          )
+          .filter(relevantInstance => relevantInstance.elemID.getFullName() !== instance.elemID.getFullName())
+          .map(relevantInstance => relevantInstance.elemID.getFullName())
+
+      const errors = []
+      const conflictedInstanceNames = getConflictedInstances('name')
       if (conflictedInstanceNames.length > 0) {
-        return {
-          elemID: instance.elemID,
-          severity: 'Error',
-          message: 'Cannot do this change since this dynamic content item name is already in use',
-          detailedMessage: `The dynamic content item name '${instance.value.name}' is already used by the following elements:
-${conflictedInstanceNames.join(', ')}. Please change the name of the dynamic content item and try again.`,
-        }
+        errors.push(toError('name', instance, conflictedInstanceNames))
       }
-      return []
+      const conflictedInstancePlaceholders = getConflictedInstances('placeholder')
+      if (conflictedInstancePlaceholders.length > 0) {
+        errors.push(toError('placeholder', instance, conflictedInstancePlaceholders))
+      }
+      return errors
     })
     .flat()
     .toArray()

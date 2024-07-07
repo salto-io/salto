@@ -47,7 +47,7 @@ import {
   USERTYPE_TYPE_NAME,
   DEVICE_ASSURANCE_TYPE_NAME,
   SMS_TEMPLATE_TYPE_NAME,
-  LINKS_FIELD,
+  LINKS_FIELD, APPLICATION_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -1006,6 +1006,76 @@ describe('adapter', () => {
           changeGroup: {
             groupID: 'deviceAssurance',
             changes: [toChange({ before: deviceAssurance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+    })
+    describe('deploy application', () => {
+      let appType: ObjectType
+      let app: InstanceElement
+      beforeEach(() => {
+        appType = new ObjectType({
+          elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        app = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          name: 'app1',
+        })
+      })
+
+      it('should successfully add an application', async () => {
+        const appWithoutId = app.clone()
+        delete appWithoutId.value.id
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: appWithoutId })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'app-fakeid1',
+        )
+      })
+
+      it('should successfully modify an application', async () => {
+        const updatedApp = app.clone()
+        updatedApp.value.name = 'app2'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: app,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
+          'app2',
+        )
+      })
+
+      it('should successfully remove an application', async () => {
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ before: app })],
           },
           progressReporter: nullProgressReporter,
         })

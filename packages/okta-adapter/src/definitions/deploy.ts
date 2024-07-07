@@ -17,7 +17,12 @@
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import { getChangeData, isModificationChange, isRemovalChange, Values } from '@salto-io/adapter-api'
+import {
+  getChangeData,
+  isModificationChange,
+  isRemovalChange,
+  Values,
+} from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from './types'
 import {
   APPLICATION_TYPE_NAME,
@@ -28,6 +33,8 @@ import {
   LINKS_FIELD,
   SMS_TEMPLATE_TYPE_NAME,
   USERTYPE_TYPE_NAME,
+  NAME_FIELD,
+  ID_FIELD,
 } from '../constants'
 import {
   getSubdomainFromElementsSource,
@@ -35,7 +42,6 @@ import {
   isDeactivationChange,
   isInactiveCustomAppChange,
 } from '../deployment'
-import { ID_FIELD, NAME_FIELD } from '@salto-io/netsuite-adapter/dist/src/constants'
 import { isCustomApp } from '../filters/app_deployment'
 
 const { isDefined } = values
@@ -113,7 +119,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               copyFromResponse: {
                 additional: {
                   adjust: async ({value, context}) => {
-                    const subdomain = await getSubdomainFromElementsSource(context.elementsSource)
+                    const subdomain = await getSubdomainFromElementsSource(context.elementSource)
                     if (subdomain !== undefined && isCustomApp(value as Values, subdomain)) {
                       const createdAppName = _.get(value, NAME_FIELD)
                       return {

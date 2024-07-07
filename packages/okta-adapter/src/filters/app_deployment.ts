@@ -19,62 +19,28 @@ import {
   Change,
   InstanceElement,
   Element,
-  isInstanceChange,
   getChangeData,
-  isAdditionOrModificationChange,
-  isAdditionChange,
-  AdditionChange,
   isInstanceElement,
-  ElemID,
-  ReadOnlyElementsSource,
   Values,
   isModificationChange,
   ModificationChange,
   isObjectType,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { config as configUtils, deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import {
   APPLICATION_TYPE_NAME,
   INACTIVE_STATUS,
-  OKTA,
   ORG_SETTING_TYPE_NAME,
   CUSTOM_NAME_FIELD,
-  ACTIVE_STATUS,
   SAML_2_0_APP,
 } from '../constants'
-import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
-import {
-  deployChanges,
-  defaultDeployChange,
-  deployEdges,
-  deployStatusChange,
-  getOktaError,
-  isActivation,
-  isDeactivation,
-} from '../deployment'
 
 const log = logger(module)
 
 const AUTO_LOGIN_APP = 'AUTO_LOGIN'
-const APPLICATION_FIELDS_TO_IGNORE = ['id', '_links', CUSTOM_NAME_FIELD]
-const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
-  profileEnrollment: {
-    add: {
-      url: '/api/v1/apps/{source}/policies/{target}',
-      method: 'put',
-    },
-  },
-  accessPolicy: {
-    add: {
-      url: '/api/v1/apps/{source}/policies/{target}',
-      method: 'put',
-    },
-  },
-}
 
 type Application = {
   id: string
@@ -99,92 +65,16 @@ export const isCustomApp = (value: Values, subdomain: string): boolean =>
   // custom app names starts with subdomain and '_'
   _.startsWith(value.name, `${subdomain}_`)
 
-const assignNameToCustomApp = (
-  change: AdditionChange<InstanceElement>,
-  appResponse: Application,
-  subdomain?: string,
-): void => {
-  const instance = getChangeData(change)
-  // Assign created name field which is not multi-env in custom apps to customName field, which is hidden
-  if (subdomain !== undefined && isCustomApp(appResponse, subdomain)) {
-    const createdAppName = appResponse.name
-    _.set(instance, ['value', CUSTOM_NAME_FIELD], createdAppName)
-  }
-}
-
-const getSubdomainFromElementsSource = async (elementsSource: ReadOnlyElementsSource): Promise<string | undefined> => {
-  const orgSettingInstance = await elementsSource.get(
-    new ElemID(OKTA, ORG_SETTING_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
-  )
-  if (!isInstanceElement(orgSettingInstance)) {
-    log.error(`Failed to get ${ORG_SETTING_TYPE_NAME} instance, can not find subdomain`)
-    return undefined
-  }
-  return orgSettingInstance.value.subdomain
-}
-
 export const isInactiveCustomAppChange = (change: ModificationChange<InstanceElement>): boolean =>
   change.data.before.value.status === INACTIVE_STATUS &&
   change.data.after.value.status === INACTIVE_STATUS &&
   // customName field only exist in custom applications
   getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
 
-const deployApp = async (
-  change: Change<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-  apiDefinitions: OktaSwaggerApiConfig,
-  subdomain?: string,
-): Promise<void> => {
-  const fieldsToIgnore = [...Object.keys(APP_ASSIGNMENT_FIELDS), ...APPLICATION_FIELDS_TO_IGNORE]
-
-  try {
-    if (
-      isModificationChange(change) &&
-      (isActivation({ before: change.data.before.value.status, after: change.data.after.value.status }) ||
-        // Custom app must be activated before applying any other changes
-        isInactiveCustomAppChange(change))
-    ) {
-      log.debug(`Changing status to ${ACTIVE_STATUS}, for instance ${getChangeData(change).elemID.getFullName()}`)
-      await deployStatusChange(change, client, apiDefinitions, 'activate')
-    }
-
-    const response = await defaultDeployChange(
-      isModificationChange(change)
-        ? deployment.transformRemovedValuesToNull(_.cloneDeep(change), ['settings'])
-        : change,
-      client,
-      apiDefinitions,
-      fieldsToIgnore,
-      // Application is created with status 'ACTIVE' by default, unless we provide activate='false' as a query param
-      isAdditionChange(change) && getChangeData(change).value?.status === INACTIVE_STATUS
-        ? { activate: 'false' }
-        : undefined,
-    )
-
-    if (
-      isModificationChange(change) &&
-      (isDeactivation({ before: change.data.before.value.status, after: change.data.after.value.status }) ||
-        isInactiveCustomAppChange(change))
-    ) {
-      log.debug(`Changing status to ${INACTIVE_STATUS}, for instance ${getChangeData(change).elemID.getFullName()}`)
-      await deployStatusChange(change, client, apiDefinitions, 'deactivate')
-    }
-
-    if (isAdditionOrModificationChange(change)) {
-      if (isAdditionChange(change) && isAppResponse(response)) {
-        assignNameToCustomApp(change, response, subdomain)
-      }
-      await deployEdges(change, APP_ASSIGNMENT_FIELDS, client)
-    }
-  } catch (err) {
-    throw getOktaError(getChangeData(change).elemID, err)
-  }
-}
-
 /**
  * Application type is deployed separately to update application's configuration, status and application's policies
  */
-const filterCreator: FilterCreator = ({ elementSource, definitions, oldApiDefinitions }) => ({
+const filterCreator: FilterCreator = () => ({
   name: 'appDeploymentFilter',
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
@@ -226,34 +116,6 @@ const filterCreator: FilterCreator = ({ elementSource, definitions, oldApiDefini
         const { customName } = instance.value
         if (customName !== undefined) {
           instance.value.name = customName
-        }
-      })
-  },
-  deploy: async changes => {
-    const client = definitions.clients.options.main.httpClient
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME,
-    )
-    const subdomain = await getSubdomainFromElementsSource(elementSource)
-    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployApp(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG], subdomain),
-    )
-
-    return {
-      leftoverChanges,
-      deployResult,
-    }
-  },
-  onDeploy: async (changes: Change<InstanceElement>[]) => {
-    changes
-      .map(getChangeData)
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-      .forEach(instance => {
-        const { customName } = instance.value
-        if (customName !== undefined) {
-          delete instance.value.name
         }
       })
   },

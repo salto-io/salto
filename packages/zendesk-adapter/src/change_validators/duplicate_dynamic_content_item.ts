@@ -53,23 +53,24 @@ export const duplicateDynamicContentItemValidator: ChangeValidator = async (chan
   const relevantInstances = await getInstancesFromElementSource(elementSource, [DYNAMIC_CONTENT_ITEM_TYPE_NAME])
   return awu(relevantChanges)
     .map(async change => {
-      const instance = getChangeData(change)
+      const changeInstance = getChangeData(change)
       const getConflictedInstances = (field: string): string[] =>
         relevantInstances
           .filter(
-            relevantInstance => relevantInstance.value[field]?.toLowerCase() === instance.value[field]?.toLowerCase(),
+            relevantInstance =>
+              relevantInstance.value[field]?.toLowerCase() === changeInstance.value[field]?.toLowerCase(),
           )
-          .filter(relevantInstance => relevantInstance.elemID.getFullName() !== instance.elemID.getFullName())
+          .filter(relevantInstance => relevantInstance.elemID.getFullName() !== changeInstance.elemID.getFullName())
           .map(relevantInstance => relevantInstance.elemID.getFullName())
 
       const errors = []
       const conflictedInstanceNames = getConflictedInstances('name')
       if (conflictedInstanceNames.length > 0) {
-        errors.push(toError('name', instance, conflictedInstanceNames))
+        errors.push(toError('name', changeInstance, conflictedInstanceNames))
       }
       const conflictedInstancePlaceholders = getConflictedInstances('placeholder')
       if (conflictedInstancePlaceholders.length > 0) {
-        errors.push(toError('placeholder', instance, conflictedInstancePlaceholders))
+        errors.push(toError('placeholder', changeInstance, conflictedInstancePlaceholders))
       }
       return errors
     })

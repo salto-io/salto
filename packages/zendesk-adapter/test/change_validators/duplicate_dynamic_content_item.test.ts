@@ -48,8 +48,9 @@ describe('duplicateDynamicContentItemValidator', () => {
     })
 
     describe('existing elements with same name and different placeholder', () => {
-      it('should return an empty array', async () => {
+      it('should return an empty array on modification', async () => {
         const existing = createDynamicContentInstance(NAME, DIFFERENT_PLACEHOLDER)
+        changes = [toChange({ before: existing, after })]
 
         const elementsSource = elementSource.createInMemoryElementSource([existing])
         const result = await duplicateDynamicContentItemValidator(changes, elementsSource)

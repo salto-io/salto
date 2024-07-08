@@ -476,7 +476,6 @@ export const CPQ_DISCOUNT_SCHEDULE = 'SBQQ__DiscountSchedule__c'
 export const CPQ_SUBSCRIPTION = 'SBQQ__Subscription__c'
 export const CPQ_QUOTE_TERM = 'SBQQ__QuoteTerm__c'
 export const CPQ_TERM_CONDITION = 'SBQQ__TermCondition__c'
-export const CPQ_TERM_CONDITON = 'SBQQ__TermCondition__c'
 
 // CPQ Fields
 export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'

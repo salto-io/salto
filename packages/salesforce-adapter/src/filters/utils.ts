@@ -210,10 +210,23 @@ export const isMetadataInstanceElementSync = (
   isMetadataObjectType(elem.getTypeSync()) &&
   elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
 
+/**
+ * @deprecated use {@link isCustomMetadataRecordTypeSync} instead.
+ */
 export const isCustomMetadataRecordType = async (
   elem: Element,
 ): Promise<boolean> => {
   const elementApiName = await apiName(elem)
+  return (
+    isObjectType(elem) &&
+    (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)
+  )
+}
+
+export const isCustomMetadataRecordTypeSync = (
+  elem: Element,
+): elem is ObjectType => {
+  const elementApiName = apiNameSync(elem)
   return (
     isObjectType(elem) &&
     (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)

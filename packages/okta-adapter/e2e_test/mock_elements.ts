@@ -108,6 +108,9 @@ export const mockDefaultValues: Record<string, Values> = {
         honorForceAuthn: true,
         authnContextClassRef: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
         requestCompressed: false,
+        attributeStatements: [],
+        inlineHooks: [],
+        acsEndpoints: [],
         allowMultipleAcsEndpoints: false,
         samlSignedRequestEnabled: false,
         slo: {
@@ -201,7 +204,8 @@ export const mockDefaultValues: Record<string, Values> = {
   },
   [BRAND_TYPE_NAME]: {
     removePoweredByOkta: false,
-    agreeToCustomPrivacyPolicy: true,
+    agreeToCustomPrivacyPolicy: false,
+    isDefault: false,
   },
   [BRAND_THEME_TYPE_NAME]: {
     primaryColorHex: '#1662dd',

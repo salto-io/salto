@@ -141,7 +141,7 @@ export const configType = createMatchingObjectType<Partial<StripeConfig>>({
   elemID: new ElemID(STRIPE),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(STRIPE),
+      refType: createClientConfigType({ adapter: STRIPE }),
     },
     [FETCH_CONFIG]: {
       refType: definitions.createUserFetchConfigType({ adapterName: STRIPE, omitElemID: true }),

@@ -43,9 +43,11 @@ type ConfigTypeCreatorParams<TCustomNameMappingOptions extends string = never> =
   additionalFields?: Record<string, FieldDefinition>
   additionalFetchFields?: Record<string, FieldDefinition>
   additionalDeployFields?: Record<string, FieldDefinition>
+  additionRateLimitFields?: Record<string, FieldDefinition>
   additionalClientFields?: Record<string, FieldDefinition>
   changeValidatorNames?: string[]
   omitElemID?: boolean
+  pathsToOmitFromDefaultConfig?: string[]
 }
 
 export type ConfigTypeCreator<TCustomNameMappingOptions extends string = never> = (
@@ -59,14 +61,20 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
   additionalFields,
   additionalFetchFields,
   additionalDeployFields,
+  additionRateLimitFields,
   additionalClientFields,
   omitElemID,
+  pathsToOmitFromDefaultConfig = [],
 }: ConfigTypeCreatorParams<TCustomNameMappingOptions>): ObjectType =>
   createMatchingObjectType<Partial<UserConfig<TCustomNameMappingOptions>>>({
     elemID: new ElemID(adapterName),
     fields: {
       client: {
-        refType: createClientConfigType(adapterName, undefined, additionalClientFields),
+        refType: createClientConfigType({
+          adapter: adapterName,
+          additionRateLimitFields,
+          additionalClientFields,
+        }),
       },
       fetch: {
         refType: createUserFetchConfigType({
@@ -85,7 +93,7 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
       ...additionalFields,
     },
     annotations: {
-      [CORE_ANNOTATIONS.DEFAULT]: defaultConfig,
+      [CORE_ANNOTATIONS.DEFAULT]: _.omit(defaultConfig, 'fetch.hideTypes', 'client', ...pathsToOmitFromDefaultConfig),
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })

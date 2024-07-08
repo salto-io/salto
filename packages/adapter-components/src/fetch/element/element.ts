@@ -24,7 +24,7 @@ import { InvalidSingletonType, getReachableTypes, hideAndOmitFields, overrideFie
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 import { ConfigChangeSuggestion, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
-import { omitInstanceValues } from './instance_utils'
+import { omitAllInstancesValues } from './instance_utils'
 import { AbortFetchOnFailure } from '../errors'
 
 const log = logger(module)
@@ -117,15 +117,17 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
   const generate: ElementGenerator['generate'] = () => {
     const allResults = Object.entries(valuesByType).flatMap(([typeName, values]) => {
       try {
-        return generateInstancesWithInitialTypes({
-          adapterName,
-          defQuery,
-          entries: values,
-          typeName,
-          definedTypes: predefinedTypes,
-          getElemIdFunc,
-          customNameMappingFunctions,
-        })
+        return defQuery.query(typeName)?.element?.topLevel === undefined
+          ? { instances: [], types: [] }
+          : generateInstancesWithInitialTypes({
+              adapterName,
+              defQuery,
+              entries: values,
+              typeName,
+              definedTypes: predefinedTypes,
+              getElemIdFunc,
+              customNameMappingFunctions,
+            })
       } catch (e) {
         // TODO decide how to handle error based on args (SALTO-5842)
         if (e instanceof InvalidSingletonType) {
@@ -149,10 +151,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
 
     overrideFieldTypes({ definedTypes, defQuery, finalTypeNames })
     // omit fields based on the adjusted types
-    instances.forEach(inst => {
-      inst.value = omitInstanceValues({ value: inst.value, type: inst.getTypeSync(), defQuery })
-    })
-
+    omitAllInstancesValues({ instances, defQuery })
     hideAndOmitFields({ definedTypes, defQuery, finalTypeNames })
 
     // only return types that are reachable from instances or definitions

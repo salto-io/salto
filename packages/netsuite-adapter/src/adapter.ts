@@ -142,6 +142,7 @@ import { buildNetsuiteBundlesQuery } from './config/bundle_query'
 import { customReferenceHandlers } from './custom_references'
 import { SystemInformation } from './client/suiteapp_client/types'
 import { getOrCreateObjectIdListElements } from './scriptid_list'
+import { getUpdatedSuiteQLNameToInternalIdsMap } from './account_specific_values_resolver'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -188,7 +189,11 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   // dataInstancesReferenceNames must run after dataInstancesReferences and before dataAccountSpecificValues
   { creator: dataInstancesReferenceNames, addsNewInformation: true },
   { creator: dataInstancesInternalId },
-  { creator: dataAccountSpecificValues },
+  { creator: accountSpecificValues },
+  // the onFetch of workflowAccountSpecificValues should run before dataAccountSpecificValues
+  // the preDeploy of workflowAccountSpecificValues should run before accountSpecificValues
+  { creator: workflowAccountSpecificValues, addsNewInformation: true },
+  { creator: dataAccountSpecificValues, addsNewInformation: true },
   { creator: suiteAppInternalIds },
   { creator: currencyExchangeRate },
   // AuthorInformation filters must run after SDFInternalIds filter
@@ -196,9 +201,6 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   // savedSearchesAuthorInformation must run before suiteAppConfigElementsFilter
   { creator: savedSearchesAuthorInformation, addsNewInformation: true },
   { creator: translationConverter },
-  { creator: accountSpecificValues },
-  // the preDeploy of workflowAccountSpecificValues should run before accountSpecificValues
-  { creator: workflowAccountSpecificValues, addsNewInformation: true },
   { creator: suiteAppConfigElementsFilter },
   { creator: configFeaturesFilter },
   { creator: customRecordsFilter },
@@ -271,6 +273,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       | {
           operation: 'deploy'
           changesGroupId: string
+          suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
         },
   ) => Required<Filter>
 
@@ -336,6 +339,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
               isPartial: false,
               config,
               changesGroupId: params.changesGroupId,
+              suiteQLNameToInternalIdsMap: params.suiteQLNameToInternalIdsMap,
             }
           default:
             throw new Error('unknown operation param')
@@ -381,6 +385,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         updatedFetchQuery,
         this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
         this.userConfig.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
+        this.userConfig.fetch.forceFileCabinetExclude ?? false,
       )
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result
@@ -465,11 +470,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
         failures,
       },
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
-      { elements: suiteQLTableElements, largeSuiteQLTables },
+      { elements: suiteQLTableElements },
     ] = await Promise.all([
       getStandardAndCustomElements(),
       getDataElements(this.client, fetchQueryWithBundles, this.getElemIdFunc),
-      getSuiteQLTableElements(this.userConfig, this.client, this.elementsSource, isPartial),
+      getSuiteQLTableElements(this.userConfig, this.elementsSource, isPartial),
     ])
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -520,7 +525,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }).onFetch(elements)
 
     return {
-      failures: { ...failures, largeSuiteQLTables },
+      failures,
       elements,
       deletedElements,
       deletedElementErrors,
@@ -661,7 +666,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
   @logDuration('deploying account configuration')
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
-    const filtersRunner = this.createFiltersRunner({ operation: 'deploy', changesGroupId: groupID })
+    const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(
+      this.client,
+      this.elementsSource,
+      changesToDeploy,
+    )
+    const filtersRunner = this.createFiltersRunner({
+      operation: 'deploy',
+      changesGroupId: groupID,
+      suiteQLNameToInternalIdsMap,
+    })
     await filtersRunner.preDeploy(changesToDeploy)
 
     const deployResult = await this.client.deploy(changesToDeploy, groupID, this.additionalDependencies, elemID =>
@@ -692,9 +706,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
         deployReferencedElements: this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
-        filtersRunner: changesGroupId => this.createFiltersRunner({ operation: 'deploy', changesGroupId }),
+        filtersRunner: (changesGroupId, suiteQLNameToInternalIdsMap) =>
+          this.createFiltersRunner({ operation: 'deploy', changesGroupId, suiteQLNameToInternalIdsMap }),
         elementsSource: this.elementsSource,
-        userConfig: this.userConfig,
+        config: this.userConfig,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
       dependencyChanger,

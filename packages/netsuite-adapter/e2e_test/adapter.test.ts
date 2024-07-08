@@ -92,7 +92,6 @@ import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_
 import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
 import { bundleType as bundle } from '../src/types/bundle_type'
 import { addApplicationIdToType } from '../src/transformer'
-import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../src/filters/data_account_specific_values'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -676,6 +675,9 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should add alias to elements', async () => {
+        const ignoreCustomRecordInstanceAlias = (type: ObjectType): boolean =>
+          isCustomRecordType(type) && (type.annotations[CORE_ANNOTATIONS.HIDDEN] || !type.annotations.includename)
+
         const relevantElements = fetchResult.elements.filter(
           element =>
             isInstanceElement(element) ||
@@ -687,8 +689,10 @@ describe('Netsuite adapter E2E with real account', () => {
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
           // some sub-instances don't have alias
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
+          .filter(element => !isInstanceElement(element) || !ignoreCustomRecordInstanceAlias(element.getTypeSync()))
+          .filter(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] !== true)
 
-        expect(elementsWithoutAlias.every(elem => elem.annotations[CORE_ANNOTATIONS.HIDDEN])).toBeTruthy()
+        expect(elementsWithoutAlias.map(element => element.elemID.getFullName())).toEqual([])
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {
@@ -739,17 +743,12 @@ describe('Netsuite adapter E2E with real account', () => {
           fetchedWorkflow.value.workflowstates?.workflowstate?.workflowstate_state1?.workflowtransitions
             ?.workflowtransition?.workflowtransition_transition1?.tostate
         expect(toStateReference).toBeDefined()
-        expect(
-          isReferenceExpression(toStateReference) &&
-            toStateReference.elemID.isEqual(
-              fetchedWorkflow.elemID.createNestedID(
-                'workflowstates',
-                'workflowstate',
-                'workflowstate_state2',
-                SCRIPT_ID,
-              ),
-            ),
-        ).toBe(true)
+        expect(isReferenceExpression(toStateReference)).toBe(true)
+        expect(toStateReference.elemID.getFullName()).toEqual(
+          fetchedWorkflow.elemID
+            .createNestedID('workflowstates', 'workflowstate', 'workflowstate_state2', SCRIPT_ID)
+            .getFullName(),
+        )
       })
 
       it('should fetch the created email template', async () => {
@@ -988,8 +987,6 @@ describe('Netsuite adapter E2E with real account', () => {
           .concat(filesToImport)
           .concat(existingFileCabinetInstances)
           .concat(newFileCabinetInstancesElemIds)
-          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
-          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID.createNestedID('instance', ElemID.CONFIG_NAME) })
 
         const expectedElements = _.uniq(allTypes.map(type => type.elemID.getFullName())).sort()
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
@@ -33,6 +34,8 @@ import {
   GROUP_PUSH_TYPE_NAME,
   GROUP_PUSH_RULE_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  USER_TYPE_NAME,
+  GROUP_MEMBERSHIP_TYPE_NAME,
 } from './constants'
 import { resolveUserSchemaRef } from './filters/expression_language'
 
@@ -103,7 +106,7 @@ export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceRes
   }
 }
 
-export const referencesRules: OktaFieldReferenceDefinition[] = [
+const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: [APP_GROUP_ASSIGNMENT_TYPE_NAME] },
     serializationStrategy: 'id',
@@ -262,6 +265,45 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   },
 ]
 
+const userReferenceRules: OktaFieldReferenceDefinition[] = [
+  {
+    src: { field: 'exclude', parentTypes: ['UserCondition', 'GroupRuleUserCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'include', parentTypes: ['UserCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'members', parentTypes: [GROUP_MEMBERSHIP_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'technicalContactId', parentTypes: ['EndUserSupport'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'id', parentTypes: ['UserTypeRef'] },
+    serializationStrategy: 'id',
+    target: { type: USERTYPE_TYPE_NAME },
+  },
+]
+
+export const getReferenceDefs = ({
+  enableMissingReferences,
+  isUserTypeIncluded,
+}: {
+  enableMissingReferences?: boolean
+  isUserTypeIncluded: boolean
+}): OktaFieldReferenceDefinition[] =>
+  referencesRules
+    .concat(isUserTypeIncluded ? userReferenceRules : [])
+    .map(def => (enableMissingReferences ? def : _.omit(def, 'missingRefStrategy')))
+
 // Resolve references to userSchema fields references to field name instead of full value
 const userSchemaLookUpFunc: GetLookupNameFunc = async ({ ref }) => {
   if (ref.elemID.typeName !== USER_SCHEMA_TYPE_NAME) {
@@ -271,13 +313,21 @@ const userSchemaLookUpFunc: GetLookupNameFunc = async ({ ref }) => {
   return userSchemaField ?? ref
 }
 
-const lookupNameFuncs: GetLookupNameFunc[] = [
-  userSchemaLookUpFunc,
-  // The second param is needed to resolve references by serializationStrategy
-  referenceUtils.generateLookupFunc(referencesRules, defs => new OktaFieldReferenceResolver(defs)),
-]
-
-export const getLookUpName: GetLookupNameFunc = async args =>
-  awu(lookupNameFuncs)
-    .map(lookupFunc => lookupFunc(args))
-    .find(res => !isReferenceExpression(res))
+export const getLookUpNameCreator = ({
+  enableMissingReferences,
+  isUserTypeIncluded,
+}: {
+  enableMissingReferences?: boolean
+  isUserTypeIncluded: boolean
+}): GetLookupNameFunc => {
+  const rules = getReferenceDefs({ enableMissingReferences, isUserTypeIncluded })
+  const lookupNameFuncs = [
+    userSchemaLookUpFunc,
+    // The second param is needed to resolve references by serializationStrategy
+    referenceUtils.generateLookupFunc(rules, defs => new OktaFieldReferenceResolver(defs)),
+  ]
+  return async args =>
+    awu(lookupNameFuncs)
+      .map(lookupFunc => lookupFunc(args))
+      .find(res => !isReferenceExpression(res))
+}

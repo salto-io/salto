@@ -336,6 +336,7 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
           fields: reviveFieldDefinitions(v.fields),
           annotationRefsOrTypes: reviveAnnotationRefTypes(v),
           annotations: restoreClasses(v.annotations),
+          metaType: restoreClasses(v.metaType),
           isSettings: v.isSettings,
           path: v.path,
         })

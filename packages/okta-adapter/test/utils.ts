@@ -28,11 +28,12 @@ import { FilterCreator } from '../src/filter'
 import { Credentials } from '../src/auth'
 import { DEFAULT_CONFIG, OktaUserConfig } from '../src/user_config'
 import { OLD_API_DEFINITIONS_CONFIG } from '../src/config'
-import { OktaFetchOptions } from '../src/definitions/types'
+import { OktaOptions } from '../src/definitions/types'
 import { createClientDefinitions } from '../src/definitions/requests/clients'
 import { PAGINATION } from '../src/definitions/requests/pagination'
 import { createFetchDefinitions } from '../src/definitions/fetch/fetch'
 import { getAdminUrl } from '../src/client/admin'
+import fetchCriteria from '../src/fetch_criteria'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
@@ -81,7 +82,7 @@ export const createDefinitions = ({
 }: {
   client?: OktaClient
   usePrivateAPI?: boolean
-}): definitionsUtils.RequiredDefinitions<OktaFetchOptions> => {
+}): definitionsUtils.RequiredDefinitions<OktaOptions> => {
   const cli = client ?? mockClient().client
   return {
     clients: createClientDefinitions({ main: cli, private: cli }),
@@ -90,12 +91,15 @@ export const createDefinitions = ({
   }
 }
 
+export const createFetchQuery = (config?: OktaUserConfig): elementUtils.query.ElementQuery =>
+  elementUtils.query.createElementQuery(config?.fetch ?? DEFAULT_CONFIG?.fetch, fetchCriteria)
+
 export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>): Parameters<FilterCreator>[0] => ({
   paginator: mockClient().paginator,
   definitions: createDefinitions({}),
   config: DEFAULT_CONFIG,
   elementSource: buildElementsSourceFromElements([]),
-  fetchQuery: elementUtils.query.createMockQuery(),
+  fetchQuery: createFetchQuery(params?.config),
   oldApiDefinitions: OLD_API_DEFINITIONS_CONFIG,
   baseUrl: 'https://dev-00000000.okta.com',
   isOAuthLogin: false,

@@ -28,7 +28,7 @@ import {
   loadLocalWorkspace,
   fetchFromWorkspace,
 } from '@salto-io/core'
-import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
+import { Workspace, nacl, StateRecency, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -44,6 +44,8 @@ import {
   formatAppliedChanges,
   formatFetchWarnings,
   formatAdapterProgress,
+  formatInvalidFilters,
+  error,
 } from '../formatter'
 import {
   getApprovedChanges as cliGetApprovedChanges,
@@ -76,6 +78,7 @@ export type FetchCommandArgs = {
   stateOnly: boolean
   accounts: string[]
   regenerateSaltoIds: boolean
+  regenerateSaltoIdsForSelectors: ElementSelector[]
   withChangesDetection?: boolean
 }
 
@@ -119,6 +122,7 @@ export const fetchCommand = async ({
   shouldCalcTotalSize,
   stateOnly,
   regenerateSaltoIds,
+  regenerateSaltoIdsForSelectors,
   withChangesDetection,
 }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
@@ -183,7 +187,15 @@ export const fetchCommand = async ({
   if (stateOnly && mode !== 'default') {
     throw new Error('The state only flag can only be used in default mode')
   }
-  const fetchResult = await fetch(workspace, fetchProgress, accounts, regenerateSaltoIds, withChangesDetection)
+
+  const fetchResult = await fetch(
+    workspace,
+    fetchProgress,
+    accounts,
+    regenerateSaltoIds,
+    withChangesDetection,
+    regenerateSaltoIdsForSelectors,
+  )
 
   // A few merge errors might have occurred,
   // but since it's fetch flow, we omitted the elements
@@ -271,6 +283,7 @@ type FetchArgs = {
   force: boolean
   stateOnly: boolean
   regenerateSaltoIds: boolean
+  regenerateSaltoIdsForSelectors?: string[]
   fromWorkspace?: string
   fromEnv?: string
   fromState: boolean
@@ -293,16 +306,35 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     accounts,
     mode,
     regenerateSaltoIds,
+    regenerateSaltoIdsForSelectors: regenerateSaltoIdsForSelectorsInput = [],
     fromWorkspace,
     fromEnv,
     fromState,
     withChangesDetection,
   } = input
+
   if ([fromEnv, fromWorkspace].some(values.isDefined) && ![fromEnv, fromWorkspace].every(values.isDefined)) {
     errorOutputLine('The fromEnv and fromWorkspace arguments must both be provided.', output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError
   }
+
+  const { validSelectors: regenerateSaltoIdsForSelectors, invalidSelectors } = createElementSelectors(
+    regenerateSaltoIdsForSelectorsInput,
+  )
+  if (invalidSelectors.length > 0) {
+    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+    return CliExitCode.UserInputError
+  }
+
+  if (!regenerateSaltoIds && regenerateSaltoIdsForSelectors.length > 0) {
+    errorOutputLine(
+      error('The regenerateSaltoIds arg must be provided in order to use the regenerateSaltoIdsForSelectors arg'),
+      output,
+    )
+    return CliExitCode.UserInputError
+  }
+
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
   const activeAccounts = getAndValidateActiveAccounts(workspace, accounts)
@@ -346,6 +378,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     stateOnly,
     withChangesDetection,
     regenerateSaltoIds,
+    regenerateSaltoIdsForSelectors,
   })
 }
 
@@ -377,6 +410,13 @@ const fetchDef = createWorkspaceCommand({
         required: false,
         description: 'Regenerate configuration elements Salto IDs based on the current settings and fetch results',
         type: 'boolean',
+      },
+      {
+        name: 'regenerateSaltoIdsForSelectors',
+        alias: 'rs',
+        required: false,
+        description: 'Selectors for Salto IDs regeneration',
+        type: 'stringsList',
       },
       {
         name: 'fromWorkspace',

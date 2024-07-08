@@ -45,6 +45,12 @@ export class ConflictingFieldTypesError extends FieldDefinitionMergeError {
   }
 }
 
+export class ConflictingMetaTypeError extends MergeError {
+  constructor({ elemID }: { elemID: ElemID }) {
+    super({ elemID, error: 'conflicting meta type definitions' })
+  }
+}
+
 export class ConflictingSettingError extends MergeError {
   constructor({ elemID }: { elemID: ElemID }) {
     super({ elemID, error: 'conflicting is settings definitions' })
@@ -114,6 +120,11 @@ const mergeObjectDefinitions = ({ elemID }: { elemID: ElemID }, objects: ObjectT
     (key, existingValue, newValue) => new DuplicateAnnotationError({ elemID, key, existingValue, newValue }),
   )
 
+  const refMetaType = objects[0].metaType
+  const metaTypeErrors = _.every(objects, obj => obj.isMetaTypeEqual(objects[0]))
+    ? []
+    : [new ConflictingMetaTypeError({ elemID: objects[0].elemID })]
+
   const refIsSettings = objects[0].isSettings
   const isSettingsErrors = _.every(objects, obj => obj.isSettings === refIsSettings)
     ? []
@@ -125,12 +136,14 @@ const mergeObjectDefinitions = ({ elemID }: { elemID: ElemID }, objects: ObjectT
       fields: _.mapValues(fieldsMergeResults, r => r.merged),
       annotationRefsOrTypes: annotationTypesMergeResults.merged,
       annotations: annotationsMergeResults.merged,
+      metaType: refMetaType,
       isSettings: refIsSettings,
     }),
     errors: _.flatten([
       ...Object.values(fieldsMergeResults).map(r => r.errors),
       ...annotationTypesMergeResults.errors,
       ...annotationsMergeResults.errors,
+      ...metaTypeErrors,
       ...isSettingsErrors,
     ]),
   }

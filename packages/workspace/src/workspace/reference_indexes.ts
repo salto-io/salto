@@ -25,10 +25,13 @@ import {
   isTemplateExpression,
   isObjectTypeChange,
   ReferenceInfo,
-  ReferenceType,
   TemplateExpression,
   StaticFile,
   isStaticFile,
+  ReferenceType,
+  REFERENCE_TYPES,
+  REFERENCE_SOURCE_SCOPES,
+  ReferenceSourceScope,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -42,7 +45,7 @@ import { RemoteMap, RemoteMapEntry } from './remote_map'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export const REFERENCE_INDEXES_VERSION = 10
+export const REFERENCE_INDEXES_VERSION = 11
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
 type ChangeReferences = {
@@ -50,9 +53,28 @@ type ChangeReferences = {
   currentAndNew: ReferenceInfo[]
 }
 
-export type ReferenceTargetIndexValue = collections.treeMap.TreeMap<{ id: ElemID; type: ReferenceType }>
+export type ReferenceIndexEntry = {
+  id: ElemID
+} & Pick<ReferenceInfo, 'type' | 'sourceScope'>
 
-type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
+export type SerializedReferenceIndexEntry = {
+  id: string
+} & Pick<ReferenceInfo, 'type' | 'sourceScope'>
+
+const isValidReferenceSourceScope = (value: unknown): value is ReferenceSourceScope | undefined =>
+  value === undefined || (_.isString(value) && (REFERENCE_SOURCE_SCOPES as ReadonlyArray<string>).includes(value))
+
+const isValidReferenceType = (value: unknown): value is ReferenceType =>
+  _.isString(value) && (REFERENCE_TYPES as ReadonlyArray<string>).includes(value)
+
+export const isSerliazedReferenceIndexEntry = (value: unknown): value is SerializedReferenceIndexEntry =>
+  _.isString(_.get(value, 'id')) &&
+  isValidReferenceType(_.get(value, 'type')) &&
+  isValidReferenceSourceScope(_.get(value, 'sourceScope'))
+
+export type ReferenceTargetIndexValue = collections.treeMap.TreeMap<ReferenceIndexEntry>
+
+export type ReferenceIndexesGetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 
 const getReferenceDetailsIdentifier = (referenceDetails: ReferenceInfo): string =>
   `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
@@ -122,8 +144,12 @@ const getReferencesFromChange = async (
   }
 }
 
-const createReferenceTree = (references: ReferenceInfo[], rootFields = false): ReferenceTargetIndexValue =>
-  new collections.treeMap.TreeMap(
+const createReferenceTree = (references: ReferenceInfo[], rootFields = false): ReferenceTargetIndexValue => {
+  const toReferenceTargetIndexEntry = (referenceInfo: ReferenceInfo): ReferenceIndexEntry =>
+    referenceInfo.sourceScope
+      ? { id: referenceInfo.target, type: referenceInfo.type, sourceScope: referenceInfo.sourceScope }
+      : { id: referenceInfo.target, type: referenceInfo.type }
+  return new collections.treeMap.TreeMap(
     references.map(ref => {
       // In case we are creating a reference tree for a type object, the fields path is not relevant
       // This is because a request for the field's references will be to the field itself, and not through the object
@@ -131,10 +157,11 @@ const createReferenceTree = (references: ReferenceInfo[], rootFields = false): R
         rootFields && ref.source.idType === 'field'
           ? ''
           : ref.source.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-      return [key, [{ id: ref.target, type: ref.type }]]
+      return [key, [toReferenceTargetIndexEntry(ref)]]
     }),
     ElemID.NAMESPACE_SEPARATOR,
   )
+}
 
 const getReferenceTargetIndexUpdates = (
   change: Change<Element>,
@@ -189,21 +216,25 @@ const updateReferenceTargetsIndex = async (
 
 const updateIdOfReferenceSourcesIndex = (
   id: string,
-  addedSources: ElemID[],
-  oldSources: ElemID[],
+  addedSources: ReferenceIndexEntry[],
+  oldSources: ReferenceIndexEntry[],
   allChangedReferenceSources: Set<string>,
-): RemoteMapEntry<ElemID[]> => {
+): RemoteMapEntry<ReferenceIndexEntry[]> => {
   const unchangedReferenceSources = oldSources.filter(
-    elemId => !allChangedReferenceSources.has(elemId.createTopLevelParentID().parent.getFullName()),
+    entry => !allChangedReferenceSources.has(entry.id.createTopLevelParentID().parent.getFullName()),
   )
 
   return { key: id, value: _.concat(unchangedReferenceSources, addedSources) }
 }
 
-const getReferenceSourcesMap = (references: ReferenceInfo[]): Record<string, ElemID[]> => {
-  const referenceSourcesChanges = _(references)
+const getReferenceSourcesMap = (references: ReferenceInfo[]): Record<string, ReferenceIndexEntry[]> => {
+  const toReferenceSourcesIndexEntry = (referenceInfo: ReferenceInfo): ReferenceIndexEntry =>
+    referenceInfo.sourceScope
+      ? { id: referenceInfo.source, type: referenceInfo.type, sourceScope: referenceInfo.sourceScope }
+      : { id: referenceInfo.source, type: referenceInfo.type }
+  const referenceSourcesChanges: Record<string, ReferenceIndexEntry[]> = _(references)
     .groupBy(({ target }) => target.createBaseID().parent.getFullName())
-    .mapValues(refs => refs.map(ref => ref.source))
+    .mapValues(refs => refs.map(toReferenceSourcesIndexEntry))
     .value()
 
   // Add to a type its fields references
@@ -222,7 +253,7 @@ const getReferenceSourcesMap = (references: ReferenceInfo[]): Record<string, Ele
 
 const updateReferenceSourcesIndex = async (
   changes: Change<Element>[],
-  index: RemoteMap<ElemID[]>,
+  index: RemoteMap<ReferenceIndexEntry[]>,
   changeToReferences: Record<string, ChangeReferences>,
   initialIndex: boolean,
 ): Promise<void> => {
@@ -256,7 +287,7 @@ const updateReferenceSourcesIndex = async (
   const [deletions, modifications] = _.partition(updates, update => update.value.length === 0)
   const uniqueModification = modifications.map(modification => ({
     ...modification,
-    value: _.uniqBy(modification.value, id => id.getFullName()),
+    value: _.uniqBy(modification.value, entry => entry.id.getFullName()),
   }))
   await Promise.all([
     modifications.length !== 0 ? index.setAll(uniqueModification) : undefined,
@@ -265,7 +296,7 @@ const updateReferenceSourcesIndex = async (
 }
 
 const getIdToCustomReferences = async (
-  getCustomReferences: GetCustomReferencesFunc,
+  getCustomReferences: ReferenceIndexesGetCustomReferencesFunc,
   changes: Change<Element>[],
 ): Promise<{ before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> }> => {
   const customReferencesAfter = await getCustomReferences(
@@ -285,11 +316,11 @@ const getIdToCustomReferences = async (
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],
   referenceTargetsIndex: RemoteMap<ReferenceTargetIndexValue>,
-  referenceSourcesIndex: RemoteMap<ElemID[]>,
+  referenceSourcesIndex: RemoteMap<ReferenceIndexEntry[]>,
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean,
-  getCustomReferences: GetCustomReferencesFunc,
+  getCustomReferences: ReferenceIndexesGetCustomReferencesFunc,
 ): Promise<void> =>
   log.timeDebug(async () => {
     let relevantChanges = changes
@@ -312,7 +343,7 @@ export const updateReferenceIndexes = async (
       initialIndex = true
     }
 
-    const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
+    const customReferences = await getIdToCustomReferences(getCustomReferences, relevantChanges)
 
     const changeToReferences = Object.fromEntries(
       await awu(relevantChanges)

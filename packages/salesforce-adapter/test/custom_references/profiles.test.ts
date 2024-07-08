@@ -15,9 +15,9 @@
  */
 import {
   ElemID,
-  Field,
   FixElementsFunc,
   InstanceElement,
+  ObjectType,
   ReferenceExpression,
   ReferenceInfo,
   Values,
@@ -26,10 +26,13 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
+  API_NAME,
   CUSTOM_APPLICATION_METADATA_TYPE,
+  CUSTOM_OBJECT,
   FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
   LAYOUT_TYPE_ID_METADATA_TYPE,
+  METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
@@ -85,6 +88,7 @@ describe('profiles', () => {
               source: profileInstance.elemID.createNestedID(...expectedSource),
               target: expectedTarget,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -142,6 +146,7 @@ describe('profiles', () => {
               ),
               target: customApp.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -171,6 +176,7 @@ describe('profiles', () => {
               ),
               target: customApp.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -250,6 +256,7 @@ describe('profiles', () => {
               ),
               target: apexClass.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -326,6 +333,7 @@ describe('profiles', () => {
               ),
               target: flow.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -387,6 +395,7 @@ describe('profiles', () => {
               ),
               target: layout.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -429,6 +438,7 @@ describe('profiles', () => {
               ),
               target: layout.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
             {
               source: profileInstance.elemID.createNestedID(
@@ -437,6 +447,7 @@ describe('profiles', () => {
               ),
               target: recordTypes[0].elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
             {
               source: profileInstance.elemID.createNestedID(
@@ -445,6 +456,7 @@ describe('profiles', () => {
               ),
               target: recordTypes[1].elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -523,6 +535,7 @@ describe('profiles', () => {
                 ),
                 target: layout.elemID,
                 type: 'weak',
+                sourceScope: 'value',
               },
             ])
           })
@@ -585,6 +598,7 @@ describe('profiles', () => {
               ),
               target: customObject.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -662,6 +676,7 @@ describe('profiles', () => {
               ),
               target: apexPage.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -747,6 +762,7 @@ describe('profiles', () => {
               ),
               target: recordType.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -778,6 +794,7 @@ describe('profiles', () => {
               ),
               target: recordType.elemID,
               type: 'weak',
+              sourceScope: 'value',
             },
           ])
         })
@@ -907,9 +924,10 @@ describe('profiles', () => {
           {
             elemID: profileInstance.elemID,
             severity: 'Info',
-            message: 'Dropping profile fields which reference missing types',
+            message:
+              'Omitting profile entries which reference unavailable types',
             detailedMessage:
-              'The profile has 8 fields which reference types which are not available in the workspace.',
+              'The profile has entries which reference types which are not available in the environment and will not be deployed.',
           },
         ])
       })
@@ -918,11 +936,16 @@ describe('profiles', () => {
     describe('when references are resolved', () => {
       beforeEach(() => {
         const elementsSource = buildElementsSourceFromElements([
-          new Field(
-            mockTypes.Account,
-            'testField__c',
-            mockTypes.AccountSettings,
-          ),
+          new ObjectType({
+            elemID: new ElemID('salesforce', 'Account'),
+            fields: {
+              testField__c: { refType: mockTypes.AccountSettings },
+            },
+            annotations: {
+              [METADATA_TYPE]: CUSTOM_OBJECT,
+              [API_NAME]: 'Account',
+            },
+          }),
           new InstanceElement(
             'SomeApplication',
             mockTypes.CustomApplication,
@@ -935,7 +958,6 @@ describe('profiles', () => {
             mockTypes.Layout,
             {},
           ),
-          mockTypes.Account,
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
           new InstanceElement(
             'Case_SomeCaseRecordType',
@@ -948,7 +970,7 @@ describe('profiles', () => {
         })
       })
 
-      it('should drop fields', async () => {
+      it('should not drop fields', async () => {
         const { fixedElements, errors } = await fixElementsFunc([
           profileInstance,
         ])
@@ -1029,9 +1051,10 @@ describe('profiles', () => {
           {
             elemID: profileInstance.elemID,
             severity: 'Info',
-            message: 'Dropping profile fields which reference missing types',
+            message:
+              'Omitting profile entries which reference unavailable types',
             detailedMessage:
-              'The profile has 4 fields which reference types which are not available in the workspace.',
+              'The profile has entries which reference types which are not available in the environment and will not be deployed.',
           },
         ])
       })

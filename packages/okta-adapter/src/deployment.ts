@@ -44,7 +44,8 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import { ACTIVE_STATUS, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'
-import { OktaStatusActionName, OktaSwaggerApiConfig } from './config'
+import { OktaSwaggerApiConfig } from './config'
+import { StatusActionName } from './definitions/types'
 
 const log = logger(module)
 
@@ -125,7 +126,7 @@ export const deployStatusChange = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
   apiDefinitions: OktaSwaggerApiConfig,
-  operation: OktaStatusActionName,
+  operation: StatusActionName,
 ): Promise<void> => {
   const deployRequests = apiDefinitions.types?.[getChangeData(change).elemID.typeName]?.deployRequests
   const instance = getChangeData(change)
@@ -193,6 +194,9 @@ export const defaultDeployChange = async (
     }
   }
 
+  if (apiDefinitions.types[getChangeData(change).elemID.typeName] === undefined) {
+    throw new Error(`No deployment configuration found for type ${getChangeData(change).elemID.typeName}`)
+  }
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
     const response = await deployment.deployChange({

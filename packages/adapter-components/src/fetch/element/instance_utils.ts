@@ -30,6 +30,7 @@ import {
   transformValuesSync,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
 import {
   ApiDefinitions,
@@ -42,6 +43,8 @@ import {
 import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { removeNullValues } from './type_utils'
+
+const log = logger(module)
 
 /**
  * Transform a value to a valid instance value by nacl-casing all its keys,
@@ -98,7 +101,24 @@ export const omitInstanceValues = <Options extends FetchApiDefinitionsOptions>({
     type,
     transformFunc: omitValues(defQuery),
     strict: false,
+    allowEmptyArrays: defQuery.query(type.elemID.name)?.element?.topLevel?.allowEmptyArrays,
   })
+
+/**
+ * calling "omitInstanceValues" on all instances and adding a log time to it
+ */
+export const omitAllInstancesValues = <Options extends FetchApiDefinitionsOptions>({
+  instances,
+  defQuery,
+}: {
+  instances: InstanceElement[]
+  defQuery: ElementAndResourceDefFinder<Options>
+}): void =>
+  log.timeDebug(() => {
+    instances.forEach(inst => {
+      inst.value = omitInstanceValues({ value: inst.value, type: inst.getTypeSync(), defQuery })
+    })
+  }, 'omitAllInstancesValues')
 
 export type InstanceCreationParams = {
   entry: Values
@@ -107,6 +127,7 @@ export type InstanceCreationParams = {
   parent?: InstanceElement
   toElemName: ElemIDCreator
   toPath: PartsCreator
+  allowEmptyArrays?: boolean
 }
 
 /**
@@ -134,7 +155,7 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}
 
   if (!elementDef?.topLevel?.isTopLevel) {
-    // should have already been tested in caller
+    // should have already been tested in caller, we should not get here if topLevel is undefined
     const error = `type ${adapterName}:${typeName} is not defined as top-level, cannot create instances`
     throw new Error(error)
   }
@@ -181,10 +202,11 @@ export const createInstance = ({
   toPath,
   defaultName,
   parent,
+  allowEmptyArrays = false,
 }: InstanceCreationParams): InstanceElement | undefined => {
   const annotations = _.pick(entry, Object.keys(INSTANCE_ANNOTATIONS))
   const value = _.omit(entry, Object.keys(INSTANCE_ANNOTATIONS))
-  const refinedValue = value !== undefined ? removeNullValues(value, type) : {}
+  const refinedValue = value !== undefined ? removeNullValues({ values: value, type, allowEmptyArrays }) : {}
 
   if (_.isEmpty(refinedValue)) {
     return undefined

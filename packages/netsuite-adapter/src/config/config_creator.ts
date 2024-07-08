@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement } from '@salto-io/adapter-api'
-import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, INACTIVE_FIELDS } from '../constants'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, FILE_CABINET_PATH_SEPARATOR, INACTIVE_FIELDS } from '../constants'
 import { removeCustomRecordTypePrefix } from '../types'
 import { fileCabinetTypesNames } from '../types/file_cabinet_types'
 import {
@@ -68,10 +68,10 @@ export const fullFetchConfig = (): FetchParams => ({
 })
 
 const updatedFetchTarget = (config: NetsuiteConfig): NetsuiteQueryParameters | undefined => {
-  if (config.fetchTarget?.customRecords === undefined) {
-    return config.fetchTarget
+  if (config.fetchTarget === undefined) {
+    return undefined
   }
-  const { types, filePaths, customRecords } = config.fetchTarget
+  const { types = {}, filePaths = [], customRecords = {} } = config.fetchTarget
   // in case that custom records are fetched, we want to fetch their types too-
   // using this config: { types: { customrecordtype: [<customRecordTypes>] } }.
   // without that addition, the custom record types wouldn't be fetched
@@ -80,15 +80,24 @@ const updatedFetchTarget = (config: NetsuiteConfig): NetsuiteQueryParameters | u
   // custom record types that have custom segments are fetch by them
   // so we need to fetch the matching custom segments too.
   const customSegmentNames = customRecordTypeNames.map(removeCustomRecordTypePrefix).filter(name => name.length > 0)
-  const customRecordTypesQuery = (types?.[CUSTOM_RECORD_TYPE] ?? []).concat(customRecordTypeNames)
-  const customSegmentsQuery = (types?.[CUSTOM_SEGMENT] ?? []).concat(customSegmentNames)
+  const customRecordTypesQuery = (types[CUSTOM_RECORD_TYPE] ?? []).concat(customRecordTypeNames)
+  const customSegmentsQuery = (types[CUSTOM_SEGMENT] ?? []).concat(customSegmentNames)
+
+  const filePathsFolders = filePaths
+    .map(path => path.substring(0, path.lastIndexOf(FILE_CABINET_PATH_SEPARATOR) + 1))
+    .filter(path => path !== FILE_CABINET_PATH_SEPARATOR)
+    // in case that the query was like ".*\.js" (all js files), we want to query all folders
+    .map(path => (path === '' ? `.*${FILE_CABINET_PATH_SEPARATOR}` : path))
+    .filter(regex.isValidRegex)
+  const updatedFilePaths = _.uniq(filePaths.concat(filePathsFolders))
+
   return {
     types: {
       ...types,
       [CUSTOM_RECORD_TYPE]: customRecordTypesQuery,
       [CUSTOM_SEGMENT]: customSegmentsQuery,
     },
-    filePaths,
+    filePaths: updatedFilePaths,
     customRecords,
   }
 }

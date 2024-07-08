@@ -1,128 +1,24 @@
 [
-	{
-		"url": "/api/v1/groups",
-		"method": "POST",
-		"status": 200,
-		"response": {
-			"id": "fakeid123",
-			"created": "2024-06-17T08:11:40.000Z",
-			"lastUpdated": "2024-06-17T08:11:40.000Z",
-			"lastMembershipUpdated": "2024-06-17T08:11:40.000Z",
-			"objectClass": [
-				"okta:user_group"
-			],
-			"type": "OKTA_GROUP",
-			"profile": {
-				"name": "Engineers",
-				"description": "all the engineers"
-			},
-			"_links": {
-				"logo": [
-					{
-						"name": "medium",
-						"href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-medium.30ce6d4085dff29412984e4c191bc874.png",
-						"type": "image/png"
-					},
-					{
-						"name": "large",
-						"href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-large.c3cb8cda8ae0add1b4fe928f5844dbe3.png",
-						"type": "image/png"
-					}
-				],
-				"owners": {
-					"href": "https://<sanitized>/api/v1/groups/fakeid123/owners"
-				},
-				"users": {
-					"href": "https://<sanitized>/api/v1/groups/fakeid123/users"
-				},
-				"apps": {
-					"href": "https://<sanitized>/api/v1/groups/fakeid123/apps"
-				}
-			}
-		},
-		"headers": {
-			"x-rate-limit-limit": "250",
-			"x-rate-limit-remaining": "249",
-			"x-rate-limit-reset": "1718611960"
-		},
-		"data": {
-			"objectClass": [
-				"okta:user_group"
-			],
-			"type": "OKTA_GROUP",
-			"profile": {
-				"name": "Engineers",
-				"description": "all the engineers"
-			}
-		}
-	},
-	{
-		"url": "/api/v1/groups/fakeid123",
-		"method": "PUT",
-		"status": 200,
-		"response": {
-			"id": "fakeid123",
-			"created": "2024-06-17T08:11:40.000Z",
-			"lastUpdated": "2024-06-17T08:13:52.000Z",
-			"lastMembershipUpdated": "2024-06-17T08:11:40.000Z",
-			"objectClass": [
-				"okta:user_group"
-			],
-			"type": "OKTA_GROUP",
-			"profile": {
-				"name": "Programmers",
-				"description": "all the engineers"
-			},
-			"_links": {
-				"logo": [
-					{
-						"name": "medium",
-						"href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-medium.30ce6d4085dff29412984e4c191bc874.png",
-						"type": "image/png"
-					},
-					{
-						"name": "large",
-						"href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-large.c3cb8cda8ae0add1b4fe928f5844dbe3.png",
-						"type": "image/png"
-					}
-				],
-				"owners": {
-					"href": "https://<sanitized>/api/v1/groups/fakeid123/owners"
-				},
-				"users": {
-					"href": "https://<sanitized>/api/v1/groups/fakeid123/users"
-				},
-				"apps": {
-					"href": "https://<sanitized>/api/v1/groups/fakeid123/apps"
-				}
-			}
-		},
-		"headers": {
-			"x-rate-limit-limit": "500",
-			"x-rate-limit-remaining": "499",
-			"x-rate-limit-reset": "1718612092"
-		},
-		"data": {
-			"id": "fakeid123",
-			"objectClass": [
-				"okta:user_group"
-			],
-			"type": "OKTA_GROUP",
-			"profile": {
-				"name": "Programmers",
-				"description": "all the engineers"
-			}
-		}
-	},
-	{
-		"url": "/api/v1/groups/fakeid123",
-		"method": "DELETE",
-		"status": 204,
-		"response": "",
-		"headers": {
-			"x-rate-limit-limit": "500",
-			"x-rate-limit-remaining": "499",
-			"x-rate-limit-reset": "1718612851"
-		}
-	}
+	{"url": "/api/v1/groups", "method": "POST", "status": 200, "response": { "id": "group-fakeid1", "created": "2024-06-17T08:11:40.000Z", "lastUpdated": "2024-06-17T08:11:40.000Z", "lastMembershipUpdated": "2024-06-17T08:11:40.000Z", "objectClass": [ "okta:user_group" ], "type": "OKTA_GROUP", "profile": { "name": "Engineers", "description": "all the engineers" }, "_links": { "logo": [ { "name": "medium", "href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-medium.30ce6d4085dff29412984e4c191bc874.png", "type": "image/png" }, { "name": "large", "href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-large.c3cb8cda8ae0add1b4fe928f5844dbe3.png", "type": "image/png" } ], "owners": { "href": "https://<sanitized>/api/v1/groups/group-fakeid1/owners" }, "users": { "href": "https://<sanitized>/api/v1/groups/group-fakeid1/users" }, "apps": { "href": "https://<sanitized>/api/v1/groups/group-fakeid1/apps" } } }, "headers": { "x-rate-limit-limit": "250", "x-rate-limit-remaining": "249", "x-rate-limit-reset": "1718611960" }, "data": { "objectClass": [ "okta:user_group" ], "type": "OKTA_GROUP", "profile": { "name": "Engineers", "description": "all the engineers" } } },
+	{"url": "/api/v1/groups/group-fakeid1", "method": "PUT", "status": 200, "response": { "id": "group-fakeid1", "created": "2024-06-17T08:11:40.000Z", "lastUpdated": "2024-06-17T08:13:52.000Z", "lastMembershipUpdated": "2024-06-17T08:11:40.000Z", "objectClass": [ "okta:user_group" ], "type": "OKTA_GROUP", "profile": { "name": "Programmers", "description": "all the engineers" }, "_links": { "logo": [ { "name": "medium", "href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-medium.30ce6d4085dff29412984e4c191bc874.png", "type": "image/png" }, { "name": "large", "href": "https://<sanitized>/assets/img/logos/groups/odyssey/okta-large.c3cb8cda8ae0add1b4fe928f5844dbe3.png", "type": "image/png" } ], "owners": { "href": "https://<sanitized>/api/v1/groups/group-fakeid1/owners" }, "users": { "href": "https://<sanitized>/api/v1/groups/group-fakeid1/users" }, "apps": { "href": "https://<sanitized>/api/v1/groups/group-fakeid1/apps" } } }, "headers": { "x-rate-limit-limit": "500", "x-rate-limit-remaining": "499", "x-rate-limit-reset": "1718612092" }, "data": { "id": "group-fakeid1", "objectClass": [ "okta:user_group" ], "type": "OKTA_GROUP", "profile": { "name": "Programmers", "description": "all the engineers" } } },
+	{"url": "/api/v1/groups/group-fakeid1", "method": "DELETE", "status": 204, "response": "", "headers": { "x-rate-limit-limit": "500", "x-rate-limit-remaining": "499", "x-rate-limit-reset": "1718612851" } },
+	{"url":"/api/v1/brands","method":"POST","status":201,"response":{"id":"brand-fakeid1","name":"subdomain4.salto.io","removePoweredByOkta":false,"customPrivacyPolicyUrl":null,"agreeToCustomPrivacyPolicy":false,"isDefault":false,"defaultApp":{"appInstanceId":null,"appLinkName":null,"classicApplicationUri":null},"_links":{"themes":{"href":"https://<sanitized>/api/v1/brands/brand-fakeid1/themes","hints":{"allow":["GET"]}},"self":{"href":"https://<sanitized>/api/v1/brands/brand-fakeid1","hints":{"allow":["GET","PUT","DELETE"]}}}},"headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"497","x-rate-limit-reset":"1718631287"},"data":{"name":"subdomain4.salto.io","removePoweredByOkta":false,"agreeToCustomPrivacyPolicy":false,"isDefault":false,"defaultApp":{"appInstanceId":"0oa1ly9huEKlEScdB696"}}},
+	{"url":"/api/v1/brands/brand-fakeid1","method":"DELETE","status":204,"response":"","headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"498","x-rate-limit-reset":"1718631287"}},
+	{"url":"/api/v1/brands/brand-fakeid1","method":"PUT","status":200,"response":{"id":"brand-fakeid1","name":"subdomain4.salto.io","removePoweredByOkta":true,"customPrivacyPolicyUrl":null,"agreeToCustomPrivacyPolicy":false,"isDefault":false,"defaultApp":{"appInstanceId":"0oa1ly9huEKlEScdB696","appLinkName":null,"classicApplicationUri":null},"_links":{"themes":{"href":"https://<sanitized>/api/v1/brands/brand-fakeid1/themes","hints":{"allow":["GET"]}},"self":{"href":"https://<sanitized>/api/v1/brands/brand-fakeid1","hints":{"allow":["GET","PUT","DELETE"]}}}},"headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"498","x-rate-limit-reset":"1718632593"},"data":{"id":"brand-fakeid1","name":"subdomain4.salto.io","removePoweredByOkta":true,"agreeToCustomPrivacyPolicy":false,"isDefault":false,"defaultApp":{"appInstanceId":"0oa1ly9huEKlEScdB696"}}},
+	{"url":"/api/v1/users","method":"POST","status":200,"queryParams":{"activate":"false"},"response":{"id":"fakeid123","status":"STAGED","created":"2024-06-26T15:34:05.000Z","activated":null,"statusChanged":null,"lastLogin":null,"lastUpdated":"2024-06-26T15:34:05.000Z","passwordChanged":null,"type":{"id":"oty1lvvml15CT6qcl696"},"profile":{"login":"thismaildoesnotexist2@salto.io"},"credentials":{"provider":{"type":"OKTA","name":"OKTA"}}},"headers":{"x-rate-limit-limit":"300","x-rate-limit-remaining":"299","x-rate-limit-reset":"1719416105"}},
+	{"url":"/api/v1/users/fakeid123","method":"POST","status":200,"response":{"id":"fakeid123","status":"STAGED","created":"2024-06-26T14:43:31.000Z","activated":null,"statusChanged":null,"lastLogin":null,"lastUpdated":"2024-06-26T15:34:41.000Z","passwordChanged":null,"type":{"id":"oty1lvvml15CT6qcl696"},"profile":{"firstName":"modification","lastName":"test","manager":"new manager assigned","mobilePhone":null,"streetAddress":"salto io","city":"Tel Aviv","secondEmail":"","login":"thismaildoesnotexist@salto.io","email":"thismaildoesnotexist@salto.io"},"credentials":{"provider":{"type":"OKTA","name":"OKTA"}}},"headers":{"x-rate-limit-limit":"300","x-rate-limit-remaining":"299","x-rate-limit-reset":"1719416141"}},
+	{"url":"/api/v1/users/fakeid123/lifecycle/deactivate","method":"POST","status":200,"response":{},"headers":{"x-rate-limit-limit":"300","x-rate-limit-remaining":"298","x-rate-limit-reset":"1719416105"}},
+	{"url":"/api/v1/users/fakeid123","method":"DELETE","status":204,"response":"","headers":{"x-rate-limit-limit":"300","x-rate-limit-remaining":"298","x-rate-limit-reset":"1719416141"}},
+	{"url":"/api/v1/domains","method":"POST","status":201,"response":{"id":"domain-fakeid1","domain":"subdomain.example.com","certificateSourceType":"MANUAL","validationStatus":"NOT_STARTED","brandId":"bndcq8sz82K0tYwgc697","dnsRecords":[{"recordType":"TXT","fqdn":"_oktaverification.subdomain.example.com","values":["7767e4218fe042c9a4c3b988481f3784"]},{"recordType":"CNAME","fqdn":"subdomain.example.com","values":["salto.customdomains.okta.com"]}],"_links":{"self":{"href":"https://<sanitized>/api/v1/domains/domain-fakeid1","hints":{"allow":["GET","DELETE","PUT"]}},"verify":{"href":"https://<sanitized>/api/v1/domains/domain-fakeid1/verify","hints":{"allow":["POST"]}},"brand":{"href":"https://<sanitized>/api/v1/brands/bndcq8sz82K0tYwgc697","hints":{"allow":["GET","PUT","DELETE"]}}}},"headers":{"x-rate-limit-limit":"25","x-rate-limit-remaining":"24","x-rate-limit-reset":"1719730879"},"data":{"domain":"subdomain.example.com","certificateSourceType":"MANUAL","validationStatus":"NOT_STARTED","brandId":"bndcq8sz82K0tYwgc697"}},
+	{"url":"/api/v1/domains/domain-fakeid1","method":"PUT","status":200,"response":{"id":"domain-fakeid1","domain":"subdomain.example.com","certificateSourceType":"MANUAL","validationStatus":"NOT_STARTED","brandId":"bndbwqem2yWBjB1qp697","dnsRecords":[{"recordType":"TXT","fqdn":"_oktaverification.subdomain.example.com","values":["7767e4218fe042c9a4c3b988481f3784"]},{"recordType":"CNAME","fqdn":"subdomain.example.com","values":["salto.customdomains.okta.com"]}],"_links":{"self":{"href":"https://<sanitized>/api/v1/domains/domain-fakeid1","hints":{"allow":["GET","DELETE","PUT"]}},"verify":{"href":"https://<sanitized>/api/v1/domains/domain-fakeid1/verify","hints":{"allow":["POST"]}},"brand":{"href":"https://<sanitized>/api/v1/brands/bndbwqem2yWBjB1qp697","hints":{"allow":["GET","PUT","DELETE"]}}}},"headers":{"x-rate-limit-limit":"25","x-rate-limit-remaining":"24","x-rate-limit-reset":"1719731145"},"data":{"id":"domain-fakeid1","domain":"subdomain.example.com","certificateSourceType":"MANUAL","validationStatus":"NOT_STARTED","brandId":"bndbwqem2yWBjB1qp697"}},
+	{"url":"/api/v1/domains/domain-fakeid1","method":"DELETE","status":204,"response":"","headers":{"x-rate-limit-limit":"25","x-rate-limit-remaining":"24","x-rate-limit-reset":"1719731331"}},
+	{"url":"/api/v1/meta/types/user","method":"POST","status":200,"response":{"id":"usertype-fakeid1","displayName":"Super User","name":"superuser","description":"Okta super user profile template","createdBy":"00ubwk43kko1bM1VO697","lastUpdatedBy":"00ubwk43kko1bM1VO697","created":"2024-06-30T07:11:28.000Z","lastUpdated":"2024-06-30T07:11:28.000Z","default":false,"_links":{"schema":{"rel":"schema","href":"https://<sanitized>/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697","method":"GET"},"self":{"rel":"self","href":"https://<sanitized>/api/v1/meta/types/user/usertype-fakeid1","method":"GET"}}},"headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"498","x-rate-limit-reset":"1719731547"},"data":{"displayName":"Super User","name":"superuser","description":"Okta super user profile template","default":false}},
+	{"url":"/api/v1/meta/types/user/usertype-fakeid1","method":"PUT","status":200,"response":{"id":"usertype-fakeid1","displayName":"Super User","name":"superuser","description":"Okta super user","createdBy":"00ubwk43kko1bM1VO697","lastUpdatedBy":"00ubwk43kko1bM1VO697","created":"2024-06-30T07:11:28.000Z","lastUpdated":"2024-06-30T07:12:19.000Z","default":false,"_links":{"schema":{"rel":"schema","href":"https://<sanitized>/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697","method":"GET"},"self":{"rel":"self","href":"https://<sanitized>/api/v1/meta/types/user/otyg64q0mq1aYdKLt697","method":"GET"}}},"headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"496","x-rate-limit-reset":"1719731547"},"data":{"id":"otyg64q0mq1aYdKLt697","_links":{"schema":{"rel":"schema","href":"https://<sanitized>/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697","method":"GET"},"self":{"rel":"self","href":"https://<sanitized>/api/v1/meta/types/user/otyg64q0mq1aYdKLt697","method":"GET"}},"displayName":"Super User","name":"superuser","description":"Okta super user","default":false}},
+	{"url":"/api/v1/meta/types/user/usertype-fakeid1","method":"DELETE","status":204,"response":"","headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"498","x-rate-limit-reset":"1719731622"}},
+	{"url":"/api/v1/templates/sms","method":"POST","status":200,"response":{"id":"smstemplate-fakeid1","name":"Custom","type":"SMS_VERIFY_CODE","template":"Your verification code is ${code}.","created":"2024-06-30T07:33:11.000Z","lastUpdated":"2024-06-30T07:33:11.000Z","translations":{"en":"sadsad ${code}"}},"headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"494","x-rate-limit-reset":"1719732804"},"data":{"name":"Custom","type":"SMS_VERIFY_CODE","template":"Your verification code is ${code}.","translations":{"en":"sadsad ${code}"}}},
+	{"url":"/api/v1/templates/sms/smstemplate-fakeid1","method":"PUT","status":200,"response":{"id":"smstemplate-fakeid1","name":"Custom","type":"SMS_VERIFY_CODE","template":"Verify this: ${code}.","created":"2024-06-30T07:33:11.000Z","lastUpdated":"2024-06-30T07:33:45.000Z","translations":{"en":"sadsad ${code}"}},"headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"498","x-rate-limit-reset":"1719732884"},"data":{"id":"smstemplate-fakeid1","name":"Custom","type":"SMS_VERIFY_CODE","template":"Verify this: ${code}.","translations":{"en":"sadsad ${code}"}}},
+	{"url":"/api/v1/templates/sms/smstemplate-fakeid1","method":"DELETE","status":204,"response":"","headers":{"x-rate-limit-limit":"500","x-rate-limit-remaining":"496","x-rate-limit-reset":"1719732804"}},
+	{"url":"/api/v1/device-assurances","method":"POST","status":200,"response":{"name":"devdev","platform":"ANDROID","id":"deviceassurance-fakeid1","secureHardwarePresent":true,"jailbreak":false,"screenLockType":{"include":["BIOMETRIC","PASSCODE"]},"gracePeriodDisplayRemediationMode":0,"gracePeriodType":0,"createdDate":"2024-06-30T07:44:41.000Z","createdBy":"00ubwk43kko1bM1VO697","lastUpdate":"2024-06-30T07:44:41.000Z","lastUpdatedBy":"00ubwk43kko1bM1VO697","_links":{"self":{"href":"https://<sanitized>/api/v1/device-assurances/deviceassurance-fakeid1","hints":{"allow":["GET","PUT","DELETE"]}}}},"headers":{"x-rate-limit-limit":"50","x-rate-limit-remaining":"48","x-rate-limit-reset":"1719733517"},"data":{"name":"devdev","platform":"ANDROID","secureHardwarePresent":true,"jailbreak":false,"screenLockType":{"include":["BIOMETRIC","PASSCODE"]},"gracePeriodDisplayRemediationMode":0,"gracePeriodType":0}},
+	{"url":"/api/v1/device-assurances/deviceassurance-fakeid1","method":"PUT","status":200,"response":{"name":"dev2","platform":"ANDROID","id":"deviceassurance-fakeid1","secureHardwarePresent":true,"jailbreak":false,"screenLockType":{"include":["BIOMETRIC","PASSCODE"]},"gracePeriodDisplayRemediationMode":0,"gracePeriodType":0,"lastUpdate":"2024-06-30T07:45:55.000Z","lastUpdatedBy":"00ubwk43kko1bM1VO697","_links":{"self":{"href":"https://<sanitized>/api/v1/device-assurances/deviceassurance-fakeid1","hints":{"allow":["GET","PUT","DELETE"]}}}},"headers":{"x-rate-limit-limit":"50","x-rate-limit-remaining":"48","x-rate-limit-reset":"1719733591"},"data":{"id":"deviceassurance-fakeid1","name":"dev2","platform":"ANDROID","secureHardwarePresent":true,"jailbreak":false,"screenLockType":{"include":["BIOMETRIC","PASSCODE"]},"gracePeriodDisplayRemediationMode":0,"gracePeriodType":0}},
+	{"url":"/api/v1/device-assurances/deviceassurance-fakeid1","method":"DELETE","status":204,"response":"","headers":{"x-rate-limit-limit":"50","x-rate-limit-remaining":"47","x-rate-limit-reset":"1719733591"}}
 ]

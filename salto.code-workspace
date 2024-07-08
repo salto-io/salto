@@ -136,6 +136,10 @@
       "name": "zuora-billing-adapter",
       "path": "packages/zuora-billing-adapter",
     },
+    {
+      "name": "jamf-adapter",
+      "path": "packages/jamf-adapter",
+    },
   ],
   "settings": {
     "files.exclude": {
@@ -158,9 +162,11 @@
       "createable",
       "creds",
       "customizer",
+      "datacenter",
       "datasource",
       "DATETIME",
       "ducktype",
+      "elems",
       "encryptedstring",
       "ENCRYPTEDTEXT",
       "ESOCKETTIMEDOUT",

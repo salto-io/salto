@@ -25,19 +25,6 @@ import { apiNameSync } from './utils'
 
 const TYPE_NAME_TO_FIELD_REMOVALS: Map<string, string[]> = new Map([
   ['Profile', ['tabVisibilities']],
-  ['blng__RevenueRecognitionTreatment__c', ['blng__UniqueId__c']],
-  [
-    'blng__FinancePeriod__c',
-    ['blng__Family__c', 'blng__NextOpenPeriod__c', 'blng__UniqueId__c'],
-  ],
-  ['blng__AccountBalanceSnapshot__c', ['blng__UniqueId__c']],
-  ['blng__ErrorLog__c', ['blng__UniqueId__c']],
-  ['blng__GLTreatment__c', ['blng__UniqueId__c']],
-  ['blng__Invoice__c', ['blng__UniqueId__c']],
-  ['blng__InvoiceLine__c', ['blng__UniqueId__c']],
-  ['blng__SubInvoiceLine__c', ['blng__UniqueId__c']],
-  ['blng__UsageSummary__c', ['blng__UniqueId__c']],
-  ['OrderItem', ['blng__UniqueId__c']],
 ])
 
 const fieldRemovalsForType = (

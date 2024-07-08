@@ -19,11 +19,21 @@ import { customsegmentType } from '../../src/autogen/types/standard_types/custom
 import extraReferenceDependenciesValidator from '../../src/change_validators/extra_reference_dependencies'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
+import { fullFetchConfig } from '../../src/config/config_creator'
+import NetsuiteClient from '../../src/client/client'
+import mockSdfClient from '../client/sdf_client'
 
 describe('extra reference changes', () => {
+  const baseParams = {
+    deployReferencedElements: false,
+    elementsSource: buildElementsSourceFromElements([]),
+    config: {
+      fetch: fullFetchConfig(),
+    },
+    client: new NetsuiteClient(mockSdfClient()),
+  }
   const customsegment = customsegmentType().type
   const entitycustomfield = entitycustomfieldType().type
-  const elementsSource = buildElementsSourceFromElements([])
 
   const entityFieldInstance = new InstanceElement('custentity_slt', entitycustomfield, {
     [SCRIPT_ID]: 'custentity_slt',
@@ -83,8 +93,7 @@ describe('extra reference changes', () => {
         toChange({ after: customSegmentInstance }),
         toChange({ before: entityFieldInstance, after: entityFieldInstance }),
       ],
-      false,
-      elementsSource,
+      baseParams,
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -96,8 +105,7 @@ describe('extra reference changes', () => {
         toChange({ after: customSegmentInstance }),
         toChange({ before: entityFieldInstance, after: entityFieldInstance }),
       ],
-      true,
-      elementsSource,
+      { ...baseParams, deployReferencedElements: true },
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -108,8 +116,7 @@ describe('extra reference changes', () => {
         toChange({ after: customSegmentInstance }),
         toChange({ before: dependsOn2Instances, after: dependsOn2Instances }),
       ],
-      false,
-      elementsSource,
+      baseParams,
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual(
@@ -129,8 +136,7 @@ describe('extra reference changes', () => {
   it('should have Warning ChangeErrors when deploying a instances without their dependencies, each instance with its relevant references', async () => {
     const changeErrors = await extraReferenceDependenciesValidator(
       [toChange({ after: customRecordType }), toChange({ before: dependsOn2Instances, after: dependsOn2Instances })],
-      true,
-      elementsSource,
+      { ...baseParams, deployReferencedElements: true },
     )
     expect(changeErrors).toHaveLength(2)
     const customSegmentInstanceElemId = customSegmentInstance.elemID.getFullName()

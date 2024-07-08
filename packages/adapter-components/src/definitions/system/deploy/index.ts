@@ -16,6 +16,7 @@
 export {
   DeployApiDefinitions,
   DeployableRequestDefinition,
+  DeployRequestCondition,
   InstanceDeployApiDefinitions,
   ValueReferenceResolver,
   ChangeDependency,

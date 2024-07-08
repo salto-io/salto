@@ -168,6 +168,7 @@ export type SuiteAppFileCabinetOperations = {
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
     extensionsToExclude: string[],
+    forceFileCabinetExclude: boolean,
   ) => Promise<ImportFileCabinetResult>
   deploy: (changes: ReadonlyArray<Change<InstanceElement>>, type: DeployType) => Promise<FileCabinetDeployResult>
 }
@@ -368,7 +369,11 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
   const fullPath = (fileParts: string[]): string =>
     `${FILE_CABINET_PATH_SEPARATOR}${fileParts.join(FILE_CABINET_PATH_SEPARATOR)}`
 
-  const queryFileCabinet = async (query: NetsuiteQuery, extensionsToExclude: string[]): Promise<FileCabinetResults> => {
+  const queryFileCabinet = async (
+    query: NetsuiteQuery,
+    extensionsToExclude: string[],
+    forceFileCabinetExclude: boolean,
+  ): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
       const { folderResults, isSuiteBundlesEnabled } = await queryTopLevelFolders()
       const topLevelFoldersResults = folderResults.filter(folder => query.isParentFolderMatch(`/${folder.name}`))
@@ -391,13 +396,24 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
           path: fullPathParts(folder, idToFolder),
           ...folder,
         })),
-        // remove excluded folders before creating the query
-        folder => {
-          const fileCabinetFullPath = `${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`
-          return query.isFileMatch(fileCabinetFullPath) || query.isParentFolderMatch(fileCabinetFullPath)
-        },
+        // remove excluded folders before creating the files query
+        folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`),
       )
       log.debug('removed the following %d folder before querying files: %o', removedFolders.length, removedFolders)
+
+      // SALTO-6145: remove this to exclude relevant folders
+      const foldersThatShouldBeRemoved = removedFolders.filter(folder =>
+        query.isParentFolderMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`),
+      )
+      if (!forceFileCabinetExclude && foldersThatShouldBeRemoved.length > 0) {
+        log.warn(
+          'the following %d folders should be removed too: %o',
+          foldersThatShouldBeRemoved.length,
+          foldersThatShouldBeRemoved,
+        )
+        foldersThatShouldBeRemoved.forEach(folder => filteredFolderResults.push(folder))
+      }
+
       const filesResults =
         filteredFolderResults.length > 0
           ? await queryFiles(
@@ -418,12 +434,13 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
     extensionsToExclude: string[],
+    forceFileCabinetExclude: boolean,
   ): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
       return { elements: [], failedPaths: { lockedError: [], otherError: [], largeFolderError: [] } }
     }
 
-    const { foldersResults, filesResults } = await queryFileCabinet(query, extensionsToExclude)
+    const { foldersResults, filesResults } = await queryFileCabinet(query, extensionsToExclude, forceFileCabinetExclude)
     const unfilteredFoldersCustomizationInfo = foldersResults.map(folder => ({
       path: folder.path,
       typeName: 'folder',

@@ -20,7 +20,8 @@ import * as userUtilsModule from '../../src/user_utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { omitMissingUsersHandler } from '../../src/fix_elements/missing_users'
-import { OktaUserConfig } from '../../src/user_config'
+import { DEFAULT_CONFIG, OktaUserConfig } from '../../src/user_config'
+import { createFetchQuery } from '../utils'
 
 const createUsersValue = (includeUsers: string[] | undefined, excludeUsers: string[] | undefined): Values => ({
   conditions: {
@@ -41,6 +42,7 @@ const createMockUser = (login: string): userUtilsModule.User => ({
 })
 
 describe('missing_users', () => {
+  const fetchQuery = createFetchQuery()
   const EXIST_USER = 'exist.user@salto.io'
   const EXIST_USER2 = 'exist.user+2@salto.io'
   const NOT_EXIST_USER = 'not.exist.user@salto.io'
@@ -77,9 +79,12 @@ describe('missing_users', () => {
       [FETCH_CONFIG]: {},
     } as OktaUserConfig
     it('should return empty fixElements list and empty errors list', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
-        missingUsersHandlerInput,
-      )
+      const result = await omitMissingUsersHandler({
+        config: mockConfig,
+        client: mockClient,
+        elementsSource,
+        fetchQuery,
+      })(missingUsersHandlerInput)
       expect(result.errors).toHaveLength(0)
       expect(result.fixedElements).toHaveLength(0)
       expect(mockGetUsers).not.toHaveBeenCalled()
@@ -93,9 +98,12 @@ describe('missing_users', () => {
       [FETCH_CONFIG]: {},
     } as OktaUserConfig
     it('should return empty fixElements list and empty errors list', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
-        missingUsersHandlerInput,
-      )
+      const result = await omitMissingUsersHandler({
+        config: mockConfig,
+        client: mockClient,
+        elementsSource,
+        fetchQuery,
+      })(missingUsersHandlerInput)
       expect(result.errors).toHaveLength(0)
       expect(result.fixedElements).toHaveLength(0)
       expect(mockGetUsers).not.toHaveBeenCalled()
@@ -109,9 +117,12 @@ describe('missing_users', () => {
       [FETCH_CONFIG]: {},
     } as OktaUserConfig
     it('should return fixElements list and errors list correctly', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
-        missingUsersHandlerInput,
-      )
+      const result = await omitMissingUsersHandler({
+        config: mockConfig,
+        client: mockClient,
+        elementsSource,
+        fetchQuery,
+      })(missingUsersHandlerInput)
       expect(result.errors).toHaveLength(2)
       expect(result.errors).toEqual([
         expect.objectContaining({
@@ -151,12 +162,32 @@ If you continue, they will be omitted. Learn more: ${userUtilsModule.OMIT_MISSIN
           } as OktaUserConfig,
           client: mockClient,
           elementsSource,
+          fetchQuery,
         })(missingUsersHandlerInput)
         expect(mockGetUsers.mock.calls[0][1]).toEqual({
           userIds: expect.arrayContaining(ALL_MOCK_USERS),
           property: 'id',
         })
       })
+    })
+  })
+  describe('When User type is included', () => {
+    it('should do nothing if User type is included', async () => {
+      const config = {
+        ...DEFAULT_CONFIG,
+        fetch: {
+          ...DEFAULT_CONFIG.fetch,
+          exclude: [],
+        },
+      }
+      const usersExcludedFetchQuery = createFetchQuery(config)
+      const result = await omitMissingUsersHandler({
+        config,
+        client: mockClient,
+        elementsSource,
+        fetchQuery: usersExcludedFetchQuery,
+      })(missingUsersHandlerInput)
+      expect(result.errors).toHaveLength(0)
     })
   })
 })

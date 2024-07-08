@@ -37,7 +37,7 @@ const isLinkProperty = createSchemeGuard<linkProperty>(LINK_PROPERTY_SCHEME, 'Re
 
 const extractIdsFromUrls = (value: Value, fieldName: string): string | undefined => {
   const linksProp = _.get(value, [LINKS_FIELD, fieldName])
-  if (isLinkProperty(linksProp)) {
+  if (linksProp !== undefined && isLinkProperty(linksProp)) {
     const id = extractIdFromUrl(linksProp.href)
     if (_.isString(id)) {
       return id

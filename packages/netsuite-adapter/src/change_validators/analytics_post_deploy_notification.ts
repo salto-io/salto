@@ -18,13 +18,7 @@ import { getChangeData, ChangeError, isInstanceChange, isAdditionOrModificationC
 import { NetsuiteChangeValidator } from './types'
 import { DATASET, WORKBOOK } from '../constants'
 
-const changeValidator: NetsuiteChangeValidator = async (
-  changes,
-  _deplyReferencedElements,
-  _elementsSource,
-  _config,
-  client,
-) =>
+const changeValidator: NetsuiteChangeValidator = async (changes, { client }) =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -43,7 +37,7 @@ const changeValidator: NetsuiteChangeValidator = async (
               'Verify that your selected workbooks or datasets have been successfully deployed in the NetSuite UI.',
             showOnFailure: false,
             subActions: [
-              client ? `Go to ${client.url}app/common/report/list.nl` : 'Within the NetSuite UI, navigate to Analytics',
+              `Go to ${client.url}app/common/report/list.nl`,
               'Verify that the changes you made in workbooks/datasets have been successfully deployed',
             ],
           },

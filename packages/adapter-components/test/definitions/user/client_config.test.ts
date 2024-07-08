@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { createClientConfigType, validateClientConfig } from '../../../src/definitions/user/client_config'
 
 describe('client_config', () => {
   describe('createClientConfigType', () => {
     it('should return default type when no custom buckets were added', async () => {
-      const type = createClientConfigType('myAdapter')
+      const type = createClientConfigType({ adapter: 'myAdapter' })
       expect(Object.keys(type.fields)).toHaveLength(5)
       expect(type.fields.rateLimit).toBeDefined()
       expect(type.fields.retry).toBeDefined()
@@ -35,7 +35,7 @@ describe('client_config', () => {
         total: number
         a: number
         b: number
-      }>('myAdapter', ['a', 'b'])
+      }>({ adapter: 'myAdapter', bucketNames: ['a', 'b'] })
       expect(Object.keys(type.fields)).toHaveLength(5)
       expect(type.fields.rateLimit).toBeDefined()
       expect(type.fields.retry).toBeDefined()
@@ -44,6 +44,49 @@ describe('client_config', () => {
       const rateLimitType = await type.fields.rateLimit.getType()
       expect(rateLimitType).toBeInstanceOf(ObjectType)
       expect(new Set(Object.keys((rateLimitType as ObjectType).fields))).toEqual(new Set(['get', 'total', 'a', 'b']))
+    })
+    describe('with additional fields provided', () => {
+      it('should add additional client fields when provided', () => {
+        const type = createClientConfigType<{
+          total: number
+          a: number
+          b: number
+        }>({
+          adapter: 'myAdapter',
+          additionalClientFields: {
+            myField: { refType: BuiltinTypes.BOOLEAN },
+            anotherField: {
+              refType: new ObjectType({
+                elemID: new ElemID('adapter', 'test'),
+                fields: { a: { refType: BuiltinTypes.STRING } },
+              }),
+            },
+          },
+        })
+        expect(Object.keys(type.fields)).toHaveLength(7)
+        expect(type.fields.myField).toBeDefined()
+        const myFields = type.fields.myField.getTypeSync()
+        expect(myFields).toBe(BuiltinTypes.BOOLEAN)
+        expect(type.fields.anotherField).toBeDefined()
+        const anotherType = type.fields.anotherField.getTypeSync() as ObjectType
+        expect(anotherType.elemID.getFullName()).toEqual('adapter.test')
+        expect(anotherType.fields.a).toBeDefined()
+      })
+      it('should add additional rate limit fields when provided', async () => {
+        const type = createClientConfigType<{
+          total: number
+          a: number
+          b: number
+        }>({
+          adapter: 'myAdapter',
+          additionRateLimitFields: {
+            myField: { refType: BuiltinTypes.BOOLEAN },
+          },
+        })
+        expect(Object.keys(type.fields)).toHaveLength(5)
+        const rateLimitType = (await type.fields.rateLimit.getType()) as ObjectType
+        expect(rateLimitType.fields.myField).toBeDefined()
+      })
     })
   })
 

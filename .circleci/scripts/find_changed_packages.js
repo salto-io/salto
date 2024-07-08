@@ -18,7 +18,7 @@ const { execSync } = require('child_process')
 const { writeFileSync, existsSync, readdirSync } = require('fs')
 const path = require('path')
 
-const getChangedFiles = (userInputBaseCommit) => {
+const getChangedFiles = userInputBaseCommit => {
   const baseCommit = userInputBaseCommit ?? execSync('git merge-base main HEAD').toString().trim()
   console.log('base commit:', baseCommit)
   const output = execSync(`git diff --name-only ${baseCommit}..HEAD`).toString().split('\n')
@@ -31,34 +31,35 @@ const getWorkspacesInfo = () => {
   return JSON.parse(JSON.parse(output).data)
 }
 
-const generateDependencyMapping = (workspaceInfo) => {
-  const dependencyMapping = {}
-  // Add the package as a dependency of itself
-  Object.keys(workspaceInfo).forEach(packageName => dependencyMapping[packageName] = [packageName])
-  const stack = []
+const generateDependencyMapping = workspaceInfo => {
+  const packageNames = Object.keys(workspaceInfo)
 
-  Object.keys(workspaceInfo).forEach(packageName => {
-    stack.push(packageName)
-
-    while (stack.length > 0) {
-      const currentPackage = stack.pop()
-
-      const packageWorkspaceInfo = workspaceInfo[currentPackage]
-      if (!packageWorkspaceInfo || !packageWorkspaceInfo.workspaceDependencies) continue
-
-      packageWorkspaceInfo.workspaceDependencies.forEach(dependency => {
-        if (!dependencyMapping[dependency].includes(currentPackage)) {
-          dependencyMapping[dependency].push(currentPackage)
-          stack.push(dependency)
-        }
-      })
+  const directAffectedPackages = Object.fromEntries(
+    packageNames.map(packageName => [packageName, new Set([packageName])])
+  )
+  Object.entries(workspaceInfo).forEach(([packageName, packageInfo]) => {
+    if (Array.isArray(packageInfo.workspaceDependencies)) {
+      packageInfo.workspaceDependencies.forEach(dep => directAffectedPackages[dep]?.add(packageName))
     }
   })
 
-  return dependencyMapping
+  const getRecursiveAffectedPackages = (package, affectedPackages = new Set()) => {
+    const packagesToAdd = Array.from(directAffectedPackages[package] ?? [])
+      .filter(dep => !affectedPackages.has(dep))
+
+    packagesToAdd.forEach(dep => affectedPackages.add(dep))
+    packagesToAdd.forEach(dep => getRecursiveAffectedPackages(dep, affectedPackages))
+    return Array.from(affectedPackages)
+  }
+
+  const recursiveAffectedPackages = Object.fromEntries(
+    packageNames.map(packageName => [packageName, getRecursiveAffectedPackages(packageName)])
+  )
+
+  return recursiveAffectedPackages
 }
 
-const hasE2eTests = (packageName) => {
+const hasE2eTests = packageName => {
   const e2eDir = path.join(__dirname, '..', '..', 'packages', packageName, 'e2e_test')
   const e2eDirExists = existsSync(e2eDir)
   const e2eDirHasTestFiles = e2eDirExists && readdirSync(e2eDir).some(file => file.endsWith('.test.ts'))
@@ -69,10 +70,12 @@ const hasE2eTests = (packageName) => {
 const findChangedPackages = (userInputBaseCommit, workspaceInfo) => {
   const changedFiles = getChangedFiles(userInputBaseCommit)
   console.log('Changed files:', changedFiles)
-  
+
   const changedPackageLocation = new Set(changedFiles.map(path => path.split('/').slice(0, 2).join('/')))
-  
-  const changedPackages = Array.from(changedPackageLocation).map(packageDir => Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir))
+
+  const changedPackages = Array.from(changedPackageLocation).map(packageDir =>
+    Object.keys(workspaceInfo).find(key => workspaceInfo[key].location === packageDir),
+  )
   const hasChangedFilesOutsidePackage = changedPackages.some(pkg => !pkg)
 
   console.log('Changed packages:', changedPackages)
@@ -84,9 +87,13 @@ const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
   const dependencyMapping = generateDependencyMapping(workspaceInfo)
   console.log('Dependency mapping:', dependencyMapping)
 
-  const changedPackagesDependencies = new Set(changedPackages.flatMap(package => dependencyMapping[package]).filter(Boolean))
+  const changedPackagesDependencies = new Set(
+    changedPackages.flatMap(package => dependencyMapping[package]).filter(Boolean),
+  )
   console.log('Changed packages dependencies:', changedPackagesDependencies)
-  const dependenciesLocation = Array.from(changedPackagesDependencies).map(pkg => workspaceInfo[pkg].location).sort()
+  const dependenciesLocation = Array.from(changedPackagesDependencies)
+    .map(pkg => workspaceInfo[pkg].location)
+    .sort()
   console.log('Changed packages with dependencies location:', dependenciesLocation)
 
   const packagesToTest = dependenciesLocation.map(location => location.replace('packages/', ''))
@@ -95,7 +102,9 @@ const getDependenciesFromChangedPackages = (changedPackages, workspaceInfo) => {
 
 const getPackagesToTest = (userInputBaseCommit, workspaceInfo, allPackages) => {
   const { changedPackages, hasChangedFilesOutsidePackage } = findChangedPackages(userInputBaseCommit, workspaceInfo)
-  return hasChangedFilesOutsidePackage ? allPackages : getDependenciesFromChangedPackages(changedPackages, workspaceInfo)
+  return hasChangedFilesOutsidePackage
+    ? allPackages
+    : getDependenciesFromChangedPackages(changedPackages, workspaceInfo)
 }
 
 const main = () => {
@@ -106,9 +115,14 @@ const main = () => {
   }
 
   const workspaceInfo = getWorkspacesInfo()
-  const allPackages = Object.keys(workspaceInfo).map(pkg => workspaceInfo[pkg].location.replace('packages/', '')).sort()
+  const allPackages = Object.keys(workspaceInfo)
+    .map(pkg => workspaceInfo[pkg].location.replace('packages/', ''))
+    .sort()
   // on main branch, we want to test all packages
-  const packagesToTest = process.env.CIRCLE_BRANCH === 'main' ? allPackages : getPackagesToTest(userInputBaseCommit, workspaceInfo, allPackages)
+  const packagesToTest =
+    process.env.CIRCLE_BRANCH === 'main'
+      ? allPackages
+      : getPackagesToTest(userInputBaseCommit, workspaceInfo, allPackages)
   console.log('Packages to test:', packagesToTest)
 
   const e2ePackagesToTest = packagesToTest.filter(hasE2eTests)

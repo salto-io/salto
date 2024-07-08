@@ -88,20 +88,10 @@ export const restructurePermissionsAndCreateInternalIdMap = (value: Record<strin
  */
 export const spaceMergeAndTransformAdjust: definitions.AdjustFunction<{
   fragments: definitions.GeneratedItem[]
-}> = item => {
+}> = async item => {
   const value = validateValue(item.value)
   restructurePermissionsAndCreateInternalIdMap(value)
   return { value }
-}
-
-/**
- * Adjust function for transforming space instances upon fetch.
- * We convert homepage object returned from the service to its id, then we build a reference from it.
- */
-export const adjustHomepageToId: definitions.AdjustFunction = args => {
-  const value = validateValue(args.value)
-  value.homepage = _.get(value, 'homepage.id')
-  return { ...args, value }
 }
 
 /**
@@ -111,7 +101,7 @@ export const adjustHomepageToId: definitions.AdjustFunction = args => {
 export const spaceChangeGroupWithItsHomepage: deployment.grouping.ChangeIdFunction = async change => {
   const changeData = getChangeData(change)
   if (isInstanceElement(changeData)) {
-    const homepageRef = changeData.value.homepage
+    const homepageRef = changeData.value.homepageId
     // in case of addition, we want the space to be in the same group as its homepage
     if (isAdditionChange(change) && isReferenceExpression(homepageRef)) {
       return homepageRef.elemID.getFullName()

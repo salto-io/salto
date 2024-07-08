@@ -2979,6 +2979,7 @@ export type ChangeValidatorName =
   | 'duplicateRoutingAttributeValue'
   | 'ticketFieldDeactivation'
   | 'duplicateIdFieldValues'
+  | 'duplicateDynamicContentItem'
   | 'notEnabledMissingReferences'
   | 'conditionalTicketFields'
   | 'dynamicContentDeletion'
@@ -3057,6 +3058,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
     ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
     duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
+    duplicateDynamicContentItem: { refType: BuiltinTypes.BOOLEAN },
     notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     conditionalTicketFields: { refType: BuiltinTypes.BOOLEAN },
     dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
@@ -3076,7 +3078,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(ZENDESK),
+      refType: createClientConfigType({ adapter: ZENDESK }),
     },
     [FETCH_CONFIG]: {
       refType: definitions.createUserFetchConfigType({
@@ -3144,7 +3146,7 @@ export type FilterContext = {
 
 export const validateFetchConfig = (
   fetchConfigPath: string,
-  userFetchConfig: definitions.UserFetchConfig,
+  userFetchConfig: definitions.UserFetchConfig<{ customNameMappingOptions: never }>,
   adapterApiConfig: configUtils.AdapterApiConfig,
 ): void =>
   validateDuckTypeFetchConfig(

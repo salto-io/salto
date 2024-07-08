@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
 import { definitions, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { POLICY_TYPE_NAME_TO_PARAMS } from '../../config'
-import { OktaFetchOptions } from '../types'
+import { OktaOptions } from '../types'
 import { OktaUserConfig } from '../../user_config'
 import {
   ACCESS_POLICY_TYPE_NAME,
@@ -27,7 +27,7 @@ import {
   CUSTOM_NAME_FIELD,
   MFA_RULE_TYPE_NAME,
   IDP_RULE_TYPE_NAME,
-  DEVICE_ASSURANCE,
+  DEVICE_ASSURANCE_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
 } from '../../constants'
@@ -57,7 +57,7 @@ const getPrivateAPICustomizations = ({
 }: {
   endpoint: definitions.EndpointPath
   serviceUrl: string
-}): definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions> => ({
+}): definitions.fetch.InstanceFetchApiDefinitions<OktaOptions> => ({
   requests: [{ endpoint: { path: endpoint, client: 'private' } }],
   resource: { directFetch: true },
   element: {
@@ -74,7 +74,7 @@ const getPrivateAPISettingsDefinitions = ({
   usePrivateAPI,
 }: {
   usePrivateAPI: boolean
-}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => {
+}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => {
   if (!usePrivateAPI) {
     return {}
   }
@@ -142,7 +142,7 @@ const accessPolicyRuleCustomizer: definitions.fetch.FetchTopLevelElementDefiniti
   extendsParent: true,
 }
 
-const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => {
+const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => {
   const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
   const policyRulesToOmitPriorities = [PROFILE_ENROLLMENT_RULE_TYPE_NAME]
   const rulesWithFieldsCustomizations = [MFA_RULE_TYPE_NAME, IDP_RULE_TYPE_NAME]
@@ -227,7 +227,7 @@ const createCustomizations = ({
 }: {
   usePrivateAPI: boolean
   includeProfileMappingProperties: boolean
-}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>> => ({
+}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => ({
   // top-level types
   Group: {
     requests: [
@@ -276,7 +276,7 @@ const createCustomizations = ({
           path: '/api/v1/apps',
         },
         transformation: {
-          adjust: ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
+          adjust: async ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
         },
       },
     ],
@@ -348,6 +348,7 @@ const createCustomizations = ({
         isTopLevel: true,
         serviceUrl: { path: '/admin/app/{name}/instance/{id}/#tab-general' },
         elemID: { parts: [{ fieldName: 'label' }] },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: {
         name: { fieldType: 'string' },
@@ -399,7 +400,7 @@ const createCustomizations = ({
       {
         endpoint: { path: '/api/v1/apps/{appId}/groups' },
         transformation: {
-          adjust: ({ value, context }) => ({
+          adjust: async ({ value, context }) => ({
             value: {
               ...(_.isObject(value)
                 ? {
@@ -462,7 +463,7 @@ const createCustomizations = ({
               },
               transformation: {
                 root: 'mappings',
-                adjust: ({ value }) => ({
+                adjust: async ({ value }) => ({
                   value: {
                     ...(isGroupPushEntry(value)
                       ? {
@@ -645,7 +646,9 @@ const createCustomizations = ({
         endpoint: { path: '/api/v1/meta/schemas/user/{id}' },
         transformation: {
           // assign user schema id from request context to value
-          adjust: ({ value, context }) => ({ value: { ...(_.isObject(value) ? { ...value, id: context.id } : {}) } }),
+          adjust: async ({ value, context }) => ({
+            value: { ...(_.isObject(value) ? { ...value, id: context.id } : {}) },
+          }),
         },
       },
     ],
@@ -983,6 +986,48 @@ const createCustomizations = ({
       fieldCustomizations: { id: { hide: true }, _links: { omit: true } },
     },
   },
+  User: {
+    requests: [
+      {
+        endpoint: {
+          // The search query is needed to fetch deprovisioned users
+          path: '/api/v1/users?search=id+pr',
+        },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'profile.login' }] },
+        serviceUrl: { path: '/admin/user/profile/view/{id}#tab-account' },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        statusChanged: { omit: true },
+        lastLogin: { omit: true },
+        passwordChanged: { omit: true },
+        activated: { omit: true },
+        _links: { omit: true },
+        type: { fieldType: 'UserTypeRef' },
+      },
+    },
+  },
+  UserCredentials: {
+    element: {
+      fieldCustomizations: {
+        recovery_question: { omit: true },
+        password: { omit: true },
+      },
+    },
+  },
+  UserTypeRef: {
+    element: {
+      fieldCustomizations: {
+        id: { hide: false },
+      },
+    },
+  },
   // singleton types
   OrgSetting: {
     requests: [{ endpoint: { path: '/api/v1/org' }, transformation: { root: '.' } }],
@@ -1123,7 +1168,7 @@ const createCustomizations = ({
 })
 
 export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
-  DEVICE_ASSURANCE,
+  DEVICE_ASSURANCE_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
@@ -1154,7 +1199,7 @@ export const createFetchDefinitions = (
   userConfig: OktaUserConfig,
   usePrivateAPI: boolean,
   baseUrl?: string,
-): definitions.fetch.FetchApiDefinitions<OktaFetchOptions> => {
+): definitions.fetch.FetchApiDefinitions<OktaOptions> => {
   const {
     fetch: { includeProfileMappingProperties },
   } = userConfig

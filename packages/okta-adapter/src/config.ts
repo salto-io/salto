@@ -26,6 +26,7 @@ import {
   POLICY_RULE_PRIORITY_TYPE_NAMES,
   POLICY_PRIORITY_TYPE_NAMES,
 } from './constants'
+import { AdditionalAction } from './definitions/types'
 
 type UserDeployConfig = definitions.UserDeployConfig
 
@@ -35,10 +36,7 @@ export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
-export type OktaStatusActionName = 'activate' | 'deactivate'
-export type OktaActionName = ActionName | OktaStatusActionName
-
-export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
+export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<ActionName | AdditionalAction>
 export type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
 export type OktaDeployConfig = UserDeployConfig & { omitMissingUsers?: boolean }
 
@@ -215,29 +213,6 @@ const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] =
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
-  Group: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/groups',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/groups/{groupId}',
-        method: 'put',
-        urlParamsToFields: {
-          groupId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/groups/{groupId}',
-        method: 'delete',
-        urlParamsToFields: {
-          groupId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
   Application: {
     deployRequests: {
       add: {
@@ -472,57 +447,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  Domain: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/domains',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/domains/{domainId}',
-        method: 'put',
-        urlParamsToFields: {
-          domainId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/domains/{domainId}',
-        method: 'delete',
-        urlParamsToFields: {
-          domainId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
   OrgSetting: {
     deployRequests: {
       modify: {
         url: '/api/v1/org',
         method: 'put',
         fieldsToIgnore: ['contactTypes'],
-      },
-    },
-  },
-  Brand: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}',
-        method: 'put',
-        urlParamsToFields: {
-          brandId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}',
-        method: 'delete',
-        urlParamsToFields: {
-          brandId: 'id',
-        },
       },
     },
   },
@@ -759,51 +689,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  UserType: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/meta/types/user',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/meta/types/user/{typeId}',
-        method: 'put',
-        urlParamsToFields: {
-          typeId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/meta/types/user/{typeId}',
-        method: 'delete',
-        urlParamsToFields: {
-          typeId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
-  SmsTemplate: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/templates/sms',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/templates/sms/{templateId}',
-        method: 'put',
-        urlParamsToFields: {
-          templateId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/templates/sms/{templateId}',
-        urlParamsToFields: {
-          templateId: 'id',
-        },
-        method: 'delete',
-      },
-    },
-  },
   ProfileMapping: {
     deployRequests: {
       add: {
@@ -882,29 +767,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       modify: {
         url: '/api/v1/rate-limit-settings/admin-notifications',
         method: 'put',
-      },
-    },
-  },
-  DeviceAssurance: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/device-assurances',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/device-assurances/{deviceAssuranceId}',
-        method: 'put',
-        urlParamsToFields: {
-          deviceAssuranceId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/device-assurances/{deviceAssuranceId}',
-        method: 'delete',
-        urlParamsToFields: {
-          deviceAssuranceId: 'id',
-        },
-        omitRequestBody: true,
       },
     },
   },

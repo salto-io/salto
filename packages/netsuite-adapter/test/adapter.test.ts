@@ -454,7 +454,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
           failedTypes: expect.anything(),
           failedCustomRecords: expect.anything(),
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -476,7 +475,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -538,7 +536,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -560,7 +557,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -585,7 +581,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -609,7 +604,6 @@ describe('Adapter', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         config,
       )
@@ -810,7 +804,7 @@ describe('Adapter', () => {
               scriptid: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true } },
               internalId: { refType: BuiltinTypes.SERVICE_ID, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
             },
-            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING },
+            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING, internalId: BuiltinTypes.HIDDEN_STRING },
             annotations: {
               scriptid: 'customrecord_locked1',
               source: 'soap',
@@ -825,7 +819,7 @@ describe('Adapter', () => {
               scriptid: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true } },
               internalId: { refType: BuiltinTypes.SERVICE_ID, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
             },
-            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING },
+            annotationRefsOrTypes: { source: BuiltinTypes.HIDDEN_STRING, internalId: BuiltinTypes.HIDDEN_STRING },
             annotations: {
               scriptid: 'customrecord_locked2',
               source: 'soap',
@@ -1410,7 +1404,7 @@ describe('Adapter', () => {
 
     it('should use suiteAppFileCabinet importFileCabinet and pass it the right params', async () => {
       await adapter.fetch(mockFetchOpts)
-      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(expect.anything(), 3, ['.*\\.(csv|pdf|png)'])
+      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(expect.anything(), 3, ['.*\\.(csv|pdf|png)'], false)
     })
 
     it('should not create serverTime elements when getSystemInformation returns undefined', async () => {
@@ -1593,7 +1587,6 @@ describe('Adapter', () => {
               excludedTypes: ['excludedTypeDataElements'],
             },
             failedCustomRecords: ['excludedTypeCustomRecord'],
-            largeSuiteQLTables: [],
           },
           config,
         )

@@ -13,16 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import workflowAccountSpecificValidator from '../../src/change_validators/workflow_account_specific_values'
-import { NETSUITE, SCRIPT_ID } from '../../src/constants'
-import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
+import { EMPLOYEE, SCRIPT_ID } from '../../src/constants'
+import { fullFetchConfig } from '../../src/config/config_creator'
+import NetsuiteClient from '../../src/client/client'
+import mockSdfClient from '../client/sdf_client'
 
 describe('workflow account specific values', () => {
   let instance: InstanceElement
-  let suiteqlTableInstance: InstanceElement
+  let suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
+
+  const baseParams = {
+    deployReferencedElements: false,
+    elementsSource: buildElementsSourceFromElements([]),
+    config: {
+      fetch: fullFetchConfig(),
+    },
+    client: new NetsuiteClient(mockSdfClient()),
+    suiteQLNameToInternalIdsMap: {},
+  }
+
   beforeEach(() => {
     instance = new InstanceElement('instance', workflowType().type, {
       isinactive: false,
@@ -87,35 +100,25 @@ describe('workflow account specific values', () => {
         },
       },
     })
-    const suiteqlTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
-    suiteqlTableInstance = new InstanceElement('employee', suiteqlTableType, {
-      [INTERNAL_IDS_MAP]: {
-        1: { name: 'Salto user 1' },
-        2: { name: 'Salto user 2' },
-        3: { name: 'Salto user 3' },
-        4: { name: 'Salto user 3' },
+    suiteQLNameToInternalIdsMap = {
+      [EMPLOYEE]: {
+        'Salto user 1': ['1'],
+        'Salto user 2': ['2'],
+        'Salto user 3': ['3', '4'],
       },
-    })
+    }
   })
 
   it('should not have changeError when deploying an instance without ACCOUNT_SPECIFIC_VALUES', async () => {
     const after = instance.clone()
-    const changeErrors = await workflowAccountSpecificValidator(
-      [toChange({ before: instance, after })],
-      false,
-      buildElementsSourceFromElements([]),
-    )
+    const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should have a generic ASV warning when deploying an instance with ACCOUNT_SPECIFIC_VALUES', async () => {
     const after = instance.clone()
     after.value.valueselect = '[ACCOUNT_SPECIFIC_VALUE]|[ACCOUNT_SPECIFIC_VALUE]'
-    const changeErrors = await workflowAccountSpecificValidator(
-      [toChange({ before: instance, after })],
-      false,
-      buildElementsSourceFromElements([]),
-    )
+    const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -129,11 +132,7 @@ describe('workflow account specific values', () => {
         '[ACCOUNT_SPECIFIC_VALUE]'
       after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.sendertype =
         'SPECIFIC'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -147,11 +146,7 @@ describe('workflow account specific values', () => {
         '[ACCOUNT_SPECIFIC_VALUE]'
       after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.recipienttype =
         'SPECIFIC'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -169,11 +164,7 @@ describe('workflow account specific values', () => {
         '[ACCOUNT_SPECIFIC_VALUE]'
       after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.recipienttype =
         'SPECIFIC'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
       expect(changeErrors).toHaveLength(2)
       expect(changeErrors).toEqual(
         expect.arrayContaining([
@@ -200,11 +191,7 @@ describe('workflow account specific values', () => {
       const after = instance.clone()
       after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.sender =
         '[ACCOUNT_SPECIFIC_VALUE]'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
       expect(changeErrors).toHaveLength(0)
     })
     it('should not have changeErrors when the account specific values are resolved', async () => {
@@ -217,11 +204,10 @@ describe('workflow account specific values', () => {
         '[ACCOUNT_SPECIFIC_VALUE] (Salto user 1)'
       after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.recipienttype =
         'SPECIFIC'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([suiteqlTableInstance]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
+        ...baseParams,
+        suiteQLNameToInternalIdsMap,
+      })
       expect(changeErrors).toHaveLength(0)
     })
     it('should have changeErrors when the account specific values cannot be resolved', async () => {
@@ -234,11 +220,10 @@ describe('workflow account specific values', () => {
         '[ACCOUNT_SPECIFIC_VALUE] (Unknown Salto user)'
       after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.recipienttype =
         'SPECIFIC'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([suiteqlTableInstance]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
+        ...baseParams,
+        suiteQLNameToInternalIdsMap,
+      })
       expect(changeErrors).toHaveLength(4)
       expect(changeErrors).toEqual(
         expect.arrayContaining([
@@ -285,11 +270,7 @@ describe('workflow account specific values', () => {
     it('should return warning on a condition with ACCOUNT_SPECIFIC_VALUE parameter', async () => {
       const after = instance.clone()
       after.value.initcondition.parameters.parameter.Account1.value = '[ACCOUNT_SPECIFIC_VALUE]'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors).toEqual([
         {
@@ -310,11 +291,7 @@ describe('workflow account specific values', () => {
       after.value.another.parameters.parameter.Account2.value = '[ACCOUNT_SPECIFIC_VALUE]'
       after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.initcondition.parameters.parameter.Account2.value =
         '[ACCOUNT_SPECIFIC_VALUE]'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
       expect(changeErrors).toHaveLength(3)
       expect(changeErrors).toEqual(
         expect.arrayContaining([
@@ -336,11 +313,7 @@ describe('workflow account specific values', () => {
     })
     it('should return warning on an addition change', async () => {
       instance.value.initcondition.parameters.parameter.Account1.value = '[ACCOUNT_SPECIFIC_VALUE]'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ after: instance })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ after: instance })], baseParams)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors).toEqual([
         {
@@ -358,11 +331,7 @@ describe('workflow account specific values', () => {
       instance.value.initcondition.parameters.parameter.Account1.value = '[ACCOUNT_SPECIFIC_VALUE]'
       const after = instance.clone()
       after.value.initcondition.formula = '"Account1" EQUALS "Account2"'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors).toEqual([
         {
@@ -381,11 +350,7 @@ describe('workflow account specific values', () => {
       const after = instance.clone()
       after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.initcondition.formula =
         '"Account1" EQUALS "Account2"'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], baseParams)
       expect(changeErrors).toHaveLength(0)
     })
     it('should not return warning when the account specific value is resolved', async () => {
@@ -393,11 +358,10 @@ describe('workflow account specific values', () => {
       instance.value.initcondition.parameters.parameter.Account1.selectrecordtype = '-4'
       const after = instance.clone()
       after.value.initcondition.formula = '"Account1" EQUALS "Account2"'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([suiteqlTableInstance]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
+        ...baseParams,
+        suiteQLNameToInternalIdsMap,
+      })
       expect(changeErrors).toHaveLength(0)
     })
     it('should return warnings when the account specific value cannot be resolved', async () => {
@@ -405,11 +369,10 @@ describe('workflow account specific values', () => {
       instance.value.initcondition.parameters.parameter.Account1.selectrecordtype = '-4'
       const after = instance.clone()
       after.value.initcondition.formula = '"Account1" EQUALS "Account2"'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([suiteqlTableInstance]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
+        ...baseParams,
+        suiteQLNameToInternalIdsMap,
+      })
       expect(changeErrors).toHaveLength(2)
       expect(changeErrors).toEqual(
         expect.arrayContaining([
@@ -437,11 +400,10 @@ describe('workflow account specific values', () => {
       instance.value.initcondition.parameters.parameter.Account1.selectrecordtype = '-4'
       const after = instance.clone()
       after.value.initcondition.formula = '"Account1" EQUALS "Account2"'
-      const changeErrors = await workflowAccountSpecificValidator(
-        [toChange({ before: instance, after })],
-        false,
-        buildElementsSourceFromElements([suiteqlTableInstance]),
-      )
+      const changeErrors = await workflowAccountSpecificValidator([toChange({ before: instance, after })], {
+        ...baseParams,
+        suiteQLNameToInternalIdsMap,
+      })
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors).toEqual(
         expect.arrayContaining([

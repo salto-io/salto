@@ -36,6 +36,7 @@ import {
   ResolveClientOptionsType,
   ResolveCustomNameMappingOptionsType,
 } from '../definitions'
+import { mergeDefinitionsWithOverrides } from '../definitions/system/overrides'
 import { RequiredDefinitions } from '../definitions/system/types'
 import { AdapterFilterCreator, FilterResult } from '../filter_utils'
 import { defaultValidateCredentials } from '../credentials'
@@ -125,7 +126,8 @@ export const createAdapter = <
           clientDefaults,
         }),
       )
-      const definitions = definitionsCreator({ clients, userConfig: config, credentials })
+      const adapterDefinitions = definitionsCreator({ clients, userConfig: config, credentials })
+      const definitions = mergeDefinitionsWithOverrides(adapterDefinitions)
       const resolverCreator = getResolverCreator(definitions)
       const fixElements = customizeFixElements
         ? combineElementFixers(customizeFixElements({ config, elementsSource: context.elementsSource }))

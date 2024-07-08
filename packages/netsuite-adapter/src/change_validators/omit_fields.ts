@@ -70,19 +70,17 @@ const getMissingKeys = (value: Values, clonedValue: Values, prefix = ''): string
     return missingKeys
   }, [] as string[])
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource, config) => {
-  const fieldsToOmit = FIELDS_TO_OMIT_PRE_DEPLOY.concat(config?.deploy?.fieldsToOmit ?? [])
+const changeValidator: NetsuiteChangeValidator = async (changes, { elementsSource, config }) => {
+  const fieldsToOmit = FIELDS_TO_OMIT_PRE_DEPLOY.concat(config.deploy?.fieldsToOmit ?? [])
   if (fieldsToOmit.length === 0) {
     return []
   }
 
-  const typeNames =
-    elementsSource !== undefined
-      ? await awu(await elementsSource.list())
-          .filter(elemId => elemId.idType === 'type')
-          .map(elemId => elemId.name)
-          .toArray()
-      : []
+  const typeNames = await awu(await elementsSource.list())
+    .filter(elemId => elemId.idType === 'type')
+    .map(elemId => elemId.name)
+    .toArray()
+
   const fieldsToOmitByType = getFieldsToOmitByType(typeNames, fieldsToOmit)
   if (_.isEmpty(fieldsToOmitByType)) {
     return []

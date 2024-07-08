@@ -28,6 +28,7 @@ import {
   config as configUtils,
   definitions,
 } from '@salto-io/adapter-components'
+import { inspectValue } from '@salto-io/adapter-utils'
 import ZendeskAdapter from './adapter'
 import {
   Credentials,
@@ -56,7 +57,7 @@ import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig, mergeWithDefaultConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig, updateElemIDDefinitions } = definitions
 const { validateDuckTypeApiDefinitionConfig } = configUtils
 const { validateDefaultMissingUserFallbackConfig } = definitions
 
@@ -113,6 +114,7 @@ const isValidUser = (user: string): boolean => EMAIL_REGEX.test(user)
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
+  const useNewInfra = configValue.fetch?.useNewInfra
   const isGuideDisabled = config?.value.fetch.guide === undefined
   DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
     ? DEFAULT_CONFIG.apiDefinitions.supportedTypes
@@ -123,6 +125,18 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   ) as configUtils.AdapterDuckTypeApiConfig
 
   const fetch = mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
+  if (useNewInfra === true) {
+    const configForNewInfra = config?.clone()
+    const updatedElemIDs = updateElemIDDefinitions(configForNewInfra?.value?.apiDefinitions)
+    if (updatedElemIDs?.elemID !== undefined) {
+      if (fetch.elemID !== undefined) {
+        log.debug('fetch.elemId is defined and is going to be merged with data from the api_definition')
+      }
+      const mergedElemIDConfig = _.merge(_.pick(fetch, 'elemID'), updatedElemIDs)
+      fetch.elemID = mergedElemIDConfig.elemID
+      log.debug(`elemId config has changes and equal to: ${inspectValue(fetch.elemID)}`)
+    }
+  }
 
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,

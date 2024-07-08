@@ -52,7 +52,7 @@ describe('element', () => {
       const generator = getElementGenerator({
         adapterName: 'myAdapter',
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
-          customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
+          customizations: { myType: { element: {} } },
         }),
         customNameMappingFunctions: {},
       })
@@ -62,8 +62,7 @@ describe('element', () => {
       })
       const res = generator.generate()
       expect(res.errors).toEqual([])
-      expect(res.elements.length).toBe(1)
-      expect(res.elements.map(e => e.elemID.getFullName())).toEqual(['myAdapter.myType'])
+      expect(res.elements).toEqual([])
     })
     it('should create instances and matching type when entries are provided and no defs', () => {
       const entries = [

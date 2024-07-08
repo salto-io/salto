@@ -28,11 +28,16 @@ describe('merge contents', () => {
   const base = 'hello world!\nmy name is:\nNaCls'
   const current = 'Hello World!\nmy name is:\nNaCls'
   const incomingMergeable = 'hello world!\nmy name is:\nNaCls the great!'
+  const incomingMergeableWithDifferentLineTerminator =
+    'hello world!\r\nmy name is:\r\nNaCls the great!\r\nthe great!\r\n'
   const incomingUnmergeable = 'HELLO WORLD!\nmy name is:\nNaCls the great!'
   const incomingAdded = 'my name is:\nNaCls\nthe great!'
+  const incomingAddedWithDifferentLineTerminator = 'my name is:\r\nNaCls\r\nthe great!\r\nthe great!'
 
   const modifiedMerged = 'Hello World!\nmy name is:\nNaCls the great!'
+  const modifiedMergedWithMixedLineTerminators = 'Hello World!\nmy name is:\nNaCls the great!\r\nthe great!\r\n'
   const addedMerged = 'Hello World!\nmy name is:\nNaCls\nthe great!'
+  const addedMergedWithMixedLineTerminators = 'Hello World!\nmy name is:\nNaCls\nthe great!\r\nthe great!'
 
   describe('merge strings', () => {
     it('should merge modified value', () => {
@@ -40,6 +45,16 @@ describe('merge contents', () => {
     })
     it('should merge added value', () => {
       expect(mergeStrings(changeId, { current, base: undefined, incoming: incomingAdded })).toEqual(addedMerged)
+    })
+    it('should merge modified value with different line terminator', () => {
+      expect(mergeStrings(changeId, { current, base, incoming: incomingMergeableWithDifferentLineTerminator })).toEqual(
+        modifiedMergedWithMixedLineTerminators,
+      )
+    })
+    it('should merge added value with different line terminator', () => {
+      expect(
+        mergeStrings(changeId, { current, base: undefined, incoming: incomingAddedWithDifferentLineTerminator }),
+      ).toEqual(addedMergedWithMixedLineTerminators)
     })
     it('should not merge unmergeable modified value', () => {
       expect(mergeStrings(changeId, { current, base, incoming: incomingUnmergeable })).toBeUndefined()

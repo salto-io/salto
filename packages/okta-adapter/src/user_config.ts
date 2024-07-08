@@ -15,8 +15,7 @@
  */
 import { elements, definitions } from '@salto-io/adapter-components'
 import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
-import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
-import { OKTA } from './constants'
+import { OKTA, USER_TYPE_NAME } from './constants'
 
 type GetUsersStrategy = 'searchQuery' | 'allUsers'
 
@@ -44,6 +43,7 @@ export type OktaUserConfig = definitions.UserConfig<never, OktaClientConfig, Okt
 
 const changeValidatorNames = [
   'createCheckDeploymentBasedOnConfig',
+  'createCheckDeploymentBasedOnDefinitions',
   'application',
   'appGroup',
   'groupRuleStatus',
@@ -69,11 +69,14 @@ const changeValidatorNames = [
   'domainAddition',
   'domainModification',
   'appUserSchemaBaseChanges',
+  'userStatusChanges',
 ] as const
 
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]
 
 // default config values
+export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
+export const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
 const DEFAULT_INCLUDE_PROFILE_MAPPING_PROPERTIES = false
 const DEFAULT_APP_URLS_VALIDATOR_VALUE = false
 
@@ -83,6 +86,7 @@ export const DEFAULT_CONFIG: OktaUserConfig = {
   },
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
+    exclude: [{ type: USER_TYPE_NAME }],
     hideTypes: true,
     convertUsersIds: DEFAULT_CONVERT_USERS_IDS_VALUE,
     enableMissingReferences: true,
@@ -117,9 +121,10 @@ export const configType = definitions.createUserConfigType({
   changeValidatorNames: [...changeValidatorNames],
   additionalFetchFields: additionalFetchConfigFields,
   additionalDeployFields: { omitMissingUsers: { refType: BuiltinTypes.BOOLEAN } },
+  additionRateLimitFields: { rateLimitBuffer: { refType: BuiltinTypes.NUMBER } },
   additionalClientFields: {
-    rateLimitBuffer: { refType: BuiltinTypes.NUMBER },
     usePrivateAPI: { refType: BuiltinTypes.BOOLEAN },
   },
   omitElemID: false,
+  pathsToOmitFromDefaultConfig: ['fetch.enableMissingReferences', 'fetch.getUsersStrategy'],
 })

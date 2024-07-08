@@ -16,13 +16,13 @@
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { dynamicOSVersionFeatureValidator } from '../../src/change_validators/dynamic_os_version_feature'
-import { OKTA, FEATURE_TYPE_NAME, DEVICE_ASSURANCE } from '../../src/constants'
+import { OKTA, FEATURE_TYPE_NAME, DEVICE_ASSURANCE_TYPE_NAME } from '../../src/constants'
 
 describe('dynamicOSVersionFeatureValidator', () => {
   const message = 'Dynamic OS version compliance feature is not enabled in the account'
   const detailedMessage =
     'This Device Assurance policy is using dynamic OS version constraints which requires the Dynamic OS version compliance feature to be enabled in the account. To fix this error, enable this feature in your account, fetch your updated configuration through Salto and refresh this deployment.'
-  const deviceAssuranceType = new ObjectType({ elemID: new ElemID(OKTA, DEVICE_ASSURANCE) })
+  const deviceAssuranceType = new ObjectType({ elemID: new ElemID(OKTA, DEVICE_ASSURANCE_TYPE_NAME) })
   const featureType = new ObjectType({ elemID: new ElemID(OKTA, FEATURE_TYPE_NAME) })
   const dynamicOSVersionFeature = new InstanceElement('a', featureType, {
     type: 'self-service',

@@ -21,6 +21,7 @@ import {
   BUSINESS_SERVICE_TYPE_NAME,
   ESCALATION_POLICY_TYPE_NAME,
   EVENT_ORCHESTRATION_TYPE_NAME,
+  SCHEDULE_LAYERS_TYPE_NAME,
   SCHEDULE_TYPE_NAME,
   SERVICE_TYPE_NAME,
   TEAM_TYPE_NAME,
@@ -49,10 +50,13 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
   updated_by: {
     omit: true,
   },
+  version: {
+    omit: true,
+  },
 }
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
-const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
+export const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
 
 const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
   {},
@@ -233,6 +237,37 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           omit: true,
         },
         id: {
+          hide: true,
+        },
+        users: {
+          omit: true,
+        },
+        schedule_layers: {
+          sort: { properties: [{ path: 'name' }, { path: 'end', order: 'desc' }] },
+          standalone: {
+            typeName: SCHEDULE_LAYERS_TYPE_NAME,
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  [SCHEDULE_LAYERS_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { extendsParent: true },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+        start: {
           hide: true,
         },
       },

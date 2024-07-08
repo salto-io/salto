@@ -15,11 +15,15 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
+import { getChangeData } from '@salto-io/adapter-api'
+import { getParent } from '@salto-io/adapter-utils'
+import { addStartToLayers, addTimeZone, shouldChangeLayer } from '../utils/schedule_layers'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   BUSINESS_SERVICE_TYPE_NAME,
   ESCALATION_POLICY_TYPE_NAME,
   EVENT_ORCHESTRATION_TYPE_NAME,
+  SCHEDULE_LAYERS_TYPE_NAME,
   SCHEDULE_TYPE_NAME,
   SERVICE_TYPE_NAME,
   TEAM_TYPE_NAME,
@@ -34,7 +38,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   >({
     [BUSINESS_SERVICE_TYPE_NAME]: { bulkPath: '/business_services', nestUnderField: 'business_service' },
     [ESCALATION_POLICY_TYPE_NAME]: { bulkPath: '/escalation_policies', nestUnderField: 'escalation_policy' },
-    [SCHEDULE_TYPE_NAME]: { bulkPath: '/schedules', nestUnderField: 'schedule' },
     [TEAM_TYPE_NAME]: { bulkPath: '/teams', nestUnderField: 'team' },
   })
 
@@ -209,6 +212,111 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 transformForCheck: {
                   pick: ['eventOrchestrationsRouter'],
                 },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [SCHEDULE_TYPE_NAME]: {
+      referenceResolution: {
+        when: 'early',
+      },
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules',
+                  method: 'post',
+                },
+                transformation: {
+                  nestUnderField: 'schedule',
+                  adjust: addStartToLayers,
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  nestUnderField: 'schedule',
+                  adjust: addStartToLayers,
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [SCHEDULE_LAYERS_TYPE_NAME]: {
+      changeGroupId: deployment.grouping.groupWithFirstParent,
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules/{parent_id}',
+                  method: 'put',
+                },
+                context: {
+                  custom:
+                    () =>
+                    ({ change }) => ({
+                      time_zone: getParent(getChangeData(change)).value.time_zone,
+                    }),
+                },
+                transformation: {
+                  adjust: addTimeZone,
+                },
+              },
+              condition: shouldChangeLayer,
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/schedules/{parent_id}',
+                  method: 'put',
+                },
+                context: {
+                  custom:
+                    () =>
+                    ({ change }) => ({
+                      time_zone: getParent(getChangeData(change)).value.time_zone,
+                    }),
+                },
+                transformation: {
+                  adjust: addTimeZone,
+                },
+              },
+              condition: shouldChangeLayer,
+            },
+          ],
+          // We don't support removal of schedule layers, CV will throw an error if we try to remove a schedule layer without removing the schedule
+          // If the user will remove the schedule, the schedule layer will be removed as well
+          remove: [
+            {
+              request: {
+                earlySuccess: true,
               },
             },
           ],

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { X2jOptions, XMLBuilder, XmlBuilderOptions, XMLParser } from 'fast-xml-parser'
 import { strings, values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -40,6 +41,7 @@ import { REQUIRED_FEATURE_SUFFIX } from '../config/constants'
 import { ConfigRecord } from './suiteapp_client/types'
 import { isFileCabinetInstance } from '../types'
 import { getServiceIdsToElemIds } from '../service_id_info'
+import { ATTRIBUTE_PREFIX } from './constants'
 
 const log = logger(module)
 const { matchAll } = strings
@@ -176,3 +178,20 @@ export const addAdditionalDependency = (instance: InstanceElement, scriptId: str
   }
   instance.value[ADDITIONAL_DEPENDENCIES].push(`[${SCRIPT_ID}=${scriptId}]`)
 }
+
+export const XML_PARSER_DEFAULT_OPTIONS: X2jOptions = {
+  attributeNamePrefix: ATTRIBUTE_PREFIX,
+  ignoreAttributes: false,
+  processEntities: false,
+}
+
+export const XML_BUILDER_DEFAULT_OPTIONS: XmlBuilderOptions = {
+  attributeNamePrefix: ATTRIBUTE_PREFIX,
+  ignoreAttributes: false,
+  processEntities: false,
+  format: true,
+  suppressBooleanAttributes: false,
+}
+
+export const xmlParser = new XMLParser(XML_PARSER_DEFAULT_OPTIONS)
+export const xmlBuilder = new XMLBuilder(XML_BUILDER_DEFAULT_OPTIONS)

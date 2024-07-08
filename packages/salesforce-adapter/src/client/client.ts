@@ -588,6 +588,22 @@ export const getConnectionDetails = async (
   }
 }
 
+const getAccountID = (
+  credentials: Credentials,
+  orgId: string,
+  instanceUrl?: string,
+): string => {
+  if (credentials.isSandbox) {
+    if (instanceUrl === undefined) {
+      throw new Error(
+        'Expected Salesforce organization URL to exist in the connection',
+      )
+    }
+    return instanceUrl
+  }
+  return orgId
+}
+
 export const validateCredentials = async (
   credentials: Credentials,
   minApiRequestsRemaining = 0,
@@ -605,21 +621,9 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`,
     )
   }
-  if (credentials.isSandbox) {
-    if (instanceUrl === undefined) {
-      throw new Error(
-        'Expected Salesforce organization URL to exist in the connection',
-      )
-    }
-    return {
-      accountId: instanceUrl,
-      accountType,
-      isProduction,
-      extraInformation: { orgId },
-    }
-  }
   return {
-    accountId: orgId,
+    accountId: getAccountID(credentials, orgId, instanceUrl),
+    accountUrl: instanceUrl,
     accountType,
     isProduction,
     extraInformation: { orgId },

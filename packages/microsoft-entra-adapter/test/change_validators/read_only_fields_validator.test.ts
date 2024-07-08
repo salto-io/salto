@@ -19,6 +19,7 @@ import {
   ADAPTER_NAME,
   APPLICATION_TYPE_NAME,
   DIRECTORY_ROLE_TYPE_NAME,
+  GROUP_TYPE_NAME,
   ROLE_DEFINITION_TYPE_NAME,
   SERVICE_PRINCIPAL_TYPE_NAME,
 } from '../../src/constants'
@@ -48,6 +49,19 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
       expect(res[0].detailedMessage).toEqual(
         'The following read-only fields were changed and cannot be deployed: inheritsPermissionsFrom. These changes will be ignored.',
       )
+    })
+
+    it('should not return change warning if inheritsPermissionsFrom field exists in the instance and this is an addition change', async () => {
+      const roleDefinition = new InstanceElement(INSTANCE_NAME, roleDefinitionType, {
+        inheritsPermissionsFrom: 'test',
+      })
+      const changes = [
+        toChange({
+          after: roleDefinition.clone(),
+        }),
+      ]
+      const res = await readOnlyFieldsValidator(changes)
+      expect(res).toHaveLength(0)
     })
 
     it('should not return change warning if there is no change in inheritsPermissionsFrom field', async () => {
@@ -178,6 +192,64 @@ describe(`${readOnlyFieldsValidator.name}`, () => {
         toChange({
           before: directoryRole.clone(),
           after: directoryRole.clone(),
+        }),
+      ]
+      const res = await readOnlyFieldsValidator(changes)
+      expect(res).toHaveLength(0)
+    })
+  })
+
+  describe(GROUP_TYPE_NAME, () => {
+    const groupType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, GROUP_TYPE_NAME),
+    })
+
+    it('should return change warning if there is a change in readonly fields on modification', async () => {
+      const group = new InstanceElement('testGroup', groupType, {
+        mail: 'test',
+      })
+      const afterGroup = group.clone()
+      afterGroup.value.mail = 'test2'
+      afterGroup.value.assignedLicenses = 'testNew'
+      const changes = [
+        toChange({
+          before: group.clone(),
+          after: afterGroup,
+        }),
+      ]
+      const res = await readOnlyFieldsValidator(changes)
+      expect(res).toHaveLength(1)
+      expect(res[0].detailedMessage).toEqual(
+        'The following read-only fields were changed and cannot be deployed: mail, assignedLicenses. These changes will be ignored.',
+      )
+    })
+
+    it('should return change warning if there readonly fields exist on addition', async () => {
+      const group = new InstanceElement('testGroup', groupType, {
+        mail: 'test',
+        assignedLicenses: 'test',
+      })
+      const changes = [
+        toChange({
+          after: group.clone(),
+        }),
+      ]
+      const res = await readOnlyFieldsValidator(changes)
+      expect(res).toHaveLength(1)
+      expect(res[0].detailedMessage).toEqual(
+        'The following read-only fields were changed and cannot be deployed: mail, assignedLicenses. These changes will be ignored.',
+      )
+    })
+
+    it('should not return change warning if there is no change in readonly fields', async () => {
+      const group = new InstanceElement('testGroup', groupType, {
+        mail: 'test',
+        assignedLicenses: 'test',
+      })
+      const changes = [
+        toChange({
+          before: group.clone(),
+          after: group.clone(),
         }),
       ]
       const res = await readOnlyFieldsValidator(changes)

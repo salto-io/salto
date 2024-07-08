@@ -21,6 +21,7 @@ import {
   InstanceElement,
   Values,
   ObjectType,
+  Field,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -30,28 +31,32 @@ import { metadataType } from '../transformers/transformer'
 import { metadataTypesWithAttributes } from '../transformers/xml_transformer'
 
 const { awu } = collections.asynciterable
+const isAttributeField = (field?: Field): boolean =>
+  field?.annotations[IS_ATTRIBUTE] ?? false
 
-const removeAttributePrefixForValue = (
-  value: Values,
-  type: ObjectType,
-): Values => {
+const handleAttributeValues = (value: Values, type: ObjectType): Values => {
   if (!_.isPlainObject(value)) {
     return value
   }
 
-  return _.mapKeys(value, (_val, key) => {
-    const potentialKey = key.replace(XML_ATTRIBUTE_PREFIX, '')
-    return type.fields[potentialKey]?.annotations[IS_ATTRIBUTE]
-      ? potentialKey
-      : key
-  })
+  // We put the attributes first for backwards compatibility.
+  const [attrEntries, entries] = _.partition(
+    Object.entries(value),
+    ([key, _val]) =>
+      isAttributeField(type.fields[key.replace(XML_ATTRIBUTE_PREFIX, '')]),
+  )
+  return Object.fromEntries(
+    attrEntries
+      .map(([key, val]) => [key.slice(XML_ATTRIBUTE_PREFIX.length), val])
+      .concat(entries),
+  )
 }
 
 const removeAttributePrefix = async (
   instance: InstanceElement,
 ): Promise<void> => {
   const type = await instance.getType()
-  instance.value = removeAttributePrefixForValue(instance.value, type)
+  instance.value = handleAttributeValues(instance.value, type)
   instance.value =
     (await transformValues({
       values: instance.value,
@@ -62,7 +67,7 @@ const removeAttributePrefix = async (
       transformFunc: async ({ value, field }) => {
         const fieldType = await field?.getType()
         return isObjectType(fieldType)
-          ? removeAttributePrefixForValue(value, fieldType)
+          ? handleAttributeValues(value, fieldType)
           : value
       },
     })) ?? instance.value

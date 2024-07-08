@@ -23,12 +23,14 @@ import {
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { SPACE_TYPE_NAME } from '../../constants'
+import { PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../constants'
 import { AdditionalAction } from '../types'
 import { validateValue } from './generic'
+import { createAdjustUserReferencesReverse } from './users'
 
+const { reduceAsync } = collections.asynciterable
 const log = logger(module)
 
 /**
@@ -63,11 +65,20 @@ const isNumber = (value: unknown): value is number => typeof value === 'number'
 /**
  * AdjustFunction that increases the version number of a page for deploy modification change.
  */
-const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = args => {
+const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async args => {
   const value = validateValue(args.value)
   const version = _.get(value, 'version')
   if (!values.isPlainRecord(version) || !isNumber(version.number)) {
-    return { ...args, value }
+    return {
+      value: {
+        ...value,
+        version: {
+          // In case of homepage addition, we don't have a version number yet but it is "1" in the service
+          // It has been set to one when we created the space and the default homepage was created
+          number: 2,
+        },
+      },
+    }
   }
   return {
     value: {
@@ -81,9 +92,25 @@ const increasePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeA
 }
 
 /**
+ * custom context function that adds homepage id to additionContext in case it is a homepage of a new deployed space.
+ */
+export const putHomepageIdInAdditionContext = (args: definitions.deploy.ChangeAndContext): Record<string, unknown> => {
+  const spaceChange = args.changeGroup?.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
+  if (spaceChange === undefined) {
+    return {}
+  }
+  // If there is a space change on the same group as a page change, it means that the page is the space homepage
+  const homepageId = _.get(args.sharedContext?.[getChangeData(spaceChange).elemID.getFullName()], 'id')
+  if (homepageId !== undefined) {
+    return { id: homepageId }
+  }
+  return {}
+}
+
+/**
  * AdjustFunction that update the page id in case it is a homepage of a new deployed space.
  */
-const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = args => {
+const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async args => {
   const value = validateValue(args.value)
   const spaceChange = args.context.changeGroup.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
   if (spaceChange === undefined) {
@@ -97,14 +124,17 @@ const updateHomepageId: definitions.AdjustFunction<definitions.deploy.ChangeAndC
   return { value }
 }
 
+const adjustUserReferencesOnPageReverse = createAdjustUserReferencesReverse(PAGE_TYPE_NAME)
+
 /**
  * AdjustFunction that runs all page modification adjust functions.
  */
-export const adjustPageOnModification: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = args => {
+export const adjustPageOnModification: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async args => {
   const value = validateValue(args.value)
   const argsWithValidatedValue = { ...args, value }
-  return [increasePageVersion, updateHomepageId].reduce(
-    (input, func) => ({ ...argsWithValidatedValue, ...func(input) }),
+  return reduceAsync(
+    [increasePageVersion, updateHomepageId, adjustUserReferencesOnPageReverse],
+    async (input, func) => ({ ...argsWithValidatedValue, ...(await func(input)) }),
     argsWithValidatedValue,
   )
 }

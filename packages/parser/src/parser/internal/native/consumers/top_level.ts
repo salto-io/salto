@@ -36,6 +36,7 @@ import {
   missingLabelsError,
   missingBlockOpen,
   invalidDefinition,
+  invalidMetaTypeError,
 } from '../errors'
 import {
   primitiveType,
@@ -69,7 +70,17 @@ const consumeType = (
 
   const elemID = parseTopLevelID(context, typeName, range)
   const consumedBlock = consumeBlockBody(context, elemID)
-  if (baseType === Keywords.TYPE_OBJECT) {
+  if (baseType === Keywords.TYPE_OBJECT || baseType.includes(ElemID.NAMESPACE_SEPARATOR)) {
+    let metaTypeRef: TypeReference<ObjectType> | undefined
+    if (baseType.includes(ElemID.NAMESPACE_SEPARATOR)) {
+      const metaElemID = ElemID.fromFullName(baseType)
+      if (metaElemID.idType !== 'type') {
+        context.errors.push(invalidMetaTypeError(range, baseType))
+        return { value: undefined, range: consumedBlock.range }
+      }
+      metaTypeRef = new TypeReference(metaElemID)
+    }
+
     return {
       value: getElementIfValid(
         new ObjectType({
@@ -77,6 +88,7 @@ const consumeType = (
           fields: consumedBlock.value.fields,
           annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
           annotations: consumedBlock.value.attrs,
+          metaType: metaTypeRef,
           isSettings,
         }),
       ),

@@ -15,4 +15,8 @@
  */
 export { builtInInstancesValidator } from './built_in_instances_validator'
 export { requiredFieldsValidator } from './required_fields_validator'
-export { readOnlyFieldsValidator, TYPE_NAME_TO_READ_ONLY_FIELDS } from './read_only_fields_validator'
+export {
+  readOnlyFieldsValidator,
+  TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
+  TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
+} from './read_only_fields_validator'

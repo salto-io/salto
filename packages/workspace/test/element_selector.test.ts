@@ -31,10 +31,12 @@ import {
   selectElementIdsByTraversal,
   selectElementsBySelectorsWithoutReferences,
   ElementSelector,
+  isElementIdMatchSelectors,
 } from '../src/workspace/element_selector'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMap } from '../src/workspace/remote_map'
 import { createMockRemoteMap } from './utils'
+import { ReferenceIndexEntry } from '../src/workspace/reference_indexes'
 
 const { awu } = collections.asynciterable
 
@@ -108,6 +110,24 @@ const mockInstance = new InstanceElement(
   ['yes', 'this', 'is', 'path'],
 )
 
+const isElemIdMatchSelectors = ({
+  elemId,
+  selectors,
+  caseInsensitive = false,
+  includeNested = false,
+}: {
+  elemId: ElemID
+  selectors: string[]
+  caseInsensitive?: boolean
+  includeNested?: boolean
+}): Promise<boolean> =>
+  isElementIdMatchSelectors({
+    elemId,
+    selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
+    referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
+    includeNested,
+  })
+
 const selectElements = async ({
   elements,
   selectors,
@@ -123,7 +143,7 @@ const selectElements = async ({
     selectElementsBySelectors({
       elementIds: awu(elements),
       selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
-      referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+      referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
       includeNested,
     }),
   ).toArray()
@@ -144,6 +164,79 @@ const selectElementsWitoutRef = ({
   })
 
 describe('element selector', () => {
+  describe('isElemIdMatchSelectors', () => {
+    it('should handle asterisks in adapter and type', async () => {
+      const elements = [
+        new ElemID('salesforce', 'sometype'),
+        new ElemID('salesforce', 'othertype'),
+        new ElemID('otheradapter', 'othertype'),
+        new ElemID('salesforce', 'othertype', 'instance'),
+      ]
+      const selectors = ['*.*']
+      expect(await isElemIdMatchSelectors({ elemId: elements[0], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[1], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[2], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[3], selectors })).toBeFalsy()
+    })
+
+    it('should only select specific type when given specific type element', async () => {
+      const elements = [
+        new ElemID('salesforce', 'sometype'),
+        new ElemID('salesforce', 'sometypewithsameprefix'),
+        new ElemID('otheradapter', 'othertype'),
+        new ElemID('salesforce', 'othertype', 'instance', 'y'),
+        new ElemID('salesforce', 'sometype', 'instance', 'x'),
+      ]
+      const selectors = ['salesforce.sometype']
+      expect(await isElemIdMatchSelectors({ elemId: elements[0], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[1], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[2], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[3], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[4], selectors })).toBeFalsy()
+    })
+
+    it('should only select specific types when given multiple typeNames', async () => {
+      const elements = [
+        new ElemID('salesforce', 'sometype'),
+        new ElemID('salesforce', 'sometypewithsameprefix'),
+        new ElemID('salesforce', 'withsamesuffixsometype'),
+        new ElemID('salesforce', 'othertype'),
+        new ElemID('salesforce', 'othertypewithsameprefix'),
+        new ElemID('salesforce', 'withsamesuffixothertype'),
+        new ElemID('otheradapter', 'sometype'),
+        new ElemID('otheradapter', 'othertype'),
+        new ElemID('salesforce', 'othertype', 'instance', 'y'),
+        new ElemID('salesforce', 'sometype', 'instance', 'x'),
+      ]
+      const selectors = ['salesforce.sometype|othertype']
+      expect(await isElemIdMatchSelectors({ elemId: elements[0], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[1], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[2], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[3], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[4], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[5], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[6], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[7], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[8], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[9], selectors })).toBeFalsy()
+    })
+
+    it('should handle asterisks in field type and instance name', async () => {
+      const elements = [
+        new ElemID('salesforce', 'sometype', 'instance', 'one_instance'),
+        new ElemID('salesforce', 'sometype', 'instance', 'second_instance_specialchar@s'),
+        new ElemID('salesforce', 'othertype', 'type', 'typename'),
+        new ElemID('otheradapter', 'othertype', 'instance', 'some_other_instance2'),
+        new ElemID('salesforce', 'othertype', 'instance', 'some_other_instance'),
+      ]
+      const selectors = ['salesforce.*.instance.*']
+      expect(await isElemIdMatchSelectors({ elemId: elements[0], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[1], selectors })).toBeTruthy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[2], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[3], selectors })).toBeFalsy()
+      expect(await isElemIdMatchSelectors({ elemId: elements[4], selectors })).toBeTruthy()
+    })
+  })
   it('should handle asterisks in adapter and type', async () => {
     const elements = [
       new ElemID('salesforce', 'sometype'),
@@ -369,7 +462,7 @@ describe('select elements recursively', () => {
       await selectElementIdsByTraversal({
         selectors,
         source: createInMemoryElementSource(testElements),
-        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
         compact,
       }),
     ).toArray()
@@ -461,7 +554,7 @@ describe('select elements recursively', () => {
       await selectElementIdsByTraversal({
         selectors,
         source: createInMemoryElementSource([mockInstance, mockType]),
-        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
         compact: false,
       }),
     ).toArray()
@@ -476,7 +569,7 @@ describe('select elements recursively', () => {
       await selectElementIdsByTraversal({
         selectors,
         source: createInMemoryElementSource([mockInstance, mockType]),
-        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        referenceSourcesIndex: createMockRemoteMap<ReferenceIndexEntry[]>(),
         compact: false,
       }),
     ).toArray()
@@ -488,7 +581,7 @@ describe('select elements recursively', () => {
 })
 
 describe('referencedBy', () => {
-  let referenceSourcesIndex: RemoteMap<ElemID[]>
+  let referenceSourcesIndex: RemoteMap<ReferenceIndexEntry[]>
 
   const objectType = new ObjectType({
     elemID: new ElemID('salesforce', 'type'),
@@ -507,7 +600,7 @@ describe('referencedBy', () => {
   })
 
   beforeEach(() => {
-    referenceSourcesIndex = new InMemoryRemoteMap<ElemID[]>()
+    referenceSourcesIndex = new InMemoryRemoteMap<ReferenceIndexEntry[]>()
   })
 
   it('should return referenced instances', async () => {
@@ -517,7 +610,7 @@ describe('referencedBy', () => {
     selector.referencedBy = referencedBy
 
     await referenceSourcesIndex.set('salesforce.type.instance.inst1', [
-      new ElemID('workato', 'type', 'instance', 'inst1', 'val'),
+      { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val'), type: 'strong' },
     ])
 
     const elements = [new InstanceElement('inst1', objectType), new InstanceElement('inst2', objectType)]
@@ -536,9 +629,11 @@ describe('referencedBy', () => {
   describe('when a field is referenced', () => {
     beforeEach(async () => {
       await referenceSourcesIndex.set('salesforce.type.field.field1', [
-        new ElemID('workato', 'type', 'instance', 'inst1', 'val'),
+        { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val'), type: 'strong' },
       ])
-      await referenceSourcesIndex.set('salesforce.type', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
+      await referenceSourcesIndex.set('salesforce.type', [
+        { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val'), type: 'strong' },
+      ])
     })
 
     it('should return the type of the referenced field', async () => {
@@ -581,8 +676,12 @@ describe('referencedBy', () => {
   })
 
   it('should return referenced types', async () => {
-    await referenceSourcesIndex.set('salesforce.type', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
-    await referenceSourcesIndex.set('salesforce.type2', [new ElemID('workato', 'type', 'instance', 'inst1', 'val2')])
+    await referenceSourcesIndex.set('salesforce.type', [
+      { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val'), type: 'strong' },
+    ])
+    await referenceSourcesIndex.set('salesforce.type2', [
+      { id: new ElemID('workato', 'type', 'instance', 'inst1', 'val2'), type: 'strong' },
+    ])
 
     const [selector] = createElementSelectors(['salesforce.*']).validSelectors
     const [referencedBy] = createElementSelectors(['workato.*.instance.*.val']).validSelectors

@@ -33,7 +33,7 @@ import {
 import { buildElementsSourceFromElements, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { e2eUtils } from '@salto-io/adapter-components'
+import { e2eUtils, elements as elementsUtils } from '@salto-io/adapter-components'
 import {
   SPACE_TYPE_NAME,
   PAGE_TYPE_NAME,
@@ -46,6 +46,15 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import { getMockValues, uniqueFieldsPerType } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
+import { UserConfig } from '../src/config'
+
+export const DEFAULT_CONFIG_WITH_PAGES: UserConfig = {
+  fetch: {
+    ...elementsUtils.query.INCLUDE_ALL_CONFIG,
+    hideTypes: true,
+    managePagesForSpaces: ['.*'],
+  },
+}
 
 const log = logger(module)
 
@@ -57,7 +66,7 @@ const fieldsToOmitOnComparisonPerType: Record<string, string[]> = {
   [TEMPLATE_TYPE_NAME]: [],
 }
 
-const fetchDefinitions = createFetchDefinitions()
+const fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG_WITH_PAGES)
 
 const createChangesForDeploy = (types: ObjectType[], testSuffix: string): Change<InstanceElement>[] => {
   const mockDefaultValues = getMockValues(testSuffix)
@@ -107,7 +116,10 @@ describe('Confluence adapter E2E', () => {
     beforeAll(async () => {
       log.resetLogCount()
       credLease = await credsLease()
-      adapterAttr = realAdapter({ credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) })
+      adapterAttr = realAdapter(
+        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
+        DEFAULT_CONFIG_WITH_PAGES,
+      )
       const fetchBeforeCleanupResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
@@ -130,8 +142,13 @@ describe('Confluence adapter E2E', () => {
         .filter(isInstanceChange)
 
       const removalChanges = appliedChanges.map(change => toChange({ before: getChangeData(change) }))
-
-      await e2eUtils.deployChangesForE2e(adapterAttr, removalChanges)
+      // Making sure space removal is the last one,
+      // O.W page and template will be deleted in the service when we delete their father space
+      const sortedRemovalChanges = [
+        ...removalChanges.filter(change => getChangeData(change).elemID.typeName !== SPACE_TYPE_NAME),
+        ...removalChanges.filter(change => getChangeData(change).elemID.typeName === SPACE_TYPE_NAME),
+      ]
+      await e2eUtils.deployChangesForE2e(adapterAttr, sortedRemovalChanges)
       if (credLease.return) {
         await credLease.return()
       }

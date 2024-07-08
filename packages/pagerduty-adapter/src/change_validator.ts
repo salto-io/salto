@@ -14,5 +14,8 @@
  * limitations under the License.
  */
 import { ChangeValidator } from '@salto-io/adapter-api'
+import { scheduleLayerRemovalValidator } from './change_validators'
 
-export default (): Record<string, ChangeValidator> => ({})
+export default (): Record<string, ChangeValidator> => ({
+  scheduleLayerRemoval: scheduleLayerRemovalValidator,
+})

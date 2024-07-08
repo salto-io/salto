@@ -37,12 +37,17 @@ import {
   GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
+  ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
+  MEMBERS_FIELD_NAME,
+  ODATA_ID_FIELD,
+  DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
 } from '../../constants'
 import { AdditionalAction, ClientOptions } from '../types'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { DeployCustomDefinitions, DeployRequestDefinition } from './types'
 import {
   adjustRoleDefinitionForDeployment,
+  createCustomConditionEmptyFieldsOnAddition,
   createCustomizationsWithBasePathForDeploy,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
@@ -66,6 +71,16 @@ const APPLICATION_MODIFICATION_REQUEST: DeployRequestDefinition = {
   },
 }
 
+// These fields cannot be specified when creating a group, but can be modified after creation
+const GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION = [
+  'allowExternalSenders',
+  'autoSubscribeNewMembers',
+  'hideFromAddressLists',
+  'hideFromOutlookClients',
+  'isSubscribedByMail',
+  'unseenCount',
+]
+
 const graphV1CustomDefinitions: DeployCustomDefinitions = {
   ...createDefinitionForAppRoleAssignment({
     parentResourceName: 'groups',
@@ -86,13 +101,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                omit: ['members'],
+                omit: [MEMBERS_FIELD_NAME],
               },
             },
           },
-          // TODO SALTO-6051: handle members addition
         ],
-        // TODO SALTO-6051: handle members modification
         modify: [
           {
             request: {
@@ -101,7 +114,12 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'patch',
               },
               transformation: {
-                omit: ['members'],
+                omit: [MEMBERS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [MEMBERS_FIELD_NAME],
               },
             },
           },
@@ -111,6 +129,35 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/directory/administrativeUnits/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/directory/administrativeUnits/{parent_id}/members/$ref',
+                method: 'post',
+              },
+              transformation: {
+                pick: [ODATA_ID_FIELD],
+              },
+            },
+          },
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/directory/administrativeUnits/{parent_id}/members/{id}/$ref',
                 method: 'delete',
               },
             },
@@ -215,15 +262,31 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 path: '/groups',
                 method: 'post',
               },
+              transformation: {
+                omit: [...GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION, GROUP_LIFE_CYCLE_POLICY_FIELD_NAME],
+              },
+            },
+            copyFromResponse: {
+              toSharedContext: {
+                pick: ['id'],
+              },
             },
           },
           {
-            request: getGroupLifecyclePolicyGroupModificationRequest('add'),
-            condition: {
-              transformForCheck: {
-                pick: [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME],
+            request: {
+              endpoint: {
+                path: '/groups/{id}',
+                method: 'patch',
+              },
+              transformation: {
+                pick: GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION,
               },
             },
+            condition: createCustomConditionEmptyFieldsOnAddition(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
+          },
+          {
+            request: getGroupLifecyclePolicyGroupModificationRequest('add'),
+            condition: createCustomConditionEmptyFieldsOnAddition([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
           },
         ],
         modify: [
@@ -232,6 +295,9 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               endpoint: {
                 path: '/groups/{id}',
                 method: 'patch',
+              },
+              transformation: {
+                omit: [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME],
               },
             },
             condition: {
@@ -328,10 +394,10 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               },
               transformation: {
                 pick: ['roleTemplateId'],
+                omit: [MEMBERS_FIELD_NAME],
               },
             },
           },
-          // TODO SALTO-6051: add and modify members array
         ],
         modify: [
           {
@@ -340,10 +406,42 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 path: '/directoryRoles/{id}',
                 method: 'patch',
               },
+              transformation: {
+                omit: [MEMBERS_FIELD_NAME],
+              },
             },
             condition: {
               transformForCheck: {
-                pick: ['members'],
+                pick: [MEMBERS_FIELD_NAME],
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [DIRECTORY_ROLE_MEMBERS_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/directoryRoles/{parent_id}/members/$ref',
+                method: 'post',
+              },
+              transformation: {
+                pick: [ODATA_ID_FIELD],
+              },
+            },
+          },
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/directoryRoles/{parent_id}/members/{id}/$ref',
+                method: 'delete',
               },
             },
           },

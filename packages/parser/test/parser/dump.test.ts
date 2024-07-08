@@ -96,21 +96,29 @@ describe('Salto Dump', () => {
     annotationRefsOrTypes: {
       ServiceId: BuiltinTypes.SERVICE_ID,
     },
+    annotations: {
+      LeadConvertSettings: {
+        account: [
+          {
+            input: 'bla',
+            output: 'foo',
+          },
+        ],
+      },
+      // eslint-disable-next-line no-template-curly-in-string
+      multiLineString: "This\nis\nmultilinestring\n${foo}&\\n''' 'needs' Escaping",
+      // eslint-disable-next-line no-template-curly-in-string
+      stringNeedsEscaping: 'This string ${needs} escaping',
+    },
   })
 
-  model.annotate({
-    LeadConvertSettings: {
-      account: [
-        {
-          input: 'bla',
-          output: 'foo',
-        },
-      ],
-    },
-    // eslint-disable-next-line no-template-curly-in-string
-    multiLineString: "This\nis\nmultilinestring\n${foo}&\\n''' 'needs' Escaping",
-    // eslint-disable-next-line no-template-curly-in-string
-    stringNeedsEscaping: 'This string ${needs} escaping',
+  const metaType = new ObjectType({
+    elemID: new ElemID('salto', 'meta'),
+  })
+
+  const simpleObject = new ObjectType({
+    elemID: new ElemID('salto', 'simple_object'),
+    metaType,
   })
 
   const instance = new InstanceElement('me', model, { name: 'me', num: 7 }, undefined, {
@@ -143,7 +151,7 @@ describe('Salto Dump', () => {
       'only',
       1,
       true,
-      { priate: 'can say' },
+      { private: 'can say' },
       [],
       new ReferenceExpression(new ElemID('salto', 'ref')),
       'Hello I am multiline\nstring.',
@@ -162,6 +170,7 @@ describe('Salto Dump', () => {
           boolType,
           fieldType,
           model,
+          simpleObject,
           instance,
           config,
           instanceStartsWithNumber,
@@ -241,17 +250,23 @@ describe('Salto Dump', () => {
       })
     })
 
+    describe('dumped type with meta', () => {
+      it('should specify meta type', () => {
+        expect(body).toMatch(/type salto.simple_object is salto.meta {/m)
+      })
+    })
+
     describe('indentation', () => {
       it('should indent attributes', () => {
         expect(body).toMatch(/LeadConvertSettings = {\s*\n {4}account = \[\s*\n {6}{\s*\n {8}input/m)
       })
-      it('shoud indent annotation blocks', () => {
+      it('should indent annotation blocks', () => {
         expect(body).toMatch(/type salesforce.field is number {.*?\n {2}annotations/s)
       })
-      it('should indent field type annontations', () => {
+      it('should indent field type annotations', () => {
         expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?\n {4}string jerry {/s)
       })
-      it('should indent type annontations', () => {
+      it('should indent type annotations', () => {
         expect(body).toMatch(/type salesforce.test {.*?\n {2}annotations/s)
       })
       it('should indent primitive types', () => {
@@ -279,7 +294,7 @@ describe('Salto Dump', () => {
         expect(body).toMatch(/arr.*?=.*?\[.*?\n'''/ms)
         // reference
         expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}salto\.ref/ms)
-        // multilinestring
+        // multi line string
         expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}'''/ms)
         expect(body).toMatch(/arr.*?=.*?\[.*?\nHello/ms)
         expect(body).toMatch(/arr.*?=.*?\[.*?\nstring/ms)
@@ -296,19 +311,20 @@ describe('Salto Dump', () => {
       const { elements, errors } = result
       const [listTypes, nonListElements] = _.partition(elements, e => isContainerType(e))
       expect(errors).toHaveLength(0)
-      expect(elements).toHaveLength(13)
+      expect(elements).toHaveLength(14)
       expect(nonListElements[0]).toEqual(strType)
       expect(nonListElements[1]).toEqual(numType)
       expect(nonListElements[2]).toEqual(boolType)
       expectTypesToMatch(nonListElements[3] as TypeElement, fieldType)
       expectTypesToMatch(nonListElements[4] as TypeElement, model)
       expectTypesToMatch(listTypes[0] as ListType, await model.fields.list.getType())
-      expectInstancesToMatch(nonListElements[5] as InstanceElement, instance)
-      expectInstancesToMatch(nonListElements[6] as InstanceElement, config)
-      expectInstancesToMatch(nonListElements[7] as InstanceElement, instanceStartsWithNumber)
-      expectInstancesToMatch(nonListElements[8] as InstanceElement, instanceWithFunctions)
-      expectInstancesToMatch(nonListElements[9] as InstanceElement, instanceWithArray)
-      expect(nonListElements[10]).toEqual(unknownType)
+      expectTypesToMatch(nonListElements[5] as TypeElement, simpleObject)
+      expectInstancesToMatch(nonListElements[6] as InstanceElement, instance)
+      expectInstancesToMatch(nonListElements[7] as InstanceElement, config)
+      expectInstancesToMatch(nonListElements[8] as InstanceElement, instanceStartsWithNumber)
+      expectInstancesToMatch(nonListElements[9] as InstanceElement, instanceWithFunctions)
+      expectInstancesToMatch(nonListElements[10] as InstanceElement, instanceWithArray)
+      expect(nonListElements[11]).toEqual(unknownType)
     })
   })
   describe('dump field', () => {

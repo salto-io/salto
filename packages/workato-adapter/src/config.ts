@@ -265,7 +265,7 @@ export const configType = new ObjectType({
   elemID: new ElemID(WORKATO),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(WORKATO),
+      refType: createClientConfigType({ adapter: WORKATO }),
     },
     [FETCH_CONFIG]: {
       refType: definitions.createUserFetchConfigType({

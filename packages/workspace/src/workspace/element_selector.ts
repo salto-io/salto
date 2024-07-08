@@ -20,6 +20,7 @@ import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 import { ReadOnlyRemoteMap } from './remote_map'
+import { ReferenceIndexEntry } from './reference_indexes'
 
 const { withLimitedConcurrency } = promises.array
 const { asynciterable } = collections
@@ -42,10 +43,6 @@ export type ElementSelector = FlatElementSelector & {
 export type ElementIDToValue = {
   elemID: ElemID
   element: Value
-}
-
-type ElementIDContainer = {
-  elemID: ElemID
 }
 
 // get the full name including handling for settings instances ('_config')
@@ -77,7 +74,7 @@ const match = (elemId: ElemID, selector: ElementSelector, includeNested = false)
 const matchWithReferenceBy = async (
   elemId: ElemID,
   selector: ElementSelector,
-  referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   includeNested = false,
 ): Promise<boolean> => {
   const { referencedBy } = selector
@@ -91,17 +88,12 @@ const matchWithReferenceBy = async (
             : elemId.createTopLevelParentID()
           ).parent.getFullName(),
         )) ?? []
-      ).some(id => match(id, referencedBy, true)))
+      ).some(entry => match(entry.id, referencedBy, true)))
   )
 }
 
 const createRegex = (selector: string, caseInSensitive: boolean): RegExp =>
   new RegExp(`^(${selector.replace(/\*/g, '[^\\.]*')})$`, caseInSensitive ? 'i' : undefined)
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-function isElementContainer(value: any): value is ElementIDContainer {
-  return value && value.elemID && value.elemID instanceof ElemID
-}
 
 const isWildcardSelector = (selector: string): boolean => selector.includes('*')
 
@@ -138,6 +130,19 @@ export const selectElementsBySelectorsWithoutReferences = ({
   return elementIds.filter(elementId => selectors.some(selector => match(elementId, selector, includeNested)))
 }
 
+export const isElementIdMatchSelectors = ({
+  elemId,
+  selectors,
+  referenceSourcesIndex,
+  includeNested,
+}: {
+  elemId: ElemID
+  selectors: ElementSelector[]
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+  includeNested?: boolean
+}): Promise<boolean> =>
+  awu(selectors).some(selector => matchWithReferenceBy(elemId, selector, referenceSourcesIndex, includeNested))
+
 export const selectElementsBySelectors = ({
   elementIds,
   selectors,
@@ -146,21 +151,14 @@ export const selectElementsBySelectors = ({
 }: {
   elementIds: AsyncIterable<ElemID>
   selectors: ElementSelector[]
-  referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>
   includeNested?: boolean
 }): AsyncIterable<ElemID> => {
   if (selectors.length === 0) {
     return elementIds
   }
-  return awu(elementIds).filter(obj =>
-    awu(selectors).some(selector =>
-      matchWithReferenceBy(
-        isElementContainer(obj) ? obj.elemID : (obj as ElemID),
-        selector,
-        referenceSourcesIndex,
-        includeNested,
-      ),
-    ),
+  return awu(elementIds).filter(elemId =>
+    isElementIdMatchSelectors({ elemId, selectors, referenceSourcesIndex, includeNested }),
   )
 }
 
@@ -287,7 +285,7 @@ export const selectElementIdsByTraversal = async ({
 }: {
   selectors: ElementSelector[]
   source: ElementsSource
-  referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>
   compact?: boolean
 }): Promise<AsyncIterable<ElemID>> =>
   log.timeDebug(async () => {

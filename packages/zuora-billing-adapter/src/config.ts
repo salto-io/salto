@@ -729,7 +729,7 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
   elemID: new ElemID(ZUORA_BILLING),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(ZUORA_BILLING),
+      refType: createClientConfigType({ adapter: ZUORA_BILLING }),
     },
     [FETCH_CONFIG]: {
       refType: definitions.createUserFetchConfigType({ adapterName: ZUORA_BILLING, omitElemID: true }),

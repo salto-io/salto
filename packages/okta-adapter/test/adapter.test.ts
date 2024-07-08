@@ -1027,7 +1027,7 @@ describe('adapter', () => {
         })
         app = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
-          name: 'app1',
+          label: 'app1',
           status: INACTIVE_STATUS
         })
       })
@@ -1051,7 +1051,7 @@ describe('adapter', () => {
 
       it('should successfully modify an application', async () => {
         const updatedApp = app.clone()
-        updatedApp.value.name = 'app2'
+        updatedApp.value.label = 'app2'
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'app',
@@ -1067,7 +1067,7 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual(
           'app2',
         )
       })

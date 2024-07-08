@@ -57,7 +57,7 @@ const nullProgressReporter: ProgressReporter = {
 type MockReply = {
   url: string
   method: definitions.HTTPMethod
-  queryParams?: Record<string, string>
+  params?: Record<string, string>
   response: unknown
 }
 
@@ -93,9 +93,9 @@ describe('adapter', () => {
       .replyOnce(200, { id: 'accountId' })
       .onGet('/api/v1/org')
       .replyOnce(200, { id: 'accountId' })
-    ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, queryParams, response }) => {
+    ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
-      const handler = mock(url, !_.isEmpty(queryParams) ? { queryParams } : undefined)
+      const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
       handler.replyOnce(200, response)
     })
   })

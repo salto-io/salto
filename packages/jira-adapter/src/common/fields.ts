@@ -13,24 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { elements, definitions } from '@salto-io/adapter-components'
+import { InstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 
-export type UserFetchConfig = definitions.UserFetchConfig<{
-  customNameMappingOptions: never
-  fetchCriteria: definitions.DefaultFetchCriteria
-}> & { managePagesForSpaces?: string[] }
+const log = logger(module)
+export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: string[]): boolean => {
+  const includesTerm = (term: string): boolean => instance.value.type?.includes(term)
 
-export type UserConfig = definitions.UserConfig<
-  never,
-  definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,
-  UserFetchConfig,
-  definitions.UserDeployConfig
->
-
-export const DEFAULT_CONFIG: UserConfig = {
-  fetch: {
-    ...elements.query.INCLUDE_ALL_CONFIG,
-    hideTypes: true,
-    managePagesForSpaces: [],
-  },
+  if (terms.some(includesTerm)) {
+    log.debug(`Found a field related to specified term in ${instance.elemID.getFullName()}.`)
+    return true
+  }
+  return false
 }

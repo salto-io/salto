@@ -79,6 +79,7 @@ export { duplicateRoutingAttributeValueValidator } from './duplicate_routing_att
 export { triggerCategoryRemovalValidator } from './trigger_category_removal'
 export { ticketFieldDeactivationValidator } from './ticket_field_deactivation'
 export { duplicateIdFieldValuesValidator } from './duplicate_id_field_values'
+export { duplicateDynamicContentItemValidator } from './duplicate_dynamic_content_item'
 export { notEnabledMissingReferencesValidator } from './not_enabled_missing_references'
 export { conditionalTicketFieldsValidator } from './conditional_ticket_fields'
 export { dynamicContentDeletionValidator } from './dynamic_content_deletion'

@@ -2,7 +2,7 @@
 
 if ! command -v rsync &> /dev/null
 then
-    if [[ "$CI" == "1" ]]
+    if [ -v "CI" ]
     then
         sudo apt update && sudo apt install -y rsync
     else

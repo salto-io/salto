@@ -129,6 +129,33 @@ commands:
       - restore_node_modules
       - setup_yarn
 
+  cached_unit_test:
+    parameters:
+      package_name:
+        type: string
+    steps:
+      - step_setup
+      - restore_turbo_cache:
+          cache_name: jest_ut-<< parameters.package_name >>
+      - run:
+          name: << parameters.package_name >> unit tests
+          command: |
+            yarn test --filter="$(echo "<< parameters.package_name >>" | cut -d':' -f2)" --  --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit --ci --colors
+            # yarn workspace "$(echo "<< parameters.package_name >>" | cut -d':' -f2)" test --reporters=default --reporters=jest-junit --ci --colors
+            # yarn test --filter="$(echo "<< parameters.package_name >>" | cut -d':' -f2)..."
+            # yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
+
+      - store_test_results:
+          path: reports
+      - store_turbo_cache:
+          cache_name: jest_ut-<< parameters.package_name >>
+
+      - coveralls/upload:
+          parallel: true
+          flag_name: << parameters.package_name >>  
+
   run_e2e_tests:
     parameters:
       should_install_java:
@@ -270,35 +297,22 @@ jobs:
         type: string
       parallelism:
         type: integer
+      resource_class:
+        type: string
+        default: xlarge
 
     parallelism: << parameters.parallelism >>
 
     docker:
       - image: cimg/node:18.9
 
-    resource_class: xlarge
+    resource_class: << parameters.resource_class >>
     working_directory: /mnt/ramdisk/project
 
     steps:
-      - step_setup
-      - restore_turbo_cache:
-          cache_name: jest_ut
-      - run:
-          name: << parameters.package_name >> unit tests
-          command: |
-            yarn test --filter="$(echo "<< parameters.package_name >>" | cut -d':' -f2)..."
-            # yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
+      - cached_unit_test:
+          package_name: << parameters.package_name >>
 
-      - store_test_results:
-          path: reports
-      - store_turbo_cache:
-          cache_name: jest_ut
-
-      - coveralls/upload:
-          parallel: true
-          flag_name: << parameters.package_name >>
 
   finish_coveralls:
     docker:

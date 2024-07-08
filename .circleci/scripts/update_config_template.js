@@ -76,6 +76,7 @@ const generateUtMatrix = (templateName, outputName) => {
   const utPackagesToTest = readFileSync(path.join(__dirname, '..', 'ut_packages_to_test.txt'), 'utf8').split('\n')
   const utPackagesWithPrettyName = utPackagesToTest.map((pkg) => { return `${pkg.split('/').pop()}:${pkg}` })
   
+  // TODO: optimize on the resource_class for each package, using the CI resource utilization analysis
   const utMatrix = `
       - unit_test:
           requires:
@@ -85,6 +86,8 @@ const generateUtMatrix = (templateName, outputName) => {
             parameters:
               parallelism:
                 - 1
+              resource_class:
+                - xlarge
               package_name: 
                 - "${utPackagesWithPrettyName.join('"\n                - "')}"`
     const alteredConfigTemplate = configTemplate.replace(

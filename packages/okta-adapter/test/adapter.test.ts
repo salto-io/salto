@@ -49,7 +49,6 @@ import {
   SMS_TEMPLATE_TYPE_NAME,
   LINKS_FIELD,
   APPLICATION_TYPE_NAME,
-  ACTIVE_STATUS,
   INACTIVE_STATUS,
 } from '../src/constants'
 

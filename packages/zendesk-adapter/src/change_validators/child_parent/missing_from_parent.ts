@@ -38,8 +38,8 @@ export const createParentReferencesError = (
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Cannot add this element since it is missing a reference from its parent',
-    detailedMessage: `In order to add this element, please add a reference to it from its parent ‘${parentFullName}’`,
+    message: `${instance.elemID.typeName} needs to be referred from its ${'ticket_field'}`,
+    detailedMessage: `To add this ${instance.elemID.typeName}, please make sure ${instance.elemID.getFullName()} is included in ‘${parentFullName}’`,
   }
 }
 

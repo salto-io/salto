@@ -28,7 +28,7 @@ commands:
           name: store intermediate artifacts between steps
           command: |
             mkdir -p .workspace
-            tar --exclude='./.workspace' --exclude='coverage' --exclude='./node_modules' --exclude="./.yarn" --exclude="./.yarnrc.yml" --exclude="./.turbo" -czf .workspace/workspace.tar.gz .
+            tar --exclude='./.workspace' --exclude='coverage' --exclude='./node_modules' --exclude="./.yarn/cache" --exclude="./.turbo" -czf .workspace/workspace.tar.gz .
       - persist_to_workspace:
           root: .workspace
           paths:
@@ -40,9 +40,9 @@ commands:
       - restore_cache:
           name: restore node modules
           keys:
-            - &node-modules-cache node-modules-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
-            - node-modules-v2-{{ arch }}}-{{ .Branch }}
-            - node-modules-v2-{{ arch }}}-main
+            - &node-modules-cache node-modules-v2-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - node-modules-v2-{{ arch }}-{{ .Branch }}
+            - node-modules-v2-{{ arch }}-main
   
   store_node_modules:
     description: cache store node_modules
@@ -60,9 +60,9 @@ commands:
       - restore_cache:
           name: restore yarn cache
           keys:
-            - &yarn-cache yarn-cache-v2-{{ arch }}}-{{ .Branch }}-{{ checksum "yarn.lock" }}
-            - yarn-cache-v2-{{ arch }}}-{{ .Branch }}
-            - yarn-cache-v2-{{ arch }}}-main
+            - &yarn-cache yarn-cache-v2-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - yarn-cache-v2-{{ arch }}-{{ .Branch }}
+            - yarn-cache-v2-{{ arch }}-main
 
   store_yarn_cache:
     description: cache store yarn cache
@@ -72,7 +72,8 @@ commands:
           key: *yarn-cache
           when: always
           paths:
-            - /mnt/ramdisk/project/.yarn
+            - /mnt/ramdisk/project/.yarn/cache
+
 
   restore_turbo_cache:
     description: load a turbocache
@@ -102,13 +103,31 @@ commands:
 
   setup_yarn:
     description: set up yarn berry
+    parameters:
+      install:
+        type: boolean
+        default: false
     steps:
+      - restore_yarn_cache
       - run:
           name: set up yarn berry
           command: |
             sudo corepack enable
           env:
             YARN_CACHE_FOLDER: /mnt/ramdisk/project/.yarn/cache
+      - when:
+          condition: << parameters.install >>
+          steps:
+            - run:
+                name: link node_modules
+                command: yarn --immutable
+            - store_yarn_cache
+
+  step_setup:
+    steps:
+      - restore_intermediate
+      - restore_node_modules
+      - setup_yarn
 
   run_e2e_tests:
     parameters:
@@ -214,17 +233,13 @@ jobs:
     docker:
       - image: cimg/node:18.9
 
-    resource_class: xlarge
+    resource_class: large
     working_directory: /mnt/ramdisk/project
 
     steps:
       - checkout
-      - restore_yarn_cache
-      - setup_yarn
-      - run: 
-          name: link node_modules
-          command: yarn --immutable
-      - store_yarn_cache
+      - setup_yarn:
+          install: true
       - store_node_modules
 
   build:
@@ -265,9 +280,7 @@ jobs:
     working_directory: /mnt/ramdisk/project
 
     steps:
-      - restore_intermediate
-      - restore_node_modules
-      - setup_yarn
+      - step_setup
       - restore_turbo_cache:
           cache_name: jest_ut
       - run:
@@ -301,10 +314,7 @@ jobs:
       - image: cimg/node:18.9
 
     steps:
-      - restore_intermediate
-      - restore_node_modules
-      - setup_yarn
-
+      - step_setup
       - run:
           name: check format with prettier
           command: yarn check-format
@@ -316,10 +326,7 @@ jobs:
       - image: cimg/node:18.9
 
     steps:
-      - restore_intermediate
-      - restore_node_modules
-      - setup_yarn
-
+      - step_setup
       - add_ssh_keys:
           fingerprints:
             - '49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17'
@@ -344,9 +351,7 @@ jobs:
     resource_class: large
     working_directory: /mnt/ramdisk/project
     steps:
-      - restore_intermediate
-      - restore_node_modules
-      - setup_yarn
+      - step_setup
       - run_e2e_tests:
           package_name: <<parameters.package_name>>
           should_install_java: <<parameters.should_install_java>>     
@@ -357,9 +362,7 @@ jobs:
       - image: cimg/node:18.9
 
     steps:
-      - restore_intermediate
-      - restore_node_modules
-      - setup_yarn
+      - step_setup
       - run:
           environment:
             PYTHON: '/usr/bin/python3'
@@ -406,10 +409,7 @@ jobs:
       - image: cimg/node:18.9
 
     steps:
-      - restore_intermediate
-      - restore_node_modules
-      - setup_yarn
-
+      - step_setup
       - run:
           name: Create a VSIX file
           command: yarn workspace salto-vscode package
@@ -447,10 +447,7 @@ jobs:
       - image: cimg/node:18.9
 
     steps:
-      - restore_intermediate
-      - restore_node_modules
-      - setup_yarn
-
+      - step_setup
       - run:
           name: Set NPM token
           command: |

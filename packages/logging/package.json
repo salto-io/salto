@@ -25,7 +25,7 @@
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
     "lint-fix": "yarn lint --fix",
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
-    "check-format": "../../build_utils/turbo_run.sh prettier -- --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
+    "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
     "@salto-io/lowerdash": "0.3.60",

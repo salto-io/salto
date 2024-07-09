@@ -137,6 +137,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
   config,
   definitions,
   fetchQuery,
+  sharedContext,
 }) => {
   let userIdToLogin: Record<string, string> = {}
   const userDefinition = { ...definitions, fetch: { instances: USER_FETCH_DEFINITIONS } }
@@ -179,12 +180,16 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       if (_.isEmpty(relevantChanges)) {
         return
       }
-      // TODO - SALTO-6074 - We will implement cache to avoid querying the same users in every change group
-      const users = await fetchUtils.getElements({
-        adapterName: ADAPTER_NAME,
-        fetchQuery,
-        definitions: userDefinition as definitionsUtils.RequiredDefinitions<Options>,
-      })
+      log.debug('uris preDeploy')
+      if (!sharedContext.users) {
+        log.debug('urii Fetching users for preDeploy')
+        sharedContext.users = fetchUtils.getElements({
+          adapterName: ADAPTER_NAME,
+          fetchQuery,
+          definitions: userDefinition as definitionsUtils.RequiredDefinitions<Options>,
+        })
+      }
+      const users = (await sharedContext.users) as fetchUtils.FetchElements<InstanceElement[]>
       if (!users || _.isEmpty(users.elements)) {
         log.warn('Could not find any users (onFetch)')
         return

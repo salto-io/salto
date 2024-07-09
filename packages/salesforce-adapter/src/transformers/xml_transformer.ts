@@ -25,6 +25,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
+  inspectValue,
   MapKeyFunc,
   mapKeysRecursive,
   safeJsonStringify,
@@ -514,9 +515,18 @@ const builder = new XMLBuilder({
   ignoreAttributes: false,
 })
 
-const toMetadataXml = (name: string, values: Values): string =>
-  // eslint-disable-next-line new-cap
-  builder.build({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
+const toMetadataXml = (name: string, values: Values): string => {
+  const content = builder.build({
+    [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD),
+  })
+  if (!_.isString(content)) {
+    log.warn(
+      'Failed to convert metadata values to valid xml content. %s',
+      inspectValue({ values, content }),
+    )
+  }
+  return content
+}
 
 const cloneValuesWithAttributePrefixes = async (
   instance: InstanceElement,

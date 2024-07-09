@@ -133,6 +133,7 @@ export type OptionalFeatures = {
   hideTypesFolder?: boolean
   omitStandardFieldsNonDeployableValues?: boolean
   latestSupportedApiVersion?: boolean
+  cpqRulesAndConditionsRefs?: boolean
 }
 
 export type ChangeValidatorName =
@@ -868,6 +869,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
     omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
     latestSupportedApiVersion: { refType: BuiltinTypes.BOOLEAN },
+    cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

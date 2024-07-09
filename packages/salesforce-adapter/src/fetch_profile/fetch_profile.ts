@@ -51,6 +51,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   hideTypesFolder: false,
   omitStandardFieldsNonDeployableValues: true,
   latestSupportedApiVersion: false,
+  cpqRulesAndConditionsRefs: false,
 }
 
 type BuildFetchProfileParams = {

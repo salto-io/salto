@@ -78,7 +78,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
   automationPageSize?: number
-  splitFieldContext?: boolean
+  splitFieldContextOptions?: boolean
 }
 
 export type MaskingConfig = {
@@ -253,7 +253,6 @@ export type ChangeValidatorName =
   | 'addJsmProject'
   | 'deleteLabelAtttribute'
   | 'jsmPermissions'
-  | 'fieldContextOptions'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -317,7 +316,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     addJsmProject: { refType: BuiltinTypes.BOOLEAN },
     deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
     jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
-    fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -362,7 +360,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
     automationPageSize: { refType: BuiltinTypes.NUMBER },
-    splitFieldContext: { refType: BuiltinTypes.BOOLEAN },
+    splitFieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,

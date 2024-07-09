@@ -180,7 +180,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       if (_.isEmpty(relevantChanges)) {
         return
       }
-      if (!sharedContext.users) {
+      if (sharedContext.users === undefined) {
         sharedContext.users = fetchUtils.getElements({
           adapterName: ADAPTER_NAME,
           fetchQuery,

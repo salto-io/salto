@@ -27,6 +27,7 @@ import {
   PACKAGE_TYPE_NAME,
   POLICY_TYPE_NAME,
   SCRIPT_TYPE_NAME,
+  SITE_TYPE_NAME,
 } from '../../constants'
 import { createClassicApiDefinitionsForType } from './classic_api_utils'
 
@@ -64,6 +65,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/api/v1/api-roles',
+                  method: 'post',
                 },
               },
             },
@@ -73,6 +75,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/api/v1/api-roles/{id}',
+                  method: 'put',
                 },
                 transformation: {
                   omit: ['id'],
@@ -85,6 +88,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/api/v1/api-roles/{id}',
+                  method: 'delete',
                 },
               },
             },
@@ -92,6 +96,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    [SITE_TYPE_NAME]: createClassicApiDefinitionsForType(SITE_TYPE_NAME, `${SITE_TYPE_NAME}s`),
   }
   return _.merge(standardRequestDefinitions, customDefinitions)
 }

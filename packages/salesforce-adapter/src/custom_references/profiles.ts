@@ -369,7 +369,7 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
         severity: 'Info' as const,
         message: 'Omitting profile entries which reference unavailable types',
         detailedMessage:
-          'The profile has entries which reference types which are not available in the environment and will not be deployed.',
+          'The profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
       }
     })
 

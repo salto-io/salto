@@ -132,6 +132,7 @@ export class AdapterImpl<
       }),
     }
     this.fetchQuery = createElementQuery(config.fetch)
+    const sharedContext = {}
     this.createFiltersRunner = () =>
       filterRunner<Co, FilterResult, {}, Options>(
         {
@@ -140,7 +141,7 @@ export class AdapterImpl<
           config: this.userConfig,
           getElemIdFunc: this.getElemIdFunc,
           elementSource,
-          sharedContext: {},
+          sharedContext,
         },
         filterCreators,
         objects.concatObjects,

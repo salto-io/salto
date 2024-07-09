@@ -180,9 +180,7 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
       if (_.isEmpty(relevantChanges)) {
         return
       }
-      log.debug('uris preDeploy')
       if (!sharedContext.users) {
-        log.debug('urii Fetching users for preDeploy')
         sharedContext.users = fetchUtils.getElements({
           adapterName: ADAPTER_NAME,
           fetchQuery,

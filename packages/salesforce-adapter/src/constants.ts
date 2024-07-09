@@ -300,6 +300,7 @@ export const RECORDS_PATH = 'Records'
 export const SETTINGS_PATH = 'Settings'
 export const OBJECTS_PATH = 'Objects'
 export const TYPES_PATH = 'Types'
+export const META_TYPES_PATH = 'MetaTypes'
 export const SUBTYPES_PATH = 'Subtypes'
 export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
 export const OBJECT_FIELDS_PATH = 'Fields'
@@ -416,6 +417,14 @@ export const ESCALATION_RULES_TYPE = 'EscalationRules'
 export const ESCALATION_RULE_TYPE = 'EscalationRule'
 export const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
 export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
+
+// Meta Types
+export const METADATA_META_TYPE = 'Metadata'
+export const STANDARD_OBJECT_META_TYPE = 'StandardObject'
+export const STANDARD_SETTINGS_META_TYPE = 'StandardSettings'
+export const CUSTOM_OBJECT_META_TYPE = 'CustomObject'
+export const CUSTOM_SETTINGS_META_TYPE = 'CustomSettings'
+export const CUSTOM_METADATA_META_TYPE = 'CustomMetadata'
 
 // Artificial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

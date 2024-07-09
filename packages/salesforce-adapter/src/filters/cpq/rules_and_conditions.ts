@@ -169,6 +169,14 @@ const createReferencesFromDef = ({
   }))
 }
 
+const resolveReferencesFromDef = ({
+  def,
+  instancesByType,
+}: {
+  def: RuleAndConditionDef;
+  instancesByType: Record<string, InstanceElement[]>
+})
+
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'cpqRulesAndConditionsFilter',
@@ -185,6 +193,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     const referencesCreated = _.sum(defs.map(def => createReferencesFromDef({def, instancesByType: dataInstanesByType})))
     log.debug('Created %d references', referencesCreated)
   },
+  preDeploy: async changes => {
+
+  }
 })
 
 export default filterCreator

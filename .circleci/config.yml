@@ -15,10 +15,9 @@ jobs:
     steps:
       - checkout
       - run:
-          name: set up yarn
+          name: Set up yarn
           command: |
             sudo corepack enable
-            yarn config set cacheFolder /mnt/ramdisk/project/.yarn/cache
 
       - run:
           name: Generate Dynamic Pipeline

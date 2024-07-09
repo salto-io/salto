@@ -14,21 +14,21 @@ environment:
 commands:
   
   restore_intermediate:
-    description: restore intermediate artifacts between steps
+    description: Restore intermediate artifacts between steps
     steps:
       - attach_workspace:
           at: .workspace
       - run:
-          name: restore intermediate artifacts between steps
+          name: Restore intermediate artifacts between steps
           command: |
             tar -xzf .workspace/workspace.tar.gz
             rm .workspace/workspace.tar.gz
 
   store_intermediate:
-    description: store intermediate artifacts between steps
+    description: Store intermediate artifacts between steps
     steps:
       - run:
-          name: store intermediate artifacts between steps
+          name: Store intermediate artifacts between steps
           command: |
             mkdir -p .workspace
             tar --exclude='./.workspace' --exclude='coverage' --exclude='./node_modules' --exclude="./.yarn/cache" --exclude="./.turbo" -czf .workspace/workspace.tar.gz .
@@ -38,40 +38,40 @@ commands:
             - workspace.tar.gz
 
   restore_node_modules:
-    description: restore node modules
+    description: Restore node modules
     steps:
       - restore_cache:
-          name: restore node modules
+          name: Restore node modules
           keys:
             - &node-modules-cache node-modules-v2-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - node-modules-v2-{{ arch }}-{{ .Branch }}
             - node-modules-v2-{{ arch }}-main
   
   store_node_modules:
-    description: cache store node_modules
+    description: Cache store node_modules
     steps:
       - save_cache:
-          name: cache store node_modules
+          name: Cache store node_modules
           key: *node-modules-cache
           when: always
           paths:
             - /mnt/ramdisk/project/node_modules
 
   restore_yarn_cache:
-    description: restore yarn cache
+    description: Restore yarn cache
     steps:
       - restore_cache:
-          name: restore yarn cache
+          name: Restore yarn cache
           keys:
             - &yarn-cache yarn-cache-v2-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - yarn-cache-v2-{{ arch }}-{{ .Branch }}
             - yarn-cache-v2-{{ arch }}-main
 
   store_yarn_cache:
-    description: cache store yarn cache
+    description: Cache store yarn cache
     steps:
       - save_cache:
-          name: cache store yarn cache
+          name: Cache store yarn cache
           key: *yarn-cache
           when: always
           paths:
@@ -79,33 +79,33 @@ commands:
 
 
   restore_turbo_cache:
-    description: load a turbocache
+    description: Load a turbocache
     parameters:
       cache_name:
         type: string
     steps:
       - restore_cache:
-          name: load turbocache for << parameters.cache_name >>
+          name: Load turbocache for << parameters.cache_name >>
           keys:
             - &turbo-cache turbo-cache-v1-<< parameters.cache_name >>-{{ .Branch }}-{{ epoch }}
             - turbo-cache-v1-<< parameters.cache_name >>-{{ .Branch }}
             - turbo-cache-v1-<< parameters.cache_name >>-main
 
   store_turbo_cache:
-    description: cache store turbo cache
+    description: Cache store turbo cache
     parameters:
       cache_name:
         type: string
     steps:
       - save_cache:
-          name: store turbocache for << parameters.cache_name >>
+          name: Store turbocache for << parameters.cache_name >>
           key: *turbo-cache
           when: always
           paths:
             - /mnt/ramdisk/project/.turbo
 
   setup_yarn:
-    description: set up yarn berry
+    description: Set up yarn berry
     parameters:
       install:
         type: boolean
@@ -113,7 +113,7 @@ commands:
     steps:
       - restore_yarn_cache
       - run:
-          name: set up yarn berry
+          name: Set up yarn berry
           command: |
             sudo corepack enable
           env:
@@ -225,10 +225,10 @@ commands:
   test_cli:
     parameters:
         arch:
-            description: linux, mac, win
+            description: Linux, mac, win
             type: string
         exe_name:
-            description: name of executable (e.g. salto, salto.exe)
+            description: Name of executable (e.g. salto, salto.exe)
             type: string
     steps:
       - aws-cli/install
@@ -245,7 +245,7 @@ commands:
           steps:
             - run: chmod +x ./<< parameters.exe_name >>
       - run:
-          name: run CLI --help
+          name: Run CLI --help
           command: ./<< parameters.exe_name >> --help
 
       - run:
@@ -283,7 +283,7 @@ jobs:
           cache_name: build
       - setup_yarn
       - run:
-          name: build and lint
+          name: Build and lint
           command: yarn build
       - store_turbo_cache:
           cache_name: build
@@ -328,7 +328,7 @@ jobs:
     steps:
       - step_setup
       - run:
-          name: check format with prettier
+          name: Check format with prettier
           command: yarn check-format
 
   publish_on_version_change:

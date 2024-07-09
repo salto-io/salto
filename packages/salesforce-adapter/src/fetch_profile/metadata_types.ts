@@ -659,10 +659,10 @@ export const isMetadataTypeWithDependency = (
     metadataType,
   )
 
-export const getFetchTargetsWithDependencies = (target: string[]): string[] => {
-  const result = _.clone(target)
+export const getFetchTargetsWithDependencies = (targets: string[]): string[] => {
+  const result = [...targets]
   const handledTypesWithDependencies: MetadataTypeWithDependencies[] = []
-  let typesWithDependencies = target.filter(isMetadataTypeWithDependency)
+  let typesWithDependencies = targets.filter(isMetadataTypeWithDependency)
   while (!_.isEmpty(typesWithDependencies)) {
     _(METADATA_TYPE_TO_DEPENDENCIES)
       .pick(typesWithDependencies)

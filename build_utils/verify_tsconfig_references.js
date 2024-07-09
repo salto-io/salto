@@ -108,7 +108,7 @@ const main = async () => {
   )
   
   const workspacePackageToReference = (package, refPackage) => {
-    const relativePath = path.relative(workspaces[package].location, workspaces[refPackage])
+    const relativePath = path.relative(workspaces[package].location, workspaces[refPackage].location)
     return { path: relativePath }
   }
 

@@ -8,6 +8,9 @@ orbs:
   coveralls: coveralls/coveralls@2.2.1
   macos: circleci/macos@2.5.1
 
+environment:
+  TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
+
 commands:
   
   restore_intermediate:
@@ -141,9 +144,6 @@ commands:
           name: << parameters.package_name >> unit tests
           command: |
             yarn test --filter="$(echo "<< parameters.package_name >>" | cut -d':' -f2)" --  --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit --ci --colors
-            # yarn workspace "$(echo "<< parameters.package_name >>" | cut -d':' -f2)" test --reporters=default --reporters=jest-junit --ci --colors
-            # yarn test --filter="$(echo "<< parameters.package_name >>" | cut -d':' -f2)..."
-            # yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
 
@@ -275,8 +275,6 @@ jobs:
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
-    environment:
-      TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
 
     steps:
       - checkout

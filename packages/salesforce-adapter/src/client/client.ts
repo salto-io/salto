@@ -159,6 +159,9 @@ const errorMessagesToRetry = [
   'Unexpected internal servlet state',
   // end of force.com error messages
   'ERROR_HTTP_420',
+  'down for maintenance',
+  'REQUEST_RUNNING_TOO_LONG',
+  'request exceeded the time limit for processing',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

@@ -47,6 +47,7 @@ import {
 } from '../src/constants'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
+import { VALIDATE_CREDENTIALS_URL } from '../src/client/connection'
 
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => '',
@@ -87,11 +88,14 @@ describe('adapter', () => {
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter.onPost('baseUrl/api/oauth/token').reply(200, { access_token: 'mock_token', token_type: 'Bearer' })
-    mockAxiosAdapter.onGet('/api/v1/api-integrations').reply(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
-      handler.replyOnce(200, response)
+      if (url === VALIDATE_CREDENTIALS_URL) {
+        handler.reply(200, response)
+      } else {
+        handler.replyOnce(200, response)
+      }
     })
   })
 

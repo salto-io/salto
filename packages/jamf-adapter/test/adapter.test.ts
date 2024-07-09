@@ -80,6 +80,8 @@ const getMockFunction = (method: definitions.HTTPMethod, mockAxiosAdapter: MockA
   }
 }
 
+const VALIDATE_CREDS_API = '/JSSResource/classes'
+
 describe('adapter', () => {
   jest.setTimeout(1000 * 1000)
   let mockAxiosAdapter: MockAdapter
@@ -87,11 +89,14 @@ describe('adapter', () => {
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter.onPost('baseUrl/api/oauth/token').reply(200, { access_token: 'mock_token', token_type: 'Bearer' })
-    mockAxiosAdapter.onGet('/api/v1/api-integrations').reply(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
-      handler.replyOnce(200, response)
+      if (url === VALIDATE_CREDS_API) {
+        handler.reply(200, response)
+      } else {
+        handler.replyOnce(200, response)
+      }
     })
   })
 

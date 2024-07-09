@@ -24,6 +24,7 @@ import {
   validateMetadataParams,
 } from '../../src/fetch_profile/metadata_query'
 import {
+  CUSTOM_METADATA,
   CUSTOM_OBJECT,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../../src/constants'
@@ -440,7 +441,7 @@ describe('buildMetadataQuery', () => {
             include: [{ metadataType: '.*' }],
             exclude: [{ metadataType: 'exclude' }],
           },
-          target: ['target', 'exclude', CUSTOM_OBJECT],
+          target: ['target', 'exclude', CUSTOM_METADATA],
         },
       })
     })
@@ -466,6 +467,9 @@ describe('buildMetadataQuery', () => {
       })
       it('should match topics for objects when custom object is in the target', () => {
         expect(query.isTypeMatch(TOPICS_FOR_OBJECTS_METADATA_TYPE)).toBeTruthy()
+      })
+      it('should match CustomObject since CustomMetadata target requires it', () => {
+        expect(query.isTypeMatch(CUSTOM_OBJECT)).toBeTrue()
       })
     })
   })

@@ -1446,19 +1446,21 @@ describe('api.ts', () => {
   describe('fixElements', () => {
     let ws: workspace.Workspace
     let type: ObjectType
+    let instance: InstanceElement
     let mockFixElements: jest.MockedFunction<FixElementsFunc>
 
     beforeEach(() => {
       type = new ObjectType({
         elemID: new ElemID('test1', 'test'),
       })
+      instance = new InstanceElement('test', type, { c: 4 })
 
       ws = mockWorkspace({
         accounts: ['test1'],
         accountToServiceName: {
           test1: 'test',
         },
-        elements: [type],
+        elements: [type, instance],
       })
       ;(ws.accountCredentials as jest.MockedFunction<workspace.Workspace['accountCredentials']>).mockResolvedValue({
         test1: mockConfigInstance,
@@ -1490,8 +1492,10 @@ describe('api.ts', () => {
       mockFixElements.mockImplementationOnce(async elements => {
         const clonedElement = elements[0].clone()
         clonedElement.annotations.a = 1
+        const clonedInst = instance.clone()
+        clonedInst.value.c = 3
         return {
-          fixedElements: [clonedElement],
+          fixedElements: [clonedElement, clonedInst],
           errors: [
             {
               elemID: type.elemID,
@@ -1523,10 +1527,27 @@ describe('api.ts', () => {
       const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
       const typeBefore = type.clone()
       const typeAfter = type.clone()
+      const instBefore = instance.clone()
+      const instAfter = instance.clone()
+      instAfter.value.c = 3
       typeAfter.annotate({ a: 1, b: 2 })
       const baseChange = toChange({ before: typeBefore, after: typeAfter })
+      const baseInstanceChange = toChange({ before: instBefore, after: instAfter })
       expect(res).toEqual({
         changes: [
+          {
+            action: 'modify',
+            data: {
+              before: 4,
+              after: 3,
+            },
+            id: new ElemID('test1', 'test', 'instance', 'test', 'c'),
+            elemIDs: {
+              before: new ElemID('test1', 'test', 'instance', 'test', 'c'),
+              after: new ElemID('test1', 'test', 'instance', 'test', 'c'),
+            },
+            baseChange: baseInstanceChange,
+          },
           {
             action: 'add',
             data: {
@@ -1567,17 +1588,24 @@ describe('api.ts', () => {
           },
         ],
       })
-
-      expect(mockFixElements).toHaveBeenCalledWith([
+      const a = mockFixElements.mock.calls
+      console.log(a)
+      expect(mockFixElements).toHaveBeenNthCalledWith(1, [
         new ObjectType({
           elemID: new ElemID('test1', 'test'),
-          annotations: {
-            a: 1,
-            b: 2,
-          },
+          annotations: {},
         }),
       ])
-      expect(mockFixElements).toHaveBeenCalledWith([
+      expect(mockFixElements).toHaveBeenNthCalledWith(2, [
+        new ObjectType({
+          elemID: new ElemID('test1', 'test'),
+          annotations: {
+            a: 1,
+          },
+        }),
+        instAfter,
+      ])
+      expect(mockFixElements).toHaveBeenNthCalledWith(3, [
         new ObjectType({
           elemID: new ElemID('test1', 'test'),
           annotations: {
@@ -1585,6 +1613,7 @@ describe('api.ts', () => {
             b: 2,
           },
         }),
+        instAfter,
       ])
     })
 

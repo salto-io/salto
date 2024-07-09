@@ -54,3 +54,4 @@ export const customFieldsWith10KOptionValidator: ChangeValidator = async changes
       message: 'Slow deployment due to field with more than 10K options',
       detailedMessage: `The deployment of custom field ${getParents(instance)[0].elemID.name} will be slower because it is associated with this context, which has more than 10K options.`,
     }))
+// TODO: change this after our structure update of context

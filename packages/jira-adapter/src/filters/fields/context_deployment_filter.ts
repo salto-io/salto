@@ -37,7 +37,6 @@ import { deployContextChange, setContextDeploymentAnnotations } from './contexts
 import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
-import { CONTEXT_NAME_FIELD } from './field_context_option_split'
 
 type BeforeOrAfter = 'before' | 'after'
 
@@ -55,10 +54,10 @@ const getOptionFromReference = (
   if (Object.prototype.hasOwnProperty.call(optionFullNameToChangeRecord, optionRef.elemID.getFullName())) {
     const optionChange = optionFullNameToChangeRecord[optionRef.elemID.getFullName()]
     const option = _.get(optionChange.data, beforeOrAfter)
-    const optionValue = _.omit(option.value, CONTEXT_NAME_FIELD)
-    return [optionValue.value, { ...optionValue, position: index + 1 }]
+    const optionValue = option.value
+    return [optionValue.value, { ...optionValue.value, position: index + 1 }]
   }
-  const optionValue = _.omit(optionRef.value.value, CONTEXT_NAME_FIELD)
+  const optionValue = optionRef.value.value
   return [optionValue.value, { ...optionValue, position: index + 1 }]
 }
 const setOptionsToOriginal = (

@@ -143,8 +143,8 @@ export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async 
               {
                 elemID: instance.elemID,
                 severity: 'Error',
-                message: 'Cannot do this change since this tag value is already in use',
-                detailedMessage: `The tag ‘${conflictedInstanceNames.tag}’ is already used by the following elements:
+                message: 'Duplicate tag value',
+                detailedMessage: `Tag value '${conflictedInstanceNames.tag}' is already used by the following elements:
 ${conflictedInstanceNames.instanceNames.join(', ')}`,
               },
             ]

@@ -204,7 +204,7 @@ import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 import { createFixElementFunctions } from './fix_elements'
 import fieldContextOptionsSplitFilter from './filters/fields/field_context_option_split'
-import addParentsOfOptionsFilter from './filters/fields/add_parents_of_options'
+import fieldContextOptionsDeploymentFilter from './filters/fields/context_options_deployment_filter'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -255,7 +255,6 @@ export const DEFAULT_FILTERS = [
   // This must run after fieldDeploymentFilter
   contextDeploymentFilter,
   // This must run after contextDeploymentFilter
-  addParentsOfOptionsFilter,
   avatarsFilter,
   iconUrlFilter,
   triggersFilter,
@@ -385,6 +384,7 @@ export const DEFAULT_FILTERS = [
   queueDeploymentFilter,
   portalGroupsFilter,
   requestTypeFilter,
+  fieldContextOptionsDeploymentFilter,
   // Must run before asstesDeployFilter
   assetsInstancesDeploymentFilter,
   // Must be done after JsmTypesFilter

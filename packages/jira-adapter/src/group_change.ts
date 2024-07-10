@@ -57,15 +57,11 @@ const getFieldConfigItemGroup: deployment.grouping.ChangeIdFunction = async chan
   return `${parent.elemID.getFullName()} items`
 }
 
-const getFieldContextAndOptionGroup: deployment.grouping.ChangeIdFunction = async change => {
+const getFieldContextOptionsGroup: deployment.grouping.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
-  if (instance.elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME) {
-    return undefined
-  }
-
-  const context = getParent(instance)
-
-  return context.elemID.getFullName()
+  return instance.elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME
+    ? undefined
+    : `options of ${getParent(instance).elemID.getFullName()}`
 }
 
 const getScriptListenersGroup: deployment.grouping.ChangeIdFunction = async change =>
@@ -102,5 +98,5 @@ export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getScriptedFragmentsGroup,
   getQueuesAdditionByProjectGroup,
   getAttributeAdditionByObjectTypeGroup,
-  getFieldContextAndOptionGroup,
+  getFieldContextOptionsGroup,
 ])

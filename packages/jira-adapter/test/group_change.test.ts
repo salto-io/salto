@@ -287,22 +287,10 @@ describe('group change', () => {
       ),
     ).rejects.toThrow()
   })
-  it('should group field context options with the context', async () => {
+  it('should group field context options', async () => {
     const changeGroupIds = (
       await getChangeGroupIds(
         new Map<string, Change>([
-          [
-            fieldContextInstance1.elemID.getFullName(),
-            toChange({
-              after: fieldContextInstance1,
-            }),
-          ],
-          [
-            fieldContextInstance2.elemID.getFullName(),
-            toChange({
-              after: fieldContextInstance2,
-            }),
-          ],
           [
             fieldContextOptionInstance1.elemID.getFullName(),
             toChange({
@@ -325,21 +313,14 @@ describe('group change', () => {
       )
     ).changeGroupIdMap
 
-    expect(changeGroupIds.get(fieldContextInstance1.elemID.getFullName())).toBe(
-      fieldContextInstance1.elemID.getFullName(),
+    expect(changeGroupIds.get(fieldContextOptionInstance1.elemID.getFullName())).toEqual(
+      'options of jira.CustomFieldContext.instance.parent1',
     )
-    expect(changeGroupIds.get(fieldContextInstance2.elemID.getFullName())).toBe(
-      fieldContextInstance2.elemID.getFullName(),
+    expect(changeGroupIds.get(fieldContextOptionInstance2.elemID.getFullName())).toEqual(
+      'options of jira.CustomFieldContext.instance.parent1',
     )
-
-    expect(changeGroupIds.get(fieldContextOptionInstance1.elemID.getFullName())).toBe(
-      fieldContextInstance1.elemID.getFullName(),
-    )
-    expect(changeGroupIds.get(fieldContextOptionInstance2.elemID.getFullName())).toBe(
-      fieldContextInstance1.elemID.getFullName(),
-    )
-    expect(changeGroupIds.get(fieldContextOptionInstance3.elemID.getFullName())).toBe(
-      fieldContextInstance2.elemID.getFullName(),
+    expect(changeGroupIds.get(fieldContextOptionInstance3.elemID.getFullName())).toEqual(
+      'options of jira.CustomFieldContext.instance.parent2',
     )
   })
 

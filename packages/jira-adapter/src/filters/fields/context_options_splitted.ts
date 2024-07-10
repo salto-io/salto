@@ -13,31 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  AdditionChange,
-  Change,
-  getChangeData,
-  InstanceElement,
-  isAdditionChange,
-  isEqualValues,
-  isMapType,
-  isModificationChange,
-  isObjectType,
-  isRemovalChange,
-  ModificationChange,
-  ObjectType,
-  ReadOnlyElementsSource,
-  Value,
-  Values,
-} from '@salto-io/adapter-api'
+import { InstanceElement, isMapType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { createSchemeGuard, getParents, naclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../client/client'
-import { getLookUpName } from '../../reference_mapping'
 import { setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
@@ -47,7 +30,7 @@ const { awu } = collections.asynciterable
 
 const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
 const PUBLIC_API_OPTIONS_LIMIT = 10000
-export const convertOptionsToList = (options: Values): Values[] =>
+const convertOptionsToList = (options: Values): Values[] =>
   _(options)
     .values()
     .sortBy(option => option.position)
@@ -65,42 +48,6 @@ export const getOptionsFromContext = (context: InstanceElement): Values[] => [
   ...convertOptionsToList(context.value.options ?? {}),
 ]
 
-const getOptionChanges = (
-  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-): {
-  added: Value[]
-  modified: Value[]
-  removed: Value[]
-} => {
-  const afterOptions = getOptionsFromContext(contextChange.data.after)
-
-  if (isAdditionChange(contextChange)) {
-    return {
-      added: afterOptions,
-      modified: [],
-      removed: [],
-    }
-  }
-
-  const beforeOptions = getOptionsFromContext(contextChange.data.before)
-
-  const afterIds = new Set(afterOptions.map(option => option.id))
-
-  const beforeOptionsById = _.keyBy(beforeOptions, option => option.id)
-
-  const addedOptions = afterOptions.filter(option => !(option.id in beforeOptionsById))
-  const removedOptions = beforeOptions.filter(option => !afterIds.has(option.id))
-  const modifiedOptions = afterOptions
-    .filter(option => option.id in beforeOptionsById)
-    .filter(option => !_.isEqual(_.omit(option, 'optionId'), _.omit(beforeOptionsById[option.id], 'optionId')))
-
-  return {
-    added: addedOptions,
-    modified: modifiedOptions,
-    removed: removedOptions,
-  }
-}
-
 // Transform option back to the format expected by Jira API
 const transformOption = (option: Values): Values => ({
   ..._.omit(option, ['position', 'parentValue', 'cascadingOptions']),
@@ -112,7 +59,7 @@ type UpdateContextOptionsParams = {
   removedOptions: Value[]
   client: JiraClient
   baseUrl: string
-  contextChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>
+  contextId: string
   paginator: clientUtils.Paginator | undefined
   isCascade: boolean
   numberOfAlreadyAddedOptions: number
@@ -131,18 +78,12 @@ const EXPECTED_OPTION_SCHEMA = Joi.object({
 
 const isOption = createSchemeGuard<Option>(EXPECTED_OPTION_SCHEMA, 'Received invalid response from private API')
 
-const proccessContextOptionsPrivateApiResponse = (
-  resp: Option[],
-  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-): void => {
-  const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
-  const optionsMap = _(contextChange.data.after.value.options)
-    .values()
-    .keyBy(option => naclCase(option.value))
-    .value()
+const processContextOptionsPrivateApiResponse = (resp: Option[], addedOptions: Value[]): void => {
+  const idToOption = _.keyBy(addedOptions, option => option.id)
+  const optionsMap = _.keyBy(addedOptions, option => naclCase(option.value))
   const optionIds = new Set(Object.keys(idToOption))
-  const respToProccess = resp.filter(newOption => !optionIds.has(newOption.id))
-  respToProccess.forEach(newOption => {
+  const respToProcess = resp.filter(newOption => !optionIds.has(newOption.id))
+  respToProcess.forEach(newOption => {
     if (newOption.optionId !== undefined) {
       idToOption[newOption.optionId].cascadingOptions[naclCase(newOption.value)].id = newOption.id
     } else {
@@ -171,9 +112,9 @@ const updateContextOptions = async ({
   addedOptions,
   modifiedOptions,
   removedOptions,
+  contextId,
   client,
   baseUrl,
-  contextChange,
   paginator,
   isCascade,
   numberOfAlreadyAddedOptions,
@@ -189,12 +130,8 @@ const updateContextOptions = async ({
   }
 
   if (addedOptions.length !== 0) {
-    const optionLengthBefore = isModificationChange(contextChange)
-      ? getOptionsFromContext(contextChange.data.before).length + numberOfAlreadyAddedOptions
-      : numberOfAlreadyAddedOptions
-    const numberOfPublicApiOptions =
-      addedOptions.length -
-      Math.min(Math.max(optionLengthBefore + addedOptions.length - PUBLIC_API_OPTIONS_LIMIT, 0), addedOptions.length)
+    const optionLengthBefore = modifiedOptions.length + numberOfAlreadyAddedOptions
+    const numberOfPublicApiOptions = Math.max(PUBLIC_API_OPTIONS_LIMIT - optionLengthBefore, 0)
     const publicApiOptions = addedOptions.slice(0, numberOfPublicApiOptions)
     const privateApiOptions = addedOptions.slice(numberOfPublicApiOptions, addedOptions.length)
     const addedOptionsChunks = _.chunk(publicApiOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
@@ -210,11 +147,8 @@ const updateContextOptions = async ({
         throw new Error('Received unexpected response from Jira API')
       }
       if (Array.isArray(resp.data.options)) {
-        const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
-        const optionsMap = _(contextChange.data.after.value.options)
-          .values()
-          .keyBy(option => naclCase(option.value))
-          .value()
+        const idToOption = _.keyBy(addedOptions, option => option.id)
+        const optionsMap = _.keyBy(addedOptions, option => naclCase(option.value))
         resp.data.options.forEach(newOption => {
           if (newOption.optionId !== undefined) {
             idToOption[newOption.optionId].cascadingOptions[naclCase(newOption.value)].id = newOption.id
@@ -229,7 +163,7 @@ const updateContextOptions = async ({
     await awu(privateApiOptions).forEach(async option => {
       const commonData = {
         addValue: option.value,
-        fieldConfigId: contextChange.data.after.value.id,
+        fieldConfigId: contextId,
       }
       const data: Record<string, string> = isCascade
         ? { ...commonData, selectedParentOptionId: option.optionId }
@@ -245,7 +179,7 @@ const updateContextOptions = async ({
         return
       }
       const resp = await getAllOptionPaginator(paginator, baseUrl)
-      proccessContextOptionsPrivateApiResponse(resp, contextChange)
+      processContextOptionsPrivateApiResponse(resp, addedOptions)
     }
   }
 
@@ -263,110 +197,113 @@ const updateContextOptions = async ({
   }
 }
 
-const reorderContextOptions = async (
-  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  client: JiraClient,
-  baseUrl: string,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<void> => {
-  const afterOptions = getOptionsFromContext(
-    await resolveValues(contextChange.data.after, getLookUpName, elementsSource),
-  )
+// const reorderContextOptions = async (
+//   // Should get order change
+//   optionsOrderChange: AdditionModificationInstanceChange,
+//   client: JiraClient,
+//   baseUrl: string,
+//   elementsSource?: ReadOnlyElementsSource,
+// ): Promise<void> => {
+//   const afterOptions = getOptionsFromContext(
+//     await resolveValues(optionsOrderChange.data.after, getLookUpName, elementsSource),
+//   )
 
-  const beforeOptions = isModificationChange(contextChange)
-    ? getOptionsFromContext(await resolveValues(contextChange.data.before, getLookUpName, elementsSource))
-    : []
+//   const beforeOptions = isModificationChange(optionsOrderChange)
+//     ? getOptionsFromContext(await resolveValues(optionsOrderChange.data.before, getLookUpName, elementsSource))
+//     : []
 
-  if (isEqualValues(beforeOptions, afterOptions)) {
-    return
-  }
+//   if (isEqualValues(beforeOptions, afterOptions)) {
+//     return
+//   }
 
-  const optionsGroups = _(afterOptions)
-    .groupBy(option => option.optionId)
-    .values()
-    .value()
-  // Data center plugin expects all options in one request.
-  const requestBodies = client.isDataCenter
-    ? optionsGroups.map(group => [
-        {
-          url: `${baseUrl}/move`,
-          data: {
-            customFieldOptionIds: group.map(option => option.id),
-            position: 'First',
-          },
-        },
-      ])
-    : optionsGroups.map(group =>
-        _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) => ({
-          url: `${baseUrl}/move`,
-          data: {
-            customFieldOptionIds: chunk.map(option => option.id),
-            position: index === 0 ? 'First' : 'Last',
-          },
-        })),
-      )
-  await awu(requestBodies)
-    .flat()
-    .forEach(async body => client.put(body))
-}
+//   const optionsGroups = _(afterOptions)
+//     .groupBy(option => option.optionId)
+//     .values()
+//     .value()
+//   // Data center plugin expects all options in one request.
+//   const requestBodies = client.isDataCenter
+//     ? optionsGroups.map(group => [
+//         {
+//           url: `${baseUrl}/move`,
+//           data: {
+//             customFieldOptionIds: group.map(option => option.id),
+//             position: 'First',
+//           },
+//         },
+//       ])
+//     : optionsGroups.map(group =>
+//         _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) => ({
+//           url: `${baseUrl}/move`,
+//           data: {
+//             customFieldOptionIds: chunk.map(option => option.id),
+//             position: index === 0 ? 'First' : 'Last',
+//           },
+//         })),
+//       )
+//   await awu(requestBodies)
+//     .flat()
+//     .forEach(async body => client.put(body))
+// }
 
-export const setContextOptions = async (
-  contextChange: Change<InstanceElement>,
-  client: JiraClient,
-  elementsSource?: ReadOnlyElementsSource,
-  paginator?: clientUtils.Paginator,
-): Promise<void> => {
-  if (isRemovalChange(contextChange)) {
-    return
-  }
-
-  const { added, modified, removed } = getOptionChanges(contextChange)
-
+export const setContextOptionsSplitted = async ({
+  contextId,
+  fieldId,
+  added,
+  modified,
+  removed,
+  client,
+  paginator,
+}: {
+  contextId: string
+  fieldId: string
+  added: InstanceElement[]
+  modified: InstanceElement[]
+  removed: InstanceElement[]
+  client: JiraClient
+  paginator?: clientUtils.Paginator
+}): Promise<void> => {
   if (added.length === 0 && modified.length === 0 && removed.length === 0) {
     return
   }
   const [addedWithoutParentId, addedWithParentId] = _.partition(
     added,
-    option => option.optionId === undefined && option.parentValue === undefined,
+    option => option.value.optionId === undefined && option.value.parentValue === undefined,
   )
 
-  const fieldId = (await getParents(getChangeData(contextChange))[0].value).value.id
-
-  const url = `/rest/api/3/field/${fieldId}/context/${getChangeData(contextChange).value.id}/option`
+  const url = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
   await updateContextOptions({
-    addedOptions: addedWithoutParentId,
+    addedOptions: addedWithoutParentId.map(option => option.value),
     modifiedOptions: modified,
     removedOptions: removed,
+    contextId,
     client,
     baseUrl: url,
-    contextChange,
     paginator,
     isCascade: false,
     numberOfAlreadyAddedOptions: 0,
   })
 
-  addedWithParentId.forEach((option: Values) => {
-    option.optionId = getChangeData(contextChange).value.options[naclCase(option.parentValue)].id
+  addedWithParentId.forEach(option => {
+    option.value.optionId = getParent(option).value.id
   })
 
   // Because the cascading options are dependent on the other options,
   // we need to deploy them after the other options
   await updateContextOptions({
-    addedOptions: addedWithParentId,
+    addedOptions: addedWithParentId.map(option => option.value),
     modifiedOptions: [],
     removedOptions: [],
+    contextId,
     client,
     baseUrl: url,
-    contextChange,
     paginator,
     isCascade: true,
     numberOfAlreadyAddedOptions: addedWithoutParentId.length,
   })
-
-  await reorderContextOptions(contextChange, client, url, elementsSource)
 }
 
 export const setOptionTypeDeploymentAnnotations = async (fieldContextType: ObjectType): Promise<void> => {
+  // TODO what here?
   setFieldDeploymentAnnotations(fieldContextType, 'options')
 
   const optionMapType = await fieldContextType.fields.options?.getType()

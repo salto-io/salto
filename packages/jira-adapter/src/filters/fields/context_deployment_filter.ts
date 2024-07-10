@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 import {
+  AdditionChange,
   Element,
   InstanceElement,
   SaltoElementError,
   createSaltoElementError,
   getChangeData,
+  isAdditionChange,
   isInstanceChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
@@ -31,7 +33,7 @@ import { deployContextChange, setContextDeploymentAnnotations } from './contexts
 import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME, IS_LOCKED, SERVICE } from './constants'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
-import { isRelatedToSpecifiedTerms } from '../../change_validators/locked_fields'
+import { isRelatedToSpecifiedTerms } from '../../common/fields'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
@@ -44,7 +46,7 @@ type ContextParams = {
 type ContextGetResponse = {
   values: ContextParams[]
 }
-const CONTEXT_RESOPNSE_SCHEME = Joi.object({
+const CONTEXT_RESPONSE_SCHEME = Joi.object({
   values: Joi.array()
     .items(
       Joi.object({
@@ -57,7 +59,7 @@ const CONTEXT_RESOPNSE_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-const isContextFieldResponse = createSchemeGuard<ContextGetResponse>(CONTEXT_RESOPNSE_SCHEME)
+const isContextFieldResponse = createSchemeGuard<ContextGetResponse>(CONTEXT_RESPONSE_SCHEME)
 
 const deployJsmContextField = async (
   change: AdditionChange<InstanceElement>,

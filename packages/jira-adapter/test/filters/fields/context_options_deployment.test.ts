@@ -48,7 +48,7 @@ describe('fieldContextDeployment', () => {
   beforeEach(() => {
     deployContextChangeMock.mockClear()
     config = getDefaultConfig({ isDataCenter: false })
-    config.fetch.splitFieldContext = true
+    config.fetch.splitFieldContextOptions = true
     const mockCli = mockClient()
     client = mockCli.client
     paginator = mockCli.paginator

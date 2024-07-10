@@ -16,10 +16,8 @@
 
 import {
   BuiltinTypes,
-  CORE_ANNOTATIONS,
   ElemID,
   ElemIdGetter,
-  Field,
   InstanceElement,
   isInstanceElement,
   ListType,
@@ -63,8 +61,8 @@ const getOptionsInstances = async ({
   optionList: Values[]
   optionType: ObjectType
   getElemIdFunc: ElemIdGetter | undefined
-}): Promise<InstanceElement[]> => {
-  const options = (
+}): Promise<InstanceElement[]> =>
+  (
     await Promise.all(
       optionList.map(async (optionValue: Values) => {
         optionValue[PARENT_NAME_FIELD] = invertNaclCase(parent.elemID.name)
@@ -77,7 +75,7 @@ const getOptionsInstances = async ({
           getElemIdFunc,
           parent,
         })
-        delete optionInstance.value[PARENT_NAME_FIELD]
+        delete optionInstance.value[PARENT_NAME_FIELD] // It was added to create the name properly
         optionInstance.path = context.path && [
           ...context.path,
           pathNaclCase(naclCase(`${invertNaclCase(context.elemID.name)}_${FIELD_CONTEXT_OPTIONS_FILE_NAME}`)),
@@ -86,8 +84,6 @@ const getOptionsInstances = async ({
       }),
     )
   ).filter(values.isDefined)
-  return options
-}
 
 const getOrderInstance = async ({
   context,
@@ -150,24 +146,13 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
       return
     }
 
-    const fieldContextType = findObject(elements, FIELD_CONTEXT_TYPE_NAME)
     const fieldContextOptionType = findObject(elements, FIELD_CONTEXT_OPTION_TYPE_NAME)
 
-    if (fieldContextType === undefined || fieldContextOptionType === undefined) {
-      log.error('Field context type or field context option type not found')
+    if (fieldContextOptionType === undefined) {
+      log.error('Field context option type not found')
       return
     }
 
-    fieldContextType.fields.options = new Field(fieldContextType, 'options', new ListType(BuiltinTypes.STRING))
-
-    fieldContextOptionType.fields[PARENT_NAME_FIELD] = new Field(
-      fieldContextOptionType,
-      PARENT_NAME_FIELD,
-      BuiltinTypes.STRING,
-      {
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      },
-    )
     await setTypeDeploymentAnnotationsRecursively(fieldContextOptionType)
 
     const fieldContextOrderObjectType = new ObjectType({
@@ -176,13 +161,13 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
         options: { refType: new ListType(BuiltinTypes.STRING) },
       },
     })
+    elements.push(fieldContextOrderObjectType)
 
     const contexts = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
 
-    const orderInstances: InstanceElement[] = []
-    const options = _.flatten(
+    const options = (
       await Promise.all(
         contexts
           .filter(context => context.value.options !== undefined)
@@ -202,12 +187,13 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
               getElemIdFunc,
             })
             delete context.value.options
-            orderInstances.push(orderInstance)
+            elements.push(orderInstance)
             return orderedOptions
           }),
-      ),
-    )
-    const cascadingOptions = _.flatten(
+      )
+    ).flat()
+
+    const cascadingOptions = (
       await Promise.all(
         options
           .filter(option => option.value.cascadingOptions !== undefined)
@@ -228,12 +214,13 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
               getElemIdFunc,
             })
             delete option.value.cascadingOptions
-            orderInstances.push(orderInstance)
+            elements.push(orderInstance)
             return orderedOptions
           }),
-      ),
-    )
-    const idToOptionRecord: Record<string, InstanceElement> = _.fromPairs(
+      )
+    ).flat()
+
+    const idToOptionRecord: Record<string, InstanceElement> = Object.fromEntries(
       options
         .concat(cascadingOptions)
         .filter(option => _.isString(option.value.id))
@@ -243,11 +230,8 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
     contexts.forEach(context => {
       context.path = context.path && [...context.path, context.path[context.path.length - 1]]
     })
-
-    elements.push(fieldContextOrderObjectType)
     options.forEach(option => elements.push(option))
     cascadingOptions.forEach(cascadingOption => elements.push(cascadingOption))
-    orderInstances.forEach(orderInstance => elements.push(orderInstance))
   },
 })
 

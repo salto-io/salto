@@ -51,7 +51,7 @@ const filter: FilterCreator = ({ config, client, paginator }) => ({
       changes,
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME,
     ) as [Change<InstanceElement>[], Change[]]
-    if (!config.fetch.splitFieldContext || relevantChanges.length === 0) {
+    if (!config.fetch.splitFieldContextOptions || relevantChanges.length === 0) {
       return { leftoverChanges, deployResult: { errors: [], appliedChanges: [] } }
     }
     const errors: SaltoElementError[] = []

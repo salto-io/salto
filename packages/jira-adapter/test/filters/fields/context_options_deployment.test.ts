@@ -41,7 +41,6 @@ describe('fieldContextDeployment', () => {
   let contextType: ObjectType
   let optionType: ObjectType
   let defaultValueType: ObjectType
-  let userFilterType: ObjectType
   let client: JiraClient
   let paginator: clientUtils.Paginator
   const deployContextChangeMock = jest.spyOn(contexts, 'deployContextChange')

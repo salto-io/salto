@@ -2768,6 +2768,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
+    fixParentOption: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -3104,6 +3105,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       refType: definitions.createUserDeployConfigType(ZENDESK, changeValidatorConfigType, {
         ...defaultMissingUserFallbackField,
         createMissingOrganizations: { refType: BuiltinTypes.BOOLEAN },
+        fixParentOption: { refType: BuiltinTypes.BOOLEAN },
       }),
     },
     [API_DEFINITIONS_CONFIG]: {

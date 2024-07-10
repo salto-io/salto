@@ -50,6 +50,7 @@ import {
   isTypeWithNestedInstances,
   isTypeWithNestedInstancesPerParent,
 } from '../last_change_date_of_types_with_nested_instances'
+import { getFetchTargetsWithDependencies } from './metadata_types'
 
 const { isDefined } = values
 const log = logger(module)
@@ -108,7 +109,12 @@ type BuildFetchWithChangesDetectionMetadataQueryParams =
 export const buildMetadataQuery = ({
   fetchParams,
 }: BuildMetadataQueryParams): MetadataQuery => {
-  const { metadata = {}, target } = fetchParams
+  const metadata = fetchParams.metadata ?? {}
+  const target: readonly string[] | undefined =
+    fetchParams.target && getFetchTargetsWithDependencies(fetchParams.target)
+  if (target !== undefined) {
+    log.debug('targeted fetch types: %o', target)
+  }
   const { include = [{}], exclude = [] } = metadata
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
 

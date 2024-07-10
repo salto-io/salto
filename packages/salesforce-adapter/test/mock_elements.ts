@@ -127,6 +127,28 @@ const CPQ_PRODUCT_RULE_TYPE = createCustomObjectType(CPQ_PRODUCT_RULE, {
   },
 })
 
+const CPQ_QUOTE_TERM_TYPE = createCustomObjectType(constants.CPQ_QUOTE_TERM, {
+  fields: {
+    [constants.CPQ_ADVANCED_CONDITION_FIELD]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      },
+    },
+    [OWNER_ID]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+        [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [constants.API_NAME]: OWNER_ID,
+      },
+    },
+  },
+})
+
 const listViewType = createMetadataObjectType({
   annotations: { metadataType: 'ListView' },
   fields: {
@@ -714,6 +736,22 @@ export const mockTypes = {
       },
     },
   }),
+  [constants.CPQ_QUOTE_TERM]: CPQ_QUOTE_TERM_TYPE,
+  [constants.CPQ_TERM_CONDITION]: createCustomObjectType(
+    constants.CPQ_TERM_CONDITION,
+    {
+      fields: {
+        [constants.CPQ_QUOTE_TERM]: {
+          refType: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
+        },
+      },
+    },
+  ),
 }
 
 export const lwcJsResourceContent =

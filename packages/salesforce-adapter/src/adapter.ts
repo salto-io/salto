@@ -993,8 +993,17 @@ export default class SalesforceAdapter implements AdapterOperations {
           )
           return
         }
+        const listedInstancesFullNames =
+          this.listedInstancesByType.getOrUndefined(typeName)
+        if (listedInstancesFullNames === undefined) {
+          log.warn(
+            'Skipping deletion detections for type %s since the type was not listed',
+            typeName,
+          )
+          return
+        }
         const listedElemIdsFullNames = new Set(
-          Array.from(this.listedInstancesByType.getOrUndefined(typeName) ?? [])
+          Array.from(listedInstancesFullNames)
             // We invoke createInstanceElement to have the correct elemID that we calculate in fetch
             .map((fullName) =>
               createElemId(metadataType, fullName).getFullName(),

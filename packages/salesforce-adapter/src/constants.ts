@@ -574,6 +574,8 @@ export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP =
   groupIdForInstanceChangeGroup('add', 'Custom PriceRule and PriceCondition')
 export const ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP =
   groupIdForInstanceChangeGroup('add', 'Custom ProductRule and ErrorCondition')
+export const ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP =
+  groupIdForInstanceChangeGroup('add', 'Custom QuoteTerm and TermCondition')
 
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 

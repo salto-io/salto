@@ -58,11 +58,11 @@ const main = async () => {
     {},
   )
 
-  const ignoreDeps = [] 
   const mismatchedVersions = filterValues(
     depsVersions,
-    (versions, key) => !ignoreDeps.some(element => key.match(element)) && Object.keys(versions).length > 1
+    versions => Object.keys(versions).length > 1
   )
+
   if (mismatchedVersions) {
     console.log(mismatchedVersions)
   }

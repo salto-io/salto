@@ -1588,8 +1588,6 @@ describe('api.ts', () => {
           },
         ],
       })
-      const a = mockFixElements.mock.calls
-      console.log(a)
       expect(mockFixElements).toHaveBeenNthCalledWith(1, [
         new ObjectType({
           elemID: new ElemID('test1', 'test'),

@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-const { execSync } = require('child_process')
-const { readFileSync, writeFileSync, existsSync, readdirSync } = require('fs')
+const { readFileSync, writeFileSync } = require('fs')
 const path = require('path')
-const { config } = require('process')
 
 const generateE2eMatrix = (templateName, outputName) => {
   const configTemplate = readFileSync(templateName, 'utf8')

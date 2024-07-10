@@ -2,6 +2,7 @@
   "$schema": "https://turborepo.org/schema.json",
   "tasks": {
     "build-ts": {
+      "outputLogs": "new-only",
       "outputs": [
         "dist/**"
       ],
@@ -10,15 +11,23 @@
       ]
     },
     "lint": {
+      "outputLogs": "new-only",
       "outputs": []
     },
     "check-format": {
+      "outputLogs": "new-only",
       "outputs": [
         ".check-format.cache"
       ]
     },
     "test": {
-      "outputs": ["coverage/**"]
+      "outputLogs": "new-only",
+      "env": [
+        "SALTO_TEST_HASH"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
     },
     "clean": {
       "cache": false

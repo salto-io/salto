@@ -145,7 +145,9 @@ const filter: FilterCreator = ({ client, config, paginator, elementsSource }) =>
       // field contexts without fields cant be removed because they don't exist,
       // modification changes are also not allowed but will not crash.
       if (hasValidParent(getChangeData(change)) || !isRemovalChange(change)) {
-        const changeToDeploy = getContextChangeWithFixedOptions(change, optionFullNameToChangeDict)
+        const changeToDeploy = config.fetch.splitFieldContextOptions
+          ? getContextChangeWithFixedOptions(change, optionFullNameToChangeDict)
+          : change
         await deployContextChange(changeToDeploy, client, config.apiDefinitions, paginator, elementsSource)
       }
     })

@@ -78,6 +78,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
   automationPageSize?: number
+  splitFieldContextOptions?: boolean
 }
 
 export type MaskingConfig = {
@@ -359,6 +360,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
     automationPageSize: { refType: BuiltinTypes.NUMBER },
+    splitFieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,

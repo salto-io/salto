@@ -333,6 +333,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
+      serviceIdField: 'id',
+      idFields: ['parentName', 'value'],
     },
   },
 

@@ -15,18 +15,24 @@
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import { getFilterParams } from '../../utils'
 import { JIRA } from '../../../src/constants'
 import fieldsTypeReferencesFilter, {
   getFieldsLookUpName,
 } from '../../../src/filters/fields/field_type_references_filter'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 
 describe('fields_references', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let fieldContextType: ObjectType
+  let config: JiraConfig
+
   beforeEach(() => {
-    filter = fieldsTypeReferencesFilter(getFilterParams()) as typeof filter
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.splitFieldContextOptions = false
+    filter = fieldsTypeReferencesFilter(getFilterParams({ config })) as typeof filter
 
     fieldContextType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),

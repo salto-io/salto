@@ -78,6 +78,13 @@ export const addAnnotationRecursively = async (type: ObjectType, annotation: str
     }
   })
 
+export const setTypeDeploymentAnnotationsRecursively = async (type: ObjectType): Promise<void> => {
+  setTypeDeploymentAnnotations(type)
+  await addAnnotationRecursively(type, CORE_ANNOTATIONS.CREATABLE)
+  await addAnnotationRecursively(type, CORE_ANNOTATIONS.UPDATABLE)
+  await addAnnotationRecursively(type, CORE_ANNOTATIONS.DELETABLE)
+}
+
 export const getFilledJspUrls = (instance: InstanceElement, config: JiraConfig, typeName: string): JspUrls => {
   const jspRequests = config.apiDefinitions.types[typeName]?.jspRequests
   if (jspRequests === undefined) {

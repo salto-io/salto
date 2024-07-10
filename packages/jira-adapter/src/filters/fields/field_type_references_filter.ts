@@ -70,9 +70,20 @@ const getDefaultOptions = (
 const hasOptionValue = (defaultValue: Values): boolean =>
   defaultValue !== undefined && (defaultValue.optionId !== undefined || defaultValue.optionIds !== undefined)
 
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'fieldTypeReferencesFilter',
   onFetch: async (elements: Element[]) => {
+    const optionType = findObject(elements, 'CustomFieldContextOption')
+    const defaultValueType = findObject(elements, 'CustomFieldContextDefaultValue')
+
+    if (optionType !== undefined && defaultValueType !== undefined) {
+      defaultValueType.fields.optionId = new Field(defaultValueType, 'optionId', optionType)
+      defaultValueType.fields.cascadingOptionId = new Field(defaultValueType, 'optionId', optionType)
+      defaultValueType.fields.optionIds = new Field(defaultValueType, 'optionIds', new ListType(optionType))
+    }
+    if (config.fetch.splitFieldContextOptions) {
+      return
+    }
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
@@ -119,15 +130,6 @@ const filter: FilterCreator = () => ({
           )
         }
       })
-
-    const optionType = findObject(elements, 'CustomFieldContextOption')
-    const defaultValueType = findObject(elements, 'CustomFieldContextDefaultValue')
-
-    if (optionType !== undefined && defaultValueType !== undefined) {
-      defaultValueType.fields.optionId = new Field(defaultValueType, 'optionId', optionType)
-      defaultValueType.fields.cascadingOptionId = new Field(defaultValueType, 'optionId', optionType)
-      defaultValueType.fields.optionIds = new Field(defaultValueType, 'optionIds', new ListType(optionType))
-    }
   },
 })
 

@@ -79,14 +79,16 @@ describe('duplicateCustomFieldOptionValuesValidator', () => {
         severity: 'Error',
         message: 'Duplicate tag value',
         detailedMessage: `Tag value 'cTag' is already used by the following elements:
-${[checkboxTicketField.elemID.getFullName(), checkboxToAdd.elemID.getFullName()].join(', ')}`,
+${[checkboxTicketField.elemID.getFullName(), checkboxToAdd.elemID.getFullName()].join(', ')}
+You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582629-duplicate-tag-value`,
       },
       {
         elemID: checkboxToAdd.elemID,
         severity: 'Error',
         message: 'Duplicate tag value',
         detailedMessage: `Tag value 'cTag' is already used by the following elements:
-${[optionToAdd.elemID.getFullName(), checkboxTicketField.elemID.getFullName()].join(', ')}`,
+${[optionToAdd.elemID.getFullName(), checkboxTicketField.elemID.getFullName()].join(', ')}
+You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582629-duplicate-tag-value`,
       },
     ])
   })

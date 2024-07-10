@@ -59,8 +59,8 @@ describe('missingFromParentValidatorCreator', () => {
       {
         elemID: option3.elemID,
         severity: 'Error',
-        message: `${option3.elemID.typeName} needs to be referred from its ${ticketField.elemID.typeName}`,
-        detailedMessage: `To add this ${option3.elemID.typeName}, please make sure ${option3.elemID.getFullName()} is included in ‘${ticketField.elemID.getFullName()}’`,
+        message: 'Element needs to be referred from its parent',
+        detailedMessage: `To add this ${option3.elemID.typeName}, please make sure ${option3.elemID.getFullName()} is included in ‘${ticketField.elemID.getFullName()}’. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582618-element-needs-to-be-referred-from-its-parent`,
       },
     ])
   })
@@ -73,8 +73,8 @@ describe('missingFromParentValidatorCreator', () => {
       {
         elemID: option2.elemID,
         severity: 'Error',
-        message: `${option2.elemID.typeName} needs to be referred from its ${ticketField.elemID.typeName}`,
-        detailedMessage: `To add this ${option2.elemID.typeName}, please make sure ${option2.elemID.getFullName()} is included in ‘${ticketField.elemID.getFullName()}’`,
+        message: 'Element needs to be referred from its parent',
+        detailedMessage: `To add this ${option2.elemID.typeName}, please make sure ${option2.elemID.getFullName()} is included in ‘${ticketField.elemID.getFullName()}’. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582618-element-needs-to-be-referred-from-its-parent`,
       },
     ])
   })

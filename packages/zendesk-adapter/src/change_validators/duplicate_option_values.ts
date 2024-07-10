@@ -145,7 +145,8 @@ export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async 
                 severity: 'Error',
                 message: 'Duplicate tag value',
                 detailedMessage: `Tag value '${conflictedInstanceNames.tag}' is already used by the following elements:
-${conflictedInstanceNames.instanceNames.join(', ')}`,
+${conflictedInstanceNames.instanceNames.join(', ')}
+You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582629-duplicate-tag-value`,
               },
             ]
           }

@@ -36,8 +36,8 @@ const createParentReferencesError = (change: AdditionChange<InstanceElement>, pa
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: `${instance.elemID.typeName} needs to be referred from its ${parentElemId.typeName}`,
-    detailedMessage: `To add this ${instance.elemID.typeName}, please make sure ${instance.elemID.getFullName()} is included in ‘${parentElemId.getFullName()}’`,
+    message: 'Element needs to be referred from its parent',
+    detailedMessage: `To add this ${instance.elemID.typeName}, please make sure ${instance.elemID.getFullName()} is included in ‘${parentElemId.getFullName()}’. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582618-element-needs-to-be-referred-from-its-parent`,
   }
 }
 

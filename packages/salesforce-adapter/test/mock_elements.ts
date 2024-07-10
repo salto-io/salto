@@ -697,6 +697,7 @@ export const mockTypes = {
     },
   }),
   TestCustomObject__c: createCustomObjectType('TestCustomObject__c', {}),
+  TestCustomEvent__e: createCustomObjectType('TestCustomEvent__e', {}),
   BusinessProcess: createMetadataObjectType({
     annotations: {
       metadataType: 'BusinessProcess',

@@ -129,8 +129,16 @@ describe('restore command', () => {
     })
 
     it('should send telemetry events', () => {
-      expect(telemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
-      expect(telemetry.getEventsMap()[eventsNames.workspaceSize]).toHaveLength(1)
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(
+        eventsNames.changesToApply,
+        expect.anything(),
+        expect.objectContaining({}),
+      )
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(
+        eventsNames.workspaceSize,
+        expect.anything(),
+        expect.objectContaining({}),
+      )
     })
 
     it('should print deployment to console', () => {

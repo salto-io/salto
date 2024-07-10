@@ -116,7 +116,7 @@ const createReferencesFromRuleInstance = (
   if (!_.isString(condition)) {
     return []
   }
-  const regexMatch = condition.match(/(?<!\S)\d+(?!\S)/g)
+  const regexMatch = condition.match(/\d+/g)
   if (regexMatch == null) {
     return []
   }

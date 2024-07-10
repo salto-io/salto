@@ -474,6 +474,7 @@ export const CPQ_PRODUCT_OPTION = 'SBQQ__ProductOption__c'
 export const CPQ_PRICE_SCHEDULE = 'SBQQ__PriceSchedule__c'
 export const CPQ_DISCOUNT_SCHEDULE = 'SBQQ__DiscountSchedule__c'
 export const CPQ_SUBSCRIPTION = 'SBQQ__Subscription__c'
+export const CPQ_TERM_CONDITION = 'SBQQ__TermCondition__c'
 export const CPQ_QUOTE_TERM = 'SBQQ__QuoteTerm__c'
 export const CPQ_TERM_CONDITON = 'SBQQ__TermCondition__c'
 

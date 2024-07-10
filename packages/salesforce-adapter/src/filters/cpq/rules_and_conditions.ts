@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-import { InstanceElement, isReferenceExpression, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, createTemplateExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { CPQ_ADVANCED_CONDITION_FIELD, CPQ_ERROR_CONDITION, CPQ_INDEX_FIELD, CPQ_PRICE_CONDITION, CPQ_PRICE_RULE, CPQ_PRODUCT_RULE, CPQ_QUOTE_TERM, CPQ_QUOTE_TERM_FIELD, CPQ_RULE_FIELD, CPQ_TERM_CONDITON, SBAA_ADVANCED_CONDITION_FIELD, SBAA_APPROVAL_CONDITION, SBAA_APPROVAL_RULE, SBAA_INDEX_FIELD } from '../../constants'
 import {LocalFilterCreator} from '../../filter'
-import { apiNameSync, isInstanceOfCustomObjectSync } from '../utils'
+import { apiNameSync, isInstanceOfCustomObjectChangeSync, isInstanceOfCustomObjectSync } from '../utils'
 
 
 const {makeArray} = collections.array
@@ -89,6 +90,8 @@ const defs: RuleAndConditionDef[] = [
   },
 ]
 
+const ruleTypeNames = defs.map(def => def.rule.typeApiName)
+
 const isConditionOfRuleFunc =
   (rule: InstanceElement, ruleField: string) =>
   (condition: InstanceElement): boolean => {
@@ -115,8 +118,11 @@ const setCustomConditionReferences = ({rule, conditionsByIndex, def}: {
     return 0
   }
   log.debug('%s', conditionsByIndex)
-  const rawParts = customCondition.split(/(\d+| AND | OR |\(|\))/).filter(Boolean)
-  const templateExpression = new TemplateExpression({
+  const rawParts = customCondition.match(/(\d+|[^\d]+)/g)?.filter(Boolean)
+  if (rawParts === undefined || !rawParts.some(Number)) {
+    return 0
+  }
+  const templateExpression = createTemplateExpression({
     parts: rawParts.map(part => {
       const index = Number(part)
       if (index === undefined) {
@@ -169,14 +175,10 @@ const createReferencesFromDef = ({
   }))
 }
 
-const resolveReferencesFromDef = ({
-  def,
-  instancesByType,
-}: {
-  def: RuleAndConditionDef;
-  instancesByType: Record<string, InstanceElement[]>
-})
-
+const isCPQRuleChange = (change: Change): change is Change<InstanceElement> => (
+  isInstanceOfCustomObjectChangeSync(change)
+  && ruleTypeNames.includes(apiNameSync(getChangeData(change).getTypeSync()) ?? '')
+)
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'cpqRulesAndConditionsFilter',
@@ -194,7 +196,13 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     log.debug('Created %d references', referencesCreated)
   },
   preDeploy: async changes => {
+    const ruleChanges = changes
+      .filter(isInstanceOfCustomObjectChangeSync)
+      .filter(isAdditionOrModificationChange)
+      .filter(change => defs.some(def => apiNameSync(getChangeData(change).getTypeSync()) === def.rule.typeApiName))
+      .forEach(change => applyFunctionToChangeData(change, instance => {
 
+    })
   }
 })
 

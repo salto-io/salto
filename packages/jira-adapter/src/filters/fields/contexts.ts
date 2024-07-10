@@ -100,8 +100,8 @@ export const deployContextChange = async ({
   await setContextField({ contextChange: change, fieldName: 'projectIds', endpoint: 'project', client, elementsSource })
   if (!config.fetch.splitFieldContextOptions) {
     await setContextOptions(change, client, elementsSource, paginator)
+    await updateDefaultValues(change, client, config, elementsSource)
   }
-  await updateDefaultValues(change, client, elementsSource)
 }
 
 export const getContexts = async (

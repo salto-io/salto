@@ -314,13 +314,13 @@ describe('group change', () => {
     ).changeGroupIdMap
 
     expect(changeGroupIds.get(fieldContextOptionInstance1.elemID.getFullName())).toEqual(
-      'options of jira.CustomFieldContext.instance.parent1',
+      'jira.CustomFieldContext.instance.parent1',
     )
     expect(changeGroupIds.get(fieldContextOptionInstance2.elemID.getFullName())).toEqual(
-      'options of jira.CustomFieldContext.instance.parent1',
+      'jira.CustomFieldContext.instance.parent1',
     )
     expect(changeGroupIds.get(fieldContextOptionInstance3.elemID.getFullName())).toEqual(
-      'options of jira.CustomFieldContext.instance.parent2',
+      'jira.CustomFieldContext.instance.parent2',
     )
   })
 

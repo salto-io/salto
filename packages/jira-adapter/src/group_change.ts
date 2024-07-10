@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { getChangeData, isModificationChange, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import {
+  getChangeData,
+  isModificationChange,
+  isAdditionChange,
+  isInstanceChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { getParent, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import {
@@ -25,7 +31,8 @@ import {
   SECURITY_LEVEL_TYPE,
   WORKFLOW_TYPE_NAME,
 } from './constants'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME } from './filters/fields/constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './filters/fields/constants'
+import { getContextParent } from './common/fields'
 
 export const getWorkflowGroup: deployment.grouping.ChangeIdFunction = async change =>
   isModificationChange(change) && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
@@ -57,11 +64,13 @@ const getFieldConfigItemGroup: deployment.grouping.ChangeIdFunction = async chan
   return `${parent.elemID.getFullName()} items`
 }
 
-const getFieldContextOptionsGroup: deployment.grouping.ChangeIdFunction = async change => {
+const getFieldContextGroup: deployment.grouping.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
-  return instance.elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME
+
+  return !isInstanceElement(instance) ||
+    ![FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME].includes(instance.elemID.typeName)
     ? undefined
-    : `options of ${getParent(instance).elemID.getFullName()}`
+    : getContextParent(instance).elemID.getFullName()
 }
 
 const getScriptListenersGroup: deployment.grouping.ChangeIdFunction = async change =>
@@ -98,5 +107,5 @@ export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getScriptedFragmentsGroup,
   getQueuesAdditionByProjectGroup,
   getAttributeAdditionByObjectTypeGroup,
-  getFieldContextOptionsGroup,
+  getFieldContextGroup,
 ])

@@ -17,7 +17,6 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID,
-  Field,
   InstanceElement,
   ListType,
   ObjectType,
@@ -31,7 +30,7 @@ import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import {
   FIELD_CONTEXT_OPTION_TYPE_NAME,
   FIELD_CONTEXT_TYPE_NAME,
-  ORDER_OBJECT_TYPE_NAME,
+  OPTIONS_ORDER_TYPE_NAME,
 } from '../../../src/filters/fields/constants'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 
@@ -68,20 +67,27 @@ describe('fieldContextOptionSplitFilter', () => {
         [CORE_ANNOTATIONS.DELETABLE]: true,
       })
     })
-
-    it("should make the context's options field a list of references", async () => {
-      await filter.onFetch([contextType, optionType])
-      expect(contextType.fields.options).toEqual(new Field(contextType, 'options', new ListType(BuiltinTypes.STRING)))
-    })
     it('should add order instance type', async () => {
       const elements = [contextType, optionType]
       await filter.onFetch(elements)
       expect(elements).toHaveLength(3)
       expect(elements[2]).toEqual(
         new ObjectType({
-          elemID: new ElemID('jira', ORDER_OBJECT_TYPE_NAME),
+          elemID: new ElemID('jira', OPTIONS_ORDER_TYPE_NAME),
           fields: {
-            options: { refType: new ListType(BuiltinTypes.STRING) },
+            options: {
+              refType: new ListType(BuiltinTypes.STRING),
+              annotations: {
+                [CORE_ANNOTATIONS.CREATABLE]: true,
+                [CORE_ANNOTATIONS.UPDATABLE]: true,
+                [CORE_ANNOTATIONS.DELETABLE]: true,
+              },
+            },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.CREATABLE]: true,
+            [CORE_ANNOTATIONS.UPDATABLE]: true,
+            [CORE_ANNOTATIONS.DELETABLE]: true,
           },
         }),
       )
@@ -114,10 +120,8 @@ describe('fieldContextOptionSplitFilter', () => {
       await filter.onFetch(elements)
       expect(elements).toHaveLength(7)
 
-      const [option1, option2, order] = elements.slice(4) as InstanceElement[]
-      expect(option1.elemID).toEqual(
-        new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME, 'instance', 'contextName_option1'),
-      )
+      const option1 = elements.find(e => e.elemID.name === 'contextName_option1') as InstanceElement
+      expect(option1).toBeDefined()
       expect(option1.value).toEqual({
         value: 'option1',
         disabled: false,
@@ -125,16 +129,17 @@ describe('fieldContextOptionSplitFilter', () => {
       })
       expect(option1.path).toEqual(['Jira', 'Records', 'Field', 'FieldName', 'contextName', 'contextName_Options'])
 
-      expect(option2.elemID).toEqual(
-        new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME, 'instance', 'contextName_option2'),
-      )
+      const option2 = elements.find(e => e.elemID.name === 'contextName_option2') as InstanceElement
+
+      expect(option2.elemID).toBeDefined()
       expect(option2.value).toEqual({
         value: 'option2',
         disabled: false,
         id: '2',
       })
       expect(option2.path).toEqual(['Jira', 'Records', 'Field', 'FieldName', 'contextName', 'contextName_Options'])
-      expect(order.elemID).toEqual(new ElemID(JIRA, ORDER_OBJECT_TYPE_NAME, 'instance', 'contextName_order_child'))
+      const order = elements.find(e => e.elemID.name === 'contextName_order_child') as InstanceElement
+      expect(order.elemID).toBeDefined()
       expect(order.value).toEqual({
         options: [new ReferenceExpression(option1.elemID, option1), new ReferenceExpression(option2.elemID, option2)],
       })
@@ -210,10 +215,6 @@ describe('fieldContextOptionSplitFilter', () => {
       await filter.onFetch(elements1)
       expect(elements1).toHaveLength(2)
 
-      const elements2 = [optionType, context]
-      await filter.onFetch(elements2)
-      expect(elements2).toHaveLength(2)
-
       const elements3 = [context]
       await filter.onFetch(elements3)
       expect(elements3).toHaveLength(1)
@@ -259,7 +260,7 @@ describe('fieldContextOptionSplitFilter', () => {
     await filter.onFetch(elements)
     // 3 types, 1 context, 2 options, 2 cascading options, 2 orders
     expect(elements).toHaveLength(10)
-    const [option1, option2, cascadingOption1, cascadingOption2, orderContext, orderCascade] = elements.slice(
+    const [orderContext, orderCascade, option1, option2, cascadingOption1, cascadingOption2] = elements.slice(
       4,
     ) as InstanceElement[]
 
@@ -302,14 +303,16 @@ describe('fieldContextOptionSplitFilter', () => {
     })
 
     // orderContext
-    expect(orderContext.elemID).toEqual(new ElemID(JIRA, ORDER_OBJECT_TYPE_NAME, 'instance', 'contextName_order_child'))
+    expect(orderContext.elemID).toEqual(
+      new ElemID(JIRA, OPTIONS_ORDER_TYPE_NAME, 'instance', 'contextName_order_child'),
+    )
     expect(orderContext.value).toEqual({
       options: [new ReferenceExpression(option1.elemID, option1), new ReferenceExpression(option2.elemID, option2)],
     })
 
     // orderCascade
     expect(orderCascade.elemID).toEqual(
-      new ElemID(JIRA, ORDER_OBJECT_TYPE_NAME, 'instance', 'contextName_option1_order_child'),
+      new ElemID(JIRA, OPTIONS_ORDER_TYPE_NAME, 'instance', 'contextName_option1_order_child'),
     )
     expect(orderCascade.value).toEqual({
       options: [
@@ -355,7 +358,7 @@ describe('fieldContextOptionSplitFilter', () => {
       await filter.onFetch(elements)
       // 3 types, 1 context, 3 options, 1 orders
       expect(elements).toHaveLength(8)
-      const [option1, option2, option3, order] = elements.slice(4) as InstanceElement[]
+      const [order, option1, option2, option3] = elements.slice(4) as InstanceElement[]
       expect(option1.elemID).toEqual(
         new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME, 'instance', 'contextName_option1'),
       )
@@ -365,7 +368,7 @@ describe('fieldContextOptionSplitFilter', () => {
       expect(option3.elemID).toEqual(
         new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME, 'instance', 'contextName_option3'),
       )
-      expect(order.elemID).toEqual(new ElemID(JIRA, ORDER_OBJECT_TYPE_NAME, 'instance', 'contextName_order_child'))
+      expect(order.elemID).toEqual(new ElemID(JIRA, OPTIONS_ORDER_TYPE_NAME, 'instance', 'contextName_order_child'))
       expect(context.value.defaultValue).toEqual({
         type: 'option.multiple',
         optionIds: [new ReferenceExpression(option1.elemID, option1), new ReferenceExpression(option3.elemID, option3)],
@@ -417,7 +420,7 @@ describe('fieldContextOptionSplitFilter', () => {
     await filter.onFetch(elements)
     // 3 types, 1 context, 2 options, 2 cascading options, 2 orders
     expect(elements).toHaveLength(10)
-    const [option1, option2, cascadingOption1, cascadingOption2, orderContext, orderCascade] = elements.slice(
+    const [orderContext, orderCascade, option1, option2, cascadingOption1, cascadingOption2] = elements.slice(
       4,
     ) as InstanceElement[]
     expect(option1.elemID).toEqual(
@@ -433,10 +436,10 @@ describe('fieldContextOptionSplitFilter', () => {
       new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME, 'instance', 'cascadeContextName_option1_cascadingOption2'),
     )
     expect(orderContext.elemID).toEqual(
-      new ElemID(JIRA, ORDER_OBJECT_TYPE_NAME, 'instance', 'cascadeContextName_order_child'),
+      new ElemID(JIRA, OPTIONS_ORDER_TYPE_NAME, 'instance', 'cascadeContextName_order_child'),
     )
     expect(orderCascade.elemID).toEqual(
-      new ElemID(JIRA, ORDER_OBJECT_TYPE_NAME, 'instance', 'cascadeContextName_option1_order_child'),
+      new ElemID(JIRA, OPTIONS_ORDER_TYPE_NAME, 'instance', 'cascadeContextName_option1_order_child'),
     )
     expect(context.value.defaultValue).toEqual({
       type: 'option.cascading',

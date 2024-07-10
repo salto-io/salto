@@ -22,6 +22,7 @@ import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../client/client'
 import { setFieldDeploymentAnnotations } from '../../utils'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME } from './constants'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -30,23 +31,6 @@ const { awu } = collections.asynciterable
 
 const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
 const PUBLIC_API_OPTIONS_LIMIT = 10000
-const convertOptionsToList = (options: Values): Values[] =>
-  _(options)
-    .values()
-    .sortBy(option => option.position)
-    .map(option => _.omit(option, 'position'))
-    .value()
-
-export const getOptionsFromContext = (context: InstanceElement): Values[] => [
-  ...(Object.values(context.value.options ?? {}) as Values[]).flatMap((option: Values) =>
-    convertOptionsToList(option.cascadingOptions).map(cascadingOption => ({
-      ...cascadingOption,
-      optionId: option.id,
-      parentValue: option.value,
-    })),
-  ),
-  ...convertOptionsToList(context.value.options ?? {}),
-]
 
 // Transform option back to the format expected by Jira API
 const transformOption = (option: Values): Values => ({
@@ -147,14 +131,9 @@ const updateContextOptions = async ({
         throw new Error('Received unexpected response from Jira API')
       }
       if (Array.isArray(resp.data.options)) {
-        const idToOption = _.keyBy(addedOptions, option => option.id)
         const optionsMap = _.keyBy(addedOptions, option => naclCase(option.value))
         resp.data.options.forEach(newOption => {
-          if (newOption.optionId !== undefined) {
-            idToOption[newOption.optionId].cascadingOptions[naclCase(newOption.value)].id = newOption.id
-          } else {
-            optionsMap[naclCase(newOption.value)].id = newOption.id
-          }
+          optionsMap[naclCase(newOption.value)].id = newOption.id
         })
       }
     })
@@ -197,53 +176,44 @@ const updateContextOptions = async ({
   }
 }
 
-// const reorderContextOptions = async (
-//   // Should get order change
-//   optionsOrderChange: AdditionModificationInstanceChange,
-//   client: JiraClient,
-//   baseUrl: string,
-//   elementsSource?: ReadOnlyElementsSource,
-// ): Promise<void> => {
-//   const afterOptions = getOptionsFromContext(
-//     await resolveValues(optionsOrderChange.data.after, getLookUpName, elementsSource),
-//   )
+export const reorderContextOptions = async (
+  // Should get order change
+  options: Value[],
+  client: JiraClient,
+  baseUrl: string,
+): Promise<void> => {
+  const optionsGroups = _(options)
+    .groupBy(option => option.optionId)
+    .values()
+    .value()
 
-//   const beforeOptions = isModificationChange(optionsOrderChange)
-//     ? getOptionsFromContext(await resolveValues(optionsOrderChange.data.before, getLookUpName, elementsSource))
-//     : []
+  // Data center plugin expects all options in one request.
+  const requestBodies = client.isDataCenter
+    ? optionsGroups.map(group => [
+        {
+          url: `${baseUrl}/move`,
+          data: {
+            customFieldOptionIds: group.map(option => option.id),
+            position: 'First',
+          },
+        },
+      ])
+    : optionsGroups.map(group =>
+        _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) => ({
+          url: `${baseUrl}/move`,
+          data: {
+            customFieldOptionIds: chunk.map(option => option.id),
+            position: index === 0 ? 'First' : 'Last',
+          },
+        })),
+      )
+  await awu(requestBodies)
+    .flat()
+    .forEach(async body => client.put(body))
+}
 
-//   if (isEqualValues(beforeOptions, afterOptions)) {
-//     return
-//   }
-
-//   const optionsGroups = _(afterOptions)
-//     .groupBy(option => option.optionId)
-//     .values()
-//     .value()
-//   // Data center plugin expects all options in one request.
-//   const requestBodies = client.isDataCenter
-//     ? optionsGroups.map(group => [
-//         {
-//           url: `${baseUrl}/move`,
-//           data: {
-//             customFieldOptionIds: group.map(option => option.id),
-//             position: 'First',
-//           },
-//         },
-//       ])
-//     : optionsGroups.map(group =>
-//         _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) => ({
-//           url: `${baseUrl}/move`,
-//           data: {
-//             customFieldOptionIds: chunk.map(option => option.id),
-//             position: index === 0 ? 'First' : 'Last',
-//           },
-//         })),
-//       )
-//   await awu(requestBodies)
-//     .flat()
-//     .forEach(async body => client.put(body))
-// }
+const isCascadeOption = (option: InstanceElement): boolean =>
+  getParent(option).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME
 
 export const setContextOptionsSplitted = async ({
   contextId,
@@ -265,16 +235,14 @@ export const setContextOptionsSplitted = async ({
   if (added.length === 0 && modified.length === 0 && removed.length === 0) {
     return
   }
-  const [addedWithoutParentId, addedWithParentId] = _.partition(
-    added,
-    option => option.value.optionId === undefined && option.value.parentValue === undefined,
-  )
+
+  const [addedCascade, addedSimple] = _.partition(added, isCascadeOption)
 
   const url = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
   await updateContextOptions({
-    addedOptions: addedWithoutParentId.map(option => option.value),
-    modifiedOptions: modified,
-    removedOptions: removed,
+    addedOptions: addedSimple.map(option => option.value),
+    modifiedOptions: modified.map(option => option.value),
+    removedOptions: removed.map(option => option.value),
     contextId,
     client,
     baseUrl: url,
@@ -282,15 +250,13 @@ export const setContextOptionsSplitted = async ({
     isCascade: false,
     numberOfAlreadyAddedOptions: 0,
   })
-
-  addedWithParentId.forEach(option => {
-    option.value.optionId = getParent(option).value.id
+  addedCascade.forEach(cascadingOption => {
+    const parentValue = getParent(cascadingOption).value
+    cascadingOption.value.optionId = parentValue?.id
+    cascadingOption.value.parentValue = parentValue?.value
   })
-
-  // Because the cascading options are dependent on the other options,
-  // we need to deploy them after the other options
   await updateContextOptions({
-    addedOptions: addedWithParentId.map(option => option.value),
+    addedOptions: addedCascade.map(option => option.value),
     modifiedOptions: [],
     removedOptions: [],
     contextId,
@@ -298,7 +264,7 @@ export const setContextOptionsSplitted = async ({
     baseUrl: url,
     paginator,
     isCascade: true,
-    numberOfAlreadyAddedOptions: addedWithoutParentId.length,
+    numberOfAlreadyAddedOptions: addedSimple.length,
   })
 }
 

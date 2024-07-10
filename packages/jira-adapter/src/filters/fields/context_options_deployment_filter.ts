@@ -16,33 +16,24 @@
 import {
   Change,
   InstanceElement,
+  ReferenceExpression,
   SaltoElementError,
   SeverityLevel,
   getChangeData,
   isAdditionChange,
   isInstanceChange,
+  isInstanceElement,
   isModificationChange,
   isSaltoError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME } from './constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './constants'
 import { setContextOptionsSplitted } from './context_options_splitted'
+import { getContextAndFieldIds } from '../../common/fields'
 
 const log = logger(module)
-
-const getContextAndFieldIds = (change: Change<InstanceElement>): { contextId: string; fieldId: string } => {
-  let parent = getParent(getChangeData(change))
-  if (parent.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME) {
-    parent = getParent(parent)
-  }
-  return {
-    contextId: parent.value.id,
-    fieldId: getParent(parent).value.id,
-  }
-}
 
 const filter: FilterCreator = ({ config, client, paginator }) => ({
   name: 'fieldContextOptionsFilter',
@@ -93,6 +84,20 @@ const filter: FilterCreator = ({ config, client, paginator }) => ({
         removed: removeChanges.map(getChangeData),
         client,
         paginator,
+      })
+      // update the ids of added options
+      addChanges.map(getChangeData).forEach(instance => {
+        leftoverChanges
+          .map(getChangeData)
+          .filter(isInstanceElement)
+          .filter(relevantInstance => relevantInstance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
+          .forEach(orderInstance => {
+            orderInstance.value.options.forEach((optionRef: ReferenceExpression) => {
+              if (optionRef.value.elemID.isEqual(instance.elemID)) {
+                optionRef.value.value.id = instance.value.id
+              }
+            })
+          })
       })
     } catch (err) {
       if (isSaltoError(err) && err.severity !== 'Error') {

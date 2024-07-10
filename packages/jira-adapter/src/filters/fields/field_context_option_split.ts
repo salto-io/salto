@@ -36,10 +36,10 @@ import { findObject, setTypeDeploymentAnnotationsRecursively } from '../../utils
 import {
   FIELD_CONTEXT_OPTIONS_FILE_NAME,
   FIELD_CONTEXT_OPTION_TYPE_NAME,
-  FIELD_CONTEXT_ORDER_FILE_NAME,
+  FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME,
   FIELD_CONTEXT_TYPE_NAME,
   ORDER_INSTANCE_SUFFIX,
-  ORDER_OBJECT_TYPE_NAME,
+  OPTIONS_ORDER_TYPE_NAME,
   PARENT_NAME_FIELD,
 } from './constants'
 import { convertOptionsToList } from './context_options'
@@ -107,10 +107,11 @@ const getOrderInstance = async ({
     transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
     defaultName: `${invertNaclCase(parent.elemID.name)}_${ORDER_INSTANCE_SUFFIX}`,
     getElemIdFunc,
+    parent,
   })
   instance.path = context.path && [
     ...context.path,
-    pathNaclCase(naclCase(`${invertNaclCase(context.elemID.name)}_${FIELD_CONTEXT_ORDER_FILE_NAME}`)),
+    pathNaclCase(naclCase(`${invertNaclCase(context.elemID.name)}_${FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME}`)),
   ]
   return instance
 }
@@ -156,11 +157,12 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
     await setTypeDeploymentAnnotationsRecursively(fieldContextOptionType)
 
     const fieldContextOrderObjectType = new ObjectType({
-      elemID: new ElemID('jira', ORDER_OBJECT_TYPE_NAME),
+      elemID: new ElemID('jira', OPTIONS_ORDER_TYPE_NAME),
       fields: {
         options: { refType: new ListType(BuiltinTypes.STRING) },
       },
     })
+    await setTypeDeploymentAnnotationsRecursively(fieldContextOrderObjectType)
     elements.push(fieldContextOrderObjectType)
 
     const contexts = elements

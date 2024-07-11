@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 TURBO_CONCURRENCY="${TURBO_CONCURRENCY:-"100%"}"
+ORG_ARG="$@"
+
 
 if [ -n "$CI" ]; then
 
@@ -55,5 +57,5 @@ else
 fi
 
 sleep 1
-yarn turbo run "$@" \
+yarn turbo run "$ORG_ARG" \
   --concurrency="$TURBO_CONCURRENCY"

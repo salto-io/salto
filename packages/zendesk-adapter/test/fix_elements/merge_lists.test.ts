@@ -23,7 +23,6 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
-import { createInMemoryElementSource } from '@salto-io/workspace/dist/src/workspace/elements_source'
 import { mergeListsHandler } from '../../src/fix_elements/merge_lists'
 import { TICKET_FIELD_CUSTOM_FIELD_OPTION, TICKET_FIELD_TYPE_NAME, ZENDESK } from '../../src/constants'
 import ZendeskClient from '../../src/client/client'
@@ -88,7 +87,7 @@ describe('mergeListsHandler', () => {
       new ReferenceExpression(ticketFiledOption2.elemID, ticketFiledOption2),
     ]
     fixedTicket.value.custom_field_options = [new ReferenceExpression(ticketFiledOption1.elemID, ticketFiledOption1)]
-    elementsSource = createInMemoryElementSource([clonedTicket, ticketFiledOption1])
+    elementsSource = elementSource.createInMemoryElementSource([clonedTicket, ticketFiledOption1])
     // should remove ticketFiledOption2
     const fixerRes = await mergeListsHandler({
       elementsSource,

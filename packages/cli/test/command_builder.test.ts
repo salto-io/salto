@@ -270,18 +270,15 @@ describe('Command builder', () => {
           })
         })
         it('should send start and success telemetry', () => {
-          const events = cliArgs.telemetry.getEvents()
-          expect(events).toContainEqual(
-            expect.objectContaining({
-              name: buildEventName('dummy', 'start'),
-              tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
-            }),
+          expect(cliArgs.telemetry.sendCountEvent).toHaveBeenCalledWith(
+            buildEventName('dummy', 'start'),
+            1,
+            expect.objectContaining({ workspaceID: 'test' }),
           )
-          expect(events).toContainEqual(
-            expect.objectContaining({
-              name: buildEventName('dummy', 'success'),
-              tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
-            }),
+          expect(cliArgs.telemetry.sendCountEvent).toHaveBeenCalledWith(
+            buildEventName('dummy', 'success'),
+            1,
+            expect.objectContaining({ workspaceID: 'test' }),
           )
         })
       })
@@ -300,18 +297,15 @@ describe('Command builder', () => {
           await expect(result).rejects.toThrow(new CliError(CliExitCode.UserInputError))
         })
         it('should send start and failure telemetry', () => {
-          const events = cliArgs.telemetry.getEvents()
-          expect(events).toContainEqual(
-            expect.objectContaining({
-              name: buildEventName('dummy', 'start'),
-              tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
-            }),
+          expect(cliArgs.telemetry.sendCountEvent).toHaveBeenCalledWith(
+            buildEventName('dummy', 'start'),
+            1,
+            expect.objectContaining({ workspaceID: 'test' }),
           )
-          expect(events).toContainEqual(
-            expect.objectContaining({
-              name: buildEventName('dummy', 'failure'),
-              tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
-            }),
+          expect(cliArgs.telemetry.sendCountEvent).toHaveBeenCalledWith(
+            buildEventName('dummy', 'failure'),
+            1,
+            expect.objectContaining({ workspaceID: 'test' }),
           )
         })
       })
@@ -341,17 +335,22 @@ describe('Command builder', () => {
         commanderInput: [{}],
       })
 
-      const events = cliArgs.telemetry.getEvents()
-      expect(events).toContainEqual(
+      expect(cliArgs.telemetry.sendCountEvent).toHaveBeenCalledWith(
+        buildEventName('dummy', 'start'),
+        1,
         expect.objectContaining({
-          name: buildEventName('dummy', 'start'),
-          tags: { workspaceID: 'test', installationID: '1234', app: 'test', extraTag1: 'tag1', extraTag2: 'tag2' },
+          workspaceID: 'test',
+          extraTag1: 'tag1',
+          extraTag2: 'tag2',
         }),
       )
-      expect(events).toContainEqual(
+      expect(cliArgs.telemetry.sendCountEvent).toHaveBeenCalledWith(
+        buildEventName('dummy', 'success'),
+        1,
         expect.objectContaining({
-          name: buildEventName('dummy', 'success'),
-          tags: { workspaceID: 'test', installationID: '1234', app: 'test', extraTag1: 'tag1', extraTag2: 'tag2' },
+          workspaceID: 'test',
+          extraTag1: 'tag1',
+          extraTag2: 'tag2',
         }),
       )
     })

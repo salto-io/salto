@@ -123,7 +123,8 @@ export const createRemoveChange = (
 })
 
 export const projectChange = async (change: DetailedChange, env: ElementsSource): Promise<DetailedChange[]> => {
-  const targetElement = await env.get(change.id)
+  // we want to get the value in its current location
+  const targetElement = await env.get(change.elemIDs?.before ?? change.id)
   if (targetElement === undefined) {
     return change.action === 'add' ? [change] : []
   }

@@ -20,6 +20,7 @@ import {
   AdapterOperations,
   AdapterOperationsContext,
   AdditionChange,
+  CompareOptions,
   CORE_ANNOTATIONS,
   DetailedChange,
   DetailedChangeWithBaseChange,
@@ -140,6 +141,7 @@ export const getDetailedChanges = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
+  compareOptions?: CompareOptions,
 ): Promise<Iterable<DetailedChangeWithBaseChange>> =>
   wu(
     (
@@ -148,6 +150,7 @@ export const getDetailedChanges = async (
         after,
         dependencyChangers: [],
         topLevelFilters,
+        compareOptions,
       })
     ).itemsByEvalOrder(),
   )
@@ -175,7 +178,11 @@ const getDetailedChangeTree = async (
   topLevelFilters: IDFilter[],
   origin: WorkspaceDetailedChangeOrigin,
 ): Promise<DetailedChangeTreeResult> => {
-  const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
+  const changes = Array.from(
+    await getDetailedChanges(before, after, topLevelFilters, {
+      compareListItems: getCoreFlagBool(CORE_FLAGS.compareListItems),
+    }),
+  )
   const changesTree = new collections.treeMap.TreeMap(
     changes.map(change => [change.id.getFullName(), [{ change, origin }]]),
   )

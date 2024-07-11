@@ -34,6 +34,8 @@ export interface Values {
 
 export type CompareOptions = {
   compareByValue?: boolean
+  createFieldChanges?: boolean
+  compareListItems?: boolean
 }
 
 export const calculateStaticFileHash = (content: Buffer): string => hashUtils.toMD5(content)

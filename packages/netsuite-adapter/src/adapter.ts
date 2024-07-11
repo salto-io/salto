@@ -553,6 +553,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   @logDuration('fetching account configuration')
   public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
+    if (process.env.DUMMY_DATA !== undefined) {
+      const dummy = new ObjectType({
+        elemID: new ElemID('netsuite', 'dummy'),
+        annotations: JSON.parse(process.env.DUMMY_DATA),
+        path: ['netsuite', 'dummy'],
+      })
+      return { elements: [dummy], partialFetchData: { isPartial: true } }
+    }
     const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfigType()))
     const hasFetchTarget = this.fetchTarget !== undefined
     if (hasFetchTarget && isFirstFetch) {

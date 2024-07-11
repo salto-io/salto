@@ -44,11 +44,6 @@ import { applyListChanges, getArrayIndexMapping } from './list_comparison'
 
 const log = logger(module)
 
-export type DetailedCompareOptions = CompareOptions & {
-  createFieldChanges?: boolean
-  compareListItems?: boolean
-}
-
 const compareListWithOrderMatching = ({
   id,
   before,
@@ -62,7 +57,7 @@ const compareListWithOrderMatching = ({
   after: Value
   beforeId: ElemID | undefined
   afterId: ElemID | undefined
-  options: DetailedCompareOptions | undefined
+  options: CompareOptions | undefined
 }): DetailedChange[] =>
   log.timeDebug(() => {
     const indexMapping = getArrayIndexMapping(before, after)
@@ -124,7 +119,7 @@ export const getValuesChanges = ({
   after: Value
   beforeId: ElemID | undefined
   afterId: ElemID | undefined
-  options?: DetailedCompareOptions
+  options?: CompareOptions
 }): DetailedChange[] => {
   if (isElement(before) && isElement(after) && isEqualElements(before, after, options)) {
     return []
@@ -253,7 +248,7 @@ export const detailedCompare = (
   // This function supports all types of Elements, but doesn't necessarily support Variable (SALTO-4363)
   before: Element,
   after: Element,
-  compareOptions?: DetailedCompareOptions,
+  compareOptions?: CompareOptions,
 ): DetailedChangeWithBaseChange[] => {
   const baseChange = toChange({ before, after })
   const createFieldChanges = compareOptions?.createFieldChanges ?? false
@@ -358,7 +353,7 @@ const isOrderChange = (change: DetailedChange): boolean =>
  * in that item that was changed. In that case we would want to ignore the inner change
  * since the item change already contains it.
  */
-const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
+export const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
   // For performance, avoiding the sort if no need to filter
   if (changes.every(change => !isOrderChange(change))) {
     return changes

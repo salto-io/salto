@@ -19,4 +19,4 @@ export { dumpElements, dumpElemID, dumpValues, dumpSingleAnnotationType, dumpAnn
 export { SourceMap } from './source_map'
 export { Functions, FunctionExpression } from './functions'
 export { IllegalReference } from './internal/types'
-export { dumpValue } from './internal/dump'
+export { dumpValue, createIndentation } from './internal/dump'

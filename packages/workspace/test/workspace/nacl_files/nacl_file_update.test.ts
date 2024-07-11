@@ -23,8 +23,11 @@ import {
   ListType,
   toChange,
   DetailedChange,
+  Field,
+  Change,
 } from '@salto-io/adapter-api'
 import { dumpElements, parse, SourceMap } from '@salto-io/parser/src/parser'
+import { getDetailedChanges } from '@salto-io/adapter-utils'
 import { SourcePos } from '@salto-io/parser/src/parser/internal/types'
 import {
   getNestedStaticFiles,
@@ -131,9 +134,13 @@ describe('getChangeLocations', () => {
     if (pos === undefined) {
       throw new Error('location is undefined')
     }
-    pos.col -= 1
-    pos.byte -= 1
-    return pos
+    return member === 'start'
+      ? { ...pos }
+      : {
+          ...pos,
+          col: pos.col - 1,
+          byte: pos.byte - 1,
+        }
   }
 
   describe('with addition of top level element', () => {
@@ -218,6 +225,8 @@ describe('getChangeLocations', () => {
             filename: 'file.nacl',
             start: pos,
             end: pos,
+            indexInParent: 3,
+            newInParent: true,
           },
           requiresIndent: true,
         },
@@ -247,9 +256,10 @@ describe('getChangeLocations', () => {
 
     it('should add the field to the end of the parent when the base change is undefined', async () => {
       const mockType = createMockType({})
+      const newField = new Field(mockType, 'newField', BuiltinTypes.STRING)
       const change: DetailedChange = {
-        ...toChange({ after: mockType.fields.numArray }),
-        id: mockType.fields.numArray.elemID,
+        ...toChange({ after: newField }),
+        id: newField.elemID,
         path: ['file'],
       }
       const sourceMap = await sourceMapForElement(mockType)
@@ -263,6 +273,7 @@ describe('getChangeLocations', () => {
             filename: 'file.nacl',
             start: pos,
             end: pos,
+            newInParent: true,
           },
           requiresIndent: true,
         },
@@ -332,6 +343,270 @@ describe('getChangeLocations', () => {
           },
         },
       ])
+    })
+  })
+
+  describe('with list changes', () => {
+    let instance: InstanceElement
+    let sourceMap: SourceMap
+    let baseChange: Change
+    let result: DetailedChangeWithSource[]
+
+    beforeEach(async () => {
+      instance = createMockInstance()
+      baseChange = toChange({ before: createMockInstance(), after: instance })
+      sourceMap = await sourceMapForElement(instance)
+    })
+
+    describe('when item is added', () => {
+      beforeEach(() => {
+        instance.value.strArray = ['x'].concat(instance.value.strArray)
+        const changes = getDetailedChanges(baseChange, { compareListItems: true })
+        result = changes.flatMap(change => getChangeLocations(change, sourceMap))
+      })
+      it('should return all changes', () => {
+        expect(result).toHaveLength(4)
+      })
+      it('should have addition change', () => {
+        const additionChange = result.find(change =>
+          change.elemIDs?.after?.isEqual(instance.elemID.createNestedID('strArray', '0')),
+        )
+        expect(additionChange).toEqual({
+          id: instance.elemID.createNestedID('strArray', '0'),
+          elemIDs: { after: instance.elemID.createNestedID('strArray', '0') },
+          action: 'add',
+          data: { after: 'x' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '0').getFullName())?.[0],
+        })
+      })
+      it('should have modification changes', () => {
+        const modificationChange1 = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '0')),
+        )
+        const modificationChange2 = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '1')),
+        )
+        const modificationChange3 = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '2')),
+        )
+        expect(modificationChange1).toEqual({
+          id: instance.elemID.createNestedID('strArray', '1'),
+          elemIDs: {
+            before: instance.elemID.createNestedID('strArray', '0'),
+            after: instance.elemID.createNestedID('strArray', '1'),
+          },
+          action: 'modify',
+          data: { before: 'a', after: 'a' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '1').getFullName())?.[0],
+        })
+        expect(modificationChange2).toEqual({
+          id: instance.elemID.createNestedID('strArray', '2'),
+          elemIDs: {
+            before: instance.elemID.createNestedID('strArray', '1'),
+            after: instance.elemID.createNestedID('strArray', '2'),
+          },
+          action: 'modify',
+          data: { before: 'b', after: 'b' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '2').getFullName())?.[0],
+        })
+        expect(modificationChange3).toEqual({
+          id: instance.elemID.createNestedID('strArray', '3'),
+          elemIDs: {
+            before: instance.elemID.createNestedID('strArray', '2'),
+            after: instance.elemID.createNestedID('strArray', '3'),
+          },
+          action: 'modify',
+          data: { before: 'c', after: 'c' },
+          baseChange,
+          location: {
+            filename: 'file.nacl',
+            start: locationForElement(instance.elemID.createNestedID('strArray'), sourceMap, 'end'),
+            end: locationForElement(instance.elemID.createNestedID('strArray'), sourceMap, 'end'),
+            indexInParent: 3,
+            newInParent: true,
+          },
+          requiresIndent: true,
+        })
+      })
+    })
+
+    describe('when item is removed', () => {
+      beforeEach(() => {
+        instance.value.strArray = instance.value.strArray.slice(1)
+        const changes = getDetailedChanges(baseChange, { compareListItems: true })
+        result = changes.flatMap(change => getChangeLocations(change, sourceMap))
+      })
+      it('should return all changes', () => {
+        expect(result).toHaveLength(3)
+      })
+      it('should have removal change', () => {
+        const removalChange = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '0')),
+        )
+        expect(removalChange).toEqual({
+          id: instance.elemID.createNestedID('strArray', '0'),
+          elemIDs: { before: instance.elemID.createNestedID('strArray', '0') },
+          action: 'remove',
+          data: { before: 'a' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '0').getFullName())?.[0],
+        })
+      })
+      it('should have modification change', () => {
+        const modificationChange = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '1')),
+        )
+        expect(modificationChange).toEqual({
+          id: instance.elemID.createNestedID('strArray', '1'),
+          elemIDs: {
+            before: instance.elemID.createNestedID('strArray', '1'),
+            after: instance.elemID.createNestedID('strArray', '0'),
+          },
+          action: 'modify',
+          data: { before: 'b', after: 'b' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '0').getFullName())?.[0],
+        })
+      })
+      it('should have a change for the new last item in the list', () => {
+        const modificationChange = result.find(
+          change => change.id.isEqual(instance.elemID.createNestedID('strArray', '1')) && change.elemIDs === undefined,
+        )
+        expect(modificationChange).toEqual({
+          id: instance.elemID.createNestedID('strArray', '1'),
+          action: 'modify',
+          data: { before: 'b', after: 'c' },
+          baseChange,
+          location: {
+            ...sourceMap.get(instance.elemID.createNestedID('strArray', '1').getFullName())?.[0],
+            end: sourceMap.get(instance.elemID.createNestedID('strArray', '2').getFullName())?.[0].end,
+          },
+        })
+      })
+    })
+
+    describe('when there are position changes', () => {
+      beforeEach(() => {
+        instance.value.strArray = [instance.value.strArray[1], instance.value.strArray[0]].concat(
+          instance.value.strArray.slice(2),
+        )
+
+        const changes = getDetailedChanges(baseChange, { compareListItems: true })
+        result = changes.flatMap(change => getChangeLocations(change, sourceMap))
+      })
+      it('should return all changes', () => {
+        expect(result).toHaveLength(2)
+      })
+      it('should have modification changes', () => {
+        const modificationChange1 = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '0')),
+        )
+        const modificationChange2 = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '1')),
+        )
+        expect(modificationChange1).toEqual({
+          id: instance.elemID.createNestedID('strArray', '1'),
+          elemIDs: {
+            before: instance.elemID.createNestedID('strArray', '0'),
+            after: instance.elemID.createNestedID('strArray', '1'),
+          },
+          action: 'modify',
+          data: { before: 'a', after: 'a' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '1').getFullName())?.[0],
+        })
+        expect(modificationChange2).toEqual({
+          id: instance.elemID.createNestedID('strArray', '0'),
+          elemIDs: {
+            before: instance.elemID.createNestedID('strArray', '1'),
+            after: instance.elemID.createNestedID('strArray', '0'),
+          },
+          action: 'modify',
+          data: { before: 'b', after: 'b' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '0').getFullName())?.[0],
+        })
+      })
+    })
+
+    describe('when all items were removed', () => {
+      beforeEach(() => {
+        instance.value.strArray = []
+
+        const changes = getDetailedChanges(baseChange, { compareListItems: true })
+        result = changes.flatMap(change => getChangeLocations(change, sourceMap))
+      })
+      it('should have only one change on the list', () => {
+        expect(result).toHaveLength(1)
+        expect(result[0]).toEqual({
+          id: instance.elemID.createNestedID('strArray'),
+          action: 'modify',
+          data: { before: ['a', 'b', 'c'], after: [] },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray').getFullName())?.[0],
+        })
+      })
+    })
+
+    describe('when there are mixed changes', () => {
+      beforeEach(() => {
+        instance.value.strArray = ['c', 'd']
+
+        const changes = getDetailedChanges(baseChange, { compareListItems: true })
+        result = changes.flatMap(change => getChangeLocations(change, sourceMap))
+      })
+      it('should return all changes', () => {
+        expect(result).toHaveLength(3)
+      })
+      it('should have modification change', () => {
+        const modificationChange = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '2')),
+        )
+        expect(modificationChange).toEqual({
+          id: instance.elemID.createNestedID('strArray', '1'),
+          elemIDs: {
+            before: instance.elemID.createNestedID('strArray', '2'),
+            after: instance.elemID.createNestedID('strArray', '0'),
+          },
+          action: 'modify',
+          data: { before: 'c', after: 'c' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '0').getFullName())?.[0],
+        })
+      })
+      it('should have removal change', () => {
+        const removalChange = result.find(change =>
+          change.elemIDs?.before?.isEqual(instance.elemID.createNestedID('strArray', '0')),
+        )
+        expect(removalChange).toEqual({
+          id: instance.elemID.createNestedID('strArray', '0'),
+          elemIDs: {
+            before: instance.elemID.createNestedID('strArray', '0'),
+          },
+          action: 'remove',
+          data: { before: 'a' },
+          baseChange,
+          location: sourceMap.get(instance.elemID.createNestedID('strArray', '0').getFullName())?.[0],
+        })
+      })
+      it('should have a change for the new last item in the list', () => {
+        const modificationChange = result.find(
+          change => change.id.isEqual(instance.elemID.createNestedID('strArray', '1')) && change.elemIDs === undefined,
+        )
+        expect(modificationChange).toEqual({
+          id: instance.elemID.createNestedID('strArray', '1'),
+          action: 'modify',
+          data: { before: 'b', after: 'd' },
+          baseChange,
+          location: {
+            ...sourceMap.get(instance.elemID.createNestedID('strArray', '1').getFullName())?.[0],
+            end: sourceMap.get(instance.elemID.createNestedID('strArray', '2').getFullName())?.[0].end,
+          },
+        })
+      })
     })
   })
 })
@@ -578,6 +853,119 @@ describe('updateNaclFileData', () => {
     it('should add the element to the data', async () => {
       const result = await updateNaclFileData(mockTypeNacl, changes, {})
       expect(result).toEqual(mockTypeMetaNacl)
+    })
+  })
+
+  describe('when list is updated', () => {
+    let instance: InstanceElement
+    let currentData: string
+    let sourceMap: SourceMap
+    let baseChange: Change
+    let result: string
+
+    beforeEach(async () => {
+      instance = createMockInstance()
+      baseChange = toChange({ before: createMockInstance(), after: instance })
+      currentData = await dumpElements([instance])
+      sourceMap = (await parse(Buffer.from(currentData), 'file.nacl')).sourceMap
+    })
+
+    describe('when item is added', () => {
+      beforeEach(async () => {
+        instance.value.strArray = ['x'].concat(instance.value.strArray)
+        result = await updateNaclFileData(
+          currentData,
+          getDetailedChanges(baseChange, { compareListItems: true }).flatMap(change =>
+            getChangeLocations(change, sourceMap),
+          ),
+          {},
+        )
+      })
+      it('should dump correctly', () => {
+        expect(result).toMatch(`strArray = [
+    "x",
+    "a",
+    "b",
+    "c",
+  ]`)
+      })
+    })
+
+    describe('when item is removed', () => {
+      beforeEach(async () => {
+        instance.value.strArray = instance.value.strArray.slice(1)
+        result = await updateNaclFileData(
+          currentData,
+          getDetailedChanges(baseChange, { compareListItems: true }).flatMap(change =>
+            getChangeLocations(change, sourceMap),
+          ),
+          {},
+        )
+      })
+      it('should dump correctly', () => {
+        expect(result).toMatch(`strArray = [
+    "b",
+    "c",
+  ]`)
+      })
+    })
+
+    describe('when there are position changes', () => {
+      beforeEach(async () => {
+        instance.value.strArray = [instance.value.strArray[1], instance.value.strArray[0]].concat(
+          instance.value.strArray.slice(2),
+        )
+        result = await updateNaclFileData(
+          currentData,
+          getDetailedChanges(baseChange, { compareListItems: true }).flatMap(change =>
+            getChangeLocations(change, sourceMap),
+          ),
+          {},
+        )
+      })
+      it('should dump correctly', () => {
+        expect(result).toMatch(`strArray = [
+    "b",
+    "a",
+    "c",
+  ]`)
+      })
+    })
+
+    describe('when all items were removed', () => {
+      beforeEach(async () => {
+        instance.value.strArray = []
+        result = await updateNaclFileData(
+          currentData,
+          getDetailedChanges(baseChange, { compareListItems: true }).flatMap(change =>
+            getChangeLocations(change, sourceMap),
+          ),
+          {},
+        )
+      })
+      it('should dump correctly', () => {
+        expect(result).toMatch(`strArray = [
+  ]`)
+      })
+    })
+
+    describe('when there are mixed changes', () => {
+      beforeEach(async () => {
+        instance.value.strArray = ['c', 'd']
+        result = await updateNaclFileData(
+          currentData,
+          getDetailedChanges(baseChange, { compareListItems: true }).flatMap(change =>
+            getChangeLocations(change, sourceMap),
+          ),
+          {},
+        )
+      })
+      it('should dump correctly', () => {
+        expect(result).toMatch(`strArray = [
+    "c",
+    "d",
+  ]`)
+      })
     })
   })
 })

@@ -258,8 +258,22 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
         pluralLabel = "TestDiffObjozkjqxojoxhfs"
         sharingModel = "ReadWrite"
         deploymentStatus = "Deployed"
-        ${accountName}.Text Alpha {
+        ${accountName}.Picklist Alpha {
           label = "Alpha"
+          valueSet = [
+            // "No" value
+            {
+              fullName = "No"
+              default = false
+              label = "No"
+            },
+            // "Yes" value
+            {
+              fullName = "Yes"
+              default = false
+              label = "Yes"
+            },
+          ]
           _required = false
         }
         ${accountName}.Text Beta {
@@ -441,13 +455,42 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
     describe('partial fetch', () => {
       let fetchedObject: ObjectType
       let fetchedRole: InstanceElement
+      let updatedFileContext: string
+
+      const envVars = {
+        // we want to test the compareListItems result here
+        SALTO_COMPARE_LIST_ITEMS: '1',
+      }
+
       beforeAll(async () => {
+        Object.assign(process.env, envVars)
+
         // Make two changes on salesforce, one in a custom object and one in a role
         const updatedField = {
           fullName: `${newObjectApiName}.Alpha__c`,
-          type: 'Text',
+          type: 'Picklist',
           label: 'updated label',
-          length: 80,
+          valueSet: {
+            valueSetDefinition: {
+              value: [
+                {
+                  fullName: 'No',
+                  default: false,
+                  label: 'No',
+                },
+                {
+                  fullName: 'Yes',
+                  default: false,
+                  label: 'Yes',
+                },
+                {
+                  fullName: 'Maybe',
+                  default: false,
+                  label: 'Maybe',
+                },
+              ],
+            },
+          },
         }
         await client.upsert(CUSTOM_FIELD, updatedField)
 
@@ -463,15 +506,63 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
         const workspace = await loadValidWorkspace(fetchOutputDir)
         fetchedObject = await workspace.getValue(new ElemID(accountName, newObjectElemName))
         fetchedRole = await workspace.getValue(new ElemID(accountName, ROLE, 'instance', newInstanceElemName))
+        updatedFileContext = (await workspace.getNaclFile(tmpNaclFileRelativePath))?.buffer ?? ''
       })
+
+      afterAll(() => {
+        Object.keys(envVars).forEach(key => {
+          delete process.env[key]
+        })
+      })
+
       it('should update elements that were part of the partial fetch', () => {
         expect(fetchedObject).toBeInstanceOf(ObjectType)
         expect(fetchedObject.fields).toHaveProperty('Alpha')
         expect(fetchedObject.fields.Alpha.annotations.label).toEqual('updated label')
+        expect(fetchedObject.fields.Alpha.annotations.valueSet).toEqual([
+          {
+            fullName: 'No',
+            default: false,
+            label: 'No',
+          },
+          {
+            fullName: 'Yes',
+            default: false,
+            label: 'Yes',
+          },
+          {
+            fullName: 'Maybe',
+            default: false,
+            label: 'Maybe',
+          },
+        ])
       })
       it('should not update elements that were not part of the partial fetch', () => {
         expect(fetchedRole).toBeInstanceOf(InstanceElement)
         expect(fetchedRole.value.name).not.toEqual('Updated role name')
+      })
+      it('should update list and not override it', () => {
+        expect(updatedFileContext).toMatch(
+          `valueSet = [
+            // "No" value
+            {
+              fullName = "No"
+              default = false
+              label = "No"
+            },
+            // "Yes" value
+            {
+              fullName = "Yes"
+              default = false
+              label = "Yes"
+            },
+            {
+              fullName = "Maybe"
+              default = false
+              label = "Maybe"
+            },
+          ]`,
+        )
       })
     })
 

@@ -28,6 +28,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { IDFilter, getPlan } from './plan/plan'
 import { ChangeWithDetails } from './plan/plan_item'
+import { CORE_FLAGS, getCoreFlagBool } from './flags'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -149,6 +150,7 @@ export async function createDiffChanges(
       after: fromElementsSrc,
       dependencyChangers: [],
       topLevelFilters: topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors),
+      compareOptions: { compareListItems: getCoreFlagBool(CORE_FLAGS.compareListItems) },
     })
     return resultType === 'changes'
       ? awu(plan.itemsByEvalOrder())
@@ -173,6 +175,7 @@ export async function createDiffChanges(
     after: fromElementsSrc,
     dependencyChangers: [],
     topLevelFilters,
+    compareOptions: { compareListItems: getCoreFlagBool(CORE_FLAGS.compareListItems) },
   })
   return wu(plan.itemsByEvalOrder())
     .map(item => item[resultType]())

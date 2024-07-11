@@ -947,6 +947,14 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     sourceTransformation: 'globalPrefix',
     target: { type: 'QuickAction' },
   },
+  {
+    src: {
+      field: 'leftValueReference',
+      parentTypes: ['FlowCondition', 'FlowTestCondition', 'FlowTestParameter'],
+    },
+    serializationStrategy: 'customLabel',
+    target: { type: CUSTOM_LABEL_METADATA_TYPE },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>

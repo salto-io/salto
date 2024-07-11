@@ -27,7 +27,7 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { config, client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { defaultDeployChange } from '../../deployment/standard_deployment'
@@ -36,6 +36,7 @@ import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from './default_values'
 import { setContextField } from './issues_and_projects'
 import { setFieldDeploymentAnnotations } from '../../utils'
+import { JiraConfig } from '../../config/config'
 
 const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext']
 
@@ -55,13 +56,19 @@ export const getContextType = async (fieldType: ObjectType): Promise<ObjectType>
   return contextType
 }
 
-export const deployContextChange = async (
-  change: Change<InstanceElement>,
-  client: JiraClient,
-  apiDefinitions: config.AdapterApiConfig,
-  paginator?: clientUtils.Paginator,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<void> => {
+export const deployContextChange = async ({
+  change,
+  client,
+  config,
+  paginator,
+  elementsSource,
+}: {
+  change: Change<InstanceElement>
+  client: JiraClient
+  config: JiraConfig
+  paginator?: clientUtils.Paginator
+  elementsSource?: ReadOnlyElementsSource
+}): Promise<void> => {
   const fieldsToIgnore = isAdditionChange(change)
     ? FIELDS_TO_IGNORE
     : [...FIELDS_TO_IGNORE, 'issueTypeIds', 'projectIds']
@@ -70,7 +77,7 @@ export const deployContextChange = async (
     await defaultDeployChange({
       change,
       client,
-      apiDefinitions,
+      apiDefinitions: config.apiDefinitions,
       // 'issueTypeIds' can be deployed in the same endpoint as create
       // but for modify there are different endpoints for them
       fieldsToIgnore,
@@ -91,8 +98,10 @@ export const deployContextChange = async (
     elementsSource,
   })
   await setContextField({ contextChange: change, fieldName: 'projectIds', endpoint: 'project', client, elementsSource })
-  await setContextOptions(change, client, elementsSource, paginator)
-  await updateDefaultValues(change, client, elementsSource)
+  if (!config.fetch.splitFieldContextOptions) {
+    await setContextOptions(change, client, elementsSource, paginator)
+    await updateDefaultValues(change, client, config, elementsSource)
+  }
 }
 
 export const getContexts = async (

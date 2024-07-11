@@ -113,8 +113,8 @@ describe('fields_deployment', () => {
 
     await filter.deploy([change])
 
-    expect(deployContextChangeMock).toHaveBeenCalledWith(
-      toChange({
+    expect(deployContextChangeMock).toHaveBeenCalledWith({
+      change: toChange({
         before: new InstanceElement(
           '4',
           contextType,
@@ -128,8 +128,8 @@ describe('fields_deployment', () => {
         ),
       }),
       client,
-      getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-    )
+      config: getDefaultConfig({ isDataCenter: false }),
+    })
   })
 
   it('should throw if contexts is not a map', async () => {

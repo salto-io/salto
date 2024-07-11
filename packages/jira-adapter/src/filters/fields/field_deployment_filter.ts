@@ -50,7 +50,7 @@ const deployField = async (change: Change<InstanceElement>, client: JiraClient, 
       : []
 
     await awu(removalContextsChanges).forEach(contextChange =>
-      deployContextChange(contextChange, client, config.apiDefinitions),
+      deployContextChange({ change: contextChange, client, config }),
     )
   }
 }

@@ -16,10 +16,8 @@
 import { ElemID, InstanceElement, ObjectType, Element, BuiltinTypes, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, elements as elementUtils, config as configDeprecated } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { HTTPError } from '@salto-io/adapter-components/src/client'
-import { TransformationConfig } from '@salto-io/adapter-components/src/config_deprecated'
 import { getFilterParams, mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
@@ -452,7 +450,7 @@ describe('automationFetchFilter', () => {
 
     conn.get.mockImplementation(async url => {
       if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
-        throw new HTTPError('failed', { data: {}, status: 403 })
+        throw new clientUtils.HTTPError('failed', { data: {}, status: 403 })
       }
 
       throw new Error(`Unexpected url ${url}`)
@@ -481,7 +479,7 @@ describe('automationFetchFilter', () => {
 
     conn.get.mockImplementation(async url => {
       if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
-        throw new HTTPError('failed', { data: {}, status: 405 })
+        throw new clientUtils.HTTPError('failed', { data: {}, status: 405 })
       }
 
       throw new Error(`Unexpected url ${url}`)
@@ -534,7 +532,7 @@ describe('automationFetchFilter', () => {
     const { client: cli, connection: conn } = mockClient(true)
     client = cli
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    const apiDefinitions = config.apiDefinitions.types.Automation.transformation as TransformationConfig
+    const apiDefinitions = config.apiDefinitions.types.Automation.transformation as configDeprecated.TransformationConfig
     apiDefinitions.idFields = ['name']
     connection = conn
     conn.get.mockImplementation(async url => {
@@ -568,7 +566,7 @@ describe('automationFetchFilter', () => {
 
     conn.post.mockImplementationOnce(mockPostResponse) // for cloud id
     conn.post.mockImplementationOnce(async () => {
-      throw new HTTPError('failed', { data: {}, status: 504 })
+      throw new clientUtils.HTTPError('failed', { data: {}, status: 504 })
     })
     conn.post.mockImplementationOnce(mockPostResponse)
     const elements = [project2Instance]
@@ -589,7 +587,7 @@ describe('automationFetchFilter', () => {
 
     conn.post.mockImplementationOnce(mockPostResponse) // for cloud id
     conn.post.mockImplementationOnce(async () => {
-      throw new HTTPError('failed', { data: {}, status: 502 })
+      throw new clientUtils.HTTPError('failed', { data: {}, status: 502 })
     })
     conn.post.mockImplementationOnce(mockPostResponse)
     const elements = [project2Instance]
@@ -610,7 +608,7 @@ describe('automationFetchFilter', () => {
     conn.post.mockClear()
     conn.post.mockImplementationOnce(mockPostResponse) // for cloud id
     conn.post.mockImplementation(async () => {
-      throw new HTTPError('failed', { data: {}, status: 504 })
+      throw new clientUtils.HTTPError('failed', { data: {}, status: 504 })
     })
 
     const elements = [project2Instance]

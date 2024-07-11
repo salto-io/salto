@@ -24,13 +24,14 @@ import {
   StaticFile,
   toChange,
 } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementsDeprecated } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } from '@salto-io/adapter-components/src/elements_deprecated'
 import OktaClient from '../src/client/client'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../src/constants'
 import { createFileType, deployLogo, getLogo } from '../src/logo'
 import { mockClient } from './utils'
+
+const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } = elementsDeprecated
 
 describe('logo filter', () => {
   const content = Buffer.from('test')

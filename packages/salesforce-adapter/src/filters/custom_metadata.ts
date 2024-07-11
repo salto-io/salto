@@ -227,7 +227,6 @@ const formatRecordValuesForService = async (
         value: XSI_NIL_TRUE,
       }
     })
-    .filter(isDefined)
     .toArray()
 
   return {

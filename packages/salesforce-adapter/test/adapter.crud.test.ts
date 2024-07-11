@@ -60,8 +60,9 @@ import {
   createValueSetEntry,
   createCustomObjectType,
   nullProgressReporter,
+  createElement,
+  removeElement,
 } from './utils'
-import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import {
   mockDeployResult,

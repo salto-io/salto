@@ -16,11 +16,15 @@
 import _ from 'lodash'
 import {
   BuiltinTypes,
+  ChangeGroup,
   CORE_ANNOTATIONS,
+  DeployResult,
   Element,
   ElemID,
   FetchOptions,
   Field,
+  getChangeData,
+  InstanceElement,
   ListType,
   MapType,
   ObjectType,
@@ -33,6 +37,7 @@ import {
 import {
   buildElementsSourceFromElements,
   findElements as findElementsByID,
+  safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import { MockInterface } from '@salto-io/test-utils'
@@ -50,6 +55,7 @@ import {
   LastChangeDateOfTypesWithNestedInstances,
   OptionalFeatures,
 } from '../src/types'
+import SalesforceAdapter from '../src/adapter'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -480,4 +486,54 @@ export const emptyLastChangeDateOfTypesWithNestedInstances =
 export const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
+}
+
+export const createElement = async <T extends InstanceElement | ObjectType>(
+  adapter: SalesforceAdapter,
+  element: T,
+  verify = true,
+): Promise<T> => {
+  const changeGroup: ChangeGroup = {
+    groupID: 'add test elements',
+    changes: [{ action: 'add', data: { after: element } }],
+  }
+  const result = await adapter.deploy({
+    changeGroup,
+    progressReporter: nullProgressReporter,
+  })
+  const errors = result.errors.filter((error) => error.severity === 'Error')
+  if (verify && errors.length > 0) {
+    if (errors.length === 1) throw result.errors[0]
+    throw new Error(
+      `Failed adding element ${element.elemID.getFullName()} with errors: ${errors.map((error) => safeJsonStringify(error))}`,
+    )
+  }
+  if (verify && result.appliedChanges.length === 0) {
+    throw new Error(
+      `Failed adding element ${element.elemID.getFullName()}: no applied changes`,
+    )
+  }
+  return getChangeData(result.appliedChanges[0]) as T
+}
+
+export const removeElement = async <T extends InstanceElement | ObjectType>(
+  adapter: SalesforceAdapter,
+  element: T,
+  verify = true,
+): Promise<DeployResult> => {
+  const changeGroup: ChangeGroup = {
+    groupID: 'remove test elements',
+    changes: [{ action: 'remove', data: { before: element } }],
+  }
+  const result = await adapter.deploy({
+    changeGroup,
+    progressReporter: nullProgressReporter,
+  })
+  if (verify && result.errors.length > 0) {
+    if (result.errors.length === 1) throw result.errors[0]
+    throw new Error(
+      `Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`,
+    )
+  }
+  return result
 }

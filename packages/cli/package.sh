@@ -7,9 +7,9 @@ function de_hoist_package() {
 }
 
 echo "workaround for yarn berry hoisting @salto-io/rocksdb dependencies"
-missing_dependencies='["is-buffer","catering","queue-tick","node-gyp-build"]'
-for dep in $(echo "$missing_dependencies" | jq -r '.[]'); do
-    de_hoist_package "$dep"
+missing_dependencies=("is-buffer" "catering" "queue-tick" "node-gyp-build")
+for package in "${missing_dependencies[@]}"; do
+  de_hoist_package "${package}"
 done
 
 node ./package_native.js

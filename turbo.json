@@ -20,6 +20,15 @@
         ".check-format.cache"
       ]
     },
+    "test": {
+      "outputLogs": "new-only",
+      "env": [
+        "SALTO_DEPENDENCIES_HASH"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
+    },
     "clean": {
       "cache": false
     }

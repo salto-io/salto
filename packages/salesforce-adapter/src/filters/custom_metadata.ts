@@ -115,6 +115,10 @@ export type ServiceMDTRecordValue = MetadataValues & {
   values: ServiceMDTRecordFieldValue | ServiceMDTRecordFieldValue[]
 }
 
+// Salesforce expects xsi:nil="true" for null values explicitly.
+// We put the "true" value in the key since fast-xml-parser omits boolean values.
+export const XSI_NIL_TRUE = { [`${XML_ATTRIBUTE_PREFIX}xsi:nil="true"`]: true }
+
 const isServiceMDTRecordFieldValue = (
   value: Values,
 ): value is ServiceMDTRecordFieldValue =>
@@ -219,9 +223,10 @@ const formatRecordValuesForService = async (
           value: { '#text': fieldValue, 'attr_xsi:type': xsdType },
         }
       }
+      // No value was provided for the field or field value was removed
       return {
         field: fieldName,
-        value: { 'attr_xsi:nil': 'true' },
+        value: XSI_NIL_TRUE,
       }
     })
     .toArray()

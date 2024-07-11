@@ -23,10 +23,11 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
+import { createInMemoryElementSource } from '@salto-io/workspace/dist/src/workspace/elements_source'
 import { mergeListsHandler } from '../../src/fix_elements/merge_lists'
 import { TICKET_FIELD_CUSTOM_FIELD_OPTION, TICKET_FIELD_TYPE_NAME, ZENDESK } from '../../src/constants'
 import ZendeskClient from '../../src/client/client'
-import { DEFAULT_CONFIG, DEPLOY_CONFIG, ZendeskConfig } from '../../src/config'
+import { DEFAULT_CONFIG, FIX_ELEMENTS_CONFIG, ZendeskConfig } from '../../src/config'
 
 describe('mergeListsHandler', () => {
   let config: ZendeskConfig
@@ -37,24 +38,24 @@ describe('mergeListsHandler', () => {
   const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) })
   const customFieldOptionType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_CUSTOM_FIELD_OPTION) })
 
-  const ticketFiled1 = new InstanceElement('ticket1', ticketFieldType, {})
+  const ticketField1 = new InstanceElement('ticket1', ticketFieldType, {})
   const ticketFiledOption1 = new InstanceElement('ticket1Option1', customFieldOptionType, {}, undefined, {
-    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(ticketFiled1.elemID, ticketFiled1)],
+    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(ticketField1.elemID, ticketField1)],
   })
   const ticketFiledOption2 = new InstanceElement('ticket1Option2', customFieldOptionType, {}, undefined, {
-    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(ticketFiled1.elemID, ticketFiled1)],
+    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(ticketField1.elemID, ticketField1)],
   })
 
   beforeEach(() => {
-    clonedTicket = ticketFiled1.clone()
-    fixedTicket = ticketFiled1.clone()
+    clonedTicket = ticketField1.clone()
+    fixedTicket = ticketField1.clone()
     fixedTicket.value.custom_field_options = [
       new ReferenceExpression(ticketFiledOption1.elemID, ticketFiledOption1),
-      new ReferenceExpression(ticketFiledOption2.elemID, ticketFiledOption2),
+      new ReferenceExpression(ticketFiledOption2.elemID),
     ]
     config = {
       ...DEFAULT_CONFIG,
-      [DEPLOY_CONFIG]: { fixParentOption: true },
+      [FIX_ELEMENTS_CONFIG]: { mergeLists: true },
     }
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -77,8 +78,32 @@ describe('mergeListsHandler', () => {
       elemID: fixerRes.fixedElements[0].elemID,
       severity: 'Warning',
       message: 'custom_field_options were updated',
-      detailedMessage: `ticket_field custom_field_options were updated.
-  The following options were added at the end of the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.`,
+      detailedMessage:
+        'ticket_field custom_field_options were updated.\nThe following options were added at the end of the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.',
+    })
+  })
+  it('Should add remove options from the parent list when it does not appear in the elementsSource', async () => {
+    clonedTicket.value.custom_field_options = [
+      new ReferenceExpression(ticketFiledOption1.elemID, ticketFiledOption1),
+      new ReferenceExpression(ticketFiledOption2.elemID, ticketFiledOption2),
+    ]
+    fixedTicket.value.custom_field_options = [new ReferenceExpression(ticketFiledOption1.elemID, ticketFiledOption1)]
+    elementsSource = createInMemoryElementSource([clonedTicket, ticketFiledOption1])
+    // should remove ticketFiledOption2
+    const fixerRes = await mergeListsHandler({
+      elementsSource,
+      config,
+      client,
+    })([clonedTicket])
+    expect(fixerRes.fixedElements.length).toEqual(1)
+    expect(fixerRes.fixedElements[0]).toEqual(fixedTicket)
+    expect(fixerRes.errors.length).toEqual(1)
+    expect(fixerRes.errors[0]).toEqual({
+      elemID: fixerRes.fixedElements[0].elemID,
+      severity: 'Warning',
+      message: 'custom_field_options were updated',
+      detailedMessage:
+        'ticket_field custom_field_options were updated.\nThe following options were removed from the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.',
     })
   })
 
@@ -97,8 +122,8 @@ describe('mergeListsHandler', () => {
       elemID: fixerRes.fixedElements[0].elemID,
       severity: 'Warning',
       message: 'custom_field_options were updated',
-      detailedMessage: `ticket_field custom_field_options were updated.
-  The following options were added at the end of the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.`,
+      detailedMessage:
+        'ticket_field custom_field_options were updated.\nThe following options were added at the end of the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.',
     })
   })
   it('Should do nothing if options and parent align', async () => {
@@ -128,8 +153,8 @@ describe('mergeListsHandler', () => {
       elemID: fixerRes.fixedElements[0].elemID,
       severity: 'Warning',
       message: 'custom_field_options were updated',
-      detailedMessage: `ticket_field custom_field_options were updated.
-  The following options were added at the end of the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.`,
+      detailedMessage:
+        'ticket_field custom_field_options were updated.\nThe following options were added at the end of the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.',
     })
   })
   it('Should do nothing if options are not defined', async () => {
@@ -155,23 +180,11 @@ describe('mergeListsHandler', () => {
     expect(fixerRes.fixedElements.length).toEqual(0)
     expect(fixerRes.errors.length).toEqual(0)
   })
-  it('Should do nothing if flag is false', async () => {
-    config = { ...DEFAULT_CONFIG, [DEPLOY_CONFIG]: { fixParentOption: false } }
-    clonedTicket.value.custom_field_options = [new ReferenceExpression(ticketFiledOption1.elemID, ticketFiledOption1)]
-    // should add ticketFiledOption2
-    const fixerRes = await mergeListsHandler({
-      elementsSource,
-      config,
-      client,
-    })([clonedTicket])
-    expect(fixerRes.fixedElements.length).toEqual(0)
-    expect(fixerRes.errors.length).toEqual(0)
-  })
   it('Should do nothing to options which are not references', async () => {
     fixedTicket.value.custom_field_options = [
       new ReferenceExpression(ticketFiledOption1.elemID, ticketFiledOption1),
       1234,
-      new ReferenceExpression(ticketFiledOption2.elemID, ticketFiledOption2),
+      new ReferenceExpression(ticketFiledOption2.elemID),
     ]
     clonedTicket.value.custom_field_options = [
       new ReferenceExpression(ticketFiledOption1.elemID, ticketFiledOption1),
@@ -189,8 +202,8 @@ describe('mergeListsHandler', () => {
       elemID: fixerRes.fixedElements[0].elemID,
       severity: 'Warning',
       message: 'custom_field_options were updated',
-      detailedMessage: `ticket_field custom_field_options were updated.
-  The following options were added at the end of the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.`,
+      detailedMessage:
+        'ticket_field custom_field_options were updated.\nThe following options were added at the end of the list: zendesk.ticket_field__custom_field_options.instance.ticket1Option2.',
     })
   })
 })

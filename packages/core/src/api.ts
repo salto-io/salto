@@ -841,10 +841,9 @@ export const fixElements = async (
   }
 
   const fixes = await fixElementsContinuously(workspace, elements, adapters, MAX_FIX_RUNS)
+  const workspaceElements = await workspace.elements()
   const changes = await awu(fixes.fixedElements)
-    .flatMap(async fixedElement =>
-      detailedCompare(await (await workspace.elements()).get(fixedElement.elemID), fixedElement),
-    )
+    .flatMap(async fixedElement => detailedCompare(await workspaceElements.get(fixedElement.elemID), fixedElement))
     .toArray()
   return { errors: fixes.errors, changes }
 }

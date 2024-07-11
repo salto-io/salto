@@ -75,8 +75,14 @@ export type ZendeskClientConfig = definitions.ClientBaseConfig<ZendeskClientRate
 export type ZendeskDeployConfig = definitions.UserDeployConfig &
   definitions.DefaultMissingUserFallbackConfig & {
     createMissingOrganizations?: boolean
-    fixParentOption?: boolean
   }
+
+export type ZendeskFixElementsConfig = {
+  mergeLists?: boolean
+  fallbackUsers?: boolean
+  removeDupUsers?: boolean
+  orderElements?: boolean
+}
 
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig,

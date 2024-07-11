@@ -39,7 +39,7 @@ const PARENT_TO_CHILD_MAP: Record<string, string> = {
   [TICKET_FIELD_TYPE_NAME]: TICKET_FIELD_CUSTOM_FIELD_OPTION,
 }
 
-const ALL_TYPES = Object.entries(PARENT_TO_CHILD_MAP).flatMap(couple => couple)
+const ALL_TYPES = Object.entries(PARENT_TO_CHILD_MAP).flat()
 
 const isRelevantElement = (element: unknown): element is InstanceElement =>
   isInstanceElement(element) && ALL_TYPES.includes(element.elemID.typeName)
@@ -52,52 +52,59 @@ const getAllParents = async (
     Object.keys(PARENT_TO_CHILD_MAP).includes(elem.elemID.typeName),
   )
   const parentNames = new Set(parentElements.map(parent => parent.elemID.getFullName()))
-  const parentNamesFromChild = new Set(
-    childElements
-      .map(child => {
-        try {
-          return getParent(child)
-        } catch (e) {
-          log.warn(
-            `could not find parent for child ${child.elemID.getFullName()}, with error ${e}, will not fix this parent`,
-          )
-        }
-        return undefined
-      })
-      .filter(isDefined)
-      .map(parent => parent.elemID.getFullName())
-      // we need to get all the parent names that don't appear already in the elements
-      .filter(name => !parentNames.has(name)),
-  )
-  const parentElementsFromElementSource: InstanceElement[] = await awu(await elementsSource.list())
-    .filter(id => id.idType === 'instance' && parentNamesFromChild.has(id.getFullName()))
+  const additionalRelevantParentNames = childElements
+    .map(child => {
+      try {
+        return getParent(child)
+      } catch (e) {
+        log.warn(
+          `could not find parent for child ${child.elemID.getFullName()}, with error ${e}, will not fix this parent`,
+        )
+      }
+      return undefined
+    })
+    .filter(isDefined)
+    // we need to get all the parent names that don't appear already in the elements
+    .filter(parent => !parentNames.has(parent.elemID.getFullName()))
+    .map(parent => parent.elemID)
+
+  const parentElementsFromElementSource: InstanceElement[] = await awu(additionalRelevantParentNames)
     .map(id => elementsSource.get(id))
     .toArray()
   return parentElements.concat(parentElementsFromElementSource)
 }
 
-const getChildrenElemIdByParent = (allParents: InstanceElement[], elemIdsList: ElemID[]): Record<string, ElemID[]> =>
-  Object.fromEntries(
-    allParents.map(parent => {
-      const parentElemId = parent.elemID
-      const childrenElemIds = elemIdsList.filter(id =>
-        id
-          .getFullName()
-          .startsWith(
-            `${parentElemId.adapter}.${PARENT_TO_CHILD_MAP[parentElemId.typeName] ?? ''}.instance.${pathNaclCase(parentElemId.name)}`,
-          ),
-      )
-      return [parentElemId.getFullName(), childrenElemIds]
-    }),
+const getChildrenElemIdByParent = (
+  allParents: InstanceElement[],
+  childElemIdsList: ElemID[],
+): Record<string, ElemID[]> => {
+  const parentsByType = _.groupBy(allParents, parent => parent.elemID.typeName)
+  const childrenByType = _.groupBy(childElemIdsList, childElemId => childElemId.typeName)
+  return Object.fromEntries(
+    Object.entries(parentsByType).flatMap(([type, parents]) =>
+      parents.map(parent => {
+        const parentElemId = parent.elemID
+        const childrenElemIds = childrenByType[PARENT_TO_CHILD_MAP[type]].filter(id =>
+          id
+            .getFullName()
+            .startsWith(
+              `${parentElemId.adapter}.${PARENT_TO_CHILD_MAP[parentElemId.typeName] ?? ''}.instance.${pathNaclCase(parentElemId.name)}`,
+            ),
+        )
+        return [parentElemId.getFullName(), childrenElemIds]
+      }),
+    ),
   )
+}
 
-type FixedParentResult = { fixedParent: InstanceElement; childrenAdded: string[] }
+type FixedParentResult = { fixedParent: InstanceElement; childrenAdded: string[]; childrenRemoved: string[] }
 
 const fixParent = (
   parent: InstanceElement,
   childrenElemIdByParent: Record<string, ElemID[]>,
-  allChildrenByFullName: Record<string, InstanceElement>,
+  allChildrenByFullName: Record<string, ElemID>,
 ): FixedParentResult | undefined => {
+  // custom_field_options will have to be configurable if we decide to support other types beside ticket, user and org field
   const parentOptions = parent.value.custom_field_options
   if (!_.isArray(parentOptions)) {
     return undefined
@@ -106,63 +113,75 @@ const fixParent = (
     parentOptions.map(option => (isReferenceExpression(option) ? option.elemID.getFullName() : option)),
   )
   const childrenIdsFromElementSource = childrenElemIdByParent[parent.elemID.getFullName()]
+  const childrenIdsFromElementSourceSet = new Set(childrenIdsFromElementSource.map(elemId => elemId.getFullName()))
   const childrenAdded: string[] = []
+  const childrenRemoved: string[] = []
   const optionsToAdd = childrenIdsFromElementSource.flatMap(childElemId => {
     if (!parentOptionsElemIdSet.has(childElemId.getFullName())) {
       const optionToAdd = allChildrenByFullName[childElemId.getFullName()]
-      if (!isInstanceElement(optionToAdd)) {
+      if (optionToAdd === undefined) {
         return []
       }
-      childrenAdded.push(optionToAdd.elemID.getFullName())
-      return [new ReferenceExpression(optionToAdd.elemID, optionToAdd)]
+      childrenAdded.push(optionToAdd.getFullName())
+      return [new ReferenceExpression(optionToAdd)]
     }
     return []
   })
   const fixedParent = parent.clone()
-  const newOptions = parentOptions.concat(optionsToAdd)
-  fixedParent.value.custom_field_options = !_.isEmpty(childrenAdded)
-    ? newOptions
-    : fixedParent.value.custom_field_options
-  // we cannot have removed children (only in parent and not in elementSource) as they will appear in the dependency
-  return !_.isEmpty(childrenAdded) ? { fixedParent, childrenAdded } : undefined
+  const newOptions = parentOptions.concat(optionsToAdd).filter(option => {
+    if (isReferenceExpression(option) && !childrenIdsFromElementSourceSet.has(option.elemID.getFullName())) {
+      childrenRemoved.push(option.elemID.getFullName())
+      return false
+    }
+    return true
+  })
+  const shouldUpdateParent = !_.isEmpty(childrenAdded) || !_.isEmpty(childrenRemoved)
+  fixedParent.value.custom_field_options = shouldUpdateParent ? newOptions : fixedParent.value.custom_field_options
+  return shouldUpdateParent ? { fixedParent, childrenAdded, childrenRemoved } : undefined
 }
 
 const getFixedParents = async (
   allParents: InstanceElement[],
   elementsSource: ReadOnlyElementsSource,
 ): Promise<FixedParentResult[]> => {
-  const elemIdsList = await awu(await elementsSource.list()).toArray()
-  const childrenElemIdByParent = getChildrenElemIdByParent(allParents, elemIdsList)
-  const allChildrenElemIds = Object.values(childrenElemIdByParent).flatMap(list => list)
-  const allChildren: InstanceElement[] = await awu(allChildrenElemIds)
-    .map(id => elementsSource.get(id))
+  const childElemIdsList = await awu(await elementsSource.list())
+    .filter(id => Object.values(PARENT_TO_CHILD_MAP).includes(id.typeName))
     .toArray()
-  const allChildrenByFullName = _.keyBy(allChildren, child => child.elemID.getFullName())
+  const childrenElemIdByParent = getChildrenElemIdByParent(allParents, childElemIdsList)
+  const allChildren: ElemID[] = Object.values(childrenElemIdByParent).flat()
+  const allChildrenByFullName = _.keyBy(allChildren, childElemId => childElemId.getFullName())
   return allParents.map(parent => fixParent(parent, childrenElemIdByParent, allChildrenByFullName)).filter(isDefined)
 }
 
-const getError = (fixedParentsRes: FixedParentResult): ChangeError => ({
-  elemID: fixedParentsRes.fixedParent.elemID,
-  severity: 'Warning',
-  message: 'custom_field_options were updated',
-  detailedMessage: `${fixedParentsRes.fixedParent.elemID.typeName} custom_field_options were updated.
-  The following options were added at the end of the list: ${fixedParentsRes.childrenAdded.join(', ')}.`,
-})
+const getError = (fixedParentsRes: FixedParentResult): ChangeError => {
+  const childrenAddedMsg = !_.isEmpty(fixedParentsRes.childrenAdded)
+    ? `\nThe following options were added at the end of the list: ${fixedParentsRes.childrenAdded.join(', ')}.`
+    : ''
+  const childrenRemovedMsg = !_.isEmpty(fixedParentsRes.childrenRemoved)
+    ? `\nThe following options were removed from the list: ${fixedParentsRes.childrenRemoved.join(', ')}.`
+    : ''
+  return {
+    elemID: fixedParentsRes.fixedParent.elemID,
+    severity: 'Warning',
+    message: 'custom_field_options were updated',
+    detailedMessage: `${fixedParentsRes.fixedParent.elemID.typeName} custom_field_options were updated.${childrenAddedMsg}${childrenRemovedMsg}`,
+  }
+}
 
 /**
  * In this fixer we merge custom_field_options, by updating the father list to include all options from the elementsSource.
  * Therefor if there is a custom option that was deleted from the list however its instance was not deleted we will add it back to the list.
  */
 export const mergeListsHandler: FixElementsHandler =
-  ({ config, elementsSource }) =>
+  ({ elementsSource }) =>
   async elements => {
-    if (config.deploy?.fixParentOption !== true) {
+    const relevantElements = elements.filter(isRelevantElement)
+    if (_.isEmpty(relevantElements)) {
       return {
         fixedElements: [],
         errors: [],
       }
     }
-    const relevantElements = elements.filter(isRelevantElement)
     const allParents = await getAllParents(relevantElements, elementsSource)
     const fixedParentsResult = await getFixedParents(allParents, elementsSource)
 

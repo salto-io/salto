@@ -143,6 +143,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     fetch,
     deploy: configValue.deploy,
     apiDefinitions,
+    fixElements: mergeWithDefaultConfig(DEFAULT_CONFIG.fixElements ?? {}, configValue.fixElements),
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)

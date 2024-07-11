@@ -16,7 +16,12 @@
 import { ElemID, InstanceElement, ObjectType, Element, BuiltinTypes, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils, elements as elementUtils, config as configDeprecated } from '@salto-io/adapter-components'
+import {
+  filterUtils,
+  client as clientUtils,
+  elements as elementUtils,
+  config as configDeprecated,
+} from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
@@ -532,7 +537,8 @@ describe('automationFetchFilter', () => {
     const { client: cli, connection: conn } = mockClient(true)
     client = cli
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    const apiDefinitions = config.apiDefinitions.types.Automation.transformation as configDeprecated.TransformationConfig
+    const apiDefinitions = config.apiDefinitions.types.Automation
+      .transformation as configDeprecated.TransformationConfig
     apiDefinitions.idFields = ['name']
     connection = conn
     conn.get.mockImplementation(async url => {

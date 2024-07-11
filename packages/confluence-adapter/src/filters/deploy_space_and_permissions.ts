@@ -189,7 +189,12 @@ const deployPermissions = async ({
 const filter =
   ({
     convertError = deployment.defaultConvertError,
-  }: filters.FilterCreationArgs<Options, UserConfig>): filterUtils.AdapterFilterCreator<{}, filterUtils.FilterResult, {}, Options> =>
+  }: filters.FilterCreationArgs<Options, UserConfig>): filterUtils.AdapterFilterCreator<
+    {},
+    filterUtils.FilterResult,
+    {},
+    Options
+  > =>
   ({ definitions, elementSource, sharedContext }) => ({
     name: 'deploySpaceAndPermissionsFilter',
     deploy: async (changes, changeGroup) => {

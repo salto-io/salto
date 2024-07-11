@@ -29,7 +29,11 @@ import {
 import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { elements as elementUtils, client as clientUtils, config as configDeprecated } from '@salto-io/adapter-components'
+import {
+  elements as elementUtils,
+  client as clientUtils,
+  config as configDeprecated,
+} from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'

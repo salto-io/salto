@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementsDeprecated } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { RECORDS_PATH } from '@salto-io/adapter-components/src/elements_deprecated'
 import { getDefaultConfig } from '../../../src/config/config'
 import addAttributesAsFieldsFilter from '../../../src/filters/assets/change_attributes_path'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, JIRA } from '../../../src/constants'
+
+const { RECORDS_PATH } = elementsDeprecated
 
 describe('ChangeAttributesPath', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>

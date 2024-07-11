@@ -130,6 +130,15 @@ export const telemetrySender = (
 
   const transformName = (eventName: string): string => [namePrefix, eventName].join(EVENT_NAME_SEPARATOR)
 
+  const markStopped = (timeoutMs: number): void => {
+    if (stopped) {
+      return
+    }
+    stopped = true
+    clearTimeout(timer)
+    httpRequestTimeout = timeoutMs
+  }
+
   const flush = async (): Promise<void> => {
     queuedEvents.push(...newEvents.splice(0, MAX_EVENTS_PER_REQUEST - queuedEvents.length))
     if (enabled && queuedEvents.length > 0) {
@@ -143,14 +152,14 @@ export const telemetrySender = (
           const { status } = e.response
           if (status >= 400 && status < 500) {
             log.debug('telemetry http response status: %d, giving up on sending events', status)
-            stopped = true
+            markStopped(0)
             return
           }
         }
         consecutiveRetryCount += 1
         if (consecutiveRetryCount === MAX_CONSECUTIVE_RETRIES) {
           log.debug('reached maximum retries: %d, giving up on sending events', MAX_CONSECUTIVE_RETRIES)
-          stopped = true
+          markStopped(0)
         }
       }
     }
@@ -167,12 +176,7 @@ export const telemetrySender = (
   }
 
   const stop = async (timeoutMs: number): Promise<void> => {
-    if (stopped) {
-      return Promise.resolve()
-    }
-    stopped = true
-    clearTimeout(timer)
-    httpRequestTimeout = timeoutMs
+    markStopped(timeoutMs)
     return flush()
   }
 

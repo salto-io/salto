@@ -36,14 +36,11 @@ const log = logger(module)
 
 const { isDefined } = values
 
-type TypeNameRecord = Record<
-  string,
-  {
-    changes: (ModificationChange<InstanceElement> | AdditionChange<InstanceElement>)[]
-    instances: InstanceElement[]
-    uniqueFieldName: string
-  }
->
+type TypeInfo = {
+  changesOfType: (ModificationChange<InstanceElement> | AdditionChange<InstanceElement>)[]
+  instancesOfType: InstanceElement[]
+  uniqueFieldName: string
+}
 
 const getSameUniqueFieldError = (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
@@ -87,6 +84,21 @@ const createTypeToInstancesRecord = async (
   return _.groupBy(instances, instance => instance.elemID.typeName)
 }
 
+const createTypeInfos = async (
+  changes: readonly Change<ChangeDataType>[],
+  elementsSource: ReadOnlyElementsSource | undefined,
+  typeToFieldRecord: Record<string, string>,
+): Promise<TypeInfo[]> => {
+  const typeToChangesRecord = createTypeToChangesRecord(changes, typeToFieldRecord)
+  const relevantTypes = Object.keys(typeToChangesRecord)
+  const typeToInstancesRecord = await createTypeToInstancesRecord(elementsSource, relevantTypes)
+  return relevantTypes.map(typeName => ({
+    changesOfType: typeToChangesRecord[typeName],
+    instancesOfType: typeToInstancesRecord[typeName],
+    uniqueFieldName: typeToFieldRecord[typeName],
+  }))
+}
+
 const getFieldValue = (instance: InstanceElement, fieldName: string): string | undefined => {
   const fieldValue = resolvePath(instance, instance.elemID.createNestedID(...fieldName.split('.')))
   if (!_.isString(fieldValue)) {
@@ -114,37 +126,17 @@ const getErrorForChange = (
   return getSameUniqueFieldError(change, otherInstance, fieldName)
 }
 
-const getErrorsForType = (typeName: string, typeRecord: TypeNameRecord): ChangeError[] => {
-  const { changes, instances, uniqueFieldName } = typeRecord[typeName]
-  const fieldValueToInstancesRecord = _.groupBy(instances, instance => getFieldValue(instance, uniqueFieldName))
-  return changes
+const getErrorsForType = (typeInfo: TypeInfo): ChangeError[] => {
+  const { changesOfType, instancesOfType, uniqueFieldName } = typeInfo
+  const fieldValueToInstancesRecord = _.groupBy(instancesOfType, instance => getFieldValue(instance, uniqueFieldName))
+  return changesOfType
     .map(change => getErrorForChange(change, uniqueFieldName, fieldValueToInstancesRecord))
     .filter(isDefined)
 }
 
-const createTypeNameRecord = async (
-  changes: readonly Change<ChangeDataType>[],
-  elementsSource: ReadOnlyElementsSource | undefined,
-  typeToFieldRecord: Record<string, string>,
-): Promise<TypeNameRecord> => {
-  const typeToChangesRecord = createTypeToChangesRecord(changes, typeToFieldRecord)
-  const relevantTypes = Object.keys(typeToChangesRecord)
-  const typeToInstancesRecord = await createTypeToInstancesRecord(elementsSource, relevantTypes)
-  return _.fromPairs(
-    relevantTypes.map(typeName => [
-      typeName,
-      {
-        changes: typeToChangesRecord[typeName],
-        instances: typeToInstancesRecord[typeName],
-        uniqueFieldName: typeToFieldRecord[typeName],
-      },
-    ]),
-  )
-}
-
 export const uniqueFieldsChangeValidatorCreator =
   (typeNameToUniqueFieldRecord: Record<string, string>): ChangeValidator =>
-  async (changes, elementsSource) => {
-    const typeNameRecord = await createTypeNameRecord(changes, elementsSource, typeNameToUniqueFieldRecord)
-    return Object.keys(typeNameRecord).flatMap(typeName => getErrorsForType(typeName, typeNameRecord))
-  }
+  async (changes, elementsSource) =>
+    (await createTypeInfos(changes, elementsSource, typeNameToUniqueFieldRecord)).flatMap(typeInfo =>
+      getErrorsForType(typeInfo),
+    )

@@ -114,15 +114,12 @@ describe('unique fields', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should not return an error if the field is undefined or is not a string', async () => {
-    const instance1 = relevantInstance1.clone()
-    instance1.value.uniqueField = undefined
+    relevantInstance1.value.uniqueField = undefined
+    relevantInstance2.value.uniqueField = [1, 2, 3]
 
-    const instance2 = relevantInstance1.clone()
-    instance2.value.uniqueField = [1, 2, 3]
-
-    const elementSource = buildElementsSourceFromElements([instance1, instance2])
+    const elementSource = buildElementsSourceFromElements([relevantInstance1, relevantInstance2])
     const changeErrors = await changeValidator(
-      [toChange({ after: instance1 }), toChange({ after: instance2 })],
+      [toChange({ after: relevantInstance1 }), toChange({ after: relevantInstance2 })],
       elementSource,
     )
     expect(changeErrors).toHaveLength(0)
@@ -140,30 +137,30 @@ describe('unique fields', () => {
     })
   })
   it('should return an error for multiple changes with the same field', async () => {
-    const instance1After = relevantInstance1.clone()
-    instance1After.value.uniqueField = 'new'
+    const relevantInstance1After = relevantInstance1.clone()
+    relevantInstance1After.value.uniqueField = 'new'
 
-    const instance2After = relevantInstance2.clone()
-    instance2After.value.uniqueField = 'new'
+    const relevantInstance2After = relevantInstance2.clone()
+    relevantInstance2After.value.uniqueField = 'new'
 
-    const elementSource = buildElementsSourceFromElements([instance1After, instance2After])
+    const elementSource = buildElementsSourceFromElements([relevantInstance1After, relevantInstance2After])
     const changeErrors = await changeValidator(
       [
-        toChange({ before: relevantInstance1, after: instance1After }),
-        toChange({ before: relevantInstance2, after: instance2After }),
+        toChange({ before: relevantInstance1, after: relevantInstance1After }),
+        toChange({ before: relevantInstance2, after: relevantInstance2After }),
       ],
       elementSource,
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
-      elemID: instance1After.elemID,
+      elemID: relevantInstance1After.elemID,
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
         "This relevantType have the same 'uniqueField' as the instance adapter.relevantType.instance.relevantInstance2, and can not be deployed.",
     })
     expect(changeErrors[1]).toEqual({
-      elemID: instance2After.elemID,
+      elemID: relevantInstance2After.elemID,
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:

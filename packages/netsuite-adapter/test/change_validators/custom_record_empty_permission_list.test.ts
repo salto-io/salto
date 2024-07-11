@@ -16,6 +16,7 @@
 import { ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import { NETSUITE, SCRIPT_ID } from '../../src/constants'
 import customRecordEmptyPermissionList from '../../src/change_validators/custom_record_empty_permission_list'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('custom record empty permission list validator', () => {
   let customRecord: ObjectType
@@ -32,7 +33,10 @@ describe('custom record empty permission list validator', () => {
     customRecord = custRecordObject.clone()
   })
   it('should return an error when there is a custom record without permissions and with accesstype USEPERMISSIONLIST', async () => {
-    const errors = await customRecordEmptyPermissionList([toChange({ after: customRecord })])
+    const errors = await customRecordEmptyPermissionList(
+      [toChange({ after: customRecord })],
+      mockChangeValidatorParams(),
+    )
     expect(errors.length).toBe(1)
     expect(errors[0]).toEqual({
       elemID: customRecord.elemID,
@@ -53,12 +57,18 @@ describe('custom record empty permission list validator', () => {
         },
       },
     }
-    const errors = await customRecordEmptyPermissionList([toChange({ after: customRecord })])
+    const errors = await customRecordEmptyPermissionList(
+      [toChange({ after: customRecord })],
+      mockChangeValidatorParams(),
+    )
     expect(errors.length).toBe(0)
   })
   it('should not return an error when the accesstype is different than USEPERMISSIONLIST', async () => {
     customRecord.annotations.accesstype = 'CUSTRECORDENTRYPERM'
-    const errors = await customRecordEmptyPermissionList([toChange({ after: customRecord })])
+    const errors = await customRecordEmptyPermissionList(
+      [toChange({ after: customRecord })],
+      mockChangeValidatorParams(),
+    )
     expect(errors.length).toBe(0)
   })
 })

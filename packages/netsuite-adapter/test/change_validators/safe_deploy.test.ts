@@ -38,7 +38,6 @@ const EMPTY_FETCH_RESULT: FetchByQueryReturnType = {
     failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
     failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
     failedCustomRecords: [],
-    largeSuiteQLTables: [],
   },
   elements: [],
   deletedElements: [],

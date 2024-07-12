@@ -911,6 +911,13 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     sourceTransformation: 'globalPrefix',
     target: { type: 'QuickAction' },
   },
+  {
+    src: {
+      field: 'fieldItem',
+      parentTypes: ['FieldInstance'],
+    },
+    target: { type: CUSTOM_FIELD },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>

@@ -38,8 +38,6 @@ logsalto.log
 
 # turbo
 packages/**/.turbo
-.turbo/cache
-.turbo/cookies
-.turbo/daemon
+.turbo
 
 .eslintcache

@@ -26,7 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParents, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FixElementsHandler } from './types'
 import { TICKET_FIELD_CUSTOM_FIELD_OPTION, TICKET_FIELD_TYPE_NAME } from '../constants'
@@ -54,13 +54,13 @@ const getAllParents = async (
   const parentNames = new Set(parentElements.map(parent => parent.elemID.getFullName()))
   const additionalRelevantParentNames = childElements
     .map(child => {
-      try {
-        return getParent(child)
-      } catch (e) {
-        log.warn(
-          `could not find parent for child ${child.elemID.getFullName()}, with error ${e}, will not fix this parent`,
-        )
+      const parent = getParents(child)[0]
+      if (isReferenceExpression(parent)) {
+        return parent
       }
+      log.warn(
+        `could not find parent for child ${child.elemID.getFullName()}, parent is not a reference expression, will not fix this parent`,
+      )
       return undefined
     })
     .filter(isDefined)

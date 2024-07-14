@@ -77,16 +77,11 @@ export type ZendeskDeployConfig = definitions.UserDeployConfig &
     createMissingOrganizations?: boolean
   }
 
-export type fixerNames = 'mergeLists' | 'fallbackUsers' | 'removeDupUsers' | 'orderElements'
+export const fixerNames = ['mergeLists', 'fallbackUsers', 'removeDupUsers', 'orderElements'] as const
 
-export type ZendeskFixElementsConfig = Record<fixerNames, boolean>
+type FixerNames = (typeof fixerNames)[number]
 
-// export type ZendeskFixElementsConfig = {
-//   mergeLists?: boolean
-//   fallbackUsers?: boolean
-//   removeDupUsers?: boolean
-//   orderElements?: boolean
-// }
+export type ZendeskFixElementsConfig = Record<FixerNames, boolean>
 
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig,

@@ -3223,7 +3223,7 @@ export const validateOmitInactiveConfig = (
 }
 export const validateFixElementsConfig = (FixElementsConfig: ZendeskFixElementsConfig | undefined): void => {
   if (FixElementsConfig !== undefined) {
-    if (!Object.keys(FixElementsConfig).every(fixerName => (fixerName as fixerNames) !== undefined)) {
+    if (!Object.keys(FixElementsConfig).every(fixerName => (fixerNames as unknown as string[]).includes(fixerName))) {
       throw Error('Invalid Zendesk fixElements config. One of the keys is invalid')
     }
   }

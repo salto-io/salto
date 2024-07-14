@@ -58,6 +58,38 @@ describe('client connection', () => {
         'Unauthorized - update credentials and try again',
       )
     })
+    describe('authParamsFunc', () => {
+      let conn: ReturnType<typeof createConnection>
+      beforeEach(() => {
+        conn = createConnection({ retries: 3 })
+      })
+      it('should return the correct auth params for username password', async () => {
+        mockAxiosAdapter.onGet('/api/v2/account').reply(config => {
+          expect(config?.auth).toEqual({ username: 'user123', password: 'pwd456' })
+          return [200, { settings: {} }]
+        })
+        const apiConn = await conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })
+        expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
+      })
+
+      it('should return the correct auth params for token', async () => {
+        mockAxiosAdapter.onGet('/api/v2/account').reply(config => {
+          expect(config?.auth).toEqual({ username: 'user123/token', password: 'token456' })
+          return [200, { settings: {} }]
+        })
+        const apiConn = await conn.login({ username: 'user123', token: 'token456', subdomain: 'abc' })
+        expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
+      })
+
+      it('should return the correct auth params for oauth', async () => {
+        mockAxiosAdapter.onGet('/api/v2/account').reply(config => {
+          expect(config?.headers?.Authorization).toEqual('Bearer token 123')
+          return [200, { settings: {} }]
+        })
+        const apiConn = await conn.login({ accessToken: 'token 123', subdomain: 'abc' })
+        expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
+      })
+    })
   })
 
   describe('instanceUrl', () => {

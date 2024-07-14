@@ -117,7 +117,7 @@ export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchCo
       .map(data => resolveValues(data, lookupFunc))
       .toArray()
 
-    if (relevantInstances.length === 0) {
+    if (relevantInstances.length === 0 || fetchConfig.resolveUserIDs === false) {
       return []
     }
 

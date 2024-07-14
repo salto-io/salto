@@ -52,7 +52,7 @@ const fallbackUserIsMissingError = (
 const missingUsersChangeWarning = (
   instance: InstanceElement,
   missingUsers: string[],
-  userFallbackValue: string,
+  userFallbackValue: string | number,
 ): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Warning',
@@ -102,7 +102,7 @@ const getMissingUsers =
   })
 
 const replaceMissingUsers =
-  (users: Set<string>, fallbackUser: string) =>
+  (users: Set<string>, fallbackUser: string | number) =>
   (instance: InstanceElement): undefined | { fixedInstance: InstanceElement; missingUsers: string[] } => {
     const missingUserPaths = getMissingUserPaths(users, instance)
 
@@ -156,7 +156,12 @@ export const fallbackUsersHandler: FixElementsHandler =
     }
 
     const userEmails = new Set(users.map(user => user.email))
-    const fallbackValue = await getUserFallbackValue(defaultMissingUserFallback, userEmails, client)
+    const fallbackValue = await getUserFallbackValue(
+      defaultMissingUserFallback,
+      userEmails,
+      client,
+      config[FETCH_CONFIG].resolveUserIDs,
+    )
     if (fallbackValue === undefined) {
       log.error('Error while trying to get defaultMissingUserFallback value')
       const errors = elements

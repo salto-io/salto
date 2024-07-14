@@ -277,7 +277,8 @@ export const getUserFallbackValue = async (
   defaultMissingUserFallback: string,
   existingUsers: Set<string>,
   client: ZendeskClient,
-): Promise<string | undefined> => {
+  shouldResolveUserIDs?: boolean,
+): Promise<string | number | undefined> => {
   if (defaultMissingUserFallback === definitions.DEPLOYER_FALLBACK_VALUE) {
     try {
       const response = (
@@ -286,7 +287,7 @@ export const getUserFallbackValue = async (
         })
       ).data
       if (isCurrentUserResponse(response)) {
-        return response.user.email
+        return shouldResolveUserIDs === false ? response.user.id : response.user.email
       }
       log.error("Received invalid response from endpoint '/api/v2/users/me'")
     } catch (e) {

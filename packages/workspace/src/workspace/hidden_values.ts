@@ -92,6 +92,10 @@ export const getElementHiddenParts = async <T extends Element>(
   const storeHiddenPaths: TransformFunc = async ({ value, field, path }) => {
     if (await hiddenFunc(field, elementsSource)) {
       if (path !== undefined) {
+        // We should hide attribute only when its annotation ref type is _hidden_value
+        if (path.idType === 'attr' && !isHiddenValue(field)) {
+          return undefined
+        }
         const parentPath = path.createParentID()
         if (!parentPath.isBaseID() && workspaceElement !== undefined) {
           const workspaceValue = resolvePath(workspaceElement, parentPath)

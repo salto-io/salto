@@ -32,11 +32,13 @@ import {
   isRemovalChange,
   isAdditionChange,
   ListType,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
-import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
+import { mergeWithHidden, handleHiddenChanges, getElementHiddenParts } from '../../src/workspace/hidden_values'
 import { RemoteElementSource, createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAddChange, createRemoveChange } from '../../src/workspace/nacl_files/multi_env/projections'
 import { State } from '../../src/workspace/state'
@@ -726,6 +728,43 @@ describe('handleHiddenChanges', () => {
     })
     it('should not have a hidden change', () => {
       expect(result.hidden).toHaveLength(0)
+    })
+  })
+  describe('getElemHiddenParts', () => {
+    describe('ObjectType attribute handling', () => {
+      let elementsSource: ReadOnlyElementsSource
+      let testElement: ObjectType
+      let annotationType: ObjectType
+
+      beforeEach(() => {
+        annotationType = new ObjectType({
+          elemID: new ElemID('test', 'annotationType'),
+        })
+        testElement = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          annotations: {
+            value1: 'test',
+            value2: 'test',
+          },
+          annotationRefsOrTypes: {
+            value1: annotationType,
+            value2: BuiltinTypes.STRING,
+          },
+        })
+        elementsSource = buildElementsSourceFromElements([annotationType, testElement])
+      })
+      it('should not hide annotation value of type that is _hidden', async () => {
+        annotationType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+        const result = await getElementHiddenParts(testElement, elementsSource)
+        expect(result).toBeUndefined()
+      })
+
+      it('should hide annotation value of type that is _hidden_value', async () => {
+        annotationType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
+        const result = (await getElementHiddenParts(testElement, elementsSource)) as ObjectType
+        expect(result).toBeDefined()
+        expect(result.annotations).toEqual({ value1: 'test' })
+      })
     })
   })
 })

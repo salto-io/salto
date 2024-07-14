@@ -62,9 +62,7 @@ describe('Profile Instance Split filter', () => {
               },
             },
             layoutAssignments: {
-              // eslint-disable-next-line camelcase
               Account_Account_Layout: [{ layout: 'Account-Account Layout' }],
-              // eslint-disable-next-line camelcase
               Account_random_characters_aaa___bbb: [
                 {
                   layout:

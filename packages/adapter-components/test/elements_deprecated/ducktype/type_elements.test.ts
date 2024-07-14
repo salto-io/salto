@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 import { ObjectType, Values, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
-// eslint-disable-next-line
 import { generateType } from '../../../src/elements_deprecated/ducktype'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements_deprecated'
 
-/* eslint-disable camelcase */
 const ADAPTER_NAME = 'myAdapter'
 
 describe('ducktype_type_elements', () => {

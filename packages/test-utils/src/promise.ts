@@ -20,7 +20,6 @@ export type Resolvable<T> = {
 
 export const makeResolvablePromise = <T>(resolveValue: T): Resolvable<T> => {
   // istanbul ignore next (the default function will always be overwritten in the Promise ctor)
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   let resolve: () => void = () => {}
   // Unsafe assumption - promise constructor calls the paramter function synchronously
   let promiseCtorRan = false

@@ -515,7 +515,6 @@ const builder = new XMLBuilder({
 })
 
 const toMetadataXml = (name: string, values: Values): string =>
-  // eslint-disable-next-line new-cap
   builder.build({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
 
 const cloneValuesWithAttributePrefixes = async (

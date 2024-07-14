@@ -47,5 +47,4 @@ export const getPlan = (): Plan => {
 export const getFirstPlanItem = (plan: Plan): PlanItem => wu(plan.itemsByEvalOrder()).next().value
 
 export const getChange = (item: PlanItem, elemID: ElemID): Change =>
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   wu(item.changes()).find(change => getChangeData(change).elemID.isEqual(elemID))!

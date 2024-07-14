@@ -462,7 +462,6 @@ export const listElementsDependenciesInWorkspace = async ({
       // eslint-disable-next-line no-await-in-loop
       const currentLevelResult = await Promise.all(
         currentLevelIds.map(async currentId => {
-          // eslint-disable-next-line no-await-in-loop
           const references = await workspace.getElementOutgoingReferences(currentId, envToListFrom, false)
           const relevantElemIds = getIndependentElemIDs(
             references

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 import { promisify } from 'util'
-import { mkdtemp as mkdtempCB, realpath as realpathCB, rmdir as rmdirCB } from 'fs'
+import { mkdtemp as mkdtempCB, realpath as realpathCB, rm as rmCB } from 'fs'
 import { tmpdir } from 'os'
 
 const mkdtemp = promisify(mkdtempCB)
-const rmdir = promisify(rmdirCB)
+const rm = promisify(rmCB)
 const realpath = promisify(realpathCB)
 
 type TempDir = {
@@ -34,7 +34,7 @@ export const setupTmpDir = (setupType: 'each' | 'all' = 'each'): TempDir => {
   })
 
   teardownFunc(async () => {
-    await rmdir(dirName, { recursive: true })
+    await rm(dirName, { recursive: true })
   })
   return { name: () => dirName }
 }

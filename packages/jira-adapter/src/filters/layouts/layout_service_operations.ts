@@ -191,7 +191,7 @@ export const getLayout = async ({
       defaultName: name,
       getElemIdFunc,
       nestedPath: [
-        ...instance.path?.slice(2, instance.path?.length - 1),
+        ...(instance.path?.slice(2, instance.path?.length - 1) ?? []),
         LAYOUT_TYPE_NAME_TO_DETAILS[typeName].pathParam,
         pathNaclCase(instanceName),
       ],

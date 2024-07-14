@@ -88,9 +88,7 @@ describe('deployActions', () => {
           {
             [ADAPTER_NAME]: mockAdapterOperations,
           },
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
           () => {},
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
           async () => {},
           false,
         )
@@ -133,9 +131,7 @@ describe('deployActions', () => {
           {
             [ADAPTER_NAME]: mockAdapterOperations,
           },
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
           () => {},
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
           async () => {},
           false,
         )

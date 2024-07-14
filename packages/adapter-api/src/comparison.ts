@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-// eslint-disable-next-line import/no-cycle
 import { CompareOptions, ReferenceExpression, Value, isReferenceExpression, isStaticFile } from './values'
-// eslint-disable-next-line import/no-cycle
 import { ReadOnlyElementsSource, isVariable } from './elements'
 
 type ReferenceCompareReturnValue<T> =

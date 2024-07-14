@@ -434,7 +434,6 @@ describe('State/cache serialization', () => {
   })
 
   describe('functions', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let funcElement: InstanceElement
     beforeAll(async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')

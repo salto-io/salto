@@ -143,7 +143,6 @@ const createCustomObject = (
   return obj
 }
 
-/* eslint-disable camelcase */
 describe('Custom Object Instances filter', () => {
   let connection: Connection
   let client: SalesforceClient

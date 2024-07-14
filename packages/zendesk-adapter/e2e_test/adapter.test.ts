@@ -178,7 +178,6 @@ const deployChanges = async (
     .map(async ([id, group]) => {
       planElementById = _.keyBy(group.map(getChangeData), data => data.elemID.getFullName())
       const nullProgressReporter: ProgressReporter = {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         reportProgress: () => {},
       }
       const deployResult = await adapterAttr.adapter.deploy({

@@ -1,6 +1,0 @@
-/dist
-/*.js
-*.d.ts
-*.config.js
-coverage
-src/tools/

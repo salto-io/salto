@@ -16,6 +16,7 @@
 module.exports = {
     rules: {
         'no-restricted-syntax': [
+            'warn',
             {
                 selector: "CallExpression[callee.object.name='JSON'][callee.property.name='stringify'][arguments.length=1]",
                 message: 'JSON.stringify usage without a replacer is disallowed. Use inspectValue (or safeJsonStringify for small objects) instead',

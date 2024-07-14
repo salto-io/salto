@@ -754,7 +754,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       )
     } else {
       const nullProgressReporter: ProgressReporter = {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         reportProgress: () => {},
       }
       deployResult = await deployMetadata(

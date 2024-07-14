@@ -26,7 +26,6 @@ import {
 import { ImportantValues } from '@salto-io/adapter-utils'
 import { ConfigChangeSuggestion } from '../../user'
 import { ArgsWithCustomizer } from '../shared/types'
-// eslint-disable-next-line import/no-cycle
 import { GenerateTypeArgs } from './types'
 import { ResolveCustomNameMappingOptionsType } from '../api'
 import { NameMappingFunctionMap, NameMappingOptions } from '../shared'

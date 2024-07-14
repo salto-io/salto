@@ -914,7 +914,6 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator: createChangeValidator({

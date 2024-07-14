@@ -37,7 +37,7 @@ export type JspUrls = {
   dataField?: string
 }
 
-export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
+export type JiraApiConfig = Omit<configUtils.AdapterApiConfig, 'types'> & {
   types: Record<
     string,
     configUtils.TypeConfig & {

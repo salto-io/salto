@@ -752,7 +752,6 @@ const fixElementsContinuously = async (
   const elementFixGroups = await Promise.all(
     Object.entries(elementGroups).map(async ([account, elementGroup]) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/return-await
         return (await adapters[account]?.fixElements?.(elementGroup)) ?? { errors: [], fixedElements: [] }
       } catch (e) {
         log.error(`Failed to fix elements for ${account} adapter: ${e}`)

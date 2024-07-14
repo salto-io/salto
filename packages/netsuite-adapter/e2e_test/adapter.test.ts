@@ -105,7 +105,6 @@ const logging = (message: string): void => {
 }
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 
@@ -738,7 +737,6 @@ describe('Netsuite adapter E2E with real account', () => {
       it('should fetch the created workflow', async () => {
         const fetchedWorkflow = findElement(fetchedElements, workflowToCreate.elemID) as InstanceElement
         expect(fetchedWorkflow.value.name).toEqual(randomString)
-        // eslint-disable-next-line max-len
         const toStateReference =
           fetchedWorkflow.value.workflowstates?.workflowstate?.workflowstate_state1?.workflowtransitions
             ?.workflowtransition?.workflowtransition_transition1?.tostate

@@ -34,20 +34,20 @@ class A {
     })
   }
 
-  @throttle<MyRateLimitConfig>({})
   // eslint-disable-next-line class-methods-use-this
+  @throttle<MyRateLimitConfig>({})
   async runSomething(promise: Promise<number>): Promise<void> {
     await promise
   }
 
-  @throttle<MyRateLimitConfig>({ bucketName: 'a' })
   // eslint-disable-next-line class-methods-use-this
+  @throttle<MyRateLimitConfig>({ bucketName: 'a' })
   async runA(promise: Promise<number>): Promise<void> {
     await promise
   }
 
-  @throttle<MyRateLimitConfig>({ bucketName: 'b' })
   // eslint-disable-next-line class-methods-use-this
+  @throttle<MyRateLimitConfig>({ bucketName: 'b' })
   async runB(promise: Promise<number>): Promise<void> {
     await promise
   }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { BuiltinTypes, ObjectType, ElemID, Value, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/fetch/element/constants'
 import { filterTypes, hideFields } from '../../src/elements_deprecated/type_elements'

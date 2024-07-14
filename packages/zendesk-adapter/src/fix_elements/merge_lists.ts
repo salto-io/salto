@@ -155,16 +155,16 @@ const getFixedParents = async (
 
 const getError = (fixedParentsRes: FixedParentResult): ChangeError => {
   const childrenAddedMsg = !_.isEmpty(fixedParentsRes.childrenAdded)
-    ? `\nThe following options were added at the end of the list: ${fixedParentsRes.childrenAdded.join(', ')}.`
+    ? `\nThe following custom field options were added at the end of the list: ${fixedParentsRes.childrenAdded.join(', ')}.`
     : ''
   const childrenRemovedMsg = !_.isEmpty(fixedParentsRes.childrenRemoved)
-    ? `\nThe following options were removed from the list: ${fixedParentsRes.childrenRemoved.join(', ')}.`
+    ? `\nThe following custom field options were removed from the list: ${fixedParentsRes.childrenRemoved.join(', ')}.`
     : ''
   return {
     elemID: fixedParentsRes.fixedParent.elemID,
     severity: 'Warning',
-    message: 'custom_field_options were updated',
-    detailedMessage: `${fixedParentsRes.fixedParent.elemID.typeName} custom_field_options were updated.${childrenAddedMsg}${childrenRemovedMsg}`,
+    message: 'The list of custom field options was automatically updated',
+    detailedMessage: `${childrenAddedMsg}${childrenRemovedMsg}`,
   }
 }
 

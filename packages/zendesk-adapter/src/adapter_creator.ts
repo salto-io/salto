@@ -48,8 +48,9 @@ import {
   validateGuideTypesConfig,
   GUIDE_SUPPORTED_TYPES,
   DEPLOY_CONFIG,
+  validateFixElementsConfig,
 } from './config'
-import { ZendeskFetchConfig } from './user_config'
+import { ZendeskFetchConfig, ZendeskFixElementsConfig } from './user_config'
 import ZendeskClient from './client/client'
 import { createConnection, instanceUrl } from './client/connection'
 import { configCreator } from './config_creator'
@@ -143,10 +144,14 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     fetch,
     deploy: configValue.deploy,
     apiDefinitions,
-    fixElements: mergeWithDefaultConfig(DEFAULT_CONFIG.fixElements ?? {}, configValue.fixElements),
+    fixElements: mergeWithDefaultConfig(
+      DEFAULT_CONFIG.fixElements ?? {},
+      configValue.fixElements,
+    ) as ZendeskFixElementsConfig,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
+  validateFixElementsConfig(adapterConfig.fixElements)
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
   validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateGuideTypesConfig(apiDefinitions)

@@ -28,6 +28,7 @@ import {
   ZENDESK,
 } from './constants'
 import {
+  fixerNames,
   Guide,
   IdLocator,
   OmitInactiveConfig,
@@ -3081,7 +3082,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   },
 })
 
-const fixerConfigType = createMatchingObjectType<ZendeskFixElementsConfig>({
+const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfig>>({
   elemID: new ElemID(ZENDESK, 'fixElementsConfig'),
   fields: {
     mergeLists: { refType: BuiltinTypes.BOOLEAN },
@@ -3218,5 +3219,12 @@ export const validateOmitInactiveConfig = (
         },
       }),
     )
+  }
+}
+export const validateFixElementsConfig = (FixElementsConfig: ZendeskFixElementsConfig | undefined): void => {
+  if (FixElementsConfig !== undefined) {
+    if (!Object.keys(FixElementsConfig).every(fixerName => (fixerName as fixerNames) !== undefined)) {
+      throw Error('Invalid Zendesk fixElements config. One of the keys is invalid')
+    }
   }
 }

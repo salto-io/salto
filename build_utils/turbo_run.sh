@@ -56,6 +56,5 @@ else
 
 fi
 
-sleep 1
 yarn turbo run "${ORG_ARG[@]}" \
   --concurrency="$TURBO_CONCURRENCY"

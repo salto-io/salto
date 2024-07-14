@@ -21,6 +21,7 @@
       ]
     },
     "test": {
+      "dependsOn": [ "^build-ts"],
       "outputLogs": "new-only",
       "env": [
         "SALTO_DEPENDENCIES_HASH"

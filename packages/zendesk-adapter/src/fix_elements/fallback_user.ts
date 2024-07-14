@@ -156,12 +156,12 @@ export const fallbackUsersHandler: FixElementsHandler =
     }
 
     const userEmails = new Set(users.map(user => user.email))
-    const fallbackValue = await getUserFallbackValue(
+    const fallbackValue = await getUserFallbackValue({
       defaultMissingUserFallback,
-      userEmails,
+      existingUsers: userEmails,
       client,
-      config[FETCH_CONFIG].resolveUserIDs,
-    )
+      shouldResolveUserIDs: config[FETCH_CONFIG].resolveUserIDs,
+    })
     if (fallbackValue === undefined) {
       log.error('Error while trying to get defaultMissingUserFallback value')
       const errors = elements

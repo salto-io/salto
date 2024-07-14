@@ -106,6 +106,7 @@ const handleExistingUsers = ({
  * Change error will vary based on the following scenarios:
  *  1. If we could not use user fallback value for some reason, we will return an error.
  *  2. If the user has no permissions to its field, we will return a warning (default user included).
+ *  3. if resolveUserIDs is false, meaning we can't translate users, we will return no errors.
  */
 export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) => ChangeValidator =
   (client, fetchConfig) => async (changes, elementSource) => {

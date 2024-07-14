@@ -70,12 +70,13 @@ describe('usersValidator', () => {
   })
 
   const testsElementSource = createInMemoryElementSource([permissionsCustomRole, noPermissionsCustomRole])
-
+  beforeEach(async () => {
+    config = { resolveUserIDs: true } as ZendeskFetchConfig
+  })
   beforeAll(async () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    config = { resolveUserIDs: true } as ZendeskFetchConfig
     mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(() => ({
       status: 200,

@@ -1,0 +1,29 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/templates/sms/smstemplate-fakeid1",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "smstemplate-fakeid1",
+      "name": "Custom",
+      "type": "SMS_VERIFY_CODE",
+      "template": "Verify this: ${code}.",
+      "created": "2024-06-30T07:33:11.000Z",
+      "lastUpdated": "2024-06-30T07:33:45.000Z",
+      "translations": {
+        "en": "sadsad ${code}"
+      }
+    },
+    "body": {
+      "id": "smstemplate-fakeid1",
+      "name": "Custom",
+      "template": "Verify this: ${code}."
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1719732884"
+    }
+  }
+]

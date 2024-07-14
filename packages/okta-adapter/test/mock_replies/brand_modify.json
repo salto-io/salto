@@ -1,0 +1,51 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/brands/brand-fakeid1",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "brand-fakeid1",
+      "name": "subdomain.example.com",
+      "removePoweredByOkta": true,
+      "customPrivacyPolicyUrl": null,
+      "agreeToCustomPrivacyPolicy": false,
+      "isDefault": false,
+      "defaultApp": {
+        "appInstanceId": "0oa1ly9huEKlEScdB696",
+        "appLinkName": null,
+        "classicApplicationUri": null
+      },
+      "_links": {
+        "themes": {
+          "href": "https://<sanitized>/api/v1/brands/brand-fakeid1/themes",
+          "hints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        },
+        "self": {
+          "href": "https://<sanitized>/api/v1/brands/brand-fakeid1",
+          "hints": {
+            "allow": [
+              "GET",
+              "PUT",
+              "DELETE"
+            ]
+          }
+        }
+      }
+    },
+    "body": {
+      "id": "brand-fakeid1",
+      "name": "subdomain.example.com",
+      "removePoweredByOkta": true
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1718632593"
+    }
+  }
+]

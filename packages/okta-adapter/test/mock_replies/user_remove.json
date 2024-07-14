@@ -1,0 +1,26 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/users/fakeid123/lifecycle/deactivate",
+    "method": "POST",
+    "status": 200,
+    "response": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "300",
+      "x-rate-limit-remaining": "298",
+      "x-rate-limit-reset": "1719416105"
+    }
+  },
+  {
+    "scope": "",
+    "path": "/api/v1/users/fakeid123",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "300",
+      "x-rate-limit-remaining": "298",
+      "x-rate-limit-reset": "1719416141"
+    }
+  }
+]

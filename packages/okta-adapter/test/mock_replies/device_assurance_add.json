@@ -1,0 +1,47 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/device-assurances",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "name": "devdev",
+      "platform": "ANDROID",
+      "id": "deviceassurance-fakeid1",
+      "secureHardwarePresent": true,
+      "jailbreak": false,
+      "screenLockType": {
+        "include": [
+          "BIOMETRIC",
+          "PASSCODE"
+        ]
+      },
+      "gracePeriodDisplayRemediationMode": 0,
+      "gracePeriodType": 0,
+      "createdDate": "2024-06-30T07:44:41.000Z",
+      "createdBy": "00ubwk43kko1bM1VO697",
+      "lastUpdate": "2024-06-30T07:44:41.000Z",
+      "lastUpdatedBy": "00ubwk43kko1bM1VO697",
+      "_links": {
+        "self": {
+          "href": "https://<sanitized>/api/v1/device-assurances/deviceassurance-fakeid1",
+          "hints": {
+            "allow": [
+              "GET",
+              "PUT",
+              "DELETE"
+            ]
+          }
+        }
+      }
+    },
+    "body": {
+      "name": "deviceassurance1"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "48",
+      "x-rate-limit-reset": "1719733517"
+    }
+  }
+]

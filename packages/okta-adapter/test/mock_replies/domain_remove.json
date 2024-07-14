@@ -1,0 +1,14 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/domains/domain-fakeid1",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "25",
+      "x-rate-limit-remaining": "24",
+      "x-rate-limit-reset": "1719731331"
+    }
+  }
+]

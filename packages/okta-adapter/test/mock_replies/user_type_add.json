@@ -1,0 +1,39 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/meta/types/user",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "id": "usertype-fakeid1",
+      "displayName": "Super User",
+      "name": "superuser",
+      "description": "Okta super user profile template",
+      "createdBy": "00ubwk43kko1bM1VO697",
+      "lastUpdatedBy": "00ubwk43kko1bM1VO697",
+      "created": "2024-06-30T07:11:28.000Z",
+      "lastUpdated": "2024-06-30T07:11:28.000Z",
+      "default": false,
+      "_links": {
+        "schema": {
+          "rel": "schema",
+          "href": "https://<sanitized>/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697",
+          "method": "GET"
+        },
+        "self": {
+          "rel": "self",
+          "href": "https://<sanitized>/api/v1/meta/types/user/usertype-fakeid1",
+          "method": "GET"
+        }
+      }
+    },
+    "body": {
+      "name": "superuser"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1719731547"
+    }
+  }
+]

@@ -145,7 +145,10 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
 
 const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
 
-const sortLists = async (instance: InstanceElement): Promise<void> => {
+const sortLists = async (instance: InstanceElement, isDataCenter: boolean): Promise<void> => {
+  if (isDataCenter) {
+    delete VALUES_TO_SORT[WORKFLOW_RULES_TYPE_NAME].postFunctions
+  }
   instance.value =
     (await transformValues({
       values: instance.value,
@@ -174,10 +177,12 @@ const sortLists = async (instance: InstanceElement): Promise<void> => {
     })) ?? {}
 }
 
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ client }) => ({
   name: 'sortListsFilter',
   onFetch: async elements => {
-    await awu(elements).filter(isInstanceElement).forEach(sortLists)
+    await awu(elements)
+      .filter(isInstanceElement)
+      .forEach(instance => sortLists(instance, client.isDataCenter))
   },
 })
 

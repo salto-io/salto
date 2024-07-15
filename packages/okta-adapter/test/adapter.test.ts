@@ -49,7 +49,7 @@ import {
   SMS_TEMPLATE_TYPE_NAME,
   LINKS_FIELD,
   APPLICATION_TYPE_NAME,
-  INACTIVE_STATUS,
+  INACTIVE_STATUS, CUSTOM_NAME_FIELD,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -1089,10 +1089,12 @@ describe('adapter', () => {
           id: 'app-fakeid1',
           label: 'app1',
           status: INACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
         })
       })
 
       it('should successfully add an application', async () => {
+        loadMockReplies('application_add.json')
         const appWithoutId = app.clone()
         delete appWithoutId.value.id
         const result = await operations.deploy({
@@ -1105,9 +1107,11 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('app-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully modify an application', async () => {
+        loadMockReplies('application_modify.json')
         const updatedApp = app.clone()
         updatedApp.value.label = 'app2'
         const result = await operations.deploy({
@@ -1126,9 +1130,11 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app2')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully remove an application', async () => {
+        loadMockReplies('application_remove.json')
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'app',
@@ -1138,6 +1144,7 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
   })

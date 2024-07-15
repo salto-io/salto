@@ -13,13 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Change, isAdditionOrModificationChange, isRemovalOrModificationChange, toChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  DetailedChange,
+  isAdditionOrModificationChange,
+  isRemovalOrModificationChange,
+  toChange,
+} from '@salto-io/adapter-api'
 
-export const reverseChange = <T extends Change>(change: T): T => {
+const hasElemIDs = <T extends Change | DetailedChange>(change: T): change is T & Pick<DetailedChange, 'elemIDs'> =>
+  'elemIDs' in change
+
+export const reverseChange = <T extends Change | DetailedChange>(change: T): T => {
   const before = isAdditionOrModificationChange(change) ? change.data.after : undefined
   const after = isRemovalOrModificationChange(change) ? change.data.before : undefined
+  const reversedElemIDs =
+    hasElemIDs(change) && change.elemIDs !== undefined
+      ? { elemIDs: { before: change.elemIDs.after, after: change.elemIDs.before } }
+      : {}
+
   return {
     ...change,
     ...toChange({ before, after }),
+    ...reversedElemIDs,
   }
 }

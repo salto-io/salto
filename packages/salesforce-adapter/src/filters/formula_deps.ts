@@ -17,9 +17,11 @@
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
+  Element,
   ElemID,
   ElemIDType,
   Field,
+  InstanceElement,
   isObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -34,10 +36,21 @@ import {
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
-import { buildElementsSourceForFetch, ensureSafeFilterFetch, extractFlatCustomObjectFields } from './utils'
+import {
+  buildElementsSourceForFetch,
+  ensureSafeFilterFetch,
+  extractFlatCustomObjectFields,
+  isInstanceOfTypeSync,
+} from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
+
+const referenceFieldsWithFormulaIdentifiers: Record<string, string> = {
+  FlowCondition: 'leftValueReference',
+  FlowTestCondition: 'leftValueReference',
+  FlowTestParameter: 'leftValueReference',
+}
 
 const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): string[] => {
   if (identifierInfo.type === 'customLabel') {
@@ -83,45 +96,59 @@ const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Pr
       ),
   )
 
-const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElementsSource): Promise<void> => {
-  const isValidReference = async (elemId: ElemID): Promise<boolean> => {
-    if (elemId.idType === 'type' || elemId.idType === 'instance') {
-      return (await allElements.get(elemId)) !== undefined
-    }
-
-    // field
-    const typeElemId = new ElemID(elemId.adapter, elemId.typeName)
-    const typeElement = await allElements.get(typeElemId)
-    return typeElement !== undefined && typeElement.fields[elemId.name] !== undefined
+const isValidReference = async (
+  elemId: ElemID,
+  allElements: ReadOnlyElementsSource,
+): Promise<boolean> => {
+  if (elemId.idType === 'type' || elemId.idType === 'instance') {
+    return (await allElements.get(elemId)) !== undefined
   }
 
-  const isSelfReference = (elemId: ElemID): boolean => elemId.isEqual(field.parent.elemID)
+  // field
+  const typeElemId = new ElemID(elemId.adapter, elemId.typeName)
+  const typeElement = await allElements.get(typeElemId)
+  return (
+    typeElement !== undefined && typeElement.fields[elemId.name] !== undefined
+  )
+}
 
-  const referenceValidity = async (elemId: ElemID): Promise<'valid' | 'omitted' | 'invalid'> => {
-    if (isSelfReference(elemId)) {
-      return 'omitted'
-    }
-    return (await isValidReference(elemId)) ? 'valid' : 'invalid'
+const referenceValidity = async (
+  refElemId: ElemID,
+  selfElemId: ElemID,
+  allElements: ReadOnlyElementsSource,
+): Promise<'valid' | 'omitted' | 'invalid'> => {
+  const isSelfReference = (elemId: ElemID): boolean =>
+    elemId.isEqual(selfElemId)
+
+  if (isSelfReference(refElemId)) {
+    return 'omitted'
   }
+  return (await isValidReference(refElemId, allElements)) ? 'valid' : 'invalid'
+}
 
-  const logInvalidReferences = (
-    invalidReferences: ElemID[],
-    formula: string,
-    identifiersInfo: FormulaIdentifierInfo[][],
-  ): void => {
-    if (invalidReferences.length > 0) {
-      log.debug(
-        'When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
-        formula,
-        field.elemID.getFullName(),
-        identifiersInfo.flat().map(info => info.instance),
-      )
-    }
-    invalidReferences.forEach(refElemId => {
-      log.debug(`Invalid reference: ${refElemId.getFullName()}`)
-    })
+const logInvalidReferences = (
+  refOrigin: ElemID,
+  invalidReferences: ElemID[],
+  formula: string,
+  identifiersInfo: FormulaIdentifierInfo[][],
+): void => {
+  if (invalidReferences.length > 0) {
+    log.debug(
+      'When parsing the formula %o in %o, one or more of the identifiers %o was parsed to an invalid reference: ',
+      formula,
+      refOrigin.getFullName(),
+      identifiersInfo.flat().map((info) => info.instance),
+    )
   }
+  invalidReferences.forEach((refElemId) => {
+    log.debug(`Invalid reference: ${refElemId.getFullName()}`)
+  })
+}
 
+const addDependenciesAnnotation = async (
+  field: Field,
+  allElements: ReadOnlyElementsSource,
+): Promise<void> => {
   const formula = field.annotations[FORMULA]
   if (formula === undefined) {
     log.error(`Field ${field.elemID.getFullName()} is a formula field with no formula?`)
@@ -159,9 +186,16 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
       References: ${references.map(ref => ref.getFullName()).join(', ')}`)
     }
 
-    const referencesWithValidity = await groupByAsync(references, referenceValidity)
+    const referencesWithValidity = await groupByAsync(references, (refElemId) =>
+      referenceValidity(refElemId, field.parent.elemID, allElements),
+    )
 
-    logInvalidReferences(referencesWithValidity.invalid ?? [], formula, identifiersInfo)
+    logInvalidReferences(
+      field.elemID,
+      referencesWithValidity.invalid ?? [],
+      formula,
+      identifiersInfo,
+    )
 
     const depsAsRefExpr = (referencesWithValidity.valid ?? []).map(elemId => ({
       reference: new ReferenceExpression(elemId),
@@ -171,6 +205,60 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
   } catch (e) {
     log.warn(`Failed to extract references from formula ${formula}: ${e}`)
   }
+}
+
+const addDependenciesToFormulaFields = async (
+  fetchedElements: Element[],
+  allElements: ReadOnlyElementsSource,
+): Promise<void> => {
+  const fetchedObjectTypes = fetchedElements.filter(isObjectType)
+  const fetchedFormulaFields = await awu(fetchedObjectTypes)
+    .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
+    .filter(isFormulaField)
+    .toArray()
+  await Promise.all(
+    fetchedFormulaFields.map((field) =>
+      addDependenciesAnnotation(field, allElements),
+    ),
+  )
+}
+
+const transformFieldsToReferences = async (
+  fetchedElements: Element[],
+  allElements: ReadOnlyElementsSource,
+): Promise<void> => {
+  const transformInstanceFieldToReference = async (
+    instance: InstanceElement,
+  ): Promise<void> => {
+    const fieldName =
+      referenceFieldsWithFormulaIdentifiers[instance.elemID.typeName]
+    const identifierInfo = parseFormulaIdentifier(
+      instance.value[fieldName],
+      instance.elemID.getFullName(),
+    )
+    const referenceElemIds = await referencesFromIdentifiers(identifierInfo)
+
+    const referencesWithValidity = await groupByAsync(
+      referenceElemIds,
+      (refElemId) => referenceValidity(refElemId, instance.elemID, allElements),
+    )
+
+    logInvalidReferences(
+      instance.elemID,
+      referencesWithValidity.invalid ?? [],
+      instance.value[fieldName],
+      [identifierInfo],
+    )
+
+    instance.value[fieldName] = new ReferenceExpression(
+      referencesWithValidity.valid[0],
+    )
+  }
+
+  const fetchedInstances = fetchedElements.filter(
+    isInstanceOfTypeSync(...Object.keys(referenceFieldsWithFormulaIdentifiers)),
+  )
+  fetchedInstances.forEach(transformInstanceFieldToReference)
 }
 
 const FILTER_NAME = 'formulaDeps'
@@ -187,14 +275,10 @@ const filter: LocalFilterCreator = ({ config }) => ({
     warningMessage: 'Error while parsing formulas',
     config,
     filterName: FILTER_NAME,
-    fetchFilterFunc: async fetchedElements => {
-      const fetchedObjectTypes = fetchedElements.filter(isObjectType)
-      const fetchedFormulaFields = await awu(fetchedObjectTypes)
-        .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
-        .filter(isFormulaField)
-        .toArray()
+    fetchFilterFunc: async (fetchedElements) => {
       const allElements = buildElementsSourceForFetch(fetchedElements, config)
-      await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
+      await addDependenciesToFormulaFields(fetchedElements, allElements)
+      await transformFieldsToReferences(fetchedElements, allElements)
     },
   }),
 })

@@ -36,20 +36,15 @@ import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
 
-const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
+const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
+const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
+
+const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created: { omit: true },
   lastUpdated: { omit: true },
   createdBy: { omit: true },
   lastUpdatedBy: { omit: true },
 }
-
-const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
-const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
-
-const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_OMIT,
-)
 
 const getPrivateAPICustomizations = ({
   endpoint,

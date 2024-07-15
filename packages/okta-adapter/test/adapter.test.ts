@@ -49,7 +49,8 @@ import {
   SMS_TEMPLATE_TYPE_NAME,
   LINKS_FIELD,
   APPLICATION_TYPE_NAME,
-  INACTIVE_STATUS, CUSTOM_NAME_FIELD,
+  INACTIVE_STATUS,
+  CUSTOM_NAME_FIELD,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {

@@ -108,9 +108,7 @@
         "uploadLogo": {
           "href": "https://<sanitized>/api/v1/apps/app-fakeid1/logo",
           "hints": {
-            "allow": [
-              "POST"
-            ]
+            "allow": ["POST"]
           }
         },
         "appLinks": [
@@ -126,9 +124,7 @@
         "policies": {
           "href": "https://<sanitized>/api/v1/apps/app-fakeid1/policies",
           "hints": {
-            "allow": [
-              "PUT"
-            ]
+            "allow": ["PUT"]
           }
         },
         "groups": {

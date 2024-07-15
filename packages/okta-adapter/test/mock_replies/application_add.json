@@ -95,9 +95,7 @@
         "uploadLogo": {
           "href": "https://salto.okta.com/api/v1/apps/app-fakeid1/logo",
           "hints": {
-            "allow": [
-              "POST"
-            ]
+            "allow": ["POST"]
           }
         },
         "appLinks": [
@@ -116,9 +114,7 @@
         "policies": {
           "href": "https://salto.okta.com/api/v1/apps/app-fakeid1/policies",
           "hints": {
-            "allow": [
-              "PUT"
-            ]
+            "allow": ["PUT"]
           }
         },
         "groups": {

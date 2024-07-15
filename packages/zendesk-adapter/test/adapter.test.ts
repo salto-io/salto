@@ -39,7 +39,7 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import defaultBrandMockReplies from './mock_replies/myBrand_mock_replies.json'
 import brandWithGuideMockReplies from './mock_replies/brandWithGuide_mock_replies.json'
 import { adapter } from '../src/adapter_creator'
-import { usernamePasswordCredentialsType } from '../src/auth'
+import { basicCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import {
   BRAND_TYPE_NAME,
@@ -126,7 +126,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
-            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+            credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
               subdomain: 'myBrand',
@@ -677,7 +677,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
-            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+            credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
               subdomain: 'myBrand',
@@ -1225,7 +1225,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
-            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+            credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
               subdomain: 'myBrand',
@@ -1281,7 +1281,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
-            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+            credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
               subdomain: 'myBrand',
@@ -1834,7 +1834,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
-            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+            credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
               subdomain: 'myBrand',
@@ -2380,7 +2380,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
-            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+            credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
               subdomain: 'myBrand',
@@ -2435,7 +2435,7 @@ describe('adapter', () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFuncWith403)
         const { elements, errors } = await adapter
           .operations({
-            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+            credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'token456',
               subdomain: 'myBrand',
@@ -2493,7 +2493,7 @@ describe('adapter', () => {
 
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         mockAxiosAdapter.onPost().reply(callbackResponseFunc)
-        const creds = new InstanceElement('config', usernamePasswordCredentialsType, {
+        const creds = new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'token456',
           subdomain: 'myBrand',
@@ -2564,7 +2564,7 @@ describe('adapter', () => {
 
       it('should return fetch error when no brand matches brands config, and still generate types', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
-        const creds = new InstanceElement('config', usernamePasswordCredentialsType, {
+        const creds = new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'token456',
           subdomain: 'myBrand',
@@ -2617,7 +2617,7 @@ describe('adapter', () => {
         })
         const { elements } = await adapter
           .operations({
-            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+            credentials: new InstanceElement('config', basicCredentialsType, {
               username: 'user123',
               password: 'pwd456',
               subdomain: 'myBrand',
@@ -2678,7 +2678,7 @@ describe('adapter', () => {
       })
       const supportInstanceId = 1500002894482
       const operations = adapter.operations({
-        credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+        credentials: new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'pwd456',
           subdomain: 'myBrand',
@@ -2828,7 +2828,7 @@ describe('adapter', () => {
         return { key: 2 }
       })
       operations = adapter.operations({
-        credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+        credentials: new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'pwd456',
           subdomain: 'myBrand',

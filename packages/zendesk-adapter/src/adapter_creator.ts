@@ -30,12 +30,7 @@ import {
 } from '@salto-io/adapter-components'
 import { inspectValue } from '@salto-io/adapter-utils'
 import ZendeskAdapter from './adapter'
-import {
-  Credentials,
-  oauthAccessTokenCredentialsType,
-  oauthRequestParametersType,
-  usernamePasswordCredentialsType,
-} from './auth'
+import { basicCredentialsType, Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType } from './auth'
 import {
   configType,
   ZendeskConfig,
@@ -95,6 +90,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   return {
     username: config.value.username,
     password: config.value.password,
+    token: config.value.token,
     subdomain: config.value.subdomain,
     domain,
   }
@@ -190,7 +186,7 @@ export const adapter: Adapter = {
     }),
   authenticationMethods: {
     basic: {
-      credentialsType: usernamePasswordCredentialsType,
+      credentialsType: basicCredentialsType,
     },
     oauth: {
       createOAuthRequest,

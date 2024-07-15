@@ -974,8 +974,8 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        // eslint-disable-next-line no-template-curly-in-string
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.template).toEqual(
+          // eslint-disable-next-line no-template-curly-in-string
           'Verify this: ${code}.',
         )
         expect(nock.pendingMocks()).toHaveLength(0)

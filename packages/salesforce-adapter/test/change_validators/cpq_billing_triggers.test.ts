@@ -29,7 +29,7 @@ describe('CPQ Billing Triggers Change Validator', () => {
     )
   })
 
-  describe('when theres no change of Billing records', () => {
+  describe('when there\'s no change of Billing records', () => {
     it('should return no errors', async () => {
       const dataInstance = new InstanceElement(
         'TestInstance',
@@ -43,7 +43,7 @@ describe('CPQ Billing Triggers Change Validator', () => {
     })
   })
 
-  describe('when theres change of Billing records', () => {
+  describe('when there\'s a change of Billing records', () => {
     it('should return no errors', async () => {
       const dataInstance = new InstanceElement(
         'TestInstance',

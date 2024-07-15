@@ -766,5 +766,52 @@ describe('handleHiddenChanges', () => {
         expect(result.annotations).toEqual({ value1: 'test' })
       })
     })
+
+    describe('Field attribute handling', () => {
+      let elementsSource: ReadOnlyElementsSource
+      let testElement: ObjectType
+      let fieldType: ObjectType
+
+      beforeEach(() => {
+        fieldType = new ObjectType({
+          elemID: new ElemID('test', 'fieldType'),
+          fields: {
+            stringValue: {
+              refType: BuiltinTypes.STRING,
+            },
+            hiddenStringValue: {
+              refType: BuiltinTypes.HIDDEN_STRING,
+            },
+          },
+        })
+        testElement = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          annotations: {
+            value2: 'test',
+          },
+          annotationRefsOrTypes: {
+            value2: BuiltinTypes.STRING,
+          },
+          fields: {
+            testField: {
+              refType: fieldType,
+              annotations: {
+                stringValue: 'test',
+                hiddenStringValue: 'test',
+              },
+            },
+          },
+        })
+        elementsSource = buildElementsSourceFromElements([fieldType, testElement])
+      })
+
+      it('should return only the hiddenStringValue', async () => {
+        const result = (await getElementHiddenParts(testElement, elementsSource)) as ObjectType
+        expect(result).toBeDefined()
+        expect(result.fields).toBeDefined()
+        expect(result.fields.hiddenStringValue).toBeDefined()
+        expect(result.fields.stringValue).toBeUndefined()
+      })
+    })
   })
 })

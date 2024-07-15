@@ -1934,7 +1934,7 @@ describe('Test utils.ts', () => {
             allowEmptyObjects: true,
           })
 
-          expect(result).toEqual({
+          expect(result.value).toEqual({
             obj: {
               val: 'a',
             },
@@ -1955,7 +1955,7 @@ describe('Test utils.ts', () => {
             allowEmptyObjects: true,
           })
 
-          expect(result).toEqual({
+          expect(result.value).toEqual({
             arr: [],
             obj: {
               nestedArr: [],

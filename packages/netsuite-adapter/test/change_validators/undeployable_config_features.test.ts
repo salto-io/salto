@@ -16,6 +16,7 @@
 import { ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { featuresType } from '../../src/types/configuration_types'
 import undeployableConfigFeaturesValidator from '../../src/change_validators/undeployable_config_features'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('undeployable config feautures validator', () => {
   const origInstance = new InstanceElement(ElemID.CONFIG_NAME, featuresType(), {
@@ -30,17 +31,19 @@ describe('undeployable config feautures validator', () => {
 
   it('should not have errors', async () => {
     instance.value.ABC = false
-    const changeErrors = await undeployableConfigFeaturesValidator([
-      toChange({ before: origInstance, after: instance }),
-    ])
+    const changeErrors = await undeployableConfigFeaturesValidator(
+      [toChange({ before: origInstance, after: instance })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should have warning on change in undeployable feature', async () => {
     instance.value.SUITEAPPCONTROLCENTER = true
-    const changeErrors = await undeployableConfigFeaturesValidator([
-      toChange({ before: origInstance, after: instance }),
-    ])
+    const changeErrors = await undeployableConfigFeaturesValidator(
+      [toChange({ before: origInstance, after: instance })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
   })

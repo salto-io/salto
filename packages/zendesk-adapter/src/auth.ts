@@ -15,18 +15,28 @@
  */
 import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import * as constants from './constants'
 
-const SUBDOMAIN_MESSAGE = 'subdomain (https://<your subdomain>.zendesk.com)'
+const PASSWORD_MESSAGE = 'Password authentication is deprecated by Zendesk, please use token instead'
+const SUBDOMAIN_MESSAGE = 'Subdomain (https://<your subdomain>.zendesk.com)'
 const DOMAIN_MESSAGE =
-  'domain (optional) - only fill in if your account is not under zendesk.com (https://<subdomain>.<your zendesk domain>)'
+  'Domain (optional) - only fill in if your account is not under zendesk.com (https://<subdomain>.<your zendesk domain>)'
 
-export type UsernamePasswordCredentials = {
+type CommonBasicCredentials = {
   username: string
-  password: string
   subdomain: string
   domain?: string
 }
+
+export type UsernamePasswordCredentials = CommonBasicCredentials & {
+  password: string
+}
+export type APITokenCredentials = CommonBasicCredentials & {
+  token: string
+}
+
+export type BasicCredentials = UsernamePasswordCredentials | APITokenCredentials
 
 export type OauthAccessTokenCredentials = {
   accessToken: string
@@ -41,7 +51,10 @@ export type OauthRequestParameters = {
   domain?: string
 }
 
-export const usernamePasswordCredentialsType = createMatchingObjectType<UsernamePasswordCredentials>({
+// The type here is to allow token or password to be optional
+export const basicCredentialsType = createMatchingObjectType<
+  CommonBasicCredentials & Partial<UsernamePasswordCredentials | APITokenCredentials>
+>({
   elemID: new ElemID(constants.ZENDESK),
   fields: {
     username: {
@@ -50,7 +63,12 @@ export const usernamePasswordCredentialsType = createMatchingObjectType<Username
     },
     password: {
       refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
+      annotations: {
+        message: PASSWORD_MESSAGE,
+      },
+    },
+    token: {
+      refType: BuiltinTypes.STRING,
     },
     subdomain: {
       refType: BuiltinTypes.STRING,
@@ -127,7 +145,10 @@ export const oauthRequestParametersType = createMatchingObjectType<OauthRequestP
   },
 })
 
-export type Credentials = UsernamePasswordCredentials | OauthAccessTokenCredentials
+export type Credentials = BasicCredentials | OauthAccessTokenCredentials
 
 export const isOauthAccessTokenCredentials = (creds: Credentials): creds is OauthAccessTokenCredentials =>
-  (creds as OauthAccessTokenCredentials).accessToken !== undefined
+  'accessToken' in creds
+
+export const isAPITokenCredentials = (creds: Credentials): creds is APITokenCredentials =>
+  'token' in creds && !_.isEmpty(creds.token)

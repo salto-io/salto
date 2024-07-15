@@ -734,7 +734,9 @@ export const getAdditionalReferences = async (workspace: Workspace, changes: Cha
 
 const getFixedElements = (elements: Element[], fixedElements: Element[]): Element[] => {
   const elementFixesByElemID = _.keyBy(fixedElements, element => element.elemID.getFullName())
-  return elements.map(element => elementFixesByElemID[element.elemID.getFullName()] ?? element)
+  const origElementsByID = _.keyBy(elements, element => element.elemID.getFullName())
+  const unitedElementsIds = _.uniq(Object.keys(elementFixesByElemID).concat(Object.keys(origElementsByID)))
+  return unitedElementsIds.map(elementId => elementFixesByElemID[elementId] ?? origElementsByID[elementId])
 }
 
 const fixElementsContinuously = async (
@@ -838,11 +840,10 @@ export const fixElements = async (
     return { errors: [], changes: [] }
   }
 
-  const idToElement = _.keyBy(elements, e => e.elemID.getFullName())
-
   const fixes = await fixElementsContinuously(workspace, elements, adapters, MAX_FIX_RUNS)
-  const changes = fixes.fixedElements.flatMap(element =>
-    detailedCompare(idToElement[element.elemID.getFullName()], element),
-  )
+  const workspaceElements = await workspace.elements()
+  const changes = await awu(fixes.fixedElements)
+    .flatMap(async fixedElement => detailedCompare(await workspaceElements.get(fixedElement.elemID), fixedElement))
+    .toArray()
   return { errors: fixes.errors, changes }
 }

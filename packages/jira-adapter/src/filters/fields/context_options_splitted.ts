@@ -215,6 +215,14 @@ export const reorderContextOptions = async (
 const isCascadeOption = (option: InstanceElement): boolean =>
   getParent(option).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME
 
+const updateParentIds = (options: InstanceElement[], parentOptions: InstanceElement[]): void => {
+  const elemIdToOption = _.keyBy(parentOptions, parentOption => parentOption.elemID.getFullName())
+  options.forEach(option => {
+    option.value.optionId = elemIdToOption[getParent(option).elemID.getFullName()]?.value.id
+    option.value.parentValue = elemIdToOption[getParent(option).elemID.getFullName()]?.value.value
+  })
+}
+
 export const setContextOptionsSplitted = async ({
   contextId,
   fieldId,
@@ -250,11 +258,8 @@ export const setContextOptionsSplitted = async ({
     isCascade: false,
     numberOfAlreadyAddedOptions: 0,
   })
-  addedCascade.forEach(cascadingOption => {
-    const parentValue = getParent(cascadingOption).value
-    cascadingOption.value.optionId = parentValue?.id
-    cascadingOption.value.parentValue = parentValue?.value
-  })
+  updateParentIds(addedCascade, addedSimple)
+
   await updateContextOptions({
     addedOptions: addedCascade.map(option => option.value),
     modifiedOptions: [],

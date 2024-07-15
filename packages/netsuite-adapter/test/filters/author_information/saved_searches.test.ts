@@ -178,14 +178,14 @@ describe('netsuite saved searches author information tests', () => {
     it('undefined saved search result', async () => {
       runSavedSearchQueryMock.mockReset()
       runSavedSearchQueryMock.mockResolvedValueOnce(undefined)
-      filterCreator(filterOpts).onFetch?.(elements)
-      expect(Object.values(savedSearch.annotations)).toHaveLength(0)
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(savedSearch.annotations).toEqual({})
     })
     it('bad search result schema', async () => {
       runSavedSearchQueryMock.mockReset()
       runSavedSearchQueryMock.mockResolvedValueOnce([{ id: '1', modifiedby: { text: 'user 1 name' } }])
-      filterCreator(filterOpts).onFetch?.(elements)
-      expect(Object.values(savedSearch.annotations)).toHaveLength(0)
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(savedSearch.annotations).toEqual({})
     })
   })
 

@@ -293,6 +293,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(elements).toEqual(expectedResults)
     })
@@ -309,6 +310,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(elements).toEqual(expectedResults)
       expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(2)
@@ -348,6 +350,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(elements).toEqual([
         ...expectedResults.filter(res => !('link' in res.values)),
@@ -383,6 +386,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(failedPaths).toEqual({
         lockedError: ['/folder5/folder4/file2'],
@@ -397,6 +401,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(elements).toEqual([
         expectedResults[0],
@@ -412,6 +417,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(mockSuiteAppClient.runSuiteQL).toHaveBeenCalledWith(
         expect.objectContaining({ select: expect.stringContaining('id, name, bundleable') }),
@@ -433,7 +439,9 @@ describe('suiteapp_file_cabinet', () => {
       })
 
       const suiteAppFileCabinet = createSuiteAppFileCabinetOperations(suiteAppClient)
-      expect(await suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB, extensionsToExclude)).toEqual({
+      expect(
+        await suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB, extensionsToExclude, false),
+      ).toEqual({
         elements: [],
         failedPaths: { lockedError: [], largeFolderError: [], otherError: [] },
       })
@@ -446,6 +454,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(elements).toEqual([])
       expect(suiteAppClient.runSuiteQL).not.toHaveBeenCalled()
@@ -468,6 +477,7 @@ describe('suiteapp_file_cabinet', () => {
           query,
           maxFileCabinetSizeInGB,
           extensionsToExclude,
+          false,
         ),
       ).rejects.toThrow()
     })
@@ -489,6 +499,7 @@ describe('suiteapp_file_cabinet', () => {
           query,
           maxFileCabinetSizeInGB,
           extensionsToExclude,
+          false,
         ),
       ).rejects.toThrow()
     })
@@ -500,6 +511,7 @@ describe('suiteapp_file_cabinet', () => {
           query,
           maxFileCabinetSizeInGB,
           extensionsToExclude,
+          false,
         ),
       ).rejects.toThrow()
     })
@@ -521,6 +533,7 @@ describe('suiteapp_file_cabinet', () => {
           query,
           maxFileCabinetSizeInGB,
           extensionsToExclude,
+          false,
         ),
       ).rejects.toThrow()
     })
@@ -542,6 +555,7 @@ describe('suiteapp_file_cabinet', () => {
           query,
           maxFileCabinetSizeInGB,
           extensionsToExclude,
+          false,
         ),
       ).rejects.toThrow()
     })
@@ -553,6 +567,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       const suiteQlQuery = {
         select:
@@ -572,6 +587,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(mockLargeFoldersToExclude).toHaveBeenCalledWith(
         [
@@ -597,6 +613,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(elements).toEqual([expectedResults[1], expectedResults[3]])
     })
@@ -608,6 +625,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       const suiteQlQuery = {
         select:
@@ -629,6 +647,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       const suiteQlQuery = {
         select:
@@ -648,6 +667,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       // no folder should match, queryFiles shouldn't be called
       expect(suiteAppClient.runSuiteQL).toHaveBeenCalledTimes(2)
@@ -667,6 +687,7 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
+        false,
       )
       expect(elements).toEqual(expectedResults)
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(

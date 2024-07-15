@@ -28,6 +28,7 @@ import {
   ZENDESK,
 } from './constants'
 import {
+  fixerNames,
   Guide,
   IdLocator,
   OmitInactiveConfig,
@@ -36,6 +37,7 @@ import {
   ZendeskClientConfig,
   ZendeskDeployConfig,
   ZendeskFetchConfig,
+  ZendeskFixElementsConfig,
 } from './user_config'
 
 const { defaultMissingUserFallbackField } = configUtils
@@ -67,6 +69,7 @@ export const CURSOR_BASED_PAGINATION_FIELD = 'links.next'
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
+export const FIX_ELEMENTS_CONFIG = 'fixElements'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
@@ -84,6 +87,7 @@ export type ZendeskConfig = {
   [FETCH_CONFIG]: ZendeskFetchConfig
   [DEPLOY_CONFIG]?: ZendeskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
+  [FIX_ELEMENTS_CONFIG]?: ZendeskFixElementsConfig
 }
 
 export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
@@ -2769,6 +2773,12 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
   },
+  [FIX_ELEMENTS_CONFIG]: {
+    mergeLists: false,
+    fallbackUsers: true,
+    removeDupUsers: true,
+    orderElements: true,
+  },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
       request: {
@@ -3074,6 +3084,19 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   },
 })
 
+const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfig>>({
+  elemID: new ElemID(ZENDESK, 'fixElementsConfig'),
+  fields: {
+    mergeLists: { refType: BuiltinTypes.BOOLEAN },
+    fallbackUsers: { refType: BuiltinTypes.BOOLEAN },
+    removeDupUsers: { refType: BuiltinTypes.BOOLEAN },
+    orderElements: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -3108,6 +3131,9 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         createMissingOrganizations: { refType: BuiltinTypes.BOOLEAN },
       }),
     },
+    [FIX_ELEMENTS_CONFIG]: {
+      refType: fixerConfigType,
+    },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({
         adapter: ZENDESK,
@@ -3133,6 +3159,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.omitTicketStatusTicketField`,
       `${FETCH_CONFIG}.useNewInfra`,
       DEPLOY_CONFIG,
+      FIX_ELEMENTS_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
@@ -3194,5 +3221,12 @@ export const validateOmitInactiveConfig = (
         },
       }),
     )
+  }
+}
+export const validateFixElementsConfig = (FixElementsConfig: ZendeskFixElementsConfig | undefined): void => {
+  if (FixElementsConfig !== undefined) {
+    if (!Object.keys(FixElementsConfig).every(fixerName => (fixerNames as unknown as string[]).includes(fixerName))) {
+      throw Error('Invalid Zendesk fixElements config. One of the keys is invalid')
+    }
   }
 }

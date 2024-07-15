@@ -34,7 +34,7 @@ import {
   TypeMap,
   FixElementsFunc,
 } from '@salto-io/adapter-api'
-import { logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
+import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import { Client } from '../../client/client_creator'
@@ -189,8 +189,7 @@ export class AdapterImpl<
    */
   @logDuration('fetching account configuration')
   async getElements(): Promise<FetchElements> {
-    const { allTypes, parsedConfigs } = await this.getAllSwaggerTypes()
-    log.debug('Full parsed configuration from swaggers: %s', safeJsonStringify(parsedConfigs))
+    const allTypes = await this.getAllSwaggerTypes()
 
     const res = await getElements({
       adapterName: this.adapterName,

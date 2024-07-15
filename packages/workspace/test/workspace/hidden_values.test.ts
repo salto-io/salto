@@ -834,7 +834,7 @@ describe('handleHiddenChanges', () => {
         ])
       })
 
-      it('should return only the hiddenStringValue', async () => {
+      it('should return ObjectType with all of the hiddenValueFieldWithNoHiddenAnnotations and the specific annotations from fieldWithPartiallyHiddenAnnotations', async () => {
         const result = (await getElementHiddenParts(testElement, elementsSource)) as ObjectType
         expect(result).toBeDefined()
         const { fields } = result

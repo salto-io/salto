@@ -729,15 +729,6 @@ describe('adapter', () => {
           progressReporter: nullProgressReporter,
         })
 
-        /*
-        expect(mockAxiosAdapter.history.post.length).toBe(1)
-        const deactivateReq = mockAxiosAdapter.history.post[0]
-        expect(deactivateReq.url).toEqual('/api/v1/users/fakeid123/lifecycle/deactivate')
-        expect(mockAxiosAdapter.history.delete.length).toBe(1)
-        const deleteReq = mockAxiosAdapter.history.delete[0]
-        expect(deleteReq.url).toEqual('/api/v1/users/fakeid123')
-        */
-
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0]).elemID.getFullName()).toEqual('okta.User.instance.user1')

@@ -15,7 +15,6 @@
  */
 
 import { definitions } from '@salto-io/adapter-components'
-import { EndpointPath } from '@salto-io/adapter-components/src/definitions'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import xmljs from 'xml-js'
@@ -50,7 +49,7 @@ export const createClassicApiDefinitionsForType = (
           request: {
             endpoint: {
               // In classic api id is mandatory on addition as well, we should provide -1 to let the service generate a new id
-              path: `/JSSResource/${plural}/id/-1` as EndpointPath,
+              path: `/JSSResource/${plural}/id/-1` as definitions.EndpointPath,
               method: 'post',
               headers: {
                 'Content-Type': 'application/xml',
@@ -72,7 +71,7 @@ export const createClassicApiDefinitionsForType = (
         {
           request: {
             endpoint: {
-              path: `/JSSResource/${plural}/id/{id}` as EndpointPath,
+              path: `/JSSResource/${plural}/id/{id}` as definitions.EndpointPath,
               method: 'put',
               headers: {
                 'Content-Type': 'application/xml',
@@ -94,7 +93,7 @@ export const createClassicApiDefinitionsForType = (
         {
           request: {
             endpoint: {
-              path: `/JSSResource/${plural}/id/{id}` as EndpointPath,
+              path: `/JSSResource/${plural}/id/{id}` as definitions.EndpointPath,
               method: 'delete',
             },
           },

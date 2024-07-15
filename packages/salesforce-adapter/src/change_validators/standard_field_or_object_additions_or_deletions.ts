@@ -32,7 +32,7 @@ import {
   isCustomObject,
   isFieldOfCustomObject,
 } from '../transformers/transformer'
-import { safeApiName } from '../filters/utils'
+import { isStandardObjectSync, safeApiName } from '../filters/utils'
 
 const { awu } = collections.asynciterable
 
@@ -107,11 +107,9 @@ const changeValidator: ChangeValidator = async (changes) => {
       Object.values(customObject.fields).includes(field),
     )
 
-  const standardObjectChanges = await awu(additionOrRemovalCustomObjectChanges)
-    .filter(
-      async (obj) => !isCustom((await safeApiName(getChangeData(obj))) ?? ''),
-    )
-    .toArray()
+  const standardObjectChanges = additionOrRemovalCustomObjectChanges.filter(
+    (change) => isStandardObjectSync(getChangeData(change)),
+  )
 
   const standardFieldAdditionErrors = await awu(standardFieldChanges)
     .filter(isAdditionChange)

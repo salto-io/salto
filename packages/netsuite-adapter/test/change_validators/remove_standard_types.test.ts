@@ -18,12 +18,16 @@ import { entitycustomfieldType } from '../../src/autogen/types/standard_types/en
 import { fileType } from '../../src/types/file_cabinet_types'
 import removeStandardTypesValidator from '../../src/change_validators/remove_standard_types'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('remove custom object change validator', () => {
   describe('onRemove', () => {
     it('should have change error when removing an instance with custom object type', async () => {
       const instance = new InstanceElement('test', entitycustomfieldType().type)
-      const changeErrors = await removeStandardTypesValidator([toChange({ before: instance })])
+      const changeErrors = await removeStandardTypesValidator(
+        [toChange({ before: instance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -34,7 +38,10 @@ describe('remove custom object change validator', () => {
         elemID: new ElemID(NETSUITE, 'customrecord1'),
         annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE, [INTERNAL_ID]: '14' },
       })
-      const changeErrors = await removeStandardTypesValidator([toChange({ before: customRecordType })])
+      const changeErrors = await removeStandardTypesValidator(
+        [toChange({ before: customRecordType })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(customRecordType.elemID)
@@ -42,13 +49,19 @@ describe('remove custom object change validator', () => {
 
     it('should not have change error when removing an instance with file cabinet type', async () => {
       const instance = new InstanceElement('test', fileType())
-      const changeErrors = await removeStandardTypesValidator([toChange({ before: instance })])
+      const changeErrors = await removeStandardTypesValidator(
+        [toChange({ before: instance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should not have change error when removing an instance with non custom object type', async () => {
       const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('bla') }))
-      const changeErrors = await removeStandardTypesValidator([toChange({ before: instance })])
+      const changeErrors = await removeStandardTypesValidator(
+        [toChange({ before: instance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
   })

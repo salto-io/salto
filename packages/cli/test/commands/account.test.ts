@@ -208,8 +208,11 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'success']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('add', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': true })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(
+              eventName,
+              1,
+              expect.objectContaining({ 'adapter-newAdapter': true }),
+            )
           })
         })
       })
@@ -227,12 +230,7 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('add', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
-              app: 'test',
-              installationID: '1234',
-              workspaceID: 'test',
-            })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, { workspaceID: 'test' })
           })
         })
       })
@@ -251,12 +249,7 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('add', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
-              app: 'test',
-              installationID: '1234',
-              workspaceID: 'test',
-            })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, { workspaceID: 'test' })
           })
         })
       })
@@ -644,12 +637,9 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'success']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({
-              'adapter-salesforce': true,
-              installationID: '1234',
-              app: 'test',
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, {
               workspaceID: 'test',
+              'adapter-salesforce': true,
             })
           })
         })
@@ -668,12 +658,7 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
-              app: 'test',
-              installationID: '1234',
-              workspaceID: 'test',
-            })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, { workspaceID: 'test' })
           })
         })
       })
@@ -690,12 +675,7 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
-              app: 'test',
-              installationID: '1234',
-              workspaceID: 'test',
-            })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, { workspaceID: 'test' })
           })
         })
       })

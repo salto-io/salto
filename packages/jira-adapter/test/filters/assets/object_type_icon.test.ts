@@ -16,7 +16,6 @@
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { InstanceElement, Element, StaticFile, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { AuthenticatedAPIConnection } from '@salto-io/adapter-components/src/client'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
 import objectTypeIconFilter from '../../../src/filters/assets/object_type_icon'
@@ -133,7 +132,7 @@ describe('object type icon filter', () => {
   describe('on deploy', () => {
     beforeEach(async () => {
       mockedConnection.createLogoConnection.mockReturnValue({
-        login: () => Promise.resolve({} as AuthenticatedAPIConnection),
+        login: () => Promise.resolve({} as clientUtils.AuthenticatedAPIConnection),
       })
       mockPost = jest.spyOn(client, 'post')
       objectTypeIconInstance = new InstanceElement('objectType1', objectTypeIconType, {

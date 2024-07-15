@@ -163,11 +163,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ after: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should call deployContextChange on modification', async () => {
@@ -175,11 +176,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ after: instance, before: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should call deployContextChange on removal', async () => {
@@ -196,11 +198,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ before: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should not call deployContextChange on removal without parent', async () => {
@@ -208,6 +211,101 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ before: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).not.toHaveBeenCalled()
+    })
+  })
+  describe('Deploy context for locked field', () => {
+    let fieldInstcnae: InstanceElement
+    let contextInstance: InstanceElement
+    let mockGet: jest.SpyInstance
+    beforeEach(() => {
+      const { client: cli } = mockClient(false)
+      client = cli
+      mockGet = jest.spyOn(client, 'get')
+      fieldInstcnae = new InstanceElement('field', fieldType, {
+        name: 'field_1',
+        description: 'auto-created by jira service',
+        type: 'com.atlassian.servicedesk:vp-origin',
+        isLocked: true,
+      })
+      contextInstance = new InstanceElement(
+        'context',
+        contextType,
+        {
+          name: 'context_1',
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(fieldInstcnae.elemID, fieldInstcnae),
+        },
+      )
+    })
+    it('should deploy custom field context with jsm locked field if it was created in the service', async () => {
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [
+            {
+              id: '1',
+              name: 'context_1',
+              isGlobalContext: true,
+            },
+          ],
+        },
+      })
+      filter = contextDeploymentFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
+      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
+      const res = await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(change.data.after.value.id).toEqual('1')
+    })
+    it('should not deploy custom field context with jsm locked field f it was not created in the service', async () => {
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [
+            {
+              id: '1',
+              name: 'context_1',
+              isGlobalContext: true,
+            },
+          ],
+        },
+      })
+      filter = contextDeploymentFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
+      contextInstance.value.name = 'context_2'
+      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
+      const res = await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+    })
+    it('should not deploy custom field context with jsm locked field if it is a bad response', async () => {
+      mockGet.mockResolvedValue({
+        status: 404,
+        data: {
+          errorMessages: ['The component with id 1 does not exist.'],
+        },
+      })
+      filter = contextDeploymentFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
+      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
+      const res = await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
+      expect(res.deployResult.errors).toHaveLength(1)
     })
   })
 })

@@ -556,6 +556,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         config,
         elementsSource,
       }),
+      config.fixElements,
     )
   }
 

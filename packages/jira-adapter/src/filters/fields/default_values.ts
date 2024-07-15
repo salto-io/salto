@@ -38,8 +38,12 @@ import {
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
 import { addAnnotationRecursively, setFieldDeploymentAnnotations } from '../../utils'
+import { JiraConfig } from '../../config/config'
 
-const resolveDefaultOption = (contextChange: Change<InstanceElement>): Promise<Change<InstanceElement>> =>
+const resolveDefaultOption = (
+  contextChange: Change<InstanceElement>,
+  config: JiraConfig,
+): Promise<Change<InstanceElement>> =>
   applyFunctionToChangeData<Change<InstanceElement>>(contextChange, instance => {
     const clonedInstance = instance.clone()
     ;['optionId', 'cascadingOptionId']
@@ -49,10 +53,9 @@ const resolveDefaultOption = (contextChange: Change<InstanceElement>): Promise<C
         // is because if we just created these options, the options under instance.value will
         // include the new option ids while the copied options under the references
         // resValues won't
-        clonedInstance.value.defaultValue[fieldName] = resolvePath(
-          clonedInstance,
-          clonedInstance.value.defaultValue[fieldName].elemID,
-        ).id
+        clonedInstance.value.defaultValue[fieldName] = config.fetch.splitFieldContextOptions
+          ? clonedInstance.value.defaultValue[fieldName].value.value.id
+          : resolvePath(clonedInstance, clonedInstance.value.defaultValue[fieldName].elemID).id
       })
     return clonedInstance
   })
@@ -60,10 +63,11 @@ const resolveDefaultOption = (contextChange: Change<InstanceElement>): Promise<C
 export const updateDefaultValues = async (
   contextChange: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface,
+  config: JiraConfig,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(
-    await resolveDefaultOption(contextChange),
+    await resolveDefaultOption(contextChange, config),
     getLookUpName,
     resolveValues,
     elementsSource,

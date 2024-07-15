@@ -46,7 +46,11 @@ import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
 import { BEHAVIOR_TYPE } from '../src/constants'
-import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../src/filters/fields/constants'
+import {
+  FIELD_CONTEXT_OPTION_TYPE_NAME,
+  FIELD_CONTEXT_TYPE_NAME,
+  FIELD_TYPE_NAME,
+} from '../src/filters/fields/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
@@ -253,6 +257,9 @@ each([
         .filter(isAdditionChange)
         .map(change => toChange({ before: getChangeData(change) }))
         .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName !== FIELD_TYPE_NAME)
+        .filter(change => getChangeData(change).elemID.typeName !== FIELD_CONTEXT_TYPE_NAME)
+        .filter(change => getChangeData(change).elemID.typeName !== FIELD_CONTEXT_OPTION_TYPE_NAME)
       removalChanges.forEach(change => {
         const instance = getChangeData(change)
         removalChanges

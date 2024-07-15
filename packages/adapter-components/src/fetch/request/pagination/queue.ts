@@ -15,6 +15,7 @@
  */
 import objectHash from 'object-hash'
 import { logger } from '@salto-io/logging'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { Response, ResponseValue } from '../../../client'
 import { ClientRequestArgsNoPath, PaginationFunction } from '../../../definitions/system'
 import { HTTPEndpointIdentifier } from '../../../definitions'
@@ -95,7 +96,7 @@ export class RequestQueue<ClientOptions extends string> {
       })
       nextArgs.forEach(arg => this.enqueue(arg))
     } catch (e) {
-      log.error('Error processing args (%s): %s, stack: %s', args, e, e.stack)
+      log.error('Error processing args (%s): %s, stack: %s', safeJsonStringify(args), safeJsonStringify(e), e.stack)
       throw e
     } finally {
       this.activePromises = this.activePromises.filter(p => p.id !== promiseID)

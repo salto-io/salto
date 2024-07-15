@@ -60,7 +60,10 @@ const changeValidator: ChangeValidator = async (changes) => {
   const billingInstance = changes
     .filter(isInstanceOfCustomObjectChangeSync)
     .map((change) => getChangeData(change))
-    .find((instance) => getNamespaceSync(instance) === BILLING_NAMESPACE)
+    .find(
+      (instance) =>
+        getNamespaceSync(instance.getTypeSync()) === BILLING_NAMESPACE,
+    )
   return billingInstance !== undefined
     ? [getBillingError(billingInstance.elemID)]
     : []

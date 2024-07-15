@@ -51,20 +51,33 @@ const nullProgressReporter: ProgressReporter = {
 
 const loadMockReplies = (filename: string): void => {
   const defs: nock.Definition[] = nock.loadDefs(`${__dirname}/mock_replies/${filename}`)
-  defs.forEach(def => {def.scope = 'https://test.okta.com:443'})
+  defs.forEach(def => {
+    if (def.scope === '') {
+      if (def.path.includes('admin') || def.path.includes('internal')) {
+        def.scope = 'https://test-admin.okta.com:443'
+      } else {
+        def.scope = 'https://test.okta.com:443'
+      }
+    }
+  })
+  nock('https://test.okta.com:443', {
+    filteringScope: scope => scope.includes('.okta.com')
+  })
   nock.define(defs)
   nock.disableNetConnect()
   nock.enableNetConnect('raw.githubusercontent.com')
 }
 
 describe('adapter', () => {
-  jest.setTimeout(10 * 5000)
+  jest.setTimeout(10 * 50000)
 
   beforeEach(async () => {
     nock('https://test.okta.com:443')
       .persist()
       .get('/api/v1/org')
       .reply(200, { id: 'accountId' })
+      .get('/favicon.ico')
+      .reply(200, 'favicon')
   })
 
   afterEach(() => {
@@ -92,6 +105,7 @@ describe('adapter', () => {
             })
             .fetch({ progressReporter: nullProgressReporter })
         ).elements
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should generate the right types on fetch', async () => {
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([

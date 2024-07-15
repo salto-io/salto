@@ -21,7 +21,7 @@ from typing import Any
 
 
 def read_http_data_from_salto_log(logpath: str) -> list[dict[str, Any]]:
-    """Return HTTP response data from a Salto log file.""""
+    """Return HTTP response data from a Salto log file."""
     with open(logpath) as logfile:
         return [
             json.loads(l[l.find(": ") + 2 :].strip())
@@ -34,7 +34,9 @@ def convert_to_nock_format(http_data: dict[str, Any]) -> dict[str, Any]:
     http_data.setdefault("scope", "")
     http_data.setdefault("path", http_data.pop("url", None))
     if not http_data["path"].startswith("/"):
-        http_data["path"] = f"/{http_data['path']}"
+        parsed = urllib.parse.urlparse(http_data["path"])
+        http_data["path"] = parsed.path
+        http_data["scope"] = f"{parsed.scheme}://{parsed.netloc}"
     if "data" in http_data:
         http_data.setdefault("body", http_data.pop("data"))
     if "body" in http_data and http_data["body"] is None:

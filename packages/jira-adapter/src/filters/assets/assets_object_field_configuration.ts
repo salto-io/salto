@@ -27,26 +27,36 @@ import {
   CORE_ANNOTATIONS,
   isAdditionOrModificationChange,
   getChangeData,
-  InstanceElement,
+  InstanceElement, Change,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_TYPE_NAME } from '../fields/constants'
 import { addAnnotationRecursively, findObject } from '../../utils'
-import { JIRA } from '../../constants'
+import { ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE, JIRA } from '../../constants'
 import { getWorkspaceId } from '../../workspace_id'
 
 const { toBasicInstance } = elementUtils
 const { getTransformationConfigByType } = configUtils
 const log = logger(module)
 
+const CmdbObjectFieldConfiguration = 'com.atlassian.jira.plugins.cmdb:cmdb-object-cftype'
+
 export const getAssetsContextId = (instance: InstanceElement): string => {
   if (Number.isNaN(instance.value.id)) {
     throw new Error(`context id is not a number, received: ${instance.value.id}`)
   }
+  // SALTO-6254 we need to figure out where to get the asset-context id from.
+  // This heuristic works so far and a temporal implementation
   return _.toString(_.toInteger(instance.value.id) - 1)
 }
+
+const getRelevantAssetsObjectFieldConfiguration = (changes: Change[]): InstanceElement[] => changes.filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+    .filter(isInstanceElement)
+    .filter(instance => instance.value.assetsObjectFieldConfiguration !== undefined)
 
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'assetsObjectFieldConfigurationFilter',
@@ -61,7 +71,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     }
 
     const assetsObjectFieldConfigurationType = new ObjectType({
-      elemID: new ElemID(JIRA, 'AssetsObjectFieldConfiguration'),
+      elemID: new ElemID(JIRA, ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE),
       fields: {
         objectSchemaId: { refType: BuiltinTypes.STRING },
         workspaceId: { refType: BuiltinTypes.STRING },
@@ -74,7 +84,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         shouldSetDefaultValuesFromEmptySearch: { refType: BuiltinTypes.BOOLEAN },
         attributesLimit: { refType: BuiltinTypes.NUMBER },
       },
-      path: [JIRA, elementUtils.TYPES_PATH, elementUtils.SUBTYPES_PATH, 'AssetsObjectFieldConfiguration'],
+      path: [JIRA, elementUtils.TYPES_PATH, elementUtils.SUBTYPES_PATH, ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE],
     })
 
     await addAnnotationRecursively(assetsObjectFieldConfigurationType, CORE_ANNOTATIONS.CREATABLE)
@@ -97,7 +107,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     const fieldContexts = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-      .filter(instance => getParent(instance).value.type === 'com.atlassian.jira.plugins.cmdb:cmdb-object-cftype')
+      .filter(instance => getParent(instance).value.type === CmdbObjectFieldConfiguration)
 
     await Promise.all(
       fieldContexts.map(async instance => {
@@ -121,12 +131,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     )
   },
   preDeploy: async changes => {
-    const relevantChanges = changes
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-      .filter(isInstanceElement)
-      .filter(instance => instance.value.assetsObjectFieldConfiguration !== undefined)
+    const relevantChanges = getRelevantAssetsObjectFieldConfiguration(changes)
     if (_.isEmpty(relevantChanges)) {
       return
     }
@@ -139,13 +144,8 @@ const filter: FilterCreator = ({ config, client }) => ({
     })
   },
   onDeploy: async changes => {
-    changes
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-      .filter(isInstanceElement)
-      .filter(instance => instance.value.assetsObjectFieldConfiguration !== undefined)
-      .forEach(async instance => {
+    getRelevantAssetsObjectFieldConfiguration(changes)
+      .forEach(instance => {
         delete instance.value.assetsObjectFieldConfiguration.workspaceId
         if (_.isEmpty(instance.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue)) {
           delete instance.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue

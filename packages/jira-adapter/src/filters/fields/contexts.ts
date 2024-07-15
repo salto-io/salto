@@ -58,7 +58,10 @@ export const getContextType = async (fieldType: ObjectType): Promise<ObjectType>
   return contextType
 }
 
-const deployAssetObjectContext = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
+const deployAssetObjectContext = async (change: Change<InstanceElement>, client: JiraClient, config: JiraConfig): Promise<void> => {
+  if(!config.fetch.enableAssetsObjectFieldConfiguration) {
+    return
+  }
   const instance = getChangeData(change)
   if (isRemovalChange(change) || instance.value.assetsObjectFieldConfiguration === undefined) {
     return
@@ -133,7 +136,7 @@ export const deployContextChange = async ({
     await setContextOptions(change, client, elementsSource, paginator)
     await updateDefaultValues(change, client, config, elementsSource)
   }
-  await deployAssetObjectContext(change, client)
+  await deployAssetObjectContext(change, client, config)
 }
 
 export const getContexts = async (

@@ -9,17 +9,23 @@ orbs:
 jobs:
   find_changed_packages:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
     resource_class: small
 
     steps:
       - checkout
       - run:
-          name: Run Find Changed Packages Script
+          name: Set up yarn
           command: |
-            pushd .circleci/scripts
-            node find_changed_packages.js
-            node update_config_template.js
+            sudo corepack enable
+
+      - run:
+          name: Generate Dynamic Pipeline
+          command: |
+            node .circleci/scripts/find_changed_packages.js
+            node .circleci/scripts/dynamic_unit_tests.js
+            node .circleci/scripts/update_config_template.js
+
       - persist_to_workspace:
           root: .
           paths:

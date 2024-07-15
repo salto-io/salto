@@ -350,10 +350,6 @@ const processDeployResponse = (
     )
   }
 
-  const componentErrors = failedComponentErrors.concat(
-    successfulComponentProblems,
-  )
-
   const testFailures = makeArray(result.details).flatMap((detail) =>
     makeArray((detail.runTestResult as RunTestsResult)?.failures),
   )
@@ -375,7 +371,8 @@ const processDeployResponse = (
 
   const errors = [
     ...testErrors,
-    ...componentErrors,
+    ...failedComponentErrors,
+    ...successfulComponentProblems,
     ...codeCoverageWarningErrors,
   ]
 
@@ -388,7 +385,7 @@ const processDeployResponse = (
 
   const anyErrors =
     isDefined(result.errorMessage) ||
-    componentErrors.length > 0 ||
+    failedComponentErrors.length > 0 ||
     testErrors.length > 0
   if (!isCheckOnly && result.rollbackOnError !== false && anyErrors) {
     // If we deployed with 'rollbackOnError' (the default) and any component in the group fails to deploy, then every

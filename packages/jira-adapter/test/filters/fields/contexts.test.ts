@@ -106,7 +106,7 @@ describe('deployContextChange', () => {
       before: beforeInstance,
       after: afterInstance,
     })
-    await deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    await deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) })
 
     expect(deployChangeMock).toHaveBeenCalledWith({
       change: await resolveChangeElement(change, getLookUpName),
@@ -140,7 +140,7 @@ describe('deployContextChange', () => {
     const change = toChange({
       before: beforeInstance,
     })
-    await deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    await deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) })
   })
 
   it('should throw for other error messages', async () => {
@@ -168,7 +168,7 @@ describe('deployContextChange', () => {
       before: beforeInstance,
     })
     await expect(
-      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions),
+      deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) }),
     ).rejects.toThrow()
   })
 
@@ -202,7 +202,7 @@ describe('deployContextChange', () => {
       after: instance,
     })
     await expect(
-      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions),
+      deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) }),
     ).rejects.toThrow()
   })
 })

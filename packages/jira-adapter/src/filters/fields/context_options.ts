@@ -47,7 +47,7 @@ const { awu } = collections.asynciterable
 
 const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
 const PUBLIC_API_OPTIONS_LIMIT = 10000
-const convertOptionsToList = (options: Values): Values[] =>
+export const convertOptionsToList = (options: Values): Values[] =>
   _(options)
     .values()
     .sortBy(option => option.position)

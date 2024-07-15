@@ -20,6 +20,8 @@ import { Credentials } from '../auth'
 
 const log = logger(module)
 
+export const VALIDATE_CREDENTIALS_URL = '/JSSResource/classes'
+
 export const validateCredentials = async ({
   connection,
   credentials,
@@ -28,7 +30,7 @@ export const validateCredentials = async ({
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
   try {
-    await connection.get('/api/v1/api-integrations')
+    await connection.get(VALIDATE_CREDENTIALS_URL)
     // TODO SALTO-6138 support isProduction
     const accountId = credentials.baseUrl
     return { accountId }

@@ -18,6 +18,7 @@ import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-i
 import { NETSUITE, ROLE, SCRIPT_ID } from '../../src/constants'
 import { roleType as role } from '../../src/autogen/types/standard_types/role'
 import permissionIdsValidator from '../../src/change_validators/role_permission_ids'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('role permission ids change validator tests', () => {
   const roleType = role().type
@@ -39,13 +40,13 @@ describe('role permission ids change validator tests', () => {
     })
   })
   it('should not have change error when deploying a role with valid permissions', async () => {
-    const changeErrors = await permissionIdsValidator([toChange({ after: roleInstance })])
+    const changeErrors = await permissionIdsValidator([toChange({ after: roleInstance })], mockChangeValidatorParams())
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should not have change error when deploying an undocumented permissions', async () => {
     roleInstance.value.permissions.permission.NEW_PERMISSION = { permkey: 'NEW_PERMISSION', permlevel: 'EDIT' }
-    const changeErrors = await permissionIdsValidator([toChange({ after: roleInstance })])
+    const changeErrors = await permissionIdsValidator([toChange({ after: roleInstance })], mockChangeValidatorParams())
     expect(changeErrors).toHaveLength(0)
   })
 
@@ -54,13 +55,13 @@ describe('role permission ids change validator tests', () => {
       permkey: new ReferenceExpression(new ElemID(NETSUITE, ROLE)),
       permlevel: 'FULL',
     }
-    const changeErrors = await permissionIdsValidator([toChange({ after: roleInstance })])
+    const changeErrors = await permissionIdsValidator([toChange({ after: roleInstance })], mockChangeValidatorParams())
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should have change error when deploying a role with invalid permissions levels', async () => {
     roleInstance.value.permissions.permission.REPO_PERIODENDFINANCIALS.permlevel = 'FULL'
-    const changeErrors = await permissionIdsValidator([toChange({ after: roleInstance })])
+    const changeErrors = await permissionIdsValidator([toChange({ after: roleInstance })], mockChangeValidatorParams())
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].detailedMessage).toEqual(

@@ -18,19 +18,10 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import checkReferencedDatasets from '../../src/change_validators/check_referenced_datasets'
 import { parsedDatasetType } from '../../src/type_parsers/analytics_parsers/parsed_dataset'
 import { parsedWorkbookType } from '../../src/type_parsers/analytics_parsers/parsed_workbook'
-import NetsuiteClient from '../../src/client/client'
-import { fullFetchConfig } from '../../src/config/config_creator'
-import mockSdfClient from '../client/sdf_client'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('unreferenced dataset validator', () => {
-  const baseParams = {
-    deployReferencedElements: false,
-    elementsSource: buildElementsSourceFromElements([]),
-    config: {
-      fetch: fullFetchConfig(),
-    },
-    client: new NetsuiteClient(mockSdfClient()),
-  }
+  const baseParams = mockChangeValidatorParams()
   const { type: dataset } = parsedDatasetType()
   const { type: workbook } = parsedWorkbookType()
   const referencedDataset = new InstanceElement('referencedDataset', dataset, {

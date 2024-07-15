@@ -122,7 +122,7 @@ describe('fetch command', () => {
         expect(fetch).toHaveBeenCalled()
       })
       it('should send telemetry events', () => {
-        expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
+        expect(telemetry.sendCountEvent).toHaveBeenCalled()
       })
     })
 
@@ -272,8 +272,7 @@ describe('fetch command', () => {
         })
         it('should not update workspace', () => {
           expect(workspace.updateNaclFiles).toHaveBeenCalledWith([], 'default')
-          expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
-          expect(telemetry.getEventsMap()[eventsNames.changes][0].value).toEqual(0)
+          expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.changes, 0, expect.objectContaining({}))
         })
       })
       describe('with changes to write to config', () => {

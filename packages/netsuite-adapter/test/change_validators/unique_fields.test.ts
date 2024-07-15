@@ -36,9 +36,7 @@ import {
   SAVED_SEARCH,
   WORKFLOW,
 } from '../../src/constants'
-import { fullFetchConfig } from '../../src/config/config_creator'
-import NetsuiteClient from '../../src/client/client'
-import mockSdfClient from '../client/sdf_client'
+import { mockChangeValidatorParams } from '../utils'
 
 const DUPLICATED_FIELD = 'test uniqueness'
 const UNIQUE_FIELD = 'test uniqueness 2'
@@ -52,14 +50,7 @@ describe('unique fields validator', () => {
     diffField: ChangeDataType
   }
 
-  const baseParams = {
-    deployReferencedElements: false,
-    elementsSource: buildElementsSourceFromElements([]),
-    config: {
-      fetch: fullFetchConfig(),
-    },
-    client: new NetsuiteClient(mockSdfClient()),
-  }
+  const baseParams = mockChangeValidatorParams()
 
   const getTestElements = (
     typeName: string,

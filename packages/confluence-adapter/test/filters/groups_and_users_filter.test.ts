@@ -17,7 +17,7 @@ import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { definitions as definitionsUtils, fetch, filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import groupsAndUsersFilter, { FALLBACK_DISPLAY_NAME } from '../../src/filters/groups_and_users_filter'
-import { UserConfig } from '../../src/config'
+import { DEFAULT_CONFIG, UserConfig } from '../../src/config'
 import { Options } from '../../src/definitions/types'
 import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../src/constants'
 import { createDeployDefinitions, createFetchDefinitions } from '../../src/definitions'
@@ -92,7 +92,7 @@ describe('groupsAndUsersFilter', () => {
     })
     return [spaceInst, pageInst, otherInst]
   }
-  const fetchDef = createFetchDefinitions()
+  const fetchDef = createFetchDefinitions(DEFAULT_CONFIG)
   const deployDef = createDeployDefinitions()
   const mockDefinitions = {
     fetch: fetchDef,

@@ -17,6 +17,7 @@ import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, toChange } from
 import { INTERNAL_ID, PATH } from '../../src/constants'
 import fileCabinetInternalIdsValidator from '../../src/change_validators/file_cabinet_internal_ids'
 import { fileType, folderType } from '../../src/types/file_cabinet_types'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('suiteapp file cabinet internal ids validator', () => {
   const file = fileType()
@@ -34,17 +35,17 @@ describe('suiteapp file cabinet internal ids validator', () => {
       removedFile.value[INTERNAL_ID] = '101'
       updatedBefore.value[INTERNAL_ID] = '2'
       updatedAfter.value[INTERNAL_ID] = '2'
-      const result = await fileCabinetInternalIdsValidator([
-        toChange({ before: removedFile }),
-        toChange({ before: updatedBefore, after: updatedAfter }),
-      ])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ before: removedFile }), toChange({ before: updatedBefore, after: updatedAfter })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(0)
     })
     it('should have change errors when there are no internal ids', async () => {
-      const result = await fileCabinetInternalIdsValidator([
-        toChange({ before: removedFile }),
-        toChange({ before: updatedBefore, after: updatedAfter }),
-      ])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ before: removedFile }), toChange({ before: updatedBefore, after: updatedAfter })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(2)
     })
   })
@@ -68,20 +69,26 @@ describe('suiteapp file cabinet internal ids validator', () => {
       addedFile.annotations[CORE_ANNOTATIONS.PARENT] = [
         new ReferenceExpression(addedFolder.elemID, undefined, addedFolder),
       ]
-      const result = await fileCabinetInternalIdsValidator([
-        toChange({ after: addedFile }),
-        toChange({ after: addedFolder }),
-      ])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ after: addedFile }), toChange({ after: addedFolder })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(0)
     })
     it('should not have change errors when path is top level', async () => {
       addedFolder.value[PATH] = '/someFolder1'
-      const result = await fileCabinetInternalIdsValidator([toChange({ after: addedFolder })])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ after: addedFolder })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(0)
     })
     it('should have change error when path is not top level and _parent is undefined', async () => {
       addedFolder.value[PATH] = '/someFolder/someFolder1'
-      const result = await fileCabinetInternalIdsValidator([toChange({ after: addedFolder })])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ after: addedFolder })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(1)
     })
     it('should have change error when path is top level and _parent is not undefined', async () => {
@@ -89,7 +96,10 @@ describe('suiteapp file cabinet internal ids validator', () => {
       addedFolder.annotations[CORE_ANNOTATIONS.PARENT] = [
         new ReferenceExpression(existingFolder.elemID, undefined, existingFolder),
       ]
-      const result = await fileCabinetInternalIdsValidator([toChange({ after: addedFolder })])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ after: addedFolder })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(1)
     })
     it('should have change error when _parent is not a one item list', async () => {
@@ -97,10 +107,10 @@ describe('suiteapp file cabinet internal ids validator', () => {
       addedFile.annotations[CORE_ANNOTATIONS.PARENT] = '/someFolder'
       addedFolder.value[PATH] = '/someFolder/someFolder1'
       addedFolder.annotations[CORE_ANNOTATIONS.PARENT] = ['/', '/someFolder']
-      const result = await fileCabinetInternalIdsValidator([
-        toChange({ after: addedFile }),
-        toChange({ after: addedFolder }),
-      ])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ after: addedFile }), toChange({ after: addedFolder })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(2)
     })
     it('should have change error when _parent is not a reference to a folder', async () => {
@@ -110,10 +120,10 @@ describe('suiteapp file cabinet internal ids validator', () => {
       addedFolder.annotations[CORE_ANNOTATIONS.PARENT] = [
         new ReferenceExpression(addedFile.elemID, undefined, addedFile),
       ]
-      const result = await fileCabinetInternalIdsValidator([
-        toChange({ after: addedFile }),
-        toChange({ after: addedFolder }),
-      ])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ after: addedFile }), toChange({ after: addedFolder })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(2)
     })
     it('should have change error when path does not match _parent', async () => {
@@ -122,7 +132,10 @@ describe('suiteapp file cabinet internal ids validator', () => {
       addedFolder.annotations[CORE_ANNOTATIONS.PARENT] = [
         new ReferenceExpression(existingFolder.elemID, undefined, existingFolder),
       ]
-      const result = await fileCabinetInternalIdsValidator([toChange({ after: addedFolder })])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ after: addedFolder })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(1)
     })
     it('should have change error when the parent folder has no internal id', async () => {
@@ -131,7 +144,10 @@ describe('suiteapp file cabinet internal ids validator', () => {
       addedFolder.annotations[CORE_ANNOTATIONS.PARENT] = [
         new ReferenceExpression(existingFolder.elemID, undefined, existingFolder),
       ]
-      const result = await fileCabinetInternalIdsValidator([toChange({ after: addedFolder })])
+      const result = await fileCabinetInternalIdsValidator(
+        [toChange({ after: addedFolder })],
+        mockChangeValidatorParams(),
+      )
       expect(result).toHaveLength(1)
     })
   })

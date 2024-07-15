@@ -16,6 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, toChange } from '@salto-io/adapter-api'
 import { NETSUITE } from '../../src/constants'
 import currencyFieldValidator from '../../src/change_validators/currency_undeployable_fields'
+import { mockChangeValidatorParams } from '../utils'
 
 export const currencyType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'currency'),
@@ -77,7 +78,7 @@ describe('Currency changes change  validator', () => {
   describe('Additon changes to currency', () => {
     it("should have changeError when deploying a new currency with 'overrideCurrencyFormat' disabled.", async () => {
       const after = instance.clone()
-      const changeErrors = await currencyFieldValidator([toChange({ after })])
+      const changeErrors = await currencyFieldValidator([toChange({ after })], mockChangeValidatorParams())
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -89,7 +90,7 @@ describe('Currency changes change  validator', () => {
     it("shoud have changeError when deploying a new currency with 'overrideCurrencyFormat' enabled.", async () => {
       const after = instance.clone()
       after.value.overrideCurrencyFormat = true
-      const changeErrors = await currencyFieldValidator([toChange({ after })])
+      const changeErrors = await currencyFieldValidator([toChange({ after })], mockChangeValidatorParams())
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -103,7 +104,10 @@ describe('Currency changes change  validator', () => {
     it("should not have changeError when editing a field which isn't currencyPrecision, displaySymbol or symbolPlacement", async () => {
       const after = instance.clone()
       after.value.symbol = 'UYU'
-      const changeErrors = await currencyFieldValidator([toChange({ before: instance, after })])
+      const changeErrors = await currencyFieldValidator(
+        [toChange({ before: instance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
 
@@ -111,14 +115,20 @@ describe('Currency changes change  validator', () => {
       instance.value.overrideCurrencyFormat = true
       const after = instance.clone()
       after.value.displaySymbol = '@'
-      const changeErrors = await currencyFieldValidator([toChange({ before: instance, after })])
+      const changeErrors = await currencyFieldValidator(
+        [toChange({ before: instance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have changeError when editing displaySymbol or symbolPlacement with overrideCurrencyFormat disabled', async () => {
       const after = instance.clone()
       after.value.displaySymbol = '@'
-      const changeErrors = await currencyFieldValidator([toChange({ before: instance, after })])
+      const changeErrors = await currencyFieldValidator(
+        [toChange({ before: instance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -130,7 +140,10 @@ describe('Currency changes change  validator', () => {
     it('should have changeError when modifying currencyPrecision', async () => {
       const after = instance.clone()
       after.value.currencyPrecision = '_zero'
-      const changeErrors = await currencyFieldValidator([toChange({ before: instance, after })])
+      const changeErrors = await currencyFieldValidator(
+        [toChange({ before: instance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)

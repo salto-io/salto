@@ -367,8 +367,9 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
       return {
         elemID: profile.elemID,
         severity: 'Info' as const,
-        message: 'Dropping profile fields which reference missing types',
-        detailedMessage: `The profile has ${profileBrokenReferenceFields.length} fields which reference types which are not available in the workspace.`,
+        message: 'Omitting profile entries which reference unavailable types',
+        detailedMessage:
+          'The profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
       }
     })
 

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import {
-  AdditionChange,
   BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID,
@@ -164,11 +163,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ after: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should call deployContextChange on modification', async () => {
@@ -176,11 +176,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ after: instance, before: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should call deployContextChange on removal', async () => {
@@ -197,11 +198,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ before: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should not call deployContextChange on removal without parent', async () => {

@@ -162,6 +162,7 @@ const isPasswordInputType = (fieldName: string): boolean =>
     'suiteAppTokenSecret',
     'suiteAppActivationKey',
     'clientSecret',
+    'accessToken',
   ].includes(fieldName)
 
 export const getFieldInputType = (fieldType: TypeElement, fieldName: string): string => {

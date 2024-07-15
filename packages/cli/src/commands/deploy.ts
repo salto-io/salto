@@ -190,6 +190,11 @@ const deployPlan = async (
     cliTelemetry.actionsFailure(result.errors.length)
   }
 
+  // Since we are done deploying, clear any leftover intervals
+  Object.values(actions)
+    .filter(action => action.intervalId)
+    .forEach(action => clearInterval(action.intervalId))
+
   return result
 }
 

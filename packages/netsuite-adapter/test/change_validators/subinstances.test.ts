@@ -16,6 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import subInstancesValidator from '../../src/change_validators/subinstances'
 import { NETSUITE } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('subInstances change validator', () => {
   describe('should have change error if a sub-instance has been modified', () => {
@@ -27,7 +28,10 @@ describe('subInstances change validator', () => {
       accountingPeriodInstance = new InstanceElement('instance', accountingPeriodType, { isSubInstance: true })
     })
     it('removal', async () => {
-      const changeErrors = await subInstancesValidator([toChange({ before: accountingPeriodInstance })])
+      const changeErrors = await subInstancesValidator(
+        [toChange({ before: accountingPeriodInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(accountingPeriodInstance.elemID)
@@ -36,14 +40,20 @@ describe('subInstances change validator', () => {
     it('modification', async () => {
       const after = accountingPeriodInstance.clone()
       after.value.isSubInstance = false
-      const changeErrors = await subInstancesValidator([toChange({ before: accountingPeriodInstance, after })])
+      const changeErrors = await subInstancesValidator(
+        [toChange({ before: accountingPeriodInstance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(accountingPeriodInstance.elemID)
     })
 
     it('addition', async () => {
-      const changeErrors = await subInstancesValidator([toChange({ after: accountingPeriodInstance })])
+      const changeErrors = await subInstancesValidator(
+        [toChange({ after: accountingPeriodInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(accountingPeriodInstance.elemID)

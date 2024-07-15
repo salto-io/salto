@@ -512,7 +512,7 @@ describe('multi env source', () => {
       const removal = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
       const addition = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
       const envObjectRemoval = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
-      const modificaton = {
+      const modification = {
         action: 'modify',
         data: { before: envFragment, after: newEnvFragment },
       } as Change<ObjectType>
@@ -523,7 +523,7 @@ describe('multi env source', () => {
       })
       const primarySourceName = 'env1'
       const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject], {}, undefined, undefined, {
-        changes: [envObjectRemoval, modificaton],
+        changes: [envObjectRemoval, modification],
         cacheValid: true,
       })
       const multiEnvSourceWithMockSources = multiEnvSource(
@@ -566,6 +566,49 @@ describe('multi env source', () => {
         _.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName()).map(dc => _.omit(dc, ['path', 'id'])),
       )
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
+    })
+    it('should split base element modifications', async () => {
+      const changes: DetailedChange[] = [
+        {
+          action: 'modify',
+          data: {
+            before: envObject,
+            after: envObject,
+          },
+          id: envObject.elemID,
+        },
+        {
+          action: 'modify',
+          data: {
+            before: envObject.fields.field,
+            after: envObject.fields.field,
+          },
+          id: envObject.fields.field.elemID,
+        },
+      ]
+      await source.updateNaclFiles(activePrefix, changes)
+      expect(envSource.updateNaclFiles).toHaveBeenCalledWith([
+        {
+          action: 'remove',
+          data: expect.anything(),
+          id: envObject.elemID,
+        },
+        {
+          action: 'add',
+          data: expect.anything(),
+          id: envObject.elemID,
+        },
+        {
+          action: 'remove',
+          data: expect.anything(),
+          id: envObject.fields.field.elemID,
+        },
+        {
+          action: 'add',
+          data: expect.anything(),
+          id: envObject.fields.field.elemID,
+        },
+      ])
     })
   })
   describe('flush', () => {
@@ -656,7 +699,7 @@ describe('multi env source', () => {
     })
   })
   describe('listNaclFiles', () => {
-    it('shoud list all Nacl files', async () => {
+    it('should list all Nacl files', async () => {
       const naclFiles = await source.listNaclFiles(activePrefix)
       expect(naclFiles).toHaveLength(4)
       await expectToContainAllItems(naclFiles, [

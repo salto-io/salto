@@ -22,9 +22,13 @@ import {
   ElemID,
   getChangeData,
   DetailedChange,
+  AdditionChange,
+  RemovalChange,
+  ModificationChange,
   Change,
   ChangeDataType,
   StaticFile,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
@@ -343,6 +347,33 @@ const buildMultiEnvSource = (
     return naclFile ? { ...naclFile, filename } : undefined
   }
 
+  // The update NaCl file logic doesn't know how to handle modifications that span multiple files,
+  // so we split them into removals and additions.
+  const splitChange = <T extends Element>(
+    change: DetailedChange<T> & ModificationChange<T>,
+  ): [DetailedChange<T> & RemovalChange<T>, DetailedChange<T> & AdditionChange<T>] => [
+    {
+      action: 'remove',
+      data: { before: change.data.before },
+      id: change.id,
+      elemIDs: change.elemIDs?.before ? { before: change.elemIDs.before } : undefined,
+      path: change.path,
+    },
+    {
+      action: 'add',
+      data: { after: change.data.after },
+      id: change.id,
+      elemIDs: change.elemIDs?.after ? { before: change.elemIDs.after } : undefined,
+      path: change.path,
+    },
+  ]
+  const isBaseModification = (
+    change: DetailedChange,
+  ): change is DetailedChange<Element> & ModificationChange<Element> =>
+    change.id.isBaseID() && isModificationChange(change)
+  const normalizeChanges = (changes: DetailedChange[]): DetailedChange[] =>
+    changes.flatMap(change => (isBaseModification(change) ? splitChange(change) : change))
+
   const applyRoutedChanges = async (routedChanges: RoutedChanges): Promise<EnvsChanges> => ({
     ...(await resolveValues({
       [commonSourceName]: commonSource().updateNaclFiles(routedChanges.commonSource ?? []),
@@ -355,7 +386,8 @@ const buildMultiEnvSource = (
     changes: DetailedChange[],
     mode: RoutingMode = 'default',
   ): Promise<EnvsChanges> => {
-    const routedChanges = await routeChanges(changes, env, commonSource(), envSources(), mode)
+    const normalizedChanges = normalizeChanges(changes)
+    const routedChanges = await routeChanges(normalizedChanges, env, commonSource(), envSources(), mode)
     const elementChanges = await applyRoutedChanges(routedChanges)
     const buildRes = await buildMultiEnvState({ envChanges: elementChanges })
     state = buildRes.state

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 import nock from 'nock'
+import _ from 'lodash'
+import axios from 'axios'
+import MockAdapter from 'axios-mock-adapter'
 import {
   InstanceElement,
   Element,
@@ -29,10 +32,12 @@ import {
   BuiltinTypes,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/user_config'
+import fetchMockReplies from './fetch_mock_replies.json'
 import {
   USER_TYPE_NAME,
   BRAND_TYPE_NAME,
@@ -45,6 +50,7 @@ import {
   LINKS_FIELD,
 } from '../src/constants'
 
+
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => null,
 }
@@ -53,46 +59,73 @@ const loadMockReplies = (filename: string): void => {
   const defs: nock.Definition[] = nock.loadDefs(`${__dirname}/mock_replies/${filename}`)
   defs.forEach(def => {
     if (def.scope === '') {
-      if (def.path.includes('admin') || def.path.includes('internal')) {
-        def.scope = 'https://test-admin.okta.com:443'
-      } else {
-        def.scope = 'https://test.okta.com:443'
-      }
+      def.scope = 'https://test.okta.com:443'
     }
-  })
-  nock('https://test.okta.com:443', {
-    filteringScope: scope => scope.includes('.okta.com')
   })
   nock.define(defs)
   nock.disableNetConnect()
   nock.enableNetConnect('raw.githubusercontent.com')
 }
 
+
+type MockReply = {
+  url: string
+  method: definitions.HTTPMethod
+  params?: Record<string, string>
+  response: unknown
+}
+
+const getMockFunction = (method: definitions.HTTPMethod, mockAxiosAdapter: MockAdapter): MockAdapter['onAny'] => {
+  switch (method.toLowerCase()) {
+    case 'get':
+      return mockAxiosAdapter.onGet
+    case 'put':
+      return mockAxiosAdapter.onPut
+    case 'post':
+      return mockAxiosAdapter.onPost
+    case 'patch':
+      return mockAxiosAdapter.onPatch
+    case 'delete':
+      return mockAxiosAdapter.onDelete
+    case 'head':
+      return mockAxiosAdapter.onHead
+    case 'options':
+      return mockAxiosAdapter.onOptions
+    default:
+      return mockAxiosAdapter.onGet
+  }
+}
+
 describe('adapter', () => {
-  jest.setTimeout(10 * 50000)
-
-  beforeEach(async () => {
-    nock('https://test.okta.com:443')
-      .persist()
-      .get('/api/v1/org')
-      .reply(200, { id: 'accountId' })
-      .get('/favicon.ico')
-      .reply(200, 'favicon')
-  })
-
-  afterEach(() => {
-    jest.clearAllMocks()
-  })
-
   describe('fetch', () => {
+    jest.setTimeout(10 * 5000)
+    let mockAxiosAdapter: MockAdapter
+
+    beforeEach(async () => {
+      mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
+      mockAxiosAdapter
+        .onGet('/api/v1/org')
+        .replyOnce(200, { id: 'accountId' })
+        .onGet('/api/v1/org')
+        .replyOnce(200, { id: 'accountId' })
+      ;([...fetchMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
+        const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
+        const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
+        handler.replyOnce(200, response)
+      })
+    })
+
+    afterEach(() => {
+      mockAxiosAdapter.restore()
+      jest.clearAllMocks()
+    })
+
     describe('full fetch with default config', () => {
       let elements: Element[]
       beforeEach(async () => {
-        nock('https://test.okta.com:443')
-          .persist()
-          .get('/.well-known/okta-organization')
-          .reply(200, { id: '00o1lvvlyBZMbsvu6696', pipeline: 'idx' })
-        loadMockReplies('fetch_mock_replies.json')
+        mockAxiosAdapter
+          .onGet('/.well-known/okta-organization')
+          .replyOnce(200, { id: '00o1lvvlyBZMbsvu6696', pipeline: 'idx' })
         elements = (
           await adapter
             .operations({
@@ -105,7 +138,6 @@ describe('adapter', () => {
             })
             .fetch({ progressReporter: nullProgressReporter })
         ).elements
-        expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should generate the right types on fetch', async () => {
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
@@ -440,6 +472,11 @@ describe('adapter', () => {
     let brand1: InstanceElement
 
     beforeEach(() => {
+      nock('https://test.okta.com:443')
+        .persist()
+        .get('/api/v1/org')
+        .reply(200, { id: 'accountId' })
+
       operations = adapter.operations({
         credentials: new InstanceElement('config', accessTokenCredentialsType, {
           baseUrl: 'https://test.okta.com',

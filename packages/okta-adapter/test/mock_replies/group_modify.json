@@ -9,9 +9,7 @@
       "created": "2024-06-17T08:11:40.000Z",
       "lastUpdated": "2024-06-17T08:13:52.000Z",
       "lastMembershipUpdated": "2024-06-17T08:11:40.000Z",
-      "objectClass": [
-        "okta:user_group"
-      ],
+      "objectClass": ["okta:user_group"],
       "type": "OKTA_GROUP",
       "profile": {
         "name": "Programmers",
@@ -43,9 +41,7 @@
     },
     "body": {
       "id": "group-fakeid1",
-      "objectClass": [
-        "okta:user_group"
-      ],
+      "objectClass": ["okta:user_group"],
       "type": "OKTA_GROUP",
       "profile": {
         "name": "Programmers",

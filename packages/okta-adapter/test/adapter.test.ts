@@ -50,7 +50,6 @@ import {
   LINKS_FIELD,
 } from '../src/constants'
 
-
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => null,
 }
@@ -66,7 +65,6 @@ const loadMockReplies = (filename: string): void => {
   nock.disableNetConnect()
   nock.enableNetConnect('raw.githubusercontent.com')
 }
-
 
 type MockReply = {
   url: string
@@ -472,10 +470,7 @@ describe('adapter', () => {
     let brand1: InstanceElement
 
     beforeEach(() => {
-      nock('https://test.okta.com:443')
-        .persist()
-        .get('/api/v1/org')
-        .reply(200, { id: 'accountId' })
+      nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
 
       operations = adapter.operations({
         credentials: new InstanceElement('config', accessTokenCredentialsType, {
@@ -902,9 +897,7 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
-          'poweruser',
-        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('poweruser')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
@@ -982,7 +975,9 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         // eslint-disable-next-line no-template-curly-in-string
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.template).toEqual('Verify this: ${code}.')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.template).toEqual(
+          'Verify this: ${code}.',
+        )
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 

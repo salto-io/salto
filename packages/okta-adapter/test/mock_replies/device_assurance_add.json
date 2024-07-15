@@ -11,10 +11,7 @@
       "secureHardwarePresent": true,
       "jailbreak": false,
       "screenLockType": {
-        "include": [
-          "BIOMETRIC",
-          "PASSCODE"
-        ]
+        "include": ["BIOMETRIC", "PASSCODE"]
       },
       "gracePeriodDisplayRemediationMode": 0,
       "gracePeriodType": 0,
@@ -26,11 +23,7 @@
         "self": {
           "href": "https://<sanitized>/api/v1/device-assurances/deviceassurance-fakeid1",
           "hints": {
-            "allow": [
-              "GET",
-              "PUT",
-              "DELETE"
-            ]
+            "allow": ["GET", "PUT", "DELETE"]
           }
         }
       }

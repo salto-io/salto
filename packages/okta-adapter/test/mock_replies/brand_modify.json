@@ -20,19 +20,13 @@
         "themes": {
           "href": "https://<sanitized>/api/v1/brands/brand-fakeid1/themes",
           "hints": {
-            "allow": [
-              "GET"
-            ]
+            "allow": ["GET"]
           }
         },
         "self": {
           "href": "https://<sanitized>/api/v1/brands/brand-fakeid1",
           "hints": {
-            "allow": [
-              "GET",
-              "PUT",
-              "DELETE"
-            ]
+            "allow": ["GET", "PUT", "DELETE"]
           }
         }
       }

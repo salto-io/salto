@@ -16,6 +16,7 @@
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { NETSUITE } from '../../src/constants'
 import configChangesValidator from '../../src/change_validators/config_changes'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('config elements changes validator', () => {
   const type = new ObjectType({
@@ -35,7 +36,10 @@ describe('config elements changes validator', () => {
   })
 
   it('should return errors on instance addition/removal', async () => {
-    const result = await configChangesValidator([toChange({ before }), toChange({ after })])
+    const result = await configChangesValidator(
+      [toChange({ before }), toChange({ after })],
+      mockChangeValidatorParams(),
+    )
     expect(result.length).toBe(2)
     expect(result[0]).toEqual({
       elemID: after.elemID,
@@ -48,7 +52,7 @@ describe('config elements changes validator', () => {
   })
   it('should return warnings/errors on values addition/removal', async () => {
     after.value = { changed: true }
-    const result = await configChangesValidator([toChange({ before, after })])
+    const result = await configChangesValidator([toChange({ before, after })], mockChangeValidatorParams())
     expect(result.length).toBe(2)
     expect(result[0]).toEqual({
       elemID: after.elemID.createNestedID('field'),

@@ -653,35 +653,33 @@ export const isMetadataTypeWithoutDependencies = (
   )
 
 export const isMetadataTypeWithDependency = (
-  metadataType: SalesforceMetadataType,
+  metadataType: string,
 ): metadataType is MetadataTypeWithDependencies =>
   (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(
     metadataType,
   )
 
-export const getFetchTargets = (
-  target: SupportedMetadataType[],
-): SalesforceMetadataType[] => {
-  const allTypes: SalesforceMetadataType[] = [
-    ...target.filter(isMetadataTypeWithoutDependencies),
-  ]
+export const getFetchTargetsWithDependencies = (
+  targets: string[],
+): string[] => {
+  const result = [...targets]
   const handledTypesWithDependencies: MetadataTypeWithDependencies[] = []
-  let typesWithDependencies = target.filter(isMetadataTypeWithDependency)
+  let typesWithDependencies = targets.filter(isMetadataTypeWithDependency)
   while (!_.isEmpty(typesWithDependencies)) {
     _(METADATA_TYPE_TO_DEPENDENCIES)
       .pick(typesWithDependencies)
       .values()
       .flatten()
-      .forEach((metadataType) => allTypes.push(metadataType))
+      .forEach((metadataType) => result.push(metadataType))
     typesWithDependencies.forEach((metadataType) =>
       handledTypesWithDependencies.push(metadataType),
     )
-    typesWithDependencies = allTypes
+    typesWithDependencies = result
       .filter(isMetadataTypeWithDependency)
       .filter(
         (typeWithDependency) =>
           !handledTypesWithDependencies.includes(typeWithDependency),
       )
   }
-  return _(allTypes).uniq().value()
+  return _(result).uniq().value()
 }

@@ -17,18 +17,25 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../../src/types/file_cabinet_types'
 import removeFileCabinetValidator from '../../src/change_validators/remove_file_cabinet'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('remove file cabinet change validator', () => {
   describe('onRemove', () => {
     it('should not have change error when removing an instance with custom object type', async () => {
       const instance = new InstanceElement('test', entitycustomfieldType().type)
-      const changeErrors = await removeFileCabinetValidator([toChange({ before: instance })])
+      const changeErrors = await removeFileCabinetValidator(
+        [toChange({ before: instance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have change error when removing an instance with file cabinet type', async () => {
       const instance = new InstanceElement('test', fileType())
-      const changeErrors = await removeFileCabinetValidator([toChange({ before: instance })])
+      const changeErrors = await removeFileCabinetValidator(
+        [toChange({ before: instance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -36,7 +43,10 @@ describe('remove file cabinet change validator', () => {
 
     it('should not have change error when removing an instance with non custom object type', async () => {
       const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('bla') }))
-      const changeErrors = await removeFileCabinetValidator([toChange({ before: instance })])
+      const changeErrors = await removeFileCabinetValidator(
+        [toChange({ before: instance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
   })

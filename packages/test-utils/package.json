@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/test-utils",
-  "version": "0.3.59",
+  "version": "0.3.60",
   "license": "Apache-2.0",
   "description": "Test utilities for jest",
   "repository": {
@@ -16,15 +16,13 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
-    "clean-ts": "../../build_utils/clean-old-ts.sh",
-    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
+    "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "test": "jest",
     "clean": "rm -rf ./dist .eslintcache",
-    "clean-ts-test": "yarn clean-ts && yarn test",
-    "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
-    "build-ts": "tsc -b && yarn clean-ts",
+    "watch-test": "yarn tsc-watch",
+    "build-ts": "tsc -b",
     "watch-ts": "tsc -b -w",
-    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
     "lint-fix": "yarn lint --fix",
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
@@ -34,7 +32,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^27.5.2",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",
     "@typescript-eslint/eslint-plugin": "4.22.1",
@@ -48,12 +46,13 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^27.4.5",
-    "jest-circus": "^27.4.5",
-    "jest-junit": "^12.0.0",
+    "jest": "^27.5.1",
+    "jest-circus": "^27.5.1",
+    "jest-junit": "^12.3.0",
     "prettier": "3.2.5",
-    "ts-jest": "^27.1.2",
+    "ts-jest": "^27.1.5",
     "tsc-watch": "^2.2.1",
-    "typescript": "4.1.3"
+    "turbo": "^2.0.6",
+    "typescript": "4.8.4"
   }
 }

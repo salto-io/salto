@@ -18,6 +18,7 @@ import { fileType } from '../../src/types/file_cabinet_types'
 import { usereventscriptType } from '../../src/autogen/types/standard_types/usereventscript'
 import accountSpecificValueValidator from '../../src/change_validators/account_specific_values'
 import { ACCOUNT_SPECIFIC_VALUE, PATH, SCRIPT_ID } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('account specific value validator', () => {
   const origInstance = new InstanceElement('instance', usereventscriptType().type, {
@@ -35,21 +36,30 @@ describe('account specific value validator', () => {
       [PATH]: '/Path/to/file',
       content: ACCOUNT_SPECIFIC_VALUE,
     })
-    const changeErrors = await accountSpecificValueValidator([toChange({ after: newFileInstance })])
+    const changeErrors = await accountSpecificValueValidator(
+      [toChange({ after: newFileInstance })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should not have ChangeError when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
     const after = instance.clone()
     after.value.name = 'NewName'
-    const changeErrors = await accountSpecificValueValidator([toChange({ before: instance, after })])
+    const changeErrors = await accountSpecificValueValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should have Warning ChangeError when modifying an instance with ACCOUNT_SPECIFIC_VALUE', async () => {
     const after = instance.clone()
     after.value.name = ACCOUNT_SPECIFIC_VALUE
-    const changeErrors = await accountSpecificValueValidator([toChange({ before: instance, after })])
+    const changeErrors = await accountSpecificValueValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -58,7 +68,10 @@ describe('account specific value validator', () => {
   it('should have Warning ChangeError when modifying an instance with value that includes ACCOUNT_SPECIFIC_VALUE', async () => {
     const after = instance.clone()
     after.value.name = `${ACCOUNT_SPECIFIC_VALUE}|${ACCOUNT_SPECIFIC_VALUE}|${ACCOUNT_SPECIFIC_VALUE}`
-    const changeErrors = await accountSpecificValueValidator([toChange({ before: instance, after })])
+    const changeErrors = await accountSpecificValueValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/parser",
-  "version": "0.3.59",
+  "version": "0.3.60",
   "license": "Apache-2.0",
   "description": "Salto parser",
   "repository": {
@@ -17,33 +17,31 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
+    "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "test": "jest",
     "clean": "rm -rf ./dist .eslintcache ./src/generated",
-    "clean-ts": "../../build_utils/clean-old-ts.sh",
-    "clean-ts-test": "yarn clean-ts && yarn test",
-    "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
-    "build-ts": "tsc -b && yarn clean-ts",
+    "watch-test": "yarn tsc-watch",
+    "build-ts": "tsc -b",
     "watch-ts": "tsc -b -w",
-    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
     "lint-fix": "yarn lint --fix",
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.59",
-    "@salto-io/adapter-utils": "0.3.59",
-    "@salto-io/logging": "0.3.59",
-    "@salto-io/lowerdash": "0.3.59",
+    "@salto-io/adapter-api": "0.3.60",
+    "@salto-io/adapter-utils": "0.3.60",
+    "@salto-io/logging": "0.3.60",
+    "@salto-io/lowerdash": "0.3.60",
     "is-promise": "4.0.0",
     "lodash": "^4.17.21",
     "moo": "^0.5.1",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/dag": "0.3.59",
-    "@salto-io/test-utils": "0.3.59",
-    "@types/jest": "^27.4.0",
+    "@salto-io/dag": "0.3.60",
+    "@salto-io/test-utils": "0.3.60",
+    "@types/jest": "^27.5.2",
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
@@ -56,13 +54,14 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^27.4.5",
-    "jest-circus": "^27.4.5",
+    "jest": "^27.5.1",
+    "jest-circus": "^27.5.1",
     "jest-each": "^26.6.2",
-    "jest-junit": "^12.0.0",
+    "jest-junit": "^12.3.0",
     "prettier": "3.2.5",
-    "ts-jest": "^27.1.2",
+    "ts-jest": "^27.1.5",
     "tsc-watch": "^2.2.1",
-    "typescript": "4.1.3"
+    "turbo": "^2.0.6",
+    "typescript": "4.8.4"
   }
 }

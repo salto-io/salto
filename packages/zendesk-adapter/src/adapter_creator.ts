@@ -30,12 +30,7 @@ import {
 } from '@salto-io/adapter-components'
 import { inspectValue } from '@salto-io/adapter-utils'
 import ZendeskAdapter from './adapter'
-import {
-  Credentials,
-  oauthAccessTokenCredentialsType,
-  oauthRequestParametersType,
-  usernamePasswordCredentialsType,
-} from './auth'
+import { basicCredentialsType, Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType } from './auth'
 import {
   configType,
   ZendeskConfig,
@@ -48,8 +43,9 @@ import {
   validateGuideTypesConfig,
   GUIDE_SUPPORTED_TYPES,
   DEPLOY_CONFIG,
+  validateFixElementsConfig,
 } from './config'
-import { ZendeskFetchConfig } from './user_config'
+import { ZendeskFetchConfig, ZendeskFixElementsConfig } from './user_config'
 import ZendeskClient from './client/client'
 import { createConnection, instanceUrl } from './client/connection'
 import { configCreator } from './config_creator'
@@ -95,6 +91,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   return {
     username: config.value.username,
     password: config.value.password,
+    token: config.value.token,
     subdomain: config.value.subdomain,
     domain,
   }
@@ -143,9 +140,14 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     fetch,
     deploy: configValue.deploy,
     apiDefinitions,
+    fixElements: mergeWithDefaultConfig(
+      DEFAULT_CONFIG.fixElements ?? {},
+      configValue.fixElements,
+    ) as ZendeskFixElementsConfig,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
+  validateFixElementsConfig(adapterConfig.fixElements)
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
   validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateGuideTypesConfig(apiDefinitions)
@@ -190,7 +192,7 @@ export const adapter: Adapter = {
     }),
   authenticationMethods: {
     basic: {
-      credentialsType: usernamePasswordCredentialsType,
+      credentialsType: basicCredentialsType,
     },
     oauth: {
       createOAuthRequest,

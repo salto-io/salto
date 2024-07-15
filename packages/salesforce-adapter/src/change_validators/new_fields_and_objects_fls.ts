@@ -42,7 +42,7 @@ const createObjectFLSInfo = (
   flsProfiles: string[],
 ): ChangeError => ({
   message: `Read/write access to this Custom Object will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
-  detailedMessage: `Deploying this new Custom Object will make it and it's Custom Fields accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
+  detailedMessage: `Deploying this new Custom Object will make it and its Custom Fields accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
   severity: 'Info',
   elemID: field.elemID,
 })

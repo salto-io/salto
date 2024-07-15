@@ -20,8 +20,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { NETSUITE } from '../../src/constants'
 import omitFieldsValidation from '../../src/change_validators/omit_fields'
 import { fullFetchConfig } from '../../src/config/config_creator'
-import NetsuiteClient from '../../src/client/client'
-import mockSdfClient from '../client/sdf_client'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('omit fields change validator test', () => {
   let type: ObjectType
@@ -29,14 +28,7 @@ describe('omit fields change validator test', () => {
   let instance: InstanceElement
   let after: InstanceElement
 
-  const baseParams = {
-    deployReferencedElements: false,
-    elementsSource: buildElementsSourceFromElements([]),
-    config: {
-      fetch: fullFetchConfig(),
-    },
-    client: new NetsuiteClient(mockSdfClient()),
-  }
+  const baseParams = mockChangeValidatorParams()
 
   beforeEach(async () => {
     innerType = new ObjectType({ elemID: new ElemID(NETSUITE, 'innerType') })

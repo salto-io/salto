@@ -29,9 +29,12 @@ import {
 import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import {
+  elements as elementUtils,
+  client as clientUtils,
+  config as configDeprecated,
+} from '@salto-io/adapter-components'
 import Joi from 'joi'
-import { AdapterDuckTypeApiConfig } from '@salto-io/adapter-components/src/config_deprecated'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 import { QUEUE_TYPE } from '../constants'
@@ -100,7 +103,7 @@ const updateDefaultQueue = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
   existingQueues: Record<string, string>,
-  jsmApiDefinitions: AdapterDuckTypeApiConfig,
+  jsmApiDefinitions: configDeprecated.AdapterDuckTypeApiConfig,
 ): Promise<void> => {
   change.data.after.value.id = existingQueues[change.data.after.value.name]
   const emptyQueueInstance = change.data.after.clone()

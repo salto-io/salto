@@ -17,9 +17,11 @@ import json
 from collections import OrderedDict
 import urllib.parse
 import argparse
+from typing import Any
 
 
-def read_http_data_from_salto_log(logpath):
+def read_http_data_from_salto_log(logpath: str) -> list[dict[str, Any]]:
+    """Return HTTP response data from a Salto log file.""""
     with open(logpath) as logfile:
         return [
             json.loads(l[l.find(": ") + 2 :].strip())
@@ -28,7 +30,7 @@ def read_http_data_from_salto_log(logpath):
         ]
 
 
-def convert_to_nock_format(http_data):
+def convert_to_nock_format(http_data: dict[str, Any]) -> dict[str, Any]:
     http_data.setdefault("scope", "")
     http_data.setdefault("path", http_data.pop("url", None))
     if not http_data["path"].startswith("/"):
@@ -54,7 +56,7 @@ def convert_to_nock_format(http_data):
     return ordered_http_data
 
 
-def write_mocks_to_json(mocks: list, mockpath: str, pretty: bool):
+def write_mocks_to_json(mocks: list[dict[str, Any]], mockpath: str, pretty: bool) -> None:
     print(f"Writing {len(mocks)} mock HTTP calls to {mockpath}")
     with open(mockpath, "w") as mockfile:
         if pretty:
@@ -85,7 +87,7 @@ def convert_existing_mock_file_to_nock_format(args):
     write_mocks_to_json(new_mocks, mockpath, pretty)
 
 
-def get_arg_parser():
+def get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Generate Nock-formatted json files from Salto log files or Axios-formatted json files."
     )
@@ -111,7 +113,7 @@ def get_arg_parser():
     return parser
 
 
-def main():
+def main() -> None:
     parser = get_arg_parser()
     args = parser.parse_args()
     args.func(args)

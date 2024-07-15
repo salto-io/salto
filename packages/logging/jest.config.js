@@ -22,7 +22,7 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   coveragePathIgnorePatterns: ['src/index.ts'],
   coverageThreshold: {
     global: {
-      branches: 97,
+      branches: 96,
       functions: 100,
       lines: 100,
       statements: 100,

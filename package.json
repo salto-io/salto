@@ -2,44 +2,36 @@
   "name": "salto-io",
   "license": "Apache-2.0",
   "private": true,
-  "workspaces": {
-    "packages": [
-      "packages/*"
-    ],
-    "nohoist": [
-      "salto-vscode/**",
-      "**/@salto-io/rocksdb/**",
-      "**/acorn-walk"
-    ]
-  },
+  "workspaces": [
+    "packages/*"
+  ],
   "resolutions": {
-    "**/debug": "^4.1.1",
-    "**/color-convert": "^2.0.1",
     "typescript": "4.1.3"
   },
   "devDependencies": {
-    "concurrently": "^5.2.0",
     "jsonc-parser": "^2.2.1",
-    "lerna": "^5.6.2"
+    "lerna": "^5.6.2",
+    "turbo": "^2.0.6"
   },
   "scripts": {
     "preinstall": "./build_utils/find_conflicting_versions.js",
     "verify": "./build_utils/verify_tsconfig_references.js",
     "pre-build": "yarn verify && yarn generate",
     "build": "yarn pre-build && yarn build-ts && yarn lint",
-    "generate": "lerna run --parallel generate",
-    "lint": "lerna run --parallel lint",
-    "lint-fix": "lerna run --parallel lint-fix",
-    "check-format": "lerna run check-format",
-    "format": "lerna run --parallel format",
-    "build-ts": "lerna run build-ts",
-    "build-all": "lerna run build",
-    "clean": "lerna run --parallel clean",
-    "test": "jest",
+    "generate": "yarn workspaces foreach -vpAi -j 4 run generate",
+    "lint": "./build_utils/turbo_run.sh lint",
+    "lint-fix": "yarn workspaces foreach -vpAi -j 4 run lint-fix",
+    "check-format": "yarn workspaces foreach -vpAi -j 4 run check-format",
+    "format": "yarn workspaces foreach -vpAi -j 4 run format",
+    "build-ts": "./build_utils/turbo_run.sh build-ts",
+    "build-all": "yarn workspaces foreach -vpAi -j 4 run build",
+    "clean": "./build_utils/turbo_run.sh clean",
+    "test": "yarn workspaces foreach -vpAi -j 4 run test --forceExit --detectOpenHandles",
     "generate-notices-file": "./build_utils/generate_notices.sh",
     "lerna-version": "lerna version --no-git-tag-version --exact",
     "lerna-version-pr": "./build_utils/create_version_pr.sh",
     "lerna-publish": "lerna publish from-package"
   },
-  "version": "0.0.0"
+  "version": "0.0.0",
+  "packageManager": "yarn@3.1.0"
 }

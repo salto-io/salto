@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import StripeClient from './client/client'
-import { FilterContext } from './config'
+import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
+import { ClientOptions, PaginationOptions } from '../types'
 
-export const { filtersRunner } = filterUtils
+const { cursorPagination } = fetchUtils.request.pagination
 
-export type FilterAdditionalParams = {
-  fetchQuery: elementUtils.query.ElementQuery
+export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
+  cursor: {
+    funcCreator: () =>
+      cursorPagination({ pathChecker: fetchUtils.request.pagination.defaultPathChecker, paginationField: 'next' }),
+  },
 }
-
-export type Filter = filterUtils.Filter
-
-export type FilterCreator = filterUtils.FilterCreator<StripeClient, FilterContext>

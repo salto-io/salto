@@ -20,11 +20,11 @@ import {
   JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import { AccessTokenCredentials } from '../src/auth'
+import { Credentials } from '../src/auth'
 
 const log = logger(module)
 
-export const credsSpec = (envName?: string): CredsSpec<Required<AccessTokenCredentials>> => {
+export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> => {
   const addEnvName = (varName: string): string => (envName === undefined ? varName : [varName, envName].join('_'))
   const tokenEnvVarName = addEnvName('ST_BASE_URL')
   return {
@@ -35,7 +35,7 @@ export const credsSpec = (envName?: string): CredsSpec<Required<AccessTokenCrede
         token: envUtils.required(tokenEnvVarName),
       }
     },
-    validate: async (_creds: AccessTokenCredentials): Promise<void> => {
+    validate: async (): Promise<void> => {
       // TODO validate when connecting with real credentials
     },
     typeName: 'stripe',

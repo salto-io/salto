@@ -1,6 +1,7 @@
 [
   {
     "url": "/v1/webhook_endpoints",
+    "method": "get",
     "response": {
       "object": "list",
       "data": [
@@ -24,6 +25,7 @@
   },
   {
     "url": "/v1/products",
+    "method": "get",
     "response": {
       "object": "list",
       "data": [
@@ -48,7 +50,7 @@
           "url": null
         },
         {
-          "id": "prod_JMpOpTpdX5rDKx",
+          "id": "prod_JMpOpTpdX5rDKy",
           "object": "product",
           "active": true,
           "attributes": [],
@@ -74,6 +76,7 @@
   },
   {
     "url": "/v1/tax_rates",
+    "method": "get",
     "response": {
       "object": "list",
       "data": [
@@ -100,6 +103,7 @@
   },
   {
     "url": "/v1/coupons",
+    "method": "get",
     "response": {
       "object": "list",
       "data": [
@@ -127,6 +131,7 @@
   },
   {
     "url": "/v1/reporting/report_types",
+    "method": "get",
     "response": {
       "object": "list",
       "data": [
@@ -148,6 +153,7 @@
   },
   {
     "url": "/v1/prices?product=prod_JMpOpTpdX5rDKx",
+    "method": "get",
     "response": {
       "object": "list",
       "data": [
@@ -244,6 +250,7 @@
   },
   {
     "url": "/v1/country_specs",
+    "method": "get",
     "response": {
       "object": "list",
       "data": [

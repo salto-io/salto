@@ -72,6 +72,8 @@ export const isHidden = async (element?: Element, elementsSource?: ReadOnlyEleme
   element?.annotations?.[CORE_ANNOTATIONS.HIDDEN] === true ||
   ((isInstanceElement(element) || isField(element)) && isHiddenValue(await element.getType(elementsSource)))
 
+const isFieldAnnotationId = (path: ElemID): boolean => path.createParentID().idType === 'field'
+
 export const getElementHiddenParts = async <T extends Element>(
   stateElement: T,
   elementsSource: ReadOnlyElementsSource,
@@ -90,9 +92,13 @@ export const getElementHiddenParts = async <T extends Element>(
   // or a _hidden_value annotation on its type definition.
   const hiddenFunc = isInstanceElement(stateElement) ? isHiddenValue : isHidden
   const storeHiddenPaths: TransformFunc = async ({ value, field, path }) => {
+    // If the field type is hidden value, we should hide all of its attributes
+    if (isField(value) && isHiddenValue(await value.getType(elementsSource))) {
+      hiddenPaths.add(value.elemID.getFullName())
+      return undefined
+    }
     // We should hide an attribute only when its annotation ref type is a hidden value
-    if (path && path.isAttrID() && !isHiddenValue(field)) {
-      log.info('@bla %s', path.getFullName())
+    if (path && (path?.isAttrID() || isFieldAnnotationId(path)) && !isHiddenValue(field)) {
       return undefined
     }
     if (await hiddenFunc(field, elementsSource)) {
@@ -122,6 +128,7 @@ export const getElementHiddenParts = async <T extends Element>(
     transformFunc: storeHiddenPaths,
     strict: false,
     elementsSource,
+    runOnFields: true,
   })
   if (hiddenPaths.size === 0) {
     // The whole element is visible
@@ -149,10 +156,11 @@ export const getElementHiddenParts = async <T extends Element>(
       // Keep traversing as long as we might reach nested hidden parts.
       // Note: it is ok to check isAncestorOfHiddenPath before isNestedHiddenPath, because there is
       // no overlap between ancestorsOfHiddenPaths and hiddenPaths
-      path !== undefined && (isAncestorOfHiddenPath(path) || isNestedHiddenPath(path)) ? value : undefined,
+      path !== undefined && (isNestedHiddenPath(path) || isAncestorOfHiddenPath(path)) ? value : undefined,
     strict: true,
     allowEmptyArrays: true,
     allowEmptyObjects: true,
+    runOnFields: true,
     elementsSource,
   })
   // remove all annotation types from the hidden element so they don't cause merge conflicts

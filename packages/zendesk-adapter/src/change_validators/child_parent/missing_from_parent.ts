@@ -26,20 +26,18 @@ import {
   ChangeError,
   isAdditionChange,
   isAdditionOrModificationChange,
+  ElemID,
 } from '@salto-io/adapter-api'
 import { ZendeskApiConfig } from '../../user_config'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren } from './utils'
 
-export const createParentReferencesError = (
-  change: AdditionChange<InstanceElement>,
-  parentFullName: string,
-): ChangeError => {
+const createParentReferencesError = (change: AdditionChange<InstanceElement>, parentElemId: ElemID): ChangeError => {
   const instance = getChangeData(change)
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Cannot add this element since it is missing a reference from its parent',
-    detailedMessage: `In order to add this element, please add a reference to it from its parent ‘${parentFullName}’`,
+    message: 'Element needs to be referred from its parent',
+    detailedMessage: `To add this ${instance.elemID.typeName}, please make sure ${instance.elemID.getFullName()} is included in ‘${parentElemId.getFullName()}’. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582618-element-needs-to-be-referred-from-its-parent`,
   }
 }
 
@@ -65,11 +63,11 @@ export const missingFromParentValidatorCreator =
       return relevantRelations.flatMap(relation => {
         const parentChange = changeByID[parentFullName]
         if (parentChange === undefined || !isAdditionOrModificationChange(parentChange)) {
-          return [createParentReferencesError(change, parentFullName)]
+          return [createParentReferencesError(change, parentRef.value.elemID)]
         }
         const { added } = getRemovedAndAddedChildren(parentChange, relation.fieldName)
         if (isAdditionChange(change) && !added.some(id => id.isEqual(instance.elemID))) {
-          return [createParentReferencesError(change, parentFullName)]
+          return [createParentReferencesError(change, parentRef.value.elemID)]
         }
         return []
       })

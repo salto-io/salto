@@ -23,6 +23,16 @@ import {
 } from './utils'
 
 /*
+ * Remove self_service_icon from self_service object
+ */
+const removeSelfServiceIcon = (value: Record<string, unknown>): void => {
+  const { self_service: selfService } = value
+  if (values.isPlainRecord(selfService)) {
+    delete selfService.self_service_icon
+  }
+}
+
+/*
  * Adjust policy instance
  */
 export const adjust: definitions.AdjustFunction = async ({ value }) => {
@@ -34,6 +44,7 @@ export const adjust: definitions.AdjustFunction = async ({ value }) => {
     adjustSiteObjectToSiteId,
     adjustScriptsObjectArrayToScriptsIds,
     adjustServiceIdToTopLevel,
+    removeSelfServiceIcon,
   ].forEach(fn => fn(value))
   return { value }
 }

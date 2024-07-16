@@ -203,7 +203,6 @@ describe('adapter', () => {
           'jamf.policy__scope__limit_to_users',
           'jamf.policy__scope__limitations',
           'jamf.policy__self_service',
-          'jamf.policy__self_service__self_service_icon',
           'jamf.policy__user_interaction',
           'jamf.script',
           'jamf.script.instance.Decrypt_Drive@s',

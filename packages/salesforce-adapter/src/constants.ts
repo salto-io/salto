@@ -546,6 +546,9 @@ export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 // sbaa Fields
 export const SBAA_CONDITIONS_MET = 'sbaa__ConditionsMet__c'
 
+// CPQ Billing
+export const BILLING_NAMESPACE = 'blng'
+
 // Change Groups
 export const groupIdForInstanceChangeGroup = (
   action: ActionName,

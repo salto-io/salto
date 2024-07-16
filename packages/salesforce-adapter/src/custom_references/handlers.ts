@@ -28,6 +28,7 @@ import {
   CustomReferencesHandlers,
   CustomReferencesSettings,
   CUSTOM_REFS_CONFIG,
+  FixElementsSettings,
   FIX_ELEMENTS_CONFIG,
   SalesforceConfig,
   WeakReferencesHandler,
@@ -44,7 +45,7 @@ const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   rulesAndConditions: rulesAndConditionsHandler,
 }
 
-const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
+const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> =
   {
     profiles: true,
     managedElements: true,
@@ -52,10 +53,16 @@ const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
     rulesAndConditions: true,
   }
 
+const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
+  profiles: false,
+  managedElements: true,
+  permisisonSets: true,
+}
+
 export const customReferencesConfiguration = (
   customReferencesConfig: CustomReferencesSettings | undefined,
-): Record<string, boolean> =>
-  _.defaults(customReferencesConfig, defaultHandlersConfiguration)
+): Required<CustomReferencesSettings> =>
+  _.defaults(customReferencesConfig, defaultCustomReferencesConfiguration)
 
 export const getCustomReferences = combineCustomReferenceGetters(
   _.mapValues(handlers, (handler) => handler.findWeakReferences),
@@ -65,8 +72,8 @@ export const getCustomReferences = combineCustomReferenceGetters(
 
 const fixElementsConfiguration = (
   config: SalesforceConfig,
-): Record<string, boolean> =>
-  _.defaults(config[FIX_ELEMENTS_CONFIG], defaultHandlersConfiguration)
+): Required<FixElementsSettings> =>
+  _.defaults(config[FIX_ELEMENTS_CONFIG], defaultFixElementsConfiguration)
 
 export const fixElementsFunc = ({
   elementsSource,

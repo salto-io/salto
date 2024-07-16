@@ -1881,91 +1881,91 @@ describe('Test utils.ts', () => {
       })
     })
     describe('allowEmpty', () => {
-      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
-        val1: [],
-        val2: undefined,
-        val3: {},
-      })
-
-      it('allowEmpty = true should not remove empty objects and arrays', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmpty: true,
-        })
-        expect(transformedElement.value).toEqual({ val1: [], val3: {} })
-      })
-
-      it('allowEmpty = false should remove empty objects and arrays', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmpty: false,
-        })
-        expect(transformedElement.value).toEqual({})
-      })
-    })
-    describe('allowEmptyArrays', () => {
-      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
-        val1: [],
-        val2: undefined,
-        val3: {
-          emptyObj: {},
-          nestedArray: [],
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          arr: { refType: new ListType(BuiltinTypes.NUMBER) },
+          obj: {
+            refType: new ObjectType({
+              elemID: new ElemID('adapter', 'nestedType'),
+              fields: {
+                nestedArr: { refType: new ListType(BuiltinTypes.STRING) },
+                val: { refType: BuiltinTypes.STRING },
+              },
+            }),
+          },
+          emptyObj: { refType: new ObjectType({ elemID: new ElemID('adapter', 'emptyType') }) },
         },
       })
-
-      it('allowEmptyArrays = true should not remove empty arrays', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmptyArrays: true,
-        })
-        expect(transformedElement.value).toEqual({ val1: [], val3: { nestedArray: [] } })
-      })
-
-      it('allowEmptyArrays = false should remove empty arrays', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmptyArrays: false,
-        })
-        expect(transformedElement.value).toEqual({})
-      })
-    })
-    describe('allowEmptyObjects', () => {
-      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
-        val1: [],
-        val2: undefined,
-        val3: {
-          emptyObj: {},
-          nestedArray: [],
+      const element = new InstanceElement('instance', type, {
+        arr: [],
+        obj: {
+          nestedArr: [],
+          val: 'a',
         },
-        obj: {},
+        emptyObj: {
+          nested: {},
+        },
+      })
+      describe('with allowEmptyArrays', () => {
+        it('should remove empty objects and not remove empty list', async () => {
+          const result = await transformElement({
+            element,
+            transformFunc: ({ value }) => value,
+            strict: false,
+            allowEmptyArrays: true,
+          })
+          expect(result.value).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+          })
+        })
       })
 
-      it('allowEmptyObjects = true should not remove empty objects', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmptyObjects: true,
+      describe('with allowEmptyObjects', () => {
+        it('should remove empty lists and not remove empty objects', async () => {
+          const result = await transformElement({
+            element,
+            transformFunc: ({ value }) => value,
+            strict: false,
+            allowEmptyObjects: true,
+          })
+
+          expect(result.value).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
         })
-        expect(transformedElement.value).toEqual({ val3: { emptyObj: {} }, obj: {} })
       })
 
-      it('allowEmptyObjects = false should remove empty objects', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmptyObjects: false,
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformElement({
+            element,
+            transformFunc: ({ value }) => value,
+            strict: false,
+            allowEmptyArrays: true,
+            allowEmptyObjects: true,
+          })
+
+          expect(result.value).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
         })
-        expect(transformedElement.value).toEqual({})
       })
     })
   })

@@ -28,6 +28,7 @@ import { mockTypes, mockInstances } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
 import makeFilter, {
   ServiceMDTRecordValue,
+  XSI_NIL_TRUE,
 } from '../../src/filters/custom_metadata'
 import {
   MetadataInstanceElement,
@@ -319,7 +320,7 @@ describe('CustomMetadata filter', () => {
             field: 'email__c',
             value: { 'attr_xsi:type': 'xsd:string', '#text': 'test@user.com' },
           },
-          { field: 'number__c', value: { 'attr_xsi:nil': 'true' } }, // null value handling
+          { field: 'number__c', value: XSI_NIL_TRUE }, // null value handling
           {
             field: 'percent__c',
             value: { 'attr_xsi:type': 'xsd:double', '#text': 23 },

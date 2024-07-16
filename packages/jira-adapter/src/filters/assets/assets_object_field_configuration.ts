@@ -27,7 +27,8 @@ import {
   CORE_ANNOTATIONS,
   isAdditionOrModificationChange,
   getChangeData,
-  InstanceElement, Change,
+  InstanceElement,
+  Change,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
@@ -52,7 +53,9 @@ export const getAssetsContextId = (instance: InstanceElement): string => {
   return _.toString(_.toInteger(instance.value.id) - 1)
 }
 
-const getRelevantAssetsObjectFieldConfiguration = (changes: Change[]): InstanceElement[] => changes.filter(isAdditionOrModificationChange)
+const getRelevantAssetsObjectFieldConfiguration = (changes: Change[]): InstanceElement[] =>
+  changes
+    .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
     .filter(isInstanceElement)
@@ -144,13 +147,12 @@ const filter: FilterCreator = ({ config, client }) => ({
     })
   },
   onDeploy: async changes => {
-    getRelevantAssetsObjectFieldConfiguration(changes)
-      .forEach(instance => {
-        delete instance.value.assetsObjectFieldConfiguration.workspaceId
-        if (_.isEmpty(instance.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue)) {
-          delete instance.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue
-        }
-      })
+    getRelevantAssetsObjectFieldConfiguration(changes).forEach(instance => {
+      delete instance.value.assetsObjectFieldConfiguration.workspaceId
+      if (_.isEmpty(instance.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue)) {
+        delete instance.value.assetsObjectFieldConfiguration.attributesDisplayedOnIssue
+      }
+    })
   },
 })
 export default filter

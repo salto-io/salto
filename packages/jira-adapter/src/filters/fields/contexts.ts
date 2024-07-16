@@ -58,8 +58,12 @@ export const getContextType = async (fieldType: ObjectType): Promise<ObjectType>
   return contextType
 }
 
-const deployAssetObjectContext = async (change: Change<InstanceElement>, client: JiraClient, config: JiraConfig): Promise<void> => {
-  if(!config.fetch.enableAssetsObjectFieldConfiguration) {
+const deployAssetObjectContext = async (
+  change: Change<InstanceElement>,
+  client: JiraClient,
+  config: JiraConfig,
+): Promise<void> => {
+  if (!config.fetch.enableAssetsObjectFieldConfiguration) {
     return
   }
   const instance = getChangeData(change)

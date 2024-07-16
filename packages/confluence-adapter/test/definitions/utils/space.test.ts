@@ -18,6 +18,7 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } fr
 import {
   createAdjustUserReferences,
   createPermissionUniqueKey,
+  getFetchSpacesEndpoint,
   isPermissionObject,
   restructurePermissionsAndCreateInternalIdMap,
   spaceChangeGroupWithItsHomepage,
@@ -25,6 +26,7 @@ import {
   transformPermissionAndUpdateIdMap,
 } from '../../../src/definitions/utils'
 import { ADAPTER_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
+import { UserConfig } from '../../../src/config'
 
 describe('space definitions utils', () => {
   const spaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SPACE_TYPE_NAME) })
@@ -259,6 +261,30 @@ describe('space definitions utils', () => {
         authorId: { accountId: 'authorId', displayName: 'authorId' },
         notUser: 'not',
       })
+    })
+  })
+  describe('getFetchSpacesEndpoint', () => {
+    const createMockUserConfig = (statuses: string[], types: string[]): UserConfig => ({
+      fetch: {
+        include: [],
+        exclude: [
+          ...statuses.map(status => ({ type: 'space', criteria: { status } })),
+          ...types.map(type => ({ type: 'space', criteria: { type } })),
+        ],
+      },
+    })
+    it('should return url without params when user exclude all statuses', () => {
+      expect(getFetchSpacesEndpoint(createMockUserConfig(['current', 'archived'], []))).toEqual('/wiki/api/v2/spaces')
+    })
+    it('should return url without params when user exclude all types', () => {
+      expect(
+        getFetchSpacesEndpoint(createMockUserConfig([], ['global', 'collaboration', 'knowledge_base', 'personal'])),
+      ).toEqual('/wiki/api/v2/spaces')
+    })
+    it('should return url with the correct params', () => {
+      expect(getFetchSpacesEndpoint(createMockUserConfig(['archived'], ['personal', 'collaboration']))).toEqual(
+        '/wiki/api/v2/spaces?type=global&type=knowledge_base&status=current',
+      )
     })
   })
 })

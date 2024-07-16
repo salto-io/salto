@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createAdapter, credentials, client, filters } from '@salto-io/adapter-components'
+import { createAdapter, credentials, client, filters, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { Credentials, credentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
@@ -76,4 +76,9 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     },
   },
   customConvertError,
+  criterionFunctions: {
+    name: fetchUtils.query.nameCriterion,
+    status: fetchUtils.query.fieldCriterionCreator('status'),
+    type: fetchUtils.query.fieldCriterionCreator('type'),
+  },
 })

@@ -112,7 +112,7 @@ describe('deployContextChange', () => {
       change: await resolveChangeElement(change, getLookUpName),
       client,
       endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.CustomFieldContext.deployRequests,
-      fieldsToIgnore: ['defaultValue', 'options', 'isGlobalContext', 'issueTypeIds', 'projectIds'],
+      fieldsToIgnore: ['defaultValue', 'options', 'isGlobalContext', 'AssetsObjectFieldConfiguration', 'issueTypeIds', 'projectIds'],
     })
   })
 

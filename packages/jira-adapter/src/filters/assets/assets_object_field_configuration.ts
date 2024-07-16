@@ -64,15 +64,6 @@ const getRelevantAssetsObjectFieldConfiguration = (changes: Change[]): InstanceE
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'assetsObjectFieldConfigurationFilter',
   onFetch: async elements => {
-    if (!config.fetch.enableAssetsObjectFieldConfiguration) {
-      return
-    }
-    const fieldContextType = findObject(elements, FIELD_CONTEXT_TYPE_NAME)
-    if (fieldContextType === undefined) {
-      log.error('fieldContext type was not found')
-      return
-    }
-
     const assetsObjectFieldConfigurationType = new ObjectType({
       elemID: new ElemID(JIRA, ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE),
       fields: {
@@ -95,6 +86,15 @@ const filter: FilterCreator = ({ config, client }) => ({
     await addAnnotationRecursively(assetsObjectFieldConfigurationType, CORE_ANNOTATIONS.DELETABLE)
 
     elements.push(assetsObjectFieldConfigurationType)
+
+    if (!config.fetch.enableAssetsObjectFieldConfiguration) {
+      return
+    }
+    const fieldContextType = findObject(elements, FIELD_CONTEXT_TYPE_NAME)
+    if (fieldContextType === undefined) {
+      log.error('fieldContext type was not found')
+      return
+    }
 
     fieldContextType.fields.assetsObjectFieldConfiguration = new Field(
       fieldContextType,

@@ -20,6 +20,7 @@ import {
   CORE_ANNOTATIONS,
   ReferenceExpression,
   isObjectType,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -64,7 +65,8 @@ const onFetch = async (elements: Element[]): Promise<void> => {
 
   customObjectFields.forEach(customObjectField => {
     const options = customObjectField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
-    if (options === undefined) {
+    // in new infra options are already references and elements of their own so there is no need to extract them
+    if (options === undefined || (_.isArray(options) && options.every(isReferenceExpression))) {
       return
     }
     if (!isCustomObjectFieldOptions(options)) {

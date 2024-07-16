@@ -19,29 +19,24 @@ import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { EVERYONE_USER_TYPE } from '../../constants'
 
+const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
+const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
+
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
 // when in doubt, it's best to hide fields only for relevant types, or to omit them.
-const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
+const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = {
+  // hide
   created_at: { hide: true },
   updated_at: { hide: true },
   created_by_id: { hide: true },
   updated_by_id: { hide: true },
-}
-const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
+
+  // omit
   count: { omit: true },
   url: { omit: true },
   extended_output_schema: { omit: true },
   extended_input_schema: { omit: true },
 }
-
-const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
-const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
-
-const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_HIDE,
-  DEFAULT_FIELDS_TO_OMIT,
-)
 
 const createCustomizations = (): Record<
   string,

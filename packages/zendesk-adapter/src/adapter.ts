@@ -369,7 +369,7 @@ const getGuideElements = async ({
   apiDefinitions,
   fetchQuery,
   getElemIdFunc,
-  useNewInfra,
+  useGuideNewInfra,
 }: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
@@ -377,7 +377,7 @@ const getGuideElements = async ({
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
-  useNewInfra: boolean | undefined
+  useGuideNewInfra: boolean | undefined
 }): Promise<fetchUtils.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
@@ -385,7 +385,7 @@ const getGuideElements = async ({
   const typesConfigWithNoStandaloneFields = _.mapValues(apiDefinitions.types, config =>
     _.omit(config, ['transformation.standaloneFields']),
   )
-  if (useNewInfra !== true) {
+  if (useGuideNewInfra !== true) {
     const fetchResultWithDuplicateTypes = await Promise.all(
       brandsList.map(async brandInstance => {
         const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
@@ -444,6 +444,8 @@ const getGuideElements = async ({
       errors: guideErrors,
     }
   }
+  // to monitor new infra usage, will be removed later
+  log.debug('using new infra for guide')
   const guideFetchResult = await fetchUtils.getElements({
     adapterName: ZENDESK,
     fetchQuery,
@@ -710,7 +712,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
-        useNewInfra,
+        useGuideNewInfra: useNewInfra,
       })
 
       combinedRes.configChanges = combinedRes.configChanges.concat(zendeskGuideElements.configChanges ?? [])

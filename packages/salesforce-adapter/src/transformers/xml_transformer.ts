@@ -512,10 +512,21 @@ export const fromRetrieveResult = async (
 const builder = new XMLBuilder({
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
   ignoreAttributes: false,
+  format: true,
+  indentBy: '    ',
 })
 
+const XML_VERSION_ENCODING_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n'
+const SALESFORCE_XML_NAMESPACE_URL = 'http://soap.sforce.com/2006/04/metadata'
+
 const toMetadataXml = (name: string, values: Values): string =>
-  builder.build({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
+  XML_VERSION_ENCODING_HEADER.concat(
+    builder.build({
+      [name]: _.merge(_.omit(values, INSTANCE_FULL_NAME_FIELD), {
+        [`${XML_ATTRIBUTE_PREFIX}xmlns`]: SALESFORCE_XML_NAMESPACE_URL,
+      }),
+    }),
+  )
 
 const cloneValuesWithAttributePrefixes = async (
   instance: InstanceElement,

@@ -87,7 +87,11 @@ describe('XML Transformer', () => {
       it('should have empty manifest', () => {
         expect(zipFiles).toHaveProperty(
           [addManifestPath],
-          `<Package><version>${API_VERSION}</version></Package>`,
+          `<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <version>${API_VERSION}</version>
+</Package>
+`,
         )
       })
     })
@@ -186,7 +190,7 @@ describe('XML Transformer', () => {
           const metaFilePath = `${packageName}/classes/MyClass.cls-meta.xml`
           expect(zipFiles).toHaveProperty([metaFilePath])
           const values = xmlParser.parse(zipFiles[metaFilePath])
-          expect(values).toEqual({
+          expect(values).toMatchObject({
             ApexClass: _.omit(apexClassValues, ['fullName', 'content']),
           })
         })
@@ -230,7 +234,7 @@ describe('XML Transformer', () => {
           const filePath = `${packageName}/aura/TestAuraDefinitionBundle/TestAuraDefinitionBundle.cmp-meta.xml`
           expect(zipFiles).toHaveProperty([filePath])
           const data = xmlParser.parse(zipFiles[filePath])
-          expect(data).toEqual({
+          expect(data).toMatchObject({
             AuraDefinitionBundle: _.pick(
               mockDefaultValues.AuraDefinitionBundle,
               ['apiVersion', 'description', 'type'],
@@ -289,27 +293,29 @@ describe('XML Transformer', () => {
           const filePath = `${packageName}/lwc/testLightningComponentBundle/testLightningComponentBundle.js-meta.xml`
           expect(zipFiles).toHaveProperty([filePath])
           expect(zipFiles[filePath]).toMatch(
-            `<LightningComponentBundle>
-              <apiVersion>49</apiVersion>
-              <isExposed>true</isExposed>
-              <targets>
-                <target>lightning__AppPage</target>
-                <target>lightning__RecordPage</target>
-                <target>lightning__HomePage</target>
-              </targets>
-              <targetConfigs>
-                <targetConfig targets="lightning__RecordPage">
-                  <objects>
-                    <object>Contact</object>
-                  </objects>
-                </targetConfig>
-                    <targetConfig targets="lightning__AppPage,lightning__HomePage">
-                        <supportedFormFactors>
-                            <supportedFormFactor type="Small"></supportedFormFactor>
-                        </supportedFormFactors>
-                    </targetConfig>
-              </targetConfigs>
-            </LightningComponentBundle>`.replace(/>\s+</gs, '><'),
+            `<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>49</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__AppPage</target>
+        <target>lightning__RecordPage</target>
+        <target>lightning__HomePage</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <objects>
+                <object>Contact</object>
+            </objects>
+        </targetConfig>
+        <targetConfig targets="lightning__AppPage,lightning__HomePage">
+            <supportedFormFactors>
+                <supportedFormFactor type="Small"></supportedFormFactor>
+            </supportedFormFactors>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
+`,
           )
         })
       })

@@ -337,6 +337,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       idFields: ['parentName', 'value'],
     },
   },
+  AssetsObjectFieldConfiguration: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'objectSchemaName' }, { fieldName: 'attributesLimit' }, { fieldName: 'workspaceId' }],
+    },
+  },
 
   CustomFieldContext: {
     transformation: {
@@ -355,6 +360,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           fieldId: '_parent.0.id',
         },
+        fieldsToIgnore: ['assetsObjectFieldConfiguration'],
       },
       modify: {
         url: '/rest/api/3/field/{fieldId}/context/{contextId}',
@@ -363,6 +369,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           contextId: 'id',
           fieldId: '_parent.0.id',
         },
+        fieldsToIgnore: ['assetsObjectFieldConfiguration'],
       },
       remove: {
         url: '/rest/api/3/field/{fieldId}/context/{contextId}',

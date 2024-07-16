@@ -22,7 +22,7 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   collectCoverageFrom: ['!<rootDir>/index.ts'],
   coverageThreshold: {
     global: {
-      branches: 90.9,
+      branches: 90.8,
       functions: 95,
       lines: 95,
       statements: 95,

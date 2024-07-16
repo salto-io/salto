@@ -449,12 +449,6 @@ const createCustomizations = (): Record<
     ],
     resource: {
       directFetch: true,
-      recurseInto: {
-        value: {
-          typeName: 'ticket_field__custom_field_options',
-          context: { args: { parent_id: { root: 'id' } } },
-        },
-      },
     },
     element: {
       topLevel: {
@@ -484,9 +478,6 @@ const createCustomizations = (): Record<
   },
 
   ticket_field__custom_field_options: {
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -518,12 +509,6 @@ const createCustomizations = (): Record<
     ],
     resource: {
       directFetch: true,
-      recurseInto: {
-        value: {
-          typeName: 'user_field__custom_field_options',
-          context: { args: { parent_id: { root: 'id' } } },
-        },
-      },
     },
     element: {
       topLevel: {
@@ -550,9 +535,6 @@ const createCustomizations = (): Record<
   },
 
   user_field__custom_field_options: {
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -579,12 +561,6 @@ const createCustomizations = (): Record<
     ],
     resource: {
       directFetch: true,
-      recurseInto: {
-        value: {
-          typeName: 'organization_field__custom_field_options',
-          context: { args: { parent_id: { root: 'id' } } },
-        },
-      },
     },
     element: {
       topLevel: {
@@ -611,9 +587,6 @@ const createCustomizations = (): Record<
   },
 
   organization_field__custom_field_options: {
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -1129,9 +1102,6 @@ const createCustomizations = (): Record<
         transformation: { root: 'custom_object_fields' },
       },
     ],
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -1220,9 +1190,6 @@ const createCustomizations = (): Record<
         transformation: { root: 'attribute_values' },
       },
     ],
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,

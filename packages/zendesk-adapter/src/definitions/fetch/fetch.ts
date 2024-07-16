@@ -1368,41 +1368,63 @@ const createCustomizations = (): Record<
         position: { hide: true },
         sections: { fieldType: 'list<section>' },
         html_url: { omit: true },
-        // translations: {
-        //   // extract each item in the holidays field to its own instance
-        //   standalone: {
-        //     typeName: 'category_translation',
-        //     addParentAnnotation: true,
-        //     referenceFromParent: true,
-        //     nestPathUnderParent: true,
-        //   },
-        // },
+        translations: {
+          standalone: {
+            typeName: 'category_translation',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
       },
     },
   },
 
-  // category_translation: {
-  //   resource: {
-  //     directFetch: true,
-  //   },
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //       elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
-  //       path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
-  //       // serviceUrl is created in help_center_service_url filter
-  //     },
-  //     fieldCustomizations: {
-  //       id: { fieldType: 'number', hide: true },
-  //       brand: { fieldType: 'number' },
-  //       created_by_id: { fieldType: 'unknown' },
-  //       updated_by_id: { fieldType: 'unknown' },
-  //       html_url: { omit: true },
-  //       source_id: { omit: true },
-  //       source_type: { omit: true },
-  //     },
-  //   },
-  // },
+  category_translation: {
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+        brand: { fieldType: 'number' },
+        created_by_id: { fieldType: 'unknown' },
+        updated_by_id: { fieldType: 'unknown' },
+        html_url: { omit: true },
+        source_id: { omit: true },
+        source_type: { omit: true },
+      },
+    },
+  },
+
+  section_translation: {
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+        brand: { fieldType: 'number' },
+        created_by_id: { fieldType: 'unknown' },
+        updated_by_id: { fieldType: 'unknown' },
+        html_url: { omit: true },
+        source_id: { omit: true },
+        source_type: { omit: true },
+      },
+    },
+  },
 
   section_order: {},
 
@@ -1434,15 +1456,15 @@ const createCustomizations = (): Record<
         articles: { fieldType: 'list<article>' },
         // translations: { fieldType: 'list<section_translation>' },
         html_url: { omit: true },
-        // translations: {
-        //   // extract each item in the holidays field to its own instance
-        //   standalone: {
-        //     typeName: 'category_translation',
-        //     addParentAnnotation: true,
-        //     referenceFromParent: false,
-        //     nestPathUnderParent: true,
-        //   },
-        // },
+        translations: {
+          // extract each item in the holidays field to its own instance
+          standalone: {
+            typeName: 'section_translation',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
       },
     },
   },
@@ -1473,12 +1495,12 @@ const createCustomizations = (): Record<
           typeName: 'article_attachment',
           context: { args: { article_id: { root: 'id' } } },
         },
-        // translations: {
-        //   typeName: 'article_translation',
-        //   context: {
-        //     args: {},
-        //   },
-        // },
+        translations: {
+          typeName: 'article_translation',
+          context: {
+            args: {},
+          },
+        },
       },
     },
     element: {
@@ -1507,14 +1529,14 @@ const createCustomizations = (): Record<
             nestPathUnderParent: true,
           },
         },
-        // translations: {
-        //   standalone: {
-        //     typeName: 'article_translation',
-        //     addParentAnnotation: true,
-        //     referenceFromParent: true,
-        //     nestPathUnderParent: true,
-        //   },
-        // },
+        translations: {
+          standalone: {
+            typeName: 'article_translation',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
       },
     },
   },
@@ -1541,6 +1563,7 @@ const createCustomizations = (): Record<
           parts: [{ fieldName: 'file_name' }, { fieldName: 'inline' }],
           extendsParent: true,
         },
+        path: { pathParts: [{ parts: [{ fieldName: 'file_name' }, { fieldName: 'inline' }], extendsParent: true }] },
         // serviceUrl is created in help_center_service_url filter
       },
       ignoreDefaultFieldCustomizations: true,
@@ -1549,37 +1572,39 @@ const createCustomizations = (): Record<
         content_url: { hide: true, fieldType: 'string' },
         size: { hide: true, fieldType: 'number' },
         relative_path: { hide: true, fieldType: 'string' },
-        // article_attachments: { fieldType: 'List<article_attachment>' },
         content: { fieldType: 'string' },
         hash: { hide: true, fieldType: 'string' },
         display_file_name: { omit: true },
         article_id: { omit: true },
+        created_at: { hide: true },
+        updated_at: { hide: true },
+        url: { omit: true },
       },
     },
   },
 
-  // article_translation: {
-  //   resource: {
-  //     directFetch: true,
-  //   },
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //       elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
-  //       path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
-  //       // serviceUrl is created in help_center_service_url filter
-  //     },
-  //     fieldCustomizations: {
-  //       id: { hide: true, fieldType: 'number' },
-  //       brand: { fieldType: 'number' },
-  //       created_by_id: { fieldType: 'unknown' },
-  //       updated_by_id: { fieldType: 'unknown' },
-  //       html_url: { omit: true },
-  //       source_id: { omit: true },
-  //       source_type: { omit: true },
-  //     },
-  //   },
-  // },
+  article_translation: {
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true, extendsParent: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        brand: { fieldType: 'number' },
+        created_by_id: { fieldType: 'unknown' },
+        updated_by_id: { fieldType: 'unknown' },
+        html_url: { omit: true },
+        source_id: { omit: true },
+        source_type: { omit: true },
+      },
+    },
+  },
 
   theme: {
     requests: [
@@ -1599,6 +1624,7 @@ const createCustomizations = (): Record<
         elemID: {
           parts: [{ fieldName: 'brand_id', isReference: true }, { fieldName: 'name' }],
         },
+        path: { pathParts: [{ parts: [{ fieldName: 'brand_id', isReference: true }, { fieldName: 'name' }] }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
@@ -1674,6 +1700,7 @@ const createCustomizations = (): Record<
       },
     ],
     resource: {
+      serviceIDFields: [],
       directFetch: true,
     },
     element: {
@@ -1726,8 +1753,15 @@ const createCustomizations = (): Record<
 
 export const createFetchDefinitions = (
   _fetchConfig: ZendeskConfig,
-  typesToOmit?: string[],
-  typesToPick?: string[],
+  {
+    typesToOmit,
+    typesToPick,
+    brandList,
+  }: {
+    typesToOmit?: string[]
+    typesToPick?: string[]
+    brandList?: string[]
+  },
 ): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
   let customizations = createCustomizations()
   if (typesToOmit !== undefined) {
@@ -1736,6 +1770,25 @@ export const createFetchDefinitions = (
   if (typesToPick !== undefined) {
     customizations = _.pick(customizations, typesToPick)
   }
+
+  if (brandList !== undefined) {
+    Object.keys(customizations).forEach(type => {
+      const typeAllRequests = customizations[type].requests
+      if (_.isArray(typeAllRequests) && typeAllRequests.length === 1) {
+        const typeRequest = typeAllRequests[0]
+        const newRequests = brandList.map(brand => ({
+          ...typeRequest,
+          context: {
+            ...typeRequest.context,
+            brandName: brand,
+          },
+          endpoint: { ...typeRequest.endpoint, client: brand },
+        }))
+        customizations[type].requests = newRequests
+      }
+    })
+  }
+
   return {
     instances: {
       default: {

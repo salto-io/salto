@@ -19,11 +19,17 @@ import { values as lowerdashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../../../constants'
 
-export const transform: definitions.AdjustFunction = ({ value, context, typeName }) => {
+const isRecord = (value: unknown): value is Record<string, unknown> => _.isPlainObject(value)
+
+export const transform: definitions.AdjustFunction = async ({ value, context, typeName }) => {
   if (!lowerdashValues.isPlainObject(value)) {
     throw new Error('unexpected value for guide item, not transforming')
   }
-  const brandInstance = context.brand
+  const brandList = context.brands
+  if (brandList === undefined || !isRecord(brandList) || !_.isString(context.brandName)) {
+    return { value }
+  }
+  const brandInstance = brandList[context.brandName]
   if (!isInstanceElement(brandInstance)) {
     return { value }
   }

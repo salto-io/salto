@@ -23,6 +23,7 @@ import {
   Change,
   getChangeData,
   StaticFile,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
@@ -568,45 +569,69 @@ describe('multi env source', () => {
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
     })
     it('should split base element modifications', async () => {
+      const envObjectMeta = envObject.clone()
+      envObjectMeta.metaType = new TypeReference(new ElemID('salto', 'meta'))
+      const { field } = envObject.fields
+      const fieldNumber = field.clone()
+      fieldNumber.refType = new TypeReference(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER)
+
       const changes: DetailedChange[] = [
         {
           action: 'modify',
           data: {
             before: envObject,
-            after: envObject,
+            after: envObjectMeta,
           },
           id: envObject.elemID,
+          elemIDs: {
+            before: envObject.elemID,
+            after: envObjectMeta.elemID,
+          },
+          path: envObject.path,
         },
         {
           action: 'modify',
           data: {
-            before: envObject.fields.field,
-            after: envObject.fields.field,
+            before: field,
+            after: fieldNumber,
           },
-          id: envObject.fields.field.elemID,
+          id: field.elemID,
+          elemIDs: {
+            before: field.elemID,
+            after: fieldNumber.elemID,
+          },
+          path: field.path,
         },
       ]
       await source.updateNaclFiles(activePrefix, changes)
       expect(envSource.updateNaclFiles).toHaveBeenCalledWith([
         {
           action: 'remove',
-          data: expect.anything(),
+          data: { before: envObject },
           id: envObject.elemID,
+          elemIDs: { before: envObject.elemID },
+          path: envObject.path,
         },
         {
           action: 'add',
-          data: expect.anything(),
+          data: { after: envObjectMeta },
           id: envObject.elemID,
+          elemIDs: { after: envObjectMeta.elemID },
+          path: envObject.path,
         },
         {
           action: 'remove',
-          data: expect.anything(),
-          id: envObject.fields.field.elemID,
+          data: { before: field },
+          id: field.elemID,
+          elemIDs: { before: field.elemID },
+          path: field.path,
         },
         {
           action: 'add',
-          data: expect.anything(),
-          id: envObject.fields.field.elemID,
+          data: { after: fieldNumber },
+          id: fieldNumber.elemID,
+          elemIDs: { after: fieldNumber.elemID },
+          path: field.path,
         },
       ])
     })

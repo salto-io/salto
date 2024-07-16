@@ -349,7 +349,7 @@ const buildMultiEnvSource = (
 
   // The update NaCl file logic doesn't know how to handle modifications that span multiple files,
   // so we split them into removals and additions.
-  const splitChange = <T extends Element>(
+  const splitChange = <T>(
     change: DetailedChange<T> & ModificationChange<T>,
   ): [DetailedChange<T> & RemovalChange<T>, DetailedChange<T> & AdditionChange<T>] => [
     {
@@ -363,16 +363,13 @@ const buildMultiEnvSource = (
       action: 'add',
       data: { after: change.data.after },
       id: change.id,
-      elemIDs: change.elemIDs?.after ? { before: change.elemIDs.after } : undefined,
+      elemIDs: change.elemIDs?.after ? { after: change.elemIDs.after } : undefined,
       path: change.path,
     },
   ]
-  const isBaseModification = (
-    change: DetailedChange,
-  ): change is DetailedChange<Element> & ModificationChange<Element> =>
-    change.id.isBaseID() && isModificationChange(change)
+
   const normalizeChanges = (changes: DetailedChange[]): DetailedChange[] =>
-    changes.flatMap(change => (isBaseModification(change) ? splitChange(change) : change))
+    changes.flatMap(change => (change.id.isBaseID() && isModificationChange(change) ? splitChange(change) : change))
 
   const applyRoutedChanges = async (routedChanges: RoutedChanges): Promise<EnvsChanges> => ({
     ...(await resolveValues({

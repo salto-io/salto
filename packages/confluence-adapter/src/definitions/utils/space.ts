@@ -118,15 +118,16 @@ export const spaceChangeGroupWithItsHomepage: deployment.grouping.ChangeIdFuncti
 const addParamsToSpaceUrl = (params: Record<string, string[]>): `/${string}` => {
   const paramEntries = Object.entries(params)
   return paramEntries.reduce(
-    (url, [paramName, paramValues], index) => `${url}${index === 0 ? '' : '&'}${paramName}=${paramValues.join(`&${paramName}=`)}`,
+    (url, [paramName, paramValues], index) =>
+      `${url}${index === 0 ? '' : '&'}${paramName}=${paramValues.join(`&${paramName}=`)}`,
     `${SPACE_URL_WITHOUT_PARAMS}?`,
   ) as `/${string}`
 }
 
 /*
-  * Fetch spaces endpoint with the relevant params according to the user config.
-  * We fetch all space types and statuses by default, unless specified otherwise in the user config.
-  */
+ * Fetch spaces endpoint with the relevant params according to the user config.
+ * We fetch all space types and statuses by default, unless specified otherwise in the user config.
+ */
 export const getFetchSpacesEndpoint = (userConfig: UserConfig): `/${string}` => {
   const excludeSpaceDefs = userConfig.fetch.exclude.filter(e => e.type === 'space')
   const excludeSpaceTypes = excludeSpaceDefs.map(e => e.criteria?.type).filter(values.isDefined)
@@ -137,5 +138,5 @@ export const getFetchSpacesEndpoint = (userConfig: UserConfig): `/${string}` => 
     log.warn('No space types or statuses to fetch, returning space url without params')
     return SPACE_URL_WITHOUT_PARAMS
   }
-  return addParamsToSpaceUrl({type: spaceTypesToFetch, status: spaceStatusesToFetch})
+  return addParamsToSpaceUrl({ type: spaceTypesToFetch, status: spaceStatusesToFetch })
 }

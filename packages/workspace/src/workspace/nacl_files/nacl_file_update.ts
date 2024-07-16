@@ -64,13 +64,16 @@ type PositionInParent = {
   indexInParent?: number
 }
 
+const getChangeId = (change: DetailedChange): ElemID =>
+  (change.action === 'remove' ? change.elemIDs?.before : change.elemIDs?.after) ?? change.id
+
 const getPositionInParent = (change: DetailedChange): PositionInParent => {
   if (change.baseChange === undefined) {
     log.warn('No base change: %s', inspectValue(change))
     return { followingElementIDs: [] }
   }
 
-  const changeId = change.elemIDs?.after ?? change.id
+  const changeId = getChangeId(change)
   const changeData = getChangeData(change)
   const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
   const pathInParent = getPath(parent, changeId)
@@ -121,15 +124,25 @@ const fixLastListItemChange = (
     return [change]
   }
 
-  const beforeLocationChangeId = change.elemIDs?.before ?? change.id
-  const afterLocationChangeId = change.elemIDs?.after ?? change.id
-
-  if (!isIndexPathPart(beforeLocationChangeId.name) || !isIndexPathPart(afterLocationChangeId.name)) {
+  if (change.elemIDs === undefined) {
     return [change]
   }
 
-  const beforeContainer = resolvePath(baseChange.data.before, beforeLocationChangeId.createParentID())
-  const afterContainer = resolvePath(baseChange.data.after, afterLocationChangeId.createParentID())
+  const beforeChangeId = change.elemIDs.before
+  const afterChangeId = change.elemIDs.after
+
+  if (beforeChangeId === undefined) {
+    return [change]
+  }
+
+  if (!isIndexPathPart(beforeChangeId.name) || (afterChangeId !== undefined && !isIndexPathPart(afterChangeId.name))) {
+    return [change]
+  }
+
+  const parentId = beforeChangeId.createParentID()
+  const beforeContainer = resolvePath(baseChange.data.before, parentId)
+  const afterContainer = resolvePath(baseChange.data.after, parentId)
+
   if (!_.isArray(beforeContainer) || !_.isArray(afterContainer)) {
     return [change]
   }
@@ -174,72 +187,76 @@ const fixLastListItemChange = (
   "{ item = 2 }, { item = 3 }, { item = 4 }" with "{ item = 2 }", leaving only the last comma.
   */
 
-  const beforeLocationIndex = Number(beforeLocationChangeId.name)
-  const afterLocationIndex = Number(afterLocationChangeId.name)
+  const beforeIndex = Number(beforeChangeId.name)
+  const afterIndex = afterChangeId !== undefined ? Number(afterChangeId.name) : undefined
   const beforeLastItemIndex = beforeContainer.length - 1
   const afterLastItemIndex = afterContainer.length - 1
 
-  if (beforeLocationIndex === beforeLastItemIndex) {
-    if (afterContainer.length === 0) {
-      const afterContainerChangeId = afterLocationChangeId.createParentID()
-      const [containerLocation] = sourceMap.get(afterContainerChangeId.getFullName()) ?? []
-      if (containerLocation === undefined) {
-        log.warn('missing location for %s', afterContainerChangeId.getFullName())
-        return [change]
-      }
-      return [
-        {
-          id: afterContainerChangeId,
-          action: 'modify',
-          data: {
-            before: beforeContainer,
-            after: afterContainer,
-          },
-          baseChange,
-          location: containerLocation,
-        },
-      ]
+  if (beforeIndex < beforeLastItemIndex) {
+    // we ignore the new last item change and the following removed items
+    if ((afterIndex ?? beforeIndex) >= afterLastItemIndex) {
+      return []
     }
 
-    const afterLastItemChangeId = afterLocationChangeId.createSiblingID(String(afterLastItemIndex))
-    const [beforeLastItemLocation] = sourceMap.get(beforeLocationChangeId.getFullName()) ?? []
-    const [afterLastItemLocation] = sourceMap.get(afterLastItemChangeId.getFullName()) ?? []
-    if (afterLastItemLocation === undefined || beforeLastItemLocation === undefined) {
-      log.warn(
-        'missing location for %s',
-        [
-          afterLastItemLocation === undefined ? afterLastItemChangeId.getFullName() : undefined,
-          beforeLastItemLocation === undefined ? beforeLocationChangeId.getFullName() : undefined,
-        ]
-          .filter(id => id !== undefined)
-          .join(','),
-      )
+    return [change]
+  }
+
+  if (afterContainer.length === 0) {
+    const [containerLocation] = sourceMap.get(parentId.getFullName()) ?? []
+    if (containerLocation === undefined) {
+      log.warn('missing location for %s', parentId.getFullName())
       return [change]
     }
-    const fixedLocation = { ...afterLastItemLocation, end: beforeLastItemLocation.end }
-    const afterLastItemChangeWithFixedLocation: DetailedChangeWithSource = {
-      id: afterLastItemChangeId,
-      action: 'modify',
-      data: {
-        before: beforeContainer[afterLastItemIndex],
-        after: afterContainer[afterLastItemIndex],
+
+    return [
+      {
+        id: parentId,
+        action: 'modify',
+        data: {
+          before: beforeContainer,
+          after: afterContainer,
+        },
+        baseChange,
+        location: containerLocation,
       },
-      baseChange,
-      location: fixedLocation,
-    }
-    // in case that the last item moved up in the list we want to return the original change too
-    if (afterLocationIndex < afterLastItemIndex) {
-      return [change, afterLastItemChangeWithFixedLocation]
-    }
-    return [afterLastItemChangeWithFixedLocation]
+    ]
   }
 
-  // we ignore the new last item change and the following removed items
-  if (afterLocationIndex >= afterLastItemIndex) {
-    return []
+  const afterLastItemChangeId = parentId.createNestedID(String(afterLastItemIndex))
+  const [beforeLastItemLocation] = sourceMap.get(beforeChangeId.getFullName()) ?? []
+  const [afterLastItemLocation] = sourceMap.get(afterLastItemChangeId.getFullName()) ?? []
+
+  if (afterLastItemLocation === undefined || beforeLastItemLocation === undefined) {
+    log.warn(
+      'missing location for %s',
+      [
+        afterLastItemLocation === undefined ? afterLastItemChangeId.getFullName() : undefined,
+        beforeLastItemLocation === undefined ? beforeChangeId.getFullName() : undefined,
+      ]
+        .filter(id => id !== undefined)
+        .join(', '),
+    )
+    return [change]
   }
 
-  return [change]
+  const fixedLocation = { ...afterLastItemLocation, end: beforeLastItemLocation.end }
+  const afterLastItemChangeWithFixedLocation: DetailedChangeWithSource = {
+    id: afterLastItemChangeId,
+    action: 'modify',
+    data: {
+      before: beforeContainer[afterLastItemIndex],
+      after: afterContainer[afterLastItemIndex],
+    },
+    baseChange,
+    location: fixedLocation,
+  }
+
+  // in case that the last item moved up in the list we want to return the original change too
+  if (afterIndex !== undefined && afterIndex < afterLastItemIndex) {
+    return [change, afterLastItemChangeWithFixedLocation]
+  }
+
+  return [afterLastItemChangeWithFixedLocation]
 }
 
 const lastNestedLocation = (parentScope: parser.SourceRange): parser.SourceRange => {
@@ -261,15 +278,15 @@ export const getChangeLocations = (
   change: DetailedChange,
   sourceMap: ReadonlyMap<string, parser.SourceRange[]>,
 ): DetailedChangeWithSource[] => {
-  const afterLocationChangeId = change.elemIDs?.after ?? change.id
+  const changeId = getChangeId(change)
   if (
-    sourceMap.has(afterLocationChangeId.getFullName()) &&
+    sourceMap.has(changeId.getFullName()) &&
     // when a part of type is written to a new file, there's a type addition change (see wrapAdditions).
     // that change shouldn't go into this `if` scope, although it exist in `sourceMap`.
-    !(change.action === 'add' && afterLocationChangeId.idType === 'type')
+    !(change.action === 'add' && changeId.idType === 'type')
   ) {
     // We want to get the location of the existing element
-    const possibleLocations = sourceMap.get(afterLocationChangeId.getFullName()) ?? []
+    const possibleLocations = sourceMap.get(changeId.getFullName()) ?? []
     if (change.action === 'remove') {
       return possibleLocations
         .map(location => ({
@@ -282,7 +299,7 @@ export const getChangeLocations = (
       // TODO: figure out how to choose the correct location if there is more than one option
       return fixLastListItemChange({ ...change, location: possibleLocations[0] }, sourceMap)
     }
-  } else if (!afterLocationChangeId.isTopLevel()) {
+  } else if (!changeId.isTopLevel()) {
     const fileName = createFileNameFromPath(change.path)
     const { followingElementIDs, indexInParent } = getPositionInParent(change)
     const possibleFollowingElementsRange = followingElementIDs
@@ -305,7 +322,7 @@ export const getChangeLocations = (
     }
 
     // If we can't find an element after this one in the parent we put it at the end
-    const parentID = afterLocationChangeId.createParentID()
+    const parentID = changeId.createParentID()
     const possibleLocations = sourceMap.get(parentID.getFullName()) ?? []
     if (possibleLocations.length > 0) {
       const foundInPath = possibleLocations.find(sr => sr.filename === fileName)

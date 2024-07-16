@@ -38,9 +38,7 @@ type ConditionChildField = {
 }
 
 type TicketFormCondition = {
-  // eslint-disable-next-line camelcase
   parent_field_id: number | ReferenceExpression
-  // eslint-disable-next-line camelcase
   child_fields?: ConditionChildField[]
 }
 

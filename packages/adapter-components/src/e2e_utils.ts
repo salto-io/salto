@@ -45,7 +45,6 @@ export type Reals = {
   adapter: AdapterOperations
 }
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 

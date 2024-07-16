@@ -15,11 +15,9 @@
  */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
-// eslint-disable-next-line
 import { toInstance } from '../../../src/elements_deprecated/ducktype'
 import { RECORDS_PATH } from '../../../src/fetch/element/constants'
 
-/* eslint-disable camelcase */
 const ADAPTER_NAME = 'myAdapter'
 
 const type = new ObjectType({

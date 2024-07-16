@@ -68,7 +68,6 @@ export const getAllElements = (accountName = 'salto'): AllElementsTypes => {
     annotationRefsOrTypes: {
       label: BuiltinTypes.STRING,
       old: BuiltinTypes.STRING,
-      // eslint-disable-next-line camelcase
       case_sensitive: BuiltinTypes.BOOLEAN,
       address: saltoAddr,
     },

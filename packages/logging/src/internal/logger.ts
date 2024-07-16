@@ -173,5 +173,5 @@ export const loggerRepo = (baseLoggerRepo: BaseLoggerRepo, initialConfig: Readon
     get(): Readonly<Config> {
       return config
     },
-  })
+  }) as LoggerRepo
 }

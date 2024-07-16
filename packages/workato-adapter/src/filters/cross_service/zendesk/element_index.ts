@@ -42,14 +42,12 @@ export type ZendeskIndex = {
 
 type fieldWithOption = InstanceElement & {
   value: {
-    // eslint-disable-next-line camelcase
     custom_field_options: ReferenceExpression[]
   }
 }
 
 const FIELD_SCHEMA = Joi.object({
   value: Joi.object({
-    // eslint-disable-next-line camelcase
     custom_field_options: Joi.array().required(),
   })
     .unknown(true)

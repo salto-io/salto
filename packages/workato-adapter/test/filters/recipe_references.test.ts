@@ -33,8 +33,6 @@ import { paginate } from '../../src/client/pagination'
 import { DEFAULT_ID_FIELDS, SUPPORTED_TYPES, getDefaultConfig, FETCH_CONFIG, DEFAULT_TYPES } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
-/* eslint-disable camelcase */
-
 describe('Recipe references filter', () => {
   let client: WorkatoClient
   type FilterType = filterUtils.FilterWith<'onPostFetch'>

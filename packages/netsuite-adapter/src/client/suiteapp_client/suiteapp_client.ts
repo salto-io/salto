@@ -699,7 +699,6 @@ export default class SuiteAppClient {
         secret: CONSUMER_SECRET,
       },
       realm: this.credentials.accountId,
-      // eslint-disable-next-line camelcase
       signature_method: 'HMAC-SHA256',
       // eslint-disable-next-line camelcase
       hash_function(base_string, key) {

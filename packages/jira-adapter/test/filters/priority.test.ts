@@ -70,21 +70,21 @@ describe('priorityFilter', () => {
   })
   describe('preDeploy', () => {
     const iconUrlTruncatePath = '/folder/image.png'
-    it('should concat the client base url to the instance icon url', () => {
+    it('should concat the client base url to the instance icon url', async () => {
       const instance = new InstanceElement('instance', type, { iconUrl: iconUrlTruncatePath })
       const changes = [toChange({ after: instance })]
-      filter.preDeploy?.(changes)
+      await filter.preDeploy?.(changes)
       expect(getChangeData(changes[0]).value.iconUrl).toEqual(new URL(iconUrlTruncatePath, client.baseUrl).href)
     })
   })
   describe('onDeploy', () => {
-    it('should remove the domain prefix from the iconUrl field', () => {
+    it('should remove the domain prefix from the iconUrl field', async () => {
       const iconUrlTruncatePath = '/folder/image.png'
       const instance = new InstanceElement('instance', type, {
         iconUrl: new URL(iconUrlTruncatePath, client.baseUrl).href,
       })
       const changes = [toChange({ after: instance })]
-      filter.onDeploy?.(changes)
+      await filter.onDeploy?.(changes)
       expect(getChangeData(changes[0]).value.iconUrl).toEqual(iconUrlTruncatePath)
     })
   })

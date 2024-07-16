@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable camelcase */
 import { InstanceElement, isInstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'

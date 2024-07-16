@@ -486,10 +486,8 @@ describe('Salto parser', () => {
         it('should have the correct value', () => {
           expect(object.fields.fax.annotations).toEqual({
             fieldLevelSecurity: {
-              // eslint-disable-next-line camelcase
               all_profiles: {
                 visible: false,
-                // eslint-disable-next-line camelcase
                 read_only: false,
               },
             },

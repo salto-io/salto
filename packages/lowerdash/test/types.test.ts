@@ -122,7 +122,6 @@ describe('types', () => {
 
   describe('isArrayOfType', () => {
     type MyType = { a: string }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type Guard = TypeGuard<unknown, MyType>
 
     it('should return true if the type guard returns true for all items', () => {

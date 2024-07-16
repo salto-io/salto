@@ -135,7 +135,6 @@ describe('billing_settings transformer', () => {
           Settings_ABC: ['Settings_ABC'],
         },
       })
-      // eslint-disable-next-line camelcase
       expect(parsedConfigs).toEqual({ Settings_AAA: { request: { url: '/settings/aaa' } } })
       expect(Object.keys(allTypes).sort()).toEqual(['Settings_AAA', 'Settings_ABC'])
       expect(

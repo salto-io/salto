@@ -41,7 +41,6 @@ export default class DummyAdapter implements AdapterOperations {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     changeGroup.changes
       .map(getChangeData)
@@ -68,6 +67,7 @@ export default class DummyAdapter implements AdapterOperations {
     changeValidator: changeValidator(this.genParams),
   }
 
+  // eslint-disable-next-line class-methods-use-this
   fixElements: FixElementsFunc = async elements => {
     const fullInst1 = elements.find(e => e.elemID.getFullName() === 'dummy.Full.instance.FullInst1')
     if (!isInstanceElement(fullInst1)) {

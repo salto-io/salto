@@ -70,13 +70,10 @@ export const isAction = createSchemeGuard<ActionsType>(
 
 export type AccountSettingsInstance = {
   value: {
-    // eslint-disable-next-line camelcase
     active_features: {
-      // eslint-disable-next-line camelcase
       automatic_answers?: boolean
     }
     tickets: {
-      // eslint-disable-next-line camelcase
       custom_statuses_enabled?: boolean
     }
   }

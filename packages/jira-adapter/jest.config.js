@@ -16,7 +16,6 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'jira-adapter',
   displayName: 'jira-adapter',
   rootDir: `${__dirname}`,
   testEnvironment: process.env.RUN_E2E_TESTS ? '@salto-io/jira-adapter/dist/e2e_test/jest_environment' : undefined,

@@ -42,7 +42,6 @@ const FILTER_NAME = 'customObjectFieldOptionsFilter'
 type CustomObjectFieldOption = {
   id: number
   name: string
-  // eslint-disable-next-line camelcase
   raw_name: string
   value: string
 }

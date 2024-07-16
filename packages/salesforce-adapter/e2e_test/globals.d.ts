@@ -1,9 +1,7 @@
 import { Credentials } from '../src/types'
 
 declare global {
-  module NodeJS {
-    interface Global {
-      salesforceCredentials: Credentials
-    }
+  namespace globalThis {
+    var salesforceCredentials: Credentials
   }
 }

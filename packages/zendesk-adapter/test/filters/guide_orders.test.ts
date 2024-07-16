@@ -58,8 +58,8 @@ const articleType = new ObjectType({
 })
 
 const PARENT_ID = 96
-const createBrandInstance = (has_help_center = true): InstanceElement =>
-  new InstanceElement('brand', brandType, { id: PARENT_ID, has_help_center, subdomain: 'test' })
+const createBrandInstance = (hasHelpCenter = true): InstanceElement =>
+  new InstanceElement('brand', brandType, { id: PARENT_ID, has_help_center: hasHelpCenter, subdomain: 'test' })
 
 const createChildInstance = (
   id = 0,

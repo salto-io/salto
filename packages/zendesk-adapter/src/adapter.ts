@@ -605,7 +605,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     // Temporarily get fetch method from the config. This is used for testing purposes
     // and should be removed once we are confident the new infra behaves nicely - SALTO-5761
-    const { useNewInfra } = this.userConfig[FETCH_CONFIG]
+    const { useNewInfra, useGuideNewInfra } = this.userConfig[FETCH_CONFIG]
     let defaultSubdomainResult
     if (useNewInfra !== true) {
       // Zendesk Support and (if enabled) global Zendesk Guide types
@@ -712,7 +712,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
-        useGuideNewInfra: useNewInfra,
+        useGuideNewInfra,
       })
 
       combinedRes.configChanges = combinedRes.configChanges.concat(zendeskGuideElements.configChanges ?? [])

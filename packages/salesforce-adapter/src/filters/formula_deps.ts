@@ -250,6 +250,10 @@ const transformFieldsToReferences = async (
       [identifierInfo],
     )
 
+    if (!referencesWithValidity.valid) {
+      return
+    }
+
     instance.value[fieldName] = new ReferenceExpression(
       referencesWithValidity.valid[0],
     )

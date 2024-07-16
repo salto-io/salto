@@ -108,6 +108,8 @@ export type WorkflowV2Transition = {
   actions?: WorkflowV2TransitionRule[]
   conditions?: WorkflowV2TransitionConditionGroup
   validators?: WorkflowV2TransitionRule[]
+  properties?: Values[]
+  transitionScreen?: Values
 }
 
 type WorkflowDataResponse = {

@@ -27,6 +27,7 @@ import {
   Element,
   ElemID,
   getChangeData,
+  Insight,
   InstanceElement,
   isAdapterSuccessInstallResult,
   isAdditionChange,
@@ -513,6 +514,50 @@ export const calculatePatch = async ({
     success: true,
     updatedConfig: {},
   }
+}
+
+const resolveAllElements = async (elementsSource: elementSource.ElementsSource): Promise<Element[]> =>
+  expressions.resolve(await awu(await elementsSource.getAll()).toArray(), elementsSource)
+
+export const getInsights = async (workspace: Workspace): Promise<Insight[]> => {
+  const wsElementsSource = await workspace.elements()
+  let resolvedElementsPromise: Promise<Element[]>
+  const getResolvedElementsOfAdapter = async (adapter: string): Promise<Element[]> => {
+    if (resolvedElementsPromise === undefined) {
+      resolvedElementsPromise = resolveAllElements(wsElementsSource)
+    }
+    const resolvedElements = await resolvedElementsPromise
+    return resolvedElements.filter(element => element.elemID.adapter === adapter)
+  }
+
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
+  const insightsByAdapter = Object.entries(accountToServiceNameMap).map(async ([account, adapter]) => {
+    let startTime: Date
+    let finishTime: Date
+
+    const { getInsights: getAdapterInsights } = adapterCreators[adapter]
+    if (getAdapterInsights === undefined) {
+      return []
+    }
+    if (account !== adapter) {
+      log.warn('Cannot get insights when account name (%s) is different from the adapter name (%s)', account, adapter)
+      return []
+    }
+
+    startTime = new Date()
+    const resolvedElements = await getResolvedElementsOfAdapter(adapter)
+    finishTime = new Date()
+    log.info('load resolved elements of adapter %s took %s ms', adapter, finishTime.getTime() - startTime.getTime())
+
+    startTime = new Date()
+    const insights = getAdapterInsights(resolvedElements)
+    finishTime = new Date()
+    log.info('get insights of adapter %s took %s ms', adapter, finishTime.getTime() - startTime.getTime())
+
+    return insights
+  })
+
+  return Promise.all(insightsByAdapter).then(insights => insights.flat())
 }
 
 export type LocalChange = Omit<FetchChange, 'pendingChanges'>

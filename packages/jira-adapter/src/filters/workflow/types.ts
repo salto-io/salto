@@ -67,6 +67,8 @@ type PostFunctionConfiguration = {
   event?: ConfigRef
   id?: unknown
   scriptRunner?: Value
+  fieldId?: unknown
+  fieldValue?: unknown
 }
 
 const postFunctionConfigurationSchema = Joi.object({
@@ -151,6 +153,7 @@ export type Transition = {
   from?: (TransitionFrom | string)[]
   properties?: Values
   to?: unknown
+  screen?: Values
 }
 
 export const transitionsSchema = Joi.object({

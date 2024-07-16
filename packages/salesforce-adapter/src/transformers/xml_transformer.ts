@@ -516,17 +516,18 @@ const builder = new XMLBuilder({
   indentBy: '    ',
 })
 
-const XML_VERSION_ENCODING_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n'
 const SALESFORCE_XML_NAMESPACE_URL = 'http://soap.sforce.com/2006/04/metadata'
 
 const toMetadataXml = (name: string, values: Values): string =>
-  XML_VERSION_ENCODING_HEADER.concat(
-    builder.build({
-      [name]: _.merge(_.omit(values, INSTANCE_FULL_NAME_FIELD), {
-        [`${XML_ATTRIBUTE_PREFIX}xmlns`]: SALESFORCE_XML_NAMESPACE_URL,
-      }),
+  builder.build({
+    '?xml': {
+      [`${XML_ATTRIBUTE_PREFIX}version`]: '1.0',
+      [`${XML_ATTRIBUTE_PREFIX}encoding`]: 'UTF-8',
+    },
+    [name]: _.merge(_.omit(values, INSTANCE_FULL_NAME_FIELD), {
+      [`${XML_ATTRIBUTE_PREFIX}xmlns`]: SALESFORCE_XML_NAMESPACE_URL,
     }),
-  )
+  })
 
 const cloneValuesWithAttributePrefixes = async (
   instance: InstanceElement,

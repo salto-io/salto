@@ -1381,9 +1381,6 @@ const createCustomizations = (): Record<
   },
 
   category_translation: {
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -1404,9 +1401,6 @@ const createCustomizations = (): Record<
   },
 
   section_translation: {
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -1454,7 +1448,6 @@ const createCustomizations = (): Record<
         parent_section_id: { fieldType: 'number' },
         sections: { fieldType: 'list<section>' },
         articles: { fieldType: 'list<article>' },
-        // translations: { fieldType: 'list<section_translation>' },
         html_url: { omit: true },
         translations: {
           // extract each item in the holidays field to its own instance
@@ -1494,12 +1487,6 @@ const createCustomizations = (): Record<
         attachments: {
           typeName: 'article_attachment',
           context: { args: { article_id: { root: 'id' } } },
-        },
-        translations: {
-          typeName: 'article_translation',
-          context: {
-            args: {},
-          },
         },
       },
     },
@@ -1553,9 +1540,6 @@ const createCustomizations = (): Record<
         transformation: { root: 'article_attachments', adjust: transformGuideItem },
       },
     ],
-    resource: {
-      directFetch: false,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -1584,9 +1568,6 @@ const createCustomizations = (): Record<
   },
 
   article_translation: {
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,

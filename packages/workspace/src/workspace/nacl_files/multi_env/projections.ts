@@ -30,6 +30,8 @@ import {
   Value,
   ElemID,
   DetailedChange,
+  DetailedChangeWithBaseChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
@@ -111,6 +113,14 @@ export const createAddChange = (value: Element | Value, id: ElemID, path?: Reado
   path,
 })
 
+export const createElementAddChange = (
+  element: Element,
+  path?: ReadonlyArray<string>,
+): DetailedChangeWithBaseChange => {
+  const baseChange = toChange({ after: element })
+  return { id: element.elemID, baseChange, path, ...baseChange }
+}
+
 export const createRemoveChange = (
   value: Element | Value,
   id: ElemID,
@@ -122,7 +132,15 @@ export const createRemoveChange = (
   path,
 })
 
-export const projectChange = async (change: DetailedChange, env: ElementsSource): Promise<DetailedChange[]> => {
+export const createElementRemoveChange = (element: Element): DetailedChangeWithBaseChange => {
+  const baseChange = toChange({ before: element })
+  return { id: element.elemID, baseChange, ...baseChange }
+}
+
+export const projectChange = async (
+  change: DetailedChangeWithBaseChange,
+  env: ElementsSource,
+): Promise<DetailedChangeWithBaseChange[]> => {
   const targetElement = await env.get(change.id)
   if (targetElement === undefined) {
     return change.action === 'add' ? [change] : []

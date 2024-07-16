@@ -25,6 +25,7 @@ import {
   Change,
   ChangeDataType,
   StaticFile,
+  DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
@@ -103,7 +104,7 @@ export type EnvsChanges = Record<string, ChangeSet<Change>>
 export type FromSource = 'env' | 'common' | 'all'
 
 export type MultiEnvSource = {
-  updateNaclFiles: (env: string, changes: DetailedChange[], mode?: RoutingMode) => Promise<EnvsChanges>
+  updateNaclFiles: (env: string, changes: DetailedChangeWithBaseChange[], mode?: RoutingMode) => Promise<EnvsChanges>
   listNaclFiles: (env: string) => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -352,7 +353,7 @@ const buildMultiEnvSource = (
 
   const updateNaclFiles = async (
     env: string,
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
     mode: RoutingMode = 'default',
   ): Promise<EnvsChanges> => {
     const routedChanges = await routeChanges(changes, env, commonSource(), envSources(), mode)

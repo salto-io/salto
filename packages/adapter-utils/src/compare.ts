@@ -376,7 +376,7 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
  * So in order to get the expected results, all the detailed changes should be passed to this
  * function in a single call
  */
-export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: DetailedChange[]): void => {
+export const applyDetailedChanges = (element: Element, detailedChanges: DetailedChange[]): void => {
   const changesToApply = filterChangesForApply(detailedChanges)
   const [potentialListItemChanges, otherChanges] = _.partition(changesToApply, change =>
     isIndexPathPart(change.id.name),

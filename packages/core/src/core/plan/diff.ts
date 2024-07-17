@@ -29,7 +29,6 @@ const removePath = (instance: InstanceElement, path: ElemID): void => {
   setPath(instance, path, undefined)
   const parentPath = path.createParentID()
   if (path.nestingLevel > 1 && _.isEmpty(_.pickBy(resolvePath(instance, parentPath), values.isDefined))) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     removePath(instance, parentPath)
   }
 }

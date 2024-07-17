@@ -18,7 +18,11 @@ Thumbs.db
 junit.xml
 
 # yarn
-yarn-error.log
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
 
 # salto logs
 logsalto.log
@@ -31,5 +35,9 @@ logsalto.log
 
 # parsed blueprint cache
 .cache
+
+# turbo
+packages/**/.turbo
+.turbo
 
 .eslintcache

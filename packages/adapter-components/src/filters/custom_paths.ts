@@ -79,7 +79,7 @@ export const customPathsFilterCreator: <TResult extends void | filter.FilterResu
         return
       }
       const newPath = [...parentPath.slice(0, -1), ...pathSuffix]
-      log.debug('updating path for instance %s from %s to %s', instance.elemID.getFullName(), instance.path, newPath)
+      log.trace('updating path for instance %s from %s to %s', instance.elemID.getFullName(), instance.path, newPath)
       instance.path = newPath
     })
   },

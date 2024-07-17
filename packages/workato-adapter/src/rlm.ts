@@ -62,7 +62,6 @@ const IMPORT_HEADER = { 'Content-Type': 'application/octet-type' }
 const RESTART_RECIPES_QUERY_PARAMS: Record<string, string> = { restart_recipes: 'true' }
 
 type JsonRecipeConfigAccountID = {
-  // eslint-disable-next-line camelcase
   zip_name: string
   name: string
   folder: string
@@ -71,9 +70,7 @@ type JsonRecipeConfigAccountID = {
 type JsonRecipeConfig = {
   keyword: string
   provider: string
-  // eslint-disable-next-line camelcase
   skip_validation: boolean
-  // eslint-disable-next-line camelcase
   account_id: JsonRecipeConfigAccountID | null
 }
 
@@ -96,17 +93,14 @@ type Folder = {
 type Connection = {
   id: number
   name: string
-  // eslint-disable-next-line camelcase
   folder_id: Folder
   application: string
 }
 
 type RecipeConfig = {
-  // eslint-disable-next-line camelcase
   account_id: Connection
   keyword: string
   provider: string
-  // eslint-disable-next-line camelcase
   skip_validation: boolean
 }
 
@@ -276,7 +270,6 @@ const recipeToZipFormat = async (zip: JSZip, recipe: InstanceElement): Promise<v
     keyword: conf.keyword,
     provider: conf.provider,
     skip_validation: conf.skip_validation,
-    // eslint-disable-next-line camelcase
     account_id:
       conf.account_id !== undefined
         ? {

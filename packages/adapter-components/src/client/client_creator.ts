@@ -77,6 +77,4 @@ export const createClient = <
   createConnection: ConnectionCreator<Credentials>
   clientCls?: ClientConstructor<Credentials>
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
-}): AdapterHTTPClient<Credentials, ClientRateLimitConfig> =>
-  // eslint-disable-next-line new-cap
-  new (clientCls ?? Client)(args)
+}): AdapterHTTPClient<Credentials, ClientRateLimitConfig> => new (clientCls ?? Client)(args)

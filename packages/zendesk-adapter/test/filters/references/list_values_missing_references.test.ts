@@ -40,7 +40,6 @@ describe('list values missing references filter', () => {
     elemID: new ElemID(ZENDESK, 'trigger'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line camelcase
       category_id: { refType: new ListType(BuiltinTypes.NUMBER) },
       actions: {
         refType: new ListType(

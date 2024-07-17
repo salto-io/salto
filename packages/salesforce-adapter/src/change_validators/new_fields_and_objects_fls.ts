@@ -23,8 +23,13 @@ import {
   isObjectType,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { isCustom } from '../transformers/transformer'
-import { apiNameSync, getFLSProfiles } from '../filters/utils'
+import {
+  apiNameSync,
+  getFLSProfiles,
+  isCustomMetadataRecordTypeSync,
+  isCustomObjectSync,
+  isStandardObjectSync,
+} from '../filters/utils'
 import { SalesforceConfig } from '../types'
 
 const profileNameOrNumberOfProfiles = (profiles: string[]): string =>
@@ -37,7 +42,7 @@ const createObjectFLSInfo = (
   flsProfiles: string[],
 ): ChangeError => ({
   message: `Read/write access to this Custom Object will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
-  detailedMessage: `Deploying this new Custom Object will make it and it's Custom Fields accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
+  detailedMessage: `Deploying this new Custom Object will make it and its Custom Fields accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
   severity: 'Info',
   elemID: field.elemID,
 })
@@ -57,11 +62,17 @@ const changeValidator =
   async (changes) => {
     const flsProfiles = getFLSProfiles(config)
 
+    // CustomObjects and CustomMetadata types
     const addedCustomObjects = changes
       .filter(isAdditionChange)
       .map(getChangeData)
       .filter(isObjectType)
-      .filter((objectType) => isCustom(apiNameSync(objectType)))
+      // Additions of Standard Objects are invalid and should be handled as part of the standardFieldOrObjectAdditionsOrDeletions Change Validator
+      .filter(
+        (objectType) =>
+          isCustomMetadataRecordTypeSync(objectType) ||
+          (isCustomObjectSync(objectType) && !isStandardObjectSync(objectType)),
+      )
     const addedCustomObjectsApiNames = new Set(
       addedCustomObjects.map((customObject) => apiNameSync(customObject)),
     )

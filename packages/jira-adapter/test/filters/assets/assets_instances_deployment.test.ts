@@ -21,7 +21,7 @@ import assetsStatusAdditionFilter from '../../../src/filters/assets/assets_insta
 import { createEmptyType, getFilterParams } from '../../utils'
 import { OBJECT_SCHEMA_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE } from '../../../src/constants'
 
-describe('assetsInstnacesDeployment', () => {
+describe('assetsInstancesDeployment', () => {
   type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
   let filter: FilterType
   let assetsStatusInstance: InstanceElement

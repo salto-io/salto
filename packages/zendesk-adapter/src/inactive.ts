@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { definitions } from '@salto-io/adapter-components'
-import { ValueGeneratedItem } from '@salto-io/adapter-components/src/fetch'
+import { definitions, fetch } from '@salto-io/adapter-components'
 import { ZendeskConfig, FETCH_CONFIG, OMIT_INACTIVE_DEFAULT } from './config'
 import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
 
@@ -53,7 +52,7 @@ export const filterOutInactiveInstancesForType = (
  * Same as above, but for the new infra. The above function is removable after the migration to the new
  * infra is complete (SALTO-5760)
  */
-export const filterOutInactiveItemForType = (config: ZendeskConfig): ((item: ValueGeneratedItem) => boolean) => {
+export const filterOutInactiveItemForType = (config: ZendeskConfig): ((item: fetch.ValueGeneratedItem) => boolean) => {
   const omitInactiveConfig = config[FETCH_CONFIG]?.omitInactive
   const omitInactiveQuery = omitInactiveConfig ? definitions.queryWithDefault(omitInactiveConfig) : undefined
   return item => {

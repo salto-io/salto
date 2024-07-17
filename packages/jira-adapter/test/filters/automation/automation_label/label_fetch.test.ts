@@ -18,7 +18,6 @@ import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { HTTPError } from '@salto-io/adapter-components/src/client'
 import { getFilterParams, mockClient } from '../../../utils'
 import automationLabelFetchFilter from '../../../../src/filters/automation/automation_label/label_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
@@ -299,7 +298,7 @@ describe('automationLabelFetchFilter', () => {
 
     conn.get.mockImplementation(async url => {
       if (url === '/rest/cb-automation/latest/rule-label') {
-        throw new HTTPError('failed', { data: {}, status: 403 })
+        throw new clientUtils.HTTPError('failed', { data: {}, status: 403 })
       }
 
       throw new Error(`Unexpected url ${url}`)
@@ -328,7 +327,7 @@ describe('automationLabelFetchFilter', () => {
 
     conn.get.mockImplementation(async url => {
       if (url === '/rest/cb-automation/latest/rule-label') {
-        throw new HTTPError('failed', { data: {}, status: 405 })
+        throw new clientUtils.HTTPError('failed', { data: {}, status: 405 })
       }
 
       throw new Error(`Unexpected url ${url}`)

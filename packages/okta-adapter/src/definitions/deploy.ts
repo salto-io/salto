@@ -19,6 +19,7 @@ import { values } from '@salto-io/lowerdash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import {
   getChangeData,
+  isAdditionChange
   isModificationChange,
   isRemovalChange,
   Values,
@@ -82,14 +83,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     ClientOptions
   >({
     [GROUP_TYPE_NAME]: { bulkPath: '/api/v1/groups' },
-    [BRAND_TYPE_NAME]: { bulkPath: '/api/v1/brands' },
     [DOMAIN_TYPE_NAME]: { bulkPath: '/api/v1/domains' },
     [SMS_TEMPLATE_TYPE_NAME]: { bulkPath: '/api/v1/templates/sms' },
     [DEVICE_ASSURANCE_TYPE_NAME]: { bulkPath: '/api/v1/device-assurances' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
-    [APPLICATION_TYPE_NAME]: {
+    
+[APPLICATION_TYPE_NAME]: {
       requestsByAction: {
         default: {
           request: {
@@ -229,6 +230,40 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           second: 'deactivate',
         },
       ],
+    },
+[BRAND_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands', method: 'post' },
+                // Brand addition only requires the name field. Other fields
+                // are set by a subsequent modify action.
+                transformation: {
+                  pick: ['name'],
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{id}', method: 'put' },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      actionDependencies: [{ first: 'add', second: 'modify' }],
     },
     [USERTYPE_TYPE_NAME]: {
       requestsByAction: {

@@ -19,6 +19,7 @@ import { bundleType } from '../../src/types/bundle_type'
 import bundleChangesValidation from '../../src/change_validators/bundle_changes'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { NETSUITE, PATH } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('bundle changes', () => {
   const bundleInstanceBefore = new InstanceElement('39609', bundleType().type, { id: '39609', name: 'testName' })
@@ -42,9 +43,10 @@ describe('bundle changes', () => {
 
   it('should have changeError when trying to deploy a bundle instance change', async () => {
     bundleInstanceAfter.value.name = 'newName'
-    const changeError = await bundleChangesValidation([
-      toChange({ after: bundleInstanceAfter, before: bundleInstanceBefore }),
-    ])
+    const changeError = await bundleChangesValidation(
+      [toChange({ after: bundleInstanceAfter, before: bundleInstanceBefore })],
+      mockChangeValidatorParams(),
+    )
     expect(changeError).toHaveLength(1)
     expect(changeError[0]).toEqual({
       message: 'Cannot add, modify, or remove bundles',
@@ -57,7 +59,10 @@ describe('bundle changes', () => {
 
   it('should have changeError when trying to deploy a new element with bundle field', async () => {
     fileInstanceAfter.value.availablewithoutlogin = true
-    const changeError = await bundleChangesValidation([toChange({ after: fileInstanceAfter })])
+    const changeError = await bundleChangesValidation(
+      [toChange({ after: fileInstanceAfter })],
+      mockChangeValidatorParams(),
+    )
     expect(changeError).toHaveLength(1)
     expect(changeError[0]).toEqual({
       message: "Can't add new elements to bundle",
@@ -71,9 +76,10 @@ describe('bundle changes', () => {
   it('should not have changeError', async () => {
     const recordInstanceAfter = recordInstance.clone()
     recordInstanceAfter.value.field = 'after'
-    const changeErrors = await bundleChangesValidation([
-      toChange({ after: recordInstanceAfter, before: recordInstance }),
-    ])
+    const changeErrors = await bundleChangesValidation(
+      [toChange({ after: recordInstanceAfter, before: recordInstance })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 })

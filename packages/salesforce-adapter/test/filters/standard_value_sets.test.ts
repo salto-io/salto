@@ -106,7 +106,6 @@ const createPicklistObjectType = (
     },
   })
 
-/* eslint-disable jest/no-focused-tests */
 describe('Standard Value Sets filter', () => {
   type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   const { client } = mockClient()

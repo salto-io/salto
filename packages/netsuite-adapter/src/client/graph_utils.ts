@@ -18,6 +18,7 @@ import _ from 'lodash'
 import wu from 'wu'
 
 export class GraphNode<T> {
+  // eslint-disable-next-line no-use-before-define
   edges: Map<string, GraphNode<T>>
   value: T
   id: string

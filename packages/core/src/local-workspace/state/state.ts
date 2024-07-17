@@ -224,7 +224,7 @@ export const localState = (
       }
       yield* yieldWithEOL([
         accountToElementStreams[account],
-        awu([safeJsonStringify({ [account]: accountToDates[account] } || {})]),
+        awu([safeJsonStringify({ [account]: accountToDates[account] })]),
         accountToPathIndex[account] || '[]',
         awu([safeJsonStringify(version)]),
       ])

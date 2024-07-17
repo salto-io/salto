@@ -36,11 +36,9 @@ const log = logger(module)
 const errorMsg = (reason: string): string => `Failed to run customStatusesEnabledValidator because ${reason}`
 
 type ChildField = {
-  // eslint-disable-next-line camelcase
   required_on_statuses?: {
     type: string
     statuses?: string[]
-    // eslint-disable-next-line camelcase
     custom_statuses?: unknown[]
   }
 }
@@ -54,7 +52,6 @@ const CHILD_FIELD_SCHEMA = Joi.object({
 }).unknown()
 
 type Condition = {
-  // eslint-disable-next-line camelcase
   child_fields: ChildField[]
 }
 
@@ -63,7 +60,6 @@ const CONDITION_SCHEMA = Joi.object({
 }).unknown()
 
 type TicketFormValue = {
-  // eslint-disable-next-line camelcase
   agent_conditions?: Condition[]
 }
 

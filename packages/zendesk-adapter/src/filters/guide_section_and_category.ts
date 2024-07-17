@@ -48,7 +48,6 @@ export type TranslationType = {
 
 type ParentType = InstanceElement & {
   value: {
-    // eslint-disable-next-line camelcase
     source_locale: string
     name?: string
     description?: string

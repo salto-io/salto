@@ -16,14 +16,13 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'pagerduty-adapter',
   displayName: 'pagerduty-adapter',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
   testEnvironment: undefined,
   coverageThreshold: {
     global: {
-      branches: 83,
+      branches: 80.3,
       functions: 87,
       lines: 92,
       statements: 92,

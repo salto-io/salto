@@ -58,28 +58,28 @@ describe('permissionSchemeFilter', () => {
     })
   })
   describe('preDeploy and onDeploy', () => {
-    it('should not remove or add any permission scheme', () => {
+    it('should not remove or add any permission scheme', async () => {
       const changes = [toChange({ after: instance })]
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
-      filter.preDeploy?.(changes)
+      await filter.preDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
-      filter.onDeploy?.(changes)
+      await filter.onDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
     })
 
-    it('should remove the problematic permission scheme in the preDeploy and add it back in the onDeploy', () => {
+    it('should remove the problematic permission scheme in the preDeploy and add it back in the onDeploy', async () => {
       instance.value.permissions.push(UNSUPPORTED_PERMISSION_SCHEME)
       const changes = [toChange({ after: instance })]
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(2)
-      filter.preDeploy?.(changes)
+      await filter.preDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
-      filter.onDeploy?.(changes)
+      await filter.onDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(2)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)

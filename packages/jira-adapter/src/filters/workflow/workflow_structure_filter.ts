@@ -126,7 +126,6 @@ const transformCondition = (condition: Condition): void => {
     removeNameValues(condition.configuration)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   condition.conditions?.forEach(transformCondition)
 }
 

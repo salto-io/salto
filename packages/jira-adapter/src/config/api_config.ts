@@ -37,7 +37,7 @@ export type JspUrls = {
   dataField?: string
 }
 
-export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
+export type JiraApiConfig = Omit<configUtils.AdapterApiConfig, 'types'> & {
   types: Record<
     string,
     configUtils.TypeConfig & {
@@ -333,6 +333,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
+      serviceIdField: 'id',
+      idFields: ['parentName', 'value'],
+    },
+  },
+  AssetsObjectFieldConfiguration: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'objectSchemaName' }, { fieldName: 'attributesLimit' }, { fieldName: 'workspaceId' }],
     },
   },
 
@@ -353,6 +360,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           fieldId: '_parent.0.id',
         },
+        fieldsToIgnore: ['assetsObjectFieldConfiguration'],
       },
       modify: {
         url: '/rest/api/3/field/{fieldId}/context/{contextId}',
@@ -361,6 +369,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           contextId: 'id',
           fieldId: '_parent.0.id',
         },
+        fieldsToIgnore: ['assetsObjectFieldConfiguration'],
       },
       remove: {
         url: '/rest/api/3/field/{fieldId}/context/{contextId}',

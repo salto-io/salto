@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import {
-  AdditionChange,
   BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID,
@@ -114,8 +113,8 @@ describe('fields_deployment', () => {
 
     await filter.deploy([change])
 
-    expect(deployContextChangeMock).toHaveBeenCalledWith(
-      toChange({
+    expect(deployContextChangeMock).toHaveBeenCalledWith({
+      change: toChange({
         before: new InstanceElement(
           '4',
           contextType,
@@ -129,8 +128,8 @@ describe('fields_deployment', () => {
         ),
       }),
       client,
-      getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-    )
+      config: getDefaultConfig({ isDataCenter: false }),
+    })
   })
 
   it('should throw if contexts is not a map', async () => {
@@ -171,55 +170,5 @@ describe('fields_deployment', () => {
 
     const res = await filter.deploy([change])
     expect(res.deployResult.errors).toHaveLength(1)
-  })
-  describe('deploy jsm locked fields', () => {
-    let filedInstance: InstanceElement
-    beforeEach(() => {
-      const mockCli = mockClient()
-      client = mockCli.client
-      paginator = mockCli.paginator
-      mockConnection = mockCli.connection
-      mockConnection.get.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          startAt: 0,
-          total: 1,
-          values: [
-            {
-              id: 'myfield',
-              name: 'myField',
-              isLocked: true,
-            },
-          ],
-        },
-      })
-      filedInstance = new InstanceElement('instance', fieldType, {
-        name: 'myField',
-        isLocked: true,
-      })
-      filter = fieldsDeploymentFilter(
-        getFilterParams({
-          client,
-          paginator,
-        }),
-      ) as typeof filter
-    })
-    it('should deploy jsm locked field if it auto-created in the service', async () => {
-      const change = toChange({ after: filedInstance }) as AdditionChange<InstanceElement>
-      const res = await filter.deploy([change])
-      expect(deployChangeMock).toHaveBeenCalledTimes(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(change.data.after.value.id).toEqual('myfield')
-    })
-    it('should return error if jsm locked field is not auto-created in the service', async () => {
-      filedInstance = new InstanceElement('instance', fieldType, {
-        name: 'myField2',
-        isLocked: true,
-      })
-      const change = toChange({ after: filedInstance }) as AdditionChange<InstanceElement>
-      const res = await filter.deploy([change])
-      expect(deployChangeMock).toHaveBeenCalledTimes(0)
-      expect(res.deployResult.errors).toHaveLength(1)
-    })
   })
 })

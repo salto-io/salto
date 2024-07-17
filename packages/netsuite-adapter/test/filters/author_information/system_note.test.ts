@@ -290,7 +290,7 @@ describe('netsuite system note author information', () => {
         { recordid: '1', recordtypeid: '-123', name: '2' },
         { recordid: '2', recordtypeid: '-112', name: '3' },
       ])
-      filterCreator(filterOpts).onFetch?.(elements)
+      await filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
@@ -305,7 +305,7 @@ describe('netsuite system note author information', () => {
         { id: '3', entityid: 'user 3 name' },
       ])
       runSuiteQLMock.mockResolvedValueOnce(undefined)
-      filterCreator(filterOpts).onFetch?.(elements)
+      await filterCreator(filterOpts).onFetch?.(elements)
     })
     it('bad system note schema', async () => {
       runSuiteQLMock.mockReset()
@@ -320,7 +320,7 @@ describe('netsuite system note author information', () => {
         { recordid: '2', recordtypeid: '-112', name: '3' },
         { recordid: '1', test: 'wow', name: '1' },
       ])
-      filterCreator(filterOpts).onFetch?.(elements)
+      await filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()

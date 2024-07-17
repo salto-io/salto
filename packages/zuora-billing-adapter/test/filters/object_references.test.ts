@@ -28,8 +28,6 @@ import {
 } from '../../src/constants'
 import filterCreator from '../../src/filters/object_references'
 
-/* eslint-disable camelcase */
-
 describe('object references filter', () => {
   let client: ZuoraClient
   type FilterType = filterUtils.FilterWith<'onFetch'>

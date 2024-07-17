@@ -62,6 +62,7 @@ import {
   getFLSProfiles,
   toCustomField,
   toCustomProperties,
+  isCustomMetadataRecordTypeSync,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -295,6 +296,16 @@ describe('filter utils', () => {
     })
     it('should return false for non customMetadataRecordType', async () => {
       expect(await isCustomMetadataRecordType(mockTypes.Profile)).toBeFalse()
+    })
+  })
+  describe('isCustomMetadataRecordTypeSync', () => {
+    it('should return true for customMetadataRecordType', () => {
+      expect(
+        isCustomMetadataRecordTypeSync(mockTypes.CustomMetadataRecordType),
+      ).toBeTrue()
+    })
+    it('should return false for non customMetadataRecordType', () => {
+      expect(isCustomMetadataRecordTypeSync(mockTypes.Profile)).toBeFalse()
     })
   })
   describe('isCustomMetadataRecordInstance', () => {

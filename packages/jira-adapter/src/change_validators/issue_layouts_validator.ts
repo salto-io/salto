@@ -141,7 +141,7 @@ export const issueLayoutsValidator: (client: JiraClient, config: JiraConfig) => 
               !isReferenceExpression(issueLayoutInstance.value.extraDefinerId) ||
               !issueLayoutsScreens.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName()),
           )
-          .map(async issueLayoutInstance => {
+          .forEach(issueLayoutInstance => {
             errors.push({
               elemID: issueLayoutInstance.elemID,
               severity: 'Error',

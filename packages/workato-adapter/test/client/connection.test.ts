@@ -36,8 +36,7 @@ describe('client connection', () => {
       mockGet.mockImplementationOnce(url =>
         Promise.resolve(
           url === '/users/me'
-            ? // eslint-disable-next-line camelcase
-              { data: { id: 'id123', company_name: 'company123' }, status: 200, statusText: 'OK' }
+            ? { data: { id: 'id123', company_name: 'company123' }, status: 200, statusText: 'OK' }
             : { data: {}, status: 200, statusText: 'OK' },
         ),
       )

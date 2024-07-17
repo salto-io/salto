@@ -14,24 +14,14 @@
  * limitations under the License.
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 import extraReferenceDependenciesValidator from '../../src/change_validators/extra_reference_dependencies'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
-import { fullFetchConfig } from '../../src/config/config_creator'
-import NetsuiteClient from '../../src/client/client'
-import mockSdfClient from '../client/sdf_client'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('extra reference changes', () => {
-  const baseParams = {
-    deployReferencedElements: false,
-    elementsSource: buildElementsSourceFromElements([]),
-    config: {
-      fetch: fullFetchConfig(),
-    },
-    client: new NetsuiteClient(mockSdfClient()),
-  }
+  const baseParams = mockChangeValidatorParams()
   const customsegment = customsegmentType().type
   const entitycustomfield = entitycustomfieldType().type
 

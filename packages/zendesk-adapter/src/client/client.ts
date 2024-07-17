@@ -43,13 +43,11 @@ export type HolidayRes = {
 }
 export type SupportAddressRes = {
   data: {
-    // eslint-disable-next-line camelcase
     recipient_addresses: Values[]
   }
 }
 export type AttachmentRes = {
   data: {
-    // eslint-disable-next-line camelcase
     article_attachments: Values[]
   }
 }

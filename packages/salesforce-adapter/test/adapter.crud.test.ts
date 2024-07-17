@@ -519,7 +519,7 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: 'cd0ece4ba3bf6418bcea8c036352b2f1',
+                        hash: 'cf4d1bc8bdab0f300fdb63389813a496',
                       },
                     },
                   },
@@ -589,7 +589,7 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: 'cd0ece4ba3bf6418bcea8c036352b2f1',
+                        hash: 'cf4d1bc8bdab0f300fdb63389813a496',
                       },
                     },
                   },
@@ -1197,12 +1197,66 @@ describe('SalesforceAdapter CRUD', () => {
           })
         })
         it('Should return the problem from successful components', () => {
-          expect(result.errors).toSatisfyAny(
-            (error) =>
-              error.elemID.isEqual(successElement.elemID) &&
-              error.severity === 'Info' &&
-              error.message === 'Something happened',
+          expect(result.errors).toIncludeAllMembers([
+            {
+              elemID: successElement.elemID,
+              severity: 'Info',
+              message: 'Something happened',
+            },
+          ])
+        })
+      })
+    })
+
+    describe('when all components succeed', () => {
+      let element: InstanceElement
+      let deployChangeGroup: ChangeGroup
+      beforeEach(() => {
+        element = createInstanceElement(
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'SuccessElement',
+          },
+          mockTypes.ApexClass,
+        )
+
+        deployChangeGroup = {
+          groupID: 'ChangeGroup',
+          changes: [toChange({ after: element })],
+        }
+      })
+      describe('when the element has a warning', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          const deployResultParams = {
+            success: false,
+            componentSuccess: [
+              {
+                fullName: apiNameSync(element),
+                componentType: metadataTypeSync(element),
+                problem: 'Something happened',
+                problemType: 'Warning',
+              },
+            ],
+          }
+          connection.metadata.deploy.mockReturnValue(
+            mockDeployResult({
+              ...deployResultParams,
+              rollbackOnError: true,
+            }),
           )
+          result = await adapter.deploy({
+            changeGroup: deployChangeGroup,
+            progressReporter: nullProgressReporter,
+          })
+        })
+        it('Should return the problem from successful component', () => {
+          expect(result.errors).toEqual([
+            {
+              elemID: element.elemID,
+              severity: 'Warning',
+              message: 'Something happened',
+            },
+          ])
         })
       })
     })

@@ -16,7 +16,6 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'persistent-pool',
   displayName: 'persistent-pool',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/src/index.ts'],

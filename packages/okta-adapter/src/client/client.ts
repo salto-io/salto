@@ -251,7 +251,6 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
   /**
    * Extract the pagination header
    */
-  // eslint-disable-next-line class-methods-use-this
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     return headers !== undefined
       ? {
@@ -261,11 +260,11 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       : undefined
   }
 
+  // eslint-disable-next-line class-methods-use-this
   @throttle<definitions.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
   @logDecorator(['url'])
   // We use this function without client instance because we don't need it
   // but we want to take advantage of the client's capabilities.
-  // eslint-disable-next-line class-methods-use-this
   public async getResource(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
@@ -279,6 +278,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
         url,
         safeJsonStringify({
           url,
+          method: 'GET',
           status,
           responseType,
           response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,

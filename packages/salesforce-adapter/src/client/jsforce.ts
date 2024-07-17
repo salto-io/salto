@@ -39,6 +39,7 @@ import {
   Record as SfRecord,
 } from '@salto-io/jsforce'
 import { Value } from '@salto-io/adapter-api'
+import { Stream } from 'stream'
 
 // This class is the interfaces we use from jsforce library
 // It's here so we will be able to mock jsforce efficiently
@@ -81,7 +82,7 @@ export interface Metadata {
     callback?: Callback<RetrieveResult>,
   ): RetrieveResultLocator<RetrieveResult>
   deploy(
-    zipInput: Buffer | string | NodeJS.ReadableStream,
+    zipInput: Buffer | string | Stream,
     options: DeployOptions,
   ): DeployResultLocator<DeployResult>
   deployRecentValidation(

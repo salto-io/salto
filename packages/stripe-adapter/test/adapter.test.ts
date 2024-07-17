@@ -56,7 +56,7 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-const mockedAdapterComponents = jest.mocked(adapterComponents, true)
+const mockedAdapterComponents = jest.mocked(adapterComponents)
 
 describe('stripe swagger adapter', () => {
   type MockReply = {
@@ -289,7 +289,6 @@ describe('stripe swagger adapter', () => {
         elementsSource: buildElementsSourceFromElements([]),
       })
       const nullProgressReporter: ProgressReporter = {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         reportProgress: () => {},
       }
       const deployOptions = {

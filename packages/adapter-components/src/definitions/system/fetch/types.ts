@@ -15,7 +15,6 @@
  */
 import { ElemIdGetter, ObjectType, Values } from '@salto-io/adapter-api'
 import { DefQuery } from '../utils'
-// eslint-disable-next-line import/no-cycle
 import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from './fetch'
 import { NameMappingFunctionMap } from '../shared'
 import { ResolveCustomNameMappingOptionsType } from '../api'

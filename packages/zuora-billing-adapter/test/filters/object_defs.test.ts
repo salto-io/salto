@@ -402,7 +402,6 @@ describe('Object defs filter', () => {
       const fieldRef = custom1.fields.AccountId__c.annotations.referenceTo[0] as ReferenceExpression
       expect(fieldRef.elemID.getFullName()).toEqual('zuora_billing.account.field.Id')
       expect(custom1.annotations).toEqual({
-        // eslint-disable-next-line camelcase
         _generated_dependencies: [expect.anything(), expect.anything()],
         description: 'this is a decription',
         id: 'some id',

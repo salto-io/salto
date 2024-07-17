@@ -261,13 +261,13 @@ describe('client_http_connection', () => {
 
     describe('onRetry', () => {
       describe('last retry', () => {
-        it('should set the config timeout to be 0 if lastRetryNoTimeout is true', () => {
+        it('should set the config timeout to be 0 if lastRetryNoTimeout is true', async () => {
           const requestConfig = { timeout: 4 }
-          retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
+          await retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
           expect(requestConfig.timeout).toBe(0)
         })
 
-        it('should not update the config if lastRetryNoTimeout is false', () => {
+        it('should not update the config if lastRetryNoTimeout is false', async () => {
           retryOptions = createRetryOptions(
             {
               maxAttempts: 3,
@@ -280,14 +280,14 @@ describe('client_http_connection', () => {
             },
           )
           const requestConfig = { timeout: 4 }
-          retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
+          await retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
           expect(requestConfig.timeout).toBe(4)
         })
       })
 
-      it('should not update the config if not last retry', () => {
+      it('should not update the config if not last retry', async () => {
         const requestConfig = { timeout: 4 }
-        retryOptions.onRetry?.(1, mockAxiosError({}), requestConfig)
+        await retryOptions.onRetry?.(1, mockAxiosError({}), requestConfig)
         expect(requestConfig.timeout).toBe(4)
       })
     })

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import _ from 'lodash'
 import { ElementFieldCustomization, FieldIDPart } from './types'
 
-const DEFAULT_FIELDS_TO_HIDE: Record<string, { hide: true }> = {
+export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomization> = {
+  // hide
   created_at: {
     hide: true,
   },
@@ -30,9 +30,8 @@ const DEFAULT_FIELDS_TO_HIDE: Record<string, { hide: true }> = {
   updated_by_id: {
     hide: true,
   },
-}
 
-const DEFAULT_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
+  // omit
   _links: {
     omit: true,
   },
@@ -89,12 +88,6 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
     omit: true,
   },
 }
-
-export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_HIDE,
-  DEFAULT_FIELDS_TO_OMIT,
-)
 
 export const ID_FIELD_TO_HIDE = { id: { hide: true } }
 

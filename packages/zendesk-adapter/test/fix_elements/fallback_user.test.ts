@@ -244,11 +244,11 @@ describe('fallbackUsersHandler', () => {
 
     it('should replace all users as fallback', () => {
       const fallbackMacro = macroInstance.clone()
-      fallbackMacro.value.actions[1].value = 'deployer@.com'
-      fallbackMacro.value.actions[2].value = 'deployer@.com'
-      fallbackMacro.value.restriction.id = 'deployer@.com'
+      fallbackMacro.value.actions[1].value = 1
+      fallbackMacro.value.actions[2].value = 1
+      fallbackMacro.value.restriction.id = 1
       const fallbackArticle = articleInstance.clone()
-      fallbackArticle.value.author_id = 'deployer@.com'
+      fallbackArticle.value.author_id = 1
 
       expect(fallbackResponse.fixedElements).toEqual([fallbackMacro, fallbackArticle])
     })

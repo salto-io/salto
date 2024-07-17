@@ -31,7 +31,6 @@ const JOB_ERROR_SCHEMA = Joi.object({
 })
 
 export type UploadJobData = {
-  // eslint-disable-next-line camelcase
   theme_id: string
   upload: {
     url: string

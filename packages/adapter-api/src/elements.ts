@@ -20,9 +20,7 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX, GLOBAL_ADAPTER } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
-// eslint-disable-next-line import/no-cycle
 import { Values, Value, TypeReference, isTypeReference, cloneDeepWithoutRefs, CompareOptions } from './values'
-// eslint-disable-next-line import/no-cycle
 import { isEqualValues } from './comparison'
 
 const { awu } = collections.asynciterable
@@ -97,8 +95,6 @@ export abstract class Element {
 
   async getAnnotationTypes(elementsSource?: ReadOnlyElementsSource): Promise<TypeMap> {
     const annotationTypes = mapValuesAsync(this.annotationRefTypes, refType => refType.getResolvedValue(elementsSource))
-
-    // eslint-disable-next-line no-use-before-define
     const nonTypeValues = Object.values(annotationTypes).filter(type => !isType(type))
     if (nonTypeValues.length) {
       throw new Error(
@@ -166,10 +162,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
 
   isEqual(other: ListType, options?: CompareOptions): boolean {
     return (
-      super.isEqual(other, options) &&
-      // eslint-disable-next-line no-use-before-define
-      this.refInnerType.elemID.isEqual(other.refInnerType.elemID) &&
-      isListType(other)
+      super.isEqual(other, options) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isListType(other)
     )
   }
 
@@ -189,7 +182,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
       const innerType = this.refInnerType.type
-      // eslint-disable-next-line no-use-before-define
+
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
         this.annotationRefTypes = innerType.annotationRefTypes
@@ -226,10 +219,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
 
   isEqual(other: MapType, options?: CompareOptions): boolean {
     return (
-      super.isEqual(other, options) &&
-      // eslint-disable-next-line no-use-before-define
-      this.refInnerType.elemID.isEqual(other.refInnerType.elemID) &&
-      isMapType(other)
+      super.isEqual(other, options) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isMapType(other)
     )
   }
 
@@ -249,7 +239,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
       const innerType = this.refInnerType.type
-      // eslint-disable-next-line no-use-before-define
+
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
         this.annotationRefTypes = innerType.annotationRefTypes

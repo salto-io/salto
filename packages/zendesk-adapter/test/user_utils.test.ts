@@ -739,20 +739,24 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: 'salto@io',
       }
-      const fallbackValue = await getUserFallbackValue(
-        deployConfig.defaultMissingUserFallback as string,
+      const fallbackValue = await getUserFallbackValue({
+        defaultMissingUserFallback: deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client,
-      )
+      })
       expect(fallbackValue).toEqual('salto@io')
     })
     it('should not return specific user value if it is missing from target env', async () => {
       deployConfig = {
         defaultMissingUserFallback: 'useruser@zendesk.com',
       }
-      expect(await getUserFallbackValue(deployConfig.defaultMissingUserFallback as string, existingUsers, client)).toBe(
-        undefined,
-      )
+      expect(
+        await getUserFallbackValue({
+          defaultMissingUserFallback: deployConfig.defaultMissingUserFallback as string,
+          existingUsers,
+          client,
+        }),
+      ).toBe(undefined)
     })
     it('should return deployer user email', async () => {
       mockGet.mockResolvedValueOnce({
@@ -764,11 +768,11 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      const fallbackValue = await getUserFallbackValue(
-        deployConfig.defaultMissingUserFallback as string,
+      const fallbackValue = await getUserFallbackValue({
+        defaultMissingUserFallback: deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client,
-      )
+      })
       expect(fallbackValue).toEqual('saltoo@io')
     })
     it('should fail and log an error in case of fallback to deployer and invalid user response', async () => {
@@ -779,9 +783,13 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      expect(await getUserFallbackValue(deployConfig.defaultMissingUserFallback as string, existingUsers, client)).toBe(
-        undefined,
-      )
+      expect(
+        await getUserFallbackValue({
+          defaultMissingUserFallback: deployConfig.defaultMissingUserFallback as string,
+          existingUsers,
+          client,
+        }),
+      ).toBe(undefined)
       expect(logError).toHaveBeenCalledWith(["Received invalid response from endpoint '/api/v2/users/me'"])
     })
     it('should fail and log an error in case of an error in current user request', async () => {
@@ -789,9 +797,13 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      expect(await getUserFallbackValue(deployConfig.defaultMissingUserFallback as string, existingUsers, client)).toBe(
-        undefined,
-      )
+      expect(
+        await getUserFallbackValue({
+          defaultMissingUserFallback: deployConfig.defaultMissingUserFallback as string,
+          existingUsers,
+          client,
+        }),
+      ).toBe(undefined)
       expect(logError).toHaveBeenCalledWith([
         'Attempt to get current user details has failed with error: %o',
         { data: {}, status: 400 },

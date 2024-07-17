@@ -53,10 +53,12 @@ import {
 import { LocalFilterCreator } from '../../filter'
 import {
   apiNameSync,
+  buildElementsSourceForFetch,
   isInstanceOfCustomObjectChangeSync,
   isInstanceOfCustomObjectSync,
 } from '../utils'
 
+const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 const log = logger(module)
 
@@ -124,6 +126,7 @@ const defs: RuleAndConditionDef[] = [
 ]
 
 const ruleTypeNames = defs.map((def) => def.rule.typeApiName)
+const conditionTypeNames = defs.map((def) => def.condition.typeApiName)
 
 const resolveConditionIndexFunc =
   (indexField: string) =>
@@ -178,15 +181,14 @@ const setCustomConditionReferences = ({
   if (!_.isString(customCondition)) {
     return 0
   }
-  log.debug('%s', conditionsByIndex)
-  const rawParts = customCondition.match(/(\d+|[^\d]+)/g)?.filter(Boolean)
-  if (rawParts === undefined || !rawParts.some(Number)) {
+  const rawParts = customCondition.match(/(\d+|[^\d]+)/g)
+  if (rawParts == null || rawParts.every((part) => _.isNaN(Number(part)))) {
     return 0
   }
   rule.value[def.rule.customConditionField] = createTemplateExpression({
     parts: rawParts.map((part) => {
       const index = Number(part)
-      if (index === undefined) {
+      if (index == null) {
         return part
       }
       const condition = conditionsByIndex[index]
@@ -205,13 +207,15 @@ const setCustomConditionReferences = ({
 
 const createReferencesFromDef = ({
   def,
-  instancesByType,
+  ruleInstancesByType,
+  conditionInstancesByType,
 }: {
   def: RuleAndConditionDef
-  instancesByType: Record<string, InstanceElement[]>
+  ruleInstancesByType: Record<string, InstanceElement[]>
+  conditionInstancesByType: Record<string, InstanceElement[]>
 }): number => {
-  const rules = instancesByType[def.rule.typeApiName]
-  if (rules === undefined) {
+  const rules = makeArray(ruleInstancesByType[def.rule.typeApiName])
+  if (rules.length === 0) {
     return 0
   }
   return _.sum(
@@ -221,7 +225,7 @@ const createReferencesFromDef = ({
         def.condition.ruleField,
       )
       const ruleConditions = makeArray(
-        instancesByType[def.condition.typeApiName],
+        conditionInstancesByType[def.condition.typeApiName],
       ).filter(isConditionOfCurrentRule)
       const conditionsByIndex = ruleConditions.reduce<
         Record<number, InstanceElement>
@@ -252,15 +256,34 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         log.debug('feature is disabled. Skipping filter')
         return
       }
-      const dataInstancesByType = _.groupBy(
-        elements.filter(isInstanceOfCustomObjectSync),
-        (instance) => apiNameSync(instance.getTypeSync()),
+      const ruleInstancesByType = _.pick(
+        _.groupBy(
+          elements.filter(isInstanceOfCustomObjectSync),
+          (instance) => apiNameSync(instance.getTypeSync()) ?? '',
+        ),
+        ruleTypeNames,
+      )
+      if (Object.keys(ruleInstancesByType).length === 0) {
+        log.debug('No rule instances were fetched. Skipping filter')
+        return
+      }
+      const conditionInstancesByType = _.pick(
+        _.groupBy(
+          (
+            await toArrayAsync(
+              await buildElementsSourceForFetch(elements, config).getAll(),
+            )
+          ).filter(isInstanceOfCustomObjectSync),
+          (instance) => apiNameSync(instance.getTypeSync()) ?? '',
+        ),
+        conditionTypeNames,
       )
       const referencesCreated = _.sum(
         defs.map((def) =>
           createReferencesFromDef({
             def,
-            instancesByType: dataInstancesByType,
+            ruleInstancesByType,
+            conditionInstancesByType,
           }),
         ),
       )

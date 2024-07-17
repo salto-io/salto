@@ -170,6 +170,7 @@ import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
 import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
+import ZendeskGuideClient from './client/guide_client'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -453,6 +454,7 @@ const getGuideElements = async ({
     getElemIdFunc,
     definitions: brandFetchDefinitions,
   })
+  guideFetchResult.elements = guideFetchResult.elements.filter(e => e.elemID.typeName !== 'brand')
   return {
     ...guideFetchResult,
   }
@@ -471,6 +473,7 @@ export interface ZendeskAdapterParams {
 
 export default class ZendeskAdapter implements AdapterOperations {
   private client: ZendeskClient
+  private guideClient: ZendeskGuideClient | undefined
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
@@ -510,6 +513,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.client = client
     this.elementsSource = elementsSource
     this.brandsList = undefined
+    this.guideClient = undefined
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -528,12 +532,16 @@ export default class ZendeskAdapter implements AdapterOperations {
       })
     }
 
+    const typesToOmit = this.getNonSupportedTypesToOmit()
+
     this.adapterDefinitions = {
       clients: createClientDefinitions({ main: this.client }),
       pagination: PAGINATION,
       fetch: definitions.mergeWithUserElemIDDefinitions({
-        userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
-        fetchConfig: createFetchDefinitions(this.userConfig, { typesToOmit: this.getNonSupportedTypesToOmit() }),
+        userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
+        fetchConfig: createFetchDefinitions(this.userConfig, {
+          typesToOmit,
+        }),
       }),
     }
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
@@ -679,23 +687,32 @@ export default class ZendeskAdapter implements AdapterOperations {
       )
       const brandClients = Object.fromEntries(
         brandsList.map(brandInstance => [
-          brandInstance.elemID.name,
+          brandInstance.value.id,
           this.createClientBySubdomain(brandInstance.value.subdomain),
         ]),
       )
-      const client = createClientDefinitions({ main: this.client, ...brandClients })
+      const typesToPick = GUIDE_TYPES_TO_HANDLE_BY_BRAND.concat([
+        'guide_settings__help_center',
+        'guide_settings__help_center__settings',
+        'guide_settings__help_center__text_filter',
+        'brand',
+      ])
+      // .filter(t => !['article', 'article_attachment', 'article_translation'].includes(t))
+      this.guideClient = new ZendeskGuideClient(brandClients)
+      const client = createClientDefinitions({ main: this.client, guide: this.guideClient })
       const guideFetchDef = definitions.mergeWithUserElemIDDefinitions({
-        userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
+        userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
         fetchConfig: createFetchDefinitions(
           this.userConfig,
           // I think we should add omit here, what am i missing
           {
-            typesToPick: GUIDE_TYPES_TO_HANDLE_BY_BRAND.concat([
-              'guide_settings__help_center',
-              'guide_settings__help_center__settings',
-              'guide_settings__help_center__text_filter',
-            ]),
-            brandList: Object.keys(brandClients),
+            typesToPick,
+            //   GUIDE_TYPES_TO_HANDLE_BY_BRAND.concat([
+            //   'guide_settings__help_center',
+            //   'guide_settings__help_center__settings',
+            //   'guide_settings__help_center__text_filter',
+            // ]),
+            // brandList: Object.keys(brandClients),
           },
         ),
       })

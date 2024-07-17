@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
+// import { Values } from '@salto-io/adapter-api'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { EVERYONE_USER_TYPE } from '../../constants'
@@ -1346,15 +1347,94 @@ const createCustomizations = (): Record<
 
   category_order: {},
 
+  // example - using a different name to avoid overlaps with existing logic
+  // guide_category: {
+  //   requests: [
+  //     {
+  //       endpoint: {
+  //         path: '/api/v2/help_center/categories',
+  //         queryArgs: {
+  //           include: 'translations',
+  //           myCustomArgForBrandId: '{brandId}',
+  //         },
+  //         // params: {
+  //         //   brand: {
+  //         //     id: '{brandId}',
+  //         //   },
+  //         // },
+  //         client: 'guide',
+  //       },
+  //       transformation: {
+  //         root: 'categories',
+  //         adjust: async ({ value, context }) => ({
+  //           value: {
+  //             ...(value as Values),
+  //             xxbrandId: context.brandId,
+  //           },
+  //         }),
+  //       },
+  //     },
+  //   ],
+  //   resource: {
+  //     directFetch: true,
+  //     context: {
+  //       dependsOn: {
+  //         brandId: {
+  //           parentTypeName: 'brand',
+  //           transformation: {
+  //             root: 'id',
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  //   element: {
+  //     topLevel: {
+  //       isTopLevel: true,
+  //     },
+  //     fieldCustomizations: {
+  //       translations: {
+  //         standalone: {
+  //           typeName: 'guide_category_translation',
+  //           addParentAnnotation: true,
+  //           referenceFromParent: true,
+  //           nestPathUnderParent: true,
+  //         },
+  //       },
+  //     },
+  //   },
+  // },
+  // guide_category_translation: {
+  //   element: {
+  //     topLevel: {
+  //       isTopLevel: true,
+  //     },
+  //   },
+  // },
+
   category: {
     requests: [
       {
-        endpoint: { path: '/api/v2/help_center/categories', queryArgs: { include: 'translations' } },
+        endpoint: {
+          path: '/api/v2/help_center/categories',
+          queryArgs: { include: 'translations', myCustomArgForBrandId: '{brandId}' },
+          client: 'guide',
+        },
         transformation: { root: 'categories', adjust: transformGuideItem },
       },
     ],
     resource: {
       directFetch: true,
+      context: {
+        dependsOn: {
+          brandId: {
+            parentTypeName: 'brand',
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
     },
     element: {
       topLevel: {
@@ -1425,12 +1505,26 @@ const createCustomizations = (): Record<
   section: {
     requests: [
       {
-        endpoint: { path: '/api/v2/help_center/sections', queryArgs: { include: 'translations' } },
+        endpoint: {
+          path: '/api/v2/help_center/sections',
+          queryArgs: { include: 'translations', myCustomArgForBrandId: '{brandId}' },
+          client: 'guide',
+        },
         transformation: { root: 'sections', adjust: transformGuideItem },
       },
     ],
     resource: {
       directFetch: true,
+      context: {
+        dependsOn: {
+          brandId: {
+            parentTypeName: 'brand',
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
     },
     element: {
       topLevel: {
@@ -1470,23 +1564,27 @@ const createCustomizations = (): Record<
         // we are doing this for better parallelization of requests on large accounts
         // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
         endpoint: {
-          path: '/api/v2/help_center/categories/{category_id}/articles',
-          queryArgs: { include: 'translations', sort_by: 'updated_at' },
+          path: '/api/v2/help_center/categories/{parent.id}/articles',
+          queryArgs: { include: 'translations', sort_by: 'updated_at', myCustomArgForBrandId: '{parent.brand}' },
+          client: 'guide',
         },
         transformation: { root: 'articles', adjust: transformGuideItem },
+        context: {
+          lookFor: 'category.brand',
+        },
       },
     ],
     resource: {
       directFetch: true,
       context: {
         dependsOn: {
-          category_id: { parentTypeName: 'category', transformation: { root: 'id' } },
+          parent: { parentTypeName: 'category', transformation: { pick: ['id', 'brand'] } },
         },
       },
       recurseInto: {
         attachments: {
           typeName: 'article_attachment',
-          context: { args: { article_id: { root: 'id' } } },
+          context: { args: { parent: { pick: ['id', 'brand'] } } },
         },
       },
     },
@@ -1535,7 +1633,9 @@ const createCustomizations = (): Record<
         // we are doing this for better parallelization of requests on large accounts
         // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
         endpoint: {
-          path: '/api/v2/help_center/articles/{article_id}/attachments',
+          path: '/api/v2/help_center/articles/{parent.id}/attachments',
+          queryArgs: { myCustomArgForBrandId: '{parent.brand}' },
+          client: 'guide',
         },
         transformation: { root: 'article_attachments', adjust: transformGuideItem },
       },
@@ -1648,13 +1748,27 @@ const createCustomizations = (): Record<
   guide_language_settings: {
     requests: [
       {
-        endpoint: { path: '/hc/api/internal/help_center_translations' },
+        endpoint: {
+          path: '/hc/api/internal/help_center_translations',
+          queryArgs: { myCustomArgForBrandId: '{brandId}' },
+          client: 'guide',
+        },
         transformation: { root: '.', adjust: transformGuideItem },
       },
     ],
     resource: {
       serviceIDFields: [],
       directFetch: true,
+      context: {
+        dependsOn: {
+          brandId: {
+            parentTypeName: 'brand',
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
     },
     element: {
       topLevel: {
@@ -1676,13 +1790,27 @@ const createCustomizations = (): Record<
   guide_settings: {
     requests: [
       {
-        endpoint: { path: '/hc/api/internal/general_settings' },
+        endpoint: {
+          path: '/hc/api/internal/general_settings',
+          queryArgs: { myCustomArgForBrandId: '{brandId}' },
+          client: 'guide',
+        },
         transformation: { root: '.', adjust: transformGuideItem },
       },
     ],
     resource: {
       serviceIDFields: [],
       directFetch: true,
+      context: {
+        dependsOn: {
+          brandId: {
+            parentTypeName: 'brand',
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
     },
     element: {
       topLevel: {

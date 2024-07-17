@@ -128,8 +128,7 @@ const fixLastListItemChange = (
     return [change]
   }
 
-  const beforeChangeId = change.elemIDs.before
-  const afterChangeId = change.elemIDs.after
+  const { before: beforeChangeId, after: afterChangeId } = change.elemIDs
 
   if (beforeChangeId === undefined) {
     return [change]

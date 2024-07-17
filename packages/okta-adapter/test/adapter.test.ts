@@ -54,6 +54,8 @@ import {
   ACTIVE_STATUS,
   SAML_2_0_APP,
   ORG_SETTING_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -1075,7 +1077,6 @@ describe('adapter', () => {
     })
     describe('deploy application', () => {
       let appType: ObjectType
-      let orgSettingType: ObjectType
 
       beforeEach(() => {
         appType = new ObjectType({
@@ -1088,7 +1089,7 @@ describe('adapter', () => {
         })
       })
 
-      it('should successfully add an inactive regular application', async () => {
+      it('should successfully add an inactive regular application without policies', async () => {
         loadMockReplies('application_add_regular_inactive.json')
         const inactiveCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
@@ -1108,12 +1109,28 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully add an active regular application', async () => {
+      it('should successfully add an active regular application with policies', async () => {
         loadMockReplies('application_add_regular_active.json')
+        const profileEnrollmentPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
+        })
+        const profileEnrollmentPolicy = new InstanceElement('profileEnrollmentPolicy', profileEnrollmentPolicyType, {
+          id: 'enrollmentpolicy-fakeid1',
+          name: 'enrollmentPolicy1',
+        })
+        const accessPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME),
+        })
+        const accessPolicy = new InstanceElement('accessPolicy', accessPolicyType, {
+          id: 'accesspolicy-fakeid1',
+          name: 'accessPolicy1',
+        })
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
           status: ACTIVE_STATUS,
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy.elemID, profileEnrollmentPolicy),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
         const result = await operations.deploy({
           changeGroup: {

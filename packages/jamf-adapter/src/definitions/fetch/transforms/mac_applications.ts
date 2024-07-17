@@ -17,14 +17,13 @@ import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import {
   adjustCategoryObjectToCategoryId,
-  adjustScriptsObjectArrayToScriptsIds,
   adjustServiceIdToTopLevel,
   adjustSiteObjectToSiteId,
   removeSelfServiceIcon,
 } from './utils'
 
 /*
- * Adjust policy instance
+ * Adjust os or mobile configuration profile instance
  */
 export const adjust: definitions.AdjustFunction = async ({ value }) => {
   if (!values.isPlainRecord(value)) {
@@ -32,9 +31,8 @@ export const adjust: definitions.AdjustFunction = async ({ value }) => {
   }
   ;[
     adjustCategoryObjectToCategoryId,
-    adjustSiteObjectToSiteId,
-    adjustScriptsObjectArrayToScriptsIds,
     adjustServiceIdToTopLevel,
+    adjustSiteObjectToSiteId,
     removeSelfServiceIcon,
   ].forEach(fn => fn(value))
   return { value }

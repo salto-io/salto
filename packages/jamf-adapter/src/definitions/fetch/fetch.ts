@@ -29,6 +29,7 @@ import {
   RESULTS,
   OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
   MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
+  MAC_APPLICATION_TYPE_NAME,
 } from '../../constants'
 import * as transforms from './transforms'
 
@@ -441,6 +442,60 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         dependsOn: {
           id: {
             parentTypeName: `${MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME}_minimal`,
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'general.name' }] },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+      },
+    },
+  },
+  [`${MAC_APPLICATION_TYPE_NAME}_minimal`]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/macapplications',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: 'mac_applications',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+  },
+  [MAC_APPLICATION_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/macapplications/id/{id}',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: MAC_APPLICATION_TYPE_NAME,
+          adjust: transforms.adjustMacApplication,
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      context: {
+        dependsOn: {
+          id: {
+            parentTypeName: `${MAC_APPLICATION_TYPE_NAME}_minimal`,
             transformation: {
               root: 'id',
             },

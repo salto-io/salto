@@ -27,7 +27,6 @@ import { AdditionalAction, ClientOptions } from '../types'
 export const createClassicApiDefinitionsForType = (
   typeName: string,
   plural: string,
-  shouldConvertIdToNumber?: boolean,
 ): Partial<definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>> => ({
   requestsByAction: {
     customizations: {
@@ -42,7 +41,7 @@ export const createClassicApiDefinitionsForType = (
                 }
                 const parsedXML = xmljs.xml2js(value, { compact: true })
                 const id = _.get(parsedXML, `${typeName}.id._text`)
-                return { value: { id: shouldConvertIdToNumber ? Number(id) : id } }
+                return { value: { id: Number(id) } }
               },
             },
           },

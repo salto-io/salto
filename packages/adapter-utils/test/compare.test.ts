@@ -625,15 +625,19 @@ describe('applyDetailedChanges', () => {
     ]
     applyDetailedChanges(inst, changes)
   })
+
   it('should add new values', () => {
     expect(inst.value.add).toEqual(3)
   })
+
   it('should modify existing values', () => {
     expect(inst.value.nested.mod).toEqual(2)
   })
+
   it('should remove values', () => {
     expect(inst.value).not.toHaveProperty('rem')
   })
+
   describe('with changes from compareListItems', () => {
     describe('with list removals', () => {
       let beforeInst: InstanceElement
@@ -754,7 +758,8 @@ describe('applyDetailedChanges', () => {
       })
     })
   })
-  describe('When list objects and reorder and modification on the same item', () => {
+
+  describe('when list objects and reorder and modification on the same item', () => {
     let beforeInst: InstanceElement
     let afterInst: InstanceElement
     let outputInst: InstanceElement
@@ -780,7 +785,7 @@ describe('applyDetailedChanges', () => {
     })
   })
 
-  describe('When there is object with number as keys', () => {
+  describe('when there is object with number as keys', () => {
     let beforeInst: InstanceElement
     let afterInst: InstanceElement
     let outputInst: InstanceElement
@@ -808,7 +813,7 @@ describe('applyDetailedChanges', () => {
     })
   })
 
-  describe('Should apply changes in the correct order', () => {
+  describe('should apply changes in the correct order', () => {
     let beforeInst: InstanceElement
     beforeEach(() => {
       const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
@@ -845,6 +850,7 @@ describe('applyDetailedChanges', () => {
       expect(beforeInst.value.a).toEqual([0, 1, 'a', 2, 3, 4, 5, 6, 7, 8, 'b', 9, 10])
     })
   })
+
   describe('when before element and after element have different IDs', () => {
     describe('with value from a different instance', () => {
       let beforeInst: InstanceElement
@@ -883,6 +889,67 @@ describe('applyDetailedChanges', () => {
         const updatedObj = beforeObj.clone()
         applyDetailedChanges(updatedObj, changes)
         expect(updatedObj.annotations.val1).toEqual(afterObj.annotations.val1)
+      })
+    })
+  })
+
+  describe('with a modification on a whole element', () => {
+    describe('when a meta type is added to a type', () => {
+      let beforeType: ObjectType
+      let afterType: ObjectType
+      let outputType: ObjectType
+      beforeEach(() => {
+        beforeType = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          annotations: { anno: 'val1' },
+        })
+        afterType = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          annotations: { anno: 'val2' },
+          metaType: new ObjectType({ elemID: new ElemID('test', 'meta') }),
+        })
+        const changes = detailedCompare(beforeType, afterType)
+        outputType = beforeType.clone()
+        applyDetailedChanges(outputType, changes)
+      })
+      it('should reproduce the after element', () => {
+        expect(outputType).toEqual(afterType)
+      })
+    })
+
+    describe('when the type of a field is changed', () => {
+      let beforeType: ObjectType
+      let afterType: ObjectType
+      let outputType: ObjectType
+      beforeEach(() => {
+        beforeType = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            field: {
+              refType: BuiltinTypes.STRING,
+              annotations: {
+                anno: 'val1',
+              },
+            },
+          },
+        })
+        afterType = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            field: {
+              refType: BuiltinTypes.NUMBER,
+              annotations: {
+                anno: 'val2',
+              },
+            },
+          },
+        })
+        const changes = detailedCompare(beforeType, afterType, { createFieldChanges: true })
+        outputType = beforeType.clone()
+        applyDetailedChanges(outputType, changes)
+      })
+      it('should reproduce the after element', () => {
+        expect(outputType).toEqual(afterType)
       })
     })
   })

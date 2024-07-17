@@ -23,12 +23,14 @@ import {
   Element,
   ElemID,
   getChangeData,
+  isContainerType,
   isElement,
   isEqualElements,
   isEqualValues,
   isField,
   isIndexPathPart,
   isInstanceElement,
+  isModificationChange,
   isObjectType,
   isPrimitiveType,
   isRemovalChange,
@@ -368,6 +370,37 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
   return changes.filter(change => relevantIds.has(change.id.getFullName()))
 }
 
+const replaceChangeData = <T extends ChangeDataType>(dst: T, src: T): void => {
+  dst.annotationRefTypes = src.annotationRefTypes
+  dst.annotations = src.annotations
+  dst.path = src.path
+
+  if (isPrimitiveType(dst) && isPrimitiveType(src)) {
+    dst.primitive = src.primitive
+  }
+
+  if (isObjectType(dst) && isObjectType(src)) {
+    dst.fields = src.fields
+    dst.metaType = src.metaType
+    dst.isSettings = src.isSettings
+  }
+
+  if (isContainerType(dst) && isContainerType(src)) {
+    dst.refInnerType = src.refInnerType
+  }
+
+  if (isInstanceElement(dst) && isInstanceElement(src)) {
+    dst.refType = src.refType
+    dst.value = src.value
+  }
+
+  if (isField(dst) && isField(src)) {
+    dst.parent = src.parent
+    dst.name = src.name
+    dst.refType = src.refType
+  }
+}
+
 /**
  * Note: When working with list item changes, separating the changes between
  * multiple applyDetailedChanges calls might create different results.
@@ -377,7 +410,21 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
  * function in a single call
  */
 export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: DetailedChange[]): void => {
-  const changesToApply = filterChangesForApply(detailedChanges)
+  const [baseElementModifications, nestedChanges] = _.partition(
+    detailedChanges,
+    change => isModificationChange(change) && change.id.isBaseID(),
+  )
+  baseElementModifications.forEach(change => {
+    const data = getChangeData(change)
+    if (isField(data)) {
+      replaceChangeData(resolvePath(element, data.elemID), data)
+      return
+    }
+
+    replaceChangeData(element, data)
+  })
+
+  const changesToApply = filterChangesForApply(nestedChanges)
   const [potentialListItemChanges, otherChanges] = _.partition(changesToApply, change =>
     isIndexPathPart(change.id.name),
   )

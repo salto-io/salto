@@ -18,6 +18,8 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { getChangeData, isAdditionChange, isModificationChange, isRemovalChange, Values } from '@salto-io/adapter-api'
+import { validatePlainObject } from '@salto-io/adapter-utils'
+import { transformRemovedValuesToNull } from '@salto-io/adapter-components/dist/src/deployment'
 import { AdditionalAction, ClientOptions } from './types'
 import {
   APPLICATION_TYPE_NAME,
@@ -150,11 +152,16 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  adjust: async ({ value }) => ({
-                    value: {
-                      name: _.get(value, CUSTOM_NAME_FIELD),
-                    },
-                  }),
+                  adjust: async ({ value, context }) => {
+                    validatePlainObject(value, APPLICATION_TYPE_NAME)
+                    const transformed = getChangeData(transformRemovedValuesToNull(context.change, ['settings'])).value
+                    return {
+                      value: {
+                        [NAME_FIELD]: _.get(value, CUSTOM_NAME_FIELD),
+                        ..._.omit(transformed, [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES]),
+                      },
+                    }
+                  },
                 },
               },
             },
@@ -191,6 +198,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 context: {
                   applicationId: '{id}',
                 },
+                transformation: {
+                  pick: [],
+                },
               },
             },
           ],
@@ -211,6 +221,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 context: {
                   applicationId: '{id}',
+                },
+                transformation: {
+                  pick: [],
                 },
               },
             },

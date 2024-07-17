@@ -146,7 +146,7 @@ export const isInactiveCustomAppChange = (change: Change<InstanceElement>): bool
   isModificationChange(change) &&
   _.isEqual(
     getAllChangeData(change).map(data => data.value.status),
-    [INACTIVE_STATUS, ACTIVE_STATUS],
+    [INACTIVE_STATUS, INACTIVE_STATUS],
   ) &&
   // customName field only exist in custom applications
   getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined

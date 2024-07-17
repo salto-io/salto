@@ -52,6 +52,7 @@ import newFieldsAndObjectsFLS from './change_validators/new_fields_and_objects_f
 import metadataTypes from './change_validators/metadata_types'
 import elementApiVersionValidator from './change_validators/element_api_version'
 import cpqBillingStartDate from './change_validators/cpq_billing_start_date'
+import cpqBillingTriggers from './change_validators/cpq_billing_triggers'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
@@ -112,6 +113,7 @@ export const changeValidators: Record<
   newFieldsAndObjectsFLS: (config) => newFieldsAndObjectsFLS(config),
   elementApiVersion: () => elementApiVersionValidator,
   cpqBillingStartDate: () => cpqBillingStartDate,
+  cpqBillingTriggers: () => cpqBillingTriggers,
   ..._.mapValues(getDefaultChangeValidators(), (validator) => () => validator),
 }
 

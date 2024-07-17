@@ -68,7 +68,6 @@ const excludedTypes = [
 ]
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 each([

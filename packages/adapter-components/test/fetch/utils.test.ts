@@ -63,7 +63,7 @@ describe('fetch utils', () => {
           root: 'a',
           nestUnderField: 'b',
           pick: ['x', 'z'],
-          adjust: ({ value }) => ({
+          adjust: async ({ value }) => ({
             value: lowerdashValues.isPlainObject(value) ? _.mapKeys(value, (_v, key) => key.toUpperCase()) : 'unknown',
           }),
         })

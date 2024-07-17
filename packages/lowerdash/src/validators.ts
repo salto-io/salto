@@ -84,7 +84,7 @@ const valUndefined =
 
 const undefinedOr = <T, TVal extends T | undefined, TContext>(
   validator: Validator<T, TContext>,
-): Validator<TVal, TContext> => some(valUndefined<T, TVal, TContext>(), (v, ctx) => validator(v as T, ctx))
+): Validator<TVal, TContext> => some(valUndefined<T, TVal, TContext>(), (v, ctx) => validator(v as unknown as T, ctx))
 
 const number =
   <TVal, TContext>(): Validator<TVal, TContext> =>

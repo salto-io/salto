@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable camelcase */
 import _ from 'lodash'
 import {
   ValueTypeField,
@@ -332,7 +331,7 @@ export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
 ])
 
 export class Types {
-  private static getElemIdFunc: ElemIdGetter
+  private static getElemIdFunc?: ElemIdGetter
 
   private static filterItemElemID = new ElemID(
     SALESFORCE,

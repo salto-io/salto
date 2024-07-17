@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line import/no-cycle
 export {
   UserConfig,
   createUserConfigType,
@@ -22,9 +21,7 @@ export {
   mergeWithDefaultConfig,
   adapterConfigFromConfig,
 } from './user_config'
-// eslint-disable-next-line import/no-cycle
 export { updateDeprecatedConfig, updateElemIDDefinitions } from './config_upgrade_utils'
-// eslint-disable-next-line import/no-cycle
 export {
   UserFetchConfig,
   createUserFetchConfigType,

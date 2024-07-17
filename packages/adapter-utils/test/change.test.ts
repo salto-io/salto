@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ObjectType, ElemID, toChange } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, toChange, DetailedChange } from '@salto-io/adapter-api'
 import { reverseChange } from '../src/change'
 
 describe('reverseChange', () => {
@@ -39,5 +39,56 @@ describe('reverseChange', () => {
     type2.annotations.test = 'test'
     const change = toChange({ before: type, after: type2 })
     expect(reverseChange(change)).toEqual(toChange({ before: type2, after: type }))
+  })
+
+  describe('reverse detailed change elemIDs', () => {
+    it('should reverse addition change', () => {
+      const changeElemId = type.elemID.createNestedID('attr', 'list', '0')
+      const change: DetailedChange = {
+        id: changeElemId,
+        elemIDs: { after: changeElemId },
+        action: 'add',
+        data: { after: 'a' },
+      }
+      expect(reverseChange(change)).toEqual({
+        id: changeElemId,
+        elemIDs: { before: changeElemId },
+        action: 'remove',
+        data: { before: 'a' },
+      })
+    })
+
+    it('should reverse removal change', () => {
+      const changeElemId = type.elemID.createNestedID('attr', 'list', '0')
+      const change: DetailedChange = {
+        id: changeElemId,
+        elemIDs: { before: changeElemId },
+        action: 'remove',
+        data: { before: 'a' },
+      }
+      expect(reverseChange(change)).toEqual({
+        id: changeElemId,
+        elemIDs: { after: changeElemId },
+        action: 'add',
+        data: { after: 'a' },
+      })
+    })
+
+    it('should reverse modification change', () => {
+      const changeElemId = type.elemID.createNestedID('attr', 'list', '0')
+      const changeBeforeElemId = type.elemID.createNestedID('attr', 'list', '1')
+      const change: DetailedChange = {
+        id: changeElemId,
+        elemIDs: { before: changeBeforeElemId, after: changeElemId },
+        action: 'modify',
+        data: { before: 'a', after: 'a' },
+      }
+      expect(reverseChange(change)).toEqual({
+        id: changeElemId,
+        elemIDs: { before: changeElemId, after: changeBeforeElemId },
+        action: 'modify',
+        data: { before: 'a', after: 'a' },
+      })
+    })
   })
 })

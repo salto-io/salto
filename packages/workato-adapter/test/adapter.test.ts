@@ -182,7 +182,6 @@ describe('adapter', () => {
         expect(folder?.value).toEqual({
           id: 300507,
           name: 'f1_nested1',
-          // eslint-disable-next-line camelcase
           parent_id: expect.any(ReferenceExpression),
         })
         expect(folder?.value.parent_id.elemID.getFullName()).toEqual('workato.folder.instance.basedir1_Root')
@@ -197,12 +196,9 @@ describe('adapter', () => {
         expect(recipe).toBeDefined()
         expect(recipe?.value).toEqual({
           id: 1209425,
-          // eslint-disable-next-line camelcase
           user_id: 191676,
           name: 'New/updated record in Salesforce will add a new row in a sheet in Google Sheets',
-          // eslint-disable-next-line camelcase
           trigger_application: 'salesforce',
-          // eslint-disable-next-line camelcase
           action_applications: ['google_sheets'],
           applications: ['salesforce', 'google_sheets'],
           description: 'When there is a new/updated record in Salesforce, add a new row in a sheet in Google Sheets',
@@ -212,14 +208,12 @@ describe('adapter', () => {
               keyword: 'application',
               name: 'salesforce',
               provider: 'salesforce',
-              // eslint-disable-next-line camelcase
               account_id: expect.any(ReferenceExpression),
             },
             {
               keyword: 'application',
               name: 'google_sheets',
               provider: 'google_sheets',
-              // eslint-disable-next-line camelcase
               account_id: expect.any(ReferenceExpression),
             },
           ],
@@ -253,14 +247,10 @@ describe('adapter', () => {
           keyword: 'trigger',
           dynamicPickListSelection: expect.anything(),
           input: {
-            // eslint-disable-next-line camelcase
             sobject_name: 'Opportunity',
-            // eslint-disable-next-line camelcase
             since_offset: '-3600',
           },
-          // eslint-disable-next-line camelcase
           visible_config_fields: ['sobject_name', 'since_offset'],
-          // eslint-disable-next-line camelcase
           hidden_config_fields: ['field_list'],
           block: expect.anything(),
           uuid: '12345678-1234-1234-1234-1234567890ab',
@@ -533,7 +523,6 @@ describe('adapter', () => {
       elemID: new ElemID(WORKATO, FOLDER_TYPE),
       fields: {
         id: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
-        // eslint-disable-next-line camelcase
         parent_id: { refType: BuiltinTypes.NUMBER },
       },
     })

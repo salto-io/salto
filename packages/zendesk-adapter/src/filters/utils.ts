@@ -196,7 +196,6 @@ export const matchBrandSubdomainFunc = (
 }
 
 type CustomFieldOption = {
-  // eslint-disable-next-line camelcase
   raw_name: string
   name?: string
 }

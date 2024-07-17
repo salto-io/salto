@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
 import { adjustLabelsToIdsFunc, adjustRestriction, createAdjustUserReferences } from '../utils'
@@ -31,7 +30,11 @@ import {
 import { spaceMergeAndTransformAdjust } from '../utils/space'
 import { UserConfig } from '../../config'
 
-const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
+const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
+const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
+
+const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = {
+  // hide
   created_at: {
     hide: true,
   },
@@ -47,8 +50,8 @@ const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCusto
   updated_by_id: {
     hide: true,
   },
-}
-const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
+
+  // omit
   _links: {
     omit: true,
   },
@@ -56,15 +59,6 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
     omit: true,
   },
 }
-
-const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
-const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
-
-const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_HIDE,
-  DEFAULT_FIELDS_TO_OMIT,
-)
 
 const createCustomizations = (
   userConfig: UserConfig,

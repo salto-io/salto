@@ -815,6 +815,16 @@ export const mockDefaultValues = {
               object: 'Contact',
             },
           ],
+          property: [
+            {
+              name: 'testTrueProp',
+              default: 'true',
+            },
+            {
+              name: 'testFalseProp',
+              default: 'false',
+            },
+          ],
           targets: 'lightning__RecordPage',
         },
         {

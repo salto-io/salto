@@ -307,6 +307,8 @@ describe('XML Transformer', () => {
             <objects>
                 <object>Contact</object>
             </objects>
+            <property name="testTrueProp" default="true"></property>
+            <property name="testFalseProp" default="false"></property>
         </targetConfig>
         <targetConfig targets="lightning__AppPage,lightning__HomePage">
             <supportedFormFactors>

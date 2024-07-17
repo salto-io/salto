@@ -75,7 +75,6 @@ describe('audit_logs filter', () => {
       {
         id,
         updated_at: updatedAt || undefined,
-        // eslint-disable-next-line camelcase
         updated_by_id: updatedBy || undefined,
       },
       [],

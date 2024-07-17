@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { simpleGetArgs, computeGetArgs } from '../../../src/fetch/resource/request_parameters'
 

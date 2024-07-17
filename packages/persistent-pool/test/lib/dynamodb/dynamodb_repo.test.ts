@@ -42,6 +42,9 @@ describe('dynamoDB repo', () => {
   let dbUtils: ReturnType<typeof makeTestDbUtils>
 
   beforeEach(async () => {
+    if (global.dynamoEnv === undefined) {
+      throw new Error('no dynamo env defined')
+    }
     ;({ dynamo, tableName } = global.dynamoEnv.dynalite)
     dbUtils = makeTestDbUtils(dynamo.db)
 
@@ -91,6 +94,9 @@ describe('dynamoDB repo', () => {
       let pool: Pool<MyType>
 
       beforeEach(async () => {
+        if (global.dynamoEnv === undefined) {
+          throw new Error('no dynamo env defined')
+        }
         const { serviceOpts } = global.dynamoEnv.dynalite
         const repo2 = await makeRepo({ ...repoOpts(), serviceOpts })
         const pool2 = await repo2.pool(myTypeName)

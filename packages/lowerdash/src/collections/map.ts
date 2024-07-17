@@ -36,7 +36,3 @@ export class DefaultMap<K, V> extends Map<K, V> {
     return super.get(key)
   }
 }
-
-export interface DefaultMap<K, V> extends Map<K, V> {
-  get(key: K): V
-}

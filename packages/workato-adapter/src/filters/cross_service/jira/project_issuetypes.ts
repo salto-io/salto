@@ -35,7 +35,6 @@ const ISSUE_TYPE = 'issueType'
 const SAMPLE_PROJECT_KEY = 'sampleProjectKey'
 const SAMPLE_ISSUE_TYPE = 'sampleIssueType'
 
-/* eslint-disable camelcase */
 type JiraExportedBlock = BlockBase & {
   as: string
   provider: 'jira' | 'jira_secondary'

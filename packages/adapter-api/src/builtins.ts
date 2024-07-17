@@ -126,15 +126,12 @@ const dependencyType = new ObjectType({
 })
 
 export type RestrictionAnnotationType = Partial<{
-  // eslint-disable-next-line camelcase
   enforce_value: boolean
   values: ReadonlyArray<unknown>
   min: number
   max: number
   regex: string
-  // eslint-disable-next-line camelcase
   max_length: number
-  // eslint-disable-next-line camelcase
   max_list_length: number
 }>
 

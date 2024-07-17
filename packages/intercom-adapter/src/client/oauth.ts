@@ -86,9 +86,6 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
     },
   })
   const res = await httpClient.post('https://api.intercom.io/auth/eagle/token', body)
-  // eslint-disable-next-line camelcase
-  const { access_token } = res.data
-  return {
-    accessToken: access_token,
-  }
+  const accessToken = res.data.access_token
+  return { accessToken }
 }

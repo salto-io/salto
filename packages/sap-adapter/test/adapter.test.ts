@@ -125,7 +125,6 @@ describe('adapter', () => {
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-      // eslint-disable-next-line camelcase
       token_type: 'bearer',
       access_token: 'token123',
       expires_in: 10000,
@@ -187,7 +186,6 @@ describe('adapter', () => {
             elementsSource: buildElementsSourceFromElements([]),
           })
           const nullProgressReporter: ProgressReporter = {
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
             reportProgress: () => {},
           }
           await expect(

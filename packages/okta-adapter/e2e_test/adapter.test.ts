@@ -289,7 +289,6 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
 }
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 

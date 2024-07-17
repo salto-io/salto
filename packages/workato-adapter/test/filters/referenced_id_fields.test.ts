@@ -52,7 +52,6 @@ describe('referenced id fields filter', () => {
     elemID: new ElemID(WORKATO, 'folder'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
-      // eslint-disable-next-line camelcase
       parent_id: { refType: BuiltinTypes.NUMBER },
     },
   })

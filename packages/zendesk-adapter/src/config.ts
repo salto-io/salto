@@ -1300,7 +1300,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'groups',
     },
   },
-  // eslint-disable-next-line camelcase
   custom_roles: {
     request: {
       url: '/api/v2/custom_roles',
@@ -1375,13 +1374,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'automations',
     },
   },
-  // eslint-disable-next-line camelcase
   sla_policies: {
     request: {
       url: '/api/v2/slas/policies',
     },
   },
-  // eslint-disable-next-line camelcase
   sla_policies_definitions: {
     request: {
       url: '/api/v2/slas/policies/definitions',
@@ -1408,7 +1405,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'macros',
     },
   },
-  // eslint-disable-next-line camelcase
   macros_actions: {
     request: {
       url: '/api/v2/macros/actions',
@@ -1420,7 +1416,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
-  // eslint-disable-next-line camelcase
   macro_categories: {
     request: {
       url: '/api/v2/macros/categories',
@@ -1430,7 +1425,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
-  // eslint-disable-next-line camelcase
   macros_definitions: {
     // has some overlaps with macro_actions
     request: {
@@ -1455,7 +1449,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'brands',
     },
   },
-  // eslint-disable-next-line camelcase
   dynamic_content_item: {
     request: {
       url: '/api/v2/dynamic_content/items',
@@ -1544,7 +1537,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'locales',
     },
   },
-  // eslint-disable-next-line camelcase
   business_hours_schedule_holiday: {
     request: {
       url: '/api/v2/business_hours/schedules/{scheduleId}/holidays',
@@ -1592,13 +1584,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
     },
   },
-  // eslint-disable-next-line camelcase
   sharing_agreements: {
     request: {
       url: '/api/v2/sharing_agreements',
     },
   },
-  // eslint-disable-next-line camelcase
   support_addresses: {
     request: {
       url: '/api/v2/recipient_addresses',
@@ -1610,7 +1600,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'recipient_addresses',
     },
   },
-  // eslint-disable-next-line camelcase
   ticket_forms: {
     // not always available
     request: {
@@ -1628,7 +1617,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  // eslint-disable-next-line camelcase
   ticket_fields: {
     request: {
       url: '/api/v2/ticket_fields',
@@ -1641,7 +1629,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
-  // eslint-disable-next-line camelcase
   user_fields: {
     request: {
       url: '/api/v2/user_fields',
@@ -1652,7 +1639,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'user_fields',
     },
   },
-  // eslint-disable-next-line camelcase
   organization_fields: {
     request: {
       url: '/api/v2/organization_fields',
@@ -1703,7 +1689,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       serviceUrl: '/admin/objects-rules/rules/routing',
     },
   },
-  // eslint-disable-next-line camelcase
   routing_attributes: {
     request: {
       url: '/api/v2/routing/attributes',
@@ -1716,7 +1701,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
     },
   },
-  // eslint-disable-next-line camelcase
   routing_attribute_definitions: {
     request: {
       url: '/api/v2/routing/attributes/definitions',
@@ -1731,7 +1715,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/api/v2/workspaces',
     },
   },
-  // eslint-disable-next-line camelcase
   app_installations: {
     request: {
       url: '/api/v2/apps/installations',
@@ -1739,7 +1722,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
   },
-  // eslint-disable-next-line camelcase
   apps_owned: {
     request: {
       url: '/api/v2/apps/owned',
@@ -1747,7 +1729,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
   },
-  // eslint-disable-next-line camelcase
   oauth_clients: {
     request: {
       url: '/api/v2/oauth/clients',
@@ -1758,7 +1739,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'clients',
     },
   },
-  // eslint-disable-next-line camelcase
   oauth_global_clients: {
     request: {
       url: '/api/v2/oauth/global_clients',
@@ -1769,7 +1749,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'global_clients',
     },
   },
-  // eslint-disable-next-line camelcase
   account_settings: {
     request: {
       url: '/api/v2/account/settings',
@@ -1778,14 +1757,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'settings',
     },
   },
-  // eslint-disable-next-line camelcase
   resource_collections: {
     request: {
       url: '/api/v2/resource_collections',
       paginationField: 'next_page',
     },
   },
-  // eslint-disable-next-line camelcase
   monitored_twitter_handles: {
     request: {
       url: '/api/v2/channels/twitter/monitored_twitter_handles',

@@ -28,11 +28,10 @@ const requireOrExtract = (externalsLocation: string): any => {
     if (typeof __non_webpack_require__ !== 'undefined') {
       const extractedModuleLocation = path.join(externalsLocation, 'rocksdb')
       rimraf.sync(externalsLocation)
-      // eslint-disable-next-line no-undef, camelcase
+      // eslint-disable-next-line camelcase
       fsExtra.copySync(path.dirname(__non_webpack_require__.resolve('@salto-io/rocksdb')), extractedModuleLocation, {
         dereference: true,
       })
-      // eslint-disable-next-line no-undef
       const result = __non_webpack_require__(extractedModuleLocation)
       try {
         rimraf.sync(externalsLocation)

@@ -17,7 +17,8 @@
     "noEmitOnError": true,
     "experimentalDecorators": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "useUnknownInCatchVariables": false
   },
   "files": [],
   "include": []

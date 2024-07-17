@@ -410,7 +410,6 @@ export const createCustomSettingsObject = (
         [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
       },
     },
-    // eslint-disable-next-line camelcase
     TestField__c: {
       label: 'TestField',
       refType: stringType,
@@ -478,6 +477,5 @@ export const emptyLastChangeDateOfTypesWithNestedInstances =
   })
 
 export const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }

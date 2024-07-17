@@ -42,51 +42,28 @@ type TypeInfo = {
   uniqueFieldName: string
 }
 
-const getSameUniqueFieldError = (
-  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
-  otherInstance: InstanceElement,
-  fieldName: string,
-): ChangeError => ({
-  elemID: getChangeData(change).elemID,
-  severity: 'Error' as SeverityLevel,
-  message: `The field '${fieldName}' in type ${otherInstance.elemID.typeName} must have a unique value`,
-  detailedMessage: `This ${otherInstance.elemID.typeName} have the same '${fieldName}' as the instance ${otherInstance.elemID.getFullName()}, and can not be deployed.`,
-})
-
-const getInstances = async (
-  elementSource: ReadOnlyElementsSource | undefined,
-  typeNames: string[],
-): Promise<InstanceElement[]> =>
-  elementSource === undefined || typeNames.length === 0 ? [] : getInstancesFromElementSource(elementSource, typeNames)
-
-const getRelevantChanges = (
-  changes: readonly Change<ChangeDataType>[],
-  typeToFieldRecord: Record<string, string>,
-): (ModificationChange<InstanceElement> | AdditionChange<InstanceElement>)[] =>
-  changes
-    .filter(isAdditionOrModificationChange)
-    .filter(change => Object.prototype.hasOwnProperty.call(typeToFieldRecord, getChangeData(change).elemID.typeName))
-    .filter(isInstanceChange)
-
 const createTypeToChangesRecord = (
   changes: readonly Change<ChangeDataType>[],
   typeToFieldRecord: Record<string, string>,
 ): Record<string, (ModificationChange<InstanceElement> | AdditionChange<InstanceElement>)[]> => {
-  const relevantChanges = getRelevantChanges(changes, typeToFieldRecord)
+  const relevantChanges = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(change => Object.prototype.hasOwnProperty.call(typeToFieldRecord, getChangeData(change).elemID.typeName))
+    .filter(isInstanceChange)
   return _.groupBy(relevantChanges, change => getChangeData(change).elemID.typeName)
 }
 
 const createTypeToInstancesRecord = async (
-  elementsSource: ReadOnlyElementsSource | undefined,
+  elementsSource: ReadOnlyElementsSource,
   relevantTypes: string[],
 ): Promise<Record<string, InstanceElement[]>> => {
-  const instances = await getInstances(elementsSource, relevantTypes)
+  const instances = relevantTypes.length === 0 ? [] : await getInstancesFromElementSource(elementsSource, relevantTypes)
   return _.groupBy(instances, instance => instance.elemID.typeName)
 }
 
 const createTypeInfos = async (
   changes: readonly Change<ChangeDataType>[],
-  elementsSource: ReadOnlyElementsSource | undefined,
+  elementsSource: ReadOnlyElementsSource,
   typeToFieldRecord: Record<string, string>,
 ): Promise<TypeInfo[]> => {
   const typeToChangesRecord = createTypeToChangesRecord(changes, typeToFieldRecord)
@@ -123,20 +100,28 @@ const getErrorForChange = (
   if (otherInstance === undefined) {
     return undefined
   }
-  return getSameUniqueFieldError(change, otherInstance, fieldName)
-}
-
-const getErrorsForType = (typeInfo: TypeInfo): ChangeError[] => {
-  const { changesOfType, instancesOfType, uniqueFieldName } = typeInfo
-  const fieldValueToInstancesRecord = _.groupBy(instancesOfType, instance => getFieldValue(instance, uniqueFieldName))
-  return changesOfType
-    .map(change => getErrorForChange(change, uniqueFieldName, fieldValueToInstancesRecord))
-    .filter(isDefined)
+  return {
+    elemID: getChangeData(change).elemID,
+    severity: 'Error' as SeverityLevel,
+    message: `The field '${fieldName}' in type ${otherInstance.elemID.typeName} must have a unique value`,
+    detailedMessage: `This ${otherInstance.elemID.typeName} have the same '${fieldName}' as the instance ${otherInstance.elemID.getFullName()}, and can not be deployed.`,
+  }
 }
 
 export const uniqueFieldsChangeValidatorCreator =
   (typeNameToUniqueFieldRecord: Record<string, string>): ChangeValidator =>
-  async (changes, elementsSource) =>
-    (await createTypeInfos(changes, elementsSource, typeNameToUniqueFieldRecord)).flatMap(typeInfo =>
-      getErrorsForType(typeInfo),
-    )
+  async (changes, elementsSource) => {
+    if (elementsSource === undefined) {
+      log.info("Didn't run unique fields validator as elementsSource is undefined")
+      return []
+    }
+    return (await createTypeInfos(changes, elementsSource, typeNameToUniqueFieldRecord)).flatMap(typeInfo => {
+      const { changesOfType, instancesOfType, uniqueFieldName } = typeInfo
+      const fieldValueToInstancesRecord = _.groupBy(instancesOfType, instance =>
+        getFieldValue(instance, uniqueFieldName),
+      )
+      return changesOfType
+        .map(change => getErrorForChange(change, uniqueFieldName, fieldValueToInstancesRecord))
+        .filter(isDefined)
+    })
+  }

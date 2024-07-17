@@ -6,7 +6,7 @@
     "status": 200,
     "response": {
       "id": "app-fakeid1",
-      "name": "subdomain.example.com_app1",
+      "name": "salto_testtest3_2",
       "label": "app1",
       "status": "INACTIVE",
       "lastUpdated": "2024-07-08T06:59:58.000Z",
@@ -137,8 +137,7 @@
     },
     "body": {
       "label": "app1",
-      "status": "INACTIVE",
-      "signOnMode": "SAML_2_0"
+      "status": "INACTIVE"
     },
     "reqHeaders": {
       "x-rate-limit-limit": "50",

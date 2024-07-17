@@ -109,6 +109,7 @@ import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
+import flowCoordinatesFilter from './filters/flow_coordinates'
 import { getConfigFromConfigChanges } from './config_change'
 import {
   LocalFilterCreator,
@@ -261,6 +262,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: importantValuesFilter },
   { creator: hideTypesFolder },
   { creator: generatedDependenciesFilter },
+  { creator: flowCoordinatesFilter },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
 ]

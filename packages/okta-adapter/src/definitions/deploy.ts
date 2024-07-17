@@ -17,20 +17,16 @@
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import {
-  getChangeData,
-  isAdditionChange
-  isModificationChange,
-  isRemovalChange,
-  Values,
-} from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isModificationChange, isRemovalChange, Values } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from './types'
 import {
   APPLICATION_TYPE_NAME,
-  BRAND_TYPE_NAME, CUSTOM_NAME_FIELD,
+  BRAND_TYPE_NAME,
+  CUSTOM_NAME_FIELD,
   DEVICE_ASSURANCE_TYPE_NAME,
   DOMAIN_TYPE_NAME,
-  GROUP_TYPE_NAME, INACTIVE_STATUS,
+  GROUP_TYPE_NAME,
+  INACTIVE_STATUS,
   LINKS_FIELD,
   SMS_TEMPLATE_TYPE_NAME,
   USERTYPE_TYPE_NAME,
@@ -47,23 +43,29 @@ import { isCustomApp } from '../filters/app_deployment'
 
 const { isDefined } = values
 
-
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
-
 
 /**
  * Create a deploy request for setting a policy associated with an `Application`.
  */
-const createDeployAppPolicyRequest = (policyName: string): definitions.deploy.DeployableRequestDefinition<ClientOptions> => ({
+const createDeployAppPolicyRequest = (
+  policyName: string,
+): definitions.deploy.DeployableRequestDefinition<ClientOptions> => ({
   condition: {
-    custom: () => ({ change }) =>
-      isDefined(_.get(getChangeData(change).value, policyName)),
+    custom:
+      () =>
+      ({ change }) =>
+        isDefined(_.get(getChangeData(change).value, policyName)),
   },
   request: {
     endpoint: {
       path: '/api/v1/apps/{source}/policies/{target}',
       method: 'put',
+    },
+    transformation: {
+      // Don't send any Application fields in the request body.
+      pick: [],
     },
     context: {
       source: '{id}',
@@ -72,10 +74,10 @@ const createDeployAppPolicyRequest = (policyName: string): definitions.deploy.De
   },
 })
 
-const createDeployAppPolicyRequests = (): definitions.deploy.DeployableRequestDefinition<ClientOptions>[] => [
-  createDeployAppPolicyRequest('accessPolicy'),
-  createDeployAppPolicyRequest('profileEnrollment'),
-]
+const APP_POLICIES = ['accessPolicy', 'profileEnrollment']
+
+const createDeployAppPolicyRequests = (): definitions.deploy.DeployableRequestDefinition<ClientOptions>[] =>
+  APP_POLICIES.map(createDeployAppPolicyRequest)
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
   const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
@@ -89,8 +91,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
-    
-[APPLICATION_TYPE_NAME]: {
+    [APPLICATION_TYPE_NAME]: {
       requestsByAction: {
         default: {
           request: {
@@ -112,14 +113,19 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   },
                 },
                 context: {
-                  custom: () => ({ change }) => ({
-                    activate: getChangeData(change).value.status === INACTIVE_STATUS ? 'false' : 'true',
-                  }),
+                  custom:
+                    () =>
+                    ({ change }) => ({
+                      activate: getChangeData(change).value.status === INACTIVE_STATUS ? 'false' : 'true',
+                    }),
+                },
+                transformation: {
+                  omit: [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES],
                 },
               },
               copyFromResponse: {
                 additional: {
-                  adjust: async ({value, context}) => {
+                  adjust: async ({ value, context }) => {
                     const subdomain = await getSubdomainFromElementsSource(context.elementSource)
                     if (subdomain !== undefined && isCustomApp(value as Values, subdomain)) {
                       const createdAppName = _.get(value, NAME_FIELD)
@@ -170,10 +176,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           activate: [
             {
               condition: {
-                custom: () => ({ change }) =>
-                  isActivationChange(change) ||
-                  // Custom app must be activated before applying any other changes
-                  isInactiveCustomAppChange(change),
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isActivationChange(change) ||
+                    // Custom app must be activated before applying any other changes
+                    isInactiveCustomAppChange(change),
               },
               request: {
                 endpoint: {
@@ -189,10 +197,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           deactivate: [
             {
               condition: {
-                custom: () => ({ change }) =>
-                  isDeactivationChange(change) ||
-                  // Custom app must be activated before applying any other changes
-                  isInactiveCustomAppChange(change),
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isDeactivationChange(change) ||
+                    // Custom app must be activated before applying any other changes
+                    isInactiveCustomAppChange(change),
               },
               request: {
                 endpoint: {
@@ -231,7 +241,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       ],
     },
-[BRAND_TYPE_NAME]: {
+    [BRAND_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [
@@ -307,10 +317,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 context: {
                   custom:
                     () =>
-                      ({ change }) => ({
-                        // To create user in STAGED status, we need to provide 'activate=false' query param
-                        activate: getChangeData(change).value.status === 'STAGED' ? 'false' : 'true',
-                      }),
+                    ({ change }) => ({
+                      // To create user in STAGED status, we need to provide 'activate=false' query param
+                      activate: getChangeData(change).value.status === 'STAGED' ? 'false' : 'true',
+                    }),
                 },
               },
             },
@@ -324,10 +334,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      ['STAGED', 'DEPROVISIONED'].includes(change.data.before.value.status) &&
-                      getChangeData(change).value.status === 'PROVISIONED',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    ['STAGED', 'DEPROVISIONED'].includes(change.data.before.value.status) &&
+                    getChangeData(change).value.status === 'PROVISIONED',
               },
             },
             // suspend user
@@ -338,10 +348,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      change.data.before.value.status === 'ACTIVE' &&
-                      getChangeData(change).value.status === 'SUSPENDED',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'ACTIVE' &&
+                    getChangeData(change).value.status === 'SUSPENDED',
               },
             },
             // unsuspend a user, and change its status to active
@@ -352,10 +362,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      change.data.before.value.status === 'SUSPENDED' &&
-                      getChangeData(change).value.status === 'ACTIVE',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'SUSPENDED' &&
+                    getChangeData(change).value.status === 'ACTIVE',
               },
             },
             // unlock a user, and change its status to active
@@ -366,10 +376,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      change.data.before.value.status === 'LOCKED_OUT' &&
-                      getChangeData(change).value.status === 'ACTIVE',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.status === 'LOCKED_OUT' &&
+                    getChangeData(change).value.status === 'ACTIVE',
               },
             },
             // update all user properties except status
@@ -390,10 +400,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      isModificationChange(change) &&
-                      change.data.before.value.stauts !== 'DEPROVISIONED' &&
-                      getChangeData(change).value.status === 'DEPROVISIONED',
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.stauts !== 'DEPROVISIONED' &&
+                    getChangeData(change).value.status === 'DEPROVISIONED',
               },
             },
           ],
@@ -405,9 +415,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 custom:
                   () =>
-                    ({ change }) =>
-                      // user must be in status DEPROVISIONED before it can be deleted
-                      getChangeData(change).value.status !== 'DEPROVISIONED',
+                  ({ change }) =>
+                    // user must be in status DEPROVISIONED before it can be deleted
+                    getChangeData(change).value.status !== 'DEPROVISIONED',
               },
             },
             {

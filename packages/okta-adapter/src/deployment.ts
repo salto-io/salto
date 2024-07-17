@@ -126,11 +126,17 @@ export const isDeactivation = ({ before, after }: { before: string; after: strin
 
 export const isActivationChange = (change: Change<InstanceElement>): boolean =>
   isModificationChange(change) &&
-  getAllChangeData(change).map(data => data.value.status) === [INACTIVE_STATUS, ACTIVE_STATUS]
+  _.isEqual(
+    getAllChangeData(change).map(data => data.value.status),
+    [INACTIVE_STATUS, ACTIVE_STATUS],
+  )
 
 export const isDeactivationChange = (change: Change<InstanceElement>): boolean =>
   isModificationChange(change) &&
-  getAllChangeData(change).map(data => data.value.status) === [ACTIVE_STATUS, INACTIVE_STATUS]
+  _.isEqual(
+    getAllChangeData(change).map(data => data.value.status),
+    [ACTIVE_STATUS, INACTIVE_STATUS],
+  )
 
 const DEACTIVATE_BEFORE_REMOVAL_TYPES = new Set([NETWORK_ZONE_TYPE_NAME])
 const shouldDeactivateBeforeRemoval = (change: Change<InstanceElement>): boolean =>
@@ -138,7 +144,10 @@ const shouldDeactivateBeforeRemoval = (change: Change<InstanceElement>): boolean
 
 export const isInactiveCustomAppChange = (change: Change<InstanceElement>): boolean =>
   isModificationChange(change) &&
-  getAllChangeData(change).map(data => data.value.status) === [INACTIVE_STATUS, INACTIVE_STATUS] &&
+  _.isEqual(
+    getAllChangeData(change).map(data => data.value.status),
+    [INACTIVE_STATUS, ACTIVE_STATUS],
+  ) &&
   // customName field only exist in custom applications
   getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
 

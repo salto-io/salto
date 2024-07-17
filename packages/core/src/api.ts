@@ -59,6 +59,7 @@ import {
   detailedCompare,
   getDetailedChanges as getDetailedChangesFromChange,
 } from '@salto-io/adapter-utils'
+import { CORE_FLAGS, getCoreFlagBool } from './core/flags'
 import { deployActions, ItemStatus } from './core/deploy'
 import {
   adapterCreators,
@@ -163,7 +164,7 @@ export const preview = async (
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts), ...(topLevelFilters ?? [])],
-    compareOptions: { compareByValue: true },
+    compareOptions: { compareByValue: true, compareListItems: getCoreFlagBool(CORE_FLAGS.compareListItems) },
   })
 }
 
@@ -215,7 +216,9 @@ export const deploy = async (
   // variable expressions. Adding only variables is not enough for the case of a variable
   // with the value of a reference.
   const changes = await awu(
-    await getDetailedChanges(await workspace.elements(), changedElements, [id => changedElements.has(id)]),
+    await getDetailedChanges(await workspace.elements(), changedElements, [id => changedElements.has(id)], {
+      compareListItems: getCoreFlagBool(CORE_FLAGS.compareListItems),
+    }),
   )
     .map(change => ({ change, serviceChanges: [change] }))
     .toArray()

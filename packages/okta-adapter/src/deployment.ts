@@ -31,7 +31,10 @@ import {
   isSaltoError,
   SaltoError,
   isRemovalChange,
-  isServiceId, getAllChangeData, ReadOnlyElementsSource, isInstanceElement,
+  isServiceId,
+  getAllChangeData,
+  ReadOnlyElementsSource,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
   config as configUtils,
@@ -139,7 +142,9 @@ export const isInactiveCustomAppChange = (change: Change<InstanceElement>): bool
   // customName field only exist in custom applications
   getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
 
-export const getSubdomainFromElementsSource = async (elementsSource: ReadOnlyElementsSource): Promise<string | undefined> => {
+export const getSubdomainFromElementsSource = async (
+  elementsSource: ReadOnlyElementsSource,
+): Promise<string | undefined> => {
   const orgSettingInstance = await elementsSource.get(
     new ElemID(OKTA, ORG_SETTING_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
   )

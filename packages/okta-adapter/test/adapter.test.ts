@@ -47,7 +47,8 @@ import {
   USERTYPE_TYPE_NAME,
   DEVICE_ASSURANCE_TYPE_NAME,
   SMS_TEMPLATE_TYPE_NAME,
-  LINKS_FIELD, APPLICATION_TYPE_NAME,
+  LINKS_FIELD,
+  APPLICATION_TYPE_NAME,
   APPLICATION_TYPE_NAME,
   INACTIVE_STATUS,
   CUSTOM_NAME_FIELD,
@@ -1104,9 +1105,7 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
-          'app-fakeid1',
-        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('app-fakeid1')
       })
 
       it('should successfully modify an application', async () => {
@@ -1127,9 +1126,7 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
-          'app2',
-        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('app2')
       })
 
       it('should successfully remove an application', async () => {

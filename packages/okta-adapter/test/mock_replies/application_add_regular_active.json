@@ -78,9 +78,7 @@
         "uploadLogo": {
           "href": "https://salto.okta.com/api/v1/apps/0oagts92usgiZLb7G697/logo",
           "hints": {
-            "allow": [
-              "POST"
-            ]
+            "allow": ["POST"]
           }
         },
         "appLinks": [
@@ -126,9 +124,7 @@
         "policies": {
           "href": "https://salto.okta.com/api/v1/apps/0oagts92usgiZLb7G697/policies",
           "hints": {
-            "allow": [
-              "PUT"
-            ]
+            "allow": ["PUT"]
           }
         },
         "groups": {

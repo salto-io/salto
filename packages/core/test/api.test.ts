@@ -1385,7 +1385,13 @@ describe('api.ts', () => {
       expectedChanges = [
         { id: sourceElemId, baseChange: baseRemoveChange, ...baseRemoveChange },
         { id: targetElement.elemID, baseChange: baseAddChange, ...baseAddChange },
-        { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef }, baseChange: baseModifyChange },
+        {
+          id: refElemId,
+          action: 'modify',
+          data: { before: beforeRef, after: afterRef },
+          elemIDs: { before: refElemId, after: refElemId },
+          baseChange: baseModifyChange,
+        },
       ]
       changes = await api.rename(ws, sourceElemId, targetElement.elemID)
     })

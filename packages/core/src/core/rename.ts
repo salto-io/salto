@@ -22,7 +22,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { transformElement, references as referencesUtils, applyDetailedChanges } from '@salto-io/adapter-utils'
+import { transformElement, references as referencesUtils, detailedCompare } from '@salto-io/adapter-utils'
 import { ElementsSource, getElementsPathHints, PathIndex, splitElementByPath, Workspace } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
@@ -76,12 +76,12 @@ export const renameChecks = async (workspace: Workspace, sourceElemId: ElemID, t
   }
 }
 
-export const updateElementReferences = async (
-  element: InstanceElement,
+export const updateElementReferences = async <T extends Element>(
+  element: T,
   sourceElemId: ElemID,
   targetElemId: ElemID,
   elementsSource?: ElementsSource,
-): Promise<InstanceElement> =>
+): Promise<T> =>
   transformElement({
     element,
     transformFunc: referencesUtils.createReferencesTransformFunc(sourceElemId, targetElemId),
@@ -129,19 +129,9 @@ const getRenameReferencesChanges = async (
   awu(await elementsSource.getAll())
     // filtering the renamed element - its references are taken care in getRenameElementChanges
     .filter(element => !sourceElemId.isEqual(element.elemID))
-    .flatMap(element => {
-      const referencesInElement = referencesUtils.getReferences(element, sourceElemId)
-      const referenceChanges = referencesInElement.map(reference => ({
-        id: reference.path,
-        ...toChange({
-          before: reference.value,
-          after: referencesUtils.getUpdatedReference(reference.value, targetElemId),
-        }),
-      }))
-      const afterElement = element.clone()
-      applyDetailedChanges(afterElement, referenceChanges)
-      const baseChange = toChange({ before: element, after: afterElement })
-      return referenceChanges.map(change => ({ ...change, baseChange }))
+    .flatMap(async element => {
+      const updatedElement = await updateElementReferences(element, sourceElemId, targetElemId)
+      return detailedCompare(element, updatedElement)
     })
     .toArray()
 

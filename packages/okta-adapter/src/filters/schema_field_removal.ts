@@ -23,6 +23,7 @@ import {
   isModificationChange,
 } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { APP_USER_SCHEMA_TYPE_NAME, GROUP_SCHEMA_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
 
@@ -55,7 +56,12 @@ const deletePropertiesWithNull = (instance: InstanceElement): void => {
   const path = SCHEMAS_TO_PATH[instance.elemID.typeName]
   const customPropertiesPath = instance.elemID.createNestedID(...path)
   const customProperties = resolvePath(instance, customPropertiesPath)
-
+  if (customProperties === undefined) {
+    return
+  }
+  if (!values.isPlainRecord(customProperties)) {
+    throw new Error('Custom properties should be a record')
+  }
   Object.keys(customProperties).forEach(property => {
     if (customProperties[property] === null) {
       delete customProperties[property]

@@ -90,6 +90,27 @@ describe('schemaFieldRemovalFilter', () => {
         await filter.onDeploy([toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterInstanceTwo })])
         expect(groupSchemaAfterInstanceTwo.value.definitions.custom.properties.property2).toBeUndefined()
       })
+      it('should throw error when custom properties is not a record', async () => {
+        const groupSchemaAfterInstanceThree = new InstanceElement('defaultGroupSchema', groupSchemaType, {
+          definitions: {
+            custom: {
+              properties: 'not a record',
+            },
+          },
+        })
+        await expect(async () =>
+          filter.onDeploy([toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterInstanceThree })]),
+        ).rejects.toThrow(new Error('Custom properties should be a record'))
+      })
+      it('should not change custom properties if the properties field is undefined', async () => {
+        const groupSchemaAfterInstanceFour = new InstanceElement('defaultGroupSchema', groupSchemaType, {
+          definitions: {
+            custom: {},
+          },
+        })
+        await filter.onDeploy([toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterInstanceFour })])
+        expect(groupSchemaAfterInstanceFour.value.definitions.custom.properties).toBeUndefined()
+      })
     })
   })
 
@@ -150,6 +171,27 @@ describe('schemaFieldRemovalFilter', () => {
         })
         await filter.onDeploy([toChange({ before: userSchemaBeforeInstance, after: userSchemaAfterInstanceTwo })])
         expect(userSchemaAfterInstanceTwo.value.definitions.custom.properties.property2).toBeUndefined()
+      })
+      it('should throw error when custom properties is not a record', async () => {
+        const userSchemaAfterInstanceThree = new InstanceElement('defaultGroupSchema', userSchemaType, {
+          definitions: {
+            custom: {
+              properties: 0,
+            },
+          },
+        })
+        await expect(() =>
+          filter.onDeploy([toChange({ before: userSchemaBeforeInstance, after: userSchemaAfterInstanceThree })]),
+        ).rejects.toThrow(new Error('Custom properties should be a record'))
+      })
+      it('should not change custom properties if the properties field is undefined', async () => {
+        const userSchemaAfterInstanceFour = new InstanceElement('defaultGroupSchema', userSchemaType, {
+          definitions: {
+            custom: {},
+          },
+        })
+        await filter.onDeploy([toChange({ before: userSchemaBeforeInstance, after: userSchemaAfterInstanceFour })])
+        expect(userSchemaAfterInstanceFour.value.definitions.custom.properties).toBeUndefined()
       })
     })
   })

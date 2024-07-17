@@ -34,7 +34,7 @@ import {
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, getParents, resolvePath, setPath } from '@salto-io/adapter-utils'
-import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
+import { APP_USER_SCHEMA_TYPE_NAME, DEFINITIONS_FIELD } from '../constants'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployWithStatus } from '../deprecated_deployment'
@@ -45,6 +45,8 @@ const log = logger(module)
 type AppUserSchema = {
   id: string
 }
+
+const CUSTOM_PROPERTIES_PATH = [DEFINITIONS_FIELD, 'custom', 'properties']
 
 const AppUserSchemaSchema = Joi.object({
   id: Joi.string().required(),
@@ -97,7 +99,7 @@ const getAppUserSchemaInstance = (
   fieldsToOmit: string[],
 ): InstanceElement => {
   const createdAppUserSchemaInstance = appUserSchemaInstance.clone()
-  createdAppUserSchemaInstance.value = _.omit(autoCreatedappUserSchema, [...Object.keys(fieldsToOmit), 'name'])
+  createdAppUserSchemaInstance.value = _.omit(autoCreatedappUserSchema, fieldsToOmit)
   return createdAppUserSchemaInstance
 }
 
@@ -125,7 +127,10 @@ const makeModificationFromAddition = async (
     appUserSchemaInstance,
     fieldsToOmit,
   )
-  return { action: 'modify', data: { before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance.clone() } }
+  return {
+    action: 'modify',
+    data: { before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance },
+  }
 }
 
 const getBaseElemID = (appUserSchemaInstance: InstanceElement): ElemID =>
@@ -140,6 +145,10 @@ const deployModificationChange = async (
   const after = change.data.after.clone()
   const beforeBaseElemId = getBaseElemID(before)
   setPath(after, getBaseElemID(after), resolvePath(before, beforeBaseElemId))
+  const afterCustomPropertiesElemID = after.elemID.createNestedID(...CUSTOM_PROPERTIES_PATH)
+  if (resolvePath(after, after.elemID.createNestedID(...CUSTOM_PROPERTIES_PATH)) === undefined) {
+    setPath(after, afterCustomPropertiesElemID, {})
+  }
   await defaultDeployWithStatus(toChange({ before, after }), client, apiDefinitions)
 }
 

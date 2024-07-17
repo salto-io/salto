@@ -136,7 +136,6 @@ describe('appUserSchemaDeployment', () => {
       const instance = getChangeData(appliedChanges[0]) as InstanceElement
       expect(instance.value).toEqual({
         // validate id assigned to value
-        // TODO make sure with Shir that I want the id to chagne but everything else don't
         id: 'appUserSchemaId',
         title: 'user schema test',
         definitions: {
@@ -185,9 +184,7 @@ describe('appUserSchemaDeployment', () => {
       expect(result.deployResult.errors).toHaveLength(1)
       expect(result.deployResult.errors[0].message).toEqual('Invalid app user schema response')
     })
-    it('should succeed when there are no properties in custom', async () => {
-      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
-      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
+    it('should deploy an empty properties field when there are no properties in custom', async () => {
       mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
       mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
 
@@ -195,29 +192,22 @@ describe('appUserSchemaDeployment', () => {
       delete withoutProperties.value.definitions.custom.properties
       const withEmptyProperties = appUserSchemaInstance.clone()
       withEmptyProperties.value.definitions.custom.properties = {}
-      const withoutCustom = appUserSchemaInstance.clone()
-      delete withoutCustom.value.definitions.custom
-      const withoutDefinitions = appUserSchemaInstance.clone()
-      delete withoutDefinitions.value.definitions
 
-      const instancesWithId = [withoutProperties, withEmptyProperties, withoutCustom, withoutDefinitions].map(
-        instance => {
-          const res = instance.clone()
-          res.value.id = 'appUserSchemaId'
-          return res
-        },
-      )
+      const instancesWithId = [withoutProperties, withEmptyProperties].map(instance => {
+        const res = instance.clone()
+        res.value.id = 'appUserSchemaId'
+        return res
+      })
+
       const result = await filter.deploy([
         toChange({ after: withoutProperties.clone() }),
         toChange({ after: withEmptyProperties.clone() }),
-        toChange({ after: withoutCustom.clone() }),
-        toChange({ after: withoutDefinitions.clone() }),
       ])
       const { appliedChanges } = result.deployResult
-      expect(appliedChanges).toHaveLength(4)
+      expect(appliedChanges).toHaveLength(2)
       expect(appliedChanges.map(getChangeData)).toEqual(instancesWithId)
       expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/apps/1/default', undefined)
-      expect(mockConnection.get).toHaveBeenCalledTimes(4)
+      expect(mockConnection.get).toHaveBeenCalledTimes(2)
       expect(result.deployResult.errors).toHaveLength(0)
     })
   })

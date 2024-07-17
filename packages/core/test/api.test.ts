@@ -23,7 +23,7 @@ import {
   ChangeDataType,
   ChangeValidator,
   CORE_ANNOTATIONS,
-  DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   Field,
@@ -46,6 +46,7 @@ import {
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
+import { setPath } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { adapter as salesforceAdapter, loadElementsFromFolder } from '@salto-io/salesforce-adapter'
 import * as api from '../src/api'
@@ -1352,8 +1353,8 @@ describe('api.ts', () => {
   })
 
   describe('rename', () => {
-    let expectedChanges: DetailedChange[]
-    let changes: DetailedChange[]
+    let expectedChanges: DetailedChangeWithBaseChange[]
+    let changes: DetailedChangeWithBaseChange[]
     beforeAll(async () => {
       const workspaceElements = mockElements.getAllElements()
       const ws = mockWorkspace({ elements: workspaceElements })
@@ -1373,10 +1374,18 @@ describe('api.ts', () => {
       const beforeRef = new ReferenceExpression(sourceElemId)
       const afterRef = new ReferenceExpression(targetElement.elemID)
 
+      const elementWithReference = await ws.getValue(refElemId.createTopLevelParentID().parent)
+      const elementWithRenamedReference = elementWithReference.clone()
+      setPath(elementWithRenamedReference, refElemId, afterRef)
+
+      const baseRemoveChange = toChange({ before: sourceElement })
+      const baseAddChange = toChange({ after: targetElement })
+      const baseModifyChange = toChange({ before: elementWithReference, after: elementWithRenamedReference })
+
       expectedChanges = [
-        { id: sourceElemId, action: 'remove', data: { before: sourceElement } },
-        { id: targetElement.elemID, action: 'add', data: { after: targetElement } },
-        { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } },
+        { id: sourceElemId, baseChange: baseRemoveChange, ...baseRemoveChange },
+        { id: targetElement.elemID, baseChange: baseAddChange, ...baseAddChange },
+        { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef }, baseChange: baseModifyChange },
       ]
       changes = await api.rename(ws, sourceElemId, targetElement.elemID)
     })

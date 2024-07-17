@@ -30,19 +30,25 @@ export default class ZendeskGuideClient implements client.HTTPReadClientInterfac
     this.clientList = clientList
   }
 
-  delete(params: client.ClientDataParams): returnType {
-    // if (this.clientList[params.brandName] === undefined) {throw new Error(`delete failed as there is no client for brand ${params.brandName}`)}
-    return this.clientList[0].delete(params)
-  }
-
-  async get(params: client.ClientBaseParams): returnType {
+  private async runCommand(params: client.ClientDataParams, method: keyof client.HttpMethodToClientParams): returnType {
     const brandId = params.queryParams?.myCustomArgForBrandId
-    if (!_.isString(brandId) || this.clientList[brandId] === undefined) {
+    if (!_.isString(brandId)) {
+      throw new Error(`${method} failed as brandId is not defined`)
+    }
+    // we shouldn't get guide elements for this brand
+    if (this.clientList[brandId] === undefined) {
       return emptyRes
     }
     const newParams = _.omit(params, 'queryParams.myCustomArgForBrandId')
-    // if (this.clientList[params.brandName] === undefined) {throw new Error(`get failed as there is no client for brand ${params.brandName}`)}
-    return this.clientList[brandId].get(newParams)
+    return this.clientList[brandId][method](newParams)
+  }
+
+  async delete(params: client.ClientDataParams): returnType {
+    return this.runCommand(params, 'delete')
+  }
+
+  async get(params: client.ClientBaseParams): returnType {
+    return this.runCommand(params, 'get')
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -50,28 +56,23 @@ export default class ZendeskGuideClient implements client.HTTPReadClientInterfac
     return 0
   }
 
-  head(params: client.ClientBaseParams): returnType {
-    // if (this.clientList[params.brandName] === undefined) {throw new Error(`head failed as there is no client for brand ${params.brandName}`)}
-    return this.clientList[0].head(params)
+  async head(params: client.ClientBaseParams): returnType {
+    return this.runCommand(params, 'head')
   }
 
-  options(params: client.ClientBaseParams): returnType {
-    // if (this.clientList[params.brandName] === undefined) {throw new Error(`options failed as there is no client for brand ${params.brandName}`)}
-    return this.clientList[0].options(params)
+  async options(params: client.ClientBaseParams): returnType {
+    return this.runCommand(params, 'options')
   }
 
-  patch(params: client.ClientDataParams): returnType {
-    // if (this.clientList[params.brandName] === undefined) {throw new Error(`patch failed as there is no client for brand ${params.brandName}`)}
-    return this.clientList[0].patch(params)
+  async patch(params: client.ClientDataParams): returnType {
+    return this.runCommand(params, 'patch')
   }
 
-  post(params: client.ClientDataParams): returnType {
-    // if (this.clientList[params.brandName] === undefined) {throw new Error(`post failed as there is no client for brand ${params.brandName}`)}
-    return this.clientList[0].post(params)
+  async post(params: client.ClientDataParams): returnType {
+    return this.runCommand(params, 'post')
   }
 
-  put(params: client.ClientDataParams): returnType {
-    // if (this.clientList[params.brandName] === undefined) {throw new Error(`put failed as there is no client for brand ${params.brandName}`)}
-    return this.clientList[0].put(params)
+  async put(params: client.ClientDataParams): returnType {
+    return this.runCommand(params, 'put')
   }
 }

@@ -454,7 +454,7 @@ const getGuideElements = async ({
     getElemIdFunc,
     definitions: brandFetchDefinitions,
   })
-  guideFetchResult.elements = guideFetchResult.elements.filter(e => e.elemID.typeName !== 'brand')
+  guideFetchResult.elements = guideFetchResult.elements.filter(e => !e.elemID.typeName.includes('brand'))
   return {
     ...guideFetchResult,
   }
@@ -702,19 +702,9 @@ export default class ZendeskAdapter implements AdapterOperations {
       const client = createClientDefinitions({ main: this.client, guide: this.guideClient })
       const guideFetchDef = definitions.mergeWithUserElemIDDefinitions({
         userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
-        fetchConfig: createFetchDefinitions(
-          this.userConfig,
-          // I think we should add omit here, what am i missing
-          {
-            typesToPick,
-            //   GUIDE_TYPES_TO_HANDLE_BY_BRAND.concat([
-            //   'guide_settings__help_center',
-            //   'guide_settings__help_center__settings',
-            //   'guide_settings__help_center__text_filter',
-            // ]),
-            // brandList: Object.keys(brandClients),
-          },
-        ),
+        fetchConfig: createFetchDefinitions(this.userConfig, {
+          typesToPick,
+        }),
       })
       const guideDefinitions = {
         clients: client,

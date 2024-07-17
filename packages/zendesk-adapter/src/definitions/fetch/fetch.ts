@@ -1347,71 +1347,6 @@ const createCustomizations = (): Record<
 
   category_order: {},
 
-  // example - using a different name to avoid overlaps with existing logic
-  // guide_category: {
-  //   requests: [
-  //     {
-  //       endpoint: {
-  //         path: '/api/v2/help_center/categories',
-  //         queryArgs: {
-  //           include: 'translations',
-  //           myCustomArgForBrandId: '{brandId}',
-  //         },
-  //         // params: {
-  //         //   brand: {
-  //         //     id: '{brandId}',
-  //         //   },
-  //         // },
-  //         client: 'guide',
-  //       },
-  //       transformation: {
-  //         root: 'categories',
-  //         adjust: async ({ value, context }) => ({
-  //           value: {
-  //             ...(value as Values),
-  //             xxbrandId: context.brandId,
-  //           },
-  //         }),
-  //       },
-  //     },
-  //   ],
-  //   resource: {
-  //     directFetch: true,
-  //     context: {
-  //       dependsOn: {
-  //         brandId: {
-  //           parentTypeName: 'brand',
-  //           transformation: {
-  //             root: 'id',
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //     },
-  //     fieldCustomizations: {
-  //       translations: {
-  //         standalone: {
-  //           typeName: 'guide_category_translation',
-  //           addParentAnnotation: true,
-  //           referenceFromParent: true,
-  //           nestPathUnderParent: true,
-  //         },
-  //       },
-  //     },
-  //   },
-  // },
-  // guide_category_translation: {
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //     },
-  //   },
-  // },
-
   category: {
     requests: [
       {
@@ -1865,11 +1800,9 @@ export const createFetchDefinitions = (
   {
     typesToOmit,
     typesToPick,
-    brandList,
   }: {
     typesToOmit?: string[]
     typesToPick?: string[]
-    brandList?: string[]
   },
 ): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
   let customizations = createCustomizations()
@@ -1878,24 +1811,6 @@ export const createFetchDefinitions = (
   }
   if (typesToPick !== undefined) {
     customizations = _.pick(customizations, typesToPick)
-  }
-
-  if (brandList !== undefined) {
-    Object.keys(customizations).forEach(type => {
-      const typeAllRequests = customizations[type].requests
-      if (_.isArray(typeAllRequests) && typeAllRequests.length === 1) {
-        const typeRequest = typeAllRequests[0]
-        const newRequests = brandList.map(brand => ({
-          ...typeRequest,
-          context: {
-            ...typeRequest.context,
-            brandName: brand,
-          },
-          endpoint: { ...typeRequest.endpoint, client: brand },
-        }))
-        customizations[type].requests = newRequests
-      }
-    })
   }
 
   return {

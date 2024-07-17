@@ -218,7 +218,6 @@ const customReferencesHandlersNames = [
   'profiles',
   'managedElements',
   'permisisonSets',
-  'rulesAndConditions',
 ] as const
 export type CustomReferencesHandlers =
   (typeof customReferencesHandlersNames)[number]

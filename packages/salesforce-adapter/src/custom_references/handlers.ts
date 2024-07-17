@@ -36,13 +36,11 @@ import {
 import { profilesHandler } from './profiles'
 import { managedElementsHandler } from './managed_elements'
 import { permissionSetsHandler } from './permission_sets'
-import { rulesAndConditionsHandler } from './rules_and_conditions'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   profiles: profilesHandler,
   managedElements: managedElementsHandler,
   permisisonSets: permissionSetsHandler,
-  rulesAndConditions: rulesAndConditionsHandler,
 }
 
 const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> =
@@ -50,7 +48,6 @@ const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> =
     profiles: true,
     managedElements: true,
     permisisonSets: true,
-    rulesAndConditions: true,
   }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {

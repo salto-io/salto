@@ -14,17 +14,50 @@
  * limitations under the License.
  */
 
-import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, createTemplateExpression } from '@salto-io/adapter-utils'
+import {
+  Change,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  isReferenceExpression,
+  ReferenceExpression,
+  TemplateExpression,
+  TemplatePart,
+} from '@salto-io/adapter-api'
+import {
+  createTemplateExpression,
+  inspectValue,
+  replaceTemplatesWithValues,
+  resolveTemplates,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { CPQ_ADVANCED_CONDITION_FIELD, CPQ_ERROR_CONDITION, CPQ_INDEX_FIELD, CPQ_PRICE_CONDITION, CPQ_PRICE_RULE, CPQ_PRODUCT_RULE, CPQ_QUOTE_TERM, CPQ_QUOTE_TERM_FIELD, CPQ_RULE_FIELD, CPQ_TERM_CONDITON, SBAA_ADVANCED_CONDITION_FIELD, SBAA_APPROVAL_CONDITION, SBAA_APPROVAL_RULE, SBAA_INDEX_FIELD } from '../../constants'
-import {LocalFilterCreator} from '../../filter'
-import { apiNameSync, isInstanceOfCustomObjectChangeSync, isInstanceOfCustomObjectSync } from '../utils'
+import {
+  CPQ_ADVANCED_CONDITION_FIELD,
+  CPQ_ERROR_CONDITION,
+  CPQ_INDEX_FIELD,
+  CPQ_PRICE_CONDITION,
+  CPQ_PRICE_RULE,
+  CPQ_PRODUCT_RULE,
+  CPQ_QUOTE_TERM,
+  CPQ_QUOTE_TERM_FIELD,
+  CPQ_RULE_FIELD,
+  CPQ_TERM_CONDITON,
+  SBAA_ADVANCED_CONDITION_FIELD,
+  SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
+  SBAA_INDEX_FIELD,
+} from '../../constants'
+import { LocalFilterCreator } from '../../filter'
+import {
+  apiNameSync,
+  isInstanceOfCustomObjectChangeSync,
+  isInstanceOfCustomObjectSync,
+} from '../utils'
 
-
-const {makeArray} = collections.array
+const { makeArray } = collections.array
 const log = logger(module)
 
 type RuleAndConditionDef = {
@@ -90,7 +123,31 @@ const defs: RuleAndConditionDef[] = [
   },
 ]
 
-const ruleTypeNames = defs.map(def => def.rule.typeApiName)
+const ruleTypeNames = defs.map((def) => def.rule.typeApiName)
+
+const resolveConditionIndexFunc =
+  (indexField: string) =>
+  (ref: ReferenceExpression): TemplatePart => {
+    const refValue = ref.value
+    if (!isInstanceElement(refValue)) {
+      log.warn(
+        'Received non instance reference %s. refValue is %s',
+        ref.elemID.getFullName(),
+        inspectValue(refValue),
+      )
+      return ref
+    }
+    const index: unknown = refValue.value[indexField]
+    if (!_.isNumber(index)) {
+      log.warn(
+        'Received non number index for instance %s with values %s',
+        refValue.elemID.getFullName(),
+        inspectValue(refValue.value),
+      )
+      return ref
+    }
+    return index.toString()
+  }
 
 const isConditionOfRuleFunc =
   (rule: InstanceElement, ruleField: string) =>
@@ -107,7 +164,11 @@ const getConditionIndex = (
   return _.isNumber(index) ? index : undefined
 }
 
-const setCustomConditionReferences = ({rule, conditionsByIndex, def}: {
+const setCustomConditionReferences = ({
+  rule,
+  conditionsByIndex,
+  def,
+}: {
   rule: InstanceElement
   conditionsByIndex: Record<number, InstanceElement>
   def: RuleAndConditionDef
@@ -122,8 +183,8 @@ const setCustomConditionReferences = ({rule, conditionsByIndex, def}: {
   if (rawParts === undefined || !rawParts.some(Number)) {
     return 0
   }
-  const templateExpression = createTemplateExpression({
-    parts: rawParts.map(part => {
+  rule.value[def.rule.customConditionField] = createTemplateExpression({
+    parts: rawParts.map((part) => {
       const index = Number(part)
       if (index === undefined) {
         return part
@@ -139,7 +200,6 @@ const setCustomConditionReferences = ({rule, conditionsByIndex, def}: {
       return new ReferenceExpression(condition.elemID, condition)
     }),
   })
-  rule.value[def.rule.customConditionField] = templateExpression
   return createdReferences
 }
 
@@ -154,56 +214,115 @@ const createReferencesFromDef = ({
   if (rules === undefined) {
     return 0
   }
-  return _.sum(rules.map(rule => {
-    const isConditionOfCurrentRule = isConditionOfRuleFunc(
-      rule,
-      def.condition.ruleField,
-    )
-    const ruleConditions = makeArray(
-      instancesByType[def.condition.typeApiName],
-    ).filter(isConditionOfCurrentRule)
-    const conditionsByIndex = ruleConditions.reduce<
-      Record<number, InstanceElement>
-    >((acc, condition) => {
-      const index = getConditionIndex(condition, def.condition.indexField)
-      if (index !== undefined) {
-        acc[index] = condition
-      }
-      return acc
-    }, {})
-    return setCustomConditionReferences({rule, conditionsByIndex, def})
-  }))
+  return _.sum(
+    rules.map((rule) => {
+      const isConditionOfCurrentRule = isConditionOfRuleFunc(
+        rule,
+        def.condition.ruleField,
+      )
+      const ruleConditions = makeArray(
+        instancesByType[def.condition.typeApiName],
+      ).filter(isConditionOfCurrentRule)
+      const conditionsByIndex = ruleConditions.reduce<
+        Record<number, InstanceElement>
+      >((acc, condition) => {
+        const index = getConditionIndex(condition, def.condition.indexField)
+        if (index !== undefined) {
+          acc[index] = condition
+        }
+        return acc
+      }, {})
+      return setCustomConditionReferences({ rule, conditionsByIndex, def })
+    }),
+  )
 }
 
-const isCPQRuleChange = (change: Change): change is Change<InstanceElement> => (
-  isInstanceOfCustomObjectChangeSync(change)
-  && ruleTypeNames.includes(apiNameSync(getChangeData(change).getTypeSync()) ?? '')
-)
+const isCPQRuleChange = (change: Change): change is Change<InstanceElement> =>
+  isInstanceOfCustomObjectChangeSync(change) &&
+  ruleTypeNames.includes(apiNameSync(getChangeData(change).getTypeSync()) ?? '')
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
-  name: 'cpqRulesAndConditionsFilter',
-  
-  onFetch: async elements => {
-    if (!config.fetchProfile.isFeatureEnabled('cpqRulesAndConditionsRefs')) {
-      log.debug('feature is disabled. Skipping filter')
-      return
-    }
-    const dataInstanesByType = _.groupBy(
-      elements.filter(isInstanceOfCustomObjectSync),
-      instance => apiNameSync(instance.getTypeSync())
-    )
-    const referencesCreated = _.sum(defs.map(def => createReferencesFromDef({def, instancesByType: dataInstanesByType})))
-    log.debug('Created %d references', referencesCreated)
-  },
-  preDeploy: async changes => {
-    const ruleChanges = changes
-      .filter(isInstanceOfCustomObjectChangeSync)
-      .filter(isAdditionOrModificationChange)
-      .filter(change => defs.some(def => apiNameSync(getChangeData(change).getTypeSync()) === def.rule.typeApiName))
-      .forEach(change => applyFunctionToChangeData(change, instance => {
-
-    })
+const filterCreator: LocalFilterCreator = ({ config }) => {
+  const templateMappingByRuleType: Partial<
+    Record<string, Record<string, TemplateExpression>>
+  > = {}
+  return {
+    name: 'cpqRulesAndConditionsFilter',
+    onFetch: async (elements) => {
+      if (!config.fetchProfile.isFeatureEnabled('cpqRulesAndConditionsRefs')) {
+        log.debug('feature is disabled. Skipping filter')
+        return
+      }
+      const dataInstancesByType = _.groupBy(
+        elements.filter(isInstanceOfCustomObjectSync),
+        (instance) => apiNameSync(instance.getTypeSync()),
+      )
+      const referencesCreated = _.sum(
+        defs.map((def) =>
+          createReferencesFromDef({
+            def,
+            instancesByType: dataInstancesByType,
+          }),
+        ),
+      )
+      log.debug('Created %d references', referencesCreated)
+    },
+    preDeploy: async (changes) => {
+      const ruleChanges = changes
+        .filter(isCPQRuleChange)
+        .filter(isAdditionOrModificationChange)
+      if (ruleChanges.length === 0) {
+        return
+      }
+      const rulesInstancesByType = _.groupBy(
+        ruleChanges.map(getChangeData),
+        (rule) => apiNameSync(rule.getTypeSync()) ?? '',
+      )
+      defs.forEach((def) => {
+        const rules = makeArray(rulesInstancesByType[def.rule.typeApiName])
+        if (rules.length > 0) {
+          const templateMapping = {}
+          replaceTemplatesWithValues(
+            {
+              values: rules.map((rule) => rule.value),
+              fieldName: def.rule.customConditionField,
+            },
+            templateMapping,
+            resolveConditionIndexFunc(def.condition.indexField),
+          )
+          templateMappingByRuleType[def.rule.typeApiName] = templateMapping
+        }
+      })
+    },
+    onDeploy: async (changes) => {
+      const ruleChanges = changes
+        .filter(isCPQRuleChange)
+        .filter(isAdditionOrModificationChange)
+      if (ruleChanges.length === 0) {
+        return
+      }
+      const rulesInstancesByType = _.groupBy(
+        ruleChanges.map(getChangeData),
+        (rule) => apiNameSync(rule.getTypeSync()) ?? '',
+      )
+      defs.forEach((def) => {
+        const rules = makeArray(rulesInstancesByType[def.rule.typeApiName])
+        const templateMapping = templateMappingByRuleType[def.rule.typeApiName]
+        if (
+          templateMapping &&
+          Object.keys(templateMapping).length > 0 &&
+          rules.length > 0
+        ) {
+          resolveTemplates(
+            {
+              values: rules.map((rule) => rule.value),
+              fieldName: def.rule.customConditionField,
+            },
+            templateMapping,
+          )
+        }
+      })
+    },
   }
-})
+}
 
 export default filterCreator

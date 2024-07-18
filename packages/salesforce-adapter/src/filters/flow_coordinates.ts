@@ -13,19 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  getChangeData,
-  InstanceElement,
-  isAdditionOrModificationChange,
-} from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import {
-  apiNameSync,
-  isInstanceOfTypeChangeSync,
-  isInstanceOfTypeSync,
-} from './utils'
+import { apiNameSync, isInstanceOfTypeChangeSync, isInstanceOfTypeSync } from './utils'
 import { FLOW_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
@@ -56,16 +48,11 @@ const isInCanvasAutoLayoutMode = (instance: InstanceElement): boolean => {
   if (!instance.value.processMetadataValues) {
     return false
   }
-  const canvasMode = instance.value.processMetadataValues.find(
-    ({ name }: { name: string }) => name === 'CanvasMode',
-  )
+  const canvasMode = instance.value.processMetadataValues.find(({ name }: { name: string }) => name === 'CanvasMode')
   return canvasMode?.value?.stringValue === 'AUTO_LAYOUT_CANVAS'
 }
 
-const removeCoordinatesFromAllSections: TransformFuncSync = ({
-  value,
-  field,
-}) => {
+const removeCoordinatesFromAllSections: TransformFuncSync = ({ value, field }) => {
   if (!field) {
     return value
   }
@@ -82,10 +69,7 @@ const removeCoordinatesFromAllSections: TransformFuncSync = ({
   return value
 }
 
-const addZeroCoordinatesToAllSections: TransformFuncSync = ({
-  value,
-  field,
-}) => {
+const addZeroCoordinatesToAllSections: TransformFuncSync = ({ value, field }) => {
   if (!field) {
     return value
   }
@@ -104,11 +88,11 @@ const addZeroCoordinatesToAllSections: TransformFuncSync = ({
 
 const filter: LocalFilterCreator = () => ({
   name: 'flowCoordinatesFilter',
-  onFetch: async (elements) => {
+  onFetch: async elements => {
     elements
       .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
       .filter(isInCanvasAutoLayoutMode)
-      .forEach((instance) => {
+      .forEach(instance => {
         instance.value = transformValuesSync({
           values: instance.value,
           type: instance.getTypeSync(),
@@ -116,12 +100,12 @@ const filter: LocalFilterCreator = () => ({
         })
       })
   },
-  preDeploy: async (changes) => {
+  preDeploy: async changes => {
     changes
       .filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
-      .forEach((instance) => {
+      .forEach(instance => {
         instance.value = transformValuesSync({
           values: instance.value,
           type: instance.getTypeSync(),
@@ -129,13 +113,13 @@ const filter: LocalFilterCreator = () => ({
         })
       })
   },
-  onDeploy: async (changes) => {
+  onDeploy: async changes => {
     changes
       .filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(isInCanvasAutoLayoutMode)
-      .forEach((instance) => {
+      .forEach(instance => {
         instance.value = transformValuesSync({
           values: instance.value,
           type: instance.getTypeSync(),

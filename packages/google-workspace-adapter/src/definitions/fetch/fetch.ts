@@ -18,10 +18,12 @@ import { definitions } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { Options } from '../types'
 
+const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
+const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
+
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
 // when in doubt, it's best to hide fields only for relevant types, or to omit them.
-const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {}
-const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
+const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = {
   creationTime: {
     omit: true,
   },
@@ -35,15 +37,6 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
     omit: true,
   },
 }
-
-const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
-const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
-
-const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_HIDE,
-  DEFAULT_FIELDS_TO_OMIT,
-)
 
 const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
   role: {
@@ -406,7 +399,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'schemas',
-          adjust: item => {
+          adjust: async item => {
             const { value } = item
             if (!(lowerdashValues.isPlainRecord(value) && Array.isArray(value.fields))) {
               throw new Error('Expected schema to be an object')

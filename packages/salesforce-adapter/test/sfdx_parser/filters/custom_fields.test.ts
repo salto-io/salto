@@ -74,7 +74,6 @@ describe('custom fields filter', () => {
 
   let filter: ReturnType<typeof customFieldsFilter>
   beforeEach(() => {
-    // eslint-disable-next-line max-len
     const readTextFileMock =
       readTextFile.notFoundAsUndefined as jest.MockedFunction<
         typeof readTextFile.notFoundAsUndefined

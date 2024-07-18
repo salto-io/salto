@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { promises } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
@@ -22,20 +23,21 @@ import { createValueTransformer } from '../utils'
 import { RecurseIntoDefinition } from '../../definitions/system/fetch/dependencies'
 import { ElementGenerator } from '../element/element'
 
+const { mapValuesAsync } = promises.object
 const log = logger(module)
 
 type NestedResourceFetcher = (
   item: ValueGeneratedItem,
 ) => Promise<Record<string, ValueGeneratedItem[] | ValueGeneratedItem>>
 
-const extractRecurseIntoContext = (
+const extractRecurseIntoContext = async (
   item: ValueGeneratedItem,
   recurseIntoDef: RecurseIntoDefinition,
-): Record<string, unknown> => {
+): Promise<Record<string, unknown>> => {
   const { args: contextArgs } = recurseIntoDef.context
-  const context = _.mapValues(contextArgs, contextDef => {
+  const context = await mapValuesAsync(contextArgs, async contextDef => {
     const transformer = createValueTransformer(contextDef)
-    const transformedItem = transformer(item)
+    const transformedItem = await transformer(item)
     if (Array.isArray(transformedItem)) {
       return transformedItem.map(({ value }) => value)
     }
@@ -89,7 +91,7 @@ export const recurseIntoSubresources =
           Object.entries(def.recurseInto ?? {})
             .filter(([_fieldName, { conditions }]) => shouldRecurseIntoEntry(item.value, item.context, conditions))
             .map(async ([fieldName, recurseDef]) => {
-              const nestedRequestContext = extractRecurseIntoContext(item, recurseDef)
+              const nestedRequestContext = await extractRecurseIntoContext(item, recurseDef)
               const typeFetcher = typeFetcherCreator({
                 typeName: recurseDef.typeName,
                 context: { ...item.context, ...nestedRequestContext },

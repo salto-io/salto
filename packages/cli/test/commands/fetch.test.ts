@@ -23,7 +23,7 @@ import {
   FetchFunc,
   loadLocalWorkspace,
 } from '@salto-io/core'
-import { Workspace } from '@salto-io/workspace'
+import { createElementSelector, Workspace } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { CliExitCode, CliTelemetry, CliError } from '../../src/types'
 import * as fetchCmd from '../../src/commands/fetch'
@@ -122,7 +122,7 @@ describe('fetch command', () => {
         expect(fetch).toHaveBeenCalled()
       })
       it('should send telemetry events', () => {
-        expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
+        expect(telemetry.sendCountEvent).toHaveBeenCalled()
       })
     })
 
@@ -146,6 +146,59 @@ describe('fetch command', () => {
 
       it('should fetch both accounts', () => {
         expect((fetch as jest.Mock).mock.calls[0][2]).toEqual(['salesforce', 'netsuite'])
+      })
+    })
+
+    describe('when passing regenerate salto ids for selectors', () => {
+      const workspace = mocks.mockWorkspace({})
+
+      it('should exit with user error when regenerate salto ids flag is not passed', async () => {
+        result = await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            mode: 'default',
+            stateOnly: false,
+            fromState: false,
+            regenerateSaltoIds: false,
+            regenerateSaltoIdsForSelectors: ['salto.type.instance.*'],
+          },
+          workspace,
+        })
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should exit with user error when selectors are invalid', async () => {
+        result = await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            mode: 'default',
+            stateOnly: false,
+            fromState: false,
+            regenerateSaltoIds: true,
+            regenerateSaltoIdsForSelectors: ['salto.type.*'],
+          },
+          workspace,
+        })
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should call core fetch with selectors', async () => {
+        result = await action({
+          ...cliCommandArgs,
+          input: {
+            force: true,
+            mode: 'default',
+            stateOnly: false,
+            fromState: false,
+            regenerateSaltoIds: true,
+            regenerateSaltoIdsForSelectors: ['salto.type.instance.*'],
+          },
+          workspace,
+        })
+        expect(result).toBe(CliExitCode.Success)
+        expect(fetch).toHaveBeenCalledWith(workspace, expect.anything(), workspace.accounts(), true, undefined, [
+          createElementSelector('salto.type.instance.*'),
+        ])
       })
     })
 
@@ -181,6 +234,7 @@ describe('fetch command', () => {
             accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
+            regenerateSaltoIdsForSelectors: [],
           })
         })
         it('should start at least one step', () => {
@@ -213,12 +267,12 @@ describe('fetch command', () => {
             shouldCalcTotalSize: true,
             stateOnly: false,
             regenerateSaltoIds: false,
+            regenerateSaltoIdsForSelectors: [],
           })
         })
         it('should not update workspace', () => {
           expect(workspace.updateNaclFiles).toHaveBeenCalledWith([], 'default')
-          expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
-          expect(telemetry.getEventsMap()[eventsNames.changes][0].value).toEqual(0)
+          expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.changes, 0, expect.objectContaining({}))
         })
       })
       describe('with changes to write to config', () => {
@@ -250,6 +304,7 @@ describe('fetch command', () => {
             shouldCalcTotalSize: true,
             stateOnly: false,
             regenerateSaltoIds: false,
+            regenerateSaltoIdsForSelectors: [],
           }
         })
 
@@ -291,6 +346,7 @@ describe('fetch command', () => {
               shouldCalcTotalSize: true,
               stateOnly: false,
               regenerateSaltoIds: false,
+              regenerateSaltoIdsForSelectors: [],
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -318,6 +374,7 @@ describe('fetch command', () => {
               shouldCalcTotalSize: true,
               stateOnly: false,
               regenerateSaltoIds: false,
+              regenerateSaltoIdsForSelectors: [],
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -345,6 +402,7 @@ describe('fetch command', () => {
               shouldCalcTotalSize: true,
               stateOnly: false,
               regenerateSaltoIds: false,
+              regenerateSaltoIdsForSelectors: [],
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -372,6 +430,7 @@ describe('fetch command', () => {
               shouldCalcTotalSize: true,
               stateOnly: false,
               regenerateSaltoIds: false,
+              regenerateSaltoIdsForSelectors: [],
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -399,6 +458,7 @@ describe('fetch command', () => {
                   shouldCalcTotalSize: true,
                   stateOnly: true,
                   regenerateSaltoIds: false,
+                  regenerateSaltoIdsForSelectors: [],
                 }),
               ).rejects.toThrow())
           })
@@ -419,6 +479,7 @@ describe('fetch command', () => {
                 shouldCalcTotalSize: true,
                 stateOnly: true,
                 regenerateSaltoIds: false,
+                regenerateSaltoIdsForSelectors: [],
               })
             })
             it('should return OK status when state is updated', () => {
@@ -452,6 +513,7 @@ describe('fetch command', () => {
                 shouldCalcTotalSize: true,
                 stateOnly: true,
                 regenerateSaltoIds: false,
+                regenerateSaltoIdsForSelectors: [],
               })
             })
             it('should return AppError status when state is updated', () => {
@@ -477,6 +539,7 @@ describe('fetch command', () => {
               shouldCalcTotalSize: true,
               stateOnly: false,
               regenerateSaltoIds: false,
+              regenerateSaltoIdsForSelectors: [],
             })
           })
           it('should deploy all changes', () => {
@@ -505,6 +568,7 @@ describe('fetch command', () => {
                 shouldCalcTotalSize: true,
                 stateOnly: false,
                 regenerateSaltoIds: false,
+                regenerateSaltoIdsForSelectors: [],
               })
               expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
             })
@@ -533,6 +597,7 @@ describe('fetch command', () => {
                 shouldCalcTotalSize: true,
                 stateOnly: false,
                 regenerateSaltoIds: false,
+                regenerateSaltoIdsForSelectors: [],
               })
               expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
               expect(res).toBe(CliExitCode.AppError)
@@ -560,6 +625,7 @@ describe('fetch command', () => {
                 shouldCalcTotalSize: true,
                 stateOnly: false,
                 regenerateSaltoIds: false,
+                regenerateSaltoIdsForSelectors: [],
               })
               expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
               expect(res).toBe(CliExitCode.Success)
@@ -600,6 +666,7 @@ describe('fetch command', () => {
             stateOnly: false,
             accounts: [],
             regenerateSaltoIds: false,
+            regenerateSaltoIdsForSelectors: [],
           })
         })
         it('should succeed', () => {

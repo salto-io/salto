@@ -22,7 +22,7 @@ import { AdjustFunction } from '../types'
 // For some reason the fetch result doesn't return proper structure according to the docs
 // https://learn.microsoft.com/en-us/graph/api/intune-rbac-roledefinition-list?view=graph-rest-1.0&tabs=http
 // So we adjust the structure to match the docs
-export const adjustRoleDefinitionForDeployment: AdjustFunction = ({ value }) => {
+export const adjustRoleDefinitionForDeployment: AdjustFunction = async ({ value }) => {
   validatePlainObject(value, ROLE_DEFINITION_TYPE_NAME)
   const rolePermissions = _.get(value, 'rolePermissions', [])
   validateArray(rolePermissions, 'rolePermissions')

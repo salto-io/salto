@@ -67,11 +67,9 @@ describe('Custom Object Split filter', () => {
         standard: {
           refType: BuiltinTypes.STRING,
         },
-        // eslint-disable-next-line camelcase
         custom__c: {
           refType: BuiltinTypes.STRING,
         },
-        // eslint-disable-next-line camelcase
         custom_namespace__c: {
           refType: BuiltinTypes.STRING,
           annotations: {
@@ -90,11 +88,9 @@ describe('Custom Object Split filter', () => {
         standard: {
           refType: BuiltinTypes.STRING,
         },
-        // eslint-disable-next-line camelcase
         custom__c: {
           refType: BuiltinTypes.STRING,
         },
-        // eslint-disable-next-line camelcase
         custom_namespace__c: {
           refType: BuiltinTypes.STRING,
           annotations: {
@@ -433,11 +429,9 @@ describe('Custom Object Split filter', () => {
         Standard: {
           refType: BuiltinTypes.STRING,
         },
-        // eslint-disable-next-line camelcase
         Custom__c: {
           refType: BuiltinTypes.STRING,
         },
-        // eslint-disable-next-line camelcase
         OtherCustom__c: {
           refType: BuiltinTypes.STRING,
         },
@@ -448,11 +442,9 @@ describe('Custom Object Split filter', () => {
         Standard: {
           refType: BuiltinTypes.STRING,
         },
-        // eslint-disable-next-line camelcase
         Custom__c: {
           refType: BuiltinTypes.STRING,
         },
-        // eslint-disable-next-line camelcase
         OtherCustom__c: {
           refType: BuiltinTypes.STRING,
         },

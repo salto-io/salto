@@ -62,18 +62,15 @@ export const oauthClientCredentialsBearerToken = async ({
   const res = await httpClient.post(
     endpoint,
     qs.stringify({
-      // eslint-disable-next-line camelcase
       client_id: clientId,
-      // eslint-disable-next-line camelcase
       client_secret: clientSecret,
-      // eslint-disable-next-line camelcase
       grant_type: 'client_credentials',
       ...additionalData,
     }),
   )
   const { token_type: tokenType, access_token: accessToken, expires_in: expiresIn } = res.data
   log.debug('received access token: type %s, expires in %s', tokenType, expiresIn)
-  if (tokenType !== BEARER_TOKEN_TYPE) {
+  if (String(tokenType).toLowerCase() !== BEARER_TOKEN_TYPE.toLowerCase()) {
     throw new Error(`Unsupported token type ${tokenType}`)
   }
   return {
@@ -113,9 +110,7 @@ export const oauthAccessTokenRefresh = async ({
   const res = await httpClient.post(
     endpoint,
     qs.stringify({
-      // eslint-disable-next-line camelcase
       refresh_token: refreshToken,
-      // eslint-disable-next-line camelcase
       grant_type: 'refresh_token',
     }),
   )

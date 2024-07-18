@@ -36,9 +36,7 @@ const BUSINESS_HOURS_SCHEDULE_TYPE_NAME = 'business_hours_schedule'
 const log = logger(module)
 
 type Interval = {
-  // eslint-disable-next-line camelcase
   end_time: string
-  // eslint-disable-next-line camelcase
   start_time: string
 }
 

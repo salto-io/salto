@@ -24,5 +24,6 @@ export type NetsuiteChangeValidator = (
     elementsSource: ReadOnlyElementsSource
     config: NetsuiteConfig
     client: NetsuiteClient
+    suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
   },
 ) => Promise<ReadonlyArray<ChangeError>>

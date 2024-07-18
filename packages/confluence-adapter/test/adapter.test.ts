@@ -100,7 +100,9 @@ describe('adapter', () => {
               token: 'pass',
               subdomain: 'subdomain',
             }),
-            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+            config: new InstanceElement('config', adapter.configType as ObjectType, {
+              fetch: { ...DEFAULT_CONFIG.fetch, managePagesForSpaces: ['My first space'] },
+            }),
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
@@ -118,16 +120,17 @@ describe('adapter', () => {
           'confluence.blog_post__version',
           'confluence.global_template',
           'confluence.page',
-          'confluence.page.instance.Omri_Farkash_Getting_started_in_Confluence@susss',
-          'confluence.page.instance.Omri_Farkash_Overview@su',
-          'confluence.page.instance.Omri_Farkash_This_is_my_page_yay@sussss',
+          'confluence.page.instance.My_first_space_Getting_started_in_Confluence@ssusss',
+          'confluence.page__authorId',
           'confluence.page__body',
+          'confluence.page__ownerId',
           'confluence.page__restriction',
           'confluence.page__restriction__restrictions',
           'confluence.page__version',
           'confluence.space',
           'confluence.space.instance.My_first_space@s',
           'confluence.space.instance.Omri_Farkash@s',
+          'confluence.space__authorId',
           'confluence.space__permissionInternalIdMap',
           'confluence.space__permissions',
         ])
@@ -139,33 +142,12 @@ describe('adapter', () => {
               .map(e => [e.elemID.name, e.path]),
           ),
         ).toEqual({
-          'Omri_Farkash_Overview@su': [
+          'My_first_space_Getting_started_in_Confluence@ssusss': [
             'confluence',
             'Records',
             'space',
-            'Omri_Farkash',
+            'My_first_space',
             'pages',
-            'Overview',
-            'Overview',
-          ],
-          'Omri_Farkash_This_is_my_page_yay@sussss': [
-            'confluence',
-            'Records',
-            'space',
-            'Omri_Farkash',
-            'pages',
-            'Overview',
-            'This_is_my_page_yay',
-            'This_is_my_page_yay',
-          ],
-          'Omri_Farkash_Getting_started_in_Confluence@susss': [
-            'confluence',
-            'Records',
-            'space',
-            'Omri_Farkash',
-            'pages',
-            'Overview',
-            'This_is_my_page_yay',
             'Getting_started_in_Confluence',
             'Getting_started_in_Confluence',
           ],
@@ -205,7 +187,6 @@ describe('adapter', () => {
     beforeEach(() => {
       spaceType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'space') })
       pageType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'page') })
-      // globalTemplateType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'global_template') })
       space1 = new InstanceElement('space1', spaceType, { name: 'space1', key: 'spaceKey', id: 11 })
       page1 = new InstanceElement('My_page@s', pageType, {
         title: 'My page',

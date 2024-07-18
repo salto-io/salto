@@ -45,7 +45,6 @@ export type Reals = {
   adapter: AdapterOperations
 }
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 
@@ -88,7 +87,6 @@ export const createInstance = <T extends APIDefinitionsOptions>({
   values: Values
   parent?: InstanceElement
 }): InstanceElement => {
-  // const uniqueValue = `${TEST_PREFIX}${typeName}${testSuffix}`
   const elemIDDef = queryWithDefault(fetchDefinitions.instances).query(typeName)?.element?.topLevel?.elemID
   if (elemIDDef === undefined) {
     log.warn(`Could not find type elemID definitions for type ${typeName}, error while creating instance`)

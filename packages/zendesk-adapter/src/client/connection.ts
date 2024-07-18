@@ -22,7 +22,9 @@ import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import {
+  APITokenCredentials,
   Credentials,
+  isAPITokenCredentials,
   isOauthAccessTokenCredentials,
   OauthAccessTokenCredentials,
   UsernamePasswordCredentials,
@@ -105,6 +107,14 @@ const usernamePasswordAuthParamsFunc = ({
   headers: APP_MARKETPLACE_HEADERS,
 })
 
+const apiTokenAuthParamsFunc = ({ username, token }: APITokenCredentials): clientUtils.AuthParams => ({
+  auth: {
+    username: `${username}/token`,
+    password: token,
+  },
+  headers: APP_MARKETPLACE_HEADERS,
+})
+
 const accessTokenAuthParamsFunc = ({ accessToken }: OauthAccessTokenCredentials): clientUtils.AuthParams => ({
   headers: {
     Authorization: `Bearer ${accessToken}`,
@@ -112,11 +122,20 @@ const accessTokenAuthParamsFunc = ({ accessToken }: OauthAccessTokenCredentials)
   },
 })
 
+const authParamsFunc = (creds: Credentials): clientUtils.AuthParams => {
+  if (isOauthAccessTokenCredentials(creds)) {
+    return accessTokenAuthParamsFunc(creds)
+  }
+  if (isAPITokenCredentials(creds)) {
+    return apiTokenAuthParamsFunc(creds)
+  }
+  return usernamePasswordAuthParamsFunc(creds)
+}
+
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) =>
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async (creds: Credentials) =>
-      isOauthAccessTokenCredentials(creds) ? accessTokenAuthParamsFunc(creds) : usernamePasswordAuthParamsFunc(creds),
+    authParamsFunc: async (creds: Credentials) => authParamsFunc(creds),
     baseURLFunc: async ({ subdomain, domain }) => baseUrl(subdomain, domain),
     credValidateFunc: validateCredentials,
     timeout,

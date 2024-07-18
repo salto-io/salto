@@ -737,6 +737,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'user_segment' },
   },
   {
+    src: { field: 'user_segment_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'user_segment' },
+  },
+  {
     src: { field: 'permission_group_id' },
     serializationStrategy: 'id',
     target: { type: 'permission_group' },

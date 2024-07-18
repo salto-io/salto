@@ -235,7 +235,6 @@ describe('Workflow filter', () => {
 
       describe('preDeploy', () => {
         beforeAll(async () => {
-          // eslint-disable-next-line prefer-destructuring
           await testFilter.preDeploy(changes)
         })
 

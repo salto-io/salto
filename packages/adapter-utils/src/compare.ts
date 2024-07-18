@@ -284,8 +284,13 @@ export const detailedCompare = (
     return [...removeChanges, ...addChanges, ...(_.flatten(modifyChanges) as DetailedChange[])]
   }
 
-  // A special case to handle type changes in fields, we have to modify the whole field
-  if (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) {
+  // A special case to handle type changes.
+  // In fields, we have to modify the whole field.
+  // For object type meta types, we have to modify the entire object.
+  if (
+    (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) ||
+    (isObjectType(before) && isObjectType(after) && !before.isMetaTypeEqual(after))
+  ) {
     return [toDetailedChangeFromBaseChange(baseChange, { before: before.elemID, after: after.elemID })]
   }
 

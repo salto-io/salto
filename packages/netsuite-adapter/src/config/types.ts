@@ -116,7 +116,8 @@ export type FetchParams = {
   addImportantValues?: boolean
   addLockedCustomRecordTypes?: boolean
   resolveAccountSpecificValues?: boolean
-  skipResolvingAccountSpecificValuesToTypes?: string[]
+  // SALTO-6145: should be removed
+  forceFileCabinetExclude?: boolean
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -131,7 +132,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addImportantValues: 'addImportantValues',
   addLockedCustomRecordTypes: 'addLockedCustomRecordTypes',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
-  skipResolvingAccountSpecificValuesToTypes: 'skipResolvingAccountSpecificValuesToTypes',
+  forceFileCabinetExclude: 'forceFileCabinetExclude',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -198,13 +199,11 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
 export type SuiteAppClientConfig = {
   suiteAppConcurrencyLimit?: number
   httpTimeoutLimitInMinutes?: number
-  maxRecordsPerSuiteQLTable?: MaxInstancesPerType[]
 }
 
 export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientConfig> = {
   suiteAppConcurrencyLimit: 'suiteAppConcurrencyLimit',
   httpTimeoutLimitInMinutes: 'httpTimeoutLimitInMinutes',
-  maxRecordsPerSuiteQLTable: 'maxRecordsPerSuiteQLTable',
 }
 
 export type NetsuiteConfig = {
@@ -389,7 +388,6 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
         }),
       },
     },
-    maxRecordsPerSuiteQLTable: { refType: new ListType(maxInstancesPerConfigType) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -578,7 +576,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addImportantValues: { refType: BuiltinTypes.BOOLEAN },
     addLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
-    skipResolvingAccountSpecificValuesToTypes: { refType: new ListType(BuiltinTypes.STRING) },
+    forceFileCabinetExclude: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

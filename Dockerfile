@@ -1,12 +1,21 @@
-FROM node:14.15.5-buster-slim
+FROM node:18.9.0-buster-slim
 WORKDIR /app
 
-RUN apt update && apt install -y openssl build-essential libgssapi-krb5-2 git ccache
+RUN \
+    apt update && \
+    apt install -y openssl build-essential libgssapi-krb5-2 git ccache python3
 
 COPY . .
-RUN echo "Running yarn install" && yarn || yarn || yarn # run again if failing due to rimraf
+
+RUN echo "Updating yarn" && \
+    corepack enable
+
+RUN echo "Running yarn install" && \
+    yarn --immutable
 
 RUN \
-    echo "Running yarn build" && yarn pre-build && yarn build-ts
+    echo "Running yarn build" && \
+    yarn pre-build && \
+    yarn build-ts
 
 ENTRYPOINT ["/usr/bin/env", "node", "./packages/cli/bin/salto"]

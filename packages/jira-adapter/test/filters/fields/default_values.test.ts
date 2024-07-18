@@ -23,16 +23,19 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import _ from 'lodash'
 import {
   setDefaultValueTypeDeploymentAnnotations,
   updateDefaultValues,
 } from '../../../src/filters/fields/default_values'
 import { JIRA } from '../../../src/constants'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 
 describe('default values', () => {
   describe('updateDefaultValues', () => {
     let client: MockInterface<clientUtils.HTTPWriteClientInterface>
+    let config: JiraConfig
     let type: ObjectType
 
     beforeEach(() => {
@@ -42,7 +45,7 @@ describe('default values', () => {
         delete: mockFunction<clientUtils.HTTPWriteClientInterface['delete']>(),
         patch: mockFunction<clientUtils.HTTPWriteClientInterface['patch']>(),
       }
-
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       type = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME) })
     })
 
@@ -89,7 +92,7 @@ describe('default values', () => {
         },
       )
 
-      await updateDefaultValues(toChange({ before, after }), client)
+      await updateDefaultValues(toChange({ before, after }), client, config)
 
       expect(client.put).toHaveBeenCalledWith({
         url: '/rest/api/3/field/2/context/defaultValue',
@@ -128,7 +131,7 @@ describe('default values', () => {
         },
       )
 
-      await updateDefaultValues(toChange({ before, after }), client)
+      await updateDefaultValues(toChange({ before, after }), client, config)
 
       expect(client.put).toHaveBeenCalledWith({
         url: '/rest/api/3/field/2/context/defaultValue',
@@ -153,7 +156,7 @@ describe('default values', () => {
           number: 9,
         },
       })
-      await updateDefaultValues(toChange({ before }), client)
+      await updateDefaultValues(toChange({ before }), client, config)
       expect(client.put).not.toHaveBeenCalled()
     })
   })

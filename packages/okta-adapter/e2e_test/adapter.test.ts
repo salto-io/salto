@@ -27,7 +27,6 @@ import {
   isEqualValues,
   isInstanceChange,
   isInstanceElement,
-  isModificationChange,
   isObjectType,
   ObjectType,
   ProgressReporter,
@@ -76,7 +75,6 @@ import { DEFAULT_CONFIG } from '../src/user_config'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
-import OktaClient from '../src/client/client'
 import { OktaOptions } from '../src/definitions/types'
 
 const { awu } = collections.asynciterable
@@ -127,97 +125,7 @@ const createInstance = ({
   )
 }
 
-const getIdForDefaultBrand = async (client: OktaClient): Promise<string> => {
-  const brandEntries = (await client.get({ url: '/api/v1/brands' })).data
-  if (_.isArray(brandEntries) && brandEntries.length === 1 && _.isString(brandEntries[0].id)) {
-    return brandEntries[0].id
-  }
-  log.error(`Received unexpected result for default brand: ${inspectValue(brandEntries)}`)
-  throw new Error('Could not find default brand')
-}
-
-const getIdForDefaultBrandTheme = async (client: OktaClient, brandId: string): Promise<string> => {
-  const themeEntries = (await client.get({ url: `/api/v1/brands/${brandId}/themes` })).data
-  if (_.isArray(themeEntries) && themeEntries.length === 1 && _.isString(themeEntries[0].id)) {
-    return themeEntries[0].id
-  }
-  log.error(`Received unexpected result for brand theme for brandId ${brandId}: ${inspectValue(themeEntries)}`)
-  throw new Error('Could not find BrandTheme with the provided brandId')
-}
-
-const createBrandChangesForDeploy = async (
-  types: ObjectType[],
-  client: OktaClient,
-): Promise<Change<InstanceElement>[]> => {
-  const brandId = await getIdForDefaultBrand(client)
-  const defaultBrand = createInstance({
-    typeName: BRAND_TYPE_NAME,
-    types,
-    valuesOverride: {
-      id: brandId,
-    },
-    name: 'unnamed_0',
-  })
-  const brand = createInstance({
-    typeName: BRAND_TYPE_NAME,
-    types,
-    valuesOverride: {
-      id: brandId,
-      removePoweredByOkta: true,
-      agreeToCustomPrivacyPolicy: false,
-    },
-    name: 'unnamed_0',
-  })
-  const brandThemeId = await getIdForDefaultBrandTheme(client, brandId)
-  const defaultBrandTheme = createInstance({
-    typeName: BRAND_THEME_TYPE_NAME,
-    types,
-    valuesOverride: {
-      id: brandThemeId,
-    },
-    parent: defaultBrand,
-    name: 'unnamed_0',
-  })
-  const brandTheme = createInstance({
-    typeName: BRAND_THEME_TYPE_NAME,
-    types,
-    valuesOverride: {
-      id: brandThemeId,
-      primaryColorHex: '#abcabc',
-      primaryColorContrastHex: '#000000',
-      secondaryColorHex: '#abcabc',
-      secondaryColorContrastHex: '#ffffff',
-    },
-    parent: brand,
-    name: 'unnamed_0',
-  })
-  // The Domain creation API differs between paid and non-paid Okta accounts, and production code only supports the
-  // paid account version, which requires an associated brand to create. There's a change validator that enforces this.
-  // This e2e test runs in a non-paid Okta account, which doesn't support multiple brands.
-  // However, conveniently, the domain creation API works in non-paid account only if we _don't_ provide a brand ID.
-  // And even more conveniently, this e2e test doesn't run any change validator prior to deploying.
-  // We use this to create a domain here without a brand ID, even though it's not supported in production code.
-  // This allows us to both test the domain deploy actions (even if they're not exactly like production), but moreover
-  // it allows us to test custom page creation, which requires a custom domain to exist.
-  const domain = createInstance({
-    typeName: DOMAIN_TYPE_NAME,
-    types,
-    valuesOverride: {
-      domain: 'subdomain.salto.io',
-    },
-  })
-  return [
-    toChange({ before: defaultBrand, after: brand }),
-    toChange({ before: defaultBrandTheme, after: brandTheme }),
-    toChange({ after: domain }),
-  ]
-}
-
-const createChangesForDeploy = async (
-  types: ObjectType[],
-  testSuffix: string,
-  client: OktaClient,
-): Promise<Change[]> => {
+const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): Promise<Change[]> => {
   const createName = (type: string): string => `${TEST_PREFIX}${type}${testSuffix}`
 
   const groupInstance = createInstance({
@@ -355,6 +263,16 @@ const createChangesForDeploy = async (
     parent: app,
     name: naclCase(`${app.elemID.name}__${groupInstance.elemID.name}`),
   })
+  const brand = createInstance({
+    typeName: BRAND_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('brand'),
+      // Brand addition is split into two calls (`add` with name, `modify` with
+      // other fields), so we override some arbitrary value to cover both calls.
+      removePoweredByOkta: true,
+    },
+  })
   return [
     toChange({ after: groupInstance }),
     toChange({ after: anotherGroupInstance }),
@@ -366,12 +284,11 @@ const createChangesForDeploy = async (
     toChange({ after: profileEnrollmentRule }),
     toChange({ after: app }),
     toChange({ after: appGroupAssignment }),
-    ...(await createBrandChangesForDeploy(types, client)),
+    toChange({ after: brand }),
   ]
 }
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 
@@ -433,39 +350,23 @@ const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement
     })
 }
 
-const getChangesForInitialCleanup = async (
-  elements: Element[],
-  types: ObjectType[],
-  client: OktaClient,
-): Promise<Change<InstanceElement>[]> => {
+const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<InstanceElement>[]> => {
   const removalChanges: Change<InstanceElement>[] = elements
     .filter(isInstanceElement)
-    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX) || inst.elemID.typeName === DOMAIN_TYPE_NAME)
+    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
     .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
     .map(instance => toChange({ before: instance }))
 
-  // Brand related instances don't have the test prefix, so we reverse them explicitly.
-  const reversedBrandChanges: Change<InstanceElement>[] = (await createBrandChangesForDeploy(types, client))
-    .filter(isModificationChange) // We can't reverse "add" actions because we'd need the service ID.
-    .map(change =>
-      toChange({
-        before: change.data.after,
-        after: change.data.before,
-      }),
-    )
-
-  const cleanupChanges = [...removalChanges, ...reversedBrandChanges]
-
   log.info(
     'Cleaning up the environment before starting e2e test: %s',
-    cleanupChanges.map(change => getChangeData(change).elemID.getFullName()),
+    removalChanges.map(change => getChangeData(change).elemID.getFullName()),
   )
-  return cleanupChanges
+  return removalChanges
 }
 
-const deployCleanup = async (adapterAttr: Reals, types: ObjectType[], elements: InstanceElement[]): Promise<void> => {
+const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): Promise<void> => {
   log.debug('Cleaning up the environment before starting e2e test')
-  const cleanupChanges = await getChangesForInitialCleanup(elements, types, adapterAttr.client)
+  const cleanupChanges = await getChangesForInitialCleanup(elements)
   const removals = cleanupChanges.filter(change => getChangeData(change).elemID.typeName !== APPLICATION_TYPE_NAME)
   await removeAllApps(adapterAttr, cleanupChanges)
   await deployChanges(adapterAttr, removals)
@@ -485,6 +386,19 @@ const getHiddenFieldsToOmit = (
 }
 
 describe('Okta adapter E2E', () => {
+  expect.extend({
+    toHaveEqualValues(received: Values, expected: InstanceElement) {
+      const pass = isEqualValues(received, expected.value)
+      return {
+        pass,
+        message: () =>
+          `Received unexpected result when fetching instance: ${expected.elemID.getFullName()}.\n` +
+          `Expected value: ${inspectValue(expected.value, { depth: 7 })},\n` +
+          `Received value: ${inspectValue(received, { depth: 7 })}`,
+      }
+    },
+  })
+
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
     let adapterAttr: Reals
@@ -526,9 +440,9 @@ describe('Okta adapter E2E', () => {
       })
       fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG, true)
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
-      await deployCleanup(adapterAttr, types, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
+      await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 
-      const changesToDeploy = await createChangesForDeploy(types, testSuffix, adapterAttr.client)
+      const changesToDeploy = await createChangesForDeploy(types, testSuffix)
       await deployAndFetch(changesToDeploy)
     })
 
@@ -677,16 +591,7 @@ describe('Okta adapter E2E', () => {
         // Omit hidden fields that are not written to nacl after deployment
         const fieldsToOmit = getHiddenFieldsToOmit(fetchDefinitions, deployedInstance.elemID.typeName)
         const originalValue = _.omit(instance?.value, fieldsToOmit)
-        const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
-        if (!isEqualResult) {
-          log.error(
-            'Received unexpected result when deploying instance: %s. Deployed value: %s , Received value after fetch: %s',
-            deployedInstance.elemID.getFullName(),
-            inspectValue(deployedInstance.value, { depth: 7 }),
-            inspectValue(originalValue, { depth: 7 }),
-          )
-        }
-        expect(isEqualResult).toBeTruthy()
+        expect(originalValue).toHaveEqualValues(deployedInstance)
       })
     })
   })

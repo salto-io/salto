@@ -137,27 +137,26 @@ const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterRes
     name: 'templateBodyToTemplateExpressionFilter',
     onFetch: async elements => {
       const instances = elements.filter(isInstanceElement)
-      const indices: PossibleRefsInTemplateIndices = instances.reduce<PossibleRefsInTemplateIndices>(
-        (acc, inst) => {
-          if (inst.elemID.typeName === SPACE_TYPE_NAME) {
-            acc.spaceByKey[inst.value.key] = inst
-          } else if (inst.elemID.typeName === PAGE_TYPE_NAME) {
-            const spaceRef = inst.value.spaceId
-            if (!isReferenceExpression(spaceRef)) {
-              return acc
-            }
-            acc.pageBySpaceFullNameAndTitle[inst.value.spaceId.elemID.getFullName()] = {
-              ...acc.pageBySpaceFullNameAndTitle[inst.value.spaceId.elemID.getFullName()],
-              [inst.value.title]: inst,
-            }
+      const indices: PossibleRefsInTemplateIndices = {
+        spaceByKey: {},
+        pageBySpaceFullNameAndTitle: {},
+      }
+      instances.forEach(inst => {
+        if (inst.elemID.typeName === SPACE_TYPE_NAME) {
+          indices.spaceByKey[inst.value.key] = inst
+        }
+        if (inst.elemID.typeName === PAGE_TYPE_NAME) {
+          const spaceRef = inst.value.spaceId
+          if (!isReferenceExpression(spaceRef)) {
+            return
           }
-          return acc
-        },
-        {
-          spaceByKey: {},
-          pageBySpaceFullNameAndTitle: {},
-        },
-      )
+          const spaceFullName = spaceRef.elemID.getFullName()
+          indices.pageBySpaceFullNameAndTitle[spaceFullName] = _.merge(
+            indices.pageBySpaceFullNameAndTitle[spaceFullName],
+            { [inst.value.title]: inst },
+          )
+        }
+      })
 
       const templateInstances = instances.filter(inst => TEMPLATE_TYPE_NAMES.includes(inst.elemID.typeName))
       templateInstances.forEach(templateInst => {

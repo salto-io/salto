@@ -162,7 +162,8 @@ describe('Element command group', () => {
       })
 
       it('should not send telemetry events', () => {
-        expect(telemetry.getEvents()).toHaveLength(0)
+        expect(telemetry.sendCountEvent).not.toHaveBeenCalled()
+        expect(telemetry.sendStackEvent).not.toHaveBeenCalled()
       })
 
       it('should print clone to console', () => {

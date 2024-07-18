@@ -18,38 +18,40 @@ import { ODATA_TYPE_FIELD } from '../../../src/constants'
 import { adjustEntitiesWithExpandedMembers } from '../../../src/definitions/fetch/utils'
 
 describe(`${adjustEntitiesWithExpandedMembers.name}`, () => {
-  it('should throw an error when value is not an object', () => {
-    expect(() =>
+  it('should throw an error when value is not an object', async () => {
+    await expect(
       adjustEntitiesWithExpandedMembers({ value: 'not an object', typeName: 'typeName', context: {} }),
-    ).toThrow()
+    ).rejects.toThrow()
   })
 
-  it('should throw an error when members is not an array', () => {
-    expect(() =>
+  it('should throw an error when members is not an array', async () => {
+    await expect(
       adjustEntitiesWithExpandedMembers({ value: { members: 'not an array' }, typeName: 'typeName', context: {} }),
-    ).toThrow()
+    ).rejects.toThrow()
   })
 
-  it('should not throw an error when members field is missing', () => {
-    expect(() => adjustEntitiesWithExpandedMembers({ value: {}, typeName: 'typeName', context: {} })).not.toThrow()
+  it('should not throw an error when members field is missing', async () => {
+    await expect(
+      adjustEntitiesWithExpandedMembers({ value: {}, typeName: 'typeName', context: {} }),
+    ).resolves.not.toThrow()
   })
 
-  it('should throw an error when members contains non-object elements', () => {
-    expect(() =>
+  it('should throw an error when members contains non-object elements', async () => {
+    await expect(
       adjustEntitiesWithExpandedMembers({
         value: { members: ['not an object'] },
         typeName: 'typeName',
         context: {},
       }),
-    ).toThrow()
+    ).rejects.toThrow()
   })
 
-  it('should select only id and ODATA_TYPE_FIELD fields from members', () => {
+  it('should select only id and ODATA_TYPE_FIELD fields from members', async () => {
     const members = [
       { id: 'id1', [ODATA_TYPE_FIELD]: '#microsoft.graph.group', otherField: 'other1' },
       { id: 'id2', [ODATA_TYPE_FIELD]: '#microsoft.graph.group', otherField: 'other2' },
     ]
-    const { value } = adjustEntitiesWithExpandedMembers({
+    const { value } = await adjustEntitiesWithExpandedMembers({
       value: { members },
       typeName: 'typeName',
       context: {},
@@ -60,13 +62,13 @@ describe(`${adjustEntitiesWithExpandedMembers.name}`, () => {
     ])
   })
 
-  it('should filter out members with unsupported ODATA_TYPE_FIELD', () => {
+  it('should filter out members with unsupported ODATA_TYPE_FIELD', async () => {
     const members = [
       { id: 'id1', [ODATA_TYPE_FIELD]: '#microsoft.graph.group' },
       { id: 'id2', [ODATA_TYPE_FIELD]: '#microsoft.graph.group' },
       { id: 'id3', [ODATA_TYPE_FIELD]: '#microsoft.graph.user' },
     ]
-    const { value } = adjustEntitiesWithExpandedMembers({
+    const { value } = await adjustEntitiesWithExpandedMembers({
       value: { members },
       typeName: 'typeName',
       context: {},

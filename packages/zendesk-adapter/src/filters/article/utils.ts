@@ -59,17 +59,13 @@ const { awu } = collections.asynciterable
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
 
-// eslint-disable-next-line camelcase
 type SourceLocaleModificationReqPayload = { category_locale?: string; section_locale?: string; article_locale?: string }
 
 type Attachment = InstanceElement & {
   value: {
     id: number
-    // eslint-disable-next-line camelcase
     file_name: string
-    // eslint-disable-next-line camelcase
     content_type: string
-    // eslint-disable-next-line camelcase
     content_url: string
     inline: boolean
   }
@@ -77,11 +73,8 @@ type Attachment = InstanceElement & {
 
 type AttachmentResponse = {
   id: number
-  // eslint-disable-next-line camelcase
   file_name: string
-  // eslint-disable-next-line camelcase
   content_type: string
-  // eslint-disable-next-line camelcase
   content_url: string
   inline: boolean
 }
@@ -165,7 +158,7 @@ const getAttachmentContent = async ({
   try {
     const path = attachment.value.relative_path
     res = await client.get({
-      url: `${path.substring(0, path.lastIndexOf('/'))}`,
+      url: path,
       responseType: 'arraybuffer',
     })
   } catch (e) {

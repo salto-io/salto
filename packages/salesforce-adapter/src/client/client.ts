@@ -145,6 +145,26 @@ const errorMessagesToRetry = [
   'no healthy upstream',
   'upstream connect error or disconnect/reset before headers',
   'security policies took too long to evaluate',
+  // The following are from the force.com source code, we did not encounter them ourselves:
+  // ref: https://github.com/forcedotcom/source-deploy-retrieve/blob/f7881c94d46aad5e67005af1802f7b66bd0b26f4/src/client/metadataTransfer.ts#L207-L228
+  'ENOMEM',
+  'ETIMEDOUT',
+  'ENOTFOUND',
+  'ECONNRESET',
+  'connection timeout',
+  'INVALID_QUERY_LOCATOR',
+  'ERROR_HTTP_502',
+  'ERROR_HTTP_503',
+  '<h1>Bad Message 400</h1><pre>reason: Bad Request</pre>',
+  'Unable to complete the creation of the query cursor at this time',
+  'Failed while fetching query cursor data for this QueryLocator',
+  'Client network socket disconnected before secure TLS connection was established',
+  'Unexpected internal servlet state',
+  // end of force.com error messages
+  'ERROR_HTTP_420',
+  'down for maintenance',
+  'REQUEST_RUNNING_TOO_LONG',
+  'request exceeded the time limit for processing',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -591,6 +611,22 @@ export const getConnectionDetails = async (
   }
 }
 
+const getAccountID = (
+  credentials: Credentials,
+  orgId: string,
+  instanceUrl?: string,
+): string => {
+  if (credentials.isSandbox) {
+    if (instanceUrl === undefined) {
+      throw new Error(
+        'Expected Salesforce organization URL to exist in the connection',
+      )
+    }
+    return instanceUrl
+  }
+  return orgId
+}
+
 export const validateCredentials = async (
   credentials: Credentials,
   minApiRequestsRemaining = 0,
@@ -608,21 +644,9 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`,
     )
   }
-  if (credentials.isSandbox) {
-    if (instanceUrl === undefined) {
-      throw new Error(
-        'Expected Salesforce organization URL to exist in the connection',
-      )
-    }
-    return {
-      accountId: instanceUrl,
-      accountType,
-      isProduction,
-      extraInformation: { orgId },
-    }
-  }
   return {
-    accountId: orgId,
+    accountId: getAccountID(credentials, orgId, instanceUrl),
+    accountUrl: instanceUrl,
     accountType,
     isProduction,
     extraInformation: { orgId },

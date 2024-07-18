@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import {
-  getFetchTargets,
+  getFetchTargetsWithDependencies,
   SUPPORTED_METADATA_TYPES,
   METADATA_TYPES_WITH_DEPENDENCIES,
   CUSTOM_OBJECT_FIELDS,
@@ -45,7 +45,7 @@ describe('Salesforce MetadataTypes', () => {
   ])('%p should contain only supported types', (__, array) => {
     expect(array.filter(isUnsupportedMetadataType)).toBeEmpty()
   })
-  describe('getFetchTargets', () => {
+  describe('getFetchTargetsWithDependencies', () => {
     describe("when fetch targets don't include any types with dependencies", () => {
       it('should return the same list', () => {
         const target: MetadataTypeWithoutDependencies[] = [
@@ -53,14 +53,36 @@ describe('Salesforce MetadataTypes', () => {
           'Capabilities',
           'ChannelLayout',
         ]
-        expect(getFetchTargets([...target])).toEqual(target)
+        expect(getFetchTargetsWithDependencies([...target])).toEqual(target)
       })
     })
     describe('when fetch targets include types with dependencies', () => {
       it('should return a list with the correct types', () => {
         expect(
-          getFetchTargets([...METADATA_TYPES_WITH_DEPENDENCIES]),
-        ).toIncludeSameMembers(['CustomMetadata', 'CustomObject', 'Workflow'])
+          getFetchTargetsWithDependencies([
+            ...METADATA_TYPES_WITH_DEPENDENCIES,
+          ]),
+        ).toIncludeSameMembers([
+          'CustomMetadata',
+          'WebLink',
+          'ValidationRule',
+          'BusinessProcess',
+          'RecordType',
+          'ListView',
+          'FieldSet',
+          'CompactLayout',
+          'SharingReason',
+          'Index',
+          'WorkflowAlert',
+          'WorkflowFieldUpdate',
+          'WorkflowFlowAction',
+          'WorkflowOutboundMessage',
+          'WorkflowKnowledgePublish',
+          'WorkflowTask',
+          'WorkflowRule',
+          'CustomObject',
+          'Workflow',
+        ])
       })
     })
   })

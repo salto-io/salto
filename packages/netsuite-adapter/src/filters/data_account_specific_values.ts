@@ -33,7 +33,7 @@ import {
   isAdditionOrModificationChange,
   ChangeError,
 } from '@salto-io/adapter-api'
-import { TransformFunc, naclCase, transformValuesSync } from '@salto-io/adapter-utils'
+import { TransformFunc, naclCase, setPath, transformValuesSync } from '@salto-io/adapter-utils'
 import { isDataObjectType, isFileCabinetType, isStandardType } from '../types'
 import {
   ACCOUNT_SPECIFIC_VALUE,
@@ -46,12 +46,13 @@ import {
   TYPES_PATH,
 } from '../constants'
 import { TYPE_ID } from '../client/suiteapp_client/constants'
-import { LocalFilterCreator } from '../filter'
+import { RemoteFilterCreator } from '../filter'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import {
   SUITEQL_TABLE,
   getSuiteQLTableInternalIdsMap,
-  getSuiteQLNameToInternalIdsMap,
+  updateSuiteQLTableInstances,
+  MissingInternalId,
 } from '../data_elements/suiteql_table_elements'
 
 const log = logger(module)
@@ -70,6 +71,20 @@ const SOAP_REFERENCE_FIELDS = new Set([NAME_FIELD, INTERNAL_ID, TYPE_ID])
 
 type ResolvedAccountSpecificValue = {
   [ID_FIELD]: string
+}
+
+type AccountSpecificValueToTransform = {
+  instance: InstanceElement
+  path: ElemID
+  internalId: string
+  fallbackName: string | undefined
+  suiteQLTableInstance: InstanceElement | undefined
+}
+
+type ResolvedAccountSpecificValueResult = {
+  value: Value
+  error?: ChangeError
+  missingInternalId?: MissingInternalId
 }
 
 const FIELD_NAME_TO_SUITEQL_TABLE: Record<string, string> = {
@@ -255,12 +270,13 @@ const getSuiteQLTableInstance = (
     .find(instance => instance !== undefined)
 }
 
-const setAccountSpecificValues = (
-  dataInstance: InstanceElement,
-  unknownTypeReferencesInstance: InstanceElement,
+const getAccountSpecificValuesToTransform = (
+  instance: InstanceElement,
   suiteQLTablesMap: Record<string, InstanceElement>,
-): void => {
-  const transformIds: TransformFunc = ({ value, field, path }) => {
+): AccountSpecificValueToTransform[] => {
+  const result: AccountSpecificValueToTransform[] = []
+
+  const getAccountSpecificValuesFunc: TransformFunc = ({ value, field, path }) => {
     if (!isNestedObject(path, value)) {
       return value
     }
@@ -272,29 +288,34 @@ const setAccountSpecificValues = (
     if (!isSoapReferenceObject(value)) {
       // some inner objects that are not references also have internalId (e.g mainAddress),
       // but it's not required for addition/modification of the instance/field, so we can just omit it.
-      return _.omit(value, INTERNAL_ID)
+      delete value[INTERNAL_ID]
+      return value
     }
 
     if (fallbackName === undefined) {
       log.warn('value in %s is missing name field: %o', path.getFullName(), value)
     }
 
-    const suiteQLTableInstance = getSuiteQLTableInstance(field, typeId, suiteQLTablesMap)
-    if (suiteQLTableInstance === undefined) {
-      const name = getNameFromUnknownTypeReference(path, unknownTypeReferencesInstance, internalId, fallbackName)
-      return toResolvedAccountSpecificValue({ type: UNKNOWN_TYPE, name })
-    }
-    const name = getNameFromSuiteQLTableInstance(suiteQLTableInstance, internalId, fallbackName)
-    return toResolvedAccountSpecificValue({ type: suiteQLTableInstance.elemID.name, name })
+    result.push({
+      instance,
+      path,
+      internalId,
+      fallbackName,
+      suiteQLTableInstance: getSuiteQLTableInstance(field, typeId, suiteQLTablesMap),
+    })
+
+    return value
   }
 
-  dataInstance.value = transformValuesSync({
-    values: dataInstance.value,
-    type: dataInstance.getTypeSync(),
-    transformFunc: transformIds,
+  transformValuesSync({
+    values: instance.value,
+    type: instance.getTypeSync(),
+    transformFunc: getAccountSpecificValuesFunc,
     strict: false,
-    pathID: dataInstance.elemID,
+    pathID: instance.elemID,
   })
+
+  return result
 }
 
 const toMissingInternalIdError = (elemId: ElemID, name: string): ChangeError => {
@@ -320,8 +341,8 @@ export const getResolvedAccountSpecificValue = (
   path: ElemID | undefined,
   value: Value,
   unknownTypeReferencesMap: Record<string, Record<string, string[]>>,
-  suiteQLTablesMap: Record<string, Record<string, string[]>>,
-): { value: Value; error?: ChangeError } => {
+  suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>,
+): ResolvedAccountSpecificValueResult => {
   if (!isNestedObject(path, value)) {
     return { value }
   }
@@ -338,7 +359,9 @@ export const getResolvedAccountSpecificValue = (
 
   const { [REGEX_TYPE]: type, [REGEX_NAME]: name } = regexRes.groups
   const nameToInternalIds =
-    type === UNKNOWN_TYPE ? unknownTypeReferencesMap[getUnknownTypeReferencesPath(path)] : suiteQLTablesMap[type]
+    type === UNKNOWN_TYPE
+      ? unknownTypeReferencesMap[getUnknownTypeReferencesPath(path)]
+      : suiteQLNameToInternalIdsMap[type]
 
   if (nameToInternalIds === undefined) {
     log.warn('did not find internal ids map of %s for path %s', type, path.getFullName())
@@ -348,7 +371,11 @@ export const getResolvedAccountSpecificValue = (
   const internalIds = nameToInternalIds[name] ?? []
   if (internalIds.length === 0) {
     log.warn('did not find name %s in internal ids map of %s for path %s', name, type, path.getFullName())
-    return { value: undefined, error: toMissingInternalIdError(path, name) }
+    return {
+      value: undefined,
+      error: toMissingInternalIdError(path, name),
+      missingInternalId: type !== UNKNOWN_TYPE ? { tableName: type, name } : undefined,
+    }
   }
 
   const resolvedValue = { [INTERNAL_ID]: internalIds[0] }
@@ -369,11 +396,11 @@ export const getResolvedAccountSpecificValue = (
 const resolveAccountSpecificValues = ({
   instance,
   unknownTypeReferencesMap,
-  suiteQLTablesMap,
+  suiteQLNameToInternalIdsMap,
 }: {
   instance: InstanceElement
   unknownTypeReferencesMap: Record<string, Record<string, string[]>>
-  suiteQLTablesMap: Record<string, Record<string, string[]>>
+  suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
 }): void => {
   const resolve: TransformFunc = ({ path, field, value }) => {
     if (field !== undefined) {
@@ -383,7 +410,7 @@ const resolveAccountSpecificValues = ({
       path,
       value,
       unknownTypeReferencesMap,
-      suiteQLTablesMap,
+      suiteQLNameToInternalIdsMap,
     )
     return resolvedValue
   }
@@ -397,8 +424,15 @@ const resolveAccountSpecificValues = ({
   })
 }
 
-const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }) => ({
+const filterCreator: RemoteFilterCreator = ({
+  client,
+  config,
+  elementsSource,
+  isPartial,
+  suiteQLNameToInternalIdsMap = {},
+}) => ({
   name: 'dataAccountSpecificValues',
+  remote: true,
   onFetch: async elements => {
     if (config.fetch.resolveAccountSpecificValues === false) {
       return
@@ -412,11 +446,38 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }
     const unknownTypeReferencesElements = await getUnknownTypeReferencesElements(elementsSource, isPartial)
     elements.push(...Object.values(unknownTypeReferencesElements))
 
-    instances
+    const accountSpecificValuesToTransform = instances
       .filter(instance => isDataObjectType(instance.getTypeSync()))
-      .forEach(instance => {
-        setAccountSpecificValues(instance, unknownTypeReferencesElements.instance, suiteQLTablesMap)
-      })
+      .flatMap(instance => getAccountSpecificValuesToTransform(instance, suiteQLTablesMap))
+
+    const internalIdsToQuery = accountSpecificValuesToTransform.flatMap(({ suiteQLTableInstance, internalId }) =>
+      suiteQLTableInstance !== undefined &&
+      getSuiteQLTableInternalIdsMap(suiteQLTableInstance)[internalId] === undefined
+        ? { tableName: suiteQLTableInstance.elemID.name, item: internalId }
+        : [],
+    )
+
+    await updateSuiteQLTableInstances({
+      client,
+      queryBy: 'internalId',
+      itemsToQuery: internalIdsToQuery,
+      suiteQLTablesMap,
+    })
+
+    accountSpecificValuesToTransform.forEach(({ instance, path, internalId, fallbackName, suiteQLTableInstance }) => {
+      if (suiteQLTableInstance === undefined) {
+        const name = getNameFromUnknownTypeReference(
+          path,
+          unknownTypeReferencesElements.instance,
+          internalId,
+          fallbackName,
+        )
+        setPath(instance, path, toResolvedAccountSpecificValue({ type: UNKNOWN_TYPE, name }))
+      } else {
+        const name = getNameFromSuiteQLTableInstance(suiteQLTableInstance, internalId, fallbackName)
+        setPath(instance, path, toResolvedAccountSpecificValue({ type: suiteQLTableInstance.elemID.name, name }))
+      }
+    })
 
     addReferenceTypes(elements)
   },
@@ -434,9 +495,8 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }
       return
     }
     const unknownTypeReferencesMap = await getUnknownTypeReferencesMap(elementsSource)
-    const suiteQLTablesMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
     relevantChangedInstances.forEach(instance => {
-      resolveAccountSpecificValues({ instance, unknownTypeReferencesMap, suiteQLTablesMap })
+      resolveAccountSpecificValues({ instance, unknownTypeReferencesMap, suiteQLNameToInternalIdsMap })
     })
   },
 })

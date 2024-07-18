@@ -143,9 +143,10 @@ export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async 
               {
                 elemID: instance.elemID,
                 severity: 'Error',
-                message: 'Cannot do this change since this tag value is already in use',
-                detailedMessage: `The tag ‘${conflictedInstanceNames.tag}’ is already used by the following elements:
-${conflictedInstanceNames.instanceNames.join(', ')}`,
+                message: 'Duplicate tag value',
+                detailedMessage: `Tag value '${conflictedInstanceNames.tag}' is already used by the following elements:
+${conflictedInstanceNames.instanceNames.join(', ')}
+You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582629-duplicate-tag-value`,
               },
             ]
           }

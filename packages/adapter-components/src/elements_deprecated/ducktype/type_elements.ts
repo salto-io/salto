@@ -78,7 +78,6 @@ const generateNestedType = ({
       }
     }
     if (validEntries.every(entry => Array.isArray(entry))) {
-      // eslint-disable-next-line no-use-before-define
       const nestedType = generateNestedType({
         adapterName,
         typeName,

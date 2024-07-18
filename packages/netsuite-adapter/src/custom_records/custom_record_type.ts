@@ -79,7 +79,8 @@ const createCustomRecordType = (
     },
     annotationRefsOrTypes: {
       ...annotationRefsOrTypes,
-      source: BuiltinTypes.HIDDEN_STRING,
+      [SOURCE]: BuiltinTypes.HIDDEN_STRING,
+      [INTERNAL_ID]: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       ...instanceValues,
@@ -101,7 +102,7 @@ export const createCustomRecordTypes = (
       label: { refType: BuiltinTypes.STRING },
     },
     annotationRefsOrTypes: {
-      source: BuiltinTypes.HIDDEN_STRING,
+      [SOURCE]: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       [SOURCE]: SOAP,
@@ -115,7 +116,7 @@ export const createCustomRecordTypes = (
       },
     },
     annotationRefsOrTypes: {
-      source: BuiltinTypes.HIDDEN_STRING,
+      [SOURCE]: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       [SOURCE]: SOAP,

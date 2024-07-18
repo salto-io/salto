@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable camelcase */
 import {
   AdditionChange,
   ElemID,

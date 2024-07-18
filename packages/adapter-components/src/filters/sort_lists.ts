@@ -16,7 +16,7 @@
 import { Element, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { filter, isResolvedReferenceExpression, TransformFuncArgs, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { ApiDefinitions, DefQuery, getNestedWithDefault, queryWithDefault } from '../definitions'
+import { ApiDefinitions, APIDefinitionsOptions, DefQuery, getNestedWithDefault, queryWithDefault } from '../definitions'
 import { ElementFetchDefinition } from '../definitions/system/fetch'
 import { PropertySortDefinition } from '../definitions/system/fetch/element'
 
@@ -76,10 +76,10 @@ const sortLists = (instance: InstanceElement, defQuery: DefQuery<ElementFetchDef
  *
  * The filter uses the field customizations of the instances to determine which fields to sort by.
  */
-export const sortListsFilterCreator: <TResult extends void | filter.FilterResult, TOptions>() => filter.FilterCreator<
-  TResult,
-  { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> }
-> =
+export const sortListsFilterCreator: <
+  TResult extends void | filter.FilterResult,
+  TOptions extends APIDefinitionsOptions,
+>() => filter.FilterCreator<TResult, { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> }> =
   () =>
   ({ definitions }) => ({
     name: 'sortListsFilter',

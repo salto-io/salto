@@ -35,7 +35,6 @@ import { WEBHOOK_TYPE_NAME } from '../constants'
 
 type ExternalSourceWithApp = {
   data: {
-    // eslint-disable-next-line camelcase
     installation_id: ReferenceExpression
   }
 }

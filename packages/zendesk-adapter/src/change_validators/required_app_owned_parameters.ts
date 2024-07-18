@@ -40,7 +40,6 @@ type AppOwned = InstanceElement & {
 
 type AppInstallation = InstanceElement & {
   value: {
-    // eslint-disable-next-line camelcase
     app_id: number
     settings?: {
       [key: string]: unknown

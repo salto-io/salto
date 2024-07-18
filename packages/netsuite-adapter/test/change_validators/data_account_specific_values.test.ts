@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
-import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { NetsuiteChangeValidator } from '../../src/change_validators/types'
 import dataAccountSpecificValueValidator from '../../src/change_validators/data_account_specific_values'
 import { NETSUITE } from '../../src/constants'
-import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
+import { SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
 import { fullFetchConfig } from '../../src/config/config_creator'
-import { NetsuiteConfig } from '../../src/config/types'
 import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../../src/filters/data_account_specific_values'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
@@ -33,6 +33,7 @@ describe('data account specific values validator', () => {
       fetch: fullFetchConfig(),
     },
     client: new NetsuiteClient(mockSdfClient()),
+    suiteQLNameToInternalIdsMap: {},
   }
 
   beforeEach(() => {
@@ -122,45 +123,41 @@ describe('data account specific values validator', () => {
   })
 
   describe('when fetch.resolveAccountSpecificValues is true', () => {
-    let elementsSource: ReadOnlyElementsSource
-    let config: NetsuiteConfig
+    let params: Parameters<NetsuiteChangeValidator>[1]
 
     beforeEach(() => {
-      config = {
-        fetch: {
-          ...fullFetchConfig(),
-          resolveAccountSpecificValues: true,
-        },
-      }
       const suiteQLTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
       const unknownTypeReferencesType = new ObjectType({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
-      const suiteQLTableInstance = new InstanceElement('account', suiteQLTableType, {
-        [INTERNAL_IDS_MAP]: {
-          1: { name: 'Account 1' },
-          2: { name: 'Some Account' },
-          3: { name: 'Some Account' },
-        },
-      })
       const unknownTypeReferencesInstance = new InstanceElement(ElemID.CONFIG_NAME, unknownTypeReferencesType, {
         [naclCase('someType.someField.inner')]: {
           1: 'Value 123',
         },
       })
-      elementsSource = buildElementsSourceFromElements([
-        suiteQLTableType,
-        unknownTypeReferencesType,
-        suiteQLTableInstance,
-        unknownTypeReferencesInstance,
-      ])
+      params = {
+        ...baseParams,
+        elementsSource: buildElementsSourceFromElements([
+          suiteQLTableType,
+          unknownTypeReferencesType,
+          unknownTypeReferencesInstance,
+        ]),
+        config: {
+          fetch: {
+            ...fullFetchConfig(),
+            resolveAccountSpecificValues: true,
+          },
+        },
+        suiteQLNameToInternalIdsMap: {
+          account: {
+            'Account 1': ['1'],
+            'Some Account': ['2', '3'],
+          },
+        },
+      }
     })
 
     it('should not have errors when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
       const instance = new InstanceElement('instance', dataType)
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
-        ...baseParams,
-        elementsSource,
-        config,
-      })
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(0)
     })
 
@@ -175,11 +172,7 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
-        ...baseParams,
-        elementsSource,
-        config,
-      })
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(0)
     })
 
@@ -194,11 +187,7 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
-        ...baseParams,
-        elementsSource,
-        config,
-      })
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         severity: 'Error',
@@ -219,11 +208,7 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
-        ...baseParams,
-        elementsSource,
-        config,
-      })
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         severity: 'Error',
@@ -244,11 +229,7 @@ describe('data account specific values validator', () => {
           },
         },
       })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], {
-        ...baseParams,
-        elementsSource,
-        config,
-      })
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         severity: 'Warning',
@@ -273,11 +254,7 @@ describe('data account specific values validator', () => {
 
       const after = before.clone()
       after.value.strField = 2
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ before, after })], {
-        ...baseParams,
-        elementsSource,
-        config,
-      })
+      const changeErrors = await dataAccountSpecificValueValidator([toChange({ before, after })], params)
       expect(changeErrors).toHaveLength(0)
     })
   })

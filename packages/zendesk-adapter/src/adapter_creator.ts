@@ -28,13 +28,9 @@ import {
   config as configUtils,
   definitions,
 } from '@salto-io/adapter-components'
+import { inspectValue } from '@salto-io/adapter-utils'
 import ZendeskAdapter from './adapter'
-import {
-  Credentials,
-  oauthAccessTokenCredentialsType,
-  oauthRequestParametersType,
-  usernamePasswordCredentialsType,
-} from './auth'
+import { basicCredentialsType, Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType } from './auth'
 import {
   configType,
   ZendeskConfig,
@@ -47,8 +43,9 @@ import {
   validateGuideTypesConfig,
   GUIDE_SUPPORTED_TYPES,
   DEPLOY_CONFIG,
+  validateFixElementsConfig,
 } from './config'
-import { ZendeskFetchConfig } from './user_config'
+import { ZendeskFetchConfig, ZendeskFixElementsConfig } from './user_config'
 import ZendeskClient from './client/client'
 import { createConnection, instanceUrl } from './client/connection'
 import { configCreator } from './config_creator'
@@ -56,7 +53,7 @@ import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig, mergeWithDefaultConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig, updateElemIDDefinitions } = definitions
 const { validateDuckTypeApiDefinitionConfig } = configUtils
 const { validateDefaultMissingUserFallbackConfig } = definitions
 
@@ -94,6 +91,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   return {
     username: config.value.username,
     password: config.value.password,
+    token: config.value.token,
     subdomain: config.value.subdomain,
     domain,
   }
@@ -113,6 +111,7 @@ const isValidUser = (user: string): boolean => EMAIL_REGEX.test(user)
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
+  const useNewInfra = configValue.fetch?.useNewInfra
   const isGuideDisabled = config?.value.fetch.guide === undefined
   DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
     ? DEFAULT_CONFIG.apiDefinitions.supportedTypes
@@ -123,15 +122,32 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   ) as configUtils.AdapterDuckTypeApiConfig
 
   const fetch = mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
+  if (useNewInfra === true) {
+    const configForNewInfra = config?.clone()
+    const updatedElemIDs = updateElemIDDefinitions(configForNewInfra?.value?.apiDefinitions)
+    if (updatedElemIDs?.elemID !== undefined) {
+      if (fetch.elemID !== undefined) {
+        log.debug('fetch.elemId is defined and is going to be merged with data from the api_definition')
+      }
+      const mergedElemIDConfig = _.merge(_.pick(fetch, 'elemID'), updatedElemIDs)
+      fetch.elemID = mergedElemIDConfig.elemID
+      log.debug(`elemId config has changes and equal to: ${inspectValue(fetch.elemID)}`)
+    }
+  }
 
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,
     fetch,
     deploy: configValue.deploy,
     apiDefinitions,
+    fixElements: mergeWithDefaultConfig(
+      DEFAULT_CONFIG.fixElements ?? {},
+      configValue.fixElements,
+    ) as ZendeskFixElementsConfig,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
+  validateFixElementsConfig(adapterConfig.fixElements)
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
   validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateGuideTypesConfig(apiDefinitions)
@@ -176,7 +192,7 @@ export const adapter: Adapter = {
     }),
   authenticationMethods: {
     basic: {
-      credentialsType: usernamePasswordCredentialsType,
+      credentialsType: basicCredentialsType,
     },
     oauth: {
       createOAuthRequest,

@@ -37,7 +37,10 @@ import {
   RECORD_TYPE_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
-import { isInstanceOfTypeSync } from '../filters/utils'
+import {
+  extractFlatCustomObjectFields,
+  isInstanceOfTypeSync,
+} from '../filters/utils'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -330,8 +333,9 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
       ...profiles.map(profileEntriesTargets),
     )
     const elementNames = new Set(
-      await awu(await elementsSource.list())
-        .map((elemID) => elemID.getFullName())
+      await awu(await elementsSource.getAll())
+        .flatMap(extractFlatCustomObjectFields)
+        .map((elem) => elem.elemID.getFullName())
         .toArray(),
     )
     const brokenReferenceFields = Object.keys(
@@ -363,8 +367,9 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
       return {
         elemID: profile.elemID,
         severity: 'Info' as const,
-        message: 'Dropping profile fields which reference missing types',
-        detailedMessage: `The profile has ${profileBrokenReferenceFields.length} fields which reference types which are not available in the workspace.`,
+        message: 'Omitting profile entries which reference unavailable types',
+        detailedMessage:
+          'The profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
       }
     })
 

@@ -707,6 +707,7 @@ describe('salesforce client', () => {
               await validateCredentials(sandboxCredentials, 3, connection),
             ).toEqual({
               accountId: 'https://url.com/',
+              accountUrl: 'https://url.com/',
               isProduction: false,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
               extraInformation: { orgId: '' },
@@ -725,6 +726,7 @@ describe('salesforce client', () => {
               await validateCredentials(sandboxCredentials, 3, connection),
             ).toEqual({
               accountId: 'https://url.com/',
+              accountUrl: 'https://url.com/',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
               extraInformation: { orgId: '' },
@@ -754,6 +756,7 @@ describe('salesforce client', () => {
               await validateCredentials(credentials, 3, connection),
             ).toEqual({
               accountId: '',
+              accountUrl: 'https://url.com/',
               isProduction: true,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
               extraInformation: { orgId: '' },
@@ -772,6 +775,7 @@ describe('salesforce client', () => {
               await validateCredentials(credentials, 3, connection),
             ).toEqual({
               accountId: '',
+              accountUrl: 'https://url.com/',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
               extraInformation: { orgId: '' },
@@ -1193,7 +1197,6 @@ describe('salesforce client', () => {
       })
 
       const makeResolvablePromise = <T>(resolveValue: T): Resolvable<T> => {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         let resolve: () => void = () => {}
         // Unsafe assumption - promise constructor calls the parameter function synchronously
         const promise = new Promise<T>((resolveFunc) => {
@@ -1236,6 +1239,7 @@ describe('salesforce client', () => {
           _.times(reads.length, (i) =>
             mockRead.mockResolvedValueOnce(reads[i].promise),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           readRequests = _.times(reads.length, (i) =>
             testClient.readMetadata(`t${i}`, 'name'),
           )
@@ -1247,6 +1251,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,
@@ -1261,6 +1266,7 @@ describe('salesforce client', () => {
           _.times(lists.length, (i) =>
             mockList.mockResolvedValueOnce(lists[i].promise),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           listRequests = _.times(lists.length, (i) =>
             testClient.listMetadataObjects({ type: `t${i}` }),
           )
@@ -1320,6 +1326,7 @@ describe('salesforce client', () => {
           _.times(reads.length, (i) =>
             mockRead.mockResolvedValueOnce(reads[i].promise),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           readRequests = _.times(reads.length, (i) =>
             testClient.readMetadata(`t${i}`, 'name'),
           )
@@ -1331,6 +1338,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,
@@ -1389,6 +1397,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,

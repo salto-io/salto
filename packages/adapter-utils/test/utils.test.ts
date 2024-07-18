@@ -102,12 +102,15 @@ describe('Test utils.ts', () => {
     annotations: { testAnno: 'TEST ANNO TYPE' },
     path: ['here', 'we', 'go'],
   })
-  const mockElem = new ElemID('mockAdapter', 'test')
-  const mockType = new ObjectType({
-    elemID: mockElem,
+  const mockMetaType = new ObjectType({
+    elemID: new ElemID('mockAdapter', 'meta'),
     annotationRefsOrTypes: {
       testAnno: mockStrType,
     },
+  })
+  const mockElem = new ElemID('mockAdapter', 'test')
+  const mockType = new ObjectType({
+    elemID: mockElem,
     annotations: {
       testAnno: 'TEST ANNO',
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -169,6 +172,7 @@ describe('Test utils.ts', () => {
         ),
       },
     },
+    metaType: mockMetaType,
     path: ['this', 'is', 'happening'],
   })
 
@@ -504,7 +508,7 @@ describe('Test utils.ts', () => {
         })
 
         it('should omit undefined fields in nested objects', () => {
-          const { magical } = resp?.obj[1]?.innerObj
+          const magical = resp?.obj?.[1]?.innerObj?.magical
           expect(magical).toBeDefined()
           expect(magical).not.toHaveProperty('notExist2')
         })
@@ -1143,7 +1147,7 @@ describe('Test utils.ts', () => {
         })
 
         it('should omit undefined fields in nested objects', () => {
-          const { magical } = resp?.obj[1]?.innerObj
+          const magical = resp?.obj?.[1]?.innerObj?.magical
           expect(magical).toBeDefined()
           expect(magical).not.toHaveProperty('notExist2')
         })
@@ -1877,91 +1881,91 @@ describe('Test utils.ts', () => {
       })
     })
     describe('allowEmpty', () => {
-      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
-        val1: [],
-        val2: undefined,
-        val3: {},
-      })
-
-      it('allowEmpty = true should not remove empty objects and arrays', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmpty: true,
-        })
-        expect(transformedElement.value).toEqual({ val1: [], val3: {} })
-      })
-
-      it('allowEmpty = false should remove empty objects and arrays', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmpty: false,
-        })
-        expect(transformedElement.value).toEqual({})
-      })
-    })
-    describe('allowEmptyArrays', () => {
-      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
-        val1: [],
-        val2: undefined,
-        val3: {
-          emptyObj: {},
-          nestedArray: [],
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          arr: { refType: new ListType(BuiltinTypes.NUMBER) },
+          obj: {
+            refType: new ObjectType({
+              elemID: new ElemID('adapter', 'nestedType'),
+              fields: {
+                nestedArr: { refType: new ListType(BuiltinTypes.STRING) },
+                val: { refType: BuiltinTypes.STRING },
+              },
+            }),
+          },
+          emptyObj: { refType: new ObjectType({ elemID: new ElemID('adapter', 'emptyType') }) },
         },
       })
-
-      it('allowEmptyArrays = true should not remove empty arrays', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmptyArrays: true,
-        })
-        expect(transformedElement.value).toEqual({ val1: [], val3: { nestedArray: [] } })
-      })
-
-      it('allowEmptyArrays = false should remove empty arrays', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmptyArrays: false,
-        })
-        expect(transformedElement.value).toEqual({})
-      })
-    })
-    describe('allowEmptyObjects', () => {
-      const element = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
-        val1: [],
-        val2: undefined,
-        val3: {
-          emptyObj: {},
-          nestedArray: [],
+      const element = new InstanceElement('instance', type, {
+        arr: [],
+        obj: {
+          nestedArr: [],
+          val: 'a',
         },
-        obj: {},
+        emptyObj: {
+          nested: {},
+        },
+      })
+      describe('with allowEmptyArrays', () => {
+        it('should remove empty objects and not remove empty list', async () => {
+          const result = await transformElement({
+            element,
+            transformFunc: ({ value }) => value,
+            strict: false,
+            allowEmptyArrays: true,
+          })
+          expect(result.value).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+          })
+        })
       })
 
-      it('allowEmptyObjects = true should not remove empty objects', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmptyObjects: true,
+      describe('with allowEmptyObjects', () => {
+        it('should remove empty lists and not remove empty objects', async () => {
+          const result = await transformElement({
+            element,
+            transformFunc: ({ value }) => value,
+            strict: false,
+            allowEmptyObjects: true,
+          })
+
+          expect(result.value).toEqual({
+            obj: {
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
         })
-        expect(transformedElement.value).toEqual({ val3: { emptyObj: {} }, obj: {} })
       })
 
-      it('allowEmptyObjects = false should remove empty objects', async () => {
-        const transformedElement = await transformElement({
-          element,
-          transformFunc: ({ value }) => value,
-          strict: false,
-          allowEmptyObjects: false,
+      describe('with allowEmptyObjects and allowEmptyArrays', () => {
+        it('should not remove empty lists and not remove empty objects', async () => {
+          const result = await transformElement({
+            element,
+            transformFunc: ({ value }) => value,
+            strict: false,
+            allowEmptyArrays: true,
+            allowEmptyObjects: true,
+          })
+
+          expect(result.value).toEqual({
+            arr: [],
+            obj: {
+              nestedArr: [],
+              val: 'a',
+            },
+            emptyObj: {
+              nested: {},
+            },
+          })
         })
-        expect(transformedElement.value).toEqual({})
       })
     })
   })
@@ -2143,9 +2147,7 @@ describe('Test utils.ts', () => {
     const ot = new ObjectType({
       elemID: otID,
       fields: {
-        // eslint-disable-next-line camelcase
         num_field: { refType: primNum },
-        // eslint-disable-next-line camelcase
         str_field: { refType: primStr },
       },
       annotationRefsOrTypes: {},
@@ -2801,6 +2803,7 @@ describe('Test utils.ts', () => {
     const fieldTypeWithAdditionalField = cloneAndAddField(fieldType)
     const annoType = new ObjectType({ elemID: new ElemID('ad', 'annoType') })
     const annoTypeWithAdditionalField = cloneAndAddField(annoType)
+    const metaType = new ObjectType({ elemID: new ElemID('ad', 'metaType') })
     const objWithResolved = new ObjectType({
       elemID: new ElemID('ad', 'withResolved'),
       fields: {
@@ -2809,6 +2812,7 @@ describe('Test utils.ts', () => {
       annotationRefsOrTypes: {
         annoA: annoType,
       },
+      metaType,
     })
     const objWithResolvedWithAdditionalField = cloneAndAddField(objWithResolved)
     const objWithUnresolved = new ObjectType({
@@ -2819,6 +2823,7 @@ describe('Test utils.ts', () => {
       annotationRefsOrTypes: {
         annoA: new TypeReference(annoType.elemID),
       },
+      metaType: new TypeReference(metaType.elemID),
     })
     const instWithResolvedType = new InstanceElement('resolved', objWithResolved, {
       a: 'does not matter',
@@ -2829,6 +2834,7 @@ describe('Test utils.ts', () => {
     const elementsSource = buildElementsSourceFromElements([
       fieldTypeWithAdditionalField,
       annoTypeWithAdditionalField,
+      metaType,
       instWithUnresolvedType,
       objWithResolvedWithAdditionalField,
       instWithResolvedType,
@@ -2846,6 +2852,7 @@ describe('Test utils.ts', () => {
       await resolveTypeShallow(clonedObj, elementsSource)
       expect(await clonedObj.fields.a.getType()).toEqual(fieldTypeWithAdditionalField)
       expect((await clonedObj.getAnnotationTypes()).annoA).toEqual(annoTypeWithAdditionalField)
+      expect(await clonedObj.getMetaType()).toEqual(metaType)
     })
 
     it('Should keep an InstanceElement with a resolved type as is', async () => {
@@ -2861,7 +2868,7 @@ describe('Test utils.ts', () => {
       expect(await clonedInst.getType()).toEqual(objWithResolvedWithAdditionalField)
     })
 
-    it('should resolve to PlaceholderObjectType if the type is not in the source', async () => {
+    it('Should resolve to PlaceholderObjectType if the type is not in the source', async () => {
       const instance = new InstanceElement('instance', new TypeReference(new ElemID('adapter', 'unknownType')))
       const source = buildElementsSourceFromElements([], [buildElementsSourceFromElements([instance])])
       expect(instance.refType.type).toBeUndefined()

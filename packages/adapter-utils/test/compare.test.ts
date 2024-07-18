@@ -29,6 +29,7 @@ import {
   isAdditionChange,
   toChange,
   Change,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges, getRelevantNamesFromChange } from '../src/compare'
 
@@ -555,6 +556,15 @@ describe('detailedCompare', () => {
         expect(hasChange(changes, 'remove', before.fields.before.elemID)).toBeTruthy()
       })
     })
+    describe('with meta type change', () => {
+      it('should return only the base change', () => {
+        const afterMeta = before.clone()
+        afterMeta.metaType = new TypeReference(new ElemID('salto', 'meta'))
+        const changes = detailedCompare(before, afterMeta)
+        expect(changes).toHaveLength(1)
+        expect(hasChange(changes, 'modify', before.elemID)).toBeTruthy()
+      })
+    })
   })
 
   describe('compare fields', () => {
@@ -580,6 +590,13 @@ describe('detailedCompare', () => {
     })
     it('should create modify changes for values that were only present both fields', () => {
       expect(hasChange(changes, 'modify', after.elemID.createNestedID('modify'))).toBeTruthy()
+    })
+    it('should return only the base change when the type changes', () => {
+      const afterNumber = before.clone()
+      afterNumber.refType = new TypeReference(BuiltinTypes.NUMBER.elemID)
+      const typeChanges = detailedCompare(before, afterNumber)
+      expect(typeChanges).toHaveLength(1)
+      expect(hasChange(typeChanges, 'modify', before.elemID)).toBeTruthy()
     })
   })
 })

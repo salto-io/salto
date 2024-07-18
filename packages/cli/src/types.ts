@@ -20,7 +20,6 @@ export type WriteStream = streams.MaybeTty & {
   write(s: string): void
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ReadStream {
   // TODO
 }

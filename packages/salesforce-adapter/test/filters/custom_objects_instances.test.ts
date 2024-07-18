@@ -81,6 +81,7 @@ import {
   buildMetadataQuery,
   buildMetadataQueryForFetchWithChangesDetection,
 } from '../../src/fetch_profile/metadata_query'
+import * as filtersUtil from '../../src/filters/utils'
 
 const { awu } = collections.asynciterable
 
@@ -142,7 +143,6 @@ const createCustomObject = (
   return obj
 }
 
-/* eslint-disable camelcase */
 describe('Custom Object Instances filter', () => {
   let connection: Connection
   let client: SalesforceClient
@@ -1694,6 +1694,76 @@ describe('Custom Object Instances filter', () => {
     })
   })
 
+  describe('regenerateSaltoIds', () => {
+    const ID_FROM_SERVICE = 'a0C8d000008r49lEAA'
+    let instances: InstanceElement[]
+    describe('when regenerateSaltoIds is true', () => {
+      beforeEach(async () => {
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                data: {
+                  includeObjects: ['.*'],
+                  saltoIDSettings: {
+                    defaultIdFields: ['Id'],
+                    regenerateSaltoIds: true,
+                  },
+                },
+              },
+            }),
+          },
+        }) as FilterType
+        connection.query = jest.fn().mockResolvedValue({
+          records: [{ Id: ID_FROM_SERVICE, Name: 'Test' }],
+        })
+        const elements: Element[] = [mockTypes.SBQQ__Template__c]
+        await filter.onFetch(elements)
+        instances = elements.filter(isInstanceElement)
+      })
+      it('should not use the getElemIdFunc', () => {
+        expect(instances).toHaveLength(1)
+        expect(instances[0].elemID.name).toEqual(ID_FROM_SERVICE)
+      })
+    })
+
+    describe('when regenerateSaltoIds is false', () => {
+      beforeEach(async () => {
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                data: {
+                  includeObjects: ['.*'],
+                  saltoIDSettings: {
+                    defaultIdFields: ['Id'],
+                    regenerateSaltoIds: false,
+                  },
+                },
+              },
+            }),
+          },
+        }) as FilterType
+        connection.query = jest.fn().mockResolvedValue({
+          records: [{ Id: ID_FROM_SERVICE, Name: 'Test' }],
+        })
+        const elements: Element[] = [mockTypes.SBQQ__Template__c]
+        await filter.onFetch(elements)
+        instances = elements.filter(isInstanceElement)
+      })
+      it('should use the getElemIdFunc', () => {
+        expect(instances).toHaveLength(1)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${ID_FROM_SERVICE}`,
+        )
+      })
+    })
+  })
+
   describe('Aliases', () => {
     let instances: InstanceElement[]
 
@@ -2275,7 +2345,6 @@ describe('Custom Object Instances filter', () => {
 
         const testType = createCustomObject(testTypeName)
         elements = [testType, changedAtSingleton]
-        await filter.onFetch(elements)
       })
       describe('Without allowReferenceTo', () => {
         beforeEach(async () => {
@@ -2303,6 +2372,7 @@ describe('Custom Object Instances filter', () => {
         })
       })
       describe('With allowReferenceTo', () => {
+        const refToType = createCustomObject(refToTypeName)
         const objectType = createCustomObject(testTypeName, {
           referenceField: {
             refType: Types.primitiveDataTypes.Lookup,
@@ -2312,39 +2382,78 @@ describe('Custom Object Instances filter', () => {
             },
           },
         })
+        beforeEach(() => {
+          elements = [objectType, refToType, changedAtSingleton]
+        })
         describe('When the referring element is fetched', () => {
-          beforeEach(async () => {
-            elements = [
-              objectType,
-              createCustomObject(refToTypeName),
-              changedAtSingleton,
-            ]
-            await filter.onFetch(elements)
+          describe('When the referred element is in the service', () => {
+            beforeEach(async () => {
+              await filter.onFetch(elements)
+            })
+            it('Should query for the correct types', () => {
+              expect(basicQueryImplementation).toHaveBeenCalledWith(
+                expect.stringContaining(testTypeName),
+              )
+              expect(basicQueryImplementation).toHaveBeenCalledWith(
+                expect.stringContaining(refToTypeName),
+              )
+            })
+            it('Should return the correct elements', () => {
+              expect(elements).toHaveLength(5)
+              expect(elements).toSatisfyAny(
+                (element) =>
+                  element?.value?.[CUSTOM_OBJECT_ID_FIELD] === testInstanceId,
+              )
+              expect(elements).toSatisfyAny(
+                (element) =>
+                  element?.value?.[CUSTOM_OBJECT_ID_FIELD] === refToInstanceId,
+              )
+            })
+            it('should not count types in allowReferenceTo', () => {
+              expect(client.countInstances).toHaveBeenCalledWith(testTypeName)
+              expect(client.countInstances).not.toHaveBeenCalledWith(
+                refToTypeName,
+              )
+            })
           })
-          it('Should query for the correct types', () => {
-            expect(basicQueryImplementation).toHaveBeenCalledWith(
-              expect.stringContaining(testTypeName),
-            )
-            expect(basicQueryImplementation).toHaveBeenCalledWith(
-              expect.stringContaining(refToTypeName),
-            )
-          })
-          it('Should return the correct elements', () => {
-            expect(elements).toHaveLength(5)
-            expect(elements).toSatisfyAny(
-              (element) =>
-                element?.value?.[CUSTOM_OBJECT_ID_FIELD] === testInstanceId,
-            )
-            expect(elements).toSatisfyAny(
-              (element) =>
-                element?.value?.[CUSTOM_OBJECT_ID_FIELD] === refToInstanceId,
-            )
-          })
-          it('should not count types in allowReferenceTo', () => {
-            expect(client.countInstances).toHaveBeenCalledWith(testTypeName)
-            expect(client.countInstances).not.toHaveBeenCalledWith(
-              refToTypeName,
-            )
+          describe('When the referred element is in the elements source', () => {
+            let mockBuildElementsSourceForFetch: jest.SpyInstance
+            beforeEach(async () => {
+              const refToInstance = new InstanceElement(
+                'RefToInstanceFromWorkspace',
+                refToType,
+                {
+                  [CUSTOM_OBJECT_ID_FIELD]: refToInstanceId,
+                },
+              )
+              mockBuildElementsSourceForFetch = jest
+                .spyOn(filtersUtil, 'buildElementsSourceForFetch')
+                .mockImplementation((elems) => {
+                  if (elems.length === 0) {
+                    return buildElementsSourceFromElements([refToInstance])
+                  }
+                  return buildElementsSourceFromElements(elems)
+                })
+              setMockQueryResults(
+                testRecords.filter((record) => record.Id === testInstanceId),
+              )
+
+              await filter.onFetch(elements)
+            })
+            afterEach(() => {
+              mockBuildElementsSourceForFetch.mockRestore()
+            })
+            it('Should return the correct elements', () => {
+              expect(elements).toHaveLength(5)
+              expect(elements).toSatisfyAny(
+                (element) =>
+                  element?.value?.[CUSTOM_OBJECT_ID_FIELD] === testInstanceId,
+              )
+              expect(elements).toSatisfyAny(
+                (element) =>
+                  element?.value?.[CUSTOM_OBJECT_ID_FIELD] === refToInstanceId,
+              )
+            })
           })
         })
         describe('When the referring element is in the element source', () => {
@@ -2354,7 +2463,6 @@ describe('Custom Object Instances filter', () => {
                 (record) => record.attributes.type !== testTypeName,
               ),
             )
-            const refToType = createCustomObject(refToTypeName)
             const refToInstance = new InstanceElement(
               'RefToInstanceFromWorkspace',
               refToType,
@@ -2404,7 +2512,6 @@ describe('Custom Object Instances filter', () => {
         })
         describe('When the referring element is in the element source and updated by the fetch', () => {
           beforeEach(async () => {
-            const refToType = createCustomObject(refToTypeName)
             const referringInstance = new InstanceElement(
               'ReferringInstance',
               objectType,

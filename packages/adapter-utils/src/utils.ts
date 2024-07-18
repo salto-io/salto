@@ -370,17 +370,25 @@ export const transformValuesSync = ({
 
 export const elementAnnotationTypes = async (
   element: Element,
-  elementsSource?: ReadOnlyElementsSource,
+  elementSource?: ReadOnlyElementsSource,
 ): Promise<TypeMap> => {
   if (isInstanceElement(element)) {
     return InstanceAnnotationTypes
   }
+
+  let annotationsType: Element
+  if (isField(element)) {
+    annotationsType = await element.getType(elementSource)
+  } else if (isObjectType(element)) {
+    annotationsType = (await element.getMetaType(elementSource)) ?? element
+  } else {
+    annotationsType = element
+  }
+
   return {
     ...InstanceAnnotationTypes,
     ...CoreAnnotationTypes,
-    ...(isField(element)
-      ? await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
-      : await element.getAnnotationTypes(elementsSource)),
+    ...(await annotationsType.getAnnotationTypes(elementSource)),
   }
 }
 
@@ -417,7 +425,6 @@ export const transformElement = async <T extends Element>({
   strict,
   elementsSource,
   runOnFields,
-  allowEmpty,
   allowEmptyArrays,
   allowEmptyObjects,
 }: {
@@ -426,7 +433,6 @@ export const transformElement = async <T extends Element>({
   strict?: boolean
   elementsSource?: ReadOnlyElementsSource
   runOnFields?: boolean
-  allowEmpty?: boolean
   allowEmptyArrays?: boolean
   allowEmptyObjects?: boolean
 }): Promise<T> => {
@@ -436,8 +442,8 @@ export const transformElement = async <T extends Element>({
     transformFunc,
     strict,
     elementsSource,
-    allowEmptyArrays: allowEmptyArrays ?? allowEmpty,
-    allowEmptyObjects: allowEmptyObjects ?? allowEmpty,
+    allowEmptyArrays,
+    allowEmptyObjects,
   })
 
   if (isInstanceElement(element)) {
@@ -449,8 +455,8 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         pathID: element.elemID,
-        allowEmptyArrays: allowEmptyArrays ?? allowEmpty,
-        allowEmptyObjects: allowEmptyObjects ?? allowEmpty,
+        allowEmptyArrays,
+        allowEmptyObjects,
       })) || {}
 
     newElement = new InstanceElement(
@@ -474,7 +480,6 @@ export const transformElement = async <T extends Element>({
             strict,
             elementsSource,
             runOnFields,
-            allowEmpty,
             allowEmptyArrays,
             allowEmptyObjects,
           })
@@ -490,6 +495,7 @@ export const transformElement = async <T extends Element>({
       annotationRefsOrTypes: element.annotationRefTypes,
       annotations: transformedAnnotations,
       path: element.path,
+      metaType: element.metaType,
       isSettings: element.isSettings,
     })
 
@@ -522,7 +528,6 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         runOnFields,
-        allowEmpty,
         allowEmptyArrays,
         allowEmptyObjects,
       }),
@@ -538,7 +543,6 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         runOnFields,
-        allowEmpty,
         allowEmptyArrays,
         allowEmptyObjects,
       }),
@@ -691,6 +695,7 @@ export const flattenElementStr = (element: Element): Element => {
         .mapKeys((_v, k) => flatStr(k))
         .mapValues(flattenField)
         .value(),
+      metaType: obj.metaType,
       isSettings: obj.isSettings,
       path: obj.path?.map(flatStr),
     })
@@ -770,6 +775,7 @@ export const filterByID = async <T extends Element | Values>(
       annotationRefsOrTypes: await filterAnnotationType(value.annotationRefTypes),
       fields: await filterFields(value.fields),
       path: value.path,
+      metaType: value.metaType,
       isSettings: value.isSettings,
     }) as Value as T
   }
@@ -963,7 +969,10 @@ export const hasValidParent = (element: Element): boolean => {
 // current Reference.getResolvedValue implementation
 // That's why we need this func and do not use getResolvedValue
 // If we decide switch the getResolvedValue behavior in the future we should lose this
-const getResolvedRef = async (ref: TypeReference, elementsSource: ReadOnlyElementsSource): Promise<TypeReference> => {
+const getResolvedRef = async <T extends TypeElement>(
+  ref: TypeReference<T>,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<TypeReference<T | PlaceholderObjectType>> => {
   if (ref.type !== undefined) {
     return ref
   }
@@ -991,6 +1000,9 @@ export const resolveTypeShallow = async (element: Element, elementsSource: ReadO
   }
   if (isObjectType(element)) {
     await awu(Object.values(element.fields)).forEach(async field => resolveTypeShallow(field, elementsSource))
+    if (element.metaType !== undefined) {
+      element.metaType = await getResolvedRef(element.metaType, elementsSource)
+    }
   }
 }
 

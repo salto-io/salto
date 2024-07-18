@@ -16,7 +16,6 @@
 import { Element, Value, InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { HTTPError } from '@salto-io/adapter-components/src/client'
 import { getFilterParams, mockClient } from '../../../utils'
 import prioritySchemeFetchFilter from '../../../../src/filters/data_center/priority_scheme/priority_scheme_fetch'
 import JiraClient from '../../../../src/client/client'
@@ -180,7 +179,7 @@ describe('prioritySchemeFetchFilter', () => {
     it('should warn if response is 403', async () => {
       connection.get.mockImplementation(async url => {
         if (url === '/rest/api/2/priorityschemes') {
-          throw new HTTPError('failed', { data: {}, status: 403 })
+          throw new clientUtils.HTTPError('failed', { data: {}, status: 403 })
         }
 
         throw new Error(`Unexpected url ${url}`)
@@ -200,7 +199,7 @@ describe('prioritySchemeFetchFilter', () => {
     it('should warn if response is 405', async () => {
       connection.get.mockImplementation(async url => {
         if (url === '/rest/api/2/priorityschemes') {
-          throw new HTTPError('failed', { data: {}, status: 405 })
+          throw new clientUtils.HTTPError('failed', { data: {}, status: 405 })
         }
 
         throw new Error(`Unexpected url ${url}`)

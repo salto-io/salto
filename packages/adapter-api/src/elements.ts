@@ -20,9 +20,7 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX, GLOBAL_ADAPTER } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
-// eslint-disable-next-line import/no-cycle
 import { Values, Value, TypeReference, isTypeReference, cloneDeepWithoutRefs, CompareOptions } from './values'
-// eslint-disable-next-line import/no-cycle
 import { isEqualValues } from './comparison'
 
 const { awu } = collections.asynciterable
@@ -97,8 +95,6 @@ export abstract class Element {
 
   async getAnnotationTypes(elementsSource?: ReadOnlyElementsSource): Promise<TypeMap> {
     const annotationTypes = mapValuesAsync(this.annotationRefTypes, refType => refType.getResolvedValue(elementsSource))
-
-    // eslint-disable-next-line no-use-before-define
     const nonTypeValues = Object.values(annotationTypes).filter(type => !isType(type))
     if (nonTypeValues.length) {
       throw new Error(
@@ -166,10 +162,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
 
   isEqual(other: ListType, options?: CompareOptions): boolean {
     return (
-      super.isEqual(other, options) &&
-      // eslint-disable-next-line no-use-before-define
-      this.refInnerType.elemID.isEqual(other.refInnerType.elemID) &&
-      isListType(other)
+      super.isEqual(other, options) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isListType(other)
     )
   }
 
@@ -189,7 +182,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
       const innerType = this.refInnerType.type
-      // eslint-disable-next-line no-use-before-define
+
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
         this.annotationRefTypes = innerType.annotationRefTypes
@@ -226,10 +219,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
 
   isEqual(other: MapType, options?: CompareOptions): boolean {
     return (
-      super.isEqual(other, options) &&
-      // eslint-disable-next-line no-use-before-define
-      this.refInnerType.elemID.isEqual(other.refInnerType.elemID) &&
-      isMapType(other)
+      super.isEqual(other, options) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isMapType(other)
     )
   }
 
@@ -249,7 +239,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
       const innerType = this.refInnerType.type
-      // eslint-disable-next-line no-use-before-define
+
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
         this.annotationRefTypes = innerType.annotationRefTypes
@@ -359,11 +349,29 @@ export type FieldDefinition = {
   annotations?: Values
 }
 
+const validateMetaType = (metaType?: ObjectType): ObjectType | undefined => {
+  if (metaType === undefined) {
+    return undefined
+  }
+
+  if (!isObjectType(metaType)) {
+    log.error(`Got an invalid meta type which is not an object type with ${(metaType as Element).elemID}.`)
+    return undefined
+  }
+
+  if (metaType instanceof PlaceholderObjectType) {
+    log.warn(`Meta type with ID ${metaType.elemID.getFullName()} not found in elements source.`)
+  }
+
+  return metaType
+}
+
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
 export class ObjectType extends Element {
   fields: FieldMap
+  metaType: TypeReference<ObjectType> | undefined
   isSettings: boolean
 
   constructor({
@@ -371,6 +379,7 @@ export class ObjectType extends Element {
     fields = {},
     annotationRefsOrTypes = {},
     annotations = {},
+    metaType = undefined,
     isSettings = false,
     path = undefined,
   }: {
@@ -378,6 +387,7 @@ export class ObjectType extends Element {
     fields?: Record<string, FieldDefinition>
     annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
+    metaType?: TypeOrRef<ObjectType>
     isSettings?: boolean
     path?: ReadonlyArray<string>
   }) {
@@ -386,6 +396,9 @@ export class ObjectType extends Element {
       fields,
       (fieldDef, name) => new Field(this, name, getRefType(fieldDef.refType), fieldDef.annotations),
     )
+    if (metaType !== undefined) {
+      this.metaType = getRefType(metaType)
+    }
     this.isSettings = isSettings
   }
 
@@ -404,9 +417,30 @@ export class ObjectType extends Element {
         _.mapValues(this.fields, f => f.elemID.getFullName()),
         _.mapValues(other.fields, f => f.elemID.getFullName()),
       ) &&
+      this.isMetaTypeEqual(other) &&
       _.isEqual(this.isSettings, other.isSettings) &&
       _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n], options)))
     )
+  }
+
+  isMetaTypeEqual(other: ObjectType): boolean {
+    if (this.metaType === undefined && other.metaType === undefined) {
+      return true
+    }
+
+    if (this.metaType === undefined || other.metaType === undefined) {
+      return false
+    }
+
+    return this.metaType.elemID.isEqual(other.metaType.elemID)
+  }
+
+  async getMetaType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType | undefined> {
+    return validateMetaType(await this.metaType?.getResolvedValue(elementsSource))
+  }
+
+  getMetaTypeSync(): ObjectType | undefined {
+    return validateMetaType(this.metaType?.getResolvedValueSync())
   }
 
   /**
@@ -421,6 +455,7 @@ export class ObjectType extends Element {
       fields: this.cloneFields(),
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
+      metaType: this.metaType?.clone(),
       isSettings,
       path: this.path !== undefined ? [...this.path] : undefined,
     })
@@ -457,6 +492,7 @@ const validateType = (type: TypeElement | undefined, elemID: ElemID): TypeElemen
   }
   return type
 }
+
 export class InstanceElement extends Element {
   public refType: TypeReference<ObjectType>
   constructor(

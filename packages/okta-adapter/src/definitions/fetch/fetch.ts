@@ -27,7 +27,7 @@ import {
   CUSTOM_NAME_FIELD,
   MFA_RULE_TYPE_NAME,
   IDP_RULE_TYPE_NAME,
-  DEVICE_ASSURANCE,
+  DEVICE_ASSURANCE_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
 } from '../../constants'
@@ -35,22 +35,16 @@ import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
-import { OMIT_CREDS_HEADER } from '../../user_utils'
 
-const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
+const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
+const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
+
+const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created: { omit: true },
   lastUpdated: { omit: true },
   createdBy: { omit: true },
   lastUpdatedBy: { omit: true },
 }
-
-const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
-const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
-
-const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_OMIT,
-)
 
 const getPrivateAPICustomizations = ({
   endpoint,
@@ -277,7 +271,7 @@ const createCustomizations = ({
           path: '/api/v1/apps',
         },
         transformation: {
-          adjust: ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
+          adjust: async ({ value }) => ({ value: assignPolicyIdsToApplication(value) }),
         },
       },
     ],
@@ -401,7 +395,7 @@ const createCustomizations = ({
       {
         endpoint: { path: '/api/v1/apps/{appId}/groups' },
         transformation: {
-          adjust: ({ value, context }) => ({
+          adjust: async ({ value, context }) => ({
             value: {
               ...(_.isObject(value)
                 ? {
@@ -464,7 +458,7 @@ const createCustomizations = ({
               },
               transformation: {
                 root: 'mappings',
-                adjust: ({ value }) => ({
+                adjust: async ({ value }) => ({
                   value: {
                     ...(isGroupPushEntry(value)
                       ? {
@@ -647,7 +641,9 @@ const createCustomizations = ({
         endpoint: { path: '/api/v1/meta/schemas/user/{id}' },
         transformation: {
           // assign user schema id from request context to value
-          adjust: ({ value, context }) => ({ value: { ...(_.isObject(value) ? { ...value, id: context.id } : {}) } }),
+          adjust: async ({ value, context }) => ({
+            value: { ...(_.isObject(value) ? { ...value, id: context.id } : {}) },
+          }),
         },
       },
     ],
@@ -989,8 +985,8 @@ const createCustomizations = ({
     requests: [
       {
         endpoint: {
-          path: '/api/v1/users',
-          headers: OMIT_CREDS_HEADER,
+          // The search query is needed to fetch deprovisioned users
+          path: '/api/v1/users?search=id+pr',
         },
       },
     ],
@@ -1009,6 +1005,14 @@ const createCustomizations = ({
         activated: { omit: true },
         _links: { omit: true },
         type: { fieldType: 'UserTypeRef' },
+      },
+    },
+  },
+  UserCredentials: {
+    element: {
+      fieldCustomizations: {
+        recovery_question: { omit: true },
+        password: { omit: true },
       },
     },
   },
@@ -1159,7 +1163,7 @@ const createCustomizations = ({
 })
 
 export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
-  DEVICE_ASSURANCE,
+  DEVICE_ASSURANCE_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,

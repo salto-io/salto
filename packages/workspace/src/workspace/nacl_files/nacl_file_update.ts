@@ -297,6 +297,10 @@ export const updateNaclFileData = async (
         }
       } else if (isElement(elem)) {
         newData = await parser.dumpElements([elem], functions, indentationLevel)
+        if (change.action === 'modify') {
+          // When replacing entire elements we already have a newline after the block so we don't need another one
+          newData = newData.trimEnd()
+        }
       } else if (isListElement) {
         newData = await parser.dumpValues(elem, functions, indentationLevel)
       } else {
@@ -417,6 +421,7 @@ const parentElementExistsInPath = (dc: DetailedChange, sourceMap: parser.SourceM
   const { parent } = dc.id.createTopLevelParentID()
   return _.some(sourceMap.get(parent.getFullName())?.map(range => range.filename === createFileNameFromPath(dc.path)))
 }
+
 export const getChangesToUpdate = (changes: DetailedChange[], sourceMap: parser.SourceMap): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean =>
     (dc.path || false) &&

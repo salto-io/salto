@@ -106,13 +106,20 @@ describe('deployContextChange', () => {
       before: beforeInstance,
       after: afterInstance,
     })
-    await deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    await deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) })
 
     expect(deployChangeMock).toHaveBeenCalledWith({
       change: await resolveChangeElement(change, getLookUpName),
       client,
       endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.CustomFieldContext.deployRequests,
-      fieldsToIgnore: ['defaultValue', 'options', 'isGlobalContext', 'issueTypeIds', 'projectIds'],
+      fieldsToIgnore: [
+        'defaultValue',
+        'options',
+        'isGlobalContext',
+        'AssetsObjectFieldConfiguration',
+        'issueTypeIds',
+        'projectIds',
+      ],
     })
   })
 
@@ -140,7 +147,7 @@ describe('deployContextChange', () => {
     const change = toChange({
       before: beforeInstance,
     })
-    await deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    await deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) })
   })
 
   it('should throw for other error messages', async () => {
@@ -168,7 +175,7 @@ describe('deployContextChange', () => {
       before: beforeInstance,
     })
     await expect(
-      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions),
+      deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) }),
     ).rejects.toThrow()
   })
 
@@ -202,7 +209,7 @@ describe('deployContextChange', () => {
       after: instance,
     })
     await expect(
-      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions),
+      deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) }),
     ).rejects.toThrow()
   })
 })

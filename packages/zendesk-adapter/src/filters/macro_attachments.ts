@@ -65,9 +65,7 @@ const MACRO_ATTACHMENT_DATA_FIELD = 'macro_attachment'
 type Attachment = {
   id: number
   filename: string
-  // eslint-disable-next-line camelcase
   content_type: string
-  // eslint-disable-next-line camelcase
   content_url: string
 }
 

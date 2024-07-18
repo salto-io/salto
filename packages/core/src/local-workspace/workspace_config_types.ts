@@ -65,9 +65,9 @@ const envsConfigType = new ObjectType({
   isSettings: true,
 })
 
-const workspaceMetatadataConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME)
+const workspaceMetadataConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME)
 const workspaceMetadataConfigType = new ObjectType({
-  elemID: workspaceMetatadataConfigElemID,
+  elemID: workspaceMetadataConfigElemID,
   fields: {
     uid: { refType: BuiltinTypes.STRING, annotations: requireAnno },
     name: { refType: BuiltinTypes.STRING, annotations: requireAnno },

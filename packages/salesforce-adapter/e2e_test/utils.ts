@@ -233,7 +233,6 @@ export const removeElementIfAlreadyExists = async (
 }
 
 export const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 

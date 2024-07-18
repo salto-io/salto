@@ -41,8 +41,6 @@ import {
 import filterCreator from '../../src/filters/workflow_and_task_references'
 import { SUPPORTED_TYPES } from '../../src/config'
 
-/* eslint-disable camelcase */
-
 describe('Workflow and task references filter', () => {
   let client: ZuoraClient
   type FilterType = filterUtils.FilterWith<'onFetch'>

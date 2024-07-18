@@ -15,18 +15,21 @@
  */
 
 import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { getGroupLifecyclePolicyGroupModificationRequest } from '../../../src/definitions/deploy/utils'
+import {
+  createDefinitionForGroupLifecyclePolicyGroupModification,
+  getGroupLifecyclePolicyGroupModificationRequest,
+} from '../../../src/definitions/deploy/utils'
 import { contextMock, objectTypeMock } from '../../mocks'
 import { ADAPTER_NAME, GROUP_LIFE_CYCLE_POLICY_FIELD_NAME } from '../../../src/constants'
 
-describe(`${getGroupLifecyclePolicyGroupModificationRequest.name}`, () => {
-  const lifeCycleReference = new ReferenceExpression(new ElemID(ADAPTER_NAME, 'obj', 'instance', 'test'), {
-    value: { id: 'testLifeCyclePolicyId' },
-  })
-  const instanceWithLifecyclePolicyRef = new InstanceElement('instance', objectTypeMock, {
-    [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]: lifeCycleReference,
-  })
+const lifeCycleReference = new ReferenceExpression(new ElemID(ADAPTER_NAME, 'obj', 'instance', 'test'), {
+  value: { id: 'testLifeCyclePolicyId' },
+})
+const instanceWithLifecyclePolicyRef = new InstanceElement('instance', objectTypeMock, {
+  [GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]: lifeCycleReference,
+})
 
+describe(`${getGroupLifecyclePolicyGroupModificationRequest.name}`, () => {
   describe('addition', () => {
     it('should return the correct path', () => {
       const { endpoint } = getGroupLifecyclePolicyGroupModificationRequest('add')
@@ -56,21 +59,61 @@ describe(`${getGroupLifecyclePolicyGroupModificationRequest.name}`, () => {
   })
 
   describe('adjust function', () => {
-    it('when the value is not a plain object', () => {
+    it('when the value is not a plain object', async () => {
       const { transformation } = getGroupLifecyclePolicyGroupModificationRequest('add')
-      expect(() =>
+      await expect(
         transformation?.adjust?.({ value: 'not an object', typeName: 'group', context: contextMock }),
-      ).toThrow()
+      ).rejects.toThrow()
     })
 
-    it('should return the object id as the group id', () => {
+    it('should return the object id as the group id', async () => {
       const { transformation } = getGroupLifecyclePolicyGroupModificationRequest('add')
-      const adjustedItem = transformation?.adjust?.({
+      const adjustedItem = await transformation?.adjust?.({
         value: { id: 'id1', anotherField: ['ignoreThis'] },
         typeName: 'group',
         context: contextMock,
       })
       expect(adjustedItem?.value).toEqual({ groupId: 'id1' })
+    })
+  })
+})
+
+describe(`${createDefinitionForGroupLifecyclePolicyGroupModification.name}`, () => {
+  describe('custom condition', () => {
+    const instanceWithoutLifecyclePolicyRef = new InstanceElement('instance', objectTypeMock, {})
+
+    it('should return false for non modification changes', () => {
+      const change = toChange({ after: instanceWithLifecyclePolicyRef })
+      const { condition } = createDefinitionForGroupLifecyclePolicyGroupModification('add')
+      expect(condition?.custom?.({})({ ...contextMock, change })).toEqual(false)
+    })
+
+    describe('when the action is add', () => {
+      it('should return false when the group lifecycle policy is not present', () => {
+        const change = toChange({ before: instanceWithLifecyclePolicyRef, after: instanceWithoutLifecyclePolicyRef })
+        const { condition } = createDefinitionForGroupLifecyclePolicyGroupModification('add')
+        expect(condition?.custom?.({})({ ...contextMock, change })).toEqual(false)
+      })
+
+      it('should return true when the group lifecycle policy is present', () => {
+        const change = toChange({ before: instanceWithoutLifecyclePolicyRef, after: instanceWithLifecyclePolicyRef })
+        const { condition } = createDefinitionForGroupLifecyclePolicyGroupModification('add')
+        expect(condition?.custom?.({})({ ...contextMock, change })).toEqual(true)
+      })
+    })
+
+    describe('when the action is remove', () => {
+      it('should return false when the group lifecycle policy is present', () => {
+        const change = toChange({ before: instanceWithoutLifecyclePolicyRef, after: instanceWithLifecyclePolicyRef })
+        const { condition } = createDefinitionForGroupLifecyclePolicyGroupModification('remove')
+        expect(condition?.custom?.({})({ ...contextMock, change })).toEqual(false)
+      })
+
+      it('should return true when the group lifecycle policy is not present', () => {
+        const change = toChange({ before: instanceWithLifecyclePolicyRef, after: instanceWithoutLifecyclePolicyRef })
+        const { condition } = createDefinitionForGroupLifecyclePolicyGroupModification('remove')
+        expect(condition?.custom?.({})({ ...contextMock, change })).toEqual(true)
+      })
     })
   })
 })

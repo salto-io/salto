@@ -139,6 +139,17 @@ const determineAccountType = (accountId: string, envType: EnvType): EnvType | 'T
   return envType
 }
 
+const logDecorator = decorators.wrapMethodWith(async ({ call, name }: decorators.OriginalCall): Promise<unknown> => {
+  const desc = `client.${name}`
+  try {
+    // eslint-disable-next-line @typescript-eslint/return-await
+    return await log.timeDebug(call, desc)
+  } catch (e) {
+    log.error('failed to run Netsuite client command on: %o', e)
+    throw e
+  }
+})
+
 export default class NetsuiteClient {
   private sdfClient: SdfClient
   private suiteAppClient?: SuiteAppClient
@@ -179,7 +190,7 @@ export default class NetsuiteClient {
     }
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
     const systemInformation = await NetsuiteClient.suiteAppValidateCredentials(credentials)
     const { accountId } = await NetsuiteClient.sdfValidateCredentials(credentials)
@@ -194,12 +205,12 @@ export default class NetsuiteClient {
     }
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async getConfigRecords(): Promise<ConfigRecord[]> {
     return this.suiteAppClient?.getConfigRecords() ?? []
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async getInstalledBundles(): Promise<SuiteAppBundleType[]> {
     return this.suiteAppClient?.getInstalledBundles() ?? []
   }
@@ -208,7 +219,7 @@ export default class NetsuiteClient {
     return this.suiteAppClient?.getInstalledSuiteApps() ?? []
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async deployConfigChanges(instancesChanges: Change<InstanceElement>[]): Promise<DeployResult> {
     if (this.suiteAppClient === undefined) {
       return {
@@ -228,19 +239,25 @@ export default class NetsuiteClient {
     )
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async getCustomObjects(typeNames: string[], queries: NetsuiteFetchQueries): Promise<GetCustomObjectsResult> {
     return this.sdfClient.getCustomObjects(typeNames, queries)
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async importFileCabinetContent(
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
     extensionsToExclude: string[],
+    forceFileCabinetExclude: boolean,
   ): Promise<ImportFileCabinetResult> {
     if (this.suiteAppFileCabinet !== undefined) {
-      return this.suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB, extensionsToExclude)
+      return this.suiteAppFileCabinet.importFileCabinet(
+        query,
+        maxFileCabinetSizeInGB,
+        extensionsToExclude,
+        forceFileCabinetExclude,
+      )
     }
 
     return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)
@@ -495,7 +512,7 @@ export default class NetsuiteClient {
     return { errors, appliedChanges: [] }
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   public async validate(
     changes: Change[],
     groupID: string,
@@ -513,7 +530,7 @@ export default class NetsuiteClient {
     return []
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   public async deploy(
     changes: Change[],
     groupID: string,
@@ -623,24 +640,11 @@ export default class NetsuiteClient {
     return this.suiteAppClient !== undefined
   }
 
-  private static logDecorator = decorators.wrapMethodWith(
-    async ({ call, name }: decorators.OriginalCall): Promise<unknown> => {
-      const desc = `client.${name}`
-      try {
-        // eslint-disable-next-line @typescript-eslint/return-await
-        return await log.timeDebug(call, desc)
-      } catch (e) {
-        log.error('failed to run Netsuite client command on: %o', e)
-        throw e
-      }
-    },
-  )
-
   public async getNetsuiteWsdl(): Promise<soap.WSDL | undefined> {
     return this.suiteAppClient?.getNetsuiteWsdl()
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   public async getAllRecords(types: string[]): Promise<RecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')
@@ -648,7 +652,7 @@ export default class NetsuiteClient {
     return this.suiteAppClient.getAllRecords(types)
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getCustomRecords when SuiteApp is not installed')

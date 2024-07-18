@@ -256,6 +256,46 @@ describe('Salto parser', () => {
         it('should have no errors', checkNoErrors)
       })
 
+      describe('with meta type', () => {
+        const body = `
+          type salesforce.object is salesforce.StandardObject {
+          }
+        `
+
+        beforeEach(async () => {
+          ;({ elements, sourceMap, errors } = await parseBody(body))
+        })
+
+        it('should parse type', () => {
+          expect(elements).toHaveLength(1)
+          const objectType = elements[0] as ObjectType
+          expect(isObjectType(objectType)).toBe(true)
+          expect(objectType.elemID).toEqual(new ElemID('salesforce', 'object'))
+          expect(objectType.metaType?.elemID).toEqual(new ElemID('salesforce', 'StandardObject'))
+        })
+
+        it('should contain all elements in source map', validateSourceMap)
+
+        it('should have no errors', checkNoErrors)
+      })
+
+      describe('with invalid meta type', () => {
+        const body = `
+          type salesforce.object is salesforce.StandardObject.field.name {
+          }
+        `
+
+        beforeEach(async () => {
+          ;({ elements, sourceMap, errors } = await parseBody(body))
+        })
+
+        it('should have an error', () => {
+          expect(errors).toHaveLength(1)
+          expect(errors[0].summary).toEqual('Invalid meta type')
+          expect(elements).toHaveLength(0)
+        })
+      })
+
       describe("when 'is' keyword is dropped", () => {
         const body = `
           type salesforce.object object {
@@ -446,10 +486,8 @@ describe('Salto parser', () => {
         it('should have the correct value', () => {
           expect(object.fields.fax.annotations).toEqual({
             fieldLevelSecurity: {
-              // eslint-disable-next-line camelcase
               all_profiles: {
                 visible: false,
-                // eslint-disable-next-line camelcase
                 read_only: false,
               },
             },

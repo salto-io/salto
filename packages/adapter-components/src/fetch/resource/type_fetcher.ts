@@ -15,9 +15,10 @@
  */
 import _ from 'lodash'
 import objectHash from 'object-hash'
-import { ElemID, Values, isPrimitiveValue } from '@salto-io/adapter-api'
+import { ElemID, isPrimitiveValue, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ElementQuery } from '../query'
 import { Requester } from '../request/requester'
 import { TypeResourceFetcher, ValueGeneratedItem } from '../types'
@@ -31,6 +32,7 @@ import { DependsOnDefinition } from '../../definitions/system/fetch/dependencies
 import { serviceIDKeyCreator } from '../element/id_utils'
 import { ElementGenerator } from '../element/element'
 
+const { mapValuesAsync } = promises.object
 const log = logger(module)
 
 export const replaceParams = (origValue: string, paramValues: Record<string, unknown>): string =>
@@ -42,7 +44,7 @@ export const replaceParams = (origValue: string, paramValues: Record<string, unk
     return replacement.toString()
   })
 
-const calculateContextArgs = ({
+const calculateContextArgs = async ({
   contextDef,
   initialRequestContext,
   contextResources,
@@ -50,22 +52,25 @@ const calculateContextArgs = ({
   contextDef?: FetchResourceDefinition['context']
   initialRequestContext?: Record<string, unknown>
   contextResources: Record<string, ValueGeneratedItem[] | undefined>
-}): Record<string, unknown[]> => {
+}): Promise<Record<string, unknown[]>> => {
   const { dependsOn } = contextDef ?? {}
   const predefinedArgs = _.mapValues(initialRequestContext, collections.array.makeArray)
   const remainingDependsOnArgs: Record<string, DependsOnDefinition> = _.omit(dependsOn, Object.keys(predefinedArgs))
-  const dependsOnArgs = _(remainingDependsOnArgs)
-    .mapValues(arg =>
-      contextResources[arg.parentTypeName]
-        ?.flatMap(item =>
-          createValueTransformer<{}, Values>(arg.transformation)({
-            typeName: arg.parentTypeName,
-            value: { ...item.value, ...item.context },
-            context: item.context,
-          }),
-        )
-        .filter(lowerdashValues.isDefined),
-    )
+  const dependsOnArgs = _(
+    await mapValuesAsync(remainingDependsOnArgs, async arg =>
+      _.flatten(
+        await Promise.all(
+          (contextResources[arg.parentTypeName] ?? []).map(async item =>
+            createValueTransformer<{}, Values>(arg.transformation)({
+              typeName: arg.parentTypeName,
+              value: { ...item.value, ...item.context },
+              context: item.context,
+            }),
+          ),
+        ),
+      ).filter(lowerdashValues.isDefined),
+    ),
+  )
     .pickBy(lowerdashValues.isDefined)
     .mapValues(values => _.uniqBy(values, objectHash))
     .value()
@@ -128,7 +133,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
       return { success: true }
     }
 
-    const contextPossibleArgs = calculateContextArgs({
+    const contextPossibleArgs = await calculateContextArgs({
       contextDef: def.context,
       initialRequestContext,
       contextResources,
@@ -170,8 +175,8 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         ? // fake grouping to avoid merging
           Object.fromEntries(allFragments.map((fragment, idx) => [idx, [fragment]]))
         : _.groupBy(allFragments, ({ value }) => toServiceID(value))
-      const mergedFragments = _(groupedFragments)
-        .mapValues(fragments => ({
+      const mergedFragments = await mapValuesAsync(
+        _.mapValues(groupedFragments, fragments => ({
           typeName,
           // concat arrays
           value: _.mergeWith({}, ...fragments.map(fragment => fragment.value), (first: unknown, second: unknown) =>
@@ -180,13 +185,12 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
           context: {
             fragments,
           },
-        }))
-        .mapValues(item =>
+        })),
+        async item =>
           collections.array.makeArray(
-            createValueTransformer<{ fragments: GeneratedItem[] }, Values>(def.mergeAndTransform)(item),
+            await createValueTransformer<{ fragments: GeneratedItem[] }, Values>(def.mergeAndTransform)(item),
           ),
-        )
-        .value()
+      )
 
       Object.values(mergedFragments)
         .flat()
@@ -196,7 +200,13 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         success: true,
       }
     } catch (e) {
-      log.error('[%s] Error caught while fetching %s: %s. stack: %s', adapterName, typeName, e, (e as Error).stack)
+      log.error(
+        '[%s] Error caught while fetching %s: %s. stack: %s',
+        adapterName,
+        typeName,
+        safeJsonStringify(e),
+        (e as Error).stack,
+      )
       done = true
       return {
         success: false,

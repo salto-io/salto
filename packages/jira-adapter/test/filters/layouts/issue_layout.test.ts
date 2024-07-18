@@ -366,9 +366,7 @@ describe('issue layout filter', () => {
         projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 10 } }
         const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
         expect(Object.entries(res)).toHaveLength(1)
-        expect(res['11111']).toEqual({
-          undefined: Promise.resolve({ data: {} }),
-        })
+        expect(res['11111']).toEqual({})
       })
       it('should return the view screen and not the default screen if there is', async () => {
         issueTypeScreenSchemeInstance1.value.issueTypeMappings = [{ issueTypeId: 100, screenSchemeId: 333 }]

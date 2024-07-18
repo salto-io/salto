@@ -81,7 +81,6 @@ describe('client', () => {
     it('should wait for first request, then wait according to rate limit', async () => {
       for (let i = 1; i <= 2; i += 1) {
         for (let j = 1; j <= 4; j += 1) {
-          // eslint-disable-next-line no-loop-func
           clientGetSinglePageSpy.mockImplementationOnce(async () => {
             await sleep(100)
             return {

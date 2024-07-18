@@ -47,7 +47,7 @@ const mergePrimitiveDefinitions = (
   )
 
   const primitiveType = primitives[0].primitive
-  const primitveTypeErrors = _.every(
+  const primitiveTypeErrors = _.every(
     primitives.map(prim => prim.primitive),
     prim => prim === primitiveType,
   )
@@ -66,7 +66,7 @@ const mergePrimitiveDefinitions = (
       annotationRefsOrTypes: annotationTypesMergeResults.merged,
       annotations: annotationsMergeResults.merged,
     }),
-    errors: [...annotationsMergeResults.errors, ...annotationTypesMergeResults.errors, ...primitveTypeErrors],
+    errors: [...annotationsMergeResults.errors, ...annotationTypesMergeResults.errors, ...primitiveTypeErrors],
   }
 }
 

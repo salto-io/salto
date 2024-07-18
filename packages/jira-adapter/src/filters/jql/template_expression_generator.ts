@@ -110,7 +110,6 @@ const getValueOperands = (operand: Operand): ValueOperand[] => {
   }
 
   if (operand.operandType === 'list') {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return operand.values.flatMap(getValueOperands)
   }
 

@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
-import { adjustLabelsToIdsFunc, adjustRestriction } from '../utils'
+import { adjustLabelsToIdsFunc, adjustRestriction, createAdjustUserReferences } from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
@@ -29,8 +28,13 @@ import {
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
 import { spaceMergeAndTransformAdjust } from '../utils/space'
+import { UserConfig } from '../../config'
 
-const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
+const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
+const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
+
+const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = {
+  // hide
   created_at: {
     hide: true,
   },
@@ -46,8 +50,8 @@ const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCusto
   updated_by_id: {
     hide: true,
   },
-}
-const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
+
+  // omit
   _links: {
     omit: true,
   },
@@ -56,16 +60,9 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
   },
 }
 
-const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
-const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
-
-const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_HIDE,
-  DEFAULT_FIELDS_TO_OMIT,
-)
-
-const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
+const createCustomizations = (
+  userConfig: UserConfig,
+): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
   [LABEL_TYPE_NAME]: {
     requests: [
       {
@@ -108,6 +105,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
+          adjust: createAdjustUserReferences(SPACE_TYPE_NAME),
         },
       },
     ],
@@ -147,6 +145,26 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             },
           },
         },
+        ...(userConfig.fetch.managePagesForSpaces !== undefined
+          ? {
+              pages: {
+                typeName: PAGE_TYPE_NAME,
+                conditions: [
+                  {
+                    fromField: 'name',
+                    match: userConfig.fetch.managePagesForSpaces ?? [],
+                  },
+                ],
+                context: {
+                  args: {
+                    spaceId: {
+                      root: 'id',
+                    },
+                  },
+                },
+              },
+            }
+          : {}),
       },
     },
     element: {
@@ -169,6 +187,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             addParentAnnotation: true,
             referenceFromParent: false,
             nestPathUnderParent: true,
+          },
+        },
+        pages: {
+          standalone: {
+            typeName: PAGE_TYPE_NAME,
+            addParentAnnotation: false,
+            referenceFromParent: false,
+            nestPathUnderParent: false,
           },
         },
         settings: {
@@ -231,16 +257,17 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/wiki/api/v2/pages',
+          path: '/wiki/api/v2/spaces/{spaceId}/pages',
         },
         transformation: {
           root: 'results',
           omit: ['position'],
+          adjust: createAdjustUserReferences(PAGE_TYPE_NAME),
         },
       },
     ],
     resource: {
-      directFetch: true,
+      directFetch: false,
       recurseInto: {
         restriction: {
           typeName: RESTRICTION_TYPE_NAME,
@@ -431,7 +458,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   },
 })
 
-export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<Options> => ({
+export const createFetchDefinitions = (userConfig: UserConfig): definitions.fetch.FetchApiDefinitions<Options> => ({
   instances: {
     default: {
       requests: [
@@ -451,6 +478,6 @@ export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },
     },
-    customizations: createCustomizations(),
+    customizations: createCustomizations(userConfig),
   },
 })

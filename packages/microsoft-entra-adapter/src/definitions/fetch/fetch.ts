@@ -82,7 +82,7 @@ const graphV1Customizations: FetchCustomizations = {
     resource: {
       directFetch: true,
       mergeAndTransform: {
-        adjust: ({ value }) => {
+        adjust: async ({ value }) => {
           validatePlainObject(value, 'group')
 
           return {
@@ -448,7 +448,7 @@ const graphV1Customizations: FetchCustomizations = {
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
-          adjust: ({ value, context }) => {
+          adjust: async ({ value, context }) => {
             validatePlainObject(value, 'custom security attribute allowed value')
             return {
               value: {
@@ -568,7 +568,7 @@ const graphV1Customizations: FetchCustomizations = {
         },
       },
       mergeAndTransform: {
-        adjust: ({ value }) => {
+        adjust: async ({ value }) => {
           validatePlainObject(value, 'domain')
           return {
             value: {

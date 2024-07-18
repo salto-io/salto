@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { client as clientUtils, createAdapter, credentials as defaultCredentials } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  createAdapter,
+  credentials as defaultCredentials,
+  filters,
+} from '@salto-io/adapter-components'
+import { BuiltinTypes } from '@salto-io/adapter-api'
 import { Credentials, credentialsType } from './auth'
 import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
@@ -23,6 +29,7 @@ import { createClientDefinitions, createDeployDefinitions, createFetchDefinition
 import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
+import convertUsersIds from './filters/users'
 
 const { defaultCredentialsFromConfig } = defaultCredentials
 
@@ -46,6 +53,11 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     },
   },
   defaultConfig: DEFAULT_CONFIG,
+  additionalConfigFields: {
+    fetch: {
+      convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
+    },
+  },
   definitionsCreator: ({ clients, credentials }) => ({
     clients: createClientDefinitions(clients),
     pagination: PAGINATION,
@@ -57,6 +69,10 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     connectionCreatorFromConfig: () => createConnection,
     credentialsFromConfig: defaultCredentialsFromConfig,
     additionalChangeValidators: createChangeValidator,
+    customizeFilterCreators: args => ({
+      ...filters.createCommonFilters<Options, UserConfig>(args),
+      convertUsersIds,
+    }),
   },
   initialClients: {
     main: undefined,

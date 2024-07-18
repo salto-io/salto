@@ -29,9 +29,10 @@ import {
 } from '@salto-io/adapter-api'
 import { getParent, getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { createChangeElementResolver, deployment, references } from '@salto-io/adapter-components'
+import { deployment } from '@salto-io/adapter-components'
 import { APP_ROLE_TYPE_NAME, APP_ROLES_FIELD_NAME, APPLICATION_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../definitions/types'
+import { changeResolver } from '../definitions/references'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -110,17 +111,6 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
         },
         leftoverChanges: changes,
       }
-    }
-
-    const deployArgsWithoutChanges = {
-      definitions: { deploy, ...otherDefs },
-      changeGroup,
-      elementSource,
-      convertError: deployment.defaultConvertError,
-      changeResolver: createChangeElementResolver<Change<InstanceElement>>({
-        getLookUpName: references.generateLookupFunc(definitions.references?.rules ?? []),
-      }),
-      sharedContext,
     }
 
     const [appRoleChanges, otherChanges] = _.partition(
@@ -215,8 +205,16 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
     }
 
     const { errors, appliedChanges } = await deployment.deployChanges({
-      changes: parentsChangeWithAppRoles.filter(isDefined),
-      ...deployArgsWithoutChanges,
+      changes: changesToDeploy,
+      changeGroup: {
+        ...changeGroup,
+        changes: changesToDeploy,
+      },
+      definitions: { deploy, ...otherDefs },
+      elementSource,
+      convertError: deployment.defaultConvertError,
+      changeResolver,
+      sharedContext,
     })
     return {
       deployResult: {

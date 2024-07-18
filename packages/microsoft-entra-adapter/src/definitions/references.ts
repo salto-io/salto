@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { definitions, references as referenceUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
+import {
+  definitions,
+  references as referenceUtils,
+  fetch as fetchUtils,
+  createChangeElementResolver,
+} from '@salto-io/adapter-components'
+import { Change, InstanceElement } from '@salto-io/adapter-api'
 import {
   ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
   APPLICATION_API_TYPE_NAME,
@@ -225,3 +231,8 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
     }),
   },
 }
+
+const resolverCreator = referenceUtils.getResolverCreator<Options>({ references: REFERENCES })
+export const changeResolver = createChangeElementResolver<Change<InstanceElement>>({
+  getLookUpName: referenceUtils.generateLookupFunc(REFERENCE_RULES, resolverCreator),
+})

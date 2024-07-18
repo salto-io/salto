@@ -13,16 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { filters } from '@salto-io/adapter-components'
-import { FilterCreator } from '../filter'
+import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
+import { ReferenceContextStrategies, Options, CustomReferenceSerializationStrategyName } from './types'
 
-/**
- * Filter creators of all the common filters
- */
-const filterCreators: Record<string, FilterCreator> = {
-  hideTypes: filters.hideTypesFilterCreator(),
-  referencedInstanceNames: filters.referencedInstanceNamesFilterCreatorDeprecated(),
-  query: filters.queryFilterCreator({}),
+const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
+  ReferenceContextStrategies,
+  CustomReferenceSerializationStrategyName
+>[] = [
+  {
+    src: { field: 'product', parentTypes: ['plan', 'price'] },
+    serializationStrategy: 'id',
+    target: { type: 'product' },
+  },
+]
+
+export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
+  rules: REFERENCE_RULES,
+  fieldsToGroupBy: ['id'],
 }
-
-export default filterCreators

@@ -281,9 +281,26 @@ describe('XML Transformer', () => {
       })
       describe('LightningComponentBundle', () => {
         beforeEach(async () => {
+          const mockLightningComponentBundleValues = _.clone(
+            mockDefaultValues.LightningComponentBundle,
+          )
+          _.set(
+            mockLightningComponentBundleValues.targetConfigs.targetConfig[0],
+            'property',
+            [
+              {
+                name: 'testTrueProp',
+                default: 'true',
+              },
+              {
+                name: 'testFalseProp',
+                default: 'false',
+              },
+            ],
+          )
           await pkg.add(
             createInstanceElement(
-              mockDefaultValues.LightningComponentBundle,
+              mockLightningComponentBundleValues,
               mockTypes.LightningComponentBundle,
             ),
           )

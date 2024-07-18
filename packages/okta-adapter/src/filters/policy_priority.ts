@@ -192,9 +192,10 @@ const deployPriorityChange = async ({
   const { type } = instance.value
   const ruleTypeName = instance.elemID.typeName
   const baseData = { priority: setPriority(ruleTypeName, priority), type, name: instance.value.name }
-  // For sign on rules, we need to include the actions in the data
-  const data =
-    instance.elemID.typeName === SIGN_ON_RULE_TYPE_NAME ? { ...baseData, actions: instance.value.actions } : baseData
+  // SignOn and MultiFactorEnrollment rules must include the `actions` field in the payload
+  const data = [SIGN_ON_RULE_TYPE_NAME, MFA_RULE_TYPE_NAME].includes(instance.elemID.typeName)
+    ? { ...baseData, actions: instance.value.actions }
+    : baseData
   const typeDefinition = apiDefinitions.types[instance.elemID.typeName]
   const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests.modify : undefined
   const deployUrl = deployRequest?.url

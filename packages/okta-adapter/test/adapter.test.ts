@@ -48,6 +48,14 @@ import {
   DEVICE_ASSURANCE_TYPE_NAME,
   SMS_TEMPLATE_TYPE_NAME,
   LINKS_FIELD,
+  APPLICATION_TYPE_NAME,
+  INACTIVE_STATUS,
+  CUSTOM_NAME_FIELD,
+  ACTIVE_STATUS,
+  SAML_2_0_APP,
+  ORG_SETTING_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -472,13 +480,18 @@ describe('adapter', () => {
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
 
+      const orgSettingType = new ObjectType({
+        elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME),
+      })
+      const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain.example.com' })
+
       operations = adapter.operations({
         credentials: new InstanceElement('config', accessTokenCredentialsType, {
           baseUrl: 'https://test.okta.com',
           token: 't',
         }),
         config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSource: buildElementsSourceFromElements([orgSetting]),
       })
 
       brandType = new ObjectType({
@@ -1054,6 +1067,231 @@ describe('adapter', () => {
           changeGroup: {
             groupID: 'deviceAssurance',
             changes: [toChange({ before: deviceAssurance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy application', () => {
+      let appType: ObjectType
+
+      beforeEach(() => {
+        appType = new ObjectType({
+          elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an inactive regular application without policies', async () => {
+        loadMockReplies('application_add_regular_inactive.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: INACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: inactiveCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('app-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an active regular application with policies', async () => {
+        loadMockReplies('application_add_regular_active.json')
+        const profileEnrollmentPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
+        })
+        const profileEnrollmentPolicy = new InstanceElement('profileEnrollmentPolicy', profileEnrollmentPolicyType, {
+          id: 'enrollmentpolicy-fakeid1',
+          name: 'enrollmentPolicy1',
+        })
+        const accessPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME),
+        })
+        const accessPolicy = new InstanceElement('accessPolicy', accessPolicyType, {
+          id: 'accesspolicy-fakeid1',
+          name: 'accessPolicy1',
+        })
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy.elemID, profileEnrollmentPolicy),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: activeCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('app-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive custom application', async () => {
+        loadMockReplies('application_add_custom_inactive.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: INACTIVE_STATUS,
+          signOnMode: SAML_2_0_APP,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: inactiveCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        const instance = getChangeData(result.appliedChanges[0] as Change<InstanceElement>)
+        expect(instance.value.id).toEqual('app-fakeid1')
+        // This is based on the orgSettings subdomain and the service returned "name" field value
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        expect(instance.value.name).toBeUndefined()
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an active custom application', async () => {
+        loadMockReplies('application_add_custom_active.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          signOnMode: SAML_2_0_APP,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: activeCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        const instance = getChangeData(result.appliedChanges[0] as Change<InstanceElement>)
+        expect(instance.value.id).toEqual('app-fakeid1')
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        // This is based on the orgSettings subdomain and the service returned "name" field value
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        expect(instance.value.name).toBeUndefined()
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an inactive custom application', async () => {
+        loadMockReplies('application_modify_custom_inactive.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: INACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+        })
+        const updatedApp = inactiveCustomApp.clone()
+        updatedApp.value.label = 'app2'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: inactiveCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app2')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an active custom application', async () => {
+        loadMockReplies('application_modify_custom_active.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.label = 'app2'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app2')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove an inactive custom application', async () => {
+        loadMockReplies('application_remove_custom_inactive.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: INACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ before: inactiveCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      // Note: currently, this kind of change is blocked by the `application`
+      // Change validator, which prevents the removal of active applications.
+      // The JSON file includes a single "delete" operation, which is what would
+      // be sent to Okta if the CV was ignored. The test is here so that we can
+      // show the diff in behavior once we allow a flow of deleting active
+      // applications as part of the move to the new infra. Stay tuned.
+      it('should successfully remove an active custom application', async () => {
+        loadMockReplies('application_remove_custom_active.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ before: inactiveCustomApp })],
           },
           progressReporter: nullProgressReporter,
         })

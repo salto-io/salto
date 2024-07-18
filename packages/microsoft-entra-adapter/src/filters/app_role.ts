@@ -132,7 +132,7 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
     const parentsWithAppRoleChanges = Object.fromEntries(
       appRoleChanges
         .map((change): [string, InstanceElement] | undefined => {
-          const parent = getParents(getChangeData(change))[0]
+          const parent = getParents(getChangeData(change))[0]?.value
           return parent ? [parent.elemID.getFullName(), parent] : undefined
         })
         .filter(isDefined),

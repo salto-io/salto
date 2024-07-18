@@ -55,7 +55,6 @@ import {
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
-  groupChangeWithItsParent,
   omitReadOnlyFields,
   adjustParentWithAppRoles,
 } from './utils'
@@ -255,7 +254,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
     },
   },
   [APP_ROLE_TYPE_NAME]: {
-    changeGroupId: groupChangeWithItsParent,
+    changeGroupId: deployment.grouping.groupWithFirstParent,
     requestsByAction: {
       customizations: {
         // Deploying an application/servicePrincipal with its appRoles is done in a single request using the definition of the application via a filter

@@ -22,6 +22,5 @@ export {
   createDefinitionForGroupLifecyclePolicyGroupModification,
 } from './group_deployment_life_cycle_policy'
 export { createCustomConditionEmptyFieldsOnAddition } from './condition_empty_fields'
-export { groupChangeWithItsParent } from './change_groups'
 export { adjustParentWithAppRoles } from './app_role'
 export { adjustConditionalAccessPolicy } from './conditional_access_policy'

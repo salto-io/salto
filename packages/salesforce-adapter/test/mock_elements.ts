@@ -354,13 +354,16 @@ export const mockTypes = {
       dirName: 'territory2Models',
     },
   }),
-  CustomMetadata: createMetadataObjectType({
-    annotations: {
-      metadataType: 'CustomMetadata',
-      dirName: 'customMetadata',
-      suffix: 'md',
+  CustomMetadata: createMetadataObjectType(
+    {
+      annotations: {
+        metadataType: 'CustomMetadata',
+        dirName: 'customMetadata',
+        suffix: 'md',
+      },
     },
-  }),
+    constants.CUSTOM_METADATA_TYPE_NAME,
+  ),
   EmailTemplate: createMetadataObjectType({
     annotations: {
       metadataType: 'EmailTemplate',

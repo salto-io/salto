@@ -110,6 +110,9 @@ import {
   LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME,
   INTERNAL_ID_ANNOTATION,
   SALESFORCE_DATE_PLACEHOLDER,
+  CUSTOM_OBJECT_TYPE_NAME,
+  CUSTOM_METADATA,
+  CUSTOM_METADATA_TYPE_NAME,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -282,6 +285,8 @@ const restrictedNumberTypes = _.mapValues(
 )
 
 export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
+  [CUSTOM_OBJECT, CUSTOM_OBJECT_TYPE_NAME],
+  [CUSTOM_METADATA, CUSTOM_METADATA_TYPE_NAME],
   ['FlexiPage', 'LightningPage'],
   ['FlexiPageRegion', 'LightningPageRegion'],
   ['FlexiPageTemplateInstance', 'LightningPageTemplateInstance'],
@@ -1456,9 +1461,9 @@ type ObjectTypeCtorParam = ConstructorParameters<typeof ObjectType>[0]
 type CreateMetadataObjectTypeParams = Omit<ObjectTypeCtorParam, 'elemID'> & {
   annotations: MetadataTypeAnnotations
 }
-export const createMetadataObjectType = (params: CreateMetadataObjectTypeParams): MetadataObjectType =>
+export const createMetadataObjectType = (params: CreateMetadataObjectTypeParams, name?: string): MetadataObjectType =>
   new ObjectType({
-    elemID: new ElemID(SALESFORCE, params.annotations.metadataType),
+    elemID: new ElemID(SALESFORCE, name ?? params.annotations.metadataType),
     ...params,
     fields: {
       [INSTANCE_FULL_NAME_FIELD]: {

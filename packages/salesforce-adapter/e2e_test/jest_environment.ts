@@ -61,7 +61,7 @@ export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentia
       }
     },
     typeName: 'salesforce',
-    globalProp: envName ? `salesforce_${envName}` : 'salseforce',
+    globalProp: envName ? `salesforce_${envName}` : 'salesforce',
   }
 }
 

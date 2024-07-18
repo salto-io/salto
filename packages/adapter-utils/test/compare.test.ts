@@ -917,6 +917,29 @@ describe('applyDetailedChanges', () => {
       })
     })
 
+    describe('when a meta type is removed from a type', () => {
+      let beforeType: ObjectType
+      let afterType: ObjectType
+      let outputType: ObjectType
+      beforeEach(() => {
+        beforeType = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          annotations: { anno: 'val1' },
+          metaType: new ObjectType({ elemID: new ElemID('test', 'meta') }),
+        })
+        afterType = new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          annotations: { anno: 'val2' },
+        })
+        const changes = detailedCompare(beforeType, afterType)
+        outputType = beforeType.clone()
+        applyDetailedChanges(outputType, changes)
+      })
+      it('should reproduce the after element', () => {
+        expect(outputType).toEqual(afterType)
+      })
+    })
+
     describe('when the type of a field is changed', () => {
       let beforeType: ObjectType
       let afterType: ObjectType

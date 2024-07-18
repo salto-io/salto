@@ -84,6 +84,7 @@ import {
   FLEXI_PAGE_TYPE,
   KEY_PREFIX,
   PLURAL_LABEL,
+  CUSTOM_OBJECT_TYPE_NAME,
 } from '../constants'
 import { FilterContext, LocalFilterCreator } from '../filter'
 import {
@@ -116,7 +117,6 @@ import {
   parentApiName,
   getDataFromChanges,
   isInstanceOfTypeChange,
-  isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
   addKeyPrefix,
@@ -126,6 +126,8 @@ import {
   isInstanceOfTypeSync,
   toCustomField,
   toCustomProperties,
+  isInstanceOfTypeChangeSync,
+  apiNameSync,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -188,7 +190,7 @@ type TypesFromInstance = {
   nestedMetadataTypes: Record<string, ObjectType>
 }
 
-export const CUSTOM_OBJECT_TYPE_ID = new ElemID(SALESFORCE, CUSTOM_OBJECT)
+export const CUSTOM_OBJECT_TYPE_ID = new ElemID(SALESFORCE, CUSTOM_OBJECT_TYPE_NAME)
 
 const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = [
   'allowInChatterGroups',
@@ -641,41 +643,42 @@ const getNestedCustomObjectValues = async (
     .toArray(),
 })
 
-const createCustomObjectInstance = (values: MetadataValues): InstanceElement => {
-  const customFieldType = new ObjectType({
-    elemID: new ElemID(SALESFORCE, CUSTOM_FIELD),
-    annotations: { [METADATA_TYPE]: CUSTOM_FIELD },
-  })
-  const customObjectType = new ObjectType({
-    elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
-    annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
-    annotations: {
-      metadataType: CUSTOM_OBJECT,
-      dirName: 'objects',
-      suffix: 'object',
-    } as MetadataTypeAnnotations,
-    fields: {
-      [DEPLOY_WRAPPER_INSTANCE_MARKER]: {
-        refType: BuiltinTypes.BOOLEAN,
-        annotations: {
-          [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
-        },
+const customObjectTypeForDeploy = new ObjectType({
+  elemID: CUSTOM_OBJECT_TYPE_ID,
+  annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
+  annotations: {
+    metadataType: CUSTOM_OBJECT,
+    dirName: 'objects',
+    suffix: 'object',
+  } as MetadataTypeAnnotations,
+  fields: {
+    [DEPLOY_WRAPPER_INSTANCE_MARKER]: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
       },
-      fields: {
-        refType: new ListType(customFieldType),
-      },
-      ..._.mapValues(NESTED_INSTANCE_VALUE_TO_TYPE_NAME, fieldType => ({
-        refType: new ListType(
-          new ObjectType({
-            elemID: new ElemID(SALESFORCE, fieldType),
-            annotations: { [METADATA_TYPE]: fieldType },
-          }),
-        ),
-      })),
     },
-  })
-  return createInstanceElement(values, customObjectType)
-}
+    fields: {
+      refType: new ListType(
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, CUSTOM_FIELD),
+          annotations: { [METADATA_TYPE]: CUSTOM_FIELD },
+        }),
+      ),
+    },
+    ..._.mapValues(NESTED_INSTANCE_VALUE_TO_TYPE_NAME, fieldType => ({
+      refType: new ListType(
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, fieldType),
+          annotations: { [METADATA_TYPE]: fieldType },
+        }),
+      ),
+    })),
+  },
+})
+
+const createCustomObjectInstance = (values: MetadataValues): InstanceElement =>
+  createInstanceElement(values, customObjectTypeForDeploy)
 
 const getCustomObjectFromChange = async (change: Change): Promise<ObjectType> => {
   const elem = getChangeData(change)
@@ -888,7 +891,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       const fieldsToSkip = config.unsupportedSystemFields
 
       const customObjectInstances = removeDuplicateElements(
-        await awu(elements).filter(isInstanceElement).filter(isInstanceOfType(CUSTOM_OBJECT)).toArray(),
+        elements.filter(isInstanceElement).filter(isInstanceOfTypeSync(CUSTOM_OBJECT)),
       )
 
       await awu(customObjectInstances)
@@ -900,7 +903,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
 
       // Remove CustomObject instances & hide the CustomObject metadata type
       _.remove(elements, isInstanceOfTypeSync(CUSTOM_OBJECT))
-      const customObjectType = elements.filter(isMetadataObjectType).find(type => type.elemID.name === CUSTOM_OBJECT)
+      const customObjectType = elements
+        .filter(isMetadataObjectType)
+        .find(type => type.elemID.isEqual(CUSTOM_OBJECT_TYPE_ID))
       if (customObjectType !== undefined) {
         customObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
       }
@@ -946,17 +951,17 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
     },
 
     onDeploy: async changes => {
-      const appliedCustomObjectApiNames = await awu(changes)
-        .filter(isInstanceOfTypeChange(CUSTOM_OBJECT))
-        .map(change => apiName(getChangeData(change)))
-        .toArray()
+      const appliedCustomObjectApiNames = changes
+        .filter(isInstanceOfTypeChangeSync(CUSTOM_OBJECT))
+        .map(change => apiNameSync(getChangeData(change)))
+        .filter(isDefined)
 
       const appliedOriginalChanges = appliedCustomObjectApiNames.flatMap(
         objectApiName => originalChanges[objectApiName] ?? [],
       )
 
       // Remove the changes we generated in preDeploy and replace them with the original changes
-      await removeAsync(changes, isInstanceOfTypeChange(CUSTOM_OBJECT))
+      _.remove(changes, isInstanceOfTypeChangeSync(CUSTOM_OBJECT))
       changes.push(...appliedOriginalChanges)
     },
   }

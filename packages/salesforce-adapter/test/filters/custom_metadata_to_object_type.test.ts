@@ -44,7 +44,10 @@ import {
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { apiName, Types } from '../../src/transformers/transformer'
-import { apiNameSync, isInstanceOfTypeChange } from '../../src/filters/utils'
+import {
+  apiNameSync,
+  isInstanceOfTypeChangeSync,
+} from '../../src/filters/utils'
 import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
@@ -59,21 +62,21 @@ describe('customMetadataToObjectTypeFilter', () => {
 
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
+  beforeEach(() => {
+    filter = filterCreator({
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({
+          fetchParams: { optionalFeatures: { skipAliases: false } },
+        }),
+      },
+    }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  })
+
   describe('onFetch', () => {
     let customMetadataRecordType: ObjectType
     let afterOnFetchElements: Element[]
     let customMetadataInstance: InstanceElement
-
-    beforeEach(() => {
-      filter = filterCreator({
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { skipAliases: false } },
-          }),
-        },
-      }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    })
 
     beforeEach(async () => {
       const checkboxField = {
@@ -229,10 +232,10 @@ describe('customMetadataToObjectTypeFilter', () => {
       await filter.onDeploy(afterOnDeployChanges)
     })
 
-    it('should create a deployable CustomObject instance on preDeploy', async () => {
-      const customObjectChange = (await awu(afterPreDeployChanges)
+    it('should create a deployable CustomObject instance on preDeploy', () => {
+      const customObjectChange = afterPreDeployChanges
         .filter(isInstanceChange)
-        .find(isInstanceOfTypeChange(CUSTOM_OBJECT))) as Change<InstanceElement>
+        .find(isInstanceOfTypeChangeSync(CUSTOM_OBJECT))
 
       expect(customObjectChange).toBeDefined()
       expect(afterPreDeployChanges).toHaveLength(1)

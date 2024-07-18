@@ -52,7 +52,7 @@ import { apiNameSync, fullApiName } from './filters/utils'
 import {
   API_NAME_SEPARATOR,
   CUSTOM_FIELD,
-  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_TYPE_NAME,
   GLOBAL_VALUE_SET_SUFFIX,
   INSTANCE_FULL_NAME_FIELD,
   SalesforceArtifacts,
@@ -224,7 +224,7 @@ const processDeployResponse = (
       log.debug('Unable to match deploy message for %s[%s] with an ElemID.', fullName, componentType)
       return undefined
     }
-    if (rawElemId.typeName === CUSTOM_OBJECT) {
+    if (rawElemId.typeName === CUSTOM_OBJECT_TYPE_NAME) {
       // When there's a deploy error for a custom object, we receive componentType = 'CustomObject',
       // fullName = (e.g.) 'Account'. By this point in the flow, custom objects are converted back into instances of
       // 'CustomObject', so we end up mapping the deploy errors to (e.g.) salesforce.CustomObject.instance.Account

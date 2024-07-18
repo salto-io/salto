@@ -484,7 +484,6 @@ describe('Nacl Files Source', () => {
       expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
     })
   })
-
   describe('init with parsed files', () => {
     it('should return elements from given parsed files', async () => {
       const filename = 'mytest.nacl'

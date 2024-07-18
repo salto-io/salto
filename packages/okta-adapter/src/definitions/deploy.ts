@@ -17,7 +17,15 @@
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import { getChangeData, isAdditionChange, isModificationChange, isRemovalChange, Values } from '@salto-io/adapter-api'
+import {
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isModificationChange,
+  isRemovalChange,
+  ModificationChange,
+  Values,
+} from '@salto-io/adapter-api'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { transformRemovedValuesToNull } from '@salto-io/adapter-components/dist/src/deployment'
 import { AdditionalAction, ClientOptions } from './types'
@@ -154,7 +162,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 transformation: {
                   adjust: async ({ value, context }) => {
                     validatePlainObject(value, APPLICATION_TYPE_NAME)
-                    const transformed = getChangeData(transformRemovedValuesToNull(context.change, ['settings'])).value
+                    const transformed = getChangeData(
+                      transformRemovedValuesToNull(context.change as ModificationChange<InstanceElement>, ['settings']),
+                    ).value
                     return {
                       value: {
                         [NAME_FIELD]: _.get(value, CUSTOM_NAME_FIELD),
@@ -210,6 +220,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 custom:
                   () =>
                   ({ change }) =>
+                    (isRemovalChange(change) && getChangeData(change).value.status !== INACTIVE_STATUS) ||
                     isDeactivationChange(change) ||
                     // Custom app must be activated before applying any other changes
                     isInactiveCustomAppChange(change),

@@ -1274,12 +1274,6 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      // Note: currently, this kind of change is blocked by the `application`
-      // Change validator, which prevents the removal of active applications.
-      // The JSON file includes a single "delete" operation, which is what would
-      // be sent to Okta if the CV was ignored. The test is here so that we can
-      // show the diff in behavior once we allow a flow of deleting active
-      // applications as part of the move to the new infra. Stay tuned.
       it('should successfully remove an active custom application', async () => {
         loadMockReplies('application_remove_custom_active.json')
         const inactiveCustomApp = new InstanceElement('app', appType, {

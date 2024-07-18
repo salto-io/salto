@@ -19,7 +19,6 @@
   "scripts": {
     "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "test": "jest",
-    "e2e-test": "RUN_E2E_TESTS=1 jest",
     "clean": "rm -rf ./dist .eslintcache",
     "watch-test": "yarn tsc-watch",
     "build-ts": "tsc -b",
@@ -43,7 +42,6 @@
     "@eslint/compat": "^1.1.0",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.6.0",
-    "@salto-io/e2e-credentials-store": "0.3.60",
     "@tony.ganchev/eslint-plugin-header": "^3.1.2",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",

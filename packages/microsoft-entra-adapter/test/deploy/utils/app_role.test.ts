@@ -32,6 +32,18 @@ describe(`${adjustParentWithAppRoles.name}`, () => {
     ).rejects.toThrow()
   })
 
+  it('should not add an appRoles field if it is not defined', async () => {
+    const appRolesParent = {}
+    const result = await Promise.resolve(
+      adjustParentWithAppRoles({
+        value: appRolesParent,
+        typeName: PARENT_TYPE_NAME,
+        context: contextMock,
+      }),
+    )
+    expect(result.value).toEqual(appRolesParent)
+  })
+
   it('should add a uuid to each appRole that does not have an id', async () => {
     const appRolesParent = {
       appRoles: [

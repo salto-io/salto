@@ -31,6 +31,7 @@ import {
   ProgressReporter,
   BuiltinTypes,
   ReferenceExpression,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -57,6 +58,7 @@ import {
   ORG_SETTING_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
+  BRAND_THEME_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -1292,6 +1294,48 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy brand theme', () => {
+      let brandThemeType: ObjectType
+
+      beforeEach(() => {
+        brandThemeType = new ObjectType({
+          elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add a brand theme', async () => {
+        loadMockReplies('brand_theme_add.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ after: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'brandtheme-fakeid1',
+        )
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

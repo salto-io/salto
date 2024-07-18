@@ -27,7 +27,6 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { validatePlainObject } from '@salto-io/adapter-utils'
-import { transformRemovedValuesToNull } from '@salto-io/adapter-components/dist/src/deployment'
 import { AdditionalAction, ClientOptions } from './types'
 import {
   APPLICATION_TYPE_NAME,
@@ -163,7 +162,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   adjust: async ({ value, context }) => {
                     validatePlainObject(value, APPLICATION_TYPE_NAME)
                     const transformed = getChangeData(
-                      transformRemovedValuesToNull(context.change as ModificationChange<InstanceElement>, ['settings']),
+                      deployment.transformRemovedValuesToNull(context.change as ModificationChange<InstanceElement>, [
+                        'settings',
+                      ]),
                     ).value
                     return {
                       value: {

@@ -115,7 +115,7 @@ export type ServiceMDTRecordValue = MetadataValues & {
   values: ServiceMDTRecordFieldValue | ServiceMDTRecordFieldValue[]
 }
 
-// Special handling since the XML parser implementation will omit the value "true" for attributes
+// Special handling since the fast-xml-parser implementation will omit the value "true" for attributes
 // As a workaround, we pass it as part of the key
 export const XSI_NIL_TRUE = { [`${XML_ATTRIBUTE_PREFIX}xsi:nil="true"`]: true }
 

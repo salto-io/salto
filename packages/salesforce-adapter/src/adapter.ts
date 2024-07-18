@@ -167,6 +167,7 @@ import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
+  APEX_CLASS_METADATA_TYPE,
   ArtificialTypes,
   CUSTOM_FIELD,
   CUSTOM_OBJECT,
@@ -183,6 +184,7 @@ import {
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
+import { createListApexClassesFunc } from './client/custom_list_funcs'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -576,6 +578,15 @@ export default class SalesforceAdapter implements AdapterOperations {
     progressReporter,
     withChangesDetection = false,
   }: FetchOptions): Promise<FetchResult> {
+    this.client.setCustomListFuncByType(
+      withChangesDetection
+        ? {
+          [APEX_CLASS_METADATA_TYPE]: await createListApexClassesFunc(
+            this.elementsSource,
+          ),
+        }
+        : {},
+    )
     const fetchParams = this.userConfig.fetch ?? {}
     const baseQuery = buildMetadataQuery({ fetchParams })
     const lastChangeDateOfTypesWithNestedInstances =
@@ -583,7 +594,6 @@ export default class SalesforceAdapter implements AdapterOperations {
         client: this.client,
         metadataQuery: buildFilePropsMetadataQuery(baseQuery),
       })
-    const customListFuncByType = 
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,

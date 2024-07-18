@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 
-export const accessTokenCredentialsType = new ObjectType({
-  elemID: new ElemID(constants.STRIPE),
-  fields: {
-    token: { refType: BuiltinTypes.STRING, annotations: { message: 'Secret API key' } },
-  },
-})
-
-export type AccessTokenCredentials = {
+export type Credentials = {
   token: string
 }
 
-export type Credentials = AccessTokenCredentials
+export const credentialsType = createMatchingObjectType<Credentials>({
+  elemID: new ElemID(constants.ADAPTER_NAME),
+  fields: {
+    token: { refType: BuiltinTypes.STRING, annotations: { _required: true, message: 'Secret API key' } },
+  },
+})

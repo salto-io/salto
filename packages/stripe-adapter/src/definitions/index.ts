@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { elements as elementUtils } from '@salto-io/adapter-components'
 
-export default {
-  name: elementUtils.query.nameCriterion,
-}
+export * from './fetch'
+export { REFERENCES as references } from './references'
+export * from './requests'
+export { Options } from './types'

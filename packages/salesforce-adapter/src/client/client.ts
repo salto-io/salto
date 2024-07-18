@@ -78,8 +78,6 @@ const log = logger(module)
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } =
   clientUtils
 
-const {awu} = collections.asynciterable
-
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
 export const API_VERSION = '60.0'
@@ -655,28 +653,39 @@ export const validateCredentials = async (
 
 type DeployProgressCallback = (inProgressResult: DeployResult) => void
 
-
-type ListApexClassesParams = {
-  client: SalesforceClient
-  sinceDate: string
-}
-
 const TYPES_WITH_CUSTOM_LIST_FUNC = [
   APEX_CLASS_METADATA_TYPE,
 ] as const
 
 export type TypeWithCustomListFunc = typeof TYPES_WITH_CUSTOM_LIST_FUNC[number]
 
-
-type CustomListFuncParams = {
-  client: SalesforceClient
-  sinceDate?: string
+interface ISalesforceClient {
+  ensureLoggedIn(): Promise<void>;
+  isSandbox(): boolean;
+  countInstances(typeName: string): Promise<number>;
+  listMetadataTypes(): Promise<MetadataObject[]>;
+  describeMetadataType(type: string): Promise<DescribeValueTypeResult>;
+  listMetadataObjects(queries: ListMetadataQuery[]): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>;
+  getUrl(): Promise<URL | undefined>;
+  readMetadata(type: string, fullNames: string[]): Promise<SendChunkedResult<string, MetadataInfo>>;
+  listSObjects(): Promise<DescribeGlobalSObjectResult[]>;
+  describeSObjects(objectNames: string[]): Promise<SendChunkedResult<string, DescribeSObjectResult>>;
+  upsert(type: string, metadata: MetadataInfo | MetadataInfo[]): Promise<UpsertResult[]>;
+  delete(type: string, fullNames: string[]): Promise<SaveResult[]>;
+  retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult>;
+  deploy(zip: Buffer, deployOptions: DeployOptions, progressCallback?: DeployProgressCallback): Promise<DeployResult>;
+  quickDeploy(validationId: string): Promise<DeployResult>;
+  queryAll(queryString: string): Promise<AsyncIterable<SalesforceRecord[]>>;
+  bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>;
+  request(url: string): Promise<unknown>;
 }
-export type CustomListFunc = (params: CustomListFuncParams) => Promise<FileProperties[]>
 
-export type CustomListFuncByType = Partial<Record<TypeWithCustomListFunc, CustomListFunc>>
+type CustomListFuncByType = Partial<Record<TypeWithCustomListFunc, (params: {
+  client: ISalesforceClient
+  sinceDate?: string
+}) => FileProperties[]>>
 
-export default class SalesforceClient {
+export default class SalesforceClient implements  ISalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
   private isLoggedIn = false

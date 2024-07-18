@@ -559,7 +559,8 @@ const cloneValuesWithAttributePrefixes = async (
     if (pathID && allAttributesPaths.has(pathID.getFullName())) {
       return XML_ATTRIBUTE_PREFIX + key
     }
-    // Special handling since the XML parser implementation will omit "true" or true values
+    // Special handling since the XML parser implementation will omit the value "true" for attributes
+    // As a workaround, we pass it as part of the key
     if (pathID && trueValueAttributePaths.has(pathID.getFullName())) {
       return `${XML_ATTRIBUTE_PREFIX}${key}="true"`
     }

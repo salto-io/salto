@@ -33,7 +33,7 @@ See [the vscode package documentation](packages/vscode/README.md#installation)
 ### Running using docker
 
 ```bash
-docker build --tag salto-cli
+docker build --tag salto-cli .
 docker run salto-cli
 ```
 

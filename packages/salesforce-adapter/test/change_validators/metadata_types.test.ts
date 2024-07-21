@@ -21,6 +21,7 @@ import {
   CUSTOM_METADATA_TYPE_NAME,
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_TYPE_NAME,
+  INSTANCE_FULL_NAME_FIELD,
   METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
@@ -77,22 +78,28 @@ describe('deployNonDeployableTypes', () => {
     })
   })
   describe('When deploying the CustomObject and CustomMetadata metadata types', () => {
-    const customObjectMetadataType = createMetadataObjectType(
-      {
-        annotations: {
-          [METADATA_TYPE]: CUSTOM_OBJECT,
+    const customObjectMetadataType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT_TYPE_NAME),
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+      },
+      fields: {
+        [INSTANCE_FULL_NAME_FIELD]: {
+          refType: BuiltinTypes.SERVICE_ID,
         },
       },
-      CUSTOM_OBJECT_TYPE_NAME,
-    )
-    const customMetadataMetadataType = createMetadataObjectType(
-      {
-        annotations: {
-          [METADATA_TYPE]: CUSTOM_METADATA,
+    })
+    const customMetadataMetadataType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_METADATA,
+      },
+      fields: {
+        [INSTANCE_FULL_NAME_FIELD]: {
+          refType: BuiltinTypes.SERVICE_ID,
         },
       },
-      CUSTOM_METADATA_TYPE_NAME,
-    )
+    })
     beforeEach(async () => {
       validatorResult = await deployNonDeployableTypes([
         toChange({ after: customObjectMetadataType }),

@@ -410,15 +410,15 @@ const replaceChangeData = <T extends ChangeDataType>(dst: T, src: T): void => {
  * function in a single call
  */
 export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: DetailedChange[]): void => {
-  const [baseElementModifications, nestedChanges] = _.partition(
-    detailedChanges,
-    change => isModificationChange(change) && change.id.isTopLevel(),
-  )
-  baseElementModifications.forEach(change => {
-    replaceChangeData(element, getChangeData(change))
-  })
+  if (detailedChanges.length === 1) {
+    const change = detailedChanges[0]
+    if (isModificationChange(change) && change.id.isTopLevel()) {
+      replaceChangeData(element, getChangeData(change))
+      return
+    }
+  }
 
-  const changesToApply = filterChangesForApply(nestedChanges)
+  const changesToApply = filterChangesForApply(detailedChanges)
   const [potentialListItemChanges, otherChanges] = _.partition(changesToApply, change =>
     isIndexPathPart(change.id.name),
   )

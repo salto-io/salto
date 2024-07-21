@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
+import {
+  AdapterAuthentication,
+  ObjectType,
+  ElemID,
+} from '@salto-io/adapter-api'
 import {
   addAdapter,
   installAdapter,
@@ -24,7 +28,14 @@ import {
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getPrivateAdaptersNames } from '../../src/formatter'
-import { accountAddDef, addAction, listAction, loginAction, accountLoginDef } from '../../src/commands/account'
+import {
+  accountAddDef,
+  addAction,
+  listAction,
+  loginAction,
+  accountLoginDef,
+  createConfigFromLoginParameters,
+} from '../../src/commands/account'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
@@ -367,19 +378,6 @@ describe('account command group', () => {
           })
         })
         describe('when called with invalid login parameters', () => {
-          it('should fail when called with missing parameter', async () => {
-            const exitCode = await addAction({
-              ...cliCommandArgs,
-              input: {
-                serviceType: 'newAdapter',
-                authType: 'basic',
-                login: true,
-                loginParameters: ['username=testUser', 'password=testPassword', 'token=testToken'],
-              },
-              workspace,
-            })
-            expect(exitCode).toEqual(CliExitCode.AppError)
-          })
           it('should fail when called with malformed parameter', async () => {
             const exitCode = await addAction({
               ...cliCommandArgs,
@@ -591,6 +589,44 @@ describe('account command group', () => {
             ).toBeFalsy()
           })
         })
+      })
+    })
+  })
+
+  describe('createConfigFromLoginParameters() helper', () => {
+    describe('when login parameters are marked required', () => {
+      const credentialsType = {
+        elemID: new ElemID('MockAdaptorName'),
+        fields: {
+          username: {
+            annotations: {
+            }
+          },
+          token: {
+            annotations: {
+              _required: true
+            }
+          }
+        }
+      }
+
+      it('should work when the required param is present', async () => {
+        const loginParameters = ['token=token456']
+        const getLoginInput = createConfigFromLoginParameters(loginParameters)
+        const newConfig = await getLoginInput(credentialsType)
+        expect(newConfig.value.token).toEqual('token456')
+      })
+
+      it('should throw when the required param is missing - with other matches', async () => {
+        const loginParameters = ['username=user123']
+        const getLoginInput = createConfigFromLoginParameters(loginParameters)
+        await expect(getLoginInput(credentialsType)).rejects.toThrow()
+      })
+
+      it('should throw when the required param is missing - with no other matches', async () => {
+        const loginParameters = ['password=password789']
+        const getLoginInput = createConfigFromLoginParameters(loginParameters)
+        await expect(getLoginInput(credentialsType)).rejects.toThrow()
       })
     })
   })

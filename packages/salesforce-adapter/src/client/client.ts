@@ -666,6 +666,10 @@ export default class SalesforceClient {
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
   private readonly filePropsByType: Record<string, FileProperties[]>
+  private readonly listMetadataObjectsOfTypePromises: Record<
+    string,
+    Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
+  >
 
   constructor({ credentials, connection, config }: SalesforceClientOpts) {
     this.credentials = credentials
@@ -709,6 +713,7 @@ export default class SalesforceClient {
       config?.readMetadataChunkSize,
     )
     this.filePropsByType = {}
+    this.listMetadataObjectsOfTypePromises = {}
   }
 
   private retryOnBadResponse = <T extends object>(
@@ -795,10 +800,13 @@ export default class SalesforceClient {
     if (cached !== undefined) {
       return { result: cached, errors: [] }
     }
-    const sendChunkedListResult = await this.sendChunkedList(
-      [{ type }],
-      isUnhandledError,
-    )
+    const ongoingRequest = this.listMetadataObjectsOfTypePromises[type]
+    if (ongoingRequest !== undefined) {
+      return ongoingRequest
+    }
+    const request = this.sendChunkedList([{ type }], isUnhandledError)
+    this.listMetadataObjectsOfTypePromises[type] = request
+    const sendChunkedListResult = await request
     if (sendChunkedListResult.errors.length === 0) {
       this.filePropsByType[type] = sendChunkedListResult.result
     }

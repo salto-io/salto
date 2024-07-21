@@ -92,7 +92,7 @@ describe('salesforce client', () => {
           total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
           retrieve: 3,
           read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-          list: 1,
+          list: undefined,
         },
       },
     })
@@ -1544,6 +1544,26 @@ describe('salesforce client', () => {
         ...customFieldResult,
         ...roleResult,
       ])
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+    it('should not send multiple requests on the same type when invoked concurrently', async () => {
+      const result = [
+        mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
+        mockFileProperties({ type: 'CustomObject', fullName: 'Case' }),
+      ]
+      const input = { type: 'CustomObject' }
+      // Make sure we only invoke listMetadata once
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*<listMetadata>.*/)
+        .delay(100)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result } } },
+        })
+      const [firstResult, secondResult] = await Promise.all([
+        client.listMetadataObjects(input),
+        client.listMetadataObjects(input),
+      ])
+      expect(firstResult).toEqual(secondResult)
       expect(dodoScope.isDone()).toBeTrue()
     })
   })

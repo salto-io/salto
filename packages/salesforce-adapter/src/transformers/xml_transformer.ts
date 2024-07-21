@@ -533,9 +533,14 @@ const cloneValuesWithAttributePrefixes = async (
   instance: InstanceElement,
 ): Promise<Values> => {
   const allAttributesPaths = new Set<string>()
+  const trueValueAttributePaths: Set<string> = new Set<string>()
   const createPathsSetCallback: TransformFunc = ({ value, field, path }) => {
     if (path && field && field.annotations[IS_ATTRIBUTE]) {
-      allAttributesPaths.add(path.getFullName())
+      if (value === true || value === 'true') {
+        trueValueAttributePaths.add(path.getFullName())
+      } else {
+        allAttributesPaths.add(path.getFullName())
+      }
     }
     return value
   }
@@ -554,9 +559,13 @@ const cloneValuesWithAttributePrefixes = async (
     if (pathID && allAttributesPaths.has(pathID.getFullName())) {
       return XML_ATTRIBUTE_PREFIX + key
     }
+    // Special handling since the fast-xml-parser implementation will omit the value "true" for attributes
+    // As a workaround, we pass it as part of the key
+    if (pathID && trueValueAttributePaths.has(pathID.getFullName())) {
+      return `${XML_ATTRIBUTE_PREFIX}${key}="true"`
+    }
     return key
   }
-
   return mapKeysRecursive(
     instance.value,
     addAttributePrefixFunc,

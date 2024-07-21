@@ -55,7 +55,6 @@ import { testHelpers } from './jest_environment'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-/* eslint-disable camelcase */
 describe('custom object instances e2e', () => {
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)

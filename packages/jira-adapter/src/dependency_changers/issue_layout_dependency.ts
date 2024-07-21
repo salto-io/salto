@@ -58,9 +58,11 @@ export const issueLayoutDependencyChanger: DependencyChanger = async changes => 
     )
 
   const issueLayoutsKeysToProject = Object.fromEntries(
-    AdditionOrModificationChanges.filter(({ change }) => getChangeData(change).elemID.typeName === ISSUE_LAYOUT_TYPE)
-      .map(({ key, change }) => [key, getParent(getChangeData(change))])
-      .filter(([_, project]) => project !== undefined) as [string, InstanceElement][],
+    (
+      AdditionOrModificationChanges.filter(
+        ({ change }) => getChangeData(change).elemID.typeName === ISSUE_LAYOUT_TYPE,
+      ).map(({ key, change }) => [key, getParent(getChangeData(change))]) as [string, InstanceElement][]
+    ).filter(([_, project]) => project !== undefined && project.value !== undefined),
   )
 
   const issueLayoutsKeysToDependencyKeys = Object.entries(issueLayoutsKeysToProject)

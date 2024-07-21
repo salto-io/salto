@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import nock from 'nock'
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -37,7 +38,6 @@ import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/user_config'
 import fetchMockReplies from './fetch_mock_replies.json'
-import deployMockReplies from './deploy_mock_replies.json'
 import {
   USER_TYPE_NAME,
   BRAND_TYPE_NAME,
@@ -48,10 +48,30 @@ import {
   DEVICE_ASSURANCE_TYPE_NAME,
   SMS_TEMPLATE_TYPE_NAME,
   LINKS_FIELD,
+  APPLICATION_TYPE_NAME,
+  INACTIVE_STATUS,
+  CUSTOM_NAME_FIELD,
+  ACTIVE_STATUS,
+  SAML_2_0_APP,
+  ORG_SETTING_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => null,
+}
+
+const loadMockReplies = (filename: string): void => {
+  const defs: nock.Definition[] = nock.loadDefs(`${__dirname}/mock_replies/${filename}`)
+  defs.forEach(def => {
+    if (def.scope === '') {
+      def.scope = 'https://test.okta.com:443'
+    }
+  })
+  nock.define(defs)
+  nock.disableNetConnect()
+  nock.enableNetConnect('raw.githubusercontent.com')
 }
 
 type MockReply = {
@@ -83,29 +103,29 @@ const getMockFunction = (method: definitions.HTTPMethod, mockAxiosAdapter: MockA
 }
 
 describe('adapter', () => {
-  jest.setTimeout(10 * 5000)
-  let mockAxiosAdapter: MockAdapter
-
-  beforeEach(async () => {
-    mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter
-      .onGet('/api/v1/org')
-      .replyOnce(200, { id: 'accountId' })
-      .onGet('/api/v1/org')
-      .replyOnce(200, { id: 'accountId' })
-    ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
-      const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
-      const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
-      handler.replyOnce(200, response)
-    })
-  })
-
-  afterEach(() => {
-    mockAxiosAdapter.restore()
-    jest.clearAllMocks()
-  })
-
   describe('fetch', () => {
+    jest.setTimeout(10 * 5000)
+    let mockAxiosAdapter: MockAdapter
+
+    beforeEach(async () => {
+      mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
+      mockAxiosAdapter
+        .onGet('/api/v1/org')
+        .replyOnce(200, { id: 'accountId' })
+        .onGet('/api/v1/org')
+        .replyOnce(200, { id: 'accountId' })
+      ;([...fetchMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
+        const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
+        const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
+        handler.replyOnce(200, response)
+      })
+    })
+
+    afterEach(() => {
+      mockAxiosAdapter.restore()
+      jest.clearAllMocks()
+    })
+
     describe('full fetch with default config', () => {
       let elements: Element[]
       beforeEach(async () => {
@@ -458,13 +478,20 @@ describe('adapter', () => {
     let brand1: InstanceElement
 
     beforeEach(() => {
+      nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
+
+      const orgSettingType = new ObjectType({
+        elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME),
+      })
+      const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain.example.com' })
+
       operations = adapter.operations({
         credentials: new InstanceElement('config', accessTokenCredentialsType, {
           baseUrl: 'https://test.okta.com',
           token: 't',
         }),
         config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSource: buildElementsSourceFromElements([orgSetting]),
       })
 
       brandType = new ObjectType({
@@ -480,6 +507,10 @@ describe('adapter', () => {
         name: 'subdomain.example.com',
         removePoweredByOkta: false,
       })
+    })
+
+    afterEach(() => {
+      nock.cleanAll()
     })
 
     describe('deploy group', () => {
@@ -506,6 +537,7 @@ describe('adapter', () => {
       })
 
       it('should successfully add a group', async () => {
+        loadMockReplies('group_add.json')
         const groupWithoutId = group1.clone()
         delete groupWithoutId.value.id
         const result = await operations.deploy({
@@ -518,11 +550,13 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('group-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully modify a group', async () => {
+        loadMockReplies('group_modify.json')
         const updatedGroup1 = group1.clone()
-        updatedGroup1.value.name = 'Programmers'
+        updatedGroup1.value.profile.name = 'Programmers'
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'group',
@@ -538,9 +572,11 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully remove a group', async () => {
+        loadMockReplies('group_remove.json')
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'group',
@@ -550,11 +586,13 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
 
     describe('deploy brand', () => {
       it('should successfully add a brand', async () => {
+        loadMockReplies('brand_add.json')
         const brandWithoutId = new InstanceElement('brand1', brandType, {
           name: 'subdomain.example.com',
           removePoweredByOkta: false,
@@ -569,9 +607,11 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('brand-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully modify a brand', async () => {
+        loadMockReplies('brand_modify.json')
         const updatedBrand1 = brand1.clone()
         updatedBrand1.value.removePoweredByOkta = true
         const result = await operations.deploy({
@@ -592,9 +632,11 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
           true,
         )
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully remove a brand', async () => {
+        loadMockReplies('brand_remove.json')
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'brand',
@@ -604,6 +646,7 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
 
@@ -621,6 +664,7 @@ describe('adapter', () => {
       })
 
       it('should successfully add a user', async () => {
+        loadMockReplies('user_add.json')
         const user1 = new InstanceElement('user1', userType, {
           status: 'STAGED',
           profile: {
@@ -637,17 +681,15 @@ describe('adapter', () => {
           },
           progressReporter: nullProgressReporter,
         })
-        expect(mockAxiosAdapter.history.post.length).toBe(1)
-        const addUserReq = mockAxiosAdapter.history.post[0]
-        expect(addUserReq.url).toEqual('/api/v1/users')
-        expect(addUserReq.params).toEqual({ activate: 'false' })
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0]).elemID.getFullName()).toEqual('okta.User.instance.user1')
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('fakeid123')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully modify a user', async () => {
+        loadMockReplies('user_modify.json')
         const user1 = new InstanceElement('user1', userType, {
           id: 'fakeid123',
           status: 'STAGED',
@@ -673,15 +715,13 @@ describe('adapter', () => {
           progressReporter: nullProgressReporter,
         })
 
-        expect(mockAxiosAdapter.history.post.length).toBe(1)
-        const deactivateReq = mockAxiosAdapter.history.post[0]
-        expect(deactivateReq.url).toEqual('/api/v1/users/fakeid123')
-
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0]).elemID.getFullName()).toEqual('okta.User.instance.user1')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully remove a user', async () => {
+        loadMockReplies('user_remove.json')
         const user1 = new InstanceElement('user1', userType, {
           id: 'fakeid123',
           status: 'PROVISIONED',
@@ -700,16 +740,10 @@ describe('adapter', () => {
           progressReporter: nullProgressReporter,
         })
 
-        expect(mockAxiosAdapter.history.post.length).toBe(1)
-        const deactivateReq = mockAxiosAdapter.history.post[0]
-        expect(deactivateReq.url).toEqual('/api/v1/users/fakeid123/lifecycle/deactivate')
-        expect(mockAxiosAdapter.history.delete.length).toBe(1)
-        const deleteReq = mockAxiosAdapter.history.delete[0]
-        expect(deleteReq.url).toEqual('/api/v1/users/fakeid123')
-
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0]).elemID.getFullName()).toEqual('okta.User.instance.user1')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
     describe('deploy domain', () => {
@@ -733,6 +767,7 @@ describe('adapter', () => {
       })
 
       it('should successfully add a domain', async () => {
+        loadMockReplies('domain_add.json')
         const domainWithoutId = domain.clone()
         delete domainWithoutId.value.id
         const result = await operations.deploy({
@@ -745,9 +780,11 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('domain-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully modify a domain', async () => {
+        loadMockReplies('domain_modify.json')
         // Domains may only modify their brand, so we'll test that.
         const brand2 = new InstanceElement('brand2', brandType, {
           id: 'brand-fakeid2',
@@ -773,9 +810,11 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.brandId.value.value.id).toEqual(
           'brand-fakeid2',
         )
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully remove a domain', async () => {
+        loadMockReplies('domain_remove.json')
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'domain',
@@ -785,6 +824,7 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
     describe('deploy user type', () => {
@@ -805,7 +845,7 @@ describe('adapter', () => {
           [LINKS_FIELD]: {
             schema: {
               rel: 'schema',
-              href: 'https://salto.okta.com/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
+              href: 'https://<sanitized>/api/v1/meta/schemas/user/oscg64q0mq1aYdKLt697',
               method: 'GET',
             },
           },
@@ -813,6 +853,7 @@ describe('adapter', () => {
       })
 
       it('should successfully add a user type', async () => {
+        loadMockReplies('user_type_add.json')
         const userTypeWithoutId = userType.clone()
         delete userTypeWithoutId.value.id
         delete userTypeWithoutId.value[LINKS_FIELD]
@@ -838,11 +879,13 @@ describe('adapter', () => {
             method: 'GET',
           },
         })
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully modify a user type', async () => {
+        loadMockReplies('user_type_modify.json')
         const updatedUserType = userType.clone()
-        updatedUserType.value.removePoweredByOkta = true
+        updatedUserType.value.name = 'poweruser'
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'userType',
@@ -858,12 +901,12 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
-          true,
-        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('poweruser')
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully remove a user type', async () => {
+        loadMockReplies('user_type_remove.json')
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'domain',
@@ -873,6 +916,7 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
     describe('deploy sms template', () => {
@@ -890,10 +934,13 @@ describe('adapter', () => {
         smsTemplate = new InstanceElement('smsTemplate', smsTemplateType, {
           id: 'smstemplate-fakeid1',
           name: 'Custom',
+          // eslint-disable-next-line no-template-curly-in-string
+          template: 'Your verification code is ${code}.',
         })
       })
 
       it('should successfully add an sms template', async () => {
+        loadMockReplies('sms_template_add.json')
         const smsTemplateWithoutId = smsTemplate.clone()
         delete smsTemplateWithoutId.value.id
         const result = await operations.deploy({
@@ -908,11 +955,14 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
           'smstemplate-fakeid1',
         )
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully modify an sms template', async () => {
+        loadMockReplies('sms_template_modify.json')
         const updatedSmsTemplate = smsTemplate.clone()
-        updatedSmsTemplate.value.name = 'Other'
+        // eslint-disable-next-line no-template-curly-in-string
+        updatedSmsTemplate.value.template = 'Verify this: ${code}.'
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'smsTemplate',
@@ -928,10 +978,15 @@ describe('adapter', () => {
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('Other')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.template).toEqual(
+          // eslint-disable-next-line no-template-curly-in-string
+          'Verify this: ${code}.',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully remove an sms template', async () => {
+        loadMockReplies('sms_template_remove.json')
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'smsTemplate',
@@ -941,6 +996,7 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
     describe('deploy device assurance', () => {
@@ -962,6 +1018,7 @@ describe('adapter', () => {
       })
 
       it('should successfully add a device assurance', async () => {
+        loadMockReplies('device_assurance_add.json')
         const deviceAssuranceWithoutId = deviceAssurance.clone()
         delete deviceAssuranceWithoutId.value.id
         const result = await operations.deploy({
@@ -976,9 +1033,11 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
           'deviceassurance-fakeid1',
         )
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully modify a device assurance', async () => {
+        loadMockReplies('device_assurance_modify.json')
         const updatedDeviceAssurance = deviceAssurance.clone()
         updatedDeviceAssurance.value.name = 'deviceassurance2'
         const result = await operations.deploy({
@@ -999,9 +1058,11 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual(
           'deviceassurance2',
         )
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
 
       it('should successfully remove a device assurance', async () => {
+        loadMockReplies('device_assurance_remove.json')
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'deviceAssurance',
@@ -1011,6 +1072,232 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy application', () => {
+      let appType: ObjectType
+
+      beforeEach(() => {
+        appType = new ObjectType({
+          elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an inactive regular application without policies', async () => {
+        loadMockReplies('application_add_regular_inactive.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: INACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: inactiveCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('app-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an active regular application with policies', async () => {
+        loadMockReplies('application_add_regular_active.json')
+        const profileEnrollmentPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
+        })
+        const profileEnrollmentPolicy = new InstanceElement('profileEnrollmentPolicy', profileEnrollmentPolicyType, {
+          id: 'enrollmentpolicy-fakeid1',
+          name: 'enrollmentPolicy1',
+        })
+        const accessPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME),
+        })
+        const accessPolicy = new InstanceElement('accessPolicy', accessPolicyType, {
+          id: 'accesspolicy-fakeid1',
+          name: 'accessPolicy1',
+        })
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy.elemID, profileEnrollmentPolicy),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: activeCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('app-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive custom application', async () => {
+        loadMockReplies('application_add_custom_inactive.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: INACTIVE_STATUS,
+          signOnMode: SAML_2_0_APP,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: inactiveCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        const instance = getChangeData(result.appliedChanges[0] as Change<InstanceElement>)
+        expect(instance.value.id).toEqual('app-fakeid1')
+        // This is based on the orgSettings subdomain and the service returned "name" field value
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        expect(instance.value.name).toBeUndefined()
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an active custom application', async () => {
+        loadMockReplies('application_add_custom_active.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          signOnMode: SAML_2_0_APP,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ after: activeCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        const instance = getChangeData(result.appliedChanges[0] as Change<InstanceElement>)
+        expect(instance.value.id).toEqual('app-fakeid1')
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        // This is based on the orgSettings subdomain and the service returned "name" field value
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        expect(instance.value.name).toBeUndefined()
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an inactive custom application', async () => {
+        loadMockReplies('application_modify_custom_inactive.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: INACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+        })
+        const updatedApp = inactiveCustomApp.clone()
+        updatedApp.value.label = 'app2'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: inactiveCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app2')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an active custom application', async () => {
+        loadMockReplies('application_modify_custom_active.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.label = 'app2'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app2')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove an inactive custom application', async () => {
+        loadMockReplies('application_remove_custom_inactive.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: INACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ before: inactiveCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      // Note: currently, this kind of change is blocked by the `application`
+      // Change validator, which prevents the removal of active applications.
+      // The JSON file includes a single "delete" operation, which is what would
+      // be sent to Okta if the CV was ignored. The test is here so that we can
+      // show the diff in behavior once we allow a flow of deleting active
+      // applications as part of the move to the new infra. Stay tuned.
+      it('should successfully remove an active custom application', async () => {
+        loadMockReplies('application_remove_custom_active.json')
+        const inactiveCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [toChange({ before: inactiveCustomApp })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
   })

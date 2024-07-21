@@ -129,7 +129,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     request: {
       url: '/folders',
       recursiveQueryByResponseField: {
-        // eslint-disable-next-line camelcase
         parent_id: 'id',
       },
       paginationField: 'page',

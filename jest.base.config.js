@@ -13,22 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+const testDir = process.env.RUN_E2E_TESTS ? 'e2e_test' : 'test'
+
 module.exports = {
-  globals: {
-    'ts-jest': {
-      isolatedModules: true
-    }
-  },
   preset: 'ts-jest',
+  transform: {
+    '^.+.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: `<rootDir>/${testDir}/tsconfig.json`,
+        isolatedModules: true,
+      }
+    ]
+  },
   verbose: true,
   testEnvironment: 'node',
-  testMatch: [
-    process.env['RUN_E2E_TESTS']
-      ? '<rootDir>/e2e_test/**/*.test.ts'
-      : '<rootDir>/test/**/*.test.ts'
-  ],
+  testMatch: [`<rootDir>/${testDir}/**/*.test.ts`],
   testRunner: "jest-circus/runner",
-  collectCoverage: true,
+  collectCoverage: process.env.RUN_E2E_TESTS ? false : true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
   collectCoverageFrom: [
     '**/*.ts',
@@ -38,6 +40,8 @@ module.exports = {
     '!coverage/**',
     '!test/**',
     '!e2e_test/**',
+    '!**/*.d.ts',
+    '!**/dist/**',
   ],
 }
 

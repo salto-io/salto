@@ -142,6 +142,7 @@ export const OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE = 'ObjectSchemaDefaultRef
 export const OBJECT_SCHEMA_GLOBAL_STATUS_TYPE = 'ObjectSchemaGlobalStatus'
 export const OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE = 'ObjectTypeLabelAttribute'
 export const OBJECT_TYPE_ICON_TYPE = 'ObjectTypeIcon'
+export const ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE = 'AssetsObjectFieldConfiguration'
 export const DELETE_LINK_TYPES = 'DeleteLinkTypes'
 export const APPLICATION_PROPERTY_TYPE = 'ApplicationProperty'
 export const FIELD_TYPE = 'Field'

@@ -1,0 +1,14 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/apps/app-fakeid1",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "250",
+      "x-rate-limit-remaining": "249",
+      "x-rate-limit-reset": "1720355168"
+    }
+  }
+]

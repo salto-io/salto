@@ -92,7 +92,7 @@ describe('salesforce client', () => {
           total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
           retrieve: 3,
           read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-          list: 1,
+          list: undefined,
         },
       },
     })
@@ -1197,7 +1197,6 @@ describe('salesforce client', () => {
       })
 
       const makeResolvablePromise = <T>(resolveValue: T): Resolvable<T> => {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         let resolve: () => void = () => {}
         // Unsafe assumption - promise constructor calls the parameter function synchronously
         const promise = new Promise<T>((resolveFunc) => {
@@ -1240,10 +1239,11 @@ describe('salesforce client', () => {
           _.times(reads.length, (i) =>
             mockRead.mockResolvedValueOnce(reads[i].promise),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           readRequests = _.times(reads.length, (i) =>
             testClient.readMetadata(`t${i}`, 'name'),
           )
-          retrieves = _.times(4, () =>
+          retrieves = _.times(6, () =>
             makeResolvablePromise(emptyRetrieveResult),
           )
           _.times(retrieves.length, (i) =>
@@ -1251,6 +1251,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,
@@ -1265,6 +1266,7 @@ describe('salesforce client', () => {
           _.times(lists.length, (i) =>
             mockList.mockResolvedValueOnce(lists[i].promise),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           listRequests = _.times(lists.length, (i) =>
             testClient.listMetadataObjects({ type: `t${i}` }),
           )
@@ -1281,7 +1283,7 @@ describe('salesforce client', () => {
         })
         it('should not call last retrieve when there are too many in-flight requests', () => {
           expect(mockRetrieve.mock.calls.length).toBeGreaterThanOrEqual(2)
-          expect(mockRetrieve.mock.calls.length).toBeLessThan(4)
+          expect(mockRetrieve.mock.calls.length).toBeLessThan(6)
         })
 
         it('should complete all the requests when they free up', async () => {
@@ -1289,10 +1291,12 @@ describe('salesforce client', () => {
           reads[1].resolve()
           retrieves[2].resolve()
           retrieves[3].resolve()
+          retrieves[4].resolve()
+          retrieves[5].resolve()
           await Promise.all(readRequests)
           await Promise.all(retrieveRequests)
           expect(mockRead).toHaveBeenCalledTimes(2)
-          expect(mockRetrieve).toHaveBeenCalledTimes(4)
+          expect(mockRetrieve).toHaveBeenCalledTimes(6)
         })
       })
 
@@ -1324,6 +1328,7 @@ describe('salesforce client', () => {
           _.times(reads.length, (i) =>
             mockRead.mockResolvedValueOnce(reads[i].promise),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           readRequests = _.times(reads.length, (i) =>
             testClient.readMetadata(`t${i}`, 'name'),
           )
@@ -1335,6 +1340,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,
@@ -1393,6 +1399,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,
@@ -1499,26 +1506,30 @@ describe('salesforce client', () => {
     })
 
     it('should only request non cached queries', async () => {
-      const firstReplyResult = [
+      const customObjectResult = [
         mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
         mockFileProperties({ type: 'CustomObject', fullName: 'Case' }),
+      ]
+      const customFieldResult = [
         mockFileProperties({
           type: 'CustomField',
           fullName: 'Account.Field__c',
         }),
         mockFileProperties({ type: 'CustomField', fullName: 'Case.Field__c' }),
       ]
-      const secondReplyResult = [
-        mockFileProperties({ type: 'Role', fullName: 'CEO' }),
-      ]
+      const roleResult = [mockFileProperties({ type: 'Role', fullName: 'CEO' })]
       const dodoScope = nock('http://dodo22')
         .post(/.*/, /.*<listMetadata>.*/)
         .reply(200, {
-          'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } },
+          'a:Envelope': { 'a:Body': { a: { result: customObjectResult } } },
         })
         .post(/.*/, /.*<listMetadata>.*/)
         .reply(200, {
-          'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } },
+          'a:Envelope': { 'a:Body': { a: { result: customFieldResult } } },
+        })
+        .post(/.*/, /.*<listMetadata>.*/)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: roleResult } } },
         })
       const firstInput = [{ type: 'CustomObject' }, { type: 'CustomField' }]
       const secondInput = [...firstInput, { type: 'Role' }]
@@ -1526,8 +1537,35 @@ describe('salesforce client', () => {
         await client.listMetadataObjects(firstInput)
       const { result: secondResult } =
         await client.listMetadataObjects(secondInput)
-      expect(firstResult).toEqual(firstReplyResult)
-      expect(secondResult).toEqual(firstReplyResult.concat(secondReplyResult))
+      expect(firstResult).toIncludeSameMembers([
+        ...customObjectResult,
+        ...customFieldResult,
+      ])
+      expect(secondResult).toIncludeSameMembers([
+        ...customObjectResult,
+        ...customFieldResult,
+        ...roleResult,
+      ])
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+    it('should not send multiple requests on the same type when invoked concurrently', async () => {
+      const result = [
+        mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
+        mockFileProperties({ type: 'CustomObject', fullName: 'Case' }),
+      ]
+      const input = { type: 'CustomObject' }
+      // Make sure we only invoke listMetadata once
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*<listMetadata>.*/)
+        .delay(100)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result } } },
+        })
+      const [firstResult, secondResult] = await Promise.all([
+        client.listMetadataObjects(input),
+        client.listMetadataObjects(input),
+      ])
+      expect(firstResult).toEqual(secondResult)
       expect(dodoScope.isDone()).toBeTrue()
     })
   })

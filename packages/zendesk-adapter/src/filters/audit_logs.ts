@@ -96,7 +96,6 @@ const GUIDE_ELEMENTS = new Set([...GUIDE_TYPES_TO_HANDLE_BY_BRAND, ...Object.key
 export const DELETED_USER = 'deleted user'
 
 type ValidAuditRes = {
-  // eslint-disable-next-line camelcase
   audit_logs: { created_at: string; actor_name: string }[]
 }
 
@@ -247,7 +246,6 @@ const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string,
           const parent = idByInstance[getParent(child).elemID.getFullName()]
           child.annotations[CORE_ANNOTATIONS.CHANGED_AT] = parent.annotations[CORE_ANNOTATIONS.CHANGED_AT]
         }
-        // eslint-disable-next-line no-empty
       } catch (e) {
         log.warn(`getParent returned an error: ${e}`)
       }

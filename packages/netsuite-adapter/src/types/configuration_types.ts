@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable camelcase */
 import { BuiltinTypes, ElemID, ObjectType, ListType } from '@salto-io/adapter-api'
 import * as constants from '../constants'
 

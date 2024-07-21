@@ -115,8 +115,8 @@ export type ServiceMDTRecordValue = MetadataValues & {
   values: ServiceMDTRecordFieldValue | ServiceMDTRecordFieldValue[]
 }
 
-// Salesforce expects xsi:nil="true" for null values explicitly.
-// We put the "true" value in the key since fast-xml-parser omits boolean values.
+// Special handling since the fast-xml-parser implementation will omit the value "true" for attributes
+// As a workaround, we pass it as part of the key
 export const XSI_NIL_TRUE = { [`${XML_ATTRIBUTE_PREFIX}xsi:nil="true"`]: true }
 
 const isServiceMDTRecordFieldValue = (

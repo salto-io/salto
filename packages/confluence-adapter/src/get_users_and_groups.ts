@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { Values } from '@salto-io/adapter-api'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { fetch as fetchUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
@@ -113,7 +114,7 @@ export const getUsersAndGroups = async (
     ),
   })
 
-  const callSingleResource = async <T>(
+  const callSingleResource = async <T extends Values>(
     typeName: string,
     filterFn: (item: unknown) => item is T,
     idKey: string,

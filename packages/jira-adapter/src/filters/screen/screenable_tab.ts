@@ -118,7 +118,7 @@ const deployTabFieldsAdditionsAndOrder = async (
         error instanceof clientUtils.HTTPError &&
         error.response?.status === 400 &&
         isScreenTabError(error.response) &&
-        error.response.data.errors?.fieldId.includes('already exists on the screen')
+        (error.response as ScreenTabError).data.errors?.fieldId?.includes('already exists on the screen')
       ) {
         log.error(`The field with id ${id} already exists on the screen ${parentScreenId} tab ${tabId}`)
       } else {

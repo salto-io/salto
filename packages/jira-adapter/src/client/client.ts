@@ -41,6 +41,9 @@ const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
 
 const RATE_LIMIT_HEADER_PREFIX = 'x-ratelimit-'
 
+export const USE_BOTTLENECK = false
+export const DELAY_PER_REQUEST_MS = 3
+
 export const GET_CLOUD_ID_URL = '/_edge/tenant_info'
 export const GQL_BASE_URL_GIRA = '/rest/gira/1'
 export const GQL_BASE_URL_GATEWAY = '/gateway/api/graphql'
@@ -87,6 +90,8 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      delayPerRequestMS: DELAY_PER_REQUEST_MS,
+      useBottleneck: USE_BOTTLENECK,
       retry: DEFAULT_RETRY_OPTS,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
@@ -135,7 +140,6 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     const rateLimitHeaders = _.pickBy(headers, (_val, key) => key.toLowerCase().startsWith(RATE_LIMIT_HEADER_PREFIX))
     if (rateLimitHeaders !== undefined && rateLimitHeaders['x-ratelimit-nearlimit']) {

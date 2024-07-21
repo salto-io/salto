@@ -36,7 +36,6 @@ const PARENTS_TYPE_NAMES = ['section', 'category', ARTICLE_TYPE_NAME]
 
 type ParentType = InstanceElement & {
   value: {
-    // eslint-disable-next-line camelcase
     source_locale: string
     translations: TranslationType[]
   }

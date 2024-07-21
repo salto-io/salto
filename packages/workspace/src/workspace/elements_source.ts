@@ -58,7 +58,7 @@ export function buildContainerType(prefix: ContainerTypeName, innerType?: TypeEl
   if (innerType === undefined) {
     return undefined
   }
-  const typeCtors: Record<ContainerTypeName, new (innerType: TypeElement) => MapType | ListType> = {
+  const typeCtors: Record<ContainerTypeName, new (innerTypeCtor: TypeElement) => MapType | ListType> = {
     List: ListType,
     Map: MapType,
   }

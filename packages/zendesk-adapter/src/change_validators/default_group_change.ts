@@ -68,7 +68,6 @@ const EXPECTED_GROUP_MEMBERSHIP_RESPONSE_SCHEMA = Joi.object({
     .required(),
 }).unknown()
 
-// eslint-disable-next-line camelcase
 const groupMembershipSchema = createSchemeGuard<{ group_memberships: { user_id: string; default: boolean }[] }>(
   EXPECTED_GROUP_MEMBERSHIP_RESPONSE_SCHEMA,
   'Invalid group membership response',

@@ -1,0 +1,187 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/apps",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "id": "app-fakeid1",
+      "name": "atlassian",
+      "label": "Atlassian Cloud2",
+      "status": "ACTIVE",
+      "lastUpdated": "2024-07-17T08:32:35.000Z",
+      "created": "2024-07-17T08:32:34.000Z",
+      "accessibility": {
+        "selfService": false,
+        "errorRedirectUrl": null,
+        "loginRedirectUrl": null
+      },
+      "visibility": {
+        "autoLaunch": false,
+        "autoSubmitToolbar": true,
+        "hide": {
+          "iOS": false,
+          "web": false
+        },
+        "appLinks": {
+          "trello": true,
+          "confluence": true,
+          "statuspage": true,
+          "compass": true,
+          "bitbucket": true,
+          "jira_service_management": true,
+          "jira": true
+        }
+      },
+      "features": [],
+      "signOnMode": "BROWSER_PLUGIN",
+      "credentials": {
+        "scheme": "EDIT_USERNAME_AND_PASSWORD",
+        "userNameTemplate": {
+          "template": "${source.login}",
+          "type": "BUILT_IN"
+        },
+        "revealPassword": true,
+        "signing": {}
+      },
+      "settings": {
+        "app": {
+          "compassUrl": null,
+          "jiraServiceManagementUrl": null,
+          "jiraUrl": null,
+          "statusPageUrl": null,
+          "opsgenieUrl": null,
+          "confluenceUrl": null,
+          "trelloUrl": null,
+          "uniqueID": null,
+          "bitbucketUrl": null,
+          "strideUrl": "https://app.strideddddde.com"
+        },
+        "notifications": {
+          "vpn": {
+            "network": {
+              "connection": "DISABLED"
+            },
+            "message": null,
+            "helpUrl": null
+          }
+        },
+        "manualProvisioning": false,
+        "implicitAssignment": false,
+        "emOptInStatus": "NONE",
+        "notes": {
+          "admin": null,
+          "enduser": null
+        }
+      },
+      "_links": {
+        "uploadLogo": {
+          "href": "https://salto.okta.com/api/v1/apps/0oagts92usgiZLb7G697/logo",
+          "hints": {
+            "allow": ["POST"]
+          }
+        },
+        "appLinks": [
+          {
+            "name": "jira",
+            "href": "https://salto.okta.com/home/atlassian/0oagts92usgiZLb7G697/aln1aqcs055ZRoizW0g8",
+            "type": "text/html"
+          },
+          {
+            "name": "compass",
+            "href": "https://salto.okta.com/home/atlassian/0oagts92usgiZLb7G697/aln1jpnsouusJZodG1d8",
+            "type": "text/html"
+          },
+          {
+            "name": "statuspage",
+            "href": "https://salto.okta.com/home/atlassian/0oagts92usgiZLb7G697/aln1isk2rtqHDAi6m1d8",
+            "type": "text/html"
+          },
+          {
+            "name": "trello",
+            "href": "https://salto.okta.com/home/atlassian/0oagts92usgiZLb7G697/aln1jpnsouqYXujMj1d8",
+            "type": "text/html"
+          },
+          {
+            "name": "confluence",
+            "href": "https://salto.okta.com/home/atlassian/0oagts92usgiZLb7G697/aln1aqcs056BwpE4X0g8",
+            "type": "text/html"
+          },
+          {
+            "name": "bitbucket",
+            "href": "https://salto.okta.com/home/atlassian/0oagts92usgiZLb7G697/aln1jpnsours5UhWQ1d8",
+            "type": "text/html"
+          },
+          {
+            "name": "jira_service_management",
+            "href": "https://salto.okta.com/home/atlassian/0oagts92usgiZLb7G697/aln1l5irrjz5FXPzX1d8",
+            "type": "text/html"
+          }
+        ],
+        "profileEnrollment": {
+          "href": "https://salto.okta.com/api/v1/policies/rstcplkwbm7wdUOtF697"
+        },
+        "policies": {
+          "href": "https://salto.okta.com/api/v1/apps/0oagts92usgiZLb7G697/policies",
+          "hints": {
+            "allow": ["PUT"]
+          }
+        },
+        "groups": {
+          "href": "https://salto.okta.com/api/v1/apps/0oagts92usgiZLb7G697/groups"
+        },
+        "logo": [
+          {
+            "name": "medium",
+            "href": "https://ok14static.oktacdn.com/fs/bcg/4/gfs1ietmawsQ6CJ0S1d8",
+            "type": "image/png"
+          }
+        ],
+        "accessPolicy": {
+          "href": "https://salto.okta.com/api/v1/policies/rstcplkwayPphSuge697"
+        },
+        "users": {
+          "href": "https://salto.okta.com/api/v1/apps/0oagts92usgiZLb7G697/users"
+        },
+        "deactivate": {
+          "href": "https://salto.okta.com/api/v1/apps/0oagts92usgiZLb7G697/lifecycle/deactivate"
+        }
+      }
+    },
+    "body": {
+      "label": "app1",
+      "status": "ACTIVE"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "49",
+      "x-rate-limit-reset": "1721205214"
+    }
+  },
+  {
+    "scope": "",
+    "path": "/api/v1/apps/app-fakeid1/policies/enrollmentpolicy-fakeid1",
+    "method": "PUT",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "48",
+      "x-rate-limit-reset": "1721205214"
+    }
+  },
+  {
+    "scope": "",
+    "path": "/api/v1/apps/app-fakeid1/policies/accesspolicy-fakeid1",
+    "method": "PUT",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "47",
+      "x-rate-limit-reset": "1721205214"
+    }
+  }
+]

@@ -94,7 +94,6 @@ describe('adapter', () => {
   let getElemIdFunc: ElemIdGetter
 
   const nullProgressReporter: ProgressReporter = {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     reportProgress: () => {},
   }
 
@@ -280,9 +279,7 @@ describe('adapter', () => {
         })
       ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValue({ elements: [testInstance2] })
       ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({ elements: [testInstance] })
-      ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>)
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        .mockImplementation(() => {})
+      ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
       ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
         document: {},
         parser: {},
@@ -476,7 +473,6 @@ describe('adapter', () => {
           elements: [testInstance2],
           errors: [{ message: 'jsmError', severity: 'Error' }],
         })
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
@@ -589,7 +585,6 @@ describe('adapter', () => {
           elements: [testInstance2],
           errors: [{ message: 'jsmError', severity: 'Error' }],
         })
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
@@ -796,7 +791,6 @@ describe('adapter', () => {
           elements: [],
           errors: [{ message: 'jsmAssetsError', severity: 'Error' }],
         })
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
@@ -916,7 +910,6 @@ describe('adapter', () => {
           elements: [testInstance2],
           errors: [{ message: 'jsmError', severity: 'Error' }],
         })
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],

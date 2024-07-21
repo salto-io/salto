@@ -878,7 +878,6 @@ export const mockDefaultValues = {
       },
     },
     applicationVisibilities: {
-      // eslint-disable-next-line camelcase
       standard__ServiceConsole: {
         application: 'standard__ServiceConsole',
         default: false,

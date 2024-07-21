@@ -512,19 +512,35 @@ export const fromRetrieveResult = async (
 const builder = new XMLBuilder({
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
   ignoreAttributes: false,
+  format: true,
+  indentBy: '    ',
 })
 
+const SALESFORCE_XML_NAMESPACE_URL = 'http://soap.sforce.com/2006/04/metadata'
+
 const toMetadataXml = (name: string, values: Values): string =>
-  // eslint-disable-next-line new-cap
-  builder.build({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
+  builder.build({
+    '?xml': {
+      [`${XML_ATTRIBUTE_PREFIX}version`]: '1.0',
+      [`${XML_ATTRIBUTE_PREFIX}encoding`]: 'UTF-8',
+    },
+    [name]: _.merge(_.omit(values, INSTANCE_FULL_NAME_FIELD), {
+      [`${XML_ATTRIBUTE_PREFIX}xmlns`]: SALESFORCE_XML_NAMESPACE_URL,
+    }),
+  })
 
 const cloneValuesWithAttributePrefixes = async (
   instance: InstanceElement,
 ): Promise<Values> => {
   const allAttributesPaths = new Set<string>()
+  const trueValueAttributePaths: Set<string> = new Set<string>()
   const createPathsSetCallback: TransformFunc = ({ value, field, path }) => {
     if (path && field && field.annotations[IS_ATTRIBUTE]) {
-      allAttributesPaths.add(path.getFullName())
+      if (value === true || value === 'true') {
+        trueValueAttributePaths.add(path.getFullName())
+      } else {
+        allAttributesPaths.add(path.getFullName())
+      }
     }
     return value
   }
@@ -543,9 +559,13 @@ const cloneValuesWithAttributePrefixes = async (
     if (pathID && allAttributesPaths.has(pathID.getFullName())) {
       return XML_ATTRIBUTE_PREFIX + key
     }
+    // Special handling since the fast-xml-parser implementation will omit the value "true" for attributes
+    // As a workaround, we pass it as part of the key
+    if (pathID && trueValueAttributePaths.has(pathID.getFullName())) {
+      return `${XML_ATTRIBUTE_PREFIX}${key}="true"`
+    }
     return key
   }
-
   return mapKeysRecursive(
     instance.value,
     addAttributePrefixFunc,

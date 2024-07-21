@@ -170,12 +170,14 @@ export const generateType = <Options extends FetchApiDefinitionsOptions>(
   const { element: elementDef } = defQuery.query(typeName) ?? {}
   if (elementDef === undefined) {
     log.debug('could not find any element definitions for type %s', typeName)
-  }
-  if (elementDef?.topLevel?.custom !== undefined) {
-    log.info('found custom override for type %s:%s, using it to generate types', adapterName, typeName)
-    const { types } = elementDef?.topLevel?.custom(elementDef)(args)
-    const [type, nestedTypes] = _.partition(types, t => t.elemID.typeName === typeName)
-    return { type: type[0], nestedTypes }
+  } else {
+    const custom = elementDef.topLevel?.custom
+    if (custom !== undefined) {
+      log.info('found custom override for type %s:%s, using it to generate types', adapterName, typeName)
+      const { types } = custom(elementDef)(args)
+      const [type, nestedTypes] = _.partition(types, t => t.elemID.typeName === typeName)
+      return { type: type[0], nestedTypes }
+    }
   }
 
   const predefinedType = definedTypes?.[typeName]

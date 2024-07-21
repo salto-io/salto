@@ -60,7 +60,6 @@ describe('template static file', () => {
       new ReferenceExpression(article.elemID),
       '/hc/test/test/articles/',
       new ReferenceExpression(article.elemID),
-      // eslint-disable-next-line no-template-curly-in-string
       '/test hc/test/test/articles/',
       new ReferenceExpression(macro1.elemID),
       '/test',
@@ -72,7 +71,6 @@ describe('template static file', () => {
     parts: [
       '/hc/test/test/articles/',
       new ReferenceExpression(article.elemID),
-      // eslint-disable-next-line no-template-curly-in-string
       'He ${said, "Hello, World!"\tThis is a backslash: \\ 😄',
       new ReferenceExpression(macro1.elemID),
       '/test',
@@ -105,7 +103,6 @@ describe('template static file', () => {
       new ReferenceExpression(article.elemID),
       '/hc/test/test/articles/',
       new ReferenceExpression(article.elemID),
-      // eslint-disable-next-line no-template-curly-in-string
       '\n/test hc/test/test/articles/',
       new ReferenceExpression(macro1.elemID),
       '/test',
@@ -117,7 +114,6 @@ describe('template static file', () => {
     parts: [
       '/hc/test/test/articles/',
       new ReferenceExpression(article.elemID),
-      // eslint-disable-next-line no-template-curly-in-string
       "\nHe ${said, ''' \"Hello, World!\"\tThis is a backslash: \\ 😄",
       new ReferenceExpression(macro1.elemID),
       '/test',

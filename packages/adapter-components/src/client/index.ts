@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 export { AdapterClientBase } from './base'
-export { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from './constants'
+export {
+  DEFAULT_RETRY_OPTS,
+  DEFAULT_TIMEOUT_OPTS,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+  RATE_LIMIT_USE_BOTTLENECK,
+} from './constants'
 export { logDecorator, requiresLogin } from './decorators'
 export {
   AdapterHTTPClient,
@@ -59,6 +65,7 @@ export {
   Paginator,
 } from './pagination/common'
 export { getAllPagesWithOffsetAndTotal } from './pagination/pagination_async'
-export { createRateLimitersFromConfig, throttle, BottleneckBuckets } from './rate_limit'
+export { createRateLimitersFromConfig, throttle, RateLimitBuckets } from './rate_limit'
+export { RateLimiter, RateLimiterCounters, RateLimiterOptions } from './rate_limiter'
 export { createClient } from './client_creator'
 export { executeWithPolling } from './polling'

@@ -65,7 +65,6 @@ const createFormulaFieldMatcher = (application: string): Matcher<SalesforceField
   const fieldOnlyMatcher = new RegExp(`\\('data\\.${application}\\.(?<block>\\w+)\\.(?<field>\\w+)'\\)`, 'g')
   // examples:
   //  - ('data.salesforce.aaa.get_custom_object(AccountId>id, sobject_name: Account).Name')
-  // eslint-disable-next-line max-len
   //  - ('data.salesforce.aaa.get_custom_object(AccountId>id, sobject_name: Account).get_custom_object(ParentId>id, sobject_name: User).Name')
   const customObjectFunctionUnnamedMatcher = '\\.get_custom_object\\([A-Za-z0-9_<>\\.]+\\, sobject_name\\: \\w+\\)'
   const customObjectFunctionNamedMatcher =

@@ -16,7 +16,6 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'intercom-adapter',
   displayName: 'intercom-adapter',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],

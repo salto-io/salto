@@ -1,7 +1,7 @@
 [
   {
-    "scope": "",
     "path": "/api/v1/brands/brand-fakeid1/themes",
+    "scope": "",
     "method": "GET",
     "status": 200,
     "response": [
@@ -66,8 +66,8 @@
     }
   },
   {
-    "scope": "",
     "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1",
+    "scope": "",
     "method": "PUT",
     "status": 200,
     "response": {

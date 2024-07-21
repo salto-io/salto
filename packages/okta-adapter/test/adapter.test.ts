@@ -1338,6 +1338,37 @@ describe('adapter', () => {
         )
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+
+      it('should successfully modify a brand theme', async () => {
+        loadMockReplies('brand_theme_modify.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const updatedBrandTheme = brandTheme.clone()
+        updatedBrandTheme.value.primaryColorHex = '#ff0000'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme, after: updatedBrandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.primaryColorHex).toEqual(
+          '#ff0000',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
   })
 })

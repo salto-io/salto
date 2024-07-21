@@ -1,0 +1,69 @@
+[
+  {
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "brantheme-fakeid1",
+      "logo": "https://ok14static.oktacdn.com/assets/img/logos/okta-logo.1e146cad5713da744492be95eb0f7793.png",
+      "favicon": "https://salto.okta.com/favicon.ico",
+      "backgroundImage": null,
+      "primaryColorHex": "#ff0000",
+      "primaryColorContrastHex": "#ffffff",
+      "secondaryColorHex": "#ebebed",
+      "secondaryColorContrastHex": "#000000",
+      "signInPageTouchPointVariant": "BACKGROUND_IMAGE",
+      "endUserDashboardTouchPointVariant": "FULL_THEME",
+      "errorPageTouchPointVariant": "BACKGROUND_IMAGE",
+      "emailTemplateTouchPointVariant": "FULL_THEME",
+      "loadingPageTouchPointVariant": "NONE",
+      "_links": {
+        "favicon": {
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brantheme-fakeid1/favicon",
+          "hints": {
+            "allow": [
+              "POST",
+              "DELETE"
+            ]
+          }
+        },
+        "self": {
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brantheme-fakeid1",
+          "hints": {
+            "allow": [
+              "GET",
+              "PUT"
+            ]
+          }
+        },
+        "logo": {
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brantheme-fakeid1/logo",
+          "hints": {
+            "allow": [
+              "POST",
+              "DELETE"
+            ]
+          }
+        },
+        "background-image": {
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brantheme-fakeid1/background-image",
+          "hints": {
+            "allow": [
+              "POST",
+              "DELETE"
+            ]
+          }
+        }
+      }
+    },
+    "body": {
+      "primaryColorHex": "#ff0000"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1721541876"
+    }
+  }
+]

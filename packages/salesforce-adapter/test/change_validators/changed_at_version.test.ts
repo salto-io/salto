@@ -16,27 +16,22 @@
 
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { createInstanceElement } from '../../src/transformers/transformer'
 import changeValidator from '../../src/change_validators/changed_at_version'
 import {
-  ArtificialTypes,
   CHANGED_AT_SINGLETON,
   CHANGED_AT_SINGLETON_VERSION_FIELD,
   CHANGED_AT_VERSION,
   SALESFORCE,
 } from '../../src/constants'
+import { mockInstances } from '../mock_elements'
 
 describe('Changed at version validator', () => {
   const mockElementsSource = (
     changedAtVersion: number,
   ): ReadOnlyElementsSource => {
-    const changedAtSingleton = createInstanceElement(
-      {
-        fullName: 'whatever',
-        [CHANGED_AT_SINGLETON_VERSION_FIELD]: changedAtVersion,
-      },
-      ArtificialTypes[CHANGED_AT_SINGLETON],
-    )
+    const changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
+    changedAtSingleton.value[CHANGED_AT_SINGLETON_VERSION_FIELD] =
+      changedAtVersion
     return buildElementsSourceFromElements([changedAtSingleton])
   }
 

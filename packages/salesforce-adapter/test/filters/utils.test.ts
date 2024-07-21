@@ -63,7 +63,7 @@ import {
   toCustomField,
   toCustomProperties,
   isCustomMetadataRecordTypeSync,
-  changedAtOutdated,
+  isChangedAtSingletonOutdated,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -516,7 +516,7 @@ describe('filter utils', () => {
       })
     })
   })
-  describe('changedAtOutdated', () => {
+  describe('isChangedAtSingletonOutdated', () => {
     let elementsSource: ReadOnlyElementsSource
 
     describe('when the changed at version is up to date', () => {
@@ -528,7 +528,7 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([changedAtSingleton])
       })
       it('should return false', async () => {
-        expect(await changedAtOutdated(elementsSource)).toBeFalse()
+        expect(await isChangedAtSingletonOutdated(elementsSource)).toBeFalse()
       })
     })
 
@@ -541,7 +541,21 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([changedAtSingleton])
       })
       it('should return true', async () => {
-        expect(await changedAtOutdated(elementsSource)).toBeTrue()
+        expect(await isChangedAtSingletonOutdated(elementsSource)).toBeTrue()
+      })
+    })
+
+    describe('when the changed at version is missing', () => {
+      let changedAtSingleton: InstanceElement
+      beforeEach(() => {
+        changedAtSingleton = mockInstances().ChangedAtSingleton
+        changedAtSingleton.value[CHANGED_AT_SINGLETON_VERSION_FIELD] = undefined
+        elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+      })
+      it('should return false', async () => {
+        // This is only the case so long as CHANGED_AT_VERSION is 0.
+        // Once we bump we should expect this to fail.
+        expect(await isChangedAtSingletonOutdated(elementsSource)).toBeFalse()
       })
     })
 
@@ -552,7 +566,7 @@ describe('filter utils', () => {
       it('should return false', async () => {
         // This is only the case so long as CHANGED_AT_VERSION is 0.
         // Once we bump we should expect this to fail.
-        expect(await changedAtOutdated(elementsSource)).toBeFalse()
+        expect(await isChangedAtSingletonOutdated(elementsSource)).toBeFalse()
       })
     })
   })

@@ -878,7 +878,7 @@ export const getChangedAtSingletonInstance = async (
   return isInstanceElement(element) ? element : undefined
 }
 
-export const changedAtOutdated = async (
+export const isChangedAtSingletonOutdated = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<boolean> => {
   const changedAtSingleton = await getChangedAtSingletonInstance(elementsSource)

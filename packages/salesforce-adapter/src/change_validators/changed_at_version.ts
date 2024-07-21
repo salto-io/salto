@@ -16,7 +16,7 @@
 
 import { logger } from '@salto-io/logging'
 import { ChangeValidator, ElemID } from '@salto-io/adapter-api'
-import { changedAtOutdated } from '../filters/utils'
+import { isChangedAtSingletonOutdated } from '../filters/utils'
 import { SALESFORCE } from '../constants'
 
 const log = logger(module)
@@ -27,7 +27,7 @@ const changeValidator: ChangeValidator = async (_changes, elementsSource) => {
     return []
   }
 
-  if (await changedAtOutdated(elementsSource)) {
+  if (await isChangedAtSingletonOutdated(elementsSource)) {
     return [
       {
         elemID: new ElemID(SALESFORCE),

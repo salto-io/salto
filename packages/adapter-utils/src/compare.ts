@@ -339,8 +339,8 @@ export const detailedCompare = (
   return elementChanges.concat(fieldChanges)
 }
 
-export const getDetailedChanges = <T extends Change<Element>>(
-  change: T,
+export const getDetailedChanges = (
+  change: Change<Element>,
   compareOptions?: CompareOptions,
 ): DetailedChangeWithBaseChange[] => {
   if (change.action !== 'modify') {

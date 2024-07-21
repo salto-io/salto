@@ -19,9 +19,7 @@ import { getParents, inspectValue } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
-import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployChange } from '../deployment'
 
 const log = logger(module)
 
@@ -41,10 +39,9 @@ const getThemeIdByBrand = async (
   throw new Error('Could not find BrandTheme with the provided brandId')
 }
 
-const deployBrandThemeAddition = async (
+const AddIdToBrandTheme = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-  apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const instance = getChangeData(change)
   const brandId = getParents(instance)[0]?.id
@@ -56,35 +53,26 @@ const deployBrandThemeAddition = async (
   const themeId = await getThemeIdByBrand(brandId, client)
   // Assign the existing id to the added brand theme
   instance.value.id = themeId
-  await defaultDeployChange(change, client, apiDefinitions)
 }
 
 /**
- * Deploy addition changes of BrandTheme instances, by finding the ID of the existing theme and updating it.
+ * Find and set the ID for an existing theme, to allow the deploy to succeed.
+ *
+ * The actual deploy of the BrandTheme is done by the standard deploy mechanism,
+ * this filter only adds the ID.
  */
-const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
+const filterCreator: FilterCreator = ({ definitions }) => ({
   name: 'brandThemeAdditionFilter',
   deploy: async changes => {
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change =>
-        isInstanceChange(change) &&
-        isAdditionChange(change) &&
-        getChangeData(change).elemID.typeName === BRAND_THEME_TYPE_NAME,
+    await Promise.all(
+      changes
+        .filter(isInstanceChange)
+        .filter(isAdditionChange)
+        .filter(change => getChangeData(change).elemID.typeName === BRAND_THEME_TYPE_NAME)
+        .map(change => AddIdToBrandTheme(change, definitions.clients.options.main.httpClient)),
     )
 
-    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployBrandThemeAddition(
-        change,
-        definitions.clients.options.main.httpClient,
-        oldApiDefinitions[API_DEFINITIONS_CONFIG],
-      ),
-    )
-
-    return {
-      leftoverChanges,
-      deployResult,
-    }
+    return { leftoverChanges: changes, deployResult: { errors: [], appliedChanges: [] } }
   },
 })
 

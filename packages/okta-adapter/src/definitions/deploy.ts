@@ -41,6 +41,7 @@ import {
   USERTYPE_TYPE_NAME,
   NAME_FIELD,
   ID_FIELD,
+  BRAND_THEME_TYPE_NAME,
 } from '../constants'
 import {
   getSubdomainFromElementsSource,
@@ -100,6 +101,62 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    [BRAND_THEME_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              omit: [ID_FIELD, LINKS_FIELD],
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/themes/{id}',
+                  method: 'put',
+                },
+                context: {
+                  brandId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/themes/{id}',
+                  method: 'put',
+                },
+                context: {
+                  brandId: '{_parent.0.id}',
+                },
+                transformation: {
+                  omit: [ID_FIELD, LINKS_FIELD, 'logo', 'favicon'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  // BrandThemes are removed automatically by Okta when the Brand is removed.
+                  // We use an empty URL here to mark this action as supported in case a user removed the theme
+                  // alongside its Brand.
+                  // A separate Change Validator ensures that mappings aren't removed by themselves.
+                  path: '/',
+                  method: 'get',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
     [APPLICATION_TYPE_NAME]: {
       requestsByAction: {
         default: {

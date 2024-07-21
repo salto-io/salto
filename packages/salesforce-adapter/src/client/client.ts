@@ -69,6 +69,7 @@ import {
 import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
+import { getFullName } from '../filters/utils'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -658,9 +659,7 @@ interface ISalesforceClient {
   countInstances(typeName: string): Promise<number>
   listMetadataTypes(): Promise<MetadataObject[]>
   describeMetadataType(type: string): Promise<DescribeValueTypeResult>
-  listMetadataObjects(
-    queries: ListMetadataQuery[],
-  ): Promise<
+  listMetadataObjects(queries: ListMetadataQuery[]): Promise<
     SendChunkedResult<ListMetadataQuery, FileProperties> & {
       isPartial?: boolean
     }
@@ -711,8 +710,17 @@ export default class SalesforceClient implements ISalesforceClient {
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
+  readonly listedInstancesByType: collections.map.DefaultMap<
+    string,
+    Set<string>
+  >
+
   private readonly listMetadataObjectsOfTypePromises: Record<
     string,
+    ReturnType<ISalesforceClient['listMetadataObjects']>
+  >
+
+  private readonly fullListPromises: Set<
     ReturnType<ISalesforceClient['listMetadataObjects']>
   >
 
@@ -761,6 +769,8 @@ export default class SalesforceClient implements ISalesforceClient {
       config?.readMetadataChunkSize,
     )
     this.listMetadataObjectsOfTypePromises = {}
+    this.fullListPromises = new Set()
+    this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
   }
 
   public setCustomListFuncByType(
@@ -834,8 +844,8 @@ export default class SalesforceClient implements ISalesforceClient {
   private async sendChunkedList(
     input: ListMetadataQuery[],
     isUnhandledError: ErrorFilter,
-  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
-    return sendChunked({
+  ): ReturnType<ISalesforceClient['listMetadataObjects']> {
+    const sendChunkedResult = await sendChunked({
       operationInfo: 'listMetadataObjects',
       input,
       sendChunk: (chunk) =>
@@ -843,6 +853,14 @@ export default class SalesforceClient implements ISalesforceClient {
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
     })
+    if (sendChunkedResult.errors.length === 0) {
+      sendChunkedResult.result.forEach((fileProps) => {
+        this.listedInstancesByType
+          .get(fileProps.type)
+          .add(getFullName(fileProps))
+      })
+    }
+    return sendChunkedResult
   }
 
   private async listMetadataObjectsOfType(
@@ -858,7 +876,13 @@ export default class SalesforceClient implements ISalesforceClient {
       ? customListFunc(this)
       : this.sendChunkedList([{ type }], isUnhandledError)
     this.listMetadataObjectsOfTypePromises[type] = request
-    return request
+    const listResult = await request
+    if (listResult.isPartial) {
+      this.fullListPromises.add(
+        this.sendChunkedList([{ type }], isUnhandledError),
+      )
+    }
+    return listResult
   }
 
   @mapToUserFriendlyErrorMessages
@@ -1274,5 +1298,10 @@ export default class SalesforceClient implements ISalesforceClient {
   @requiresLogin()
   public async request(url: string): Promise<unknown> {
     return this.conn.request(url)
+  }
+
+  @logDecorator()
+  public async finalize(): Promise<void> {
+    await Promise.all(Array.from(this.fullListPromises))
   }
 }

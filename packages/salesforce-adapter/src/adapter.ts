@@ -139,7 +139,6 @@ import {
   apiNameSync,
   buildDataRecordsSoqlQueries,
   getFLSProfiles,
-  getFullName,
   instanceInternalId,
   isCustomObjectSync,
   isCustomType,
@@ -429,7 +428,6 @@ export default class SalesforceAdapter implements AdapterOperations {
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private elementsSource: ReadOnlyElementsSource
-  private listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
   private fixElementsFunc: FixElementsFunc
 
   public constructor({
@@ -493,36 +491,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataTypesOfInstancesFetchedInFilters =
       metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
-    this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
-    this.client = new Proxy(client, {
-      get: (target, propertyKey) => {
-        if (propertyKey === 'listMetadataObjects') {
-          // This proxy populates the listedInstancesByType
-          // which is later used to detect deleted elements in partial fetch
-          const proxyListMetadataObjects: SalesforceClient['listMetadataObjects'] =
-            (...args) =>
-              target
-                .listMetadataObjects(...args)
-                .then((listMetadataObjectsResult) => {
-                  // If the result is partial, we don't want to use it to populate the listedInstancesByType
-                  if (!listMetadataObjectsResult.isPartial) {
-                    _(listMetadataObjectsResult.result)
-                      .groupBy(({ type }) => type)
-                      .forEach((props, typeName) => {
-                        const listedInstances =
-                          this.listedInstancesByType.get(typeName)
-                        props.forEach((prop) =>
-                          listedInstances.add(getFullName(prop)),
-                        )
-                      })
-                  }
-                  return listMetadataObjectsResult
-                })
-          return proxyListMetadataObjects
-        }
-        return target[propertyKey as keyof SalesforceClient]
-      },
-    })
+    this.client = client
     this.elementsSource = elementsSource
     this.createFiltersRunner = ({
       fetchProfile,
@@ -556,7 +525,12 @@ export default class SalesforceAdapter implements AdapterOperations {
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
     await listMetadataObjects(this.client, CUSTOM_FIELD)
-    const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
+    const listedFields = this.client.listedInstancesByType.getOrUndefined(
+      constants.CUSTOM_FIELD,
+    )
+    if (listedFields === undefined) {
+      return new Set()
+    }
     const fieldsFromElementsSource = await awu(
       await this.elementsSource.getAll(),
     )
@@ -703,6 +677,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       )
     }
     metadataQuery.logData()
+    await this.client.finalize()
     return {
       elements,
       errors: onFetchFilterResult.errors ?? [],
@@ -1004,7 +979,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           return
         }
         const listedInstancesFullNames =
-          this.listedInstancesByType.getOrUndefined(typeName)
+          this.client.listedInstancesByType.getOrUndefined(typeName)
         if (listedInstancesFullNames === undefined) {
           log.warn(
             'Skipping deletion detections for type %s since the type was not listed',

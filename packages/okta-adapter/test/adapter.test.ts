@@ -1369,6 +1369,35 @@ describe('adapter', () => {
         )
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+
+      it('should successfully remove a brand theme', async () => {
+        loadMockReplies('brand_theme_remove.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        // In production, a BrandTheme can only be removed alongside its parent Brand (this is enforced by a change
+        // validator). CVs don't run in this test though, so we only run the change group for the BrandTheme removal
+        // and the mock HTTP response will behave as if the Brand was removed as well.
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
   })
 })

@@ -41,18 +41,3 @@ export const RATE_LIMIT_DEFAULT_USE_BOTTLENECK = true
 export const RATE_LIMIT_DEFAULT_SHOULD_RETRY = (): boolean => false
 export const RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY = (): number => 0
 export const RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY = false
-
-
-  maxConcurrentCalls: validateNumber(Infinity, options.maxConcurrentCalls),
-  maxCallsPerInterval,
-  intervalLengthMS,
-  carryRunningCallsOver: options.carryRunningCallsOver ?? true,
-  delayMS: validateNumber(0, delayMS),
-  startPaused: options.startPaused ?? false,
-  useBottleneck: options.useBottleneck !== undefined ? options.useBottleneck : RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
-  retryPredicate: options.retryPredicate ?? RATE_LIMIT_DEFAULT_SHOULD_RETRY,
-  calculateRetryDelay: options.calculateRetryDelay ?? RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
-  pauseDuringRetryDelay:
-    options.pauseDuringRetryDelay !== undefined
-      ? options.pauseDuringRetryDelay
-      : RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,

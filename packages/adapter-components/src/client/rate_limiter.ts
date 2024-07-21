@@ -151,7 +151,7 @@ export class RateLimiter {
       carryRunningCallsOver: options.carryRunningCallsOver ?? true,
       delayMS: toValidNumber(RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS, options.delayMS),
       startPaused: options.startPaused ?? false,
-      useBottleneck: options.useBottleneck ?? RATE_LIMIT_DEFAULT_USE_BOTTLENECK,,
+      useBottleneck: options.useBottleneck ?? RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
       retryPredicate: options.retryPredicate ?? RATE_LIMIT_DEFAULT_SHOULD_RETRY,
       calculateRetryDelay: options.calculateRetryDelay ?? RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
       pauseDuringRetryDelay:

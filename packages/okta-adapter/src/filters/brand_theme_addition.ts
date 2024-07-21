@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  InstanceElement,
+  isInstanceChange,
+  getChangeData,
+  isAdditionChange,
+  SaltoElementError,
+  isSaltoElementError,
+  isSaltoError,
+  createSaltoElementErrorFromError,
+  createSaltoElementError,
+  SaltoError,
+} from '@salto-io/adapter-api'
 import { getParents, inspectValue } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -42,17 +54,30 @@ const getThemeIdByBrand = async (
 const AddIdToBrandTheme = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-): Promise<void> => {
+): Promise<undefined | SaltoError> => {
   const instance = getChangeData(change)
   const brandId = getParents(instance)[0]?.id
   if (!_.isString(brandId)) {
     // Parent reference is already resolved
     log.error(`Failed to deploy BrandTheme with brandId: ${brandId}`)
-    throw new Error('BrandTheme must have valid brandId')
+    return createSaltoElementError({
+      message: 'BrandTheme must have valid brandId',
+      severity: 'Error',
+      elemID: instance.elemID,
+    })
   }
-  const themeId = await getThemeIdByBrand(brandId, client)
-  // Assign the existing id to the added brand theme
-  instance.value.id = themeId
+  try {
+    const themeId = await getThemeIdByBrand(brandId, client)
+    // Assign the existing id to the added brand theme
+    instance.value.id = themeId
+  } catch (error) {
+    return createSaltoElementErrorFromError({
+      error,
+      severity: 'Error',
+      elemID: instance.elemID,
+    })
+  }
+  return undefined
 }
 
 /**
@@ -64,15 +89,18 @@ const AddIdToBrandTheme = async (
 const filterCreator: FilterCreator = ({ definitions }) => ({
   name: 'brandThemeAdditionFilter',
   deploy: async changes => {
-    await Promise.all(
+    const results = await Promise.all(
       changes
         .filter(isInstanceChange)
         .filter(isAdditionChange)
         .filter(change => getChangeData(change).elemID.typeName === BRAND_THEME_TYPE_NAME)
         .map(change => AddIdToBrandTheme(change, definitions.clients.options.main.httpClient)),
     )
-
-    return { leftoverChanges: changes, deployResult: { errors: [], appliedChanges: [] } }
+    const errors: SaltoElementError[] = results.filter(isSaltoError).filter(isSaltoElementError)
+    const leftoverChanges = changes.filter(
+      change => !errors.map(error => error.elemID).includes(getChangeData(change).elemID),
+    )
+    return { leftoverChanges, deployResult: { errors, appliedChanges: [] } }
   },
 })
 

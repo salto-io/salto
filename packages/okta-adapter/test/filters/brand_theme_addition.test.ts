@@ -55,7 +55,7 @@ describe('brandThemeAdditionFilter', () => {
   })
 
   describe('deploy', () => {
-    it('should successfully deploy addition changes of brand theme', async () => {
+    it('should successfully add ID to an added brand theme', async () => {
       mockConnection.get.mockResolvedValue({
         status: 200,
         data: [
@@ -66,15 +66,10 @@ describe('brandThemeAdditionFilter', () => {
       })
       mockConnection.put.mockResolvedValue({ status: 200, data: {} })
       const result = await filter.deploy([toChange({ after: themeInstance })])
-      expect(result.deployResult.appliedChanges).toHaveLength(1)
+      expect(result.deployResult.appliedChanges).toHaveLength(0)
+      expect(result.deployResult.errors).toHaveLength(0)
       expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/brands/brandId123/themes', undefined)
-      expect(mockConnection.put).toHaveBeenCalledWith(
-        '/api/v1/brands/brandId123/themes/themeId456',
-        {
-          secondaryColorHex: '#abcdef',
-        },
-        undefined,
-      )
+      expect(themeInstance.value.id).toEqual('themeId456')
     })
     it('should throw an error when failing to get the theme id - no themes returned', async () => {
       mockConnection.get.mockResolvedValue({

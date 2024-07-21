@@ -97,8 +97,8 @@ const getProjectIssueLayoutsScreensName = async (
         .filter(issueTypeMappingsElement =>
           isRelevantMapping(
             issueTypeMappingsElement.issueTypeId,
-            relevantIssueTypeMappings.length,
-            projectIssueTypesFullName.length,
+            relevantIssueTypeMappings?.length ?? 0,
+            projectIssueTypesFullName?.length ?? 0,
           ),
         )
         .filter(issueTypeMappingsElement => isReferenceExpression(issueTypeMappingsElement.screenSchemeId))

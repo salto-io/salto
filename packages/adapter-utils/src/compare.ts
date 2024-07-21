@@ -358,7 +358,7 @@ const isOrderChange = (change: DetailedChange): boolean =>
  * in that item that was changed. In that case we would want to ignore the inner change
  * since the item change already contains it.
  */
-const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
+export const getIndependentChanges = (changes: DetailedChange[]): DetailedChange[] => {
   // For performance, avoiding the sort if no need to filter
   if (changes.every(change => !isOrderChange(change))) {
     return changes
@@ -377,7 +377,7 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
  * function in a single call
  */
 export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: DetailedChange[]): void => {
-  const changesToApply = filterChangesForApply(detailedChanges)
+  const changesToApply = getIndependentChanges(detailedChanges)
   const [potentialListItemChanges, otherChanges] = _.partition(changesToApply, change =>
     isIndexPathPart(change.id.name),
   )

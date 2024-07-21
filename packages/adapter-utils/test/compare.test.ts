@@ -31,7 +31,12 @@ import {
   Change,
   TypeReference,
 } from '@salto-io/adapter-api'
-import { detailedCompare, applyDetailedChanges, getRelevantNamesFromChange } from '../src/compare'
+import {
+  detailedCompare,
+  applyDetailedChanges,
+  getRelevantNamesFromChange,
+  getIndependentChanges,
+} from '../src/compare'
 
 describe('detailedCompare', () => {
   const hasChange = (changes: DetailedChange[], action: string, id: ElemID): boolean =>
@@ -885,6 +890,60 @@ describe('applyDetailedChanges', () => {
         expect(updatedObj.annotations.val1).toEqual(afterObj.annotations.val1)
       })
     })
+  })
+})
+
+describe('getIndependentChanges', () => {
+  const type = new ObjectType({ elemID: new ElemID('salto', 'obj') })
+  it('should return all changes when there are no order changes', () => {
+    const before = new InstanceElement('inst', type, { list: [{ num: 1 }, { num: 2 }, { num: 3 }] })
+    const after = new InstanceElement('inst', type, { list: [{ num: 2 }, { num: 3 }, { num: 4 }] })
+    const detailedChanges = detailedCompare(before, after, { compareListItems: true })
+    expect(detailedChanges).toHaveLength(4)
+    const filteredChanges = getIndependentChanges(detailedChanges)
+    expect(filteredChanges).toEqual(detailedChanges)
+  })
+  it('should return only changes that are not children of other changes', () => {
+    const before = new InstanceElement('inst', type, {
+      list: [{ num: 1, innerList: [1, 2] }, { num: 2 }, { num: 3, innerList: [1, 2] }],
+    })
+    const after = new InstanceElement('inst', type, {
+      list: [
+        { num: 1, innerList: [1, 2, 3] },
+        { num: 3, innerList: [1, 2, 3] },
+      ],
+    })
+    const detailedChanges = detailedCompare(before, after, { compareListItems: true })
+    expect(detailedChanges).toHaveLength(4)
+    expect(detailedChanges).toEqual([
+      expect.objectContaining({
+        action: 'add',
+        elemIDs: {
+          after: before.elemID.createNestedID('list', '0', 'innerList', '2'),
+        },
+      }),
+      expect.objectContaining({ action: 'remove', elemIDs: { before: before.elemID.createNestedID('list', '1') } }),
+      expect.objectContaining({
+        action: 'add',
+        elemIDs: {
+          after: before.elemID.createNestedID('list', '1', 'innerList', '2'),
+        },
+      }),
+      expect.objectContaining({
+        action: 'modify',
+        elemIDs: {
+          before: before.elemID.createNestedID('list', '2'),
+          after: before.elemID.createNestedID('list', '1'),
+        },
+      }),
+    ])
+    const filteredChanges = getIndependentChanges(detailedChanges)
+    expect(filteredChanges).toHaveLength(detailedChanges.length - 1)
+    expect(filteredChanges).toEqual(
+      detailedChanges.filter(
+        change => !change.elemIDs?.after?.isEqual(before.elemID.createNestedID('list', '1', 'innerList', '2')),
+      ),
+    )
   })
 })
 

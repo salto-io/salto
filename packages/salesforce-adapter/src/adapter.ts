@@ -504,15 +504,18 @@ export default class SalesforceAdapter implements AdapterOperations {
               target
                 .listMetadataObjects(...args)
                 .then((listMetadataObjectsResult) => {
-                  _(listMetadataObjectsResult.result)
-                    .groupBy(({ type }) => type)
-                    .forEach((props, typeName) => {
-                      const listedInstances =
-                        this.listedInstancesByType.get(typeName)
-                      props.forEach((prop) =>
-                        listedInstances.add(getFullName(prop)),
-                      )
-                    })
+                  // If the result is partial, we don't want to use it to populate the listedInstancesByType
+                  if (!listMetadataObjectsResult.isPartial) {
+                    _(listMetadataObjectsResult.result)
+                      .groupBy(({ type }) => type)
+                      .forEach((props, typeName) => {
+                        const listedInstances =
+                          this.listedInstancesByType.get(typeName)
+                        props.forEach((prop) =>
+                          listedInstances.add(getFullName(prop)),
+                        )
+                      })
+                  }
                   return listMetadataObjectsResult
                 })
           return proxyListMetadataObjects
@@ -581,10 +584,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.client.setCustomListFuncByType(
       withChangesDetection
         ? {
-          [APEX_CLASS_METADATA_TYPE]: await createListApexClassesFunc(
-            this.elementsSource,
-          ),
-        }
+            [APEX_CLASS_METADATA_TYPE]: await createListApexClassesFunc(
+              this.elementsSource,
+            ),
+          }
         : {},
     )
     const fetchParams = this.userConfig.fetch ?? {}

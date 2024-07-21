@@ -660,7 +660,11 @@ interface ISalesforceClient {
   describeMetadataType(type: string): Promise<DescribeValueTypeResult>
   listMetadataObjects(
     queries: ListMetadataQuery[],
-  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
+  ): Promise<
+    SendChunkedResult<ListMetadataQuery, FileProperties> & {
+      isPartial?: boolean
+    }
+  >
   getUrl(): Promise<URL | undefined>
   readMetadata(
     type: string,
@@ -690,10 +694,9 @@ interface ISalesforceClient {
   ): Promise<BatchResultInfo[]>
   request(url: string): Promise<unknown>
 }
-
 export type CustomListFunc = (
   client: ISalesforceClient,
-) => Promise<FileProperties[]>
+) => ReturnType<ISalesforceClient['listMetadataObjects']>
 
 export default class SalesforceClient implements ISalesforceClient {
   private readonly retryOptions: RequestRetryOptions
@@ -708,10 +711,9 @@ export default class SalesforceClient implements ISalesforceClient {
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
-  private readonly filePropsByType: Record<string, FileProperties[]>
   private readonly listMetadataObjectsOfTypePromises: Record<
     string,
-    Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
+    ReturnType<ISalesforceClient['listMetadataObjects']>
   >
 
   private customListFuncByType: Record<string, CustomListFunc>
@@ -758,7 +760,6 @@ export default class SalesforceClient implements ISalesforceClient {
       DEFAULT_READ_METADATA_CHUNK_SIZE,
       config?.readMetadataChunkSize,
     )
-    this.filePropsByType = {}
     this.listMetadataObjectsOfTypePromises = {}
   }
 
@@ -847,22 +848,17 @@ export default class SalesforceClient implements ISalesforceClient {
   private async listMetadataObjectsOfType(
     type: string,
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
-    const cached = this.filePropsByType[type]
-    if (cached !== undefined) {
-      return { result: cached, errors: [] }
+  ): ReturnType<ISalesforceClient['listMetadataObjects']> {
+    const existingRequest = this.listMetadataObjectsOfTypePromises[type]
+    if (existingRequest !== undefined) {
+      return existingRequest
     }
-    const ongoingRequest = this.listMetadataObjectsOfTypePromises[type]
-    if (ongoingRequest !== undefined) {
-      return ongoingRequest
-    }
-    const request = this.sendChunkedList([{ type }], isUnhandledError)
+    const customListFunc = this.customListFuncByType[type]
+    const request = customListFunc
+      ? customListFunc(this)
+      : this.sendChunkedList([{ type }], isUnhandledError)
     this.listMetadataObjectsOfTypePromises[type] = request
-    const sendChunkedListResult = await request
-    if (sendChunkedListResult.errors.length === 0) {
-      this.filePropsByType[type] = sendChunkedListResult.result
-    }
-    return sendChunkedListResult
+    return request
   }
 
   @mapToUserFriendlyErrorMessages
@@ -875,7 +871,7 @@ export default class SalesforceClient implements ISalesforceClient {
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
+  ): ReturnType<ISalesforceClient['listMetadataObjects']> {
     const queries = makeArray(listMetadataQuery)
     if (queries.some((query) => query.folder !== undefined)) {
       // We can't cache folder queries, so we just send them all at once
@@ -887,9 +883,13 @@ export default class SalesforceClient implements ISalesforceClient {
         this.listMetadataObjectsOfType(query.type, isUnhandledError),
       ),
     )
+    const isPartial = listResults.some(
+      (listResult) => listResult.isPartial === true,
+    )
     return {
       result: listResults.flatMap((listResult) => listResult.result),
       errors: listResults.flatMap((listResult) => listResult.errors),
+      ...(isPartial ? { isPartial: true } : {}),
     }
   }
 

@@ -13,22 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { FileProperties } from '@salto-io/jsforce'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { CustomListFunc } from './client'
+import { getChangedAtSingletonInstance } from '../filters/utils'
+import { APEX_CLASS_METADATA_TYPE } from '../constants'
 
 const { toArrayAsync } = collections.asynciterable
 const log = logger(module)
 
+const latestChangedInstanceOfType = async (
+  elementsSource: ReadOnlyElementsSource,
+  typeName: string,
+): Promise<string | undefined> => {
+  const singleton = await getChangedAtSingletonInstance(elementsSource)
+  if (!singleton) {
+    return undefined
+  }
+  const allChangedAtOfType = singleton.value[typeName]
+  if (!_.isPlainObject(allChangedAtOfType)) {
+    return undefined
+  }
+  return _.maxBy(
+    Object.values(allChangedAtOfType).filter(_.isString),
+    (dateTime) => new Date(dateTime).getTime(),
+  )
+}
+
 export const createListApexClassesFunc =
-  async (_elementsSource?: ReadOnlyElementsSource): Promise<CustomListFunc> =>
+  async (elementsSource?: ReadOnlyElementsSource): Promise<CustomListFunc> =>
   async (client) => {
     log.warn('Invoked custom listApexClasses')
-    const sinceDate = undefined
+    const sinceDate =
+      elementsSource &&
+      (await latestChangedInstanceOfType(
+        elementsSource,
+        APEX_CLASS_METADATA_TYPE,
+      ))
     const query =
-      'SELECT NamespacePrefix, Name, CreatedDate, CreatedBy.Name, LastModifiedDate, LastModifiedBy.Name FROM ApexClass'
+      'SELECT Id, NamespacePrefix, Name, CreatedDate, CreatedBy.Name, LastModifiedDate, LastModifiedBy.Name FROM ApexClass'
     const whereClause = sinceDate
       ? ` WHERE LastModifiedDate > ${sinceDate}`
       : ''
@@ -36,15 +62,17 @@ export const createListApexClassesFunc =
       await toArrayAsync(await client.queryAll(query.concat(whereClause)))
     ).flat()
     const props = result.map((record): FileProperties => {
-      const fullName = record.NamespacePrefix
-        ? `${record.NamespacePrefix}__${record.Name}`
+      const namespacePrefix =
+        record.namespacePrefix != null ? record.namespacePrefix : undefined
+      const fullName = namespacePrefix
+        ? `${namespacePrefix}__${record.Name}`
         : record.Name
       return {
         id: record.Id,
         fullName,
         fileName: `classes/${fullName}.cls`,
         type: 'ApexClass',
-        namespacePrefix: record.NamespacePrefix,
+        namespacePrefix,
         lastModifiedDate: record.LastModifiedDate,
         createdDate: record.CreatedDate,
         createdByName: record.CreatedBy.Name,
@@ -53,5 +81,5 @@ export const createListApexClassesFunc =
         createdById: '',
       }
     })
-    return props
+    return { result: props, errors: [], isPartial: true }
   }

@@ -21,6 +21,7 @@ import {
   ElemID,
   getChangeData,
   isAdditionChange,
+  isElement,
   isField,
   isIndexPathPart,
   isInstanceElement,
@@ -37,16 +38,12 @@ import {
   detailedCompare,
   FILTER_FUNC_NEXT_STEP,
   filterByID,
+  getDetailedChanges,
   resolvePath,
+  setPath,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import {
-  createAddChange,
-  createElementAddChange,
-  createRemoveChange,
-  projectChange,
-  projectElementOrValueToEnv,
-} from './projections'
+import { createAddChange, createRemoveChange, projectChange, projectElementOrValueToEnv } from './projections'
 import { DetailedAddition, wrapAdditions, wrapNestedValues } from '../addition_wrapper'
 import { NaclFilesSource, RoutingMode, toPathHint } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
@@ -212,7 +209,7 @@ const addToSource = async ({
               topLevelElement,
             )
         if (!values.isDefined(before)) {
-          return [createElementAddChange(wrappedElement)]
+          return getDetailedChanges(toChange({ after: wrappedElement }))
         }
         if (overrideTargetElements) {
           // we want to override, not merge - so we need to wrap each gid individually
@@ -596,16 +593,15 @@ const removeFromSource = async (
   return awu(Object.entries(groupedByTopLevel))
     .flatMap(async ([key, groupedIds]) => {
       const targetTopElement = await targetSource.get(ElemID.fromFullName(key))
-      if (targetTopElement === undefined) {
+      if (!isElement(targetTopElement)) {
         return []
       }
-      const removeChanges = groupedIds.map(id => createRemoveChange(resolvePath(targetTopElement, id), id))
-      if (removeChanges.find(change => change.id.isEqual(targetTopElement.elemID)) !== undefined) {
-        return removeChanges.map(change => ({ ...change, baseChange: toChange({ before: targetTopElement }) }))
+      if (groupedIds.find(id => id.getFullName() === key) !== undefined) {
+        return getDetailedChanges(toChange({ before: targetTopElement }))
       }
       const after = targetTopElement.clone()
-      applyDetailedChanges(after, removeChanges)
-      return removeChanges.map(change => ({ ...change, baseChange: toChange({ before: targetTopElement, after }) }))
+      groupedIds.map(id => setPath(after, id, undefined))
+      return detailedCompare(targetTopElement, after, { createFieldChanges: true })
     })
     .toArray()
 }

@@ -25,6 +25,7 @@ import {
   safeJsonStringify,
   resolvePath,
   applyDetailedChanges,
+  getDetailedChanges,
 } from '@salto-io/adapter-utils'
 import {
   CORE_ANNOTATIONS,
@@ -61,12 +62,7 @@ import {
 } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
-import {
-  createAddChange,
-  createElementAddChange,
-  createElementRemoveChange,
-  createRemoveChange,
-} from './nacl_files/multi_env/projections'
+import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
 import { splitElementByPath } from './path_index'
 
@@ -273,7 +269,7 @@ const getHiddenTypeChanges = async (
 ): Promise<DetailedChangeWithBaseChange[]> =>
   awu(changes)
     .filter(c => isHiddenChangeOnElement(c, false))
-    .map(async change => {
+    .flatMap(async change => {
       const elemId = change.id.createTopLevelParentID().parent
       const elem = await state.get(elemId)
       if (!isElement(elem)) {
@@ -283,11 +279,10 @@ const getHiddenTypeChanges = async (
           elemId.getFullName(),
           isChangeToHidden(change, false),
         )
-        return change
+        return [change]
       }
-      return isChangeToHidden(change, false) ? createElementRemoveChange(elem) : createElementAddChange(elem)
+      return getDetailedChanges(toChange(isChangeToHidden(change, false) ? { before: elem } : { after: elem }))
     })
-    .filter(values.isDefined)
     .toArray()
 
 const getInstanceTypeHiddenChanges = async (
@@ -316,11 +311,11 @@ const getInstanceTypeHiddenChanges = async (
     .flatMap(async elem => {
       if (isInstanceElement(elem)) {
         if (toHiddenElemIds.has(elem.refType.elemID.getFullName())) {
-          return [createElementRemoveChange(elem)]
+          return getDetailedChanges(toChange({ before: elem }))
         }
         if (fromHiddenElemIds.has(elem.refType.elemID.getFullName())) {
-          return (await splitElementByPath(elem, pathIndex)).map(fragment =>
-            createElementAddChange(fragment, fragment.path),
+          return (await splitElementByPath(elem, pathIndex)).flatMap(fragment =>
+            getDetailedChanges(toChange({ after: fragment })).map(change => ({ ...change, path: fragment.path })),
           )
         }
       }

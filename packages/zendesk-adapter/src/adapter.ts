@@ -535,7 +535,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     const typesToOmit = this.getNonSupportedTypesToOmit()
 
     this.adapterDefinitions = {
-      clients: createClientDefinitions({ main: this.client }),
+      // we can't add guide client at this point
+      clients: createClientDefinitions({ main: this.client, guide: this.client }),
       pagination: PAGINATION,
       fetch: definitions.mergeWithUserElemIDDefinitions({
         userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],

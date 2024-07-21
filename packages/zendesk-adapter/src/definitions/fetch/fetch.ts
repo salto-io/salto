@@ -1352,8 +1352,11 @@ const createCustomizations = (): Record<
       {
         endpoint: {
           path: '/api/v2/help_center/categories',
-          queryArgs: { include: 'translations', myCustomArgForBrandId: '{brandId}' },
+          queryArgs: { include: 'translations' },
           client: 'guide',
+          params: {
+            brand: { id: '{brandId}' },
+          },
         },
         transformation: { root: 'categories', adjust: transformGuideItem },
       },
@@ -1442,8 +1445,11 @@ const createCustomizations = (): Record<
       {
         endpoint: {
           path: '/api/v2/help_center/sections',
-          queryArgs: { include: 'translations', myCustomArgForBrandId: '{brandId}' },
+          queryArgs: { include: 'translations' },
           client: 'guide',
+          params: {
+            brand: { id: '{brandId}' },
+          },
         },
         transformation: { root: 'sections', adjust: transformGuideItem },
       },
@@ -1500,8 +1506,11 @@ const createCustomizations = (): Record<
         // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
         endpoint: {
           path: '/api/v2/help_center/categories/{parent.id}/articles',
-          queryArgs: { include: 'translations', sort_by: 'updated_at', myCustomArgForBrandId: '{parent.brand}' },
+          queryArgs: { include: 'translations', sort_by: 'updated_at' },
           client: 'guide',
+          params: {
+            brand: { id: '{parent.brand}' },
+          },
         },
         transformation: { root: 'articles', adjust: transformGuideItem },
         context: {
@@ -1569,8 +1578,10 @@ const createCustomizations = (): Record<
         // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
         endpoint: {
           path: '/api/v2/help_center/articles/{parent.id}/attachments',
-          queryArgs: { myCustomArgForBrandId: '{parent.brand}' },
           client: 'guide',
+          params: {
+            brand: { id: '{parent.brand}' },
+          },
         },
         transformation: { root: 'article_attachments', adjust: transformGuideItem },
       },
@@ -1685,8 +1696,10 @@ const createCustomizations = (): Record<
       {
         endpoint: {
           path: '/hc/api/internal/help_center_translations',
-          queryArgs: { myCustomArgForBrandId: '{brandId}' },
           client: 'guide',
+          params: {
+            brand: { id: '{brandId}' },
+          },
         },
         transformation: { root: '.', adjust: transformGuideItem },
       },
@@ -1727,8 +1740,10 @@ const createCustomizations = (): Record<
       {
         endpoint: {
           path: '/hc/api/internal/general_settings',
-          queryArgs: { myCustomArgForBrandId: '{brandId}' },
           client: 'guide',
+          params: {
+            brand: { id: '{brandId}' },
+          },
         },
         transformation: { root: '.', adjust: transformGuideItem },
       },

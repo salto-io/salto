@@ -31,7 +31,7 @@ export default class ZendeskGuideClient implements client.HTTPReadClientInterfac
   }
 
   private async runCommand(params: client.ClientDataParams, method: keyof client.HttpMethodToClientParams): returnType {
-    const brandId = params.queryParams?.myCustomArgForBrandId
+    const brandId = params.params?.brand?.id
     if (!_.isString(brandId)) {
       throw new Error(`${method} failed as brandId is not defined`)
     }
@@ -39,8 +39,7 @@ export default class ZendeskGuideClient implements client.HTTPReadClientInterfac
     if (this.clientList[brandId] === undefined) {
       return emptyRes
     }
-    const newParams = _.omit(params, 'queryParams.myCustomArgForBrandId')
-    return this.clientList[brandId][method](newParams)
+    return this.clientList[brandId][method](params)
   }
 
   async delete(params: client.ClientDataParams): returnType {

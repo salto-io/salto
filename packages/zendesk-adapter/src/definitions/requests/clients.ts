@@ -14,65 +14,75 @@
  * limitations under the License.
  */
 import { definitions } from '@salto-io/adapter-components'
-import _ from 'lodash'
 import { ClientOptions, PaginationOptions } from '../types'
 
 export const createClientDefinitions = (
   clients: Record<ClientOptions, definitions.RESTApiClientDefinition<PaginationOptions>['httpClient']>,
-): definitions.ApiDefinitions<{ clientOptions: ClientOptions; paginationOptions: PaginationOptions }>['clients'] => {
-  const endpoints = {
-    default: {
-      get: {
-        pagination: 'basic_cursor',
-        // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
-        readonly: true,
-      },
-      delete: {
-        omitBody: true,
+): definitions.ApiDefinitions<{ clientOptions: ClientOptions; paginationOptions: PaginationOptions }>['clients'] => ({
+  default: 'main',
+  options: {
+    main: {
+      httpClient: clients.main,
+      endpoints: {
+        default: {
+          get: {
+            pagination: 'basic_cursor',
+            // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
+            readonly: true,
+          },
+          delete: {
+            omitBody: true,
+          },
+        },
+        customizations: {
+          '/api/v2/organizations': { get: { pagination: 'links' } },
+          '/api/v2/groups': { get: { pagination: 'links' } },
+          '/api/v2/triggers': { get: { pagination: 'links' } },
+          '/api/v2/trigger_categories': { get: { pagination: 'links' } },
+          '/api/v2/automations': { get: { pagination: 'links' } },
+          '/api/v2/brands': { get: { pagination: 'links' } },
+          '/api/v2/recipient_addresses': { get: { pagination: 'links' } },
+          '/api/v2/views': { get: { pagination: 'links' } },
+          '/api/v2/macros': { get: { pagination: 'links', queryArgs: { access: 'shared' } } },
+          '/api/v2/ticket_fields': { get: { pagination: 'links' } },
+          '/api/v2/user_fields': { get: { pagination: 'links' } },
+          '/api/v2/organization_fields': { get: { pagination: 'links' } },
+          '/api/v2/apps/installations': { get: { pagination: 'links' } },
+          '/api/v2/apps/owned': { get: { pagination: 'links' } },
+          '/api/v2/oauth/clients': { get: { pagination: 'links' } },
+          '/api/v2/oauth/global_clients': { get: { pagination: 'links' } },
+          '/api/v2/resource_collections': { get: { pagination: 'settings' } },
+          '/api/v2/dynamic_content/items': { get: { pagination: 'links' } },
+          '/api/v2/webhooks': { get: { pagination: 'links' } },
+          '/api/v2/oauth/tokens': { get: { pagination: 'links' } },
+          '/api/v2/custom_objects': { get: { pagination: 'basic_cursor_with_args' } },
+          '/api/v2/custom_objects/{custom_object_key}/fields': { get: { pagination: 'links' } },
+          '/api/v2/guide/permission_groups': { get: { pagination: 'basic_cursor_with_args' } },
+          '/api/v2/help_center/user_segments': { get: { pagination: 'links' } },
+        },
       },
     },
-    customizations: {
-      '/api/v2/organizations': { get: { pagination: 'links' } },
-      '/api/v2/groups': { get: { pagination: 'links' } },
-      '/api/v2/triggers': { get: { pagination: 'links' } },
-      '/api/v2/trigger_categories': { get: { pagination: 'links' } },
-      '/api/v2/automations': { get: { pagination: 'links' } },
-      '/api/v2/brands': { get: { pagination: 'links' } },
-      '/api/v2/recipient_addresses': { get: { pagination: 'links' } },
-      '/api/v2/views': { get: { pagination: 'links' } },
-      '/api/v2/macros': { get: { pagination: 'links', queryArgs: { access: 'shared' } } },
-      '/api/v2/ticket_fields': { get: { pagination: 'links' } },
-      '/api/v2/user_fields': { get: { pagination: 'links' } },
-      '/api/v2/organization_fields': { get: { pagination: 'links' } },
-      '/api/v2/apps/installations': { get: { pagination: 'links' } },
-      '/api/v2/apps/owned': { get: { pagination: 'links' } },
-      '/api/v2/oauth/clients': { get: { pagination: 'links' } },
-      '/api/v2/oauth/global_clients': { get: { pagination: 'links' } },
-      '/api/v2/resource_collections': { get: { pagination: 'settings' } },
-      '/api/v2/dynamic_content/items': { get: { pagination: 'links' } },
-      '/api/v2/webhooks': { get: { pagination: 'links' } },
-      '/api/v2/oauth/tokens': { get: { pagination: 'links' } },
-      '/api/v2/custom_objects': { get: { pagination: 'basic_cursor_with_args' } },
-      '/api/v2/custom_objects/{custom_object_key}/fields': { get: { pagination: 'links' } },
-      '/api/v2/guide/permission_groups': { get: { pagination: 'basic_cursor_with_args' } },
-      '/api/v2/help_center/user_segments': { get: { pagination: 'links' } },
-      '/hc/api/internal/general_settings': { get: { pagination: 'links' } },
-      '/hc/api/internal/help_center_translations': { get: { pagination: 'links' } },
-      '/api/v2/help_center/categories': { get: { pagination: 'links' } },
-      '/api/v2/help_center/sections': { get: { pagination: 'links' } },
-      '/api/v2/help_center/articles/{article_id}/attachments': { get: { pagination: 'links' } },
+    guide: {
+      httpClient: clients.guide,
+      endpoints: {
+        default: {
+          get: {
+            pagination: 'basic_cursor',
+            // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
+            readonly: true,
+          },
+          delete: {
+            omitBody: true,
+          },
+        },
+        customizations: {
+          '/hc/api/internal/general_settings': { get: { pagination: 'links' } },
+          '/hc/api/internal/help_center_translations': { get: { pagination: 'links' } },
+          '/api/v2/help_center/categories': { get: { pagination: 'links' } },
+          '/api/v2/help_center/sections': { get: { pagination: 'links' } },
+          '/api/v2/help_center/articles/{article_id}/attachments': { get: { pagination: 'links' } },
+        },
+      },
     },
-  }
-  const defaultClients = {
-    default: 'main',
-    options: {},
-  }
-  Object.keys(clients).forEach(clientName => {
-    const client = {
-      httpClient: clients[clientName as ClientOptions],
-      endpoints,
-    }
-    _.set(defaultClients.options, clientName, client)
-  })
-  return defaultClients
-}
+  },
+})

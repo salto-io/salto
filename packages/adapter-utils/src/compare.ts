@@ -380,8 +380,8 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
 export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: DetailedChange[]): void => {
   if (detailedChanges.length === 1) {
     const change = detailedChanges[0]
-    if (isModificationChange(change) && change.id.isTopLevel()) {
-      element.replace(getChangeData(change))
+    if (change.id.isEqual(element.elemID) && isModificationChange(change)) {
+      element.assign(change.data.after)
       return
     }
   }

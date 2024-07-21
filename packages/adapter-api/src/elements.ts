@@ -120,11 +120,11 @@ export abstract class Element {
   abstract clone(annotations?: Values): Element
 
   /**
-   * Replace the content of the element with the content of other.
+   * Assign all element fields from other.
    * Needs to be overridden by each subclass as this is structure dependent.
-   * Note that the element ID is not replaced.
+   * Note that the element ID is not changed.
    */
-  replace(other: Element): void {
+  assign(other: Element): void {
     this.annotationRefTypes = other.annotationRefTypes
     this.annotations = other.annotations
     this.path = other.path
@@ -181,8 +181,8 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
     return new ListType(this.refInnerType.clone())
   }
 
-  replace(other: ListType): void {
-    super.replace(other)
+  assign(other: ListType): void {
+    super.assign(other)
     this.refInnerType = other.refInnerType
   }
 
@@ -243,8 +243,8 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     return new MapType(this.refInnerType.clone())
   }
 
-  replace(other: MapType): void {
-    super.replace(other)
+  assign(other: MapType): void {
+    super.assign(other)
     this.refInnerType = other.refInnerType
   }
 
@@ -320,8 +320,8 @@ export class Field extends Element {
     )
   }
 
-  replace(other: Field): void {
-    super.replace(other)
+  assign(other: Field): void {
+    super.assign(other)
     this.parent = other.parent
     this.name = other.name
     this.refType = other.refType
@@ -371,8 +371,8 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
     return res
   }
 
-  replace(other: PrimitiveType<Primitive>): void {
-    super.replace(other)
+  assign(other: PrimitiveType<Primitive>): void {
+    super.assign(other)
     this.primitive = other.primitive
   }
 }
@@ -498,8 +498,8 @@ export class ObjectType extends Element {
     return res
   }
 
-  replace(other: ObjectType): void {
-    super.replace(other)
+  assign(other: ObjectType): void {
+    super.assign(other)
     this.fields = other.fields
     this.metaType = other.metaType
     this.isSettings = other.isSettings
@@ -582,14 +582,14 @@ export class InstanceElement extends Element {
     )
   }
 
-  replace(other: InstanceElement): void {
+  assign(other: InstanceElement): void {
     if (!this.refType.elemID.isEqual(other.refType.elemID)) {
       throw Error(
         `Cannot replace instance with type ${this.refType.elemID} with instance with type ${this.refType.elemID}.`,
       )
     }
 
-    super.replace(other)
+    super.assign(other)
     this.value = other.value
   }
 }
@@ -611,8 +611,8 @@ export class Variable extends Element {
     return new Variable(this.elemID, cloneDeepWithoutRefs(this.value), this.path)
   }
 
-  replace(other: Variable): void {
-    super.replace(other)
+  assign(other: Variable): void {
+    super.assign(other)
     this.value = other.value
   }
 }

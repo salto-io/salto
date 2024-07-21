@@ -34,7 +34,6 @@ import {
 import {
   deployment,
   definitions as definitionsUtils,
-  filters,
   filterUtils,
   references,
   ChangeElementResolver,
@@ -50,8 +49,8 @@ import {
   applyFunctionToChangeData,
 } from '@salto-io/adapter-utils'
 import { Options } from '../definitions/types'
-import { UserConfig } from '../config'
 import { ADAPTER_NAME } from '../constants'
+import { customConvertError } from '../error_utils'
 
 const log = logger(module)
 
@@ -262,11 +261,9 @@ const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsO
  * The filter will deploy the top level change and then deploy the array field changes, which can be either additions or removals.
  */
 export const deployArrayFieldsFilterCreator =
-  ({
-    convertError = deployment.defaultConvertError,
-    ...arrayFieldDefinition
-  }: Pick<filters.FilterCreationArgs<Options, UserConfig>, 'convertError'> &
-    DeployArrayFieldFilterParams): filterUtils.AdapterFilterCreator<{}, filter.FilterResult, {}, Options> =>
+  (
+    arrayFieldDefinition: DeployArrayFieldFilterParams,
+  ): filterUtils.AdapterFilterCreator<{}, filter.FilterResult, {}, Options> =>
   ({ definitions, elementSource, sharedContext }) => ({
     name: 'deployArrayFieldsFilter',
     deploy: async (changes, changeGroup) => {
@@ -305,7 +302,7 @@ export const deployArrayFieldsFilterCreator =
         definitions: { deploy, ...otherDefs },
         changeGroup,
         elementSource,
-        convertError,
+        convertError: customConvertError,
         changeResolver: createChangeElementResolver<Change<InstanceElement>>({
           getLookUpName: references.generateLookupFunc(definitions.references?.rules ?? []),
         }),

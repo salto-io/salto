@@ -278,6 +278,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
         url,
         safeJsonStringify({
           url,
+          method: 'GET',
           status,
           responseType,
           response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,

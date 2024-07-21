@@ -43,11 +43,10 @@ import {
   UpsertResult,
 } from '@salto-io/jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { flatValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
-import {isDefined} from '@salto-io/lowerdash/dist/src/values';
 import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
@@ -709,8 +708,12 @@ export default class SalesforceClient implements ISalesforceClient {
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
-  // private readonly listTypePromises: Record<string, ReturnType<ISalesforceClient['listMetadataObjects']>>
   private readonly filePropsByType: Record<string, FileProperties[]>
+  private readonly listMetadataObjectsOfTypePromises: Record<
+    string,
+    Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
+  >
+
   private customListFuncByType: Record<string, CustomListFunc>
 
   constructor({ credentials, connection, config }: SalesforceClientOpts) {
@@ -756,6 +759,7 @@ export default class SalesforceClient implements ISalesforceClient {
       config?.readMetadataChunkSize,
     )
     this.filePropsByType = {}
+    this.listMetadataObjectsOfTypePromises = {}
   }
 
   public setCustomListFuncByType(
@@ -826,80 +830,67 @@ export default class SalesforceClient implements ISalesforceClient {
     return flatValues(describeResult)
   }
 
-  // @mapToUserFriendlyErrorMessages
-  // @throttle<ClientRateLimitConfig>({
-  //   bucketName: 'list',
-  //   keys: ['type', '0.type'],
-  // })
-  // // @logDecorator(['type', '0.type'])
-  // @requiresLogin()
+  private async sendChunkedList(
+    input: ListMetadataQuery[],
+    isUnhandledError: ErrorFilter,
+  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
+    return sendChunked({
+      operationInfo: 'listMetadataObjects',
+      input,
+      sendChunk: (chunk) =>
+        this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
+      chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
+      isUnhandledError,
+    })
+  }
+
+  private async listMetadataObjectsOfType(
+    type: string,
+    isUnhandledError: ErrorFilter = isSFDCUnhandledException,
+  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
+    const cached = this.filePropsByType[type]
+    if (cached !== undefined) {
+      return { result: cached, errors: [] }
+    }
+    const ongoingRequest = this.listMetadataObjectsOfTypePromises[type]
+    if (ongoingRequest !== undefined) {
+      return ongoingRequest
+    }
+    const request = this.sendChunkedList([{ type }], isUnhandledError)
+    this.listMetadataObjectsOfTypePromises[type] = request
+    const sendChunkedListResult = await request
+    if (sendChunkedListResult.errors.length === 0) {
+      this.filePropsByType[type] = sendChunkedListResult.result
+    }
+    return sendChunkedListResult
+  }
+
+  @mapToUserFriendlyErrorMessages
+  @throttle<ClientRateLimitConfig>({
+    bucketName: 'list',
+    keys: ['type', '0.type'],
+  })
+  @logDecorator(['type', '0.type'])
+  @requiresLogin()
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
   ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
-    await this.ensureLoggedIn()
-    if (makeArray(listMetadataQuery).some(q => q.type === 'ApexClass')) {
-      log.debug('listMetadataObjects for ApexClass at %o', new Error().stack)
+    const queries = makeArray(listMetadataQuery)
+    if (queries.some((query) => query.folder !== undefined)) {
+      // We can't cache folder queries, so we just send them all at once
+      return this.sendChunkedList(queries, isUnhandledError)
     }
-    const sendChunkedList = async (
-      input: typeof listMetadataQuery,
-    ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> =>
-      sendChunked({
-        operationInfo: 'listMetadataObjects',
-        input,
-        sendChunk: (chunk) =>
-          this.retryOnBadResponse(async () => {
-            const queriedTypes = _.uniq(chunk.map((query) => query.type))
-            const customListFunctions = _.pick(
-              this.customListFuncByType,
-              queriedTypes,
-            )
-            const nonCustomListQueries = chunk.filter(
-              (query) => !Object.keys(customListFunctions).includes(query.type),
-            )
-            return (
-              await Promise.all([
-                ...Object.values(customListFunctions).map((func) => func(this)),
-                this.conn.metadata.list(nonCustomListQueries),
-              ])
-            ).flat().filter(isDefined)
-          }),
-        chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
-        isUnhandledError,
-      })
 
-    // We do not cache if one of the queries is on Folder to avoid complexity by storing
-    // folder-level caches as this is only relevant for specific Metadata Types that are stored within Folders.
-    if (
-      makeArray(listMetadataQuery).some((query) => query.folder !== undefined)
-    ) {
-      return sendChunkedList(listMetadataQuery)
+    const listResults = await Promise.all(
+      queries.map((query) =>
+        this.listMetadataObjectsOfType(query.type, isUnhandledError),
+      ),
+    )
+    return {
+      result: listResults.flatMap((listResult) => listResult.result),
+      errors: listResults.flatMap((listResult) => listResult.errors),
     }
-    const [cachedQueries, nonCachedQueries] = _.partition(
-      makeArray(listMetadataQuery),
-      (query) => Object.keys(this.filePropsByType).includes(query.type),
-    )
-    const cachedProps = cachedQueries.flatMap((query) =>
-      makeArray(this.filePropsByType[query.type]),
-    )
-    if (nonCachedQueries.length === 0) {
-      log.debug(
-        'returning cached listMetadataObjects for %s',
-        safeJsonStringify(listMetadataQuery),
-      )
-      return { result: cachedProps, errors: [] }
-    }
-    const {result: nonCachedProps, errors} = await sendChunkedList(nonCachedQueries)
-    const nonCachedPropsByType = _.groupBy(
-      nonCachedProps,
-      (prop) => prop.type,
-    )
-    nonCachedQueries.forEach((query) => {
-      this.filePropsByType[query.type] = makeArray(
-        nonCachedPropsByType[query.type],
-      )
-    })
-    return { result: cachedProps.concat(nonCachedProps), errors }
   }
 
   @mapToUserFriendlyErrorMessages

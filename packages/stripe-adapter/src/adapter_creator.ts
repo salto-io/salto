@@ -13,82 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
-import _ from 'lodash'
-import StripeClient from './client/client'
-import StripeAdapter from './adapter'
-import { Credentials, accessTokenCredentialsType } from './auth'
-import {
-  configType,
-  StripeConfig,
-  CLIENT_CONFIG,
-  API_DEFINITIONS_CONFIG,
-  FETCH_CONFIG,
-  DEFAULT_CONFIG,
-  StripeApiConfig,
-} from './config'
+import { createAdapter, credentials, client } from '@salto-io/adapter-components'
+import { Credentials, credentialsType } from './auth'
+import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
+import { ADAPTER_NAME } from './constants'
+import { createClientDefinitions, createFetchDefinitions, pagination, Options, references } from './definitions'
 
-const log = logger(module)
-const { validateCredentials } = clientUtils
-const { validateClientConfig, mergeWithDefaultConfig } = definitions
-const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
+const { defaultCredentialsFromConfig } = credentials
+const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
 
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
-  token: config.value.token,
-})
-
-const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): StripeConfig => {
-  const apiDefinitions = mergeWithDefaultConfig(
-    DEFAULT_CONFIG.apiDefinitions,
-    config?.value.apiDefinitions,
-  ) as StripeApiConfig
-
-  const fetch = _.defaults({}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG])
-
-  validateClientConfig(CLIENT_CONFIG, config?.value?.client)
-  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
-  validateSwaggerFetchConfig(FETCH_CONFIG, fetch, apiDefinitions)
-
-  const adapterConfig: { [K in keyof Required<StripeConfig>]: StripeConfig[K] } = {
-    client: config?.value?.client,
-    fetch,
-    apiDefinitions,
-  }
-  Object.keys(config?.value ?? {})
-    .filter(k => !Object.keys(adapterConfig).includes(k))
-    .forEach(k => log.debug('Unknown config property was found: %s', k))
-  return adapterConfig
-}
-
-export const adapter: Adapter = {
-  operations: context => {
-    const config = adapterConfigFromConfig(context.config)
-    const credentials = credentialsFromConfig(context.credentials)
-    const adapterOperations = new StripeAdapter({
-      client: new StripeClient({
-        credentials,
-        config: config[CLIENT_CONFIG],
-      }),
-      config,
-    })
-
-    return {
-      deploy: adapterOperations.deploy.bind(adapterOperations),
-      fetch: async args => adapterOperations.fetch(args),
-      deployModifiers: adapterOperations.deployModifiers,
-    }
-  },
-  validateCredentials: async config =>
-    validateCredentials(credentialsFromConfig(config), {
-      createConnection,
-    }),
+export const adapter = createAdapter<Credentials, Options, UserConfig>({
+  adapterName: ADAPTER_NAME,
   authenticationMethods: {
     basic: {
-      credentialsType: accessTokenCredentialsType,
+      credentialsType,
     },
   },
-  configType,
-}
+  defaultConfig: DEFAULT_CONFIG,
+  definitionsCreator: ({ clients }) => ({
+    clients: createClientDefinitions(clients),
+    pagination,
+    fetch: createFetchDefinitions(),
+    references,
+    sources: {
+      openAPI: [
+        {
+          url: 'https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml',
+          toClient: 'main',
+        },
+      ],
+    },
+  }),
+  operationsCustomizations: {
+    connectionCreatorFromConfig: () => createConnection,
+    credentialsFromConfig: defaultCredentialsFromConfig,
+  },
+  initialClients: {
+    main: undefined,
+  },
+  clientDefaults: {
+    rateLimit: {
+      total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      get: 25,
+      deploy: 25,
+    },
+    maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+    retry: DEFAULT_RETRY_OPTS,
+  },
+})

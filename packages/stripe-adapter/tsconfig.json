@@ -4,13 +4,12 @@
     "outDir": "dist",
     "baseUrl": "."
   },
-  "include": ["src/**/*", "src/**/*.json", "index.ts", "e2e_test/jest_environment.ts"],
+  "include": ["src/**/*", "src/**/*.json", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },
     { "path": "../adapter-utils" },
     { "path": "../logging" },
-    { "path": "../lowerdash" },
-    { "path": "../e2e-credentials-store" }
+    { "path": "../lowerdash" }
   ]
 }

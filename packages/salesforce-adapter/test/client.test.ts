@@ -92,7 +92,7 @@ describe('salesforce client', () => {
           total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
           retrieve: 3,
           read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-          list: 1,
+          list: undefined,
         },
       },
     })
@@ -1504,26 +1504,30 @@ describe('salesforce client', () => {
     })
 
     it('should only request non cached queries', async () => {
-      const firstReplyResult = [
+      const customObjectResult = [
         mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
         mockFileProperties({ type: 'CustomObject', fullName: 'Case' }),
+      ]
+      const customFieldResult = [
         mockFileProperties({
           type: 'CustomField',
           fullName: 'Account.Field__c',
         }),
         mockFileProperties({ type: 'CustomField', fullName: 'Case.Field__c' }),
       ]
-      const secondReplyResult = [
-        mockFileProperties({ type: 'Role', fullName: 'CEO' }),
-      ]
+      const roleResult = [mockFileProperties({ type: 'Role', fullName: 'CEO' })]
       const dodoScope = nock('http://dodo22')
         .post(/.*/, /.*<listMetadata>.*/)
         .reply(200, {
-          'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } },
+          'a:Envelope': { 'a:Body': { a: { result: customObjectResult } } },
         })
         .post(/.*/, /.*<listMetadata>.*/)
         .reply(200, {
-          'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } },
+          'a:Envelope': { 'a:Body': { a: { result: customFieldResult } } },
+        })
+        .post(/.*/, /.*<listMetadata>.*/)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: roleResult } } },
         })
       const firstInput = [{ type: 'CustomObject' }, { type: 'CustomField' }]
       const secondInput = [...firstInput, { type: 'Role' }]
@@ -1531,8 +1535,35 @@ describe('salesforce client', () => {
         await client.listMetadataObjects(firstInput)
       const { result: secondResult } =
         await client.listMetadataObjects(secondInput)
-      expect(firstResult).toEqual(firstReplyResult)
-      expect(secondResult).toEqual(firstReplyResult.concat(secondReplyResult))
+      expect(firstResult).toIncludeSameMembers([
+        ...customObjectResult,
+        ...customFieldResult,
+      ])
+      expect(secondResult).toIncludeSameMembers([
+        ...customObjectResult,
+        ...customFieldResult,
+        ...roleResult,
+      ])
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+    it('should not send multiple requests on the same type when invoked concurrently', async () => {
+      const result = [
+        mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
+        mockFileProperties({ type: 'CustomObject', fullName: 'Case' }),
+      ]
+      const input = { type: 'CustomObject' }
+      // Make sure we only invoke listMetadata once
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*<listMetadata>.*/)
+        .delay(100)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result } } },
+        })
+      const [firstResult, secondResult] = await Promise.all([
+        client.listMetadataObjects(input),
+        client.listMetadataObjects(input),
+      ])
+      expect(firstResult).toEqual(secondResult)
       expect(dodoScope.isDone()).toBeTrue()
     })
   })

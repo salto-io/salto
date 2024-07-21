@@ -22,7 +22,12 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { ArtificialTypes, DATA_INSTANCES_CHANGED_AT_MAGIC } from '../constants'
+import {
+  ArtificialTypes,
+  CHANGED_AT_SINGLETON_VERSION_FIELD,
+  CHANGED_AT_VERSION,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
+} from '../constants'
 import {
   apiNameSync,
   getChangedAtSingletonInstance,
@@ -39,7 +44,9 @@ const createCurrentChangedAtSingletonValues = (
     | {},
   metadataInstancesByType: Record<string, MetadataInstanceElement[]>,
 ): Values => {
-  const instanceValues: Values = {}
+  const instanceValues: Values = {
+    [CHANGED_AT_SINGLETON_VERSION_FIELD]: CHANGED_AT_VERSION,
+  }
   Object.entries(metadataInstancesByType).forEach(
     ([metadataType, elements]) => {
       instanceValues[metadataType] = {}
@@ -57,7 +64,13 @@ const createCurrentChangedAtSingletonValues = (
 
 const createEmptyChangedAtSingletonInstance =
   async (): Promise<InstanceElement> =>
-    new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.ChangedAtSingleton)
+    new InstanceElement(
+      ElemID.CONFIG_NAME,
+      ArtificialTypes.ChangedAtSingleton,
+      {
+        [CHANGED_AT_SINGLETON_VERSION_FIELD]: CHANGED_AT_VERSION,
+      },
+    )
 
 const dateStringOfMostRecentlyChangedInstance = (
   instances: InstanceElement[],

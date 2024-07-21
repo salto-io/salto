@@ -63,9 +63,12 @@ import {
   toCustomField,
   toCustomProperties,
   isCustomMetadataRecordTypeSync,
+  changedAtOutdated,
 } from '../../src/filters/utils'
 import {
   API_NAME,
+  CHANGED_AT_SINGLETON_VERSION_FIELD,
+  CHANGED_AT_VERSION,
   COMPOUND_FIELD_TYPE_NAMES,
   CUSTOM_OBJECT,
   CUSTOM_SETTINGS_TYPE,
@@ -510,6 +513,46 @@ describe('filter utils', () => {
         expect(
           await getChangedAtSingletonInstance(elementsSource),
         ).toBeUndefined()
+      })
+    })
+  })
+  describe('changedAtOutdated', () => {
+    let elementsSource: ReadOnlyElementsSource
+
+    describe('when the changed at version is up to date', () => {
+      let changedAtSingleton: InstanceElement
+      beforeEach(() => {
+        changedAtSingleton = mockInstances().ChangedAtSingleton
+        changedAtSingleton.value[CHANGED_AT_SINGLETON_VERSION_FIELD] =
+          CHANGED_AT_VERSION
+        elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+      })
+      it('should return false', async () => {
+        expect(await changedAtOutdated(elementsSource)).toBeFalse()
+      })
+    })
+
+    describe('when the changed at version is outdated', () => {
+      let changedAtSingleton: InstanceElement
+      beforeEach(() => {
+        changedAtSingleton = mockInstances().ChangedAtSingleton
+        changedAtSingleton.value[CHANGED_AT_SINGLETON_VERSION_FIELD] =
+          CHANGED_AT_VERSION - 1
+        elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+      })
+      it('should return true', async () => {
+        expect(await changedAtOutdated(elementsSource)).toBeTrue()
+      })
+    })
+
+    describe('when the ChangedAtSingleton instance does not exist in the elementsSource', () => {
+      beforeEach(() => {
+        elementsSource = buildElementsSourceFromElements([])
+      })
+      it('should return false', async () => {
+        // This is only the case so long as CHANGED_AT_VERSION is 0.
+        // Once we bump we should expect this to fail.
+        expect(await changedAtOutdated(elementsSource)).toBeFalse()
       })
     })
   })

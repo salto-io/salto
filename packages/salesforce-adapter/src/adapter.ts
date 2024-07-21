@@ -138,6 +138,7 @@ import {
   addDefaults,
   apiNameSync,
   buildDataRecordsSoqlQueries,
+  changedAtOutdated,
   getFLSProfiles,
   getFullName,
   instanceInternalId,
@@ -574,7 +575,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({
     progressReporter,
-    withChangesDetection = false,
+    withChangesDetection: changesDetectionRequested = false,
   }: FetchOptions): Promise<FetchResult> {
     const fetchParams = this.userConfig.fetch ?? {}
     const baseQuery = buildMetadataQuery({ fetchParams })
@@ -583,6 +584,9 @@ export default class SalesforceAdapter implements AdapterOperations {
         client: this.client,
         metadataQuery: buildFilePropsMetadataQuery(baseQuery),
       })
+    const withChangesDetection = (await changedAtOutdated(this.elementsSource))
+      ? false
+      : changesDetectionRequested
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,

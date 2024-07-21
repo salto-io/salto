@@ -18,6 +18,7 @@ import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import {
   ActionName,
+  BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID,
   ObjectType,
@@ -428,6 +429,8 @@ export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
 
+export const CHANGED_AT_SINGLETON_VERSION_FIELD = 'version'
+export const CHANGED_AT_VERSION = 0
 export const ArtificialTypes = {
   [CHANGED_AT_SINGLETON]: new ObjectType({
     elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
@@ -435,6 +438,9 @@ export const ArtificialTypes = {
     annotations: {
       [CORE_ANNOTATIONS.HIDDEN]: true,
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    },
+    fields: {
+      [CHANGED_AT_SINGLETON_VERSION_FIELD]: { refType: BuiltinTypes.NUMBER },
     },
   }),
 } as const

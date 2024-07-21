@@ -501,6 +501,8 @@ describe('SalesforceAdapter fetch', () => {
             [APEX_CLASS_FULL_NAME]: DATE,
             [ANOTHER_APEX_CLASS_FULL_NAME]: DATE,
           },
+          [constants.CHANGED_AT_SINGLETON_VERSION_FIELD]:
+            constants.CHANGED_AT_VERSION,
         }
         const elementsSource = buildElementsSourceFromElements([
           mockTypes.ApexClass,
@@ -606,8 +608,11 @@ describe('SalesforceAdapter fetch', () => {
       let testConnection: MockInterface<Connection>
       describe('Targeted fetch', () => {
         beforeEach(() => {
+          changedAtSingleton.value[
+            constants.CHANGED_AT_SINGLETON_VERSION_FIELD
+          ] = constants.CHANGED_AT_VERSION
           const existingElements = [
-            mockInstances().ChangedAtSingleton,
+            changedAtSingleton,
             mockTypes.Layout,
             mockTypes.ApexClass,
             mockTypes.CustomObject,
@@ -718,12 +723,15 @@ describe('SalesforceAdapter fetch', () => {
           },
         }
         describe('When a record was deleted', () => {
-          const existingInstanceThatDoesntExistInSalesforce =
+          const existingInstanceThatDoesNotExistInSalesforce =
             new InstanceElement('DeletedInstance', testType, {
               [constants.CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
             })
           beforeEach(async () => {
             changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
+            changedAtSingleton.value[
+              constants.CHANGED_AT_SINGLETON_VERSION_FIELD
+            ] = constants.CHANGED_AT_VERSION
             _.set(
               changedAtSingleton.value,
               [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName],
@@ -731,7 +739,7 @@ describe('SalesforceAdapter fetch', () => {
             )
             const elements = [
               testType,
-              existingInstanceThatDoesntExistInSalesforce,
+              existingInstanceThatDoesNotExistInSalesforce,
               changedAtSingleton,
             ]
             const elementsSource = buildElementsSourceFromElements(elements)
@@ -754,7 +762,9 @@ describe('SalesforceAdapter fetch', () => {
           it('Should return the elemID of the deleted record', () => {
             expect(
               fetchResult.partialFetchData?.deletedElements,
-            ).toContainEqual(existingInstanceThatDoesntExistInSalesforce.elemID)
+            ).toContainEqual(
+              existingInstanceThatDoesNotExistInSalesforce.elemID,
+            )
           })
         })
         describe('When a record was modified', () => {
@@ -762,6 +772,9 @@ describe('SalesforceAdapter fetch', () => {
             [constants.CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
           })
           beforeEach(async () => {
+            changedAtSingleton.value[
+              constants.CHANGED_AT_SINGLETON_VERSION_FIELD
+            ] = constants.CHANGED_AT_VERSION
             const elements = [testType, testInstance, changedAtSingleton]
             const elementsSource = buildElementsSourceFromElements(elements)
             ;({ connection: testConnection, adapter: testAdapter } =

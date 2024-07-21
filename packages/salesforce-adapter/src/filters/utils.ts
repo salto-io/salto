@@ -104,6 +104,8 @@ import {
   DEFAULT_VALUE_FORMULA,
   FORMULA,
   FIELD_DEPENDENCY_FIELDS,
+  CHANGED_AT_SINGLETON_VERSION_FIELD,
+  CHANGED_AT_VERSION,
 } from '../constants'
 import {
   CustomField,
@@ -874,6 +876,16 @@ export const getChangedAtSingletonInstance = async (
     ),
   )
   return isInstanceElement(element) ? element : undefined
+}
+
+export const changedAtOutdated = async (
+  elementsSource: ReadOnlyElementsSource,
+): Promise<boolean> => {
+  const changedAtSingleton = await getChangedAtSingletonInstance(elementsSource)
+  return (
+    (changedAtSingleton?.value[CHANGED_AT_SINGLETON_VERSION_FIELD] ?? 0) !==
+    CHANGED_AT_VERSION
+  )
 }
 
 export const isCustomType = (element: Element): element is ObjectType =>

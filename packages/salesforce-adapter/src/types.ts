@@ -170,6 +170,7 @@ export type ChangeValidatorName =
   | 'taskOrEventFieldsModifications'
   | 'newFieldsAndObjectsFLS'
   | 'elementApiVersion'
+  | 'changedAtVersion'
   | 'cpqBillingStartDate'
   | 'cpqBillingTriggers'
 
@@ -914,6 +915,7 @@ const changeValidatorConfigType =
       taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
       newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
       elementApiVersion: { refType: BuiltinTypes.BOOLEAN },
+      changedAtVersion: { refType: BuiltinTypes.BOOLEAN },
       cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
       cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
     },

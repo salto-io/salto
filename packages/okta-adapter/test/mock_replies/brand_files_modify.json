@@ -1,0 +1,34 @@
+[
+  {
+    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/logo",
+    "scope": "",
+    "method": "POST",
+    "status": 201,
+    "response": {
+      "url": "https://ok14static.oktacdn.com/fs/bco/1/fs0gy8luwnuryzJZX697"
+    },
+    "body": {
+      "_overheadLength": 155,
+      "_valueLength": 32906,
+      "_valuesToMeasure": [],
+      "writable": false,
+      "readable": true,
+      "dataSize": 0,
+      "maxDataSize": 2097152,
+      "pauseStreams": true,
+      "_released": true,
+      "_streams": [],
+      "_currentStream": null,
+      "_insideLoop": false,
+      "_pendingNext": false,
+      "_boundary": "--------------------------565667825726854248526092",
+      "_events": {},
+      "_eventsCount": 1
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1721570073"
+    }
+  }
+]

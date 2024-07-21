@@ -3867,6 +3867,7 @@ __metadata:
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
     "@types/node": ^18.9.0
+    "@types/p-queue": ^3.1.0
     "@types/parse-link-header": ^2.0.0
     "@types/sax": ^1.2.1
     "@types/shelljs": ^0.7.8
@@ -3895,6 +3896,7 @@ __metadata:
     lodash: ^4.17.21
     object-hash: ^3.0.0
     openapi-types: ^7.0.1
+    p-queue: 6.6.2
     parse-link-header: ^2.0.0
     prettier: 3.2.5
     qs: ^6.10.1
@@ -5082,6 +5084,7 @@ __metadata:
     lodash: ^4.17.21
     mime-types: ^2.1.27
     nock: ^12.0.1
+    p-queue: 6.6.2
     prettier: 3.2.5
     readdirp: ^3.1.1
     request: ^2.88.2
@@ -6116,6 +6119,15 @@ __metadata:
   version: 3.0.0
   resolution: "@types/object-hash@npm:3.0.0"
   checksum: efd36ca444c61bc7e62874c1d043068ade67fd18ba30d2186ddf69e55c87f37f65ae13ee2eeb17794a8eab7ed3d2d82366aedac78cca9259778ef65e47b0acc7
+  languageName: node
+  linkType: hard
+
+"@types/p-queue@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "@types/p-queue@npm:3.1.0"
+  dependencies:
+    "@types/node": "*"
+  checksum: 695c1ebedfbb30fc06216467217037a827a8be32f6a2ea70f287f8bc096f63b5e83c27ba08e9f747cd4a1869051577503fd6b3aaf595a2ab6adf25dc8f527df8
   languageName: node
   linkType: hard
 
@@ -16031,7 +16043,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"p-queue@npm:^6.6.2":
+"p-queue@npm:6.6.2, p-queue@npm:^6.6.2":
   version: 6.6.2
   resolution: "p-queue@npm:6.6.2"
   dependencies:

@@ -36,7 +36,7 @@ import {
 import customPathsFilterCreator from './filters/custom_paths'
 import { createFixElementFunctions } from './fix_elements'
 
-const { validateCredentials, DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const { validateCredentials } = clientUtils
 
 const { defaultCredentialsFromConfig } = credentials
 
@@ -48,8 +48,6 @@ const clientDefaults = {
     get: 100,
     deploy: 100,
   },
-  maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  retry: DEFAULT_RETRY_OPTS,
 }
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({

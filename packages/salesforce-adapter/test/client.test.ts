@@ -1243,7 +1243,7 @@ describe('salesforce client', () => {
           readRequests = _.times(reads.length, (i) =>
             testClient.readMetadata(`t${i}`, 'name'),
           )
-          retrieves = _.times(4, () =>
+          retrieves = _.times(6, () =>
             makeResolvablePromise(emptyRetrieveResult),
           )
           _.times(retrieves.length, (i) =>
@@ -1283,7 +1283,7 @@ describe('salesforce client', () => {
         })
         it('should not call last retrieve when there are too many in-flight requests', () => {
           expect(mockRetrieve.mock.calls.length).toBeGreaterThanOrEqual(2)
-          expect(mockRetrieve.mock.calls.length).toBeLessThan(4)
+          expect(mockRetrieve.mock.calls.length).toBeLessThan(6)
         })
 
         it('should complete all the requests when they free up', async () => {
@@ -1291,10 +1291,12 @@ describe('salesforce client', () => {
           reads[1].resolve()
           retrieves[2].resolve()
           retrieves[3].resolve()
+          retrieves[4].resolve()
+          retrieves[5].resolve()
           await Promise.all(readRequests)
           await Promise.all(retrieveRequests)
           expect(mockRead).toHaveBeenCalledTimes(2)
-          expect(mockRetrieve).toHaveBeenCalledTimes(4)
+          expect(mockRetrieve).toHaveBeenCalledTimes(6)
         })
       })
 

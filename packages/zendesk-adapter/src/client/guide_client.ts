@@ -24,13 +24,18 @@ const emptyRes: client.Response<client.ResponseValue | client.ResponseValue[]> =
   status: 404,
 }
 
+// we use this client to make zendesk guide calls, clientList is a record of brandId to zendeskClient. Each call that goes through this
+// client will be diverted to the correct zendesk client according the brand ID received in the params.
 export default class ZendeskGuideClient implements client.HTTPReadClientInterface, client.HTTPWriteClientInterface {
   private clientList: Record<string, ZendeskClient>
   constructor(clientList: Record<string, ZendeskClient>) {
     this.clientList = clientList
   }
 
-  private async runCommand(params: client.ClientDataParams, method: keyof client.HttpMethodToClientParams): returnType {
+  private async sendRequest(
+    params: client.ClientDataParams,
+    method: keyof client.HttpMethodToClientParams,
+  ): returnType {
     const brandId = params.params?.brand?.id
     if (!_.isString(brandId)) {
       throw new Error(`${method} failed as brandId is not defined`)
@@ -43,11 +48,11 @@ export default class ZendeskGuideClient implements client.HTTPReadClientInterfac
   }
 
   async delete(params: client.ClientDataParams): returnType {
-    return this.runCommand(params, 'delete')
+    return this.sendRequest(params, 'delete')
   }
 
   async get(params: client.ClientBaseParams): returnType {
-    return this.runCommand(params, 'get')
+    return this.sendRequest(params, 'get')
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -56,22 +61,22 @@ export default class ZendeskGuideClient implements client.HTTPReadClientInterfac
   }
 
   async head(params: client.ClientBaseParams): returnType {
-    return this.runCommand(params, 'head')
+    return this.sendRequest(params, 'head')
   }
 
   async options(params: client.ClientBaseParams): returnType {
-    return this.runCommand(params, 'options')
+    return this.sendRequest(params, 'options')
   }
 
   async patch(params: client.ClientDataParams): returnType {
-    return this.runCommand(params, 'patch')
+    return this.sendRequest(params, 'patch')
   }
 
   async post(params: client.ClientDataParams): returnType {
-    return this.runCommand(params, 'post')
+    return this.sendRequest(params, 'post')
   }
 
   async put(params: client.ClientDataParams): returnType {
-    return this.runCommand(params, 'put')
+    return this.sendRequest(params, 'put')
   }
 }

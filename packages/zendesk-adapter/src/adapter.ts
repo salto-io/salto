@@ -453,7 +453,7 @@ const getGuideElements = async ({
     getElemIdFunc,
     definitions: brandFetchDefinitions,
   })
-  guideFetchResult.elements = guideFetchResult.elements.filter(e => !e.elemID.typeName.includes('brand'))
+  guideFetchResult.elements = guideFetchResult.elements.filter(e => !e.elemID.typeName.startsWith('brand'))
   return {
     ...guideFetchResult,
   }
@@ -697,7 +697,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         'guide_settings__help_center__text_filter',
         'brand',
       ])
-      // .filter(t => !['article', 'article_attachment', 'article_translation'].includes(t))
       this.guideClient = new ZendeskGuideClient(brandClients)
       const client = createClientDefinitions({ main: this.client, guide: this.guideClient })
       const guideFetchDef = definitions.mergeWithUserElemIDDefinitions({

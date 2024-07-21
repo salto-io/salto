@@ -1398,6 +1398,33 @@ describe('adapter', () => {
         expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+
+      it('should fail to remove a brand theme if it still exists', async () => {
+        loadMockReplies('brand_theme_remove_failure.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0].message).toEqual('Expected BrandTheme to be deleted')
+        expect(result.appliedChanges).toHaveLength(0)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
   })
 })

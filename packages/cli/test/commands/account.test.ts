@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  AdapterAuthentication,
-  ObjectType,
-  ElemID,
-} from '@salto-io/adapter-api'
+import { AdapterAuthentication, ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import {
   addAdapter,
   installAdapter,
@@ -378,6 +374,19 @@ describe('account command group', () => {
           })
         })
         describe('when called with invalid login parameters', () => {
+          it('should fail when called with missing parameter', async () => {
+            const exitCode = await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceType: 'newAdapter',
+                authType: 'basic',
+                login: true,
+                loginParameters: ['username=testUser', 'password=testPassword', 'token=testToken'],
+              },
+              workspace,
+            })
+            expect(exitCode).toEqual(CliExitCode.AppError)
+          })
           it('should fail when called with malformed parameter', async () => {
             const exitCode = await addAction({
               ...cliCommandArgs,
@@ -595,20 +604,21 @@ describe('account command group', () => {
 
   describe('createConfigFromLoginParameters() helper', () => {
     describe('when login parameters are marked required', () => {
-      const credentialsType = {
-        elemID: new ElemID('MockAdaptorName'),
+      const credentialsType = new ObjectType({
+        elemID: new ElemID('MockAdapterName'),
         fields: {
           username: {
-            annotations: {
-            }
+            refType: BuiltinTypes.STRING,
+            annotations: {},
           },
           token: {
+            refType: BuiltinTypes.STRING,
             annotations: {
-              _required: true
-            }
-          }
-        }
-      }
+              _required: true,
+            },
+          },
+        },
+      })
 
       it('should work when the required param is present', async () => {
         const loginParameters = ['token=token456']

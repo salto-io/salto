@@ -22,37 +22,25 @@
         "favicon": {
           "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brantheme-fakeid1/favicon",
           "hints": {
-            "allow": [
-              "POST",
-              "DELETE"
-            ]
+            "allow": ["POST", "DELETE"]
           }
         },
         "self": {
           "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brantheme-fakeid1",
           "hints": {
-            "allow": [
-              "GET",
-              "PUT"
-            ]
+            "allow": ["GET", "PUT"]
           }
         },
         "logo": {
           "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brantheme-fakeid1/logo",
           "hints": {
-            "allow": [
-              "POST",
-              "DELETE"
-            ]
+            "allow": ["POST", "DELETE"]
           }
         },
         "background-image": {
           "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brantheme-fakeid1/background-image",
           "hints": {
-            "allow": [
-              "POST",
-              "DELETE"
-            ]
+            "allow": ["POST", "DELETE"]
           }
         }
       }

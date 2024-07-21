@@ -54,7 +54,7 @@ export const shouldDeleteRestrictionOnPageModification = (args: definitions.depl
 /**
  * Update the restriction format and omit redundant fields
  */
-export const adjustRestriction: definitions.AdjustFunction = async ({ value }) => {
+export const adjustRestriction: definitions.AdjustFunctionSingle = async ({ value }) => {
   const userRestrictions = _.get(value, 'restrictions.user.results')
   return {
     value: {

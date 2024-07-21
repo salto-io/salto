@@ -354,16 +354,19 @@ export const mockTypes = {
       dirName: 'territory2Models',
     },
   }),
-  CustomMetadata: createMetadataObjectType(
-    {
-      annotations: {
-        metadataType: 'CustomMetadata',
-        dirName: 'customMetadata',
-        suffix: 'md',
+  CustomMetadata: new ObjectType({
+    elemID: new ElemID(SALESFORCE, constants.CUSTOM_METADATA_TYPE_NAME),
+    annotations: {
+      metadataType: 'CustomMetadata',
+      dirName: 'customMetadata',
+      suffix: 'md',
+    },
+    fields: {
+      [INSTANCE_FULL_NAME_FIELD]: {
+        refType: BuiltinTypes.SERVICE_ID,
       },
     },
-    constants.CUSTOM_METADATA_TYPE_NAME,
-  ),
+  }),
   EmailTemplate: createMetadataObjectType({
     annotations: {
       metadataType: 'EmailTemplate',

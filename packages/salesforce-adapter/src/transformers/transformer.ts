@@ -1461,9 +1461,9 @@ type ObjectTypeCtorParam = ConstructorParameters<typeof ObjectType>[0]
 type CreateMetadataObjectTypeParams = Omit<ObjectTypeCtorParam, 'elemID'> & {
   annotations: MetadataTypeAnnotations
 }
-export const createMetadataObjectType = (params: CreateMetadataObjectTypeParams, name?: string): MetadataObjectType =>
+export const createMetadataObjectType = (params: CreateMetadataObjectTypeParams): MetadataObjectType =>
   new ObjectType({
-    elemID: new ElemID(SALESFORCE, name ?? params.annotations.metadataType),
+    elemID: new ElemID(SALESFORCE, params.annotations.metadataType),
     ...params,
     fields: {
       [INSTANCE_FULL_NAME_FIELD]: {

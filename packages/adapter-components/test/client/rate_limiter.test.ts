@@ -217,42 +217,43 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
     jest.spyOn(Date, 'now').mockReturnValue(timeElapsed) // Mock current time
     const delayMS = 500
     const rateLimiter = new RateLimiter({ delayMS })
-    // @ts-expect-error
+    // @ts-expect-error accessing private member/function
     expect(rateLimiter.nextDelay()).toBe(delayMS)
-    // @ts-expect-error
+    // @ts-expect-error accessing private member/function
     expect(rateLimiter.nextDelay()).toBe(delayMS * 2)
 
     // Partial delay
     timeElapsed = 100
     jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
-    // @ts-expect-error
+    // @ts-expect-error accessing private member/function
     expect(rateLimiter.nextDelay()).toBe(delayMS * 3 - timeElapsed)
 
     // No delay needed
-    // @ts-expect-error
+    // @ts-expect-error accessing private member/function
     timeElapsed = rateLimiter.prevInvocationTime + delayMS
     jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
-    // @ts-expect-error
+    // @ts-expect-error accessing private member/function
     expect(rateLimiter.nextDelay()).toBe(0)
   })
   it('should properly wrap task with delay.', async () => {
-    
     const delayMS = 500
     const rateLimiter = new RateLimiter({ delayMS })
 
     const timer = {
-      // @ts-expect-error
+      // @ts-expect-error accessing private member/function
       startTime: rateLimiter.prevInvocationTime,
-      timeElapsed: undefined
+      timeElapsed: undefined,
     }
-    // @ts-expect-error
-    const delayedTask = rateLimiter.getDelayedTask(() => {timer.timeElapsed = Date.now() - timer.startTime})
+    // @ts-expect-error accessing private member/function
+    const delayedTask = rateLimiter.getDelayedTask(() => {
+      timer.timeElapsed = Date.now() - timer.startTime
+    })
     await delayedTask()
-    const {timeElapsed, startTime} = timer
-    
-    // @ts-expect-error
+    const { timeElapsed, startTime } = timer
+
+    // @ts-expect-error accessing private member/function
     expect(rateLimiter.prevInvocationTime).toBeGreaterThanOrEqual(startTime + delayMS)
-    // @ts-expect-error
+    // @ts-expect-error accessing private member/function
     expect(rateLimiter.prevInvocationTime).toBeLessThan(startTime + delayMS * 2)
 
     expect(timeElapsed).toBeGreaterThanOrEqual(delayMS)

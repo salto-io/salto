@@ -184,7 +184,7 @@ export class RateLimiter {
       if (this.internalOptions.delayMS > 0) {
         await new Promise(resolve => setTimeout(resolve, this.nextDelay()))
       }
-      return await task()
+      return task()
     }
     return delayedTask
   }

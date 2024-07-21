@@ -145,9 +145,10 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
         typeName,
       )
 
+    const allCallArgs = _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body', 'params'])
     const callArgs = mergedEndpointDef.omitBody
-      ? _.pick(mergedEndpointDef, ['queryArgs', 'headers'])
-      : _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body'])
+      ? _.omit(mergedEndpointDef, 'body')
+      : allCallArgs
 
     log.trace(
       'traversing pages for adapter %s client %s endpoint %s.%s',

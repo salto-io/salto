@@ -89,65 +89,73 @@ describe('client_rate_limit', () => {
       resolvables.push(p)
       return p.promise
     }
+    const ZERO_COUNTERS = { total: 0, pending: 0, running: 0, done: 0, failed: 0, succeeded: 0 }
     it('should throttle when bucket is limited', async () => {
       const resolvables: Resolvable<number>[] = []
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runB(addPromise(resolvables))
       // wait for the rate limiters to update
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 1, pending: 0, running: 1, done: 0 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 1, pending: 0, running: 1, done: 0 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 1, running: 1 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 1, running: 1 })
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runB(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 2, pending: 0, running: 2, done: 0 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 2, pending: 0, running: 2, done: 0 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 2, running: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 2, running: 2 })
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runB(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 1, running: 2, done: 0 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 2, pending: 0, running: 2, done: 0 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 3, pending: 1, running: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 2, running: 2 })
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runSomething(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 1, running: 2, done: 0 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 3, pending: 0, running: 3, done: 0 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 3, pending: 1, running: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 3, running: 3 })
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runSomething(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 1, running: 2, done: 0 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 4, pending: 1, running: 3, done: 0 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 3, pending: 1, running: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 4, pending: 1, running: 3 })
 
       resolvables[0].resolve()
       // wait for the rate limiters to update
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 2, done: 1 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 1, running: 3, done: 1 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 3, running: 2, done: 1, succeeded: 1 })
+      expect(a1.rateLimiters.total.counters).toEqual({
+        ...ZERO_COUNTERS,
+        total: 5,
+        pending: 1,
+        running: 3,
+        done: 1,
+        succeeded: 1,
+      })
 
       resolvables[1].resolve()
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 1, done: 2 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 3, running: 1, done: 2, succeeded: 2 })
 
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 0, running: 3, done: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 5, running: 3, done: 2, succeeded: 2 })
 
       resolvables[3].resolve()
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 1, done: 2 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 0, running: 2, done: 3 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 3, running: 1, done: 2, succeeded: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 5, running: 2, done: 3, succeeded: 3 })
 
       resolvables[4].resolve()
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 1, done: 2 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 0, running: 1, done: 4 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 3, running: 1, done: 2, succeeded: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 5, running: 1, done: 4, succeeded: 4 })
 
       resolvables[2].resolve()
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 0, done: 3 })
-      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 0, running: 0, done: 5 })
+      expect(a1.rateLimiters.b.counters).toEqual({ ...ZERO_COUNTERS, total: 3, done: 3, succeeded: 3 })
+      expect(a1.rateLimiters.total.counters).toEqual({ ...ZERO_COUNTERS, total: 5, done: 5, succeeded: 5 })
     })
   })
 })

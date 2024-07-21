@@ -29,9 +29,6 @@ export const DEFAULT_TIMEOUT_OPTS: Required<ClientTimeoutConfig> = {
 
 export const RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS = -1
 
-export RATE_LIMIT_DEFAULT_OPTIONS = {
-  
-}
 export const RATE_LIMIT_DEFAULT_MAX_CONCURRENT_CALLS = Infinity
 export const RATE_LIMIT_DEFAULT_MAX_CALLS_PER_INTERVAL = Infinity
 export const RATE_LIMIT_DEFAULT_CARRY_RUNNING_CALLS_OVER = true

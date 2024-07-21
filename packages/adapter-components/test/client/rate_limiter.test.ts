@@ -143,7 +143,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
     it('should throw an error when startPaused and useBottleneck are set to true', () => {
       if (useBottleneck) {
         expect(() => new RateLimiter({ startPaused: true, useBottleneck })).toThrow(
-          "Bottleneck queue can't be paused and thus can't be initialized with startPaused.",
+          "Bottleneck queue can't be paused and thus can't be initialized with startPaused==true or pauseDuringDelay==true.",
         )
       } else {
         const rateLimiter = new RateLimiter({ startPaused: true, useBottleneck })

@@ -160,9 +160,12 @@ export class RateLimiter {
           : RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
     }
 
-    if (this.internalOptions.useBottleneck && (this.internalOptions.startPaused || this.internalOptions.pauseDuringRetryDelay)) {
+    if (
+      this.internalOptions.useBottleneck &&
+      (this.internalOptions.startPaused || this.internalOptions.pauseDuringRetryDelay)
+    ) {
       throw new Error(
-        "Bottleneck queue can't be paused and thus can't be initialized with startPaused==true or pauseDuringDelay==true .",
+        "Bottleneck queue can't be paused and thus can't be initialized with startPaused==true or pauseDuringDelay==true.",
       )
     }
     this.queue = this.internalOptions.useBottleneck

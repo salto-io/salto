@@ -19,7 +19,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { EVERYONE_USER_TYPE } from '../../constants'
-import { transformGuideItem } from './transforms'
+import { transformGuideItem, transformSectionItem } from './transforms'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -1451,7 +1451,7 @@ const createCustomizations = (): Record<
             brand: { id: '{brandId}' },
           },
         },
-        transformation: { root: 'sections', adjust: transformGuideItem },
+        transformation: { root: 'sections', adjust: transformSectionItem },
       },
     ],
     resource: {
@@ -1820,13 +1820,9 @@ export const createFetchDefinitions = (
     typesToPick?: string[]
   },
 ): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
-  let customizations = createCustomizations()
-  if (typesToOmit !== undefined) {
-    customizations = _.omit(customizations, typesToOmit)
-  }
-  if (typesToPick !== undefined) {
-    customizations = _.pick(customizations, typesToPick)
-  }
+  const initialCustomizations = createCustomizations()
+  const withoutOmitted = typesToOmit !== undefined ? _.omit(initialCustomizations, typesToOmit) : initialCustomizations
+  const finalCustomizations = typesToPick !== undefined ? _.pick(withoutOmitted, typesToPick) : withoutOmitted
 
   return {
     instances: {
@@ -1837,7 +1833,7 @@ export const createFetchDefinitions = (
           fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
         },
       },
-      customizations,
+      customizations: finalCustomizations,
     },
   }
 }

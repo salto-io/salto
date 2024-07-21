@@ -450,7 +450,6 @@ const getGuideElements = async ({
   const guideFetchResult = await fetchUtils.getElements({
     adapterName: ZENDESK,
     fetchQuery,
-    additionalRequestContext: { brands: _.keyBy(brandsList, brand => brand.elemID.name) },
     getElemIdFunc,
     definitions: brandFetchDefinitions,
   })

@@ -23,7 +23,6 @@ import {
   Element,
   ElemID,
   getChangeData,
-  isContainerType,
   isElement,
   isEqualElements,
   isEqualValues,
@@ -370,37 +369,6 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
   return changes.filter(change => relevantIds.has(change.id.getFullName()))
 }
 
-const replaceChangeData = <T extends ChangeDataType>(dst: T, src: T): void => {
-  dst.annotationRefTypes = src.annotationRefTypes
-  dst.annotations = src.annotations
-  dst.path = src.path
-
-  if (isPrimitiveType(dst) && isPrimitiveType(src)) {
-    dst.primitive = src.primitive
-  }
-
-  if (isObjectType(dst) && isObjectType(src)) {
-    dst.fields = src.fields
-    dst.metaType = src.metaType
-    dst.isSettings = src.isSettings
-  }
-
-  if (isContainerType(dst) && isContainerType(src)) {
-    dst.refInnerType = src.refInnerType
-  }
-
-  if (isInstanceElement(dst) && isInstanceElement(src)) {
-    dst.refType = src.refType
-    dst.value = src.value
-  }
-
-  if (isField(dst) && isField(src)) {
-    dst.parent = src.parent
-    dst.name = src.name
-    dst.refType = src.refType
-  }
-}
-
 /**
  * Note: When working with list item changes, separating the changes between
  * multiple applyDetailedChanges calls might create different results.
@@ -413,7 +381,7 @@ export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: D
   if (detailedChanges.length === 1) {
     const change = detailedChanges[0]
     if (isModificationChange(change) && change.id.isTopLevel()) {
-      replaceChangeData(element, getChangeData(change))
+      element.replace(getChangeData(change))
       return
     }
   }

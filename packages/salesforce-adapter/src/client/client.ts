@@ -20,7 +20,6 @@ import requestretry, {
   RetryStrategies,
   RetryStrategy,
 } from 'requestretry'
-import Bottleneck from 'bottleneck'
 import { collections, decorators, hash } from '@salto-io/lowerdash'
 import {
   BatchResultInfo,
@@ -661,7 +660,7 @@ export default class SalesforceClient {
   private readonly config?: SalesforceClientConfig
   private readonly setFetchPollingTimeout: () => void
   private readonly setDeployPollingTimeout: () => void
-  readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
+  readonly rateLimiters: Record<RateLimitBucketName, clientUtils.RateLimiter>
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>

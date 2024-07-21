@@ -14,51 +14,55 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import Bottleneck from 'bottleneck'
 import { logger } from '@salto-io/logging'
 import { decorators } from '@salto-io/lowerdash'
 import { ClientRateLimitConfig } from '../definitions/user/client_config'
 import { logOperationDecorator } from './decorators'
+import { RateLimiter } from './rate_limiter'
 
 const log = logger(module)
 
 type RateLimitExtendedConfig = ClientRateLimitConfig & Record<string, number | undefined>
 
-export type BottleneckBuckets<TRateLimitConfig> = {
-  [P in keyof Required<TRateLimitConfig>]: Bottleneck
+export type RateLimitBuckets<TRateLimitConfig> = {
+  [P in keyof Required<TRateLimitConfig>]: RateLimiter
 }
 
 export const createRateLimitersFromConfig = <TRateLimitConfig extends RateLimitExtendedConfig>({
   rateLimit,
   maxRequestsPerMinute,
+  delayPerRequestMS,
+  useBottleneck,
   clientName,
 }: {
   rateLimit: Required<TRateLimitConfig>
   maxRequestsPerMinute?: number
+  delayPerRequestMS?: number
+  useBottleneck?: boolean
   clientName: string
-}): BottleneckBuckets<TRateLimitConfig> => {
+}): RateLimitBuckets<TRateLimitConfig> => {
   const toLimit = (
     num: number | undefined,
     // 0 is an invalid value (blocked in configuration)
   ): number | undefined => (num && num < 0 ? undefined : num)
   const rateLimitConfig = _.mapValues(rateLimit, toLimit)
   log.debug('%s client rate limit config: %o', clientName, rateLimitConfig)
-  const reservoirArgs =
-    maxRequestsPerMinute !== undefined && maxRequestsPerMinute > 0
-      ? {
-          reservoir: maxRequestsPerMinute,
-          reservoirRefreshAmount: maxRequestsPerMinute,
-          reservoirRefreshInterval: 60 * 1000,
-        }
+
+  const intervalOptions =
+    (maxRequestsPerMinute ?? 0) > 0
+      ? { maxCallsPerInterval: maxRequestsPerMinute, intervalLengthMS: 60 * 1000, carryRunningCallsOver: true }
       : {}
+
   return _.mapValues(
     rateLimitConfig,
     val =>
-      new Bottleneck({
-        maxConcurrent: val,
-        ...reservoirArgs,
+      new RateLimiter({
+        maxConcurrentCalls: val,
+        delayMS: delayPerRequestMS,
+        useBottleneck,
+        ...intervalOptions,
       }),
-  ) as BottleneckBuckets<TRateLimitConfig>
+  ) as RateLimitBuckets<TRateLimitConfig>
 }
 
 type ThrottleParameters<TRateLimitConfig extends ClientRateLimitConfig> = {
@@ -73,7 +77,7 @@ export const throttle = <TRateLimitConfig extends ClientRateLimitConfig>({
   decorators.wrapMethodWith(async function withRateLimit(
     this: {
       clientName: string
-      rateLimiters: BottleneckBuckets<TRateLimitConfig>
+      rateLimiters: RateLimitBuckets<TRateLimitConfig>
     },
     originalMethod: decorators.OriginalCall,
   ): Promise<unknown> {

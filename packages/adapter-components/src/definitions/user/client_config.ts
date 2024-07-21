@@ -52,6 +52,8 @@ export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Pa
   retry: ClientRetryConfig
   rateLimit: RateLimitConfig
   maxRequestsPerMinute: number
+  delayPerRequestMS: number
+  useBottleneck: boolean
   pageSize: ClientPageSizeConfig
   timeout: ClientTimeoutConfig
 }>
@@ -129,6 +131,8 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       retry: { refType: clientRetryConfigType },
       rateLimit: { refType: clientRateLimitConfigType },
       maxRequestsPerMinute: createFieldDefWithMin(-1),
+      delayPerRequestMS: createFieldDefWithMin(0),
+      useBottleneck: { refType: BuiltinTypes.BOOLEAN },
       pageSize: { refType: clientPageSizeConfigType },
       timeout: { refType: clientTimeoutConfigType },
       ...additionalClientFields,

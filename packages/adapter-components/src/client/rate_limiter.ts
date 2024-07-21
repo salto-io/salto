@@ -15,7 +15,13 @@
  */
 import PQueue from 'p-queue'
 import Bottleneck from 'bottleneck'
-import { RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS, RATE_LIMIT_USE_BOTTLENECK } from './constants'
+import {
+  RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
+  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+  RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
+  RATE_LIMIT_DEFAULT_SHOULD_RETRY,
+  RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
+} from './constants'
 
 /**
  * Type for specifying options for the RateLimiter.
@@ -70,6 +76,30 @@ export type RateLimiterOptions = {
    * @default true
    */
   useBottleneck: boolean
+
+  /**
+   * Predicate to determine if a task should be retried based on the number of attempts and the error encountered.
+   * @param attempt The current attempt number.
+   * @param error The error encountered during the task execution.
+   * @returns A boolean indicating whether the task should be retried.
+   * @default () => false
+   */
+  retryPredicate: (attempt: number, error: unknown) => boolean
+
+  /**
+   * Function to calculate the delay before retrying a task based on the number of attempts and the error encountered.
+   * @param attempt The current attempt number.
+   * @param error The error encountered during the task execution.
+   * @returns The delay in milliseconds before the next retry.
+   * @default () => 0
+   */
+  calculateRetryDelay: (attempt: number, error: unknown) => number
+
+  /**
+   * Flag indicating whether to pause the queue for the delay calculated.
+   * @default false
+   */
+  pauseDuringRetryDelay: boolean
 }
 
 /**
@@ -80,19 +110,22 @@ export type RateLimiterCounters = {
   running: number
   pending: number
   done: number
+  succeeded: number
+  failed: number
 }
 
 const toValidNumber = (defaultValue: number, value?: number): number =>
   value === undefined || value <= 0 ? defaultValue : value
 
 /**
- * Class for managing rate limiting of tasks.
+ * Class for managing rate limiting of tasks using PQueue or Bottleneck.
  */
 export class RateLimiter {
   private queue: PQueue | Bottleneck
   private internalOptions: RateLimiterOptions
   private internalCounters: RateLimiterCounters
   private prevInvocationTime: number
+  private resumeTime: number
 
   /**
    * Constructs a RateLimiter instance.
@@ -118,10 +151,19 @@ export class RateLimiter {
       carryRunningCallsOver: options.carryRunningCallsOver ?? true,
       delayMS: toValidNumber(RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS, options.delayMS),
       startPaused: options.startPaused ?? false,
-      useBottleneck: options.useBottleneck ?? RATE_LIMIT_USE_BOTTLENECK,
+      useBottleneck: options.useBottleneck ?? RATE_LIMIT_DEFAULT_USE_BOTTLENECK,,
+      retryPredicate: options.retryPredicate ?? RATE_LIMIT_DEFAULT_SHOULD_RETRY,
+      calculateRetryDelay: options.calculateRetryDelay ?? RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
+      pauseDuringRetryDelay:
+        options.pauseDuringRetryDelay !== undefined
+          ? options.pauseDuringRetryDelay
+          : RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
     }
-    if (this.internalOptions.startPaused && this.internalOptions.useBottleneck) {
-      throw new Error("Bottleneck queue can't be paused and thus can't be initialized with startPaused.")
+
+    if (this.internalOptions.useBottleneck && (this.internalOptions.startPaused || this.internalOptions.pauseDuringRetryDelay)) {
+      throw new Error(
+        "Bottleneck queue can't be paused and thus can't be initialized with startPaused==true or pauseDuringDelay==true .",
+      )
     }
     this.queue = this.internalOptions.useBottleneck
       ? new Bottleneck({
@@ -147,8 +189,11 @@ export class RateLimiter {
       running: 0,
       pending: 0,
       done: 0,
+      succeeded: 0,
+      failed: 0,
     }
     this.prevInvocationTime = Date.now()
+    this.resumeTime = Date.now()
   }
 
   /**
@@ -191,17 +236,25 @@ export class RateLimiter {
 
   /**
    * Wraps a given task with counters bookkeeping.
-   * @param task The task to wrapped with bookkeeping.
-   * @returns A function that returns a promise resolving to the result of the task
+   * @param task The task to be wrapped with bookkeeping.
+   * @returns A function that returns a promise resolving to the result of the task.
    */
   private wrapWithBookKeeping<T>(task: () => Promise<T>): () => Promise<T> {
     return async (): Promise<T> => {
       this.internalCounters.pending -= 1
       this.internalCounters.running += 1
-      const res = await task()
-      this.internalCounters.running -= 1
-      this.internalCounters.done += 1
-      return res
+      let res
+      try {
+        res = await task()
+        this.internalCounters.succeeded += 1
+        return res
+      } catch (e) {
+        this.internalCounters.failed += 1
+        throw e
+      } finally {
+        this.internalCounters.running -= 1
+        this.internalCounters.done += 1
+      }
     }
   }
 
@@ -211,16 +264,33 @@ export class RateLimiter {
    * @param task The task to be added to the queue.
    * @returns A promise that resolves when the task is completed.
    */
-  add<T>(task: () => Promise<T>): Promise<T> {
+  async add<T>(task: () => Promise<T>): Promise<T> {
     this.internalCounters.total += 1
     this.internalCounters.pending += 1
     const wrappedTask = this.wrapWithBookKeeping(this.getDelayedTask(task))
-
-    if (this.internalOptions.useBottleneck) {
-      return (this.queue as Bottleneck).schedule(wrappedTask)
+    let res: Promise<T>
+    let numAttempts = 0
+    while (true) {
+      try {
+        numAttempts += 1
+        res = this.internalOptions.useBottleneck
+          ? (this.queue as Bottleneck).schedule(wrappedTask)
+          : (this.queue as PQueue).add(wrappedTask)
+        // eslint-disable-next-line no-await-in-loop
+        return await res
+      } catch (e) {
+        if (!this.internalOptions.retryPredicate(numAttempts, e)) {
+          throw e
+        }
+        const delay = this.internalOptions.calculateRetryDelay(numAttempts, e)
+        if (this.internalOptions.pauseDuringRetryDelay) {
+          this.pause(delay)
+        } else {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
     }
-
-    return (this.queue as PQueue).add(wrappedTask)
   }
 
   /**
@@ -263,11 +333,19 @@ export class RateLimiter {
   /**
    * Pauses the processing of tasks in the queue.
    */
-  pause(): void {
+  pause(time?: number): void {
     if (this.queue instanceof Bottleneck) {
-      throw new Error('RateLimiter has not implementation for Pause when the underlying queue is Bottleneck')
+      throw new Error('RateLimiter has no implementation for pause when the underlying queue is Bottleneck')
     }
     this.queue.pause()
+    if (time !== undefined) {
+      this.resumeTime = Date.now() + time
+      setTimeout(() => {
+        if (Date.now() >= this.resumeTime) {
+          this.resume()
+        }
+      }, time)
+    }
   }
 
   /**
@@ -275,7 +353,7 @@ export class RateLimiter {
    */
   resume(): void {
     if (this.queue instanceof Bottleneck) {
-      throw new Error('RateLimiter has not implementation for resume when the underlying queue is Bottleneck')
+      throw new Error('RateLimiter has no implementation for resume when the underlying queue is Bottleneck')
     }
     this.queue.start()
   }
@@ -285,7 +363,7 @@ export class RateLimiter {
    */
   clear(): void {
     if (this.queue instanceof Bottleneck) {
-      throw new Error('RateLimiter has not implementation for Pause when the underlying queue is Bottleneck')
+      throw new Error('RateLimiter has no implementation for clear when the underlying queue is Bottleneck')
     }
     this.queue.clear()
     this.internalCounters.total -= this.internalCounters.pending

@@ -28,13 +28,12 @@ describe('Salesforce MetadataTypes', () => {
   const getDuplicates = (array: ReadonlyArray<string>): ReadonlyArray<string> =>
     _(array)
       .groupBy()
-      .pickBy((g) => g.length > 1)
+      .pickBy(g => g.length > 1)
       .keys()
       .value()
   const isSupportedMetadataType = (typeName: string): boolean =>
     (SUPPORTED_METADATA_TYPES as ReadonlyArray<string>).includes(typeName)
-  const isUnsupportedMetadataType = (typeName: string): boolean =>
-    !isSupportedMetadataType(typeName)
+  const isUnsupportedMetadataType = (typeName: string): boolean => !isSupportedMetadataType(typeName)
 
   it('should not contain duplicates', () => {
     expect(getDuplicates(SALESFORCE_METADATA_TYPES)).toBeEmpty()
@@ -48,21 +47,13 @@ describe('Salesforce MetadataTypes', () => {
   describe('getFetchTargetsWithDependencies', () => {
     describe("when fetch targets don't include any types with dependencies", () => {
       it('should return the same list', () => {
-        const target: MetadataTypeWithoutDependencies[] = [
-          'CustomLabels',
-          'Capabilities',
-          'ChannelLayout',
-        ]
+        const target: MetadataTypeWithoutDependencies[] = ['CustomLabels', 'Capabilities', 'ChannelLayout']
         expect(getFetchTargetsWithDependencies([...target])).toEqual(target)
       })
     })
     describe('when fetch targets include types with dependencies', () => {
       it('should return a list with the correct types', () => {
-        expect(
-          getFetchTargetsWithDependencies([
-            ...METADATA_TYPES_WITH_DEPENDENCIES,
-          ]),
-        ).toIncludeSameMembers([
+        expect(getFetchTargetsWithDependencies([...METADATA_TYPES_WITH_DEPENDENCIES])).toIncludeSameMembers([
           'CustomMetadata',
           'WebLink',
           'ValidationRule',

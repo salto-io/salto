@@ -26,11 +26,10 @@ import { dependencyChanger } from '../src/dependency_changer'
 import { mockTypes } from './mock_elements'
 import { Types } from '../src/transformers/transformer'
 
-const createChangeId = (change: Change): ChangeId =>
-  getChangeData(change).elemID.getFullName()
+const createChangeId = (change: Change): ChangeId => getChangeData(change).elemID.getFullName()
 
 const createChangeMapFromChanges = (changes: Change[]): Map<ChangeId, Change> =>
-  new Map(changes.map((change) => [createChangeId(change), change]))
+  new Map(changes.map(change => [createChangeId(change), change]))
 
 describe('Dependency Changer', () => {
   let instanceChange: Change<InstanceElement>
@@ -61,10 +60,7 @@ describe('Dependency Changer', () => {
       instanceChange = toChange({
         after: new InstanceElement('testInstance', standardType),
       })
-      changes = createChangeMapFromChanges([
-        instanceChange,
-        toChange({ after: standardType }),
-      ])
+      changes = createChangeMapFromChanges([instanceChange, toChange({ after: standardType })])
       deps = Array.from(await dependencyChanger(changes, new Map()))
     })
 

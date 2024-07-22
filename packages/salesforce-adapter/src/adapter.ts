@@ -35,10 +35,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
-import {
-  resolveChangeElement,
-  restoreChangeElement,
-} from '@salto-io/adapter-components'
+import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -116,13 +113,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
 import generatedDependenciesFilter from './filters/generated_dependencies'
-import {
-  CUSTOM_REFS_CONFIG,
-  FetchElements,
-  FetchProfile,
-  MetadataQuery,
-  SalesforceConfig,
-} from './types'
+import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import { getConfigFromConfigChanges } from './config_change'
 import {
@@ -154,14 +145,8 @@ import {
   fetchMetadataInstances,
   retrieveMetadataInstanceForFetchWithChangesDetection,
 } from './fetch'
-import {
-  isCustomObjectInstanceChanges,
-  deployCustomObjectInstancesGroup,
-} from './custom_object_instances_deploy'
-import {
-  getLookUpName,
-  getLookupNameForDataInstances,
-} from './transformers/reference_mapping'
+import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
+import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
@@ -192,9 +177,7 @@ const { isDefined } = values
 
 const log = logger(module)
 
-export const allFilters: Array<
-  LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition
-> = [
+export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
   {
     creator: createMissingInstalledPackagesInstancesFilter,
     addsNewInformation: true,
@@ -393,10 +376,7 @@ export const SYSTEM_FIELDS = [
   'SetupOwnerId',
 ]
 
-export const UNSUPPORTED_SYSTEM_FIELDS = [
-  'LastReferencedDate',
-  'LastViewedDate',
-]
+export const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
 
 const getMetadataTypesFromElementsSource = async (
   elementsSource: ReadOnlyElementsSource,
@@ -404,11 +384,11 @@ const getMetadataTypesFromElementsSource = async (
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
     // standard and custom objects
-    .filter((metadataType) => !isCustomObjectSync(metadataType))
+    .filter(metadataType => !isCustomObjectSync(metadataType))
     // custom types (CustomMetadata / CustomObject (non standard) / CustomSettings)
-    .filter((metadataType) => !isCustomType(metadataType))
+    .filter(metadataType => !isCustomType(metadataType))
     // settings types
-    .filter((metadataType) => !metadataType.isSettings)
+    .filter(metadataType => !metadataType.isSettings)
     .toArray()
 
 type CreateFiltersRunnerParams = {
@@ -421,9 +401,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-  private createFiltersRunner: (
-    params: CreateFiltersRunnerParams,
-  ) => Required<Filter>
+  private createFiltersRunner: (params: CreateFiltersRunnerParams) => Required<Filter>
 
   private client: SalesforceClient
   private userConfig: SalesforceConfig
@@ -469,10 +447,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         isNestedApiNameRelative: true,
       },
       CustomObject: {
-        nestedInstanceFields: [
-          ...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME),
-          'fields',
-        ],
+        nestedInstanceFields: [...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), 'fields'],
         isNestedApiNameRelative: true,
       },
     },
@@ -484,32 +459,24 @@ export default class SalesforceAdapter implements AdapterOperations {
     unsupportedSystemFields = UNSUPPORTED_SYSTEM_FIELDS,
     config,
   }: SalesforceAdapterParams) {
-    this.maxItemsInRetrieveRequest =
-      config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
+    this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieve = metadataToRetrieve
     this.userConfig = config
-    this.metadataTypesOfInstancesFetchedInFilters =
-      metadataTypesOfInstancesFetchedInFilters
+    this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
     this.elementsSource = elementsSource
-    this.createFiltersRunner = ({
-      fetchProfile,
-      contextOverrides = {},
-    }: CreateFiltersRunnerParams) =>
+    this.createFiltersRunner = ({ fetchProfile, contextOverrides = {} }: CreateFiltersRunnerParams) =>
       filter.filtersRunner(
         {
           client: this.client,
           config: {
             unsupportedSystemFields,
             systemFields,
-            enumFieldPermissions:
-              config.enumFieldPermissions ??
-              constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
+            enumFieldPermissions: config.enumFieldPermissions ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
             fetchProfile,
             elementsSource,
-            separateFieldToFiles:
-              config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
+            separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
             flsProfiles: getFLSProfiles(config),
             ...contextOverrides,
           },
@@ -525,23 +492,19 @@ export default class SalesforceAdapter implements AdapterOperations {
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
     await listMetadataObjects(this.client, CUSTOM_FIELD)
-    const listedFields = this.client.listedInstancesByType.getOrUndefined(
-      constants.CUSTOM_FIELD,
-    )
+    const listedFields = this.client.listedInstancesByType.getOrUndefined(constants.CUSTOM_FIELD)
     if (listedFields === undefined) {
       return new Set()
     }
-    const fieldsFromElementsSource = await awu(
-      await this.elementsSource.getAll(),
-    )
+    const fieldsFromElementsSource = await awu(await this.elementsSource.getAll())
       .filter(isCustomObjectSync)
-      .flatMap((obj) => Object.values(obj.fields))
-      .filter((field) => isCustom(apiNameSync(field)))
+      .flatMap(obj => Object.values(obj.fields))
+      .filter(field => isCustom(apiNameSync(field)))
       .toArray()
     return new Set(
       fieldsFromElementsSource
-        .filter((field) => !listedFields.has(apiNameSync(field) ?? ''))
-        .map((field) => apiNameSync(field.parent))
+        .filter(field => !listedFields.has(apiNameSync(field) ?? ''))
+        .map(field => apiNameSync(field.parent))
         .filter(isDefined),
     )
   }
@@ -551,33 +514,26 @@ export default class SalesforceAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
-  async fetch({
-    progressReporter,
-    withChangesDetection = false,
-  }: FetchOptions): Promise<FetchResult> {
+  async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     this.client.setCustomListFuncByType(
       withChangesDetection
         ? {
-            [APEX_CLASS_METADATA_TYPE]: await createListApexClassesFunc(
-              this.elementsSource,
-            ),
+            [APEX_CLASS_METADATA_TYPE]: await createListApexClassesFunc(this.elementsSource),
           }
         : {},
     )
     const fetchParams = this.userConfig.fetch ?? {}
     const baseQuery = buildMetadataQuery({ fetchParams })
-    const lastChangeDateOfTypesWithNestedInstances =
-      await getLastChangeDateOfTypesWithNestedInstances({
-        client: this.client,
-        metadataQuery: buildFilePropsMetadataQuery(baseQuery),
-      })
+    const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+      client: this.client,
+      metadataQuery: buildFilePropsMetadataQuery(baseQuery),
+    })
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
-          customObjectsWithDeletedFields:
-            await this.getCustomObjectsWithDeletedFields(),
+          customObjectsWithDeletedFields: await this.getCustomObjectsWithDeletedFields(),
         })
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({
@@ -602,9 +558,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...Types.getAnnotationTypes(),
       ...Object.values(ArtificialTypes),
     ]
-    const metadataTypeInfosPromise = this.listMetadataTypes(
-      fetchProfile.metadataQuery,
-    )
+    const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
     const metadataTypesPromise = withChangesDetection
       ? getMetadataTypesFromElementsSource(this.elementsSource)
       : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes)
@@ -617,16 +571,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       fetchProfile,
     )
     progressReporter.reportProgress({ message: 'Fetching instances' })
-    const {
-      elements: metadataInstancesElements,
-      configChanges: metadataInstancesConfigInstances,
-    } = await metadataInstancesPromise
-    const elements = [
-      ...fieldTypes,
-      ...hardCodedTypes,
-      ...metadataTypes,
-      ...metadataInstancesElements,
-    ]
+    const { elements: metadataInstancesElements, configChanges: metadataInstancesConfigInstances } =
+      await metadataInstancesPromise
+    const elements = [...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements]
     progressReporter.reportProgress({
       message: 'Running filters for additional information',
     })
@@ -634,20 +581,13 @@ export default class SalesforceAdapter implements AdapterOperations {
       fetchProfile,
       contextOverrides: { lastChangeDateOfTypesWithNestedInstances },
     })
-    const onFetchFilterResult = (await fetchFiltersRunner.onFetch(
-      elements,
-    )) as FilterResult
+    const onFetchFilterResult = (await fetchFiltersRunner.onFetch(elements)) as FilterResult
     const configChangeSuggestions = [
       ...metadataInstancesConfigInstances,
       ...(onFetchFilterResult.configSuggestions ?? []),
     ]
-    const updatedConfig = getConfigFromConfigChanges(
-      configChangeSuggestions,
-      this.userConfig,
-    )
-    const getPartialFetchData = async (): Promise<
-      PartialFetchData | undefined
-    > => {
+    const updatedConfig = getConfigFromConfigChanges(configChangeSuggestions, this.userConfig)
+    const getPartialFetchData = async (): Promise<PartialFetchData | undefined> => {
       if (!fetchProfile.metadataQuery.isPartialFetch()) {
         return undefined
       }
@@ -658,7 +598,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       if (deletedElemIds.length > 0) {
         log.debug(
           'The following elemIDs were deleted in partial fetch: %s',
-          safeJsonStringify(deletedElemIds.map((e) => e.getFullName())),
+          safeJsonStringify(deletedElemIds.map(e => e.getFullName())),
         )
       }
       return { isPartial: true, deletedElements: deletedElemIds }
@@ -666,11 +606,8 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     if (withChangesDetection) {
       const relevantFetchedElementIds = elements
-        .filter(
-          (element) =>
-            isCustomObjectSync(element) || isInstanceElement(element),
-        )
-        .map((element) => element.elemID.getFullName())
+        .filter(element => isCustomObjectSync(element) || isInstanceElement(element))
+        .map(element => element.elemID.getFullName())
       ;(relevantFetchedElementIds.length > 100 ? log.trace : log.debug)(
         'Fetched the following elements in quick fetch: %s',
         safeJsonStringify(relevantFetchedElementIds),
@@ -700,23 +637,16 @@ export default class SalesforceAdapter implements AdapterOperations {
         changeGroup.changes
           .slice(0, 100)
           .map(getChangeData)
-          .map((e) => e.elemID.getFullName()),
+          .map(e => e.elemID.getFullName()),
       )}`,
     )
-    const isDataDeployGroup = await isCustomObjectInstanceChanges(
-      changeGroup.changes,
-    )
-    const getLookupNameFunc = isDataDeployGroup
-      ? getLookupNameForDataInstances
-      : getLookUpName
+    const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)
+    const getLookupNameFunc = isDataDeployGroup ? getLookupNameForDataInstances : getLookUpName
     const resolvedChanges = await awu(changeGroup.changes)
-      .map((change) => resolveChangeElement(change, getLookupNameFunc))
+      .map(change => resolveChangeElement(change, getLookupNameFunc))
       .toArray()
 
-    await awu(resolvedChanges)
-      .filter(isAdditionChange)
-      .map(getChangeData)
-      .forEach(addDefaults)
+    await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
     const filtersRunner = this.createFiltersRunner({ fetchProfile })
     await filtersRunner.preDeploy(resolvedChanges)
     log.debug(`preDeploy of group ${changeGroup.groupID} finished`)
@@ -728,8 +658,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           appliedChanges: [],
           errors: [
             {
-              message:
-                'Cannot deploy CustomObject Records as part of check-only deployment',
+              message: 'Cannot deploy CustomObject Records as part of check-only deployment',
               severity: 'Error',
             },
           ],
@@ -761,14 +690,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
     log.debug(`onDeploy of group ${changeGroup.groupID} finished`)
 
-    const sourceChanges = _.keyBy(changeGroup.changes, (change) =>
-      getChangeData(change).elemID.getFullName(),
-    )
+    const sourceChanges = _.keyBy(changeGroup.changes, change => getChangeData(change).elemID.getFullName())
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
-      .map((change) =>
-        restoreChangeElement(change, sourceChanges, getLookupNameFunc),
-      )
+      .map(change => restoreChangeElement(change, sourceChanges, getLookupNameFunc))
       .toArray()
     return {
       appliedChanges,
@@ -796,12 +721,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     return this.deployOrValidate(deployOptions, true)
   }
 
-  private async listMetadataTypes(
-    metadataQuery: MetadataQuery,
-  ): Promise<MetadataObject[]> {
-    return (await this.client.listMetadataTypes()).filter((info) =>
-      metadataQuery.isTypeMatch(info.xmlName),
-    )
+  private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {
+    return (await this.client.listMetadataTypes()).filter(info => metadataQuery.isTypeMatch(info.xmlName))
   }
 
   @logDuration('fetching metadata types')
@@ -812,27 +733,14 @@ export default class SalesforceAdapter implements AdapterOperations {
     const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(
       await awu(knownMetadataTypes)
-        .map(
-          async (mdType) =>
-            [await apiName(mdType), mdType] as [string, TypeElement],
-        )
+        .map(async mdType => [await apiName(mdType), mdType] as [string, TypeElement])
         .toArray(),
     )
-    const baseTypeNames = new Set(typeInfos.map((type) => type.xmlName))
-    const childTypeNames = new Set(
-      typeInfos.flatMap((type) => type.childXmlNames).filter(values.isDefined),
-    )
+    const baseTypeNames = new Set(typeInfos.map(type => type.xmlName))
+    const childTypeNames = new Set(typeInfos.flatMap(type => type.childXmlNames).filter(values.isDefined))
     return (
       await Promise.all(
-        typeInfos.map((typeInfo) =>
-          fetchMetadataType(
-            this.client,
-            typeInfo,
-            knownTypes,
-            baseTypeNames,
-            childTypeNames,
-          ),
-        ),
+        typeInfos.map(typeInfo => fetchMetadataType(this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames)),
       )
     ).flat()
   }
@@ -843,48 +751,33 @@ export default class SalesforceAdapter implements AdapterOperations {
     types: Promise<TypeElement[]>,
     fetchProfile: FetchProfile,
   ): Promise<FetchElements<InstanceElement[]>> {
-    const readInstances = async (
-      metadataTypes: ObjectType[],
-    ): Promise<FetchElements<InstanceElement[]>> => {
+    const readInstances = async (metadataTypes: ObjectType[]): Promise<FetchElements<InstanceElement[]>> => {
       const metadataTypesToRead = await awu(metadataTypes)
-        .filter(
-          async (type) =>
-            !this.metadataTypesOfInstancesFetchedInFilters.includes(
-              await apiName(type),
-            ),
-        )
+        .filter(async type => !this.metadataTypesOfInstancesFetchedInFilters.includes(await apiName(type)))
         .toArray()
       const result = await Promise.all(
-        metadataTypesToRead.map((type) =>
-          this.createMetadataInstances(type, fetchProfile),
-        ),
+        metadataTypesToRead.map(type => this.createMetadataInstances(type, fetchProfile)),
       )
       return {
-        elements: _.flatten(result.map((r) => r.elements)),
-        configChanges: _.flatten(result.map((r) => r.configChanges)),
+        elements: _.flatten(result.map(r => r.elements)),
+        configChanges: _.flatten(result.map(r => r.configChanges)),
       }
     }
 
     const typeInfos = await typeInfoPromise
-    const topLevelTypeNames = typeInfos.map((info) => info.xmlName)
+    const topLevelTypeNames = typeInfos.map(info => info.xmlName)
     const topLevelTypes = await awu(await types)
       .filter(isMetadataObjectType)
-      .filter(
-        async (t) =>
-          topLevelTypeNames.includes(await apiName(t)) ||
-          t.annotations.folderContentType !== undefined,
-      )
+      .filter(async t => topLevelTypeNames.includes(await apiName(t)) || t.annotations.folderContentType !== undefined)
       .toArray()
 
-    const [metadataTypesToRetrieve, metadataTypesToRead] = await partition(
-      topLevelTypes,
-      async (t) => this.metadataToRetrieve.includes(await apiName(t)),
+    const [metadataTypesToRetrieve, metadataTypesToRead] = await partition(topLevelTypes, async t =>
+      this.metadataToRetrieve.includes(await apiName(t)),
     )
 
-    const retrieveMetadataInstancesFunc =
-      fetchProfile.metadataQuery.isFetchWithChangesDetection()
-        ? retrieveMetadataInstanceForFetchWithChangesDetection
-        : retrieveMetadataInstances
+    const retrieveMetadataInstancesFunc = fetchProfile.metadataQuery.isFetchWithChangesDetection()
+      ? retrieveMetadataInstanceForFetchWithChangesDetection
+      : retrieveMetadataInstances
 
     const allInstances = await Promise.all([
       retrieveMetadataInstancesFunc({
@@ -896,10 +789,8 @@ export default class SalesforceAdapter implements AdapterOperations {
       readInstances(metadataTypesToRead),
     ])
     return {
-      elements: _.flatten(allInstances.map((instances) => instances.elements)),
-      configChanges: _.flatten(
-        allInstances.map((instances) => instances.configChanges),
-      ),
+      elements: _.flatten(allInstances.map(instances => instances.elements)),
+      configChanges: _.flatten(allInstances.map(instances => instances.configChanges)),
     }
   }
 
@@ -908,10 +799,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     fetchProfile: FetchProfile,
   ): Promise<FetchElements<InstanceElement[]>> {
     const typeName = await apiName(type)
-    const { elements: fileProps, configChanges } = await listMetadataObjects(
-      this.client,
-      typeName,
-    )
+    const { elements: fileProps, configChanges } = await listMetadataObjects(this.client, typeName)
 
     const instances = await fetchMetadataInstances({
       client: this.client,
@@ -927,25 +815,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  private async getElemIdsByTypeFromSource(): Promise<
-    Record<string, ElemID[]>
-  > {
-    const metadataElements = (
-      await awu(await this.elementsSource.getAll()).toArray()
-    )
-      .filter(
-        (element) =>
-          !constants.NON_LISTED_ELEMENT_IDS.includes(
-            element.elemID.getFullName(),
-          ),
-      )
-      .filter(
-        (element) =>
-          isMetadataInstanceElementSync(element) || isCustomObjectSync(element),
-      )
+  private async getElemIdsByTypeFromSource(): Promise<Record<string, ElemID[]>> {
+    const metadataElements = (await awu(await this.elementsSource.getAll()).toArray())
+      .filter(element => !constants.NON_LISTED_ELEMENT_IDS.includes(element.elemID.getFullName()))
+      .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
     return _(metadataElements)
       .groupBy(metadataTypeSync)
-      .mapValues((elements) => elements.map((e) => e.elemID))
+      .mapValues(elements => elements.map(e => e.elemID))
       .value()
   }
 
@@ -962,7 +838,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
     const metadataTypesByName = _.keyBy(
       fetchElements.filter(isMetadataObjectType),
-      (type) => apiNameSync(type) ?? 'unknown',
+      type => apiNameSync(type) ?? 'unknown',
     )
     const elemIdsByTypeFromSource = await this.getElemIdsByTypeFromSource()
     const deletedElemIds = new Set<ElemID>()
@@ -972,30 +848,21 @@ export default class SalesforceAdapter implements AdapterOperations {
       .forEach(([typeName, elemIdsFromSource]) => {
         const metadataType = metadataTypesByName[typeName]
         if (metadataType === undefined) {
-          log.warn(
-            'Skipping deletion detections for type %s since the metadata ObjectType was not found',
-            typeName,
-          )
+          log.warn('Skipping deletion detections for type %s since the metadata ObjectType was not found', typeName)
           return
         }
-        const listedInstancesFullNames =
-          this.client.listedInstancesByType.getOrUndefined(typeName)
+        const listedInstancesFullNames = this.client.listedInstancesByType.getOrUndefined(typeName)
         if (listedInstancesFullNames === undefined) {
-          log.warn(
-            'Skipping deletion detections for type %s since the type was not listed',
-            typeName,
-          )
+          log.warn('Skipping deletion detections for type %s since the type was not listed', typeName)
           return
         }
         const listedElemIdsFullNames = new Set(
           Array.from(listedInstancesFullNames)
             // We invoke createInstanceElement to have the correct elemID that we calculate in fetch
-            .map((fullName) =>
-              createElemId(metadataType, fullName).getFullName(),
-            ),
+            .map(fullName => createElemId(metadataType, fullName).getFullName()),
         )
 
-        elemIdsFromSource.forEach((sourceElemId) => {
+        elemIdsFromSource.forEach(sourceElemId => {
           if (!listedElemIdsFullNames.has(sourceElemId.getFullName())) {
             deletedElemIds.add(sourceElemId)
           }
@@ -1012,22 +879,21 @@ export default class SalesforceAdapter implements AdapterOperations {
     ): Promise<string[]> => {
       const instancesByType = _(instances)
         .filter(isInstanceOfCustomObjectSync)
-        .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
+        .groupBy(instance => apiNameSync(instance.getTypeSync()) ?? '')
         .value()
       _.unset(instancesByType, '')
 
-      const queries = awu(Object.entries(instancesByType)).map(
-        async ([typeName, instancesOfType]) =>
-          buildDataRecordsSoqlQueries(
-            typeName,
-            [instancesOfType[0].getTypeSync().fields[CUSTOM_OBJECT_ID_FIELD]],
-            instancesOfType.map(instanceInternalId),
-          ),
+      const queries = awu(Object.entries(instancesByType)).map(async ([typeName, instancesOfType]) =>
+        buildDataRecordsSoqlQueries(
+          typeName,
+          [instancesOfType[0].getTypeSync().fields[CUSTOM_OBJECT_ID_FIELD]],
+          instancesOfType.map(instanceInternalId),
+        ),
       )
 
       return awu(queries)
-        .flatMap(async (typeQueries) => queryClient(this.client, typeQueries))
-        .map((record) => record[CUSTOM_OBJECT_ID_FIELD])
+        .flatMap(async typeQueries => queryClient(this.client, typeQueries))
+        .map(record => record[CUSTOM_OBJECT_ID_FIELD])
         .toArray()
     }
 
@@ -1037,32 +903,20 @@ export default class SalesforceAdapter implements AdapterOperations {
     ): Promise<InstanceElement[]> => {
       // We implement a small optimization of not querying for IDs we just fetched, because we know these IDs couldn't
       // have been deleted.
-      const idsToDiscard = new Set(
-        instancesToDiscard
-          .filter(isInstanceOfCustomObjectSync)
-          .map(instanceInternalId),
-      )
+      const idsToDiscard = new Set(instancesToDiscard.filter(isInstanceOfCustomObjectSync).map(instanceInternalId))
       return awu(await elementsSource.getAll())
         .filter(isInstanceOfCustomObjectSync)
-        .filter((instance) => !idsToDiscard.has(instanceInternalId(instance)))
+        .filter(instance => !idsToDiscard.has(instanceInternalId(instance)))
         .toArray()
     }
 
-    const workspaceInstances = await getCustomObjectInstancesFromElementSource(
-      this.elementsSource,
-      fetchElements,
-    )
+    const workspaceInstances = await getCustomObjectInstancesFromElementSource(this.elementsSource, fetchElements)
 
-    const instanceIdsInSalesforce = new Set(
-      await querySalesforceForRecordIdsOfInstances(workspaceInstances),
-    )
+    const instanceIdsInSalesforce = new Set(await querySalesforceForRecordIdsOfInstances(workspaceInstances))
 
     return workspaceInstances
-      .filter(
-        (instance) =>
-          !instanceIdsInSalesforce.has(instanceInternalId(instance)),
-      )
-      .map((instance) => instance.elemID)
+      .filter(instance => !instanceIdsInSalesforce.has(instanceInternalId(instance)))
+      .map(instance => instance.elemID)
   }
 
   private async getDeletedElemIdsForPartialFetch({
@@ -1072,14 +926,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     fetchElements: ReadonlyArray<Element>
     fetchProfile: FetchProfile
   }): Promise<Required<PartialFetchData>['deletedElements']> {
-    const deletedMetadata = await this.getDeletedMetadataForPartialFetch(
-      fetchElements,
-      fetchProfile,
-    )
-    const deletedDataRecords =
-      await this.getDeletedDataRecordsForPartialFetch(fetchElements)
+    const deletedMetadata = await this.getDeletedMetadataForPartialFetch(fetchElements, fetchProfile)
+    const deletedDataRecords = await this.getDeletedDataRecordsForPartialFetch(fetchElements)
     return deletedMetadata.concat(deletedDataRecords)
   }
 
-  fixElements: FixElementsFunc = (elements) => this.fixElementsFunc(elements)
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

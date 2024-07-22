@@ -37,36 +37,21 @@ const latestChangedInstanceOfType = async (
   if (!_.isPlainObject(allChangedAtOfType)) {
     return undefined
   }
-  return _.maxBy(
-    Object.values(allChangedAtOfType).filter(_.isString),
-    (dateTime) => new Date(dateTime).getTime(),
-  )
+  return _.maxBy(Object.values(allChangedAtOfType).filter(_.isString), dateTime => new Date(dateTime).getTime())
 }
 
 export const createListApexClassesFunc =
   async (elementsSource?: ReadOnlyElementsSource): Promise<CustomListFunc> =>
-  async (client) => {
+  async client => {
     log.warn('Invoked custom listApexClasses')
-    const sinceDate =
-      elementsSource &&
-      (await latestChangedInstanceOfType(
-        elementsSource,
-        APEX_CLASS_METADATA_TYPE,
-      ))
+    const sinceDate = elementsSource && (await latestChangedInstanceOfType(elementsSource, APEX_CLASS_METADATA_TYPE))
     const query =
       'SELECT Id, NamespacePrefix, Name, CreatedDate, CreatedBy.Name, LastModifiedDate, LastModifiedBy.Name FROM ApexClass'
-    const whereClause = sinceDate
-      ? ` WHERE LastModifiedDate > ${sinceDate}`
-      : ''
-    const result = (
-      await toArrayAsync(await client.queryAll(query.concat(whereClause)))
-    ).flat()
+    const whereClause = sinceDate ? ` WHERE LastModifiedDate > ${sinceDate}` : ''
+    const result = (await toArrayAsync(await client.queryAll(query.concat(whereClause)))).flat()
     const props = result.map((record): FileProperties => {
-      const namespacePrefix =
-        record.namespacePrefix != null ? record.namespacePrefix : undefined
-      const fullName = namespacePrefix
-        ? `${namespacePrefix}__${record.Name}`
-        : record.Name
+      const namespacePrefix = record.namespacePrefix != null ? record.namespacePrefix : undefined
+      const fullName = namespacePrefix ? `${namespacePrefix}__${record.Name}` : record.Name
       return {
         id: record.Id,
         fullName,

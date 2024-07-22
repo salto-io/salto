@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 
-import {
-  BuiltinTypes,
-  CORE_ANNOTATIONS,
-  ElemID,
-  ObjectType,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { ImportantValues } from '@salto-io/adapter-utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { METADATA_TYPE } from '../../src/constants'
@@ -30,16 +25,14 @@ import { defaultFilterContext } from '../utils'
 describe('important values filter', () => {
   const hasImportantValues =
     (...importantValues: string[]): ((type: ObjectType) => boolean) =>
-    (type) => {
+    type => {
       if (type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] === undefined) {
         return false
       }
-      const typeImportantValues = (
-        type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] as ImportantValues
-      ).map((importantValue) => importantValue.value)
-      return importantValues.every((importantValue) =>
-        typeImportantValues.includes(importantValue),
+      const typeImportantValues = (type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] as ImportantValues).map(
+        importantValue => importantValue.value,
       )
+      return importantValues.every(importantValue => typeImportantValues.includes(importantValue))
     }
   describe('onFetch', () => {
     let nonMetadataType: ObjectType
@@ -79,16 +72,10 @@ describe('important values filter', () => {
         }) as typeof filter
       })
       it('should not add important values', async () => {
-        await filter.onFetch([
-          nonMetadataType,
-          metadataType,
-          metadataTypeWithNoImportantValues,
-        ])
+        await filter.onFetch([nonMetadataType, metadataType, metadataTypeWithNoImportantValues])
         expect(nonMetadataType).not.toSatisfy(hasImportantValues())
         expect(metadataType).not.toSatisfy(hasImportantValues())
-        expect(metadataTypeWithNoImportantValues).not.toSatisfy(
-          hasImportantValues(),
-        )
+        expect(metadataTypeWithNoImportantValues).not.toSatisfy(hasImportantValues())
       })
     })
     describe('when feature is enabled', () => {
@@ -107,18 +94,10 @@ describe('important values filter', () => {
         }) as typeof filter
       })
       it('should add important values', async () => {
-        await filter.onFetch([
-          nonMetadataType,
-          metadataType,
-          metadataTypeWithNoImportantValues,
-        ])
+        await filter.onFetch([nonMetadataType, metadataType, metadataTypeWithNoImportantValues])
         expect(nonMetadataType).not.toSatisfy(hasImportantValues())
-        expect(metadataTypeWithNoImportantValues).not.toSatisfy(
-          hasImportantValues(),
-        )
-        expect(metadataType).toSatisfy(
-          hasImportantValues('fullName', 'apiVersion', 'content'),
-        )
+        expect(metadataTypeWithNoImportantValues).not.toSatisfy(hasImportantValues())
+        expect(metadataType).toSatisfy(hasImportantValues('fullName', 'apiVersion', 'content'))
       })
     })
     describe('when additional important values override default ones', () => {
@@ -141,21 +120,11 @@ describe('important values filter', () => {
         }) as typeof filter
       })
       it('should add correct important values', async () => {
-        await filter.onFetch([
-          nonMetadataType,
-          metadataType,
-          metadataTypeWithNoImportantValues,
-        ])
+        await filter.onFetch([nonMetadataType, metadataType, metadataTypeWithNoImportantValues])
         expect(nonMetadataType).not.toSatisfy(hasImportantValues())
-        expect(metadataTypeWithNoImportantValues).not.toSatisfy(
-          hasImportantValues(),
-        )
-        expect(metadataType).toSatisfy(
-          hasImportantValues('fullName', 'apiVersion', 'content'),
-        )
-        expect(
-          metadataType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES],
-        ).toIncludeAnyMembers([
+        expect(metadataTypeWithNoImportantValues).not.toSatisfy(hasImportantValues())
+        expect(metadataType).toSatisfy(hasImportantValues('fullName', 'apiVersion', 'content'))
+        expect(metadataType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toIncludeAnyMembers([
           { value: 'fullName', indexed: false, highlighted: false },
         ])
       })
@@ -184,18 +153,10 @@ describe('important values filter', () => {
         }) as typeof filter
       })
       it('should add correct important values', async () => {
-        await filter.onFetch([
-          nonMetadataType,
-          metadataType,
-          metadataTypeWithNoImportantValues,
-        ])
+        await filter.onFetch([nonMetadataType, metadataType, metadataTypeWithNoImportantValues])
         expect(nonMetadataType).not.toSatisfy(hasImportantValues())
-        expect(metadataTypeWithNoImportantValues).toSatisfy(
-          hasImportantValues('someField', 'someOtherField'),
-        )
-        expect(metadataType).toSatisfy(
-          hasImportantValues('fullName', 'apiVersion', 'content'),
-        )
+        expect(metadataTypeWithNoImportantValues).toSatisfy(hasImportantValues('someField', 'someOtherField'))
+        expect(metadataType).toSatisfy(hasImportantValues('fullName', 'apiVersion', 'content'))
       })
     })
   })

@@ -26,21 +26,13 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { isInstanceOfType } from '../filters/utils'
-import {
-  ACCOUNT_SETTINGS_METADATA_TYPE,
-  ORGANIZATION_SETTINGS,
-  SALESFORCE,
-} from '../constants'
+import { ACCOUNT_SETTINGS_METADATA_TYPE, ORGANIZATION_SETTINGS, SALESFORCE } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const isRecordTypeInvalid = (
-  globalSharingSettings: InstanceElement,
-  instance: InstanceElement,
-): boolean =>
-  globalSharingSettings.value.defaultAccountAccess !== 'Read' &&
-  instance.value.enableAccountOwnerReport !== undefined
+const isRecordTypeInvalid = (globalSharingSettings: InstanceElement, instance: InstanceElement): boolean =>
+  globalSharingSettings.value.defaultAccountAccess !== 'Read' && instance.value.enableAccountOwnerReport !== undefined
 
 const invalidRecordTypeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
@@ -58,15 +50,10 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     return []
   }
 
-  const orgWideSettings = await elementsSource.get(
-    new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance'),
-  )
+  const orgWideSettings = await elementsSource.get(new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance'))
 
   if (!isInstanceElement(orgWideSettings)) {
-    log.error(
-      'Expected a single Organization instance. Found %o instead',
-      orgWideSettings,
-    )
+    log.error('Expected a single Organization instance. Found %o instead', orgWideSettings)
     return []
   }
 
@@ -75,9 +62,7 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(isInstanceOfType(ACCOUNT_SETTINGS_METADATA_TYPE))
-    .filter((accountSettingsInstance) =>
-      isRecordTypeInvalid(orgWideSettings, accountSettingsInstance),
-    )
+    .filter(accountSettingsInstance => isRecordTypeInvalid(orgWideSettings, accountSettingsInstance))
     .map(invalidRecordTypeError)
     .toArray()
 }

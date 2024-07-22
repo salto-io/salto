@@ -24,22 +24,15 @@ import {
   isFieldChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import {
-  CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
-  SYSTEM_FIELDS,
-} from '../constants'
-import {
-  isFieldOfCustomObject,
-  fieldTypeName,
-} from '../transformers/transformer'
+import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES, SYSTEM_FIELDS } from '../constants'
+import { isFieldOfCustomObject, fieldTypeName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
 const isInvalidTypeChange = async (change: Change<Field>): Promise<boolean> => {
   const changeData = getChangeData(change)
   const afterFieldType = fieldTypeName(changeData.refType.elemID.name)
-  const isAfterTypeAllowed =
-    CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(afterFieldType)
+  const isAfterTypeAllowed = CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(afterFieldType)
   const isSystemField = SYSTEM_FIELDS.includes(changeData.name)
   if (isSystemField || isAfterTypeAllowed) {
     return false
@@ -63,11 +56,11 @@ const createChangeError = (field: Field): ChangeError => ({
  * Modification of a custom field type is restricted to certain types,
  * as well as the type of new custom fields.
  */
-const changeValidator: ChangeValidator = async (changes) =>
+const changeValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isFieldChange)
-    .filter((change) => isFieldOfCustomObject(getChangeData(change)))
+    .filter(change => isFieldOfCustomObject(getChangeData(change)))
     .filter(isInvalidTypeChange)
     .map(getChangeData)
     .map(createChangeError)

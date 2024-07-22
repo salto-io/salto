@@ -27,10 +27,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import {
-  DUPLICATE_RULE_METADATA_TYPE,
-  INSTANCE_FULL_NAME_FIELD,
-} from '../constants'
+import { DUPLICATE_RULE_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { isInstanceOfType, isInstanceOfTypeChange } from '../filters/utils'
 
 const { awu } = collections.asynciterable
@@ -55,18 +52,12 @@ const DUPLICATE_RULE_INSTANCE_SCHEMA = Joi.object({
   .unknown(true)
   .required()
 
-const isValidDuplicateRuleInstance = createSchemeGuard<DuplicateRuleInstance>(
-  DUPLICATE_RULE_INSTANCE_SCHEMA,
-)
+const isValidDuplicateRuleInstance = createSchemeGuard<DuplicateRuleInstance>(DUPLICATE_RULE_INSTANCE_SCHEMA)
 
 const getRelatedObjectName = (instance: DuplicateRuleInstance): string =>
   instance.value[INSTANCE_FULL_NAME_FIELD].split('.')[0]
 
-const createSortOrderError = (
-  instance: DuplicateRuleInstance,
-  objectName: string,
-  order: number[],
-): ChangeError => ({
+const createSortOrderError = (instance: DuplicateRuleInstance, objectName: string, order: number[]): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Duplicate rule instances must be in sequential order.',
@@ -88,9 +79,9 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceOfTypeChange(DUPLICATE_RULE_METADATA_TYPE))
-      .filter((change) => isValidDuplicateRuleInstance(getChangeData(change)))
+      .filter(change => isValidDuplicateRuleInstance(getChangeData(change)))
       .toArray()) as Change<DuplicateRuleInstance>[],
-    (change) => getRelatedObjectName(getChangeData(change)),
+    change => getRelatedObjectName(getChangeData(change)),
   )
   if (_.isEmpty(relatedChangesByObjectName)) {
     return []
@@ -109,28 +100,18 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   )
 
   const invalidSortOrderByObjectName = _.pickBy(
-    _.mapValues(relevantDuplicateRuleInstancesByObjectName, (instances) =>
-      instances.map((instance) => instance.value.sortOrder).sort(),
+    _.mapValues(relevantDuplicateRuleInstancesByObjectName, instances =>
+      instances.map(instance => instance.value.sortOrder).sort(),
     ),
     isInvalidSortOrder,
   )
 
-  const invalidChangesByObjectName = _.pick(
-    relatedChangesByObjectName,
-    Object.keys(invalidSortOrderByObjectName),
-  )
+  const invalidChangesByObjectName = _.pick(relatedChangesByObjectName, Object.keys(invalidSortOrderByObjectName))
 
-  return Object.entries(invalidChangesByObjectName).flatMap(
-    ([objectName, invalidChanges]) =>
-      invalidChanges
-        .map(getChangeData)
-        .map((instance) =>
-          createSortOrderError(
-            instance,
-            objectName,
-            invalidSortOrderByObjectName[objectName],
-          ),
-        ),
+  return Object.entries(invalidChangesByObjectName).flatMap(([objectName, invalidChanges]) =>
+    invalidChanges
+      .map(getChangeData)
+      .map(instance => createSortOrderError(instance, objectName, invalidSortOrderByObjectName[objectName])),
   )
 }
 

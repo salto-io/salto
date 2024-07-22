@@ -26,11 +26,7 @@ import {
   AdditionChange,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
-import {
-  apiNameSync,
-  isInstanceOfCustomObjectChangeSync,
-  isInstanceOfTypeChangeSync,
-} from './filters/utils'
+import { apiNameSync, isInstanceOfCustomObjectChangeSync, isInstanceOfTypeChangeSync } from './filters/utils'
 import {
   ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
   SBAA_APPROVAL_CONDITION,
@@ -53,10 +49,7 @@ import {
 } from './constants'
 
 const getGroupId = (change: Change): string => {
-  if (
-    !isInstanceChange(change) ||
-    !isInstanceOfCustomObjectChangeSync(change)
-  ) {
+  if (!isInstanceChange(change) || !isInstanceOfCustomObjectChangeSync(change)) {
     return METADATA_CHANGE_GROUP
   }
   const typeName = apiNameSync(getChangeData(change).getTypeSync()) ?? 'UNKNOWN'
@@ -81,43 +74,25 @@ const getAddCustomRuleAndConditionGroupChangeIds = (
     .filter(([_changeId, change]) => isInstanceChange(change))
     .toArray() as [ChangeId, AdditionChange<InstanceElement>][]
   const customRuleAdditions = addedInstancesChanges
-    .filter(([_changeId, change]) =>
-      isInstanceOfTypeChangeSync(ruleTypeName)(change),
-    )
-    .filter(
-      ([_changeId, change]) =>
-        getChangeData(change).value[ruleConditionFieldName] === 'Custom',
-    )
+    .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(ruleTypeName)(change))
+    .filter(([_changeId, change]) => getChangeData(change).value[ruleConditionFieldName] === 'Custom')
   const customRuleElemIds = new Set(
-    customRuleAdditions.map(([_changeId, change]) =>
-      getChangeData(change).elemID.getFullName(),
-    ),
+    customRuleAdditions.map(([_changeId, change]) => getChangeData(change).elemID.getFullName()),
   )
   const customConditionAdditions = addedInstancesChanges
-    .filter(([_changeId, change]) =>
-      isInstanceOfTypeChangeSync(conditionTypeName)(change),
-    )
+    .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(conditionTypeName)(change))
     .filter(([_changeId, change]) => {
       const rule = getChangeData(change).value[conditionRuleFieldName]
-      return (
-        isReferenceExpression(rule) &&
-        customRuleElemIds.has(rule.elemID.getFullName())
-      )
+      return isReferenceExpression(rule) && customRuleElemIds.has(rule.elemID.getFullName())
     })
-  return new Set(
-    customRuleAdditions
-      .concat(customConditionAdditions)
-      .map(([changeId]) => changeId),
-  )
+  return new Set(customRuleAdditions.concat(customConditionAdditions).map(([changeId]) => changeId))
 }
 
 /**
  * Returns the changes that should be part of the special deploy group for adding sbaa__ApprovalRule__c
  * instances with sbaa__ConditionsMet = 'Custom' and their corresponding sbaa__ApprovalCondition instances.
  */
-const getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds = (
-  changes: Map<ChangeId, Change>,
-): Set<ChangeId> =>
+const getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds = (changes: Map<ChangeId, Change>): Set<ChangeId> =>
   getAddCustomRuleAndConditionGroupChangeIds(
     changes,
     SBAA_APPROVAL_RULE,
@@ -130,9 +105,7 @@ const getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds = (
  * Returns the changes that should be part of the special deploy group for adding SBQQ__PriceRule__c
  * instances with SBQQ__ConditionsMet = 'Custom' and their corresponding SBQQ__PriceCondition instances.
  */
-const getAddCpqCustomPriceRuleAndConditionGroupChangeIds = (
-  changes: Map<ChangeId, Change>,
-): Set<ChangeId> =>
+const getAddCpqCustomPriceRuleAndConditionGroupChangeIds = (changes: Map<ChangeId, Change>): Set<ChangeId> =>
   getAddCustomRuleAndConditionGroupChangeIds(
     changes,
     CPQ_PRICE_RULE,
@@ -145,9 +118,7 @@ const getAddCpqCustomPriceRuleAndConditionGroupChangeIds = (
  * Returns the changes that should be part of the special deploy group for adding SBQQ__ProductRule__c
  * instances with SBQQ__ConditionsMet = 'Custom' and their corresponding SBQQ__ProductCondition instances.
  */
-const getAddCpqCustomProductRuleAndConditionGroupChangeIds = (
-  changes: Map<ChangeId, Change>,
-): Set<ChangeId> =>
+const getAddCpqCustomProductRuleAndConditionGroupChangeIds = (changes: Map<ChangeId, Change>): Set<ChangeId> =>
   getAddCustomRuleAndConditionGroupChangeIds(
     changes,
     CPQ_PRODUCT_RULE,
@@ -160,9 +131,7 @@ const getAddCpqCustomProductRuleAndConditionGroupChangeIds = (
  * Returns the changes that should be part of the special deploy group for adding SBQQ__QuoteTerm__c
  * instances with SBQQ__ConditionsMet = 'Custom' and their corresponding SBQQ__ProductCondition instances.
  */
-const getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds = (
-  changes: Map<ChangeId, Change>,
-): Set<ChangeId> =>
+const getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds = (changes: Map<ChangeId, Change>): Set<ChangeId> =>
   getAddCustomRuleAndConditionGroupChangeIds(
     changes,
     CPQ_QUOTE_TERM,
@@ -171,16 +140,12 @@ const getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds = (
     CPQ_QUOTE_TERM,
   )
 
-export const getChangeGroupIds: ChangeGroupIdFunction = async (changes) => {
+export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
-  const customApprovalRuleAndConditionChangeIds =
-    getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds(changes)
-  const customPriceRuleAndConditionChangeIds =
-    getAddCpqCustomPriceRuleAndConditionGroupChangeIds(changes)
-  const customProductRuleAndConditionChangeIds =
-    getAddCpqCustomProductRuleAndConditionGroupChangeIds(changes)
-  const customQuoteTermsAndConditionsChangeIds =
-    getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds(changes)
+  const customApprovalRuleAndConditionChangeIds = getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds(changes)
+  const customPriceRuleAndConditionChangeIds = getAddCpqCustomPriceRuleAndConditionGroupChangeIds(changes)
+  const customProductRuleAndConditionChangeIds = getAddCpqCustomProductRuleAndConditionGroupChangeIds(changes)
+  const customQuoteTermsAndConditionsChangeIds = getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds(changes)
   wu(changes.entries()).forEach(([changeId, change]) => {
     let groupId: string
     if (customApprovalRuleAndConditionChangeIds.has(changeId)) {

@@ -79,9 +79,11 @@ const getProjectIssueLayoutsScreensName = async (
   ) {
     return []
   }
-  const projectIssueTypesFullName = (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds
-    ?.filter(isReferenceExpression)
-    ?.map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
+  const projectIssueTypesFullName = (
+    (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds ?? []
+  )
+    .filter(isReferenceExpression)
+    .map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
 
   const relevantIssueTypeMappings = (
     (await Promise.all(
@@ -97,8 +99,8 @@ const getProjectIssueLayoutsScreensName = async (
         .filter(issueTypeMappingsElement =>
           isRelevantMapping(
             issueTypeMappingsElement.issueTypeId,
-            relevantIssueTypeMappings?.length ?? 0,
-            projectIssueTypesFullName?.length ?? 0,
+            relevantIssueTypeMappings.length,
+            projectIssueTypesFullName.length,
           ),
         )
         .filter(issueTypeMappingsElement => isReferenceExpression(issueTypeMappingsElement.screenSchemeId))

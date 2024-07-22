@@ -81,10 +81,14 @@ import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
 import { mockInstances, mockTypes } from './mock_elements'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import * as customListFuncsModule from '../src/client/custom_list_funcs'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { INVALID_CROSS_REFERENCE_KEY } = SALESFORCE_ERRORS
+
+jest.mock('../src/client/custom_list_funcs')
+const mockedCustomListFuncs = jest.mocked(customListFuncsModule)
 
 const createCustomObject = (name: string, additionalFields?: Record<string, FieldDefinition>): ObjectType => {
   const stringType = new PrimitiveType({
@@ -295,6 +299,25 @@ describe('SalesforceAdapter fetch', () => {
       type SetMocksMode = 'relatedApexChanged' | 'relatedApexNotChanged'
 
       const setupMocks = (mode: SetMocksMode): void => {
+        const apexClassFileProperties = [
+          mockFileProperties({
+            type: APEX_CLASS_METADATA_TYPE,
+            fullName: APEX_CLASS_FULL_NAME,
+            lastModifiedDate: mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
+            fileName: testData.apexClass.zipFileName,
+          }),
+          // Make sure we don't attempt to retrieve the non-changed apex class
+          mockFileProperties({
+            type: APEX_CLASS_METADATA_TYPE,
+            fullName: ANOTHER_APEX_CLASS_FULL_NAME,
+            lastModifiedDate: DATE,
+            fileName: testData.anotherApexClass.zipFileName,
+          }),
+        ]
+        mockedCustomListFuncs.createListApexClassesDef.mockResolvedValue({
+          func: async _client => ({ result: apexClassFileProperties, errors: [] }),
+          isPartial: true,
+        })
         connection.metadata.describe.mockResolvedValue(
           mockDescribeResult([
             { xmlName: PROFILE_METADATA_TYPE, metaFile: false },
@@ -321,21 +344,7 @@ describe('SalesforceAdapter fetch', () => {
               ]
             }
             if (query.type === APEX_CLASS_METADATA_TYPE) {
-              return [
-                mockFileProperties({
-                  type: APEX_CLASS_METADATA_TYPE,
-                  fullName: APEX_CLASS_FULL_NAME,
-                  lastModifiedDate: mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
-                  fileName: testData.apexClass.zipFileName,
-                }),
-                // Make sure we don't attempt to retrieve the non-changed apex class
-                mockFileProperties({
-                  type: APEX_CLASS_METADATA_TYPE,
-                  fullName: ANOTHER_APEX_CLASS_FULL_NAME,
-                  lastModifiedDate: DATE,
-                  fileName: testData.anotherApexClass.zipFileName,
-                }),
-              ]
+              return apexClassFileProperties
             }
             if (query.type === constants.CUSTOM_METADATA) {
               return [

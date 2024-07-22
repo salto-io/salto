@@ -38,7 +38,7 @@ import {
   UpsertResult,
 } from '@salto-io/jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { flatValues } from '@salto-io/adapter-utils'
+import { flatValues, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
@@ -604,7 +604,7 @@ export default class SalesforceClient implements ISalesforceClient {
     ReturnType<ISalesforceClient['listMetadataObjects']>
   >
 
-  private readonly fullListPromises: Set<ReturnType<ISalesforceClient['listMetadataObjects']>>
+  private readonly fullListPromisesByType: Record<string, ReturnType<ISalesforceClient['listMetadataObjects']>>
 
   private customListFuncDefByType: Record<string, CustomListFuncDef>
 
@@ -634,7 +634,7 @@ export default class SalesforceClient implements ISalesforceClient {
     this.clientName = 'SFDC'
     this.readMetadataChunkSize = _.merge({}, DEFAULT_READ_METADATA_CHUNK_SIZE, config?.readMetadataChunkSize)
     this.listMetadataObjectsOfTypePromises = {}
-    this.fullListPromises = new Set()
+    this.fullListPromisesByType = {}
     this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
   }
 
@@ -725,9 +725,19 @@ export default class SalesforceClient implements ISalesforceClient {
     const customListFuncDef: CustomListFuncDef | undefined = this.customListFuncDefByType[type]
     // For partial custom list result, we run additional full list request
     if (customListFuncDef?.isPartial) {
-      this.fullListPromises.add(this.sendChunkedList([{ type }], isUnhandledError))
+      this.fullListPromisesByType[type] = this.sendChunkedList([{ type }], isUnhandledError)
     }
-    return customListFuncDef?.func(this) ?? this.sendChunkedList([{ type }], isUnhandledError)
+    const request =
+      customListFuncDef?.func(this).catch(e => {
+        log.error(
+          'Failed to run custom list function for type %s. Falling back to full list. Error: %s',
+          type,
+          inspectValue(e),
+        )
+        return this.fullListPromisesByType[type] ?? this.sendChunkedList([{ type }], isUnhandledError)
+      }) ?? this.sendChunkedList([{ type }], isUnhandledError)
+    this.listMetadataObjectsOfTypePromises[type] = request
+    return request
   }
 
   @mapToUserFriendlyErrorMessages
@@ -1071,6 +1081,6 @@ export default class SalesforceClient implements ISalesforceClient {
 
   @logDecorator()
   public async finalize(): Promise<void> {
-    await Promise.all(Array.from(this.fullListPromises))
+    await Promise.all(Object.values(this.fullListPromisesByType))
   }
 }

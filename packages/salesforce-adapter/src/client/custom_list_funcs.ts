@@ -15,7 +15,6 @@
  */
 import _ from 'lodash'
 import { FileProperties } from '@salto-io/jsforce'
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { CustomListFuncDef } from './client'
@@ -23,7 +22,6 @@ import { getChangedAtSingletonInstance } from '../filters/utils'
 import { APEX_CLASS_METADATA_TYPE } from '../constants'
 
 const { toArrayAsync } = collections.asynciterable
-const log = logger(module)
 
 const latestChangedInstanceOfType = async (
   elementsSource: ReadOnlyElementsSource,
@@ -44,7 +42,6 @@ export const createListApexClassesDef = async (
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<CustomListFuncDef> => ({
   func: async client => {
-    log.warn('Invoked custom listApexClasses')
     const sinceDate = elementsSource && (await latestChangedInstanceOfType(elementsSource, APEX_CLASS_METADATA_TYPE))
     const query =
       'SELECT Id, NamespacePrefix, Name, CreatedDate, CreatedBy.Name, LastModifiedDate, LastModifiedBy.Name FROM ApexClass'

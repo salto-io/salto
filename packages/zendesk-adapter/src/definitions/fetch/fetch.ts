@@ -1723,9 +1723,6 @@ const createCustomizations = (): Record<
         },
         // serviceUrl is created in help_center_service_url filter
       },
-      fieldCustomizations: {
-        default_locale: { fieldType: 'string' },
-      },
     },
   },
 

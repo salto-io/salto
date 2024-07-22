@@ -637,7 +637,13 @@ export default class SalesforceClient implements ISalesforceClient {
   }
 
   public setCustomListFuncDefByType(customListFuncDefByType: typeof this.customListFuncDefByType): void {
-    this.customListFuncDefByType = customListFuncDefByType
+    this.customListFuncDefByType = _.mapValues(customListFuncDefByType, def => ({
+      func: def.isPartial
+        ? def.func
+        : // Populate the listedInstancesByType for non-partial custom list functions
+          async (client: ISalesforceClient) => def.func(client).then(this.populateListedInstancesByType),
+      isPartial: def.isPartial,
+    }))
   }
 
   private retryOnBadResponse = <T extends object>(request: () => Promise<T>): Promise<T> => {
@@ -693,23 +699,28 @@ export default class SalesforceClient implements ISalesforceClient {
     return flatValues(describeResult)
   }
 
+  private populateListedInstancesByType(
+    listResult: SendChunkedResult<ListMetadataQuery, FileProperties>,
+  ): SendChunkedResult<ListMetadataQuery, FileProperties> {
+    if (listResult.errors.length === 0) {
+      listResult.result.forEach(fileProps => {
+        this.listedInstancesByType.get(fileProps.type).add(getFullName(fileProps))
+      })
+    }
+    return listResult
+  }
+
   private async sendChunkedList(
     input: ListMetadataQuery[],
     isUnhandledError: ErrorFilter,
   ): ReturnType<ISalesforceClient['listMetadataObjects']> {
-    const sendChunkedResult = await sendChunked({
+    return sendChunked({
       operationInfo: 'listMetadataObjects',
       input,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
-    })
-    if (sendChunkedResult.errors.length === 0) {
-      sendChunkedResult.result.forEach(fileProps => {
-        this.listedInstancesByType.get(fileProps.type).add(getFullName(fileProps))
-      })
-    }
-    return sendChunkedResult
+    }).then(this.populateListedInstancesByType)
   }
 
   private async listMetadataObjectsOfType(

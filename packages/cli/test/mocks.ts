@@ -432,7 +432,12 @@ export const mockCredentialsType = (adapterName: string): AdapterAuthentication 
             refType: BuiltinTypes.STRING,
             annotations: {},
           },
-          sandbox: { refType: BuiltinTypes.BOOLEAN },
+          sandbox: {
+            refType: BuiltinTypes.BOOLEAN,
+            annotations: {
+              _required: true,
+            },
+          },
         },
       }),
     },

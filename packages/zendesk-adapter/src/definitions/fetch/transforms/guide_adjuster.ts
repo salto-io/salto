@@ -13,21 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { validateValue } from './generic'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
+import _ from 'lodash'
 
-/**
- * Add space.key to a template request
- */
-export const addSpaceKey: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async ({
-  value,
-  context,
-}) => ({
-  value: {
-    ...validateValue(value),
-    space: {
-      key: _.get(context.additionalContext, 'space_key'),
+// this transformer adds the brand id to guide elements, to know the source of each element
+export const transform: definitions.AdjustFunctionSingle = async ({ value, context }) => {
+  if (!lowerdashValues.isPlainObject(value)) {
+    throw new Error('unexpected value for guide item, not transforming')
+  }
+  const brandId = context.brandId ?? _.get(context.parent, 'brand')
+  if (brandId === undefined) {
+    return { value }
+  }
+
+  return {
+    value: {
+      ...value,
+      // Defining Zendesk Guide element to its corresponding brand (= subdomain)
+      brand: brandId,
     },
-  },
-})
+  }
+}

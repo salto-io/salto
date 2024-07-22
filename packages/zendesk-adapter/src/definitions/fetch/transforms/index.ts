@@ -13,21 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
-import { definitions } from '@salto-io/adapter-components'
-import { validateValue } from './generic'
 
-/**
- * Add space.key to a template request
- */
-export const addSpaceKey: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async ({
-  value,
-  context,
-}) => ({
-  value: {
-    ...validateValue(value),
-    space: {
-      key: _.get(context.additionalContext, 'space_key'),
-    },
-  },
-})
+export { transform as transformGuideItem } from './guide_adjuster'
+export { transform as transformSectionItem } from './section_adjuster'

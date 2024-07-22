@@ -35,7 +35,7 @@ const removeSelfServiceIcon = (value: Record<string, unknown>): void => {
 /*
  * Adjust policy instance
  */
-export const adjust: definitions.AdjustFunction = async ({ value }) => {
+export const adjust: definitions.AdjustFunctionSingle = async ({ value }) => {
   if (!values.isPlainRecord(value)) {
     throw new Error('Expected value to be a record')
   }

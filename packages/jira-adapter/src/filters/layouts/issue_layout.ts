@@ -156,15 +156,8 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
 }
 
 const verifyProjectDeleted = async (projectId: string, client: JiraClient): Promise<boolean> => {
-  try {
-    const res = await client.get({ url: `/rest/api/3/project/${projectId}` })
-    return res.status === 404
-  } catch (error) {
-    if (error instanceof clientUtils.HTTPError && error.response?.status === 404) {
-      return true
-    }
-    throw error
-  }
+  const res = await client.get({ url: `/rest/api/3/project/${projectId}` })
+  return res.status === 404
 }
 
 const deployLayoutChange = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {

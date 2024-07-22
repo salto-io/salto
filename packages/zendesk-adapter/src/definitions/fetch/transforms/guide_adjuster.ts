@@ -18,7 +18,7 @@ import { values as lowerdashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
 // this transformer adds the brand id to guide elements, to know the source of each element
-export const transform: definitions.AdjustFunction = async ({ value, context }) => {
+export const transform: definitions.AdjustFunctionSingle = async ({ value, context }) => {
   if (!lowerdashValues.isPlainObject(value)) {
     throw new Error('unexpected value for guide item, not transforming')
   }

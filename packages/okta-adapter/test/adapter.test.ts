@@ -1434,6 +1434,8 @@ describe('adapter', () => {
       let brandLogoType: ObjectType
       let brandFaviconType: ObjectType
       let brandTheme: InstanceElement
+      let brandLogo: InstanceElement
+      let brandFavicon: InstanceElement
 
       beforeEach(() => {
         brandThemeType = new ObjectType({
@@ -1468,20 +1470,15 @@ describe('adapter', () => {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
           },
         )
-      })
-
-      it('should successfully add a brand theme', async () => {
-        loadMockReplies('brand_theme_files_add.json')
-        const brandLogo = new InstanceElement(
+        brandLogo = new InstanceElement(
           'brandLogo',
           brandLogoType,
           {
-            id: 'brandlogo-fakeid1',
             fileName: 'logo.png',
             content: new StaticFile({
               filepath: 'logo.png',
               encoding: 'binary',
-              content: Buffer.from('logo'),
+              content: Buffer.from('logo-fake-binary-data'),
             }),
           },
           undefined,
@@ -1492,18 +1489,95 @@ describe('adapter', () => {
             ],
           },
         )
+        brandFavicon = new InstanceElement(
+          'brandFavicon',
+          brandFaviconType,
+          {
+            fileName: 'favicon.ico',
+            content: new StaticFile({
+              filepath: 'favicon.ico',
+              encoding: 'binary',
+              content: Buffer.from('favicon-fake-binary-data'),
+            }),
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(brandTheme.elemID, brandTheme),
+              new ReferenceExpression(brand1.elemID, brand1),
+            ],
+          },
+        )
+      })
+
+      it('should successfully add brand theme files', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo', /logo-fake-binary-data/)
+          .reply(201, { url: 'https://somepath.to/brandlogo-fakeid1' })
+        nock('https://test.okta.com/')
+          .post('/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon', /favicon-fake-binary-data/)
+          .reply(201)
+
         const result = await operations.deploy({
           changeGroup: {
-            groupID: 'brandLogo',
-            changes: [toChange({ after: brandLogo })],
+            groupID: 'brandThemeFiles',
+            changes: [toChange({ after: brandLogo }), toChange({ after: brandFavicon })],
           },
           progressReporter: nullProgressReporter,
         })
         expect(result.errors).toHaveLength(0)
-        expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
-          'brandtheme-fakeid1',
-        )
+        expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify brand theme files', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo', /updated-logo-fake-binary-data/)
+          .reply(201)
+        nock('https://test.okta.com/')
+          .post('/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon', /updated-favicon-fake-binary-data/)
+          .reply(201)
+
+        const updatedBrandLogo = brandLogo.clone()
+        updatedBrandLogo.value.content = new StaticFile({
+          filepath: 'logo.png',
+          encoding: 'binary',
+          content: Buffer.from('updated-logo-fake-binary-data'),
+        })
+        const updatedBrandFavicon = brandFavicon.clone()
+        updatedBrandFavicon.value.content = new StaticFile({
+          filepath: 'favicon.ico',
+          encoding: 'binary',
+          content: Buffer.from('updated-favicon-fake-binary-data'),
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandThemeFiles',
+            changes: [
+              toChange({ before: brandLogo, after: updatedBrandLogo }),
+              toChange({ before: brandFavicon, after: updatedBrandFavicon }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove brand theme files', async () => {
+        loadMockReplies('brand_theme_files_remove.json')
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandThemeFiles',
+            changes: [toChange({ before: brandLogo }), toChange({ before: brandFavicon })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

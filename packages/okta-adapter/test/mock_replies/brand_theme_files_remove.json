@@ -1,6 +1,6 @@
 [
   {
-    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/favicon",
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon",
     "scope": "",
     "method": "DELETE",
     "status": 204,
@@ -12,7 +12,7 @@
     }
   },
   {
-    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/logo",
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo",
     "scope": "",
     "method": "DELETE",
     "status": 204,

@@ -30,7 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import {
   ISSUE_LAYOUT_TYPE,
   ISSUE_TYPE_SCHEMA_NAME,

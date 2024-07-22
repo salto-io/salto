@@ -30,6 +30,8 @@ import {
   CUSTOM_OBJECT,
   FLOW_METADATA_TYPE,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
+  CHANGED_AT_SINGLETON_VERSION_FIELD,
+  CHANGED_AT_VERSION,
 } from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
 import {
@@ -87,7 +89,9 @@ describe('createChangedAtSingletonInstanceFilter', () => {
             elementsSource: buildElementsSourceFromElements([
               changedAtSingleton,
             ]),
-            lastChangeDateOfTypesWithNestedInstances,
+            lastChangeDateOfTypesWithNestedInstances: _.clone(
+              lastChangeDateOfTypesWithNestedInstances,
+            ),
           },
         }) as FilterWith<'onFetch'>
         fetchedElements = [updatedInstance]
@@ -109,6 +113,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
           [updatedInstanceTypeName, updatedInstanceName],
           CHANGED_AT,
         )
+        expectedValues[CHANGED_AT_SINGLETON_VERSION_FIELD] = CHANGED_AT_VERSION
         expect(changedAtSingleton.value).toEqual({
           ...lastChangeDateOfTypesWithNestedInstances,
           ...expectedValues,
@@ -149,7 +154,9 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         const filter = filterCreator({
           config: {
             ...defaultFilterContext,
-            lastChangeDateOfTypesWithNestedInstances,
+            lastChangeDateOfTypesWithNestedInstances: _.clone(
+              lastChangeDateOfTypesWithNestedInstances,
+            ),
           },
         }) as FilterWith<'onFetch'>
         fetchedElements = [metadataInstance, customObject, dataInstance]
@@ -168,6 +175,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
           [DATA_INSTANCES_CHANGED_AT_MAGIC]: {
             SBQQ__Template__c: CHANGED_AT,
           },
+          [CHANGED_AT_SINGLETON_VERSION_FIELD]: CHANGED_AT_VERSION,
         })
       })
     })

@@ -959,6 +959,10 @@ export const mockInstances = () => ({
   [CHANGED_AT_SINGLETON]: new InstanceElement(
     ElemID.CONFIG_NAME,
     ArtificialTypes.ChangedAtSingleton,
+    {
+      // Using a version that is never valid to verify it gets overridden
+      [constants.CHANGED_AT_SINGLETON_VERSION_FIELD]: -1,
+    },
   ),
 })
 

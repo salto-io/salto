@@ -26,6 +26,8 @@ import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
 import {
   API_NAME,
   CHANGED_AT_SINGLETON,
+  CHANGED_AT_SINGLETON_VERSION_FIELD,
+  CHANGED_AT_VERSION,
   CUSTOM_FIELD,
   CUSTOM_OBJECT,
   FIELD_ANNOTATIONS,
@@ -233,6 +235,8 @@ describe('Salesforce Fetch With Changes Detection', () => {
         [NON_UPDATED_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
         [OBJECT_WITH_DELETED_FIELD_NAME]: '2023-11-02T00:00:00.000Z',
       }
+      changedAtSingleton.value[CHANGED_AT_SINGLETON_VERSION_FIELD] =
+        CHANGED_AT_VERSION
     })
     it('should fetch only the updated CustomObject instances', async () => {
       await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })

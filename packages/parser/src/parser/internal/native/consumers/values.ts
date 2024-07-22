@@ -113,7 +113,7 @@ export const createStringValue = (
   const isSimpleString = _.every(tokens, token =>
     [TOKEN_TYPES.CONTENT, TOKEN_TYPES.ESCAPE, TOKEN_TYPES.NEWLINE].includes(token.type),
   )
-  return simpleString
+  return isSimpleString
     ? createSimpleStringValueFunc(context, tokens)
     : createTemplateExpressions(context, tokens, createSimpleStringValueFunc)
 }

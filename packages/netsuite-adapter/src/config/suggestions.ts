@@ -34,6 +34,7 @@ import { emptyQueryParams, fullFetchConfig } from './config_creator'
 const DEPRECATED_CONFIGS_TO_REMOVE = [
   'fetch.skipResolvingAccountSpecificValuesToTypes',
   'suiteAppClient.maxRecordsPerSuiteQLTable',
+  'useChangesDetection',
 ]
 
 export const STOP_MANAGING_ITEMS_MSG =

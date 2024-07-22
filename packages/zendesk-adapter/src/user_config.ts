@@ -64,6 +64,7 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
   omitInactive?: OmitInactiveConfig
   omitTicketStatusTicketField?: boolean
   useNewInfra?: boolean
+  useGuideNewInfra?: boolean
 }
 
 export type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }

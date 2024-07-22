@@ -62,5 +62,28 @@ export const createClientDefinitions = (
         },
       },
     },
+    guide: {
+      httpClient: clients.guide,
+      endpoints: {
+        default: {
+          get: {
+            pagination: 'basic_cursor',
+            // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
+            readonly: true,
+          },
+          delete: {
+            omitBody: true,
+          },
+        },
+        customizations: {
+          '/hc/api/internal/general_settings': { get: { pagination: 'links' } },
+          '/hc/api/internal/help_center_translations': { get: { pagination: 'links' } },
+          '/api/v2/help_center/categories': { get: { pagination: 'links' } },
+          '/api/v2/help_center/sections': { get: { pagination: 'links' } },
+          '/api/v2/help_center/articles/{article.id}/attachments': { get: { pagination: 'links' } },
+          '/api/v2/help_center/categories/{parent.id}/articles': { get: { pagination: 'links' } },
+        },
+      },
+    },
   },
 })

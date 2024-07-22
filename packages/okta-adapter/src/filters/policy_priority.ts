@@ -57,7 +57,7 @@ import {
   SIGN_ON_RULE_PRIORITY_TYPE_NAME,
   SIGN_ON_RULE_TYPE_NAME,
 } from '../constants'
-import { deployChanges } from '../deployment'
+import { deployChanges } from '../deprecated_deployment'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 
 const log = logger(module)

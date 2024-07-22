@@ -18,7 +18,7 @@ import { isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adap
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
-import { deployChanges } from '../deployment'
+import { deployChanges } from '../deprecated_deployment'
 
 const verifyProfileMappingIsDeleted = async (
   profileMappingId: string,

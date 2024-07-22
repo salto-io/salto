@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { assignServiceIdToAdditionChange, deployChanges } from '../deployment'
+import { assignServiceIdToAdditionChange, deployChanges } from '../deprecated_deployment'
 import { shouldAccessPrivateAPIs } from '../definitions/requests/clients'
 
 const log = logger(module)

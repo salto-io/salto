@@ -37,7 +37,7 @@ import {
 } from '../constants'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployWithStatus } from '../deployment'
+import { deployChanges, defaultDeployWithStatus } from '../deprecated_deployment'
 import { OktaOptions } from '../definitions/types'
 
 const log = logger(module)

@@ -30,7 +30,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
-import appDeploymentFilter, { isInactiveCustomAppChange } from '../../src/filters/app_deployment'
+import appDeploymentFilter, { isInactiveCustomAppChange } from '../../src/filters/app_fetch'
 import { APPLICATION_TYPE_NAME, OKTA, ORG_SETTING_TYPE_NAME } from '../../src/constants'
 
 describe('appDeploymentFilter', () => {

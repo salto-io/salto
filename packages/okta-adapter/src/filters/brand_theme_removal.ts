@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
-import { deployChanges } from '../deployment'
+import { deployChanges } from '../deprecated_deployment'
 
 const log = logger(module)
 

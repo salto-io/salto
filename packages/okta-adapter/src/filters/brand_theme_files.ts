@@ -28,7 +28,7 @@ import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, FAV_ICON_TYPE_NAME } from 
 import { FilterCreator } from '../filter'
 import { LOGO_TYPES_TO_VALUES, createFileType, deployLogo, getLogo } from '../logo'
 import OktaClient from '../client/client'
-import { deployChanges } from '../deployment'
+import { deployChanges } from '../deprecated_deployment'
 
 const logoTypeNames = [BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME]
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
-import { isInactiveCustomAppChange } from '../filters/app_deployment'
 import { INACTIVE_STATUS, APPLICATION_TYPE_NAME } from '../constants'
+import { isInactiveCustomAppChange } from '../definitions/deploy/types/application'
 
 /**
  * Modifications of custom application in status 'INACTIVE' are not supported via the Okta API

@@ -18,7 +18,6 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { BuiltinTypes, Element, ElemID, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_type_split'
-import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
 import {
   API_NAME,
   CUSTOM_OBJECT,
@@ -43,6 +42,8 @@ const getElementPaths = (elements: Element[]): string[] =>
 
 describe('Custom Object Split filter', () => {
   describe('when using default file split', () => {
+    const TYPE_NAME = 'ObjectRandom'
+    const TYPE_ID = new ElemID(SALESFORCE, TYPE_NAME)
     const CUSTOM_METADATA_RECORD_TYPE_NAME = 'MDType__mdt'
     const filter = (): FilterType =>
       filterCreator({
@@ -55,7 +56,7 @@ describe('Custom Object Split filter', () => {
       return elements
     }
     const noNameSpaceObject = new ObjectType({
-      elemID: CUSTOM_OBJECT_TYPE_ID,
+      elemID: TYPE_ID,
       fields: {
         standard: {
           refType: BuiltinTypes.STRING,
@@ -76,7 +77,7 @@ describe('Custom Object Split filter', () => {
       },
     })
     const namespaceObject = new ObjectType({
-      elemID: CUSTOM_OBJECT_TYPE_ID,
+      elemID: TYPE_ID,
       fields: {
         standard: {
           refType: BuiltinTypes.STRING,
@@ -116,7 +117,7 @@ describe('Custom Object Split filter', () => {
 
       it('should create annotations object', () => {
         const annotationsObj = elements.find(obj =>
-          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectAnnotations']),
+          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, TYPE_NAME, `${TYPE_NAME}Annotations`]),
         ) as ObjectType
         expect(annotationsObj).toBeDefined()
         expect(Object.values(annotationsObj.fields).length).toEqual(0)
@@ -125,7 +126,7 @@ describe('Custom Object Split filter', () => {
 
       it('should create standard fields object', () => {
         const standardFieldsObj = elements.find(obj =>
-          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectStandardFields']),
+          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, TYPE_NAME, `${TYPE_NAME}StandardFields`]),
         ) as ObjectType
         expect(standardFieldsObj).toBeDefined()
         expect(Object.values(standardFieldsObj.annotations).length).toEqual(0)
@@ -135,7 +136,7 @@ describe('Custom Object Split filter', () => {
 
       it('should create custom fields object with all custom fields', () => {
         const customFieldsObj = elements.find(obj =>
-          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectCustomFields']),
+          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, TYPE_NAME, `${TYPE_NAME}CustomFields`]),
         ) as ObjectType
         expect(customFieldsObj).toBeDefined()
         expect(Object.values(customFieldsObj.annotations).length).toEqual(0)
@@ -161,8 +162,8 @@ describe('Custom Object Split filter', () => {
             INSTALLED_PACKAGES_PATH,
             'namespace',
             OBJECTS_PATH,
-            'CustomObject',
-            'CustomObjectAnnotations',
+            TYPE_NAME,
+            `${TYPE_NAME}Annotations`,
           ]),
         ) as ObjectType
         expect(annotationsObj).toBeDefined()
@@ -177,8 +178,8 @@ describe('Custom Object Split filter', () => {
             INSTALLED_PACKAGES_PATH,
             'namespace',
             OBJECTS_PATH,
-            'CustomObject',
-            'CustomObjectStandardFields',
+            TYPE_NAME,
+            `${TYPE_NAME}StandardFields`,
           ]),
         ) as ObjectType
         expect(standardFieldsObj).toBeDefined()
@@ -194,8 +195,8 @@ describe('Custom Object Split filter', () => {
             INSTALLED_PACKAGES_PATH,
             'namespace',
             OBJECTS_PATH,
-            'CustomObject',
-            'CustomObjectCustomFields',
+            TYPE_NAME,
+            `${TYPE_NAME}CustomFields`,
           ]),
         ) as ObjectType
         expect(customFieldsObj).toBeDefined()
@@ -217,7 +218,7 @@ describe('Custom Object Split filter', () => {
 
       it('should filter out empty standard fields object', async () => {
         const objectWithNoStandardFields = new ObjectType({
-          elemID: CUSTOM_OBJECT_TYPE_ID,
+          elemID: TYPE_ID,
           fields: {
             custom__c: {
               refType: BuiltinTypes.STRING,
@@ -236,13 +237,13 @@ describe('Custom Object Split filter', () => {
         })
         const splitElementsPaths = await getSplitElementsPaths(objectWithNoStandardFields)
         expect(splitElementsPaths).toIncludeSameMembers([
-          [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectCustomFields'],
-          [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectAnnotations'],
+          [SALESFORCE, OBJECTS_PATH, TYPE_NAME, `${TYPE_NAME}CustomFields`],
+          [SALESFORCE, OBJECTS_PATH, TYPE_NAME, `${TYPE_NAME}Annotations`],
         ])
       })
       it('should filter out empty custom fields object', async () => {
         const objectWithNoCustomFields = new ObjectType({
-          elemID: CUSTOM_OBJECT_TYPE_ID,
+          elemID: TYPE_ID,
           fields: {
             standard: {
               refType: BuiltinTypes.STRING,
@@ -255,8 +256,8 @@ describe('Custom Object Split filter', () => {
         })
         const splitElementsPaths = await getSplitElementsPaths(objectWithNoCustomFields)
         expect(splitElementsPaths).toIncludeSameMembers([
-          [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectStandardFields'],
-          [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectAnnotations'],
+          [SALESFORCE, OBJECTS_PATH, TYPE_NAME, `${TYPE_NAME}StandardFields`],
+          [SALESFORCE, OBJECTS_PATH, TYPE_NAME, `${TYPE_NAME}Annotations`],
         ])
       })
     })

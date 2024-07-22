@@ -66,7 +66,6 @@ const main = () => {
   }
 
   if (argv.files) {
-    // console.log(dependenciesSourceFiles.split(' ').join('\n'))
     console.log(fs.readFileSync(tempFile.name, { encoding: 'utf8' }))
   }
 

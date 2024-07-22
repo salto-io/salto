@@ -598,14 +598,12 @@ export default class SalesforceClient implements ISalesforceClient {
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
   readonly listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
-
   private readonly listMetadataObjectsOfTypePromises: Record<
     string,
     ReturnType<ISalesforceClient['listMetadataObjects']>
   >
 
   private readonly fullListPromisesByType: Record<string, ReturnType<ISalesforceClient['listMetadataObjects']>>
-
   private customListFuncDefByType: Record<string, CustomListFuncDef>
 
   constructor({ credentials, connection, config }: SalesforceClientOpts) {

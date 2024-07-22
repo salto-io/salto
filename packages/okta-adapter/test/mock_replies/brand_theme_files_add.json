@@ -5,7 +5,7 @@
     "method": "POST",
     "status": 201,
     "response": {
-      "id": "bndgy8c9vh5GeoyOe697",
+      "id": "brand-fakeid1",
       "name": "amir-brand",
       "removePoweredByOkta": false,
       "customPrivacyPolicyUrl": null,
@@ -18,7 +18,7 @@
       },
       "_links": {
         "themes": {
-          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes",
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes",
           "hints": {
             "allow": [
               "GET"
@@ -26,7 +26,7 @@
           }
         },
         "self": {
-          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697",
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1",
           "hints": {
             "allow": [
               "GET",
@@ -47,12 +47,12 @@
     }
   },
   {
-    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697",
+    "path": "/api/v1/brands/brand-fakeid1",
     "scope": "",
     "method": "PUT",
     "status": 200,
     "response": {
-      "id": "bndgy8c9vh5GeoyOe697",
+      "id": "brand-fakeid1",
       "name": "amir-brand",
       "removePoweredByOkta": true,
       "customPrivacyPolicyUrl": null,
@@ -65,7 +65,7 @@
       },
       "_links": {
         "themes": {
-          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes",
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes",
           "hints": {
             "allow": [
               "GET"
@@ -73,7 +73,7 @@
           }
         },
         "self": {
-          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697",
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1",
           "hints": {
             "allow": [
               "GET",
@@ -93,7 +93,7 @@
         "appInstanceId": "0oad1nts1d2M8Bdvy697",
         "appLinkName": "word"
       },
-      "id": "bndgy8c9vh5GeoyOe697"
+      "id": "brand-fakeid1"
     },
     "reqHeaders": {
       "x-rate-limit-limit": "500",
@@ -102,13 +102,13 @@
     }
   },
   {
-    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697/themes",
+    "path": "/api/v1/brands/brand-fakeid1/themes",
     "scope": "",
     "method": "GET",
     "status": 200,
     "response": [
       {
-        "id": "thegy8c9vifg3loPL697",
+        "id": "brandtheme-fakeid1",
         "logo": "https://ok14static.oktacdn.com/assets/img/logos/okta-logo.1e146cad5713da744492be95eb0f7793.png",
         "favicon": "https://salto.okta.com/favicon.ico",
         "backgroundImage": null,
@@ -123,7 +123,7 @@
         "loadingPageTouchPointVariant": "NONE",
         "_links": {
           "favicon": {
-            "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/favicon",
+            "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon",
             "hints": {
               "allow": [
                 "POST",
@@ -132,7 +132,7 @@
             }
           },
           "self": {
-            "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697",
+            "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1",
             "hints": {
               "allow": [
                 "GET",
@@ -141,7 +141,7 @@
             }
           },
           "logo": {
-            "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/logo",
+            "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo",
             "hints": {
               "allow": [
                 "POST",
@@ -150,7 +150,7 @@
             }
           },
           "background-image": {
-            "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/background-image",
+            "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/background-image",
             "hints": {
               "allow": [
                 "POST",
@@ -168,12 +168,12 @@
     }
   },
   {
-    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697",
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1",
     "scope": "",
     "method": "PUT",
     "status": 200,
     "response": {
-      "id": "thegy8c9vifg3loPL697",
+      "id": "brandtheme-fakeid1",
       "logo": "https://ok14static.oktacdn.com/assets/img/logos/okta-logo.1e146cad5713da744492be95eb0f7793.png",
       "favicon": "https://salto.okta.com/favicon.ico",
       "backgroundImage": null,
@@ -188,7 +188,7 @@
       "loadingPageTouchPointVariant": "NONE",
       "_links": {
         "favicon": {
-          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/favicon",
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon",
           "hints": {
             "allow": [
               "POST",
@@ -197,7 +197,7 @@
           }
         },
         "self": {
-          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697",
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1",
           "hints": {
             "allow": [
               "GET",
@@ -206,7 +206,7 @@
           }
         },
         "logo": {
-          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/logo",
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo",
           "hints": {
             "allow": [
               "POST",
@@ -215,7 +215,7 @@
           }
         },
         "background-image": {
-          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/background-image",
+          "href": "https://salto.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/background-image",
           "hints": {
             "allow": [
               "POST",
@@ -243,7 +243,7 @@
     }
   },
   {
-    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/favicon",
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon",
     "scope": "",
     "method": "POST",
     "status": 201,
@@ -275,7 +275,7 @@
     }
   },
   {
-    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697/themes/thegy8c9vifg3loPL697/logo",
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo",
     "scope": "",
     "method": "POST",
     "status": 201,

@@ -376,7 +376,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'os_x_configuration_profile',
-          omit: ['general.uuid', 'general.payloads'],
+          omit: ['general.uuid'],
           adjust: transforms.adjustConfigurationProfile,
         },
       },
@@ -431,7 +431,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'configuration_profile',
-          omit: ['general.uuid', 'general.payloads'],
+          omit: ['general.uuid'],
           adjust: transforms.adjustConfigurationProfile,
         },
       },
@@ -486,6 +486,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: MAC_APPLICATION_TYPE_NAME,
+          omit: ['scope.computer_groups', 'vpp.vpp_admin_account_id'],
           adjust: transforms.adjustMacApplication,
         },
       },

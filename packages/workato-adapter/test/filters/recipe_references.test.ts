@@ -2665,9 +2665,7 @@ describe('Recipe references filter', () => {
       expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
 
       expect(recipeCode.value.input.sobject_name).toEqual('Opportunity')
-      expect(recipeCode.value.dynamicPickListSelection.sobject_name).toEqual(
-        'Opportunity',
-      )
+      expect(recipeCode.value.dynamicPickListSelection.sobject_name).toEqual('Opportunity')
     })
   })
 })

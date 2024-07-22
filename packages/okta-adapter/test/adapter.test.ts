@@ -1531,6 +1531,7 @@ describe('adapter', () => {
         expect(result.appliedChanges).toHaveLength(2)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+
       it('should successfully modify brand theme files', async () => {
         // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
         // random boundary string, etc., so we call nock programmatically instead of loading from a file.
@@ -1567,6 +1568,7 @@ describe('adapter', () => {
         expect(result.appliedChanges).toHaveLength(2)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+
       it('should successfully remove brand theme files', async () => {
         loadMockReplies('brand_theme_files_remove.json')
         const result = await operations.deploy({

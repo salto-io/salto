@@ -838,15 +838,17 @@ describe('handleHiddenChanges', () => {
         const result = (await getElementHiddenParts(testElement, elementsSource)) as ObjectType
         expect(result).toBeDefined()
         const { fields } = result
-        expect(Object.keys(fields)).toIncludeSameMembers([
-          'fieldWithPartiallyHiddenAnnotations',
-          'hiddenValueFieldWithNoHiddenAnnotations',
-        ])
-        const { fieldWithPartiallyHiddenAnnotations, hiddenValueFieldWithNoHiddenAnnotations } = fields
+        const {
+          fieldWithPartiallyHiddenAnnotations,
+          hiddenFieldWithNoHiddenAnnotations,
+          hiddenValueFieldWithNoHiddenAnnotations,
+        } = fields
         expect(fieldWithPartiallyHiddenAnnotations).toBeDefined()
+        expect(hiddenFieldWithNoHiddenAnnotations).toBeDefined()
         expect(hiddenValueFieldWithNoHiddenAnnotations).toBeDefined()
         expect(fieldWithPartiallyHiddenAnnotations.annotations).toEqual({ hiddenStringValue: 'testHidden' })
-        expect(hiddenValueFieldWithNoHiddenAnnotations.annotations).toEqual({ stringValue: 'test', booleanValue: true })
+        expect(hiddenFieldWithNoHiddenAnnotations.annotations).toEqual({})
+        expect(hiddenValueFieldWithNoHiddenAnnotations.annotations).toEqual({})
       })
     })
   })

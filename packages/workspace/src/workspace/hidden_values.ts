@@ -83,14 +83,8 @@ export const getElementHiddenParts = async <T extends Element>(
   }
   const hiddenPaths = new Set<string>()
   const ancestorsOfHiddenPaths = new Set<string>()
-  // There are two "hidden" annotations - _hidden, and _hidden_value.
-  // If this is an instance, the field belongs to the type so we want to check if
-  // the field is marked as _hidden_value.
-  // Otherwise, we're looking for either a _hidden annotation on the element,
-  // or a _hidden_value annotation on its type definition.
-  const hiddenFunc = isInstanceElement(stateElement) ? isHiddenValue : isHidden
   const storeHiddenPaths: TransformFunc = async ({ value, field, path }) => {
-    if (await hiddenFunc(field, elementsSource)) {
+    if (isHiddenValue(field)) {
       if (path !== undefined) {
         const parentPath = path.createParentID()
         if (!parentPath.isBaseID() && workspaceElement !== undefined) {

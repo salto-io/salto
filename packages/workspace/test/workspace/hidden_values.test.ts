@@ -753,6 +753,7 @@ describe('handleHiddenChanges', () => {
         })
         elementsSource = buildElementsSourceFromElements([annotationType, testElement])
       })
+
       it('should not hide annotation value of type that is _hidden', async () => {
         annotationType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
         const result = await getElementHiddenParts(testElement, elementsSource)

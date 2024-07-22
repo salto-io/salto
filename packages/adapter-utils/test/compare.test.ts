@@ -943,7 +943,6 @@ describe('applyDetailedChanges', () => {
     describe('when the type of a field is changed', () => {
       let beforeType: ObjectType
       let afterType: ObjectType
-      let outputType: ObjectType
       beforeEach(() => {
         beforeType = new ObjectType({
           elemID: new ElemID('test', 'type'),
@@ -967,12 +966,28 @@ describe('applyDetailedChanges', () => {
             },
           },
         })
-        const changes = detailedCompare(beforeType, afterType, { createFieldChanges: true })
-        outputType = beforeType.clone()
-        applyDetailedChanges(outputType, changes)
       })
-      it('should reproduce the after element', () => {
-        expect(outputType).toEqual(afterType)
+      describe('when applying changes on the object type', () => {
+        let outputType: ObjectType
+        beforeEach(() => {
+          const changes = detailedCompare(beforeType, afterType, { createFieldChanges: true })
+          outputType = beforeType.clone()
+          applyDetailedChanges(outputType, changes)
+        })
+        it('should reproduce the after element', () => {
+          expect(outputType).toEqual(afterType)
+        })
+      })
+      describe('when applying changes on the field', () => {
+        let outputField: Field
+        beforeEach(() => {
+          const changes = detailedCompare(beforeType.fields.field, afterType.fields.field, { createFieldChanges: true })
+          outputField = beforeType.fields.field.clone()
+          applyDetailedChanges(outputField, changes)
+        })
+        it('should reproduce the after field', () => {
+          expect(outputField).toEqual(afterType.fields.field)
+        })
       })
     })
   })

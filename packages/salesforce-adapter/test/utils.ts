@@ -30,31 +30,17 @@ import {
   TypeElement,
   Values,
 } from '@salto-io/adapter-api'
-import {
-  buildElementsSourceFromElements,
-  findElements as findElementsByID,
-} from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, findElements as findElementsByID } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import { MockInterface } from '@salto-io/test-utils'
 import * as constants from '../src/constants'
 import { FIELD_ANNOTATIONS, SYSTEM_FIELDS } from '../src/constants'
-import {
-  annotationsFileName,
-  customFieldsFileName,
-  standardFieldsFileName,
-} from '../src/filters/custom_type_split'
+import { annotationsFileName, customFieldsFileName, standardFieldsFileName } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
-import {
-  CustomReferencesSettings,
-  LastChangeDateOfTypesWithNestedInstances,
-  OptionalFeatures,
-} from '../src/types'
+import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
 
-export const findElements = (
-  elements: ReadonlyArray<Element>,
-  ...name: ReadonlyArray<string>
-): Element[] => {
+export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
   const expectedElemId =
     name.length === 1
       ? new ElemID(constants.SALESFORCE, name[0])
@@ -165,64 +151,37 @@ export const createEncodedZipContent = async (
   encoding: BufferEncoding = 'base64',
 ): Promise<string> => {
   const zip = new JSZip()
-  files.forEach((file) => zip.file(file.path, file.content))
+  files.forEach(file => zip.file(file.path, file.content))
   return (await zip.generateAsync({ type: 'nodebuffer' })).toString(encoding)
 }
 
-export const findCustomFieldsObject = (
-  elements: Element[],
-  name: string,
-): ObjectType => {
+export const findCustomFieldsObject = (elements: Element[], name: string): ObjectType => {
   const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects.find(
-    (obj) => obj.path?.slice(-1)[0] === customFieldsFileName(name),
-  ) as ObjectType
+  return customObjects.find(obj => obj.path?.slice(-1)[0] === customFieldsFileName(name)) as ObjectType
 }
 
-export const findStandardFieldsObject = (
-  elements: Element[],
-  name: string,
-): ObjectType => {
+export const findStandardFieldsObject = (elements: Element[], name: string): ObjectType => {
   const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects.find(
-    (obj) => obj.path?.slice(-1)[0] === standardFieldsFileName(name),
-  ) as ObjectType
+  return customObjects.find(obj => obj.path?.slice(-1)[0] === standardFieldsFileName(name)) as ObjectType
 }
 
-export const findAnnotationsObject = (
-  elements: Element[],
-  name: string,
-): ObjectType => {
+export const findAnnotationsObject = (elements: Element[], name: string): ObjectType => {
   const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects.find(
-    (obj) => obj.path?.slice(-1)[0] === annotationsFileName(name),
-  ) as ObjectType
+  return customObjects.find(obj => obj.path?.slice(-1)[0] === annotationsFileName(name)) as ObjectType
 }
 
-export const findFullCustomObject = (
-  elements: Element[],
-  name: string,
-): ObjectType => {
+export const findFullCustomObject = (elements: Element[], name: string): ObjectType => {
   const customObjects = findElements(elements, name) as ObjectType[]
   return new ObjectType({
     elemID: customObjects[0].elemID,
-    annotationRefsOrTypes: Object.fromEntries(
-      customObjects.flatMap((obj) => Object.entries(obj.annotationRefTypes)),
-    ),
-    annotations: Object.fromEntries(
-      customObjects.flatMap((obj) => Object.entries(obj.annotations)),
-    ),
-    fields: Object.fromEntries(
-      customObjects.flatMap((obj) => Object.entries(obj.fields)),
-    ),
+    annotationRefsOrTypes: Object.fromEntries(customObjects.flatMap(obj => Object.entries(obj.annotationRefTypes))),
+    annotations: Object.fromEntries(customObjects.flatMap(obj => Object.entries(obj.annotations))),
+    fields: Object.fromEntries(customObjects.flatMap(obj => Object.entries(obj.fields))),
     isSettings: customObjects[0].isSettings,
   })
 }
 
-export const generateProfileType = (
-  useMaps = false,
-  preDeploy = false,
-): ObjectType => {
+export const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileApplicationVisibility'),
     fields: {
@@ -258,21 +217,13 @@ export const generateProfileType = (
 
   // we only define types as lists if they use non-unique maps - so for onDeploy, fieldPermissions
   // will not appear as a list unless conflicts were found during the previous fetch
-  const fieldPermissionsNonMapType = preDeploy
-    ? ProfileFieldLevelSecurity
-    : new ListType(ProfileFieldLevelSecurity)
+  const fieldPermissionsNonMapType = preDeploy ? ProfileFieldLevelSecurity : new ListType(ProfileFieldLevelSecurity)
 
   if (useMaps || preDeploy) {
     // mark key fields as _required=true
-    ProfileApplicationVisibility.fields.application.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
-    ProfileLayoutAssignment.fields.layout.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
-    ProfileFieldLevelSecurity.fields.field.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
+    ProfileApplicationVisibility.fields.application.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    ProfileLayoutAssignment.fields.layout.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    ProfileFieldLevelSecurity.fields.field.annotations[CORE_ANNOTATIONS.REQUIRED] = true
   }
 
   return new ObjectType({
@@ -282,19 +233,13 @@ export const generateProfileType = (
         refType: BuiltinTypes.STRING,
       },
       applicationVisibilities: {
-        refType: useMaps
-          ? new MapType(ProfileApplicationVisibility)
-          : ProfileApplicationVisibility,
+        refType: useMaps ? new MapType(ProfileApplicationVisibility) : ProfileApplicationVisibility,
       },
       layoutAssignments: {
-        refType: useMaps
-          ? new MapType(new ListType(ProfileLayoutAssignment))
-          : new ListType(ProfileLayoutAssignment),
+        refType: useMaps ? new MapType(new ListType(ProfileLayoutAssignment)) : new ListType(ProfileLayoutAssignment),
       },
       fieldPermissions: {
-        refType: useMaps
-          ? new MapType(new MapType(ProfileFieldLevelSecurity))
-          : fieldPermissionsNonMapType,
+        refType: useMaps ? new MapType(new MapType(ProfileFieldLevelSecurity)) : fieldPermissionsNonMapType,
       },
     },
     annotations: {
@@ -303,15 +248,9 @@ export const generateProfileType = (
   })
 }
 
-export const generatePermissionSetType = (
-  useMaps = false,
-  preDeploy = false,
-): ObjectType => {
+export const generatePermissionSetType = (useMaps = false, preDeploy = false): ObjectType => {
   const PermissionSetApplicationVisibility = new ObjectType({
-    elemID: new ElemID(
-      constants.SALESFORCE,
-      'PermissionSetApplicationVisibility',
-    ),
+    elemID: new ElemID(constants.SALESFORCE, 'PermissionSetApplicationVisibility'),
     fields: {
       application: { refType: BuiltinTypes.STRING },
       default: { refType: BuiltinTypes.BOOLEAN },
@@ -341,12 +280,8 @@ export const generatePermissionSetType = (
 
   if (useMaps || preDeploy) {
     // mark key fields as _required=true
-    PermissionSetApplicationVisibility.fields.application.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
-    PermissionSetFieldLevelSecurity.fields.field.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
+    PermissionSetApplicationVisibility.fields.application.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    PermissionSetFieldLevelSecurity.fields.field.annotations[CORE_ANNOTATIONS.REQUIRED] = true
   }
 
   return new ObjectType({
@@ -356,14 +291,10 @@ export const generatePermissionSetType = (
         refType: BuiltinTypes.STRING,
       },
       applicationVisibilities: {
-        refType: useMaps
-          ? new MapType(PermissionSetApplicationVisibility)
-          : PermissionSetApplicationVisibility,
+        refType: useMaps ? new MapType(PermissionSetApplicationVisibility) : PermissionSetApplicationVisibility,
       },
       fieldPermissions: {
-        refType: useMaps
-          ? new MapType(new MapType(PermissionSetFieldLevelSecurity))
-          : fieldPermissionsNonMapType,
+        refType: useMaps ? new MapType(new MapType(PermissionSetFieldLevelSecurity)) : fieldPermissionsNonMapType,
       },
     },
     annotations: {
@@ -384,10 +315,7 @@ const idType = new PrimitiveType({
   primitive: PrimitiveTypes.STRING,
 })
 
-export const createCustomSettingsObject = (
-  name: string,
-  settingsType: string,
-): ObjectType => {
+export const createCustomSettingsObject = (name: string, settingsType: string): ObjectType => {
   const basicFields = {
     Id: {
       refType: idType,
@@ -465,16 +393,15 @@ export const mockFetchOpts: MockInterface<FetchOptions> = {
   progressReporter: { reportProgress: jest.fn() },
 }
 
-export const emptyLastChangeDateOfTypesWithNestedInstances =
-  (): LastChangeDateOfTypesWithNestedInstances => ({
-    AssignmentRules: {},
-    AutoResponseRules: {},
-    CustomObject: {},
-    EscalationRules: {},
-    SharingRules: {},
-    Workflow: {},
-    CustomLabels: '2023-11-06T00:00:00.000Z',
-  })
+export const emptyLastChangeDateOfTypesWithNestedInstances = (): LastChangeDateOfTypesWithNestedInstances => ({
+  AssignmentRules: {},
+  AutoResponseRules: {},
+  CustomObject: {},
+  EscalationRules: {},
+  SharingRules: {},
+  Workflow: {},
+  CustomLabels: '2023-11-06T00:00:00.000Z',
+})
 
 export const nullProgressReporter: ProgressReporter = {
   reportProgress: () => {},

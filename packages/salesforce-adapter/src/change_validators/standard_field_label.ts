@@ -29,8 +29,7 @@ import { LABEL } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const isStandardFieldChange = (change: Change<Field>): boolean =>
-  !isCustom(getChangeData(change).elemID.getFullName())
+const isStandardFieldChange = (change: Change<Field>): boolean => !isCustom(getChangeData(change).elemID.getFullName())
 
 const isLabelModification = (change: ModificationChange<Field>): boolean => {
   const beforeAnnotations = change.data.before.annotations
@@ -48,11 +47,11 @@ const createChangeError = (field: Field): ChangeError => ({
 /**
  * It is forbidden to modify a label of a standard field.
  */
-const changeValidator: ChangeValidator = async (changes) =>
+const changeValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isModificationChange)
     .filter(isFieldChange)
-    .filter((change) => isFieldOfCustomObject(getChangeData(change)))
+    .filter(change => isFieldOfCustomObject(getChangeData(change)))
     .filter(isStandardFieldChange)
     .filter(isLabelModification)
     .map(getChangeData)

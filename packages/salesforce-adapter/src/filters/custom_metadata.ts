@@ -50,13 +50,7 @@ import {
   SALESFORCE_CUSTOM_SUFFIX,
   XML_ATTRIBUTE_PREFIX,
 } from '../constants'
-import {
-  apiName,
-  createInstanceElement,
-  isNull,
-  MetadataValues,
-  XsdType,
-} from '../transformers/transformer'
+import { apiName, createInstanceElement, isNull, MetadataValues, XsdType } from '../transformers/transformer'
 
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
@@ -119,19 +113,12 @@ export type ServiceMDTRecordValue = MetadataValues & {
 // As a workaround, we pass it as part of the key
 export const XSI_NIL_TRUE = { [`${XML_ATTRIBUTE_PREFIX}xsi:nil="true"`]: true }
 
-const isServiceMDTRecordFieldValue = (
-  value: Values,
-): value is ServiceMDTRecordFieldValue =>
+const isServiceMDTRecordFieldValue = (value: Values): value is ServiceMDTRecordFieldValue =>
   _.isString(value.field) &&
-  (value.value === undefined ||
-    isNull(value.value) ||
-    _.isString(value.value[`${XML_ATTRIBUTE_PREFIX}xsi:type`]))
+  (value.value === undefined || isNull(value.value) || _.isString(value.value[`${XML_ATTRIBUTE_PREFIX}xsi:type`]))
 
-const isServiceMDTRecordValues = (
-  value: Values,
-): value is ServiceMDTRecordValue =>
-  'values' in value &&
-  makeArray(value.values).every(isServiceMDTRecordFieldValue)
+const isServiceMDTRecordValues = (value: Values): value is ServiceMDTRecordValue =>
+  'values' in value && makeArray(value.values).every(isServiceMDTRecordFieldValue)
 
 type NaclMDTRecordFieldValue = {
   field: string
@@ -139,9 +126,7 @@ type NaclMDTRecordFieldValue = {
   type?: string
 }
 
-const serviceFieldValueToNaclValue = (
-  value: ServiceMDTRecordFieldValue,
-): NaclMDTRecordFieldValue => ({
+const serviceFieldValueToNaclValue = (value: ServiceMDTRecordFieldValue): NaclMDTRecordFieldValue => ({
   field: value.field,
   ...(isNull(value.value)
     ? {}
@@ -153,23 +138,15 @@ const serviceFieldValueToNaclValue = (
 
 const additionalNamespaces = Object.fromEntries([
   [`${XML_ATTRIBUTE_PREFIX}xmlns:xsd`, 'http://www.w3.org/2001/XMLSchema'],
-  [
-    `${XML_ATTRIBUTE_PREFIX}xmlns:xsi`,
-    'http://www.w3.org/2001/XMLSchema-instance',
-  ],
+  [`${XML_ATTRIBUTE_PREFIX}xmlns:xsi`, 'http://www.w3.org/2001/XMLSchema-instance'],
 ])
 
 const getCustomMetadataType = async (
   instance: InstanceElement,
   customMetadataTypes: ObjectType[],
 ): Promise<ObjectType | undefined> => {
-  const customMetadataTypeName = (await apiName(instance))
-    .split('.')[0]
-    .concat(CUSTOM_METADATA_SUFFIX)
-  return awu(customMetadataTypes).find(
-    async (objectType) =>
-      (await apiName(objectType)) === customMetadataTypeName,
-  )
+  const customMetadataTypeName = (await apiName(instance)).split('.')[0].concat(CUSTOM_METADATA_SUFFIX)
+  return awu(customMetadataTypes).find(async objectType => (await apiName(objectType)) === customMetadataTypeName)
 }
 
 const extractValuesToFields = (recordValues: ServiceMDTRecordValue): Values =>
@@ -190,27 +167,19 @@ const formatMDTRecordValuesToNacl = (values: ServiceMDTRecordValue): Values =>
     Object.keys(additionalNamespaces),
   )
 
-const iSupportedFieldTypeName = (
-  fieldTypeName: string,
-): fieldTypeName is SupportedFieldTypeName =>
+const iSupportedFieldTypeName = (fieldTypeName: string): fieldTypeName is SupportedFieldTypeName =>
   (SUPPORTED_FIELD_TYPE_NAMES as ReadonlyArray<string>).includes(fieldTypeName)
 
 const getFieldXsdType = async (field: Field): Promise<XsdType | undefined> => {
   const fieldTypeName = (await field.getType()).elemID.typeName
   if (!iSupportedFieldTypeName(fieldTypeName)) {
-    log.warn(
-      'Unsupported field type %s on field %s',
-      fieldTypeName,
-      field.elemID.getFullName(),
-    )
+    log.warn('Unsupported field type %s on field %s', fieldTypeName, field.elemID.getFullName())
     return undefined
   }
   return FIELD_TYPE_TO_XSD_TYPE[fieldTypeName]
 }
 
-const formatRecordValuesForService = async (
-  instance: InstanceElement,
-): Promise<Values> => {
+const formatRecordValuesForService = async (instance: InstanceElement): Promise<Values> => {
   const instanceType = await instance.getType()
   const values = await awu(Object.entries(instanceType.fields))
     .filter(([fieldName]) => fieldName.endsWith(SALESFORCE_CUSTOM_SUFFIX))
@@ -236,9 +205,7 @@ const formatRecordValuesForService = async (
     ..._.omit(
       instance.value,
       INTERNAL_ID_FIELD,
-      Object.keys(instance.value).filter((k) =>
-        k.endsWith(SALESFORCE_CUSTOM_SUFFIX),
-      ),
+      Object.keys(instance.value).filter(k => k.endsWith(SALESFORCE_CUSTOM_SUFFIX)),
     ),
     values,
   }
@@ -248,10 +215,7 @@ const getInstanceWithCorrectType = async (
   instance: InstanceElement,
   customMetadataRecordTypes: ObjectType[],
 ): Promise<InstanceElement | undefined> => {
-  const correctType = await getCustomMetadataType(
-    instance,
-    customMetadataRecordTypes,
-  )
+  const correctType = await getCustomMetadataType(instance, customMetadataRecordTypes)
   if (_.isUndefined(correctType)) {
     log.warn(
       'Could not fix type for CustomMetadataType Instance %s, since its CustomMetadata record type was not found',
@@ -263,10 +227,7 @@ const getInstanceWithCorrectType = async (
     ? formatMDTRecordValuesToNacl(instance.value)
     : instance.value
   if (!isMetadataValues(formattedValues)) {
-    log.warn(
-      'CustomMetadata instance %s is missing the fullName field, skipping.',
-      instance.elemID.getFullName(),
-    )
+    log.warn('CustomMetadata instance %s is missing the fullName field, skipping.', instance.elemID.getFullName())
     return undefined
   }
   return createInstanceElement(formattedValues, correctType)
@@ -285,9 +246,7 @@ const toDeployableChange = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
 ): Promise<Change<InstanceElement>> => {
   const deployableAfter = createInstanceElement(
-    (await formatRecordValuesForService(
-      getChangeData(change),
-    )) as MetadataValues,
+    (await formatRecordValuesForService(getChangeData(change))) as MetadataValues,
     CUSTOM_METADATA_TYPE,
   )
   return isModificationChange(change)
@@ -299,7 +258,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
   let originalChangesByApiName: Record<string, Change>
   return {
     name: 'customMetadataRecordsFilter',
-    onFetch: async (elements) => {
+    onFetch: async elements => {
       const elementsSource = buildElementsSourceForFetch(elements, config)
       const customMetadataRecordTypes = await awu(await elementsSource.getAll())
         .filter(isObjectType)
@@ -310,44 +269,34 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         .filter(isInstanceOfType(CUSTOM_METADATA))
         .toArray()
       const newInstances = await awu(oldInstances)
-        .map((instance) =>
-          getInstanceWithCorrectType(instance, customMetadataRecordTypes),
-        )
+        .map(instance => getInstanceWithCorrectType(instance, customMetadataRecordTypes))
         .filter(isDefined)
         .toArray()
       _.pullAll(elements, oldInstances)
       elements.push(...newInstances)
     },
 
-    preDeploy: async (changes) => {
+    preDeploy: async changes => {
       const originalChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
-        .filter((change) =>
-          isCustomMetadataRecordInstance(getChangeData(change)),
-        )
+        .filter(change => isCustomMetadataRecordInstance(getChangeData(change)))
         .toArray()
-      originalChangesByApiName = await keyByAsync(originalChanges, (c) =>
-        apiName(getChangeData(c)),
-      )
-      const deployableChanges = await awu(originalChanges)
-        .map(toDeployableChange)
-        .toArray()
+      originalChangesByApiName = await keyByAsync(originalChanges, c => apiName(getChangeData(c)))
+      const deployableChanges = await awu(originalChanges).map(toDeployableChange).toArray()
 
       _.pullAll(changes, originalChanges)
-      deployableChanges.forEach((change) => changes.push(change))
+      deployableChanges.forEach(change => changes.push(change))
     },
 
-    onDeploy: async (changes) => {
+    onDeploy: async changes => {
       const appliedChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
-        .filter((change) =>
-          isInstanceOfType(CUSTOM_METADATA)(getChangeData(change)),
-        )
+        .filter(change => isInstanceOfType(CUSTOM_METADATA)(getChangeData(change)))
         .toArray()
       _.pullAll(changes, appliedChanges)
-      await awu(appliedChanges).forEach(async (appliedChange) => {
+      await awu(appliedChanges).forEach(async appliedChange => {
         const name = await apiName(getChangeData(appliedChange))
         changes.push(originalChangesByApiName[name])
       })

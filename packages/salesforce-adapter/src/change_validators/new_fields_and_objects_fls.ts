@@ -33,24 +33,16 @@ import {
 import { SalesforceConfig } from '../types'
 
 const profileNameOrNumberOfProfiles = (profiles: string[]): string =>
-  profiles.length === 1
-    ? `the following profile: ${profiles[0]}`
-    : `${profiles.length} profiles`
+  profiles.length === 1 ? `the following profile: ${profiles[0]}` : `${profiles.length} profiles`
 
-const createObjectFLSInfo = (
-  field: ObjectType,
-  flsProfiles: string[],
-): ChangeError => ({
+const createObjectFLSInfo = (field: ObjectType, flsProfiles: string[]): ChangeError => ({
   message: `Read/write access to this Custom Object will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
   detailedMessage: `Deploying this new Custom Object will make it and its Custom Fields accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
   severity: 'Info',
   elemID: field.elemID,
 })
 
-const createFieldFLSInfo = (
-  field: Field,
-  flsProfiles: string[],
-): ChangeError => ({
+const createFieldFLSInfo = (field: Field, flsProfiles: string[]): ChangeError => ({
   message: `Read/write access to this Custom Field will be granted to ${profileNameOrNumberOfProfiles(flsProfiles)}`,
   detailedMessage: `Deploying this new Custom Field will make it accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
   severity: 'Info',
@@ -59,7 +51,7 @@ const createFieldFLSInfo = (
 
 const changeValidator =
   (config: SalesforceConfig): ChangeValidator =>
-  async (changes) => {
+  async changes => {
     const flsProfiles = getFLSProfiles(config)
 
     // CustomObjects and CustomMetadata types
@@ -69,14 +61,12 @@ const changeValidator =
       .filter(isObjectType)
       // Additions of Standard Objects are invalid and should be handled as part of the standardFieldOrObjectAdditionsOrDeletions Change Validator
       .filter(
-        (objectType) =>
+        objectType =>
           isCustomMetadataRecordTypeSync(objectType) ||
           (isCustomObjectSync(objectType) && !isStandardObjectSync(objectType)),
       )
-    const addedCustomObjectsApiNames = new Set(
-      addedCustomObjects.map((customObject) => apiNameSync(customObject)),
-    )
-    const addedCustomObjectsInfos = addedCustomObjects.map((customObject) =>
+    const addedCustomObjectsApiNames = new Set(addedCustomObjects.map(customObject => apiNameSync(customObject)))
+    const addedCustomObjectsInfos = addedCustomObjects.map(customObject =>
       createObjectFLSInfo(customObject, flsProfiles),
     )
     const addedCustomFieldsInfos = changes
@@ -84,10 +74,8 @@ const changeValidator =
       .filter(isFieldChange)
       .map(getChangeData)
       // Do not create FLS info on fields that are part of a new custom object
-      .filter(
-        (field) => !addedCustomObjectsApiNames.has(apiNameSync(field.parent)),
-      )
-      .map((field) => createFieldFLSInfo(field, flsProfiles))
+      .filter(field => !addedCustomObjectsApiNames.has(apiNameSync(field.parent)))
+      .map(field => createFieldFLSInfo(field, flsProfiles))
 
     return [...addedCustomFieldsInfos, ...addedCustomObjectsInfos]
   }

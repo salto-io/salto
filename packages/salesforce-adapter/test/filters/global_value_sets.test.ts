@@ -22,19 +22,12 @@ import {
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import * as constants from '../../src/constants'
-import filterCreator, {
-  GLOBAL_VALUE_SET,
-  CUSTOM_VALUE,
-  MASTER_LABEL,
-} from '../../src/filters/global_value_sets'
+import filterCreator, { GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
-const createGlobalValueSetInstanceElement = (
-  name: string,
-  values: string[],
-): InstanceElement =>
+const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement(
     'global_value_set_test',
     new ObjectType({
@@ -47,7 +40,7 @@ const createGlobalValueSetInstanceElement = (
       [MASTER_LABEL]: name,
       [constants.DESCRIPTION]: name,
       sorted: false,
-      [CUSTOM_VALUE]: values.map((v) => ({
+      [CUSTOM_VALUE]: values.map(v => ({
         [constants.CUSTOM_VALUE.FULL_NAME]: v,
         [constants.CUSTOM_VALUE.DEFAULT]: false,
         [constants.CUSTOM_VALUE.LABEL]: v,
@@ -56,11 +49,7 @@ const createGlobalValueSetInstanceElement = (
     },
   )
 
-const createPicklistObjectType = (
-  mockElemID: ElemID,
-  apiName: string,
-  valueSetName: string,
-): ObjectType =>
+const createPicklistObjectType = (mockElemID: ElemID, apiName: string, valueSetName: string): ObjectType =>
   new ObjectType({
     elemID: mockElemID,
     fields: {
@@ -104,22 +93,16 @@ describe('Global Value Sets filter', () => {
       await filter.onFetch(elements)
       const globalValueSetInstance = elements[0] as InstanceElement
       const customObjectType = elements[1] as ObjectType
-      expect(
-        customObjectType.fields.state.annotations[
-          constants.VALUE_SET_FIELDS.VALUE_SET_NAME
-        ],
-      ).toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
+      expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
+        new ReferenceExpression(globalValueSetInstance.elemID),
+      )
     })
 
     it('should not replace value set with references if value set name does not exist', async () => {
       elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist'))
       await filter.onFetch(elements)
       const customObjectType = elements[1] as ObjectType
-      expect(
-        customObjectType.fields.state.annotations[
-          constants.VALUE_SET_FIELDS.VALUE_SET_NAME
-        ],
-      ).toEqual('not_exist')
+      expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual('not_exist')
     })
   })
 })

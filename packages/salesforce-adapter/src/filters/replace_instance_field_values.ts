@@ -28,17 +28,9 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import {
-  apiName,
-  metadataType,
-  isCustomObject,
-} from '../transformers/transformer'
+import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
-import {
-  getInternalId,
-  hasInternalId,
-  buildElementsSourceForFetch,
-} from './utils'
+import { getInternalId, hasInternalId, buildElementsSourceForFetch } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -79,28 +71,22 @@ const getRelevantFieldMapping = async ({
   elementsSource,
   key,
   value,
-}: GetRelevantFieldMappingParams): Promise<
-  multiIndex.Index<[string], string>
-> => {
+}: GetRelevantFieldMappingParams): Promise<multiIndex.Index<[string], string>> => {
   const isReferencedCustomObject = async (elem: Element): Promise<boolean> =>
-    (await isCustomObject(elem)) &&
-    Object.values(metadataTypeToInstanceName).includes(await apiName(elem))
+    (await isCustomObject(elem)) && Object.values(metadataTypeToInstanceName).includes(await apiName(elem))
 
   return multiIndex.keyByAsync({
     iter: awu(await elementsSource.getAll())
       .filter(isObjectType)
       .filter(isReferencedCustomObject)
-      .flatMap((obj) => Object.values(obj.fields)),
+      .flatMap(obj => Object.values(obj.fields)),
     filter: hasInternalId,
     key,
     map: value,
   })
 }
 
-const shouldReplace = async (
-  field: Field,
-  instance: InstanceElement,
-): Promise<boolean> => {
+const shouldReplace = async (field: Field, instance: InstanceElement): Promise<boolean> => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
   return (await resolverFinder(field, instance)).length > 0
 }
@@ -116,9 +102,7 @@ const replaceInstanceValues = async (
 
     // if we can't find an item in the lookup it's because
     // it's a standard field that doesn't need translation
-    return _.isArray(value)
-      ? value.map((s) => nameLookup.get(s) ?? s)
-      : nameLookup.get(value) ?? value
+    return _.isArray(value) ? value.map(s => nameLookup.get(s) ?? s) : nameLookup.get(value) ?? value
   }
 
   const values = instance.value
@@ -139,10 +123,8 @@ const replaceInstancesValues = async (
 ): Promise<void> => {
   await awu(elements)
     .filter(isInstanceElement)
-    .filter(async (e) =>
-      Object.keys(metadataTypeToInstanceName).includes(await metadataType(e)),
-    )
-    .forEach(async (e) => {
+    .filter(async e => Object.keys(metadataTypeToInstanceName).includes(await metadataType(e)))
+    .forEach(async e => {
       await replaceInstanceValues(e, nameLookUp)
       log.debug(`replaced values of instance ${await apiName(e)}`)
     })
@@ -157,23 +139,23 @@ const filter: LocalFilterCreator = ({ config }) => ({
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const idToApiNameLookUp = await getRelevantFieldMapping({
       elementsSource: referenceElements,
-      key: (field) => [toShortId(getInternalId(field))],
-      value: async (field) => apiName(field),
+      key: field => [toShortId(getInternalId(field))],
+      value: async field => apiName(field),
     })
     await replaceInstancesValues(elements, idToApiNameLookUp)
   },
   preDeploy: async (changes: ReadonlyArray<Change>): Promise<void> => {
     const apiNameToIdLookup = await getRelevantFieldMapping({
       elementsSource: config.elementsSource,
-      key: async (field) => [await apiName(field)],
-      value: (field) => toShortId(getInternalId(field)),
+      key: async field => [await apiName(field)],
+      value: field => toShortId(getInternalId(field)),
     })
     await replaceInstancesValues(changes.map(getChangeData), apiNameToIdLookup)
   },
-  onDeploy: async (changes) => {
+  onDeploy: async changes => {
     const idToApiNameLookUp = await getRelevantFieldMapping({
       elementsSource: config.elementsSource,
-      key: (field) => [toShortId(getInternalId(field))],
+      key: field => [toShortId(getInternalId(field))],
       value: apiName,
     })
     await replaceInstancesValues(changes.map(getChangeData), idToApiNameLookUp)

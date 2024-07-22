@@ -85,22 +85,10 @@ import {
   VALUE_SETTINGS_FIELDS,
   VALUE_SET_FIELDS,
 } from '../../src/constants'
-import {
-  createInstanceElement,
-  Types,
-} from '../../src/transformers/transformer'
-import {
-  CustomField,
-  CustomObject,
-  CustomPicklistValue,
-  FilterItem,
-} from '../../src/client/types'
+import { createInstanceElement, Types } from '../../src/transformers/transformer'
+import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
 import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
-import {
-  createCustomObjectType,
-  createField,
-  createValueSetEntry,
-} from '../utils'
+import { createCustomObjectType, createField, createValueSetEntry } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
 
@@ -290,9 +278,7 @@ describe('filter utils', () => {
   })
   describe('isCustomMetadataRecordType', () => {
     it('should return true for customMetadataRecordType', async () => {
-      expect(
-        await isCustomMetadataRecordType(mockTypes.CustomMetadataRecordType),
-      ).toBeTrue()
+      expect(await isCustomMetadataRecordType(mockTypes.CustomMetadataRecordType)).toBeTrue()
     })
     it('should return false for non customMetadataRecordType', async () => {
       expect(await isCustomMetadataRecordType(mockTypes.Profile)).toBeFalse()
@@ -300,9 +286,7 @@ describe('filter utils', () => {
   })
   describe('isCustomMetadataRecordTypeSync', () => {
     it('should return true for customMetadataRecordType', () => {
-      expect(
-        isCustomMetadataRecordTypeSync(mockTypes.CustomMetadataRecordType),
-      ).toBeTrue()
+      expect(isCustomMetadataRecordTypeSync(mockTypes.CustomMetadataRecordType)).toBeTrue()
     })
     it('should return false for non customMetadataRecordType', () => {
       expect(isCustomMetadataRecordTypeSync(mockTypes.Profile)).toBeFalse()
@@ -313,14 +297,9 @@ describe('filter utils', () => {
       { [INSTANCE_FULL_NAME_FIELD]: 'MDType.MDTypeInstance' },
       mockTypes.CustomMetadataRecordType,
     )
-    const profileInstance = createInstanceElement(
-      { [INSTANCE_FULL_NAME_FIELD]: 'profileInstance' },
-      mockTypes.Profile,
-    )
+    const profileInstance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'profileInstance' }, mockTypes.Profile)
     it('should return true for customMetadataRecordType instance', async () => {
-      expect(
-        await isCustomMetadataRecordInstance(customMetadataRecordInstance),
-      ).toBeTrue()
+      expect(await isCustomMetadataRecordInstance(customMetadataRecordInstance)).toBeTrue()
     })
     it('should return false for non customMetadataRecordType', async () => {
       expect(await isCustomMetadataRecordInstance(profileInstance)).toBeFalse()
@@ -345,17 +324,13 @@ describe('filter utils', () => {
   })
   describe('getNamespace', () => {
     describe('without namespace', () => {
-      it.each([
-        'Instance',
-        'Parent.Instance',
-        ...INSTANCE_SUFFIXES.map((suffix) => `Instance__${suffix}`),
-      ])('%s', async (name: string) => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: name },
-          mockTypes.Profile,
-        )
-        expect(await getNamespace(instance)).toBeUndefined()
-      })
+      it.each(['Instance', 'Parent.Instance', ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`)])(
+        '%s',
+        async (name: string) => {
+          const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+          expect(await getNamespace(instance)).toBeUndefined()
+        },
+      )
       it('Layout instance', async () => {
         const instance = createInstanceElement(
           { [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' },
@@ -370,14 +345,9 @@ describe('filter utils', () => {
         `${NAMESPACE}__Instance`,
         `Parent.${NAMESPACE}__Instance`,
         `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
-        ...INSTANCE_SUFFIXES.map(
-          (suffix) => `${NAMESPACE}__Instance__${suffix}`,
-        ),
+        ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
       ])('%s', async (name: string) => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: name },
-          mockTypes.Profile,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
         expect(await getNamespace(instance)).toEqual(NAMESPACE)
       })
       it('Layout instance', async () => {
@@ -393,17 +363,13 @@ describe('filter utils', () => {
   })
   describe('getNamespaceSync', () => {
     describe('without namespace', () => {
-      it.each([
-        'Instance',
-        'Parent.Instance',
-        ...INSTANCE_SUFFIXES.map((suffix) => `Instance__${suffix}`),
-      ])('%s', (name: string) => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: name },
-          mockTypes.Profile,
-        )
-        expect(getNamespaceSync(instance)).toBeUndefined()
-      })
+      it.each(['Instance', 'Parent.Instance', ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`)])(
+        '%s',
+        (name: string) => {
+          const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+          expect(getNamespaceSync(instance)).toBeUndefined()
+        },
+      )
       it('Layout instance', () => {
         const instance = createInstanceElement(
           { [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' },
@@ -418,14 +384,9 @@ describe('filter utils', () => {
         `${NAMESPACE}__Instance`,
         `Parent.${NAMESPACE}__Instance`,
         `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
-        ...INSTANCE_SUFFIXES.map(
-          (suffix) => `${NAMESPACE}__Instance__${suffix}`,
-        ),
+        ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
       ])('%s', (name: string) => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: name },
-          mockTypes.Profile,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
         expect(getNamespaceSync(instance)).toEqual(NAMESPACE)
       })
       it('Layout instance', () => {
@@ -447,7 +408,7 @@ describe('filter utils', () => {
       expect(await isStandardObject(mockTypes.Profile)).toBeFalse()
     })
     describe('when CustomObject has a custom suffix', () => {
-      it.each(INSTANCE_SUFFIXES.map((suffix) => `TestObject__${suffix}`))(
+      it.each(INSTANCE_SUFFIXES.map(suffix => `TestObject__${suffix}`))(
         'Should return false for CustomObject with name TestObject__%s',
         async (customObjectName: string) => {
           const customObject = createCustomObjectType(customObjectName, {})
@@ -464,7 +425,7 @@ describe('filter utils', () => {
       expect(mockTypes.Profile).not.toSatisfy(isStandardObjectSync)
     })
     describe('when CustomObject has a custom suffix', () => {
-      it.each(INSTANCE_SUFFIXES.map((suffix) => `TestObject__${suffix}`))(
+      it.each(INSTANCE_SUFFIXES.map(suffix => `TestObject__${suffix}`))(
         'Should return false for CustomObject with name TestObject__%s',
         (customObjectName: string) => {
           const customObject = createCustomObjectType(customObjectName, {})
@@ -480,10 +441,7 @@ describe('filter utils', () => {
       ['SBQQ__Account__c-Layout Name', 'SBQQ__Account__c', 'Layout Name'],
       ['Account-Layout-Complex-Name', 'Account', 'Layout-Complex-Name'],
     ])('%s', (layoutApiName, expectedObjectName, expectedLayoutName) => {
-      expect(layoutObjAndName(layoutApiName)).toEqual([
-        expectedObjectName,
-        expectedLayoutName,
-      ])
+      expect(layoutObjAndName(layoutApiName)).toEqual([expectedObjectName, expectedLayoutName])
     })
   })
   describe('getChangedAtSingleton', () => {
@@ -496,9 +454,7 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([changedAtSingleton])
       })
       it('should return the singleton', async () => {
-        expect(await getChangedAtSingletonInstance(elementsSource)).toEqual(
-          changedAtSingleton,
-        )
+        expect(await getChangedAtSingletonInstance(elementsSource)).toEqual(changedAtSingleton)
       })
     })
 
@@ -507,9 +463,7 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([])
       })
       it('should return undefined', async () => {
-        expect(
-          await getChangedAtSingletonInstance(elementsSource),
-        ).toBeUndefined()
+        expect(await getChangedAtSingletonInstance(elementsSource)).toBeUndefined()
       })
     })
   })
@@ -530,16 +484,11 @@ describe('filter utils', () => {
     let parent: ObjectType
 
     beforeEach(() => {
-      instance = createInstanceElement(
-        { [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' },
-        mockTypes.WebLink,
-      )
+      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
       parent = mockTypes.Account
     })
     it('should return false for element with unresolved parent', () => {
-      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
-        parent.elemID,
-      )
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parent.elemID)
       expect(isElementWithResolvedParent(instance)).toBeFalse()
     })
     it('should return false for element with no parent', () => {
@@ -550,10 +499,7 @@ describe('filter utils', () => {
       expect(isElementWithResolvedParent(instance)).toBeFalse()
     })
     it('should return true when parent is an Element', () => {
-      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
-        parent.elemID,
-        parent,
-      )
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parent.elemID, parent)
       expect(isElementWithResolvedParent(instance)).toBeTrue()
     })
   })
@@ -599,10 +545,7 @@ describe('filter utils', () => {
     let instance: InstanceElement
 
     beforeEach(() => {
-      instance = createInstanceElement(
-        { [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' },
-        mockTypes.WebLink,
-      )
+      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
     })
 
     it('should return undefined on all properties when element is not annotated with any', () => {
@@ -616,8 +559,7 @@ describe('filter utils', () => {
 
     it('should return correct properties when element is annotated with some', () => {
       instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = 'test'
-      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] =
-        '2023-01-01T16:28:30.000Z'
+      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = '2023-01-01T16:28:30.000Z'
       expect(getElementAuthorInformation(instance)).toEqual({
         createdBy: 'test',
         createdAt: '2023-01-01T16:28:30.000Z',
@@ -628,11 +570,9 @@ describe('filter utils', () => {
 
     it('should return correct properties when element is annotated with all', () => {
       instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = 'test'
-      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] =
-        '2023-01-01T16:28:30.000Z'
+      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = '2023-01-01T16:28:30.000Z'
       instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'test2'
-      instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] =
-        '2023-01-01T16:28:30.000Z'
+      instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = '2023-01-01T16:28:30.000Z'
       expect(getElementAuthorInformation(instance)).toEqual({
         createdBy: 'test',
         createdAt: '2023-01-01T16:28:30.000Z',
@@ -643,14 +583,10 @@ describe('filter utils', () => {
   })
   describe('toListType', () => {
     it('should wrap a non List type', () => {
-      expect(toListType(mockTypes.Profile)).toEqual(
-        new ListType(mockTypes.Profile),
-      )
+      expect(toListType(mockTypes.Profile)).toEqual(new ListType(mockTypes.Profile))
     })
     it('should not wrap a List type', () => {
-      expect(toListType(new ListType(mockTypes.Profile))).toEqual(
-        new ListType(mockTypes.Profile),
-      )
+      expect(toListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
     })
   })
   describe('isInstanceOfTypeSync and isInstanceOfTypeChangeSync', () => {
@@ -676,25 +612,15 @@ describe('filter utils', () => {
       })
       it('should return false when the resolved instance type is not one of the provided types', () => {
         expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow'))
-        expect(instance).not.toSatisfy(
-          isInstanceOfTypeSync('Flow', 'ApexClass'),
-        )
+        expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow', 'ApexClass'))
       })
       it('should return true when the unresolved instance type is one of the provided types', () => {
-        expect(instanceWithUnresolvedType).toSatisfy(
-          isInstanceOfTypeSync('Profile'),
-        )
-        expect(instanceWithUnresolvedType).toSatisfy(
-          isInstanceOfTypeSync('Profile', 'Flow'),
-        )
+        expect(instanceWithUnresolvedType).toSatisfy(isInstanceOfTypeSync('Profile'))
+        expect(instanceWithUnresolvedType).toSatisfy(isInstanceOfTypeSync('Profile', 'Flow'))
       })
       it('should return false when the unresolved instance type is not one of the provided types', () => {
-        expect(instanceWithUnresolvedType).not.toSatisfy(
-          isInstanceOfTypeSync('Flow'),
-        )
-        expect(instanceWithUnresolvedType).not.toSatisfy(
-          isInstanceOfTypeSync('Flow', 'ApexClass'),
-        )
+        expect(instanceWithUnresolvedType).not.toSatisfy(isInstanceOfTypeSync('Flow'))
+        expect(instanceWithUnresolvedType).not.toSatisfy(isInstanceOfTypeSync('Flow', 'ApexClass'))
       })
       it('should return false for a type element', () => {
         expect(mockTypes.Profile).not.toSatisfy(isInstanceOfTypeSync('Profile'))
@@ -711,9 +637,7 @@ describe('filter utils', () => {
       })
       it('should return false when the changed instance type is not one of the provided types', () => {
         expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow'))
-        expect(change).not.toSatisfy(
-          isInstanceOfTypeChangeSync('Flow', 'ApexClass'),
-        )
+        expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow', 'ApexClass'))
       })
     })
   })
@@ -831,11 +755,7 @@ describe('filter utils', () => {
 
     describe('when there is no annotation', () => {
       beforeEach(() => {
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.Lookup,
-          'SomeCustomObject.SomeField',
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.Lookup, 'SomeCustomObject.SomeField')
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return an empty array', () => {
@@ -844,14 +764,9 @@ describe('filter utils', () => {
     })
     describe('when the annotation is empty', () => {
       beforeEach(() => {
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.MasterDetail,
-          'SomeCustomObject.SomeField',
-          {
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [],
-          },
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.MasterDetail, 'SomeCustomObject.SomeField', {
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [],
+        })
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return an empty array', () => {
@@ -860,14 +775,9 @@ describe('filter utils', () => {
     })
     describe('when the annotation contains strings', () => {
       beforeEach(() => {
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.Lookup,
-          'SomeCustomObject.SomeField',
-          {
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: ['SomeTargetType'],
-          },
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.Lookup, 'SomeCustomObject.SomeField', {
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: ['SomeTargetType'],
+        })
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return the referred type', () => {
@@ -878,16 +788,9 @@ describe('filter utils', () => {
     describe('when the annotation contains references', () => {
       beforeEach(() => {
         const targetType = createCustomObjectType('TargetType', {})
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.MasterDetail,
-          'SomeCustomObject.SomeField',
-          {
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [
-              new ReferenceExpression(targetType.elemID, targetType),
-            ],
-          },
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.MasterDetail, 'SomeCustomObject.SomeField', {
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [new ReferenceExpression(targetType.elemID, targetType)],
+        })
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return the referred type name', () => {
@@ -897,11 +800,7 @@ describe('filter utils', () => {
     })
     describe('when it`s a hierarchy field', () => {
       beforeEach(() => {
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.Hierarchy,
-          'SomeCustomObject.SomeField',
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.Hierarchy, 'SomeCustomObject.SomeField')
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return the referred type name', () => {
@@ -915,25 +814,16 @@ describe('filter utils', () => {
       expect(mockTypes.Account.fields.Name).toSatisfy(isStandardField)
     })
     it('should return false for Custom Field', () => {
-      const customField = new Field(
-        mockTypes.Account,
-        'CustomField__c',
-        Types.primitiveDataTypes.Text,
-        {
-          [API_NAME]: 'Account.CustomField__c',
-        },
-      )
+      const customField = new Field(mockTypes.Account, 'CustomField__c', Types.primitiveDataTypes.Text, {
+        [API_NAME]: 'Account.CustomField__c',
+      })
       expect(customField).not.toSatisfy(isStandardField)
     })
   })
   describe('getFullName', () => {
     it('should return correct fullNames', () => {
       // instances with no parent
-      expect(
-        getFullName(
-          mockFileProperties({ fullName: 'Test', type: 'ApexClass' }),
-        ),
-      ).toEqual('Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test', type: 'ApexClass' }))).toEqual('Test')
       expect(
         getFullName(
           mockFileProperties({
@@ -963,11 +853,7 @@ describe('filter utils', () => {
         ),
       ).toEqual('Test')
       // layout instances
-      expect(
-        getFullName(
-          mockFileProperties({ fullName: 'Test-Test', type: 'Layout' }),
-        ),
-      ).toEqual('Test-Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', type: 'Layout' }))).toEqual('Test-Test')
       expect(
         getFullName(
           mockFileProperties({
@@ -1053,9 +939,7 @@ describe('filter utils', () => {
       expect(instance).toSatisfy(isInstanceOfCustomObjectSync)
     })
     it('should return false for non CustomObject instance', () => {
-      expect(mockInstances().Profile).not.toSatisfy(
-        isInstanceOfCustomObjectSync,
-      )
+      expect(mockInstances().Profile).not.toSatisfy(isInstanceOfCustomObjectSync)
     })
   })
   describe('isInstanceOfCustomObjectChangeSync', () => {
@@ -1063,14 +947,10 @@ describe('filter utils', () => {
       const instance = new InstanceElement('TestInstance', mockTypes.Account, {
         Name: 'TestInstance',
       })
-      expect(toChange({ after: instance })).toSatisfy(
-        isInstanceOfCustomObjectChangeSync,
-      )
+      expect(toChange({ after: instance })).toSatisfy(isInstanceOfCustomObjectChangeSync)
     })
     it('should return false for non CustomObject instance', () => {
-      expect(toChange({ after: mockInstances().Profile })).not.toSatisfy(
-        isInstanceOfCustomObjectChangeSync,
-      )
+      expect(toChange({ after: mockInstances().Profile })).not.toSatisfy(isInstanceOfCustomObjectChangeSync)
     })
   })
   describe('aliasOrElemID', () => {
@@ -1081,9 +961,7 @@ describe('filter utils', () => {
     })
     it('should return the fullElemID for Element without alias', () => {
       const instanceWithoutAlias = mockInstances().Profile
-      expect(aliasOrElemID(instanceWithoutAlias)).toEqual(
-        instanceWithoutAlias.elemID.getFullName(),
-      )
+      expect(aliasOrElemID(instanceWithoutAlias)).toEqual(instanceWithoutAlias.elemID.getFullName())
     })
   })
   describe('getMostRecentFileProperties', () => {
@@ -1105,9 +983,7 @@ describe('filter utils', () => {
           lastModifiedDate: '2023-11-02T16:28:30.000Z',
         }),
       ].concat(mostRecentProps)
-      expect(getMostRecentFileProperties(fileProperties)).toEqual(
-        mostRecentProps,
-      )
+      expect(getMostRecentFileProperties(fileProperties)).toEqual(mostRecentProps)
     })
     it('should return undefined for empty array', () => {
       expect(getMostRecentFileProperties([])).toBeUndefined()
@@ -1140,19 +1016,12 @@ describe('filter utils', () => {
 
     it('should return the FLS profiles defined in the config', () => {
       const flsProfiles = ['Admin Copy', 'Test Profile']
-      expect(getFLSProfiles({ client: { deploy: { flsProfiles } } })).toEqual(
-        flsProfiles,
-      )
+      expect(getFLSProfiles({ client: { deploy: { flsProfiles } } })).toEqual(flsProfiles)
     })
   })
   describe('toCustomField', () => {
     const elemID = new ElemID('salesforce', 'test')
-    const field = new Field(
-      new ObjectType({ elemID }),
-      'name',
-      Types.primitiveDataTypes.Text,
-      { [LABEL]: 'Labelo' },
-    )
+    const field = new Field(new ObjectType({ elemID }), 'name', Types.primitiveDataTypes.Text, { [LABEL]: 'Labelo' })
 
     it('should have label for custom field', async () => {
       field.annotations[API_NAME] = 'Test__c.Custom__c'
@@ -1172,9 +1041,7 @@ describe('filter utils', () => {
     })
     describe('Hierarchy CustomField', () => {
       it('should have relationshipName value but no relatesTo value', async () => {
-        const customField = await toCustomField(
-          mockTypes.User.fields.Manager__c,
-        )
+        const customField = await toCustomField(mockTypes.User.fields.Manager__c)
         expect(customField.relationshipName).toEqual('Manager')
         expect(customField.referenceTo).toBeUndefined()
       })
@@ -1188,16 +1055,11 @@ describe('filter utils', () => {
           Types.primitiveDataTypes.MetadataRelationship,
           {
             [LABEL]: 'Labelo',
-            [FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]:
-              CONTROLLING_FIELD,
+            [FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]: CONTROLLING_FIELD,
           },
         )
         const customField = await toCustomField(metadataRelationshipField)
-        expect(
-          customField[
-            FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD
-          ],
-        ).toEqual(CONTROLLING_FIELD)
+        expect(customField[FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]).toEqual(CONTROLLING_FIELD)
       })
     })
   })
@@ -1265,23 +1127,19 @@ describe('filter utils', () => {
       describe('with fields', () => {
         let customObj: CustomObject
         beforeEach(async () => {
-          customObj = await toCustomProperties(objType, true, [
-            objType.fields[ignoredField].annotations[API_NAME],
-          ])
+          customObj = await toCustomProperties(objType, true, [objType.fields[ignoredField].annotations[API_NAME]])
         })
         it('should have correct name', () => {
           expect(customObj.fullName).toEqual(objType.annotations[API_NAME])
         })
         it('should have fields', () => {
           expect(customObj.fields).toBeDefined()
-          expect(
-            makeArray(customObj.fields).map((f) => f.fullName),
-          ).toContainEqual(objType.fields[existingField].annotations[API_NAME])
+          expect(makeArray(customObj.fields).map(f => f.fullName)).toContainEqual(
+            objType.fields[existingField].annotations[API_NAME],
+          )
         })
         it('should not have ignored fields', () => {
-          expect(
-            makeArray(customObj.fields).map((f) => f.fullName),
-          ).not.toContainEqual(
+          expect(makeArray(customObj.fields).map(f => f.fullName)).not.toContainEqual(
             objType.fields[ignoredField].annotations[API_NAME],
           )
         })
@@ -1364,15 +1222,9 @@ describe('filter utils', () => {
 
       it('should transform master-detail field', async () => {
         const masterDetailField = objectType.fields[fieldName]
-        masterDetailField.refType = createRefToElmWithValue(
-          Types.primitiveDataTypes.MasterDetail,
-        )
-        masterDetailField.annotations[
-          FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ
-        ] = true
-        masterDetailField.annotations[
-          FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL
-        ] = true
+        masterDetailField.refType = createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)
+        masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
+        masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
         const customMasterDetailField = await toCustomField(masterDetailField)
         assertCustomFieldTransformation(
           customMasterDetailField,
@@ -1399,16 +1251,11 @@ describe('filter utils', () => {
           [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
           [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
             {
-              [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
-                'ControllingVal1',
-              ],
+              [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['ControllingVal1'],
               [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
             },
             {
-              [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
-                'ControllingVal1',
-                'ControllingVal2',
-              ],
+              [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['ControllingVal1', 'ControllingVal2'],
               [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
             },
           ],
@@ -1439,72 +1286,36 @@ describe('filter utils', () => {
       })
 
       it('should transform field dependency for picklist field', async () => {
-        const customFieldWithFieldDependency = await toCustomField(
-          obj.fields[fieldName],
-        )
-        expect(customFieldWithFieldDependency.type).toEqual(
-          FIELD_TYPE_NAMES.PICKLIST,
-        )
-        expect(
-          customFieldWithFieldDependency?.valueSet?.controllingField,
-        ).toEqual('ControllingFieldName')
-        const valueSettings =
-          customFieldWithFieldDependency?.valueSet?.valueSettings
+        const customFieldWithFieldDependency = await toCustomField(obj.fields[fieldName])
+        expect(customFieldWithFieldDependency.type).toEqual(FIELD_TYPE_NAMES.PICKLIST)
+        expect(customFieldWithFieldDependency?.valueSet?.controllingField).toEqual('ControllingFieldName')
+        const valueSettings = customFieldWithFieldDependency?.valueSet?.valueSettings
         expect(valueSettings).toHaveLength(2)
         expect(valueSettings?.[0].valueName).toEqual('Val1')
-        expect(valueSettings?.[0].controllingFieldValue).toEqual([
-          'ControllingVal1',
-        ])
+        expect(valueSettings?.[0].controllingFieldValue).toEqual(['ControllingVal1'])
         expect(valueSettings?.[1].valueName).toEqual('Val2')
-        expect(valueSettings?.[1].controllingFieldValue).toEqual([
-          'ControllingVal1',
-          'ControllingVal2',
-        ])
+        expect(valueSettings?.[1].controllingFieldValue).toEqual(['ControllingVal1', 'ControllingVal2'])
       })
 
       it('should transform field dependency for multi picklist field', async () => {
-        obj.fields[fieldName].refType = createRefToElmWithValue(
-          Types.primitiveDataTypes.MultiselectPicklist,
-        )
-        const customFieldWithFieldDependency = await toCustomField(
-          obj.fields[fieldName],
-        )
-        expect(customFieldWithFieldDependency.type).toEqual(
-          FIELD_TYPE_NAMES.MULTIPICKLIST,
-        )
-        expect(
-          customFieldWithFieldDependency?.valueSet?.controllingField,
-        ).toEqual('ControllingFieldName')
-        const valueSettings =
-          customFieldWithFieldDependency?.valueSet?.valueSettings
+        obj.fields[fieldName].refType = createRefToElmWithValue(Types.primitiveDataTypes.MultiselectPicklist)
+        const customFieldWithFieldDependency = await toCustomField(obj.fields[fieldName])
+        expect(customFieldWithFieldDependency.type).toEqual(FIELD_TYPE_NAMES.MULTIPICKLIST)
+        expect(customFieldWithFieldDependency?.valueSet?.controllingField).toEqual('ControllingFieldName')
+        const valueSettings = customFieldWithFieldDependency?.valueSet?.valueSettings
         expect(valueSettings).toHaveLength(2)
         expect(valueSettings?.[0].valueName).toEqual('Val1')
-        expect(valueSettings?.[0].controllingFieldValue).toEqual([
-          'ControllingVal1',
-        ])
+        expect(valueSettings?.[0].controllingFieldValue).toEqual(['ControllingVal1'])
         expect(valueSettings?.[1].valueName).toEqual('Val2')
-        expect(valueSettings?.[1].controllingFieldValue).toEqual([
-          'ControllingVal1',
-          'ControllingVal2',
-        ])
+        expect(valueSettings?.[1].controllingFieldValue).toEqual(['ControllingVal1', 'ControllingVal2'])
       })
 
       it('should ignore field dependency when not defined', async () => {
-        delete obj.fields[fieldName].annotations[
-          FIELD_ANNOTATIONS.FIELD_DEPENDENCY
-        ]
-        const customFieldWithFieldDependency = await toCustomField(
-          obj.fields[fieldName],
-        )
-        expect(customFieldWithFieldDependency.type).toEqual(
-          FIELD_TYPE_NAMES.PICKLIST,
-        )
-        expect(
-          customFieldWithFieldDependency?.valueSet?.controllingField,
-        ).toBeUndefined()
-        expect(
-          customFieldWithFieldDependency?.valueSet?.valueSettings,
-        ).toBeUndefined()
+        delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
+        const customFieldWithFieldDependency = await toCustomField(obj.fields[fieldName])
+        expect(customFieldWithFieldDependency.type).toEqual(FIELD_TYPE_NAMES.PICKLIST)
+        expect(customFieldWithFieldDependency?.valueSet?.controllingField).toBeUndefined()
+        expect(customFieldWithFieldDependency?.valueSet?.valueSettings).toBeUndefined()
       })
     })
 
@@ -1531,15 +1342,9 @@ describe('filter utils', () => {
       })
 
       it('should transform global picklist field', async () => {
-        const customFieldWithGlobalPicklist = await toCustomField(
-          obj.fields[fieldName],
-        )
-        expect(customFieldWithGlobalPicklist.type).toEqual(
-          FIELD_TYPE_NAMES.PICKLIST,
-        )
-        expect(customFieldWithGlobalPicklist?.valueSet?.valueSetName).toEqual(
-          'gvs',
-        )
+        const customFieldWithGlobalPicklist = await toCustomField(obj.fields[fieldName])
+        expect(customFieldWithGlobalPicklist.type).toEqual(FIELD_TYPE_NAMES.PICKLIST)
+        expect(customFieldWithGlobalPicklist?.valueSet?.valueSetName).toEqual('gvs')
         expect(customFieldWithGlobalPicklist?.valueSet?.restricted).toBe(true)
       })
     })
@@ -1583,12 +1388,8 @@ describe('filter utils', () => {
       it('should transform rollup summary field', async () => {
         const rollupSummaryInfo = await toCustomField(obj.fields[fieldName])
         expect(rollupSummaryInfo.type).toEqual(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
-        expect(_.get(rollupSummaryInfo, 'summarizedField')).toEqual(
-          'Opportunity.Amount',
-        )
-        expect(_.get(rollupSummaryInfo, 'summaryForeignKey')).toEqual(
-          'Opportunity.AccountId',
-        )
+        expect(_.get(rollupSummaryInfo, 'summarizedField')).toEqual('Opportunity.Amount')
+        expect(_.get(rollupSummaryInfo, 'summaryForeignKey')).toEqual('Opportunity.AccountId')
         expect(_.get(rollupSummaryInfo, 'summaryOperation')).toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeDefined()
         const filterItems = rollupSummaryInfo.summaryFilterItems as FilterItem[]
@@ -1602,17 +1403,11 @@ describe('filter utils', () => {
       })
 
       it('should ignore field dependency when not defined', async () => {
-        delete obj.fields[fieldName].annotations[
-          FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS
-        ]
+        delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
         const rollupSummaryInfo = await toCustomField(obj.fields[fieldName])
         expect(rollupSummaryInfo.type).toEqual(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
-        expect(_.get(rollupSummaryInfo, 'summarizedField')).toEqual(
-          'Opportunity.Amount',
-        )
-        expect(_.get(rollupSummaryInfo, 'summaryForeignKey')).toEqual(
-          'Opportunity.AccountId',
-        )
+        expect(_.get(rollupSummaryInfo, 'summarizedField')).toEqual('Opportunity.Amount')
+        expect(_.get(rollupSummaryInfo, 'summaryForeignKey')).toEqual('Opportunity.AccountId')
         expect(_.get(rollupSummaryInfo, 'summaryOperation')).toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeUndefined()
       })

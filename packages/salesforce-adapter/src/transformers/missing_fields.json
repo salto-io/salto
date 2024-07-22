@@ -242,12 +242,7 @@
       {
         "name": "style",
         "type": "STRING",
-        "picklistValues": [
-          "TwoColumnsTopToBottom",
-          "TwoColumnsLeftToRight",
-          "OneColumn",
-          "CustomLinks"
-        ]
+        "picklistValues": ["TwoColumnsTopToBottom", "TwoColumnsLeftToRight", "OneColumn", "CustomLinks"]
       }
     ]
   },
@@ -373,15 +368,7 @@
       {
         "name": "dataType",
         "type": "STRING",
-        "picklistValues": [
-          "Currency",
-          "Date",
-          "Number",
-          "String",
-          "Boolean",
-          "Picklist",
-          "Multipicklist"
-        ]
+        "picklistValues": ["Currency", "Date", "Number", "String", "Boolean", "Picklist", "Multipicklist"]
       }
     ]
   },
@@ -391,14 +378,7 @@
       {
         "name": "dataType",
         "type": "STRING",
-        "picklistValues": [
-          "Boolean",
-          "Currency",
-          "Date",
-          "DateTime",
-          "Number",
-          "String"
-        ]
+        "picklistValues": ["Boolean", "Currency", "Date", "DateTime", "Number", "String"]
       },
       {
         "name": "fieldType",
@@ -466,14 +446,7 @@
       {
         "name": "dataType",
         "type": "STRING",
-        "picklistValues": [
-          "Boolean",
-          "Currency",
-          "Date",
-          "DateTime",
-          "Number",
-          "String"
-        ]
+        "picklistValues": ["Boolean", "Currency", "Date", "DateTime", "Number", "String"]
       }
     ]
   },
@@ -527,12 +500,7 @@
       {
         "name": "gender",
         "type": "STRING",
-        "picklistValues": [
-          "Masculine",
-          "Feminine",
-          "Neuter",
-          "AnimateMasculine"
-        ]
+        "picklistValues": ["Masculine", "Feminine", "Neuter", "AnimateMasculine"]
       },
       {
         "name": "sharingModel",
@@ -651,13 +619,7 @@
       {
         "name": "forecastCategory",
         "type": "STRING",
-        "picklistValues": [
-          "Omitted",
-          "Pipeline",
-          "BestCase",
-          "Forecast",
-          "Closed"
-        ]
+        "picklistValues": ["Omitted", "Pipeline", "BestCase", "Forecast", "Closed"]
       }
     ]
   },
@@ -698,13 +660,7 @@
       {
         "name": "type",
         "type": "STRING",
-        "picklistValues": [
-          "Application",
-          "Component",
-          "Event",
-          "Interface",
-          "Tokens"
-        ]
+        "picklistValues": ["Application", "Component", "Event", "Interface", "Tokens"]
       }
     ]
   },
@@ -734,11 +690,7 @@
     "id": "ActionsSettings",
     "fields": [
       {
-        "boolean": [
-          "enableDefaultQuickActionsOn",
-          "enableMdpEnabled",
-          "enableThirdPartyActions"
-        ]
+        "boolean": ["enableDefaultQuickActionsOn", "enableMdpEnabled", "enableThirdPartyActions"]
       }
     ]
   },
@@ -1092,11 +1044,7 @@
     "id": "EncryptionKeySettings",
     "fields": [
       {
-        "boolean": [
-          "enableCacheOnlyKeys",
-          "canOptOutOfDerivationWithBYOK",
-          "enableReplayDetection"
-        ]
+        "boolean": ["enableCacheOnlyKeys", "canOptOutOfDerivationWithBYOK", "enableReplayDetection"]
       }
     ]
   },
@@ -1317,10 +1265,7 @@
     "id": "OmniChannelSettings",
     "fields": [
       {
-        "boolean": [
-          "enableOmniAutoLoginPrompt",
-          "enableOmniSecondaryRoutingPriority"
-        ]
+        "boolean": ["enableOmniAutoLoginPrompt", "enableOmniSecondaryRoutingPriority"]
       }
     ]
   },
@@ -1341,11 +1286,7 @@
     "id": "OrderManagementSettings",
     "fields": [
       {
-        "boolean": [
-          "enableB2CIntegration",
-          "enableB2CSelfService",
-          "enableOrderManagement"
-        ]
+        "boolean": ["enableB2CIntegration", "enableB2CSelfService", "enableOrderManagement"]
       }
     ]
   },
@@ -1374,11 +1315,7 @@
     "id": "PartyDataModelSettings",
     "fields": [
       {
-        "boolean": [
-          "enableAutoSelectIndividualOnMerge",
-          "enableConsentManagementEnabled",
-          "enableIndividualAutoCreate"
-        ]
+        "boolean": ["enableAutoSelectIndividualOnMerge", "enableConsentManagementEnabled", "enableIndividualAutoCreate"]
       }
     ]
   },
@@ -1408,10 +1345,7 @@
     "id": "PathAssistantSettings",
     "fields": [
       {
-        "boolean": [
-          "canOverrideAutoPathCollapseWithUserPref",
-          "pathAssistantForOpportunityEnabled"
-        ]
+        "boolean": ["canOverrideAutoPathCollapseWithUserPref", "pathAssistantForOpportunityEnabled"]
       }
     ]
   },
@@ -1442,11 +1376,7 @@
     "id": "PrivacySettings",
     "fields": [
       {
-        "boolean": [
-          "enableConsentAuditTrail",
-          "enableConsentEventStream",
-          "enableDefaultMetadataValues"
-        ]
+        "boolean": ["enableConsentAuditTrail", "enableConsentEventStream", "enableDefaultMetadataValues"]
       }
     ]
   },
@@ -1548,11 +1478,7 @@
     "id": "SiteSettings",
     "fields": [
       {
-        "boolean": [
-          "enableProxyLoginICHeader",
-          "enableSitesRecordReassignOrgPref",
-          "enableTopicsInSites"
-        ]
+        "boolean": ["enableProxyLoginICHeader", "enableSitesRecordReassignOrgPref", "enableTopicsInSites"]
       }
     ]
   },
@@ -1723,11 +1649,7 @@
     "id": "AccountIntelligenceSettings",
     "fields": [
       {
-        "boolean": [
-          "enableAccountLogos",
-          "enableAutomatedAccountFields",
-          "enableNewsStories"
-        ]
+        "boolean": ["enableAccountLogos", "enableAutomatedAccountFields", "enableNewsStories"]
       }
     ]
   },
@@ -1800,11 +1722,7 @@
     "id": "CaseClassificationSettings",
     "fields": [
       {
-        "boolean": [
-          "caseClassificationRecommendations",
-          "reRunAttributeBasedRules",
-          "runAssignmentRules"
-        ]
+        "boolean": ["caseClassificationRecommendations", "reRunAttributeBasedRules", "runAssignmentRules"]
       }
     ]
   },

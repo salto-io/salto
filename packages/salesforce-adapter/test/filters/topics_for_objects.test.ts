@@ -27,27 +27,17 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import {
-  apiName,
-  MetadataTypeAnnotations,
-} from '../../src/transformers/transformer'
+import { apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import filterCreator from '../../src/filters/topics_for_objects'
-import {
-  defaultFilterContext,
-  emptyLastChangeDateOfTypesWithNestedInstances,
-} from '../utils'
+import { defaultFilterContext, emptyLastChangeDateOfTypesWithNestedInstances } from '../utils'
 import { FilterWith } from './mocks'
 import { isInstanceOfTypeSync } from '../../src/filters/utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
 import { mockInstances } from '../mock_elements'
 
-const {
-  TOPICS_FOR_OBJECTS_ANNOTATION,
-  TOPICS_FOR_OBJECTS_FIELDS,
-  TOPICS_FOR_OBJECTS_METADATA_TYPE,
-} = constants
+const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
 describe('Topics for objects filter', () => {
@@ -68,10 +58,7 @@ describe('Topics for objects filter', () => {
       },
     })
   describe('onFetch', () => {
-    const mockTopicElemID = new ElemID(
-      constants.SALESFORCE,
-      constants.TOPICS_FOR_OBJECTS_ANNOTATION,
-    )
+    const mockTopicElemID = new ElemID(constants.SALESFORCE, constants.TOPICS_FOR_OBJECTS_ANNOTATION)
 
     let topicsForObjectsMetadataType: ObjectType
     let topicsForObjectsType: ObjectType
@@ -95,37 +82,23 @@ describe('Topics for objects filter', () => {
           [constants.METADATA_TYPE]: TOPICS_FOR_OBJECTS_METADATA_TYPE,
         },
       })
-      topicsForObjectsInstance = new InstanceElement(
-        'Test__c',
-        topicsForObjectsMetadataType,
-        {
-          [ENABLE_TOPICS]: 'true',
-          [ENTITY_API_NAME]: 'Test__c',
-          [constants.INSTANCE_FULL_NAME_FIELD]: 'Test__c',
-        },
-      )
+      topicsForObjectsInstance = new InstanceElement('Test__c', topicsForObjectsMetadataType, {
+        [ENABLE_TOPICS]: 'true',
+        [ENTITY_API_NAME]: 'Test__c',
+        [constants.INSTANCE_FULL_NAME_FIELD]: 'Test__c',
+      })
       topicsForObjectsType = mockObject('Test__c')
-      elements = [
-        topicsForObjectsType,
-        topicsForObjectsInstance,
-        topicsForObjectsMetadataType,
-      ]
+      elements = [topicsForObjectsType, topicsForObjectsInstance, topicsForObjectsMetadataType]
     })
     it('should add topicsForObjects to object types and remove topics type & instances', async () => {
       await filter.onFetch(elements)
       expect(topicsForObjectsType).toSatisfy(
-        (type) =>
-          type.annotations[TOPICS_FOR_OBJECTS_ANNOTATION][ENABLE_TOPICS] ===
-          true,
+        type => type.annotations[TOPICS_FOR_OBJECTS_ANNOTATION][ENABLE_TOPICS] === true,
       )
 
       // Check topic instances are deleted and the TopicsForObjects metadataType is hidden
-      expect(elements).not.toSatisfy(
-        isInstanceOfTypeSync(TOPICS_FOR_OBJECTS_METADATA_TYPE),
-      )
-      expect(topicsForObjectsMetadataType).toSatisfy(
-        (type) => type.annotations[CORE_ANNOTATIONS.HIDDEN] === true,
-      )
+      expect(elements).not.toSatisfy(isInstanceOfTypeSync(TOPICS_FOR_OBJECTS_METADATA_TYPE))
+      expect(topicsForObjectsMetadataType).toSatisfy(type => type.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
     })
     describe('when is fetch with changes detection mode', () => {
       const TYPE_WITH_NON_MODIFIED_TOPICS_FOR_OBJECTS = 'Test2__c'
@@ -133,32 +106,24 @@ describe('Topics for objects filter', () => {
       let typeWithNonModifiedTopicsForObjects: ObjectType
 
       beforeEach(async () => {
-        typeWithNonModifiedTopicsForObjects = mockObject(
-          TYPE_WITH_NON_MODIFIED_TOPICS_FOR_OBJECTS,
-          true,
-        )
+        typeWithNonModifiedTopicsForObjects = mockObject(TYPE_WITH_NON_MODIFIED_TOPICS_FOR_OBJECTS, true)
         const typeInSource = typeWithNonModifiedTopicsForObjects.clone({
           annotations: {
             [TOPICS_FOR_OBJECTS_ANNOTATION]: { [ENABLE_TOPICS]: true },
           },
         })
-        const elementsSource = buildElementsSourceFromElements([
-          typeInSource,
-          mockInstances().ChangedAtSingleton,
-        ])
+        const elementsSource = buildElementsSourceFromElements([typeInSource, mockInstances().ChangedAtSingleton])
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               fetchParams: {},
-              metadataQuery:
-                await buildMetadataQueryForFetchWithChangesDetection({
-                  fetchParams: {},
-                  elementsSource,
-                  lastChangeDateOfTypesWithNestedInstances:
-                    emptyLastChangeDateOfTypesWithNestedInstances(),
-                  customObjectsWithDeletedFields: new Set(),
-                }),
+              metadataQuery: await buildMetadataQueryForFetchWithChangesDetection({
+                fetchParams: {},
+                elementsSource,
+                lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances(),
+                customObjectsWithDeletedFields: new Set(),
+              }),
             }),
           },
         }) as typeof filter
@@ -167,23 +132,15 @@ describe('Topics for objects filter', () => {
       it('should set correct topicsForObjects on types', async () => {
         await filter.onFetch(elements)
         expect(topicsForObjectsType).toSatisfy(
-          (type) =>
-            type.annotations[TOPICS_FOR_OBJECTS_ANNOTATION][ENABLE_TOPICS] ===
-            true,
+          type => type.annotations[TOPICS_FOR_OBJECTS_ANNOTATION][ENABLE_TOPICS] === true,
         )
         expect(typeWithNonModifiedTopicsForObjects).toSatisfy(
-          (type) =>
-            type.annotations[TOPICS_FOR_OBJECTS_ANNOTATION][ENABLE_TOPICS] ===
-            true,
+          type => type.annotations[TOPICS_FOR_OBJECTS_ANNOTATION][ENABLE_TOPICS] === true,
         )
 
         // Check topic instances are deleted and the TopicsForObjects metadataType is hidden
-        expect(elements).not.toSatisfy(
-          isInstanceOfTypeSync(TOPICS_FOR_OBJECTS_METADATA_TYPE),
-        )
-        expect(topicsForObjectsMetadataType).toSatisfy(
-          (type) => type.annotations[CORE_ANNOTATIONS.HIDDEN] === true,
-        )
+        expect(elements).not.toSatisfy(isInstanceOfTypeSync(TOPICS_FOR_OBJECTS_METADATA_TYPE))
+        expect(topicsForObjectsMetadataType).toSatisfy(type => type.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
       })
     })
 
@@ -197,12 +154,8 @@ describe('Topics for objects filter', () => {
       it('should remove the TopicsForObjects Instances', async () => {
         await filter.onFetch(elements)
         // Check topic instances are deleted and the TopicsForObjects metadataType is hidden
-        expect(elements).not.toSatisfyAny(
-          isInstanceOfTypeSync(TOPICS_FOR_OBJECTS_METADATA_TYPE),
-        )
-        expect(topicsForObjectsMetadataType).toSatisfy(
-          (type) => type.annotations[CORE_ANNOTATIONS.HIDDEN] === true,
-        )
+        expect(elements).not.toSatisfyAny(isInstanceOfTypeSync(TOPICS_FOR_OBJECTS_METADATA_TYPE))
+        expect(topicsForObjectsMetadataType).toSatisfy(type => type.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
       })
     })
   })
@@ -229,33 +182,20 @@ describe('Topics for objects filter', () => {
         await filter.preDeploy(changes)
       })
       it('should add topics annotation to new types that do not have it', () => {
-        expect(getChangeData(changes[0]).annotations).toHaveProperty(
-          TOPICS_FOR_OBJECTS_ANNOTATION,
-          { [ENABLE_TOPICS]: false },
-        )
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(TOPICS_FOR_OBJECTS_ANNOTATION, {
+          [ENABLE_TOPICS]: false,
+        })
       })
       it('should not add topics to existing types that do not have it', () => {
-        expect(getChangeData(changes[3]).annotations).not.toHaveProperty(
-          TOPICS_FOR_OBJECTS_ANNOTATION,
-        )
+        expect(getChangeData(changes[3]).annotations).not.toHaveProperty(TOPICS_FOR_OBJECTS_ANNOTATION)
       })
       it('should add instance change to types that have changed topics enabled value', async () => {
         expect(changes).toHaveLength(6)
         const topicsInstanceChanges = changes.slice(4)
-        expect(topicsInstanceChanges.map((change) => change.action)).toEqual([
-          'add',
-          'add',
-        ])
-        const instances = topicsInstanceChanges.map(
-          getChangeData,
-        ) as InstanceElement[]
-        expect(
-          await Promise.all(instances.map((inst) => apiName(inst))),
-        ).toEqual(['Test2__c', 'Test3__c'])
-        expect(instances.map((inst) => inst.value.enableTopics)).toEqual([
-          true,
-          false,
-        ])
+        expect(topicsInstanceChanges.map(change => change.action)).toEqual(['add', 'add'])
+        const instances = topicsInstanceChanges.map(getChangeData) as InstanceElement[]
+        expect(await Promise.all(instances.map(inst => apiName(inst)))).toEqual(['Test2__c', 'Test3__c'])
+        expect(instances.map(inst => inst.value.enableTopics)).toEqual([true, false])
 
         const topicsForObjectsType = await instances[0].getType()
         expect(topicsForObjectsType.annotations).toMatchObject({

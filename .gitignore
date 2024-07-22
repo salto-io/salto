@@ -33,3 +33,5 @@ logsalto.log
 .cache
 
 .eslintcache
+.turbo
+.yarn

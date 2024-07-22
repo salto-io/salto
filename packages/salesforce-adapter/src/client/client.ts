@@ -563,11 +563,7 @@ interface ISalesforceClient {
   countInstances(typeName: string): Promise<number>
   listMetadataTypes(): Promise<MetadataObject[]>
   describeMetadataType(type: string): Promise<DescribeValueTypeResult>
-  listMetadataObjects(queries: ListMetadataQuery[]): Promise<
-    SendChunkedResult<ListMetadataQuery, FileProperties> & {
-      isPartial?: boolean
-    }
-  >
+  listMetadataObjects(queries: ListMetadataQuery[]): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
   getUrl(): Promise<URL | undefined>
   readMetadata(type: string, fullNames: string[]): Promise<SendChunkedResult<string, MetadataInfo>>
   listSObjects(): Promise<DescribeGlobalSObjectResult[]>
@@ -582,6 +578,11 @@ interface ISalesforceClient {
   request(url: string): Promise<unknown>
 }
 export type CustomListFunc = (client: ISalesforceClient) => ReturnType<ISalesforceClient['listMetadataObjects']>
+
+export type CustomListFuncDef = {
+  func: CustomListFunc
+  isPartial: boolean
+}
 
 export default class SalesforceClient implements ISalesforceClient {
   private readonly retryOptions: RequestRetryOptions
@@ -605,10 +606,10 @@ export default class SalesforceClient implements ISalesforceClient {
 
   private readonly fullListPromises: Set<ReturnType<ISalesforceClient['listMetadataObjects']>>
 
-  private customListFuncByType: Record<string, CustomListFunc>
+  private customListFuncDefByType: Record<string, CustomListFuncDef>
 
   constructor({ credentials, connection, config }: SalesforceClientOpts) {
-    this.customListFuncByType = {}
+    this.customListFuncDefByType = {}
     this.credentials = credentials
     this.config = config
     this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
@@ -637,8 +638,8 @@ export default class SalesforceClient implements ISalesforceClient {
     this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
   }
 
-  public setCustomListFuncByType(customListFuncByType: typeof this.customListFuncByType): void {
-    this.customListFuncByType = customListFuncByType
+  public setCustomListFuncDefByType(customListFuncDefByType: typeof this.customListFuncDefByType): void {
+    this.customListFuncDefByType = customListFuncDefByType
   }
 
   private retryOnBadResponse = <T extends object>(request: () => Promise<T>): Promise<T> => {
@@ -721,14 +722,12 @@ export default class SalesforceClient implements ISalesforceClient {
     if (existingRequest !== undefined) {
       return existingRequest
     }
-    const customListFunc = this.customListFuncByType[type]
-    const request = customListFunc ? customListFunc(this) : this.sendChunkedList([{ type }], isUnhandledError)
-    this.listMetadataObjectsOfTypePromises[type] = request
-    const listResult = await request
-    if (listResult.isPartial) {
+    const customListFuncDef: CustomListFuncDef | undefined = this.customListFuncDefByType[type]
+    // For partial custom list result, we run additional full list request
+    if (customListFuncDef?.isPartial) {
       this.fullListPromises.add(this.sendChunkedList([{ type }], isUnhandledError))
     }
-    return listResult
+    return customListFuncDef?.func(this) ?? this.sendChunkedList([{ type }], isUnhandledError)
   }
 
   @mapToUserFriendlyErrorMessages
@@ -751,11 +750,9 @@ export default class SalesforceClient implements ISalesforceClient {
     const listResults = await Promise.all(
       queries.map(query => this.listMetadataObjectsOfType(query.type, isUnhandledError)),
     )
-    const isPartial = listResults.some(listResult => listResult.isPartial === true)
     return {
       result: listResults.flatMap(listResult => listResult.result),
       errors: listResults.flatMap(listResult => listResult.errors),
-      ...(isPartial ? { isPartial: true } : {}),
     }
   }
 

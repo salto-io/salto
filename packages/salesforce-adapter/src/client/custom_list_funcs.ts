@@ -18,7 +18,7 @@ import { FileProperties } from '@salto-io/jsforce'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { CustomListFunc } from './client'
+import { CustomListFuncDef } from './client'
 import { getChangedAtSingletonInstance } from '../filters/utils'
 import { APEX_CLASS_METADATA_TYPE } from '../constants'
 
@@ -40,9 +40,10 @@ const latestChangedInstanceOfType = async (
   return _.maxBy(Object.values(allChangedAtOfType).filter(_.isString), dateTime => new Date(dateTime).getTime())
 }
 
-export const createListApexClassesFunc =
-  async (elementsSource?: ReadOnlyElementsSource): Promise<CustomListFunc> =>
-  async client => {
+export const createListApexClassesDef = async (
+  elementsSource?: ReadOnlyElementsSource,
+): Promise<CustomListFuncDef> => ({
+  func: async client => {
     log.warn('Invoked custom listApexClasses')
     const sinceDate = elementsSource && (await latestChangedInstanceOfType(elementsSource, APEX_CLASS_METADATA_TYPE))
     const query =
@@ -66,5 +67,7 @@ export const createListApexClassesFunc =
         createdById: '',
       }
     })
-    return { result: props, errors: [], isPartial: true }
-  }
+    return { result: props, errors: [] }
+  },
+  isPartial: true,
+})

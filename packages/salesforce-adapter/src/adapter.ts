@@ -168,7 +168,7 @@ import {
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
-import { createListApexClassesFunc } from './client/custom_list_funcs'
+import { createListApexClassesDef } from './client/custom_list_funcs'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -515,10 +515,10 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
-    this.client.setCustomListFuncByType(
+    this.client.setCustomListFuncDefByType(
       withChangesDetection
         ? {
-            [APEX_CLASS_METADATA_TYPE]: await createListApexClassesFunc(this.elementsSource),
+            [APEX_CLASS_METADATA_TYPE]: await createListApexClassesDef(this.elementsSource),
           }
         : {},
     )

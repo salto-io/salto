@@ -24,7 +24,11 @@ import {
   FieldDefinition,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/value_to_static_file'
-import { SALESFORCE, WEBLINK_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
+import {
+  SALESFORCE,
+  WEBLINK_METADATA_TYPE,
+  METADATA_TYPE,
+} from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
@@ -90,11 +94,15 @@ describe('value to static file filter', () => {
       ['Objects', 'dir'],
     )
 
-    const webLinkInstanceNoPath = new InstanceElement('weblinkUndefinedPathInstance', webLinkType, {
-      [URL]: codeAsString,
-      [LINK_TYPE_FIELD]: JAVASCRIPT,
-      [NOT_URL]: anotherFieldContent,
-    })
+    const webLinkInstanceNoPath = new InstanceElement(
+      'weblinkUndefinedPathInstance',
+      webLinkType,
+      {
+        [URL]: codeAsString,
+        [LINK_TYPE_FIELD]: JAVASCRIPT,
+        [NOT_URL]: anotherFieldContent,
+      },
+    )
     const anotherInstance = new InstanceElement(
       'anotherInstance',
       anotherType,
@@ -136,30 +144,44 @@ describe('value to static file filter', () => {
       it('should not extract from non-weblink instances', () => {
         const anotherInstanceAfterFilter = elements
           .filter(isInstanceElement)
-          .find(e => e.elemID.name === 'anotherInstance')
+          .find((e) => e.elemID.name === 'anotherInstance')
         expect(anotherInstanceAfterFilter?.value[URL]).toBe(regularUrl)
-        expect(anotherInstanceAfterFilter?.value[NOT_URL]).toBe(anotherFieldContent)
+        expect(anotherInstanceAfterFilter?.value[NOT_URL]).toBe(
+          anotherFieldContent,
+        )
       })
 
       it('should only extract from weblink instances with linkType=javascript field', () => {
         const weblinkInstanceAfterFilterWithCode = elements
           .filter(isInstanceElement)
-          .find(e => e.elemID.name === 'webLinkInstanceCode')
-        expect(weblinkInstanceAfterFilterWithCode?.value[URL]).not.toBe(codeAsString)
-        expect(weblinkInstanceAfterFilterWithCode?.value[URL]).toEqual(codeAsFile)
-        expect(weblinkInstanceAfterFilterWithCode?.value[NOT_URL]).toBe(anotherFieldContent)
+          .find((e) => e.elemID.name === 'webLinkInstanceCode')
+        expect(weblinkInstanceAfterFilterWithCode?.value[URL]).not.toBe(
+          codeAsString,
+        )
+        expect(weblinkInstanceAfterFilterWithCode?.value[URL]).toEqual(
+          codeAsFile,
+        )
+        expect(weblinkInstanceAfterFilterWithCode?.value[NOT_URL]).toBe(
+          anotherFieldContent,
+        )
 
         const weblinkInstanceAfterFilterWithoutCode = elements
           .filter(isInstanceElement)
-          .find(e => e.elemID.name === 'webLinkInstanceNotCode')
-        expect(weblinkInstanceAfterFilterWithoutCode?.value[URL]).toBe(codeAsString)
-        expect(weblinkInstanceAfterFilterWithoutCode?.value[NOT_URL]).toBe(anotherFieldContent)
+          .find((e) => e.elemID.name === 'webLinkInstanceNotCode')
+        expect(weblinkInstanceAfterFilterWithoutCode?.value[URL]).toBe(
+          codeAsString,
+        )
+        expect(weblinkInstanceAfterFilterWithoutCode?.value[NOT_URL]).toBe(
+          anotherFieldContent,
+        )
       })
     })
     describe('do not replace value for undefined path', () => {
       let instanceUndefinedPath: InstanceElement | undefined
       beforeAll(async () => {
-        instanceUndefinedPath = elements?.filter(isInstanceElement).find(e => e.path === undefined)
+        instanceUndefinedPath = elements
+          ?.filter(isInstanceElement)
+          .find((e) => e.path === undefined)
         if (instanceUndefinedPath !== undefined) {
           instanceUndefinedPath.path = undefined
         }
@@ -167,7 +189,9 @@ describe('value to static file filter', () => {
       })
 
       it('do not replace value for undefined path', () => {
-        instanceUndefinedPath = elements?.filter(isInstanceElement).find(e => e.path === undefined)
+        instanceUndefinedPath = elements
+          ?.filter(isInstanceElement)
+          .find((e) => e.path === undefined)
         expect(instanceUndefinedPath?.value[URL]).toBe(codeAsString)
         expect(instanceUndefinedPath?.value[NOT_URL]).toBe(anotherFieldContent)
       })

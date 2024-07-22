@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Change, getAllChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  getAllChangeData,
+  InstanceElement,
+  toChange,
+} from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import filterCreator, {
   LAYOUT_ASSIGNMENTS_FIELD,
@@ -46,40 +51,46 @@ describe('minifyDeployFilter', () => {
     let afterOnDeployChanges: Change<InstanceElement>[]
 
     beforeAll(async () => {
-      const beforeProfileInstance = new InstanceElement('TestProfile', mockTypes.Profile, {
-        [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
-        [LOGIN_FLOWS_FIELD]: {
-          flow: 'Test',
-          flowType: 'UI',
-          friendlyName: 'Test Login',
-          uiLoginFlowType: 'VisualWorkflow',
-          useLightningRuntime: 'false',
-        },
-        layoutAssignments: {
-          nonModifiedLayout: [{ layout: 'nonModifiedLayout' }],
-          anotherNonModifiedLayout: [{ layout: 'anotherNonModifiedLayout' }],
-        },
-        nonModifiedField: '1',
-        anotherNonModifiedField: '2',
-        modifiedField: 'before',
-        modifiedNestedField: {
-          modifiedAttr: 'before',
-          nonModifiedAttr: '1',
-        },
-        modifiedNestedNestedField: {
-          modifiedNestedAttr: {
+      const beforeProfileInstance = new InstanceElement(
+        'TestProfile',
+        mockTypes.Profile,
+        {
+          [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
+          [LOGIN_FLOWS_FIELD]: {
+            flow: 'Test',
+            flowType: 'UI',
+            friendlyName: 'Test Login',
+            uiLoginFlowType: 'VisualWorkflow',
+            useLightningRuntime: 'false',
+          },
+          layoutAssignments: {
+            nonModifiedLayout: [{ layout: 'nonModifiedLayout' }],
+            anotherNonModifiedLayout: [{ layout: 'anotherNonModifiedLayout' }],
+          },
+          nonModifiedField: '1',
+          anotherNonModifiedField: '2',
+          modifiedField: 'before',
+          modifiedNestedField: {
             modifiedAttr: 'before',
             nonModifiedAttr: '1',
           },
-          nonModifiedAttr: '1',
+          modifiedNestedNestedField: {
+            modifiedNestedAttr: {
+              modifiedAttr: 'before',
+              nonModifiedAttr: '1',
+            },
+            nonModifiedAttr: '1',
+          },
         },
-      })
+      )
 
       const afterProfileInstance = beforeProfileInstance.clone()
       afterProfileInstance.value.modifiedField = 'after'
       afterProfileInstance.value.modifiedNestedField.modifiedAttr = 'after'
-      afterProfileInstance.value.modifiedNestedNestedField.modifiedNestedAttr.modifiedAttr = 'after'
-      afterProfileInstance.value[LAYOUT_ASSIGNMENTS_FIELD].newLayoutAssignment = [{ layout: 'newLayoutAssignment' }]
+      afterProfileInstance.value.modifiedNestedNestedField.modifiedNestedAttr.modifiedAttr =
+        'after'
+      afterProfileInstance.value[LAYOUT_ASSIGNMENTS_FIELD].newLayoutAssignment =
+        [{ layout: 'newLayoutAssignment' }]
       afterProfileInstance.value[LOGIN_IP_RANGES_FIELD] = AFTER_IP_RANGES
       profileChange = toChange({
         before: beforeProfileInstance,

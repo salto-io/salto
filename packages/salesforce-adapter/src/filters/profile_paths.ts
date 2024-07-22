@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  Element,
+  InstanceElement,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 
@@ -27,12 +31,21 @@ const { awu } = collections.asynciterable
 
 const { toArrayAsync } = collections.asynciterable
 
-const generateProfileInternalIdToName = async (client: SalesforceClient): Promise<Map<string, string>> => {
-  const profileNames = await toArrayAsync(await client.queryAll('SELECT Id, Name FROM Profile'))
-  return new Map(profileNames.flat().map(profile => [profile.Id, profile.Name]))
+const generateProfileInternalIdToName = async (
+  client: SalesforceClient,
+): Promise<Map<string, string>> => {
+  const profileNames = await toArrayAsync(
+    await client.queryAll('SELECT Id, Name FROM Profile'),
+  )
+  return new Map(
+    profileNames.flat().map((profile) => [profile.Id, profile.Name]),
+  )
 }
 
-const replacePath = async (profile: InstanceElement, profileInternalIdToName: Map<string, string>): Promise<void> => {
+const replacePath = async (
+  profile: InstanceElement,
+  profileInternalIdToName: Map<string, string>,
+): Promise<void> => {
   const name =
     (await apiName(profile)) === 'PlatformPortal'
       ? // Both 'PlatformPortal' & 'AuthenticatedWebsite' profiles have 'Authenticated Website'
@@ -61,13 +74,14 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     filterName: 'profilePaths',
     fetchFilterFunc: async (elements: Element[]) => {
       const profiles = await awu(elements)
-        .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e))
+        .filter(async (e) => isInstanceOfType(PROFILE_METADATA_TYPE)(e))
         .toArray()
       if (profiles.length > 0) {
-        const profileInternalIdToName = await generateProfileInternalIdToName(client)
+        const profileInternalIdToName =
+          await generateProfileInternalIdToName(client)
         await awu(profiles)
           .filter(isInstanceElement)
-          .forEach(async inst => replacePath(inst, profileInternalIdToName))
+          .forEach(async (inst) => replacePath(inst, profileInternalIdToName))
       }
     },
   }),

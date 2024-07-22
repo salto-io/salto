@@ -34,10 +34,14 @@ describe('Generated dependencies filter', () => {
       annotations: {
         [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
           {
-            reference: new ReferenceExpression(new ElemID('salesforce', 'refTypeBefore')),
+            reference: new ReferenceExpression(
+              new ElemID('salesforce', 'refTypeBefore'),
+            ),
           },
           {
-            reference: new ReferenceExpression(new ElemID('salesforce', 'otherRefType')),
+            reference: new ReferenceExpression(
+              new ElemID('salesforce', 'otherRefType'),
+            ),
           },
         ],
       },
@@ -47,10 +51,14 @@ describe('Generated dependencies filter', () => {
       annotations: {
         [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
           {
-            reference: new ReferenceExpression(new ElemID('salesforce', 'refType')),
+            reference: new ReferenceExpression(
+              new ElemID('salesforce', 'refType'),
+            ),
           },
           {
-            reference: new ReferenceExpression(new ElemID('salesforce', 'otherRefType')),
+            reference: new ReferenceExpression(
+              new ElemID('salesforce', 'otherRefType'),
+            ),
           },
         ],
       },
@@ -59,15 +67,22 @@ describe('Generated dependencies filter', () => {
     new InstanceElement('inst', type, undefined, undefined, {
       [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
         {
-          reference: new ReferenceExpression(new ElemID('salesforce', 'refType', 'instance', 'inst')),
+          reference: new ReferenceExpression(
+            new ElemID('salesforce', 'refType', 'instance', 'inst'),
+          ),
         },
         {
-          reference: new ReferenceExpression(new ElemID('salesforce', 'otherRefType', 'instance', 'inst')),
+          reference: new ReferenceExpression(
+            new ElemID('salesforce', 'otherRefType', 'instance', 'inst'),
+          ),
         },
       ],
     })
-  const generateTypeWithNoAnnotations = (): ObjectType => createCustomObjectType('mock', {})
-  const generateInstanceWithNoAnnotations = (type: ObjectType): InstanceElement => new InstanceElement('inst', type)
+  const generateTypeWithNoAnnotations = (): ObjectType =>
+    createCustomObjectType('mock', {})
+  const generateInstanceWithNoAnnotations = (
+    type: ObjectType,
+  ): InstanceElement => new InstanceElement('inst', type)
 
   const generateChanges = (): Change[] => {
     const typeAfter = generateTypeAfter()

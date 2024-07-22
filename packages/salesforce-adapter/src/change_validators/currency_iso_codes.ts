@@ -55,15 +55,26 @@ type InstanceWithCurrencyIsoCode = InstanceElement & {
   }
 }
 
-const isInstanceWithCurrencyIsoCode = (instance: InstanceElement): instance is InstanceWithCurrencyIsoCode =>
+const isInstanceWithCurrencyIsoCode = (
+  instance: InstanceElement,
+): instance is InstanceWithCurrencyIsoCode =>
   _.isString(instance.value[CURRENCY_ISO_CODE])
 
-const isCurrencyIsoCodesInstance = (instance: InstanceElement): instance is CurrencyIsoCodesInstance => {
+const isCurrencyIsoCodesInstance = (
+  instance: InstanceElement,
+): instance is CurrencyIsoCodesInstance => {
   const valueSet = instance.value[FIELD_ANNOTATIONS.VALUE_SET]
-  return isDefined(valueSet) && makeArray(valueSet).every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
+  return (
+    isDefined(valueSet) &&
+    makeArray(valueSet).every((entry) =>
+      _.isString(entry[INSTANCE_FULL_NAME_FIELD]),
+    )
+  )
 }
 
-const createOrgHasNoMultiCurrencyEnabledError = ({ elemID }: InstanceElement): ChangeError => ({
+const createOrgHasNoMultiCurrencyEnabledError = ({
+  elemID,
+}: InstanceElement): ChangeError => ({
   elemID,
   message: 'Organization doesnt support multi currency',
   detailedMessage:
@@ -88,30 +99,45 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   const changesWithCurrencyIsoCode = (await awu(changes)
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-    .filter(change => isInstanceWithCurrencyIsoCode(getChangeData(change)))
+    .filter((change) => isInstanceWithCurrencyIsoCode(getChangeData(change)))
     .toArray()) as Change<InstanceWithCurrencyIsoCode>[]
 
   if (_.isEmpty(changesWithCurrencyIsoCode)) {
     return []
   }
 
-  const currencyIsoCodesInstance = await elementsSource.get(new ElemID(SALESFORCE, CURRENCY_CODE_TYPE_NAME, 'instance'))
-  if (currencyIsoCodesInstance === undefined || !isInstanceElement(currencyIsoCodesInstance)) {
-    return changesWithCurrencyIsoCode.map(getChangeData).map(createOrgHasNoMultiCurrencyEnabledError)
+  const currencyIsoCodesInstance = await elementsSource.get(
+    new ElemID(SALESFORCE, CURRENCY_CODE_TYPE_NAME, 'instance'),
+  )
+  if (
+    currencyIsoCodesInstance === undefined ||
+    !isInstanceElement(currencyIsoCodesInstance)
+  ) {
+    return changesWithCurrencyIsoCode
+      .map(getChangeData)
+      .map(createOrgHasNoMultiCurrencyEnabledError)
   }
 
   if (!isCurrencyIsoCodesInstance(currencyIsoCodesInstance)) {
-    log.warn('CurrencyIsoCodes instance is invalid. Received: %o', currencyIsoCodesInstance)
+    log.warn(
+      'CurrencyIsoCodes instance is invalid. Received: %o',
+      currencyIsoCodesInstance,
+    )
     return []
   }
-  const supportedIsoCodes = currencyIsoCodesInstance.value[FIELD_ANNOTATIONS.VALUE_SET].map(
-    entry => entry[INSTANCE_FULL_NAME_FIELD],
-  )
+  const supportedIsoCodes = currencyIsoCodesInstance.value[
+    FIELD_ANNOTATIONS.VALUE_SET
+  ].map((entry) => entry[INSTANCE_FULL_NAME_FIELD])
 
   return changesWithCurrencyIsoCode
     .map(getChangeData)
-    .filter(instance => !supportedIsoCodes.includes(instance.value[CURRENCY_ISO_CODE]))
-    .map(instance => createInstanceHasUnsupportedCurrencyError(instance, supportedIsoCodes))
+    .filter(
+      (instance) =>
+        !supportedIsoCodes.includes(instance.value[CURRENCY_ISO_CODE]),
+    )
+    .map((instance) =>
+      createInstanceHasUnsupportedCurrencyError(instance, supportedIsoCodes),
+    )
 }
 
 export default changeValidator

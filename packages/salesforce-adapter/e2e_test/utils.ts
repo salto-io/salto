@@ -65,7 +65,9 @@ export const getRecordOfInstance = async (
   additionalFields = [] as string[],
   uniqueField = 'Id',
 ): Promise<SalesforceRecord | undefined> => {
-  const selectFieldsString = _.uniq([uniqueField].concat(additionalFields)).join(',')
+  const selectFieldsString = _.uniq(
+    [uniqueField].concat(additionalFields),
+  ).join(',')
   const queryString = `SELECT ${selectFieldsString} FROM ${await apiName(await instance.getType())} WHERE ${uniqueField} = '${instance.value[uniqueField]}'`
   const queryResult = await client.queryAll(queryString)
   const records = (await toArrayAsync(queryResult)).flat()
@@ -85,15 +87,18 @@ export const objectExists = async (
     return false
   }
   if (fields || missingFields) {
-    const fieldNames = makeArray(_.get(readResult, 'fields')).map(rf => rf.fullName)
-    if (fields && !fields.every(f => fieldNames.includes(f))) {
+    const fieldNames = makeArray(_.get(readResult, 'fields')).map(
+      (rf) => rf.fullName,
+    )
+    if (fields && !fields.every((f) => fieldNames.includes(f))) {
       return false
     }
-    return !missingFields || missingFields.every(f => !fieldNames.includes(f))
+    return !missingFields || missingFields.every((f) => !fieldNames.includes(f))
   }
   if (annotations) {
-    const valuesMatch = Object.entries(annotations).every(([annotationName, expectedVal]) =>
-      _.isEqual(_.get(readResult, annotationName), expectedVal),
+    const valuesMatch = Object.entries(annotations).every(
+      ([annotationName, expectedVal]) =>
+        _.isEqual(_.get(readResult, annotationName), expectedVal),
     )
     if (!valuesMatch) {
       return false
@@ -111,14 +116,21 @@ export const getMetadataFromElement = async (
   return getMetadata(client, mdType, fullName)
 }
 
-export const fetchTypes = async (client: SalesforceClient, types: string[]): Promise<ObjectType[]> => {
+export const fetchTypes = async (
+  client: SalesforceClient,
+  types: string[],
+): Promise<ObjectType[]> => {
   const typeInfos = await client.listMetadataTypes()
-  const topLevelTypes = typeInfos.filter(info => types.includes(info.xmlName))
-  const baseTypeNames = new Set(topLevelTypes.map(info => info.xmlName))
-  const childTypeNames = new Set(topLevelTypes.flatMap(info => info.childXmlNames).filter(values.isDefined))
+  const topLevelTypes = typeInfos.filter((info) => types.includes(info.xmlName))
+  const baseTypeNames = new Set(topLevelTypes.map((info) => info.xmlName))
+  const childTypeNames = new Set(
+    topLevelTypes
+      .flatMap((info) => info.childXmlNames)
+      .filter(values.isDefined),
+  )
   const additionalTypeInfos = types
-    .filter(typeName => !baseTypeNames.has(typeName))
-    .map(typeName => ({
+    .filter((typeName) => !baseTypeNames.has(typeName))
+    .map((typeName) => ({
       xmlName: typeName,
       childXmlNames: [],
       directoryName: '',
@@ -130,7 +142,15 @@ export const fetchTypes = async (client: SalesforceClient, types: string[]): Pro
   const res = await Promise.all(
     topLevelTypes
       .concat(additionalTypeInfos)
-      .map(info => fetchMetadataType(client, info, knownTypes, baseTypeNames, childTypeNames)),
+      .map((info) =>
+        fetchMetadataType(
+          client,
+          info,
+          knownTypes,
+          baseTypeNames,
+          childTypeNames,
+        ),
+      ),
   )
   return res.flat().filter(isObjectType)
 }
@@ -140,16 +160,26 @@ type CreateInstanceParams = {
   typeElements?: Iterable<Element>
   type: string | ObjectType
 }
-export function createInstance(params: { value: MetadataValues; type: ObjectType }): InstanceElement
+export function createInstance(params: {
+  value: MetadataValues
+  type: ObjectType
+}): InstanceElement
 export function createInstance(params: {
   value: MetadataValues
   type: string
   typeElements: Iterable<Element>
 }): InstanceElement
-export function createInstance({ value, typeElements, type }: CreateInstanceParams): InstanceElement {
+export function createInstance({
+  value,
+  typeElements,
+  type,
+}: CreateInstanceParams): InstanceElement {
   const objectType = isObjectType(type)
     ? type
-    : (findElement(typeElements as Iterable<Element>, new ElemID(SALESFORCE, type)) as ObjectType)
+    : (findElement(
+        typeElements as Iterable<Element>,
+        new ElemID(SALESFORCE, type),
+      ) as ObjectType)
   return createInstanceElement(value, objectType)
 }
 
@@ -158,7 +188,11 @@ export const getMetadataInstance = async (
   type: ObjectType,
   fullName: string,
 ): Promise<InstanceElement | undefined> => {
-  const md = await getMetadata(client, isObjectType(type) ? await metadataType(type) : type, fullName)
+  const md = await getMetadata(
+    client,
+    isObjectType(type) ? await metadataType(type) : type,
+    fullName,
+  )
   return md === undefined ? undefined : createInstance({ value: md, type })
 }
 
@@ -172,9 +206,16 @@ export const removeMetadataIfAlreadyExists = async (
   }
 }
 
-const removeRecordIfAlreadyExists = async (client: SalesforceClient, instance: InstanceElement): Promise<void> => {
+const removeRecordIfAlreadyExists = async (
+  client: SalesforceClient,
+  instance: InstanceElement,
+): Promise<void> => {
   if ((await getRecordOfInstance(client, instance)) !== undefined) {
-    await client.bulkLoadOperation(await apiName(await instance.getType()), 'delete', [{ Id: instance.value.Id }])
+    await client.bulkLoadOperation(
+      await apiName(await instance.getType()),
+      'delete',
+      [{ Id: instance.value.Id }],
+    )
   }
 }
 
@@ -208,27 +249,33 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
     changeGroup,
     progressReporter: nullProgressReporter,
   })
-  const errors = result.errors.filter(error => error.severity === 'Error')
+  const errors = result.errors.filter((error) => error.severity === 'Error')
   if (verify && errors.length > 0) {
     if (errors.length === 1) throw result.errors[0]
     throw new Error(
-      `Failed adding element ${element.elemID.getFullName()} with errors: ${errors.map(error => safeJsonStringify(error))}`,
+      `Failed adding element ${element.elemID.getFullName()} with errors: ${errors.map((error) => safeJsonStringify(error))}`,
     )
   }
   if (verify && result.appliedChanges.length === 0) {
-    throw new Error(`Failed adding element ${element.elemID.getFullName()}: no applied changes`)
+    throw new Error(
+      `Failed adding element ${element.elemID.getFullName()}: no applied changes`,
+    )
   }
   return getChangeData(result.appliedChanges[0]) as T
 }
 
-export const createElementAndVerify = async <T extends InstanceElement | ObjectType>(
+export const createElementAndVerify = async <
+  T extends InstanceElement | ObjectType,
+>(
   adapter: SalesforceAdapter,
   client: SalesforceClient,
   element: T,
 ): Promise<T> => {
   const result = await createElement(adapter, element)
   if (await isInstanceOfCustomObject(element)) {
-    expect(await getRecordOfInstance(client, element as InstanceElement)).toBeDefined()
+    expect(
+      await getRecordOfInstance(client, element as InstanceElement),
+    ).toBeDefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeDefined()
   }
@@ -262,7 +309,9 @@ export const removeElement = async <T extends InstanceElement | ObjectType>(
   })
   if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
-    throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
+    throw new Error(
+      `Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`,
+    )
   }
   return result
 }
@@ -274,7 +323,9 @@ export const removeElementAndVerify = async (
 ): Promise<void> => {
   await removeElement(adapter, element)
   if (await isInstanceOfCustomObject(element)) {
-    expect(await getRecordOfInstance(client, element as InstanceElement)).toBeUndefined()
+    expect(
+      await getRecordOfInstance(client, element as InstanceElement),
+    ).toBeUndefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeUndefined()
   }
@@ -286,4 +337,9 @@ export const runFiltersOnFetch = async (
   elements: Element[],
   filterCreators = allFilters.map(({ creator }) => creator),
 ): Promise<void | FilterResult> =>
-  filter.filtersRunner({ client, config: { ...defaultFilterContext, ...context } }, filterCreators).onFetch(elements)
+  filter
+    .filtersRunner(
+      { client, config: { ...defaultFilterContext, ...context } },
+      filterCreators,
+    )
+    .onFetch(elements)

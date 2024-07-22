@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeError, Change, InstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
+import {
+  ChangeError,
+  Change,
+  InstanceElement,
+  toChange,
+  getChangeData,
+} from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/data_change'
 import { mockTypes } from '../mock_elements'
 
@@ -22,9 +28,11 @@ describe('dataChange ChangeValidator', () => {
   describe('with data instance change with no unknown fields values', () => {
     let change: Change
     beforeEach(async () => {
-      const beforeCustomObjInstance = new InstanceElement('customObjInstance', mockTypes.Product2, {
-        ProductCode: 'beforeValue',
-      })
+      const beforeCustomObjInstance = new InstanceElement(
+        'customObjInstance',
+        mockTypes.Product2,
+        { ProductCode: 'beforeValue' },
+      )
       const afterCustomObjInstance = beforeCustomObjInstance.clone()
       afterCustomObjInstance.value.ProductCode = 'afterValue'
       change = toChange({
@@ -46,9 +54,11 @@ describe('dataChange ChangeValidator', () => {
   describe('with data instance change with unknown fields values', () => {
     let change: Change
     beforeEach(async () => {
-      const beforeCustomObjInstance = new InstanceElement('customObjInstance', mockTypes.Product2, {
-        ProductCode: 'beforeValue',
-      })
+      const beforeCustomObjInstance = new InstanceElement(
+        'customObjInstance',
+        mockTypes.Product2,
+        { ProductCode: 'beforeValue' },
+      )
       const afterCustomObjInstance = beforeCustomObjInstance.clone()
       afterCustomObjInstance.value.ProductCode = 'afterValue'
       afterCustomObjInstance.value.UnknownField__c = 'unknownValue'
@@ -75,10 +85,16 @@ describe('dataChange ChangeValidator', () => {
 
   describe('with regular instance change', () => {
     beforeEach(async () => {
-      const beforeInstance = new InstanceElement('instance', mockTypes.ApexClass, { field: 'beforeValue' })
+      const beforeInstance = new InstanceElement(
+        'instance',
+        mockTypes.ApexClass,
+        { field: 'beforeValue' },
+      )
       const afterInstance = beforeInstance.clone()
       afterInstance.value.field = 'afterValue'
-      changeErrors = await changeValidator([toChange({ before: beforeInstance, after: afterInstance })])
+      changeErrors = await changeValidator([
+        toChange({ before: beforeInstance, after: afterInstance }),
+      ])
     })
     it('should have no errors', () => {
       expect(changeErrors).toBeEmpty()

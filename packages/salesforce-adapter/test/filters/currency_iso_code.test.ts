@@ -13,12 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element, ObjectType, BuiltinTypes, ElemID, Change, toChange, getChangeData } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, findElements as findElementsByID } from '@salto-io/adapter-utils'
+import {
+  Element,
+  ObjectType,
+  BuiltinTypes,
+  ElemID,
+  Change,
+  toChange,
+  getChangeData,
+} from '@salto-io/adapter-api'
+import {
+  buildElementsSourceFromElements,
+  findElements as findElementsByID,
+} from '@salto-io/adapter-utils'
 import currencyIsoCodeFilter from '../../src/filters/currency_iso_code'
-import { FIELD_TYPE_NAMES, SALESFORCE, CURRENCY_CODE_TYPE_NAME } from '../../src/constants'
+import {
+  FIELD_TYPE_NAMES,
+  SALESFORCE,
+  CURRENCY_CODE_TYPE_NAME,
+} from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
-import { createValueSetEntry, createCustomObjectType, findElements, defaultFilterContext } from '../utils'
+import {
+  createValueSetEntry,
+  createCustomObjectType,
+  findElements,
+  defaultFilterContext,
+} from '../utils'
 import { FilterWith } from './mocks'
 
 type PicklistDefinition = {
@@ -37,7 +57,9 @@ const createMockElement = (...picklists: PicklistDefinition[]): ObjectType =>
           {
             refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.PICKLIST],
             annotations: {
-              valueSet: values.map(value => createValueSetEntry(value, false, value, true)),
+              valueSet: values.map((value) =>
+                createValueSetEntry(value, false, value, true),
+              ),
             },
           },
         ]),
@@ -95,7 +117,10 @@ describe('currencyIsoCode filter', () => {
       })
 
       it('should create a new type element', () => {
-        const currencyCodesType = findElements(elements, CURRENCY_CODE_TYPE_NAME)
+        const currencyCodesType = findElements(
+          elements,
+          CURRENCY_CODE_TYPE_NAME,
+        )
         expect(currencyCodesType).toHaveLength(1)
         expect(currencyCodesType[0]).toMatchObject(
           expect.objectContaining({
@@ -109,7 +134,11 @@ describe('currencyIsoCode filter', () => {
       })
 
       it('should create a new record with the current currencies', () => {
-        const currencyCodeRecord = findElements(elements, CURRENCY_CODE_TYPE_NAME, ElemID.CONFIG_NAME)
+        const currencyCodeRecord = findElements(
+          elements,
+          CURRENCY_CODE_TYPE_NAME,
+          ElemID.CONFIG_NAME,
+        )
         expect(currencyCodeRecord).toHaveLength(1)
         expect(currencyCodeRecord[0]).toMatchObject({
           path: [SALESFORCE, 'Records', 'Settings', 'CurrencyIsoCodes'],
@@ -126,7 +155,8 @@ describe('currencyIsoCode filter', () => {
         const modifiedElement = [...findElementsByID(elements, targetElemID)]
         expect(modifiedElement).toHaveLength(1)
         expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
-        const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode
+        const { annotations } = (modifiedElement[0] as ObjectType).fields
+          .CurrencyIsoCode
         expect(annotations).not.toHaveProperty('valueSet')
         expect(annotations).toHaveProperty('valueSetName')
       })
@@ -135,7 +165,8 @@ describe('currencyIsoCode filter', () => {
         const modifiedElement = [...findElementsByID(elements, targetElemID)]
         expect(modifiedElement).toHaveLength(1)
         expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
-        const { annotations } = (modifiedElement[0] as ObjectType).fields.Priority
+        const { annotations } = (modifiedElement[0] as ObjectType).fields
+          .Priority
         expect(annotations).toHaveProperty('valueSet')
         expect(annotations).not.toHaveProperty('valueSetName')
       })
@@ -146,8 +177,11 @@ describe('currencyIsoCode filter', () => {
       let targetElemID: ElemID
 
       beforeEach(async () => {
-        elements = [createMockElement({ name: 'CurrencyIsoCode', values: ['USD'] })]
-        delete (elements[0] as ObjectType).fields.CurrencyIsoCode.annotations.valueSet[0].label
+        elements = [
+          createMockElement({ name: 'CurrencyIsoCode', values: ['USD'] }),
+        ]
+        delete (elements[0] as ObjectType).fields.CurrencyIsoCode.annotations
+          .valueSet[0].label
         targetElemID = elements[0].elemID
         await filter.onFetch(elements)
       })
@@ -155,7 +189,8 @@ describe('currencyIsoCode filter', () => {
         const modifiedElement = [...findElementsByID(elements, targetElemID)]
         expect(modifiedElement).toHaveLength(1)
         expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
-        const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode
+        const { annotations } = (modifiedElement[0] as ObjectType).fields
+          .CurrencyIsoCode
         expect(annotations).toHaveProperty('valueSet')
         expect(annotations).not.toHaveProperty('valueSetName')
       })
@@ -173,12 +208,17 @@ describe('currencyIsoCode filter', () => {
         const modifiedElement = [...findElementsByID(elements, targetElemID)]
         expect(modifiedElement).toHaveLength(1)
         expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
-        const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode
+        const { annotations } = (modifiedElement[0] as ObjectType).fields
+          .CurrencyIsoCode
         expect(annotations).not.toHaveProperty('valueSet')
         expect(annotations).toHaveProperty('valueSetName')
       })
       it('should create an empty currency iso codes record', () => {
-        const currencyCodeRecord = findElements(elements, CURRENCY_CODE_TYPE_NAME, ElemID.CONFIG_NAME)
+        const currencyCodeRecord = findElements(
+          elements,
+          CURRENCY_CODE_TYPE_NAME,
+          ElemID.CONFIG_NAME,
+        )
         expect(currencyCodeRecord).toHaveLength(1)
         expect(currencyCodeRecord[0]).toMatchObject({
           value: {
@@ -198,7 +238,9 @@ describe('currencyIsoCode filter', () => {
         ),
       ]
       const filterConfig = defaultFilterContext
-      filter = currencyIsoCodeFilter({ config: filterConfig }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+      filter = currencyIsoCodeFilter({ config: filterConfig }) as FilterWith<
+        'onFetch' | 'preDeploy' | 'onDeploy'
+      >
       await filter.onFetch(elements)
       filterConfig.elementsSource = buildElementsSourceFromElements(elements)
       change = toChange({ after: elements[0] })
@@ -210,8 +252,12 @@ describe('currencyIsoCode filter', () => {
       })
 
       it('should remove the valueSetName annotation', () => {
-        expect(getChangeData(change).fields.CurrencyIsoCode?.annotations).not.toHaveProperty('valueSetName')
-        expect(getChangeData(change).fields.CurrencyIsoCode?.annotations).not.toHaveProperty('valueSet')
+        expect(
+          getChangeData(change).fields.CurrencyIsoCode?.annotations,
+        ).not.toHaveProperty('valueSetName')
+        expect(
+          getChangeData(change).fields.CurrencyIsoCode?.annotations,
+        ).not.toHaveProperty('valueSet')
       })
     })
 
@@ -221,8 +267,12 @@ describe('currencyIsoCode filter', () => {
       })
 
       it('should restore the valueSetName', () => {
-        expect(getChangeData(change).fields.CurrencyIsoCode?.annotations).not.toHaveProperty('valueSet')
-        expect(getChangeData(change).fields.CurrencyIsoCode?.annotations).toHaveProperty('valueSetName')
+        expect(
+          getChangeData(change).fields.CurrencyIsoCode?.annotations,
+        ).not.toHaveProperty('valueSet')
+        expect(
+          getChangeData(change).fields.CurrencyIsoCode?.annotations,
+        ).toHaveProperty('valueSetName')
       })
     })
   })

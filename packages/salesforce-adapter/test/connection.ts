@@ -36,17 +36,25 @@ import {
   DeployResult,
   QueryResult,
 } from '@salto-io/jsforce-types'
-import Connection, { Metadata, Soap, Bulk, Tooling, RunTestsResult, RunTestFailure } from '../src/client/jsforce'
+import Connection, {
+  Metadata,
+  Soap,
+  Bulk,
+  Tooling,
+  RunTestsResult,
+  RunTestFailure,
+} from '../src/client/jsforce'
 import { createEncodedZipContent, ZipFile } from './utils'
 
 export const MOCK_INSTANCE_URL = 'https://url.com/'
 
-export type MockDescribeResultInput = Pick<MetadataObject, 'xmlName'> & Partial<MetadataObject>
+export type MockDescribeResultInput = Pick<MetadataObject, 'xmlName'> &
+  Partial<MetadataObject>
 export const mockDescribeResult = (
   objects: MockDescribeResultInput[],
   organizationNamespace = '',
 ): DescribeMetadataResult => ({
-  metadataObjects: objects.map(props => ({
+  metadataObjects: objects.map((props) => ({
     childXmlNames: [],
     directoryName: _.lowerCase(props.xmlName),
     inFolder: false,
@@ -59,10 +67,17 @@ export const mockDescribeResult = (
   partialSaveAllowed: true,
 })
 
-export type MockValueTypeFieldInput = Pick<ValueTypeField, 'name' | 'soapType'> &
-  Partial<Omit<ValueTypeField, 'fields'> & { fields: MockValueTypeFieldInput[] }>
+export type MockValueTypeFieldInput = Pick<
+  ValueTypeField,
+  'name' | 'soapType'
+> &
+  Partial<
+    Omit<ValueTypeField, 'fields'> & { fields: MockValueTypeFieldInput[] }
+  >
 
-export const mockValueTypeField = (props: MockValueTypeFieldInput): ValueTypeField => ({
+export const mockValueTypeField = (
+  props: MockValueTypeFieldInput,
+): ValueTypeField => ({
   foreignKeyDomain: props.foreignKeyDomain ?? '',
   isForeignKey: props.isForeignKey ?? false,
   isNameField: false,
@@ -70,15 +85,20 @@ export const mockValueTypeField = (props: MockValueTypeFieldInput): ValueTypeFie
   picklistValues: [],
   valueRequired: false,
   ...props,
-  fields: props.fields === undefined ? [] : props.fields.map(mockValueTypeField),
+  fields:
+    props.fields === undefined ? [] : props.fields.map(mockValueTypeField),
 })
 
-export type MockDescribeValueResultInput = Partial<Omit<DescribeValueTypeResult, 'valueTypeFields' | 'parentField'>> & {
+export type MockDescribeValueResultInput = Partial<
+  Omit<DescribeValueTypeResult, 'valueTypeFields' | 'parentField'>
+> & {
   parentField?: MockValueTypeFieldInput
   valueTypeFields: MockValueTypeFieldInput[]
 }
 
-export const mockDescribeValueResult = (props: MockDescribeValueResultInput): DescribeValueTypeResult => ({
+export const mockDescribeValueResult = (
+  props: MockDescribeValueResultInput,
+): DescribeValueTypeResult => ({
   apiCreatable: true,
   apiDeletable: true,
   apiReadable: true,
@@ -91,8 +111,14 @@ export const mockDescribeValueResult = (props: MockDescribeValueResultInput): De
   valueTypeFields: props.valueTypeFields.map(mockValueTypeField),
 })
 
-export type MockFilePropertiesInput = Pick<FileProperties, 'type' | 'fullName'> & Partial<FileProperties>
-export const mockFileProperties = (props: MockFilePropertiesInput): FileProperties => ({
+export type MockFilePropertiesInput = Pick<
+  FileProperties,
+  'type' | 'fullName'
+> &
+  Partial<FileProperties>
+export const mockFileProperties = (
+  props: MockFilePropertiesInput,
+): FileProperties => ({
   createdById: '0054J000002KGspQAG',
   createdByName: 'test',
   createdDate: '2020-05-01T14:31:36.000Z',
@@ -105,10 +131,14 @@ export const mockFileProperties = (props: MockFilePropertiesInput): FileProperti
   ...props,
 })
 
-export type MockRetrieveResultInput = Partial<Omit<RetrieveResult, 'zipFile'>> & {
+export type MockRetrieveResultInput = Partial<
+  Omit<RetrieveResult, 'zipFile'>
+> & {
   zipFiles?: ZipFile[]
 }
-export const mockRetrieveResult = async (props: MockRetrieveResultInput): Promise<RetrieveResult> => ({
+export const mockRetrieveResult = async (
+  props: MockRetrieveResultInput,
+): Promise<RetrieveResult> => ({
   fileProperties: [],
   id: _.uniqueId(),
   messages: [],
@@ -119,10 +149,13 @@ export const mockRetrieveLocator = (
   props: MockRetrieveResultInput | Promise<RetrieveResult>,
 ): RetrieveResultLocator<RetrieveResult> =>
   ({
-    complete: () => (props instanceof Promise ? props : mockRetrieveResult(props)),
+    complete: () =>
+      props instanceof Promise ? props : mockRetrieveResult(props),
   }) as RetrieveResultLocator<RetrieveResult>
 
-export const mockDeployMessage = (params: Partial<DeployMessage>): DeployMessage => ({
+export const mockDeployMessage = (
+  params: Partial<DeployMessage>,
+): DeployMessage => ({
   changed: false,
   columnNumber: 0,
   componentType: '',
@@ -139,7 +172,9 @@ export const mockDeployMessage = (params: Partial<DeployMessage>): DeployMessage
   ...params,
 })
 
-export const mockRunTestFailure = (params: Partial<RunTestFailure>): RunTestFailure => ({
+export const mockRunTestFailure = (
+  params: Partial<RunTestFailure>,
+): RunTestFailure => ({
   id: _.uniqueId(),
   message: 'message',
   methodName: 'methodName',
@@ -153,7 +188,9 @@ type PartialRunTestResult = Omit<Partial<RunTestsResult>, 'failures'> & {
   failures?: Partial<RunTestFailure>[]
 }
 
-export const mockRunTestResult = (params?: PartialRunTestResult): RunTestsResult | undefined =>
+export const mockRunTestResult = (
+  params?: PartialRunTestResult,
+): RunTestsResult | undefined =>
   params === undefined
     ? undefined
     : {
@@ -161,7 +198,9 @@ export const mockRunTestResult = (params?: PartialRunTestResult): RunTestsResult
         numTestsRun: collections.array.makeArray(params.failures).length,
         totalTime: 10,
         ...params,
-        failures: collections.array.makeArray(params.failures).map(mockRunTestFailure),
+        failures: collections.array
+          .makeArray(params.failures)
+          .map(mockRunTestFailure),
       }
 
 type GetDeployResultParams = {
@@ -179,7 +218,8 @@ type GetDeployResultParams = {
   retrieveResult?: RetrieveResult
 }
 
-type MockDeployResultParams = GetDeployResultParams & Required<Pick<GetDeployResultParams, 'id'>>
+type MockDeployResultParams = GetDeployResultParams &
+  Required<Pick<GetDeployResultParams, 'id'>>
 
 export const mockDeployResultComplete = ({
   id,
@@ -259,7 +299,9 @@ export const mockDeployResultInProgress = ({
   errorMessage: undefined,
 })
 
-export const mockDeployResult = (params: GetDeployResultParams): DeployResultLocator<DeployResult> => {
+export const mockDeployResult = (
+  params: GetDeployResultParams,
+): DeployResultLocator<DeployResult> => {
   const mockParams: MockDeployResultParams = _.defaults(params, {
     id: _.uniqueId(),
   })
@@ -272,7 +314,9 @@ export const mockDeployResult = (params: GetDeployResultParams): DeployResultLoc
   } as unknown as DeployResultLocator<DeployResult>
 }
 
-export const mockQueryResult = (props: Partial<QueryResult<Value>>): QueryResult<Value> => ({
+export const mockQueryResult = (
+  props: Partial<QueryResult<Value>>,
+): QueryResult<Value> => ({
   done: true,
   totalSize: 0,
   records: [],
@@ -336,7 +380,9 @@ const mockIdentity = (organizationId: string): IdentityInfo => ({
   is_app_installed: false,
 })
 
-export const mockSObjectField = (overrides: Partial<SalesforceField>): SalesforceField => ({
+export const mockSObjectField = (
+  overrides: Partial<SalesforceField>,
+): SalesforceField => ({
   aggregatable: false,
   autoNumber: false,
   byteLength: 0,
@@ -440,7 +486,12 @@ export const mockSObjectDescribe = (
 })
 
 const mockRestResponses: Record<string, unknown> = {
-  '/services/data/': [{ version: '9.0' }, { version: '58.0' }, { version: '59.0' }, { version: '60.0' }],
+  '/services/data/': [
+    { version: '9.0' },
+    { version: '58.0' },
+    { version: '59.0' },
+    { version: '60.0' },
+  ],
 }
 
 export const mockJsforce: () => MockInterface<Connection> = () => ({
@@ -452,31 +503,45 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
   metadata: {
     pollInterval: 1000,
     pollTimeout: 10000,
-    checkDeployStatus: mockFunction<Metadata['checkDeployStatus']>().mockResolvedValue(
-      mockDeployResultInProgress({ id: _.uniqueId() }),
-    ),
+    checkDeployStatus: mockFunction<
+      Metadata['checkDeployStatus']
+    >().mockResolvedValue(mockDeployResultInProgress({ id: _.uniqueId() })),
     describe: mockFunction<Metadata['describe']>().mockResolvedValue({
       metadataObjects: [],
       organizationNamespace: '',
     }),
-    describeValueType: mockFunction<Metadata['describeValueType']>().mockResolvedValue(
-      mockDescribeValueResult({ valueTypeFields: [] }),
-    ),
+    describeValueType: mockFunction<
+      Metadata['describeValueType']
+    >().mockResolvedValue(mockDescribeValueResult({ valueTypeFields: [] })),
     read: mockFunction<Metadata['read']>().mockResolvedValue([]),
     list: mockFunction<Metadata['list']>().mockResolvedValue([]),
     upsert: mockFunction<Metadata['upsert']>().mockResolvedValue([]),
     delete: mockFunction<Metadata['delete']>().mockResolvedValue([]),
     update: mockFunction<Metadata['update']>().mockResolvedValue([]),
-    retrieve: mockFunction<Metadata['retrieve']>().mockReturnValue(mockRetrieveLocator({})),
-    deploy: mockFunction<Metadata['deploy']>().mockReturnValue(mockDeployResult({})),
-    deployRecentValidation: mockFunction<Metadata['deployRecentValidation']>().mockReturnValue(mockDeployResult({})),
+    retrieve: mockFunction<Metadata['retrieve']>().mockReturnValue(
+      mockRetrieveLocator({}),
+    ),
+    deploy: mockFunction<Metadata['deploy']>().mockReturnValue(
+      mockDeployResult({}),
+    ),
+    deployRecentValidation: mockFunction<
+      Metadata['deployRecentValidation']
+    >().mockReturnValue(mockDeployResult({})),
   },
   soap: {
-    describeSObjects: mockFunction<Soap['describeSObjects']>().mockResolvedValue([]),
+    describeSObjects: mockFunction<
+      Soap['describeSObjects']
+    >().mockResolvedValue([]),
   },
-  describeGlobal: mockFunction<Connection['describeGlobal']>().mockResolvedValue({ sobjects: [] }),
-  query: mockFunction<Connection['query']>().mockResolvedValue(mockQueryResult({})),
-  queryMore: mockFunction<Connection['queryMore']>().mockResolvedValue(mockQueryResult({})),
+  describeGlobal: mockFunction<
+    Connection['describeGlobal']
+  >().mockResolvedValue({ sobjects: [] }),
+  query: mockFunction<Connection['query']>().mockResolvedValue(
+    mockQueryResult({}),
+  ),
+  queryMore: mockFunction<Connection['queryMore']>().mockResolvedValue(
+    mockQueryResult({}),
+  ),
   bulk: {
     pollInterval: 1000,
     pollTimeout: 10000,
@@ -486,10 +551,18 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     DailyApiRequests: { Remaining: 10000 },
   }),
   tooling: {
-    query: mockFunction<Tooling['query']>().mockResolvedValue(mockQueryResult({})),
-    queryMore: mockFunction<Tooling['queryMore']>().mockResolvedValue(mockQueryResult({})),
+    query: mockFunction<Tooling['query']>().mockResolvedValue(
+      mockQueryResult({}),
+    ),
+    queryMore: mockFunction<Tooling['queryMore']>().mockResolvedValue(
+      mockQueryResult({}),
+    ),
   },
-  identity: mockFunction<Connection['identity']>().mockImplementation(async () => mockIdentity('')),
-  request: mockFunction<Connection['request']>().mockImplementation(async req => mockRestResponses[req]),
+  identity: mockFunction<Connection['identity']>().mockImplementation(
+    async () => mockIdentity(''),
+  ),
+  request: mockFunction<Connection['request']>().mockImplementation(
+    async (req) => mockRestResponses[req],
+  ),
   instanceUrl: MOCK_INSTANCE_URL,
 })

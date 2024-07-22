@@ -29,9 +29,13 @@ import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
-const isTypeDeletion = (changedElement: ChangeDataType): boolean => changedElement.elemID.idType === 'type'
+const isTypeDeletion = (changedElement: ChangeDataType): boolean =>
+  changedElement.elemID.idType === 'type'
 
-const isRecordTypeOfDeletedType = async (instance: InstanceElement, deletedTypes: string[]): Promise<boolean> => {
+const isRecordTypeOfDeletedType = async (
+  instance: InstanceElement,
+  deletedTypes: string[],
+): Promise<boolean> => {
   const type = await parentApiName(instance)
   return deletedTypes.includes(type)
 }
@@ -46,12 +50,12 @@ const createChangeError = (instance: InstanceElement): ChangeError => ({
 /**
  * It is not possible to delete a recordType trough SF API's
  */
-const changeValidator: ChangeValidator = async changes => {
+const changeValidator: ChangeValidator = async (changes) => {
   const deletedTypes = await awu(changes)
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(isTypeDeletion)
-    .map(async obj => apiName(obj))
+    .map(async (obj) => apiName(obj))
     .toArray()
   // We want to allow to delete record type if the entire type is being deleted
   return awu(changes)
@@ -59,7 +63,10 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(isInstanceOfType(RECORD_TYPE_METADATA_TYPE))
-    .filter(async instance => !(await isRecordTypeOfDeletedType(instance, deletedTypes)))
+    .filter(
+      async (instance) =>
+        !(await isRecordTypeOfDeletedType(instance, deletedTypes)),
+    )
     .map(createChangeError)
     .toArray()
 }

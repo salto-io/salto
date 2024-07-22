@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  InstanceElement,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -27,32 +32,44 @@ import { ensureSafeFilterFetch, isInstanceOfType } from '../utils'
 const { isDefined } = values
 const { awu } = collections.asynciterable
 const log = logger(module)
-export const SHARING_RULES_API_NAMES = ['SharingCriteriaRule', 'SharingGuestRule', 'SharingOwnerRule'] as const
+export const SHARING_RULES_API_NAMES = [
+  'SharingCriteriaRule',
+  'SharingGuestRule',
+  'SharingOwnerRule',
+] as const
 
 const isSharingRulesInstance = isInstanceOfType(SHARING_RULES_TYPE)
-const getRuleObjectName = (fileProperties: FileProperties): string => fileProperties.fullName.split('.')[0]
+const getRuleObjectName = (fileProperties: FileProperties): string =>
+  fileProperties.fullName.split('.')[0]
 
-const getSharingRulesFileProperties = async (client: SalesforceClient): Promise<FileProperties[]> => {
+const getSharingRulesFileProperties = async (
+  client: SalesforceClient,
+): Promise<FileProperties[]> => {
   const { result, errors } = await client.listMetadataObjects(
-    SHARING_RULES_API_NAMES.map(ruleType => ({ type: ruleType })),
+    SHARING_RULES_API_NAMES.map((ruleType) => ({ type: ruleType })),
   )
   if (errors && errors.length > 0) {
-    log.warn(`Encountered errors while listing file properties for SharingRules: ${errors}`)
+    log.warn(
+      `Encountered errors while listing file properties for SharingRules: ${errors}`,
+    )
   }
   return result
 }
 
-const fetchAllSharingRules = async (client: SalesforceClient): Promise<Record<string, FileProperties[]>> => {
+const fetchAllSharingRules = async (
+  client: SalesforceClient,
+): Promise<Record<string, FileProperties[]>> => {
   const allRules = await getSharingRulesFileProperties(client)
-  return _.groupBy(allRules.flat(), fileProp => getRuleObjectName(fileProp))
+  return _.groupBy(allRules.flat(), (fileProp) => getRuleObjectName(fileProp))
 }
 
 const getLastSharingRuleFileProperties = (
   sharingRules: InstanceElement,
   sharingRulesMap: Record<string, FileProperties[]>,
 ): FileProperties => {
-  const rules = _.sortBy(sharingRulesMap[sharingRules.value.fullName], fileProp =>
-    Date.parse(fileProp.lastModifiedDate),
+  const rules = _.sortBy(
+    sharingRulesMap[sharingRules.value.fullName],
+    (fileProp) => Date.parse(fileProp.lastModifiedDate),
   )
   return rules[rules.length - 1]
 }
@@ -76,8 +93,11 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         .filter(isInstanceElement)
         .filter(isSharingRulesInstance)
         .toArray()
-      sharingRulesInstances.forEach(sharingRules => {
-        const lastRuleFileProp = getLastSharingRuleFileProperties(sharingRules, sharingRulesMap)
+      sharingRulesInstances.forEach((sharingRules) => {
+        const lastRuleFileProp = getLastSharingRuleFileProperties(
+          sharingRules,
+          sharingRulesMap,
+        )
         if (isDefined(lastRuleFileProp)) {
           const ruleAuthorInformation = getAuthorAnnotations(lastRuleFileProp)
           delete ruleAuthorInformation[CORE_ANNOTATIONS.CREATED_AT]

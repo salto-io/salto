@@ -38,9 +38,11 @@ const getUpdateErrorsForNonUpdateableFields = async (
   const beforeResolved = await resolveValues(before, getLookUpName)
   const afterResolved = await resolveValues(after, getLookUpName)
   return Object.values((await afterResolved.getType()).fields)
-    .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
-    .map(field => {
-      if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
+    .filter((field) => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
+    .map((field) => {
+      if (
+        afterResolved.value[field.name] !== beforeResolved.value[field.name]
+      ) {
         return {
           elemID: beforeResolved.elemID,
           severity: 'Warning',
@@ -53,11 +55,13 @@ const getUpdateErrorsForNonUpdateableFields = async (
     .filter(values.isDefined)
 }
 
-const getCreateErrorsForNonCreatableFields = async (after: InstanceElement): Promise<ReadonlyArray<ChangeError>> => {
+const getCreateErrorsForNonCreatableFields = async (
+  after: InstanceElement,
+): Promise<ReadonlyArray<ChangeError>> => {
   const afterResolved = await resolveValues(after, getLookUpName)
   return awu(Object.values((await afterResolved.getType()).fields))
-    .filter(field => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
-    .map(field => {
+    .filter((field) => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
+    .map((field) => {
       if (!_.isUndefined(afterResolved.value[field.name])) {
         return {
           elemID: afterResolved.elemID,
@@ -72,11 +76,11 @@ const getCreateErrorsForNonCreatableFields = async (after: InstanceElement): Pro
     .toArray()
 }
 
-const changeValidator: ChangeValidator = async changes => {
+const changeValidator: ChangeValidator = async (changes) => {
   const updateChangeErrors = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .filter(isModificationChange)
-    .flatMap(change =>
+    .flatMap((change) =>
       getUpdateErrorsForNonUpdateableFields(
         change.data.before as InstanceElement,
         change.data.after as InstanceElement,
@@ -87,7 +91,11 @@ const changeValidator: ChangeValidator = async changes => {
   const createChangeErrors = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .filter(isAdditionChange)
-    .flatMap(change => getCreateErrorsForNonCreatableFields(getChangeData(change) as InstanceElement))
+    .flatMap((change) =>
+      getCreateErrorsForNonCreatableFields(
+        getChangeData(change) as InstanceElement,
+      ),
+    )
     .toArray()
 
   return [...updateChangeErrors, ...createChangeErrors]

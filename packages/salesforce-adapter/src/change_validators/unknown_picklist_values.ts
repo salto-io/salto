@@ -27,7 +27,11 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../constants'
+import {
+  FIELD_ANNOTATIONS,
+  INSTANCE_FULL_NAME_FIELD,
+  VALUE_SET_FIELDS,
+} from '../constants'
 import { Types } from '../transformers/transformer'
 
 const { isDefined } = values
@@ -42,18 +46,22 @@ type GlobalValueSetValue = InstanceElement['value'] & {
 }
 
 const isValueSetValue = (value: unknown): value is ValueSetValue =>
-  _.isArray(value) && value.every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
+  _.isArray(value) &&
+  value.every((entry) => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
 
 const isGlobalValueSetValue = (value: unknown): value is GlobalValueSetValue =>
   isValueSetValue(_.get(value, 'customValue'))
 
-const getGlobalValueSetValue = (field: Field): GlobalValueSetValue | undefined => {
+const getGlobalValueSetValue = (
+  field: Field,
+): GlobalValueSetValue | undefined => {
   const valueSetName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   if (!isReferenceExpression(valueSetName)) {
     return undefined
   }
   const globalValueSetInstance = valueSetName.value
-  return isInstanceElement(globalValueSetInstance) && isGlobalValueSetValue(globalValueSetInstance.value)
+  return isInstanceElement(globalValueSetInstance) &&
+    isGlobalValueSetValue(globalValueSetInstance.value)
     ? globalValueSetInstance.value
     : undefined
 }
@@ -62,12 +70,14 @@ const getAllowedValues = (field: Field): string[] | undefined => {
   const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
   // ValueSet
   if (isValueSetValue(valueSet)) {
-    return valueSet.map(entry => entry[INSTANCE_FULL_NAME_FIELD])
+    return valueSet.map((entry) => entry[INSTANCE_FULL_NAME_FIELD])
   }
   // GlobalValueSet
   const globalValueSetValue = getGlobalValueSetValue(field)
   if (globalValueSetValue !== undefined) {
-    return globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD])
+    return globalValueSetValue.customValue.map(
+      (entry) => entry[INSTANCE_FULL_NAME_FIELD],
+    )
   }
   return undefined
 }
@@ -84,15 +94,19 @@ const createUnknownPicklistValueChangeError = (
   severity: 'Warning',
 })
 
-const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement): Promise<ChangeError[]> => {
+const createUnknownPicklistValueChangeErrors = async (
+  instance: InstanceElement,
+): Promise<ChangeError[]> => {
   const { fields } = await instance.getType()
   const picklistFieldNames = Object.values(fields)
     // Only checking picklist fields for now and not multi-picklist fields because multi-picklist
     // fields require more manipulations
-    .filter(field => field.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID))
-    .map(field => field.name)
+    .filter((field) =>
+      field.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID),
+    )
+    .map((field) => field.name)
   return picklistFieldNames
-    .map(picklistFieldName => {
+    .map((picklistFieldName) => {
       const field = fields[picklistFieldName]
       const fieldValue = instance.value[picklistFieldName]
       if (fieldValue === undefined) {
@@ -100,13 +114,18 @@ const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement)
       }
       const allowedValues = getAllowedValues(field)
       return allowedValues !== undefined && !allowedValues.includes(fieldValue)
-        ? createUnknownPicklistValueChangeError(instance, field, fieldValue, allowedValues)
+        ? createUnknownPicklistValueChangeError(
+            instance,
+            field,
+            fieldValue,
+            allowedValues,
+          )
         : undefined
     })
     .filter(isDefined)
 }
 
-const changeValidator: ChangeValidator = async changes =>
+const changeValidator: ChangeValidator = async (changes) =>
   awu(changes)
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)

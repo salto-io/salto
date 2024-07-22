@@ -44,14 +44,15 @@ const adapter: Adapter<Args, UsernamePasswordCredentials> = {
       default: false,
     },
   },
-  credentials: async args =>
+  credentials: async (args) =>
     new UsernamePasswordCredentials({
       username: args.username,
       password: args.password,
       apiToken: args['api-token'],
       isSandbox: args.sandbox,
     }),
-  validateCredentials: config => validateCredentials(config) as unknown as Promise<void>,
+  validateCredentials: (config) =>
+    validateCredentials(config) as unknown as Promise<void>,
 }
 
 export default adapter

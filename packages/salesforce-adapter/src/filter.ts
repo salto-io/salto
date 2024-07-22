@@ -17,7 +17,11 @@ import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
 import SalesforceClient from './client/client'
-import { ConfigChangeSuggestion, FetchProfile, LastChangeDateOfTypesWithNestedInstances } from './types'
+import {
+  ConfigChangeSuggestion,
+  FetchProfile,
+  LastChangeDateOfTypesWithNestedInstances,
+} from './types'
 
 export type FilterContext = {
   unsupportedSystemFields?: string[]
@@ -51,17 +55,30 @@ export type Filter = filter.Filter<FilterResult>
 // Local filters only use information in existing elements
 // They can change the format of elements, but cannot use external sources of information
 type LocalFilterOpts = Pick<FilterOpts, 'config'>
-export type LocalFilterCreator = filter.FilterCreator<FilterResult, LocalFilterOpts>
+export type LocalFilterCreator = filter.FilterCreator<
+  FilterResult,
+  LocalFilterOpts
+>
 
 // Remote filters can add more information to existing elements
 // They should not change the format of existing elements, they should focus only on adding
 // the new information
 type RemoteFilterOpts = Pick<FilterOpts, 'config' | 'client'>
-export type RemoteFilterCreator = filter.RemoteFilterCreator<FilterResult, RemoteFilterOpts>
+export type RemoteFilterCreator = filter.RemoteFilterCreator<
+  FilterResult,
+  RemoteFilterOpts
+>
 
 // Files filters can run on folders and get additional context from the list of available files
 type FilesFilterOpts = Pick<FilterOpts, 'config' | 'files'>
-export type FilesFilterCreator = filter.FilterCreator<FilterResult, FilesFilterOpts>
+export type FilesFilterCreator = filter.FilterCreator<
+  FilterResult,
+  FilesFilterOpts
+>
 
-export type LocalFilterCreatorDefinition = filter.LocalFilterCreatorDefinition<FilterResult, LocalFilterOpts>
-export type RemoteFilterCreatorDefinition = filter.RemoteFilterCreatorDefinition<FilterResult, RemoteFilterOpts>
+export type LocalFilterCreatorDefinition = filter.LocalFilterCreatorDefinition<
+  FilterResult,
+  LocalFilterOpts
+>
+export type RemoteFilterCreatorDefinition =
+  filter.RemoteFilterCreatorDefinition<FilterResult, RemoteFilterOpts>

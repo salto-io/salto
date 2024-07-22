@@ -29,13 +29,24 @@ export type Opts = {
   adapterParams?: Partial<SalesforceAdapterParams>
   credentials: Credentials
 }
-const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
-  new ElemID(adapterName, name)
+const mockGetElemIdFunc = (
+  adapterName: string,
+  _serviceIds: ServiceIds,
+  name: string,
+): ElemID => new ElemID(adapterName, name)
 
-const realAdapter = ({ adapterParams, credentials }: Opts, config?: SalesforceConfig): Reals => {
+const realAdapter = (
+  { adapterParams, credentials }: Opts,
+  config?: SalesforceConfig,
+): Reals => {
   // Default to purge on delete to avoid leaving definitions in the recycle bin
-  const clientConfig = _.merge({ deploy: { purgeOnDelete: true } }, config?.client)
-  const client = (adapterParams && adapterParams.client) || new SalesforceClient({ credentials, config: clientConfig })
+  const clientConfig = _.merge(
+    { deploy: { purgeOnDelete: true } },
+    config?.client,
+  )
+  const client =
+    (adapterParams && adapterParams.client) ||
+    new SalesforceClient({ credentials, config: clientConfig })
   const adapter = new SalesforceAdapter({
     client,
     config: config ?? {},

@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CORE_ANNOTATIONS, ElemID, ObjectType, InstanceElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { mockFileProperties } from '../../connection'
@@ -21,7 +26,9 @@ import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
 import { Filter, FilterResult } from '../../../src/filter'
-import sharingRules, { WARNING_MESSAGE } from '../../../src/filters/author_information/sharing_rules'
+import sharingRules, {
+  WARNING_MESSAGE,
+} from '../../../src/filters/author_information/sharing_rules'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME } from '../../../src/constants'
 
@@ -65,12 +72,20 @@ describe('sharing rules author information test', () => {
       await filter.onFetch?.([sharingRulesInstance, instanceToIgnore])
     })
     it('should add author annotations to sharing rules', async () => {
-      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('secondRuler')
-      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2021-10-19T06:41:10.000Z')
+      expect(
+        sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY],
+      ).toEqual('secondRuler')
+      expect(
+        sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT],
+      ).toEqual('2021-10-19T06:41:10.000Z')
     })
     it('should leave rules with no information as they are', async () => {
-      expect(instanceToIgnore.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
-      expect(instanceToIgnore.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
+      expect(
+        instanceToIgnore.annotations[CORE_ANNOTATIONS.CHANGED_BY],
+      ).not.toBeDefined()
+      expect(
+        instanceToIgnore.annotations[CORE_ANNOTATIONS.CHANGED_AT],
+      ).not.toBeDefined()
     })
   })
   describe('failure', () => {
@@ -78,7 +93,9 @@ describe('sharing rules author information test', () => {
       connection.metadata.list.mockImplementation(() => {
         throw new Error()
       })
-      const res = (await filter.onFetch?.([sharingRulesInstance])) as FilterResult
+      const res = (await filter.onFetch?.([
+        sharingRulesInstance,
+      ])) as FilterResult
       const err = res.errors ?? []
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
@@ -99,8 +116,12 @@ describe('sharing rules author information test', () => {
         },
       })
       await filter.onFetch?.([sharingRulesInstance])
-      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
-      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
+      expect(
+        sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY],
+      ).not.toBeDefined()
+      expect(
+        sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT],
+      ).not.toBeDefined()
     })
   })
 })

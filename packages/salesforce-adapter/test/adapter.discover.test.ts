@@ -39,8 +39,19 @@ import { FileProperties } from '@salto-io/jsforce-types'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import { apiName, createInstanceElement, MetadataObjectType, Types } from '../src/transformers/transformer'
-import { createCustomObjectType, findElements, mockFetchOpts, nullProgressReporter, ZipFile } from './utils'
+import {
+  apiName,
+  createInstanceElement,
+  MetadataObjectType,
+  Types,
+} from '../src/transformers/transformer'
+import {
+  createCustomObjectType,
+  findElements,
+  mockFetchOpts,
+  nullProgressReporter,
+  ZipFile,
+} from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
@@ -55,7 +66,11 @@ import {
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
-import { ConfigChangeSuggestion, FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import {
+  ConfigChangeSuggestion,
+  FetchElements,
+  MAX_ITEMS_IN_RETRIEVE_REQUEST,
+} from '../src/types'
 import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
@@ -75,7 +90,11 @@ import {
   SALESFORCE_ERRORS,
   SOCKET_TIMEOUT,
 } from '../src/constants'
-import { apiNameSync, isInstanceOfType, isInstanceOfTypeSync } from '../src/filters/utils'
+import {
+  apiNameSync,
+  isInstanceOfType,
+  isInstanceOfTypeSync,
+} from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
@@ -86,7 +105,10 @@ const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { INVALID_CROSS_REFERENCE_KEY } = SALESFORCE_ERRORS
 
-const createCustomObject = (name: string, additionalFields?: Record<string, FieldDefinition>): ObjectType => {
+const createCustomObject = (
+  name: string,
+  additionalFields?: Record<string, FieldDefinition>,
+): ObjectType => {
   const stringType = new PrimitiveType({
     elemID: new ElemID(SALESFORCE, 'string'),
     primitive: PrimitiveTypes.STRING,
@@ -117,7 +139,9 @@ const createCustomObject = (name: string, additionalFields?: Record<string, Fiel
       [API_NAME]: name,
       [METADATA_TYPE]: CUSTOM_OBJECT,
     },
-    fields: additionalFields ? Object.assign(basicFields, additionalFields) : basicFields,
+    fields: additionalFields
+      ? Object.assign(basicFields, additionalFields)
+      : basicFields,
   })
   obj.path = [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
   return obj
@@ -147,8 +171,11 @@ describe('SalesforceAdapter fetch', () => {
 
   const testMaxItemsInRetrieveRequest = 20
 
-  const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
-    new ElemID(adapterName, name)
+  const mockGetElemIdFunc = (
+    adapterName: string,
+    _serviceIds: ServiceIds,
+    name: string,
+  ): ElemID => new ElemID(adapterName, name)
 
   beforeEach(() => {
     changedAtSingleton = mockInstances().ChangedAtSingleton
@@ -170,7 +197,10 @@ describe('SalesforceAdapter fetch', () => {
         elementsSource,
       },
     }))
-    fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
+    fetchMetadataInstancesSpy = jest.spyOn(
+      fetchModule,
+      'fetchMetadataInstances',
+    )
   })
 
   afterEach(() => {
@@ -180,7 +210,8 @@ describe('SalesforceAdapter fetch', () => {
 
   describe('should fetch metadata types', () => {
     type MockInstanceParams = {
-      props: Omit<MockFilePropertiesInput, 'type'> & Partial<Pick<MockFilePropertiesInput, 'type'>>
+      props: Omit<MockFilePropertiesInput, 'type'> &
+        Partial<Pick<MockFilePropertiesInput, 'type'>>
       values: MetadataInfo & Record<string, unknown>
       zipFiles?: ZipFile[]
     }
@@ -191,23 +222,33 @@ describe('SalesforceAdapter fetch', () => {
       chunkSize = testMaxItemsInRetrieveRequest,
       organizationNamespace?: string,
     ): void => {
-      connection.metadata.describe.mockResolvedValue(mockDescribeResult([typeDef], organizationNamespace))
-      connection.metadata.describeValueType.mockResolvedValue(mockDescribeValueResult(valueDef))
+      connection.metadata.describe.mockResolvedValue(
+        mockDescribeResult([typeDef], organizationNamespace),
+      )
+      connection.metadata.describeValueType.mockResolvedValue(
+        mockDescribeValueResult(valueDef),
+      )
       if (instances !== undefined) {
         connection.metadata.list.mockResolvedValue(
-          instances.map(inst => mockFileProperties({ type: typeDef.xmlName, ...inst.props })),
+          instances.map((inst) =>
+            mockFileProperties({ type: typeDef.xmlName, ...inst.props }),
+          ),
         )
         connection.metadata.read.mockImplementation(async (type, fullNames) =>
           type === typeDef.xmlName
             ? makeArray(fullNames)
-                .map(name => instances.find(inst => inst.props.fullName === name))
+                .map((name) =>
+                  instances.find((inst) => inst.props.fullName === name),
+                )
                 .filter(values.isDefined)
-                .map(inst => inst.values)
+                .map((inst) => inst.values)
             : [],
         )
-        const zipFiles = instances.map(inst => inst.zipFiles).filter(values.isDefined)
+        const zipFiles = instances
+          .map((inst) => inst.zipFiles)
+          .filter(values.isDefined)
         if (!_.isEmpty(zipFiles)) {
-          _.chunk(zipFiles, chunkSize).forEach(chunkFiles =>
+          _.chunk(zipFiles, chunkSize).forEach((chunkFiles) =>
             connection.metadata.retrieve.mockReturnValueOnce(
               mockRetrieveLocator({
                 zipFiles: _.flatten(chunkFiles),
@@ -224,18 +265,26 @@ describe('SalesforceAdapter fetch', () => {
       instancesByType: Record<string, MockInstanceParams[]>,
       chunkSize = testMaxItemsInRetrieveRequest,
     ): void => {
-      connection.metadata.describe.mockResolvedValue(mockDescribeResult(typeDefs))
-      connection.metadata.describeValueType.mockResolvedValue(mockDescribeValueResult(valueDef))
-      connection.metadata.list.mockImplementation(async queries => {
+      connection.metadata.describe.mockResolvedValue(
+        mockDescribeResult(typeDefs),
+      )
+      connection.metadata.describeValueType.mockResolvedValue(
+        mockDescribeValueResult(valueDef),
+      )
+      connection.metadata.list.mockImplementation(async (queries) => {
         const { type } = makeArray(queries)[0]
-        return instancesByType[type]?.map(inst => mockFileProperties({ type, ...inst.props }))
+        return instancesByType[type]?.map((inst) =>
+          mockFileProperties({ type, ...inst.props }),
+        )
       })
-      connection.metadata.read.mockImplementation(async type => instancesByType[type].map(inst => inst.values))
+      connection.metadata.read.mockImplementation(async (type) =>
+        instancesByType[type].map((inst) => inst.values),
+      )
       const zipFiles = _.flatten(Object.values(instancesByType))
-        .map(inst => inst.zipFiles)
+        .map((inst) => inst.zipFiles)
         .filter(values.isDefined)
       if (!_.isEmpty(zipFiles)) {
-        _.chunk(zipFiles, chunkSize).forEach(chunkFiles =>
+        _.chunk(zipFiles, chunkSize).forEach((chunkFiles) =>
           connection.metadata.retrieve.mockReturnValueOnce(
             mockRetrieveLocator({
               zipFiles: _.flatten(chunkFiles),
@@ -302,8 +351,8 @@ describe('SalesforceAdapter fetch', () => {
             { xmlName: constants.CUSTOM_METADATA, metaFile: false },
           ]),
         )
-        connection.metadata.list.mockImplementation(async queries =>
-          makeArray(queries).flatMap(query => {
+        connection.metadata.list.mockImplementation(async (queries) =>
+          makeArray(queries).flatMap((query) => {
             if (query.type === PROFILE_METADATA_TYPE) {
               return [
                 mockFileProperties({
@@ -325,7 +374,8 @@ describe('SalesforceAdapter fetch', () => {
                 mockFileProperties({
                   type: APEX_CLASS_METADATA_TYPE,
                   fullName: APEX_CLASS_FULL_NAME,
-                  lastModifiedDate: mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
+                  lastModifiedDate:
+                    mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
                   fileName: testData.apexClass.zipFileName,
                 }),
                 // Make sure we don't attempt to retrieve the non-changed apex class
@@ -350,36 +400,59 @@ describe('SalesforceAdapter fetch', () => {
             return []
           }),
         )
-        connection.metadata.retrieve.mockImplementation(request => {
+        connection.metadata.retrieve.mockImplementation((request) => {
           const fullNamesByType = Object.fromEntries(
-            request.unpackaged?.types.map(entry => [entry.name, entry.members]) ?? [],
+            request.unpackaged?.types.map((entry) => [
+              entry.name,
+              entry.members,
+            ]) ?? [],
           )
           const zipFiles: ZipFile[] = []
-          if (fullNamesByType[PROFILE_METADATA_TYPE]?.includes(UPDATED_PROFILE_FULL_NAME)) {
+          if (
+            fullNamesByType[PROFILE_METADATA_TYPE]?.includes(
+              UPDATED_PROFILE_FULL_NAME,
+            )
+          ) {
             zipFiles.push({
               path: `unpackaged/${testData.updatedProfile.zipFileName}`,
               content: testData.updatedProfile.zipFileContent,
             })
           }
-          if (fullNamesByType[PROFILE_METADATA_TYPE]?.includes(NON_UPDATED_PROFILE_FULL_NAME)) {
+          if (
+            fullNamesByType[PROFILE_METADATA_TYPE]?.includes(
+              NON_UPDATED_PROFILE_FULL_NAME,
+            )
+          ) {
             zipFiles.push({
               path: `unpackaged/${testData.nonUpdatedProfile.zipFileName}`,
               content: testData[NON_UPDATED_PROFILE_FULL_NAME].zipFileContent,
             })
           }
-          if (fullNamesByType[APEX_CLASS_METADATA_TYPE]?.includes(APEX_CLASS_FULL_NAME)) {
+          if (
+            fullNamesByType[APEX_CLASS_METADATA_TYPE]?.includes(
+              APEX_CLASS_FULL_NAME,
+            )
+          ) {
             zipFiles.push({
               path: `unpackaged/${testData.apexClass.zipFileName}-meta.xml`,
               content: testData.apexClass.zipFileContent,
             })
           }
-          if (fullNamesByType[APEX_CLASS_METADATA_TYPE]?.includes(ANOTHER_APEX_CLASS_FULL_NAME)) {
+          if (
+            fullNamesByType[APEX_CLASS_METADATA_TYPE]?.includes(
+              ANOTHER_APEX_CLASS_FULL_NAME,
+            )
+          ) {
             zipFiles.push({
               path: `unpackaged/${testData.anotherApexClass.zipFileName}-meta.xml`,
               content: testData.anotherApexClass.zipFileContent,
             })
           }
-          if (fullNamesByType[constants.CUSTOM_METADATA]?.includes(CUSTOM_METADATA_FULL_NAME)) {
+          if (
+            fullNamesByType[constants.CUSTOM_METADATA]?.includes(
+              CUSTOM_METADATA_FULL_NAME,
+            )
+          ) {
             zipFiles.push({
               path: `unpackaged/${testData[CUSTOM_METADATA_FULL_NAME].zipFileName}`,
               content: testData[CUSTOM_METADATA_FULL_NAME].zipFileContent,
@@ -468,16 +541,22 @@ describe('SalesforceAdapter fetch', () => {
             withChangesDetection: true,
           })
           const fetchedInstances = fetchRes.elements.filter(isInstanceElement)
-          const profileInstances = fetchedInstances.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
+          const profileInstances = fetchedInstances.filter(
+            isInstanceOfTypeSync(PROFILE_METADATA_TYPE),
+          )
           // Make sure we didn't create any related props instances that were not changed
-          expect(fetchedInstances).not.toSatisfy(isInstanceOfTypeSync(APEX_CLASS_METADATA_TYPE))
+          expect(fetchedInstances).not.toSatisfy(
+            isInstanceOfTypeSync(APEX_CLASS_METADATA_TYPE),
+          )
           expect(profileInstances.length).toEqual(1)
           expect(profileInstances[0].value).toMatchObject({
             fullName: UPDATED_PROFILE_FULL_NAME,
             apiVersion: 58,
           })
           // Make sure we fetch the CustomMetadata instance
-          expect(fetchedInstances).toSatisfyAny(instance => apiNameSync(instance) === CUSTOM_METADATA_FULL_NAME)
+          expect(fetchedInstances).toSatisfyAny(
+            (instance) => apiNameSync(instance) === CUSTOM_METADATA_FULL_NAME,
+          )
         })
       })
 
@@ -491,13 +570,15 @@ describe('SalesforceAdapter fetch', () => {
             withChangesDetection: true,
           })
           const fetchedInstances = fetchRes.elements.filter(isInstanceElement)
-          const profileInstances = fetchedInstances.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
+          const profileInstances = fetchedInstances.filter(
+            isInstanceOfTypeSync(PROFILE_METADATA_TYPE),
+          )
           expect(profileInstances.length).toEqual(2)
           const updatedProfileInstance = profileInstances.find(
-            inst => apiNameSync(inst) === UPDATED_PROFILE_FULL_NAME,
+            (inst) => apiNameSync(inst) === UPDATED_PROFILE_FULL_NAME,
           ) as InstanceElement
           const nonUpdatedProfileInstance = profileInstances.find(
-            inst => apiNameSync(inst) === NON_UPDATED_PROFILE_FULL_NAME,
+            (inst) => apiNameSync(inst) === NON_UPDATED_PROFILE_FULL_NAME,
           ) as InstanceElement
           expect(updatedProfileInstance).toBeDefined()
           expect(nonUpdatedProfileInstance).toBeDefined()
@@ -509,9 +590,13 @@ describe('SalesforceAdapter fetch', () => {
             fullName: NON_UPDATED_PROFILE_FULL_NAME,
             apiVersion: 58,
           })
-          const fetchedApexClasses = fetchedInstances.filter(isInstanceOfTypeSync(APEX_CLASS_METADATA_TYPE))
+          const fetchedApexClasses = fetchedInstances.filter(
+            isInstanceOfTypeSync(APEX_CLASS_METADATA_TYPE),
+          )
           expect(fetchedApexClasses).toHaveLength(1)
-          expect(fetchedApexClasses[0]).toSatisfy(instance => apiNameSync(instance) === APEX_CLASS_FULL_NAME)
+          expect(fetchedApexClasses[0]).toSatisfy(
+            (instance) => apiNameSync(instance) === APEX_CLASS_FULL_NAME,
+          )
         })
       })
     })
@@ -528,14 +613,21 @@ describe('SalesforceAdapter fetch', () => {
             mockTypes.CustomObject,
             createInstanceElement({ fullName: 'Layout1' }, mockTypes.Layout),
             createInstanceElement({ fullName: 'Layout2' }, mockTypes.Layout),
-            createInstanceElement({ fullName: 'DeletedLayout' }, mockTypes.Layout),
+            createInstanceElement(
+              { fullName: 'DeletedLayout' },
+              mockTypes.Layout,
+            ),
             createInstanceElement({ fullName: 'Apex1' }, mockTypes.ApexClass),
             createInstanceElement({ fullName: 'Apex2' }, mockTypes.ApexClass),
-            createInstanceElement({ fullName: 'DeletedApex' }, mockTypes.ApexClass),
+            createInstanceElement(
+              { fullName: 'DeletedApex' },
+              mockTypes.ApexClass,
+            ),
             createCustomObjectType('Account', {}),
             createCustomObjectType('Deleted__c', {}),
           ]
-          const elementsSource = buildElementsSourceFromElements(existingElements)
+          const elementsSource =
+            buildElementsSourceFromElements(existingElements)
           ;({ connection: testConnection, adapter: testAdapter } = mockAdapter({
             adapterParams: {
               getElemIdFunc: mockGetElemIdFunc,
@@ -554,10 +646,13 @@ describe('SalesforceAdapter fetch', () => {
             },
           }))
           testConnection.metadata.describe.mockResolvedValue(
-            mockDescribeResult([{ xmlName: 'Layout' }, { xmlName: 'ApexClass' }]),
+            mockDescribeResult([
+              { xmlName: 'Layout' },
+              { xmlName: 'ApexClass' },
+            ]),
           )
-          testConnection.metadata.list.mockImplementation(async queries =>
-            makeArray(queries).flatMap(query => {
+          testConnection.metadata.list.mockImplementation(async (queries) =>
+            makeArray(queries).flatMap((query) => {
               if (query.type === 'Layout') {
                 return [
                   mockFileProperties({ type: 'Layout', fullName: 'Layout1' }),
@@ -592,7 +687,11 @@ describe('SalesforceAdapter fetch', () => {
             ...mockFetchOpts,
             withChangesDetection: true,
           })
-          expect(makeArray(fetchResult.partialFetchData?.deletedElements).map(id => id.getFullName())).toEqual([
+          expect(
+            makeArray(fetchResult.partialFetchData?.deletedElements).map((id) =>
+              id.getFullName(),
+            ),
+          ).toEqual([
             'salesforce.Layout.instance.DeletedLayout',
             'salesforce.ApexClass.instance.DeletedApex',
             'salesforce.Deleted__c',
@@ -619,20 +718,30 @@ describe('SalesforceAdapter fetch', () => {
           },
         }
         describe('When a record was deleted', () => {
-          const existingInstanceThatDoesntExistInSalesforce = new InstanceElement('DeletedInstance', testType, {
-            [constants.CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
-          })
+          const existingInstanceThatDoesntExistInSalesforce =
+            new InstanceElement('DeletedInstance', testType, {
+              [constants.CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
+            })
           beforeEach(async () => {
             changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
-            _.set(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName], changedAtCutoff)
-            const elements = [testType, existingInstanceThatDoesntExistInSalesforce, changedAtSingleton]
+            _.set(
+              changedAtSingleton.value,
+              [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName],
+              changedAtCutoff,
+            )
+            const elements = [
+              testType,
+              existingInstanceThatDoesntExistInSalesforce,
+              changedAtSingleton,
+            ]
             const elementsSource = buildElementsSourceFromElements(elements)
-            ;({ connection: testConnection, adapter: testAdapter } = mockAdapter({
-              adapterParams: {
-                config: adapterConfig,
-                elementsSource,
-              },
-            }))
+            ;({ connection: testConnection, adapter: testAdapter } =
+              mockAdapter({
+                adapterParams: {
+                  config: adapterConfig,
+                  elementsSource,
+                },
+              }))
             fetchResult = await testAdapter.fetch({
               progressReporter: nullProgressReporter,
               withChangesDetection: true,
@@ -643,9 +752,9 @@ describe('SalesforceAdapter fetch', () => {
             jest.restoreAllMocks()
           })
           it('Should return the elemID of the deleted record', () => {
-            expect(fetchResult.partialFetchData?.deletedElements).toContainEqual(
-              existingInstanceThatDoesntExistInSalesforce.elemID,
-            )
+            expect(
+              fetchResult.partialFetchData?.deletedElements,
+            ).toContainEqual(existingInstanceThatDoesntExistInSalesforce.elemID)
           })
         })
         describe('When a record was modified', () => {
@@ -655,12 +764,13 @@ describe('SalesforceAdapter fetch', () => {
           beforeEach(async () => {
             const elements = [testType, testInstance, changedAtSingleton]
             const elementsSource = buildElementsSourceFromElements(elements)
-            ;({ connection: testConnection, adapter: testAdapter } = mockAdapter({
-              adapterParams: {
-                config: adapterConfig,
-                elementsSource,
-              },
-            }))
+            ;({ connection: testConnection, adapter: testAdapter } =
+              mockAdapter({
+                adapterParams: {
+                  config: adapterConfig,
+                  elementsSource,
+                },
+              }))
             testConnection.query.mockResolvedValue(
               mockQueryResult({
                 records: [
@@ -758,7 +868,8 @@ describe('SalesforceAdapter fetch', () => {
               {
                 props: {
                   fullName: 'TestNestedReport',
-                  fileName: 'reports/ReportsFolder/NestedFolder/TestNestedReport.report',
+                  fileName:
+                    'reports/ReportsFolder/NestedFolder/TestNestedReport.report',
                 },
                 values: {
                   fullName: 'NestedFolder/TestNestedReport',
@@ -791,10 +902,15 @@ describe('SalesforceAdapter fetch', () => {
       describe('listMetadataObjects', () => {
         it('should cache listMetadataObjects calls that are not on Folders', async () => {
           await adapter.fetch(mockFetchOpts)
-          const listedQueries = connection.metadata.list.mock.calls.flatMap(args => args[0])
-          const queriesByType = _.groupBy(listedQueries, query => query.type)
-          const typesQueriedMoreThanOnce = Object.entries(queriesByType).reduce<string[]>(
-            (acc, [type, queries]) => (queries.length > 1 ? acc.concat(type) : acc),
+          const listedQueries = connection.metadata.list.mock.calls.flatMap(
+            (args) => args[0],
+          )
+          const queriesByType = _.groupBy(listedQueries, (query) => query.type)
+          const typesQueriedMoreThanOnce = Object.entries(queriesByType).reduce<
+            string[]
+          >(
+            (acc, [type, queries]) =>
+              queries.length > 1 ? acc.concat(type) : acc,
             [],
           )
           expect(typesQueriedMoreThanOnce).toEqual(['Report'])
@@ -835,22 +951,37 @@ describe('SalesforceAdapter fetch', () => {
       )
       const { elements: result } = await adapter.fetch(mockFetchOpts)
 
-      const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
+      const describeMock = connection.metadata
+        .describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
-      expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Flow')
+      expect(describeMock.mock.calls[0][0]).toBe(
+        '{http://soap.sforce.com/2006/04/metadata}Flow',
+      )
       const flow = findElements(result, 'Flow').pop() as ObjectType
       expect(flow.fields.description.refType.elemID.name).toBe('string')
       // TODO: remove comment when SALTO-45 will be resolved
       // expect(flow.fields.description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
       expect(flow.fields.isTemplate.refType.elemID.name).toBe('boolean')
-      expect(flow.fields.isTemplate.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
+      expect(
+        flow.fields.isTemplate.annotations[CORE_ANNOTATIONS.REQUIRED],
+      ).toBeFalsy()
       expect(flow.fields.enum.refType.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
       expect(getRestriction(flow.fields.enum).values).toEqual(['no', 'yes'])
-      expect(flow.path).toEqual([constants.SALESFORCE, constants.TYPES_PATH, 'Flow'])
-      expect(isServiceId(await flow.fields[constants.INSTANCE_FULL_NAME_FIELD].getType())).toEqual(true)
-      expect(isServiceId((await flow.getAnnotationTypes())[constants.METADATA_TYPE])).toEqual(true)
+      expect(flow.path).toEqual([
+        constants.SALESFORCE,
+        constants.TYPES_PATH,
+        'Flow',
+      ])
+      expect(
+        isServiceId(
+          await flow.fields[constants.INSTANCE_FULL_NAME_FIELD].getType(),
+        ),
+      ).toEqual(true)
+      expect(
+        isServiceId((await flow.getAnnotationTypes())[constants.METADATA_TYPE]),
+      ).toEqual(true)
       expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
     })
 
@@ -871,11 +1002,19 @@ describe('SalesforceAdapter fetch', () => {
       )
       const { elements: result } = await adapter.fetch(mockFetchOpts)
 
-      const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
+      const describeMock = connection.metadata
+        .describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
-      expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}EmailTemplate')
-      expect(describeMock.mock.calls[1][0]).toBe('{http://soap.sforce.com/2006/04/metadata}EmailFolder')
-      const emailFolder = findElements(result, 'EmailFolder').pop() as ObjectType
+      expect(describeMock.mock.calls[0][0]).toBe(
+        '{http://soap.sforce.com/2006/04/metadata}EmailTemplate',
+      )
+      expect(describeMock.mock.calls[1][0]).toBe(
+        '{http://soap.sforce.com/2006/04/metadata}EmailFolder',
+      )
+      const emailFolder = findElements(
+        result,
+        'EmailFolder',
+      ).pop() as ObjectType
       expect(emailFolder.fields[constants.INTERNAL_ID_FIELD]).toBeDefined()
     })
 
@@ -926,9 +1065,12 @@ describe('SalesforceAdapter fetch', () => {
 
       const { elements: result } = await adapter.fetch(mockFetchOpts)
 
-      const elementNames = result.map(x => x.elemID.getFullName())
+      const elementNames = result.map((x) => x.elemID.getFullName())
       expect(elementNames).toHaveLength(
-        _.concat(Object.keys(Types.getAllFieldTypes()), Object.keys(Types.getAllMissingTypes())).length +
+        _.concat(
+          Object.keys(Types.getAllFieldTypes()),
+          Object.keys(Types.getAllMissingTypes()),
+        ).length +
           2 /* LookupFilter & filter items */ +
           1 /* rollup summary operation */ +
           1 /* rollup summary filter type */ +
@@ -944,19 +1086,33 @@ describe('SalesforceAdapter fetch', () => {
           2 /* ChangedAtSingleton type & instance */,
       )
 
-      const elementsMap = _.keyBy(result, element => element.elemID.getFullName())
+      const elementsMap = _.keyBy(result, (element) =>
+        element.elemID.getFullName(),
+      )
       const nestingType = elementsMap['salesforce.NestingType'] as ObjectType
       const nestedType = elementsMap['salesforce.NestedType'] as ObjectType
-      const singleField = elementsMap['salesforce.SingleFieldType'] as ObjectType
+      const singleField = elementsMap[
+        'salesforce.SingleFieldType'
+      ] as ObjectType
       expect(nestingType).toBeInstanceOf(ObjectType)
       expect(nestingType.fields.field.refType.elemID).toEqual(nestedType.elemID)
-      expect(nestingType.fields.otherField.refType.elemID).toEqual(singleField.elemID)
+      expect(nestingType.fields.otherField.refType.elemID).toEqual(
+        singleField.elemID,
+      )
       expect(nestedType).toBeInstanceOf(ObjectType)
-      expect(nestedType.fields.nestedStr.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
-      expect(nestedType.fields.nestedNum.refType.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
-      expect(nestedType.fields.doubleNested.refType.elemID).toEqual(singleField.elemID)
+      expect(nestedType.fields.nestedStr.refType.elemID).toEqual(
+        BuiltinTypes.STRING.elemID,
+      )
+      expect(nestedType.fields.nestedNum.refType.elemID).toEqual(
+        BuiltinTypes.NUMBER.elemID,
+      )
+      expect(nestedType.fields.doubleNested.refType.elemID).toEqual(
+        singleField.elemID,
+      )
       expect(singleField).toBeInstanceOf(ObjectType)
-      expect(singleField.fields.str.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
+      expect(singleField.fields.str.refType.elemID).toEqual(
+        BuiltinTypes.STRING.elemID,
+      )
     })
 
     describe('with metadata instance', () => {
@@ -1029,8 +1185,14 @@ describe('SalesforceAdapter fetch', () => {
       it('should fetch metadata instance', async () => {
         mockFlowType()
         const { elements: result } = await adapter.fetch(mockFetchOpts)
-        const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
-        expect((await flow.getType()).elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
+        const flow = findElements(
+          result,
+          'Flow',
+          'FlowInstance',
+        ).pop() as InstanceElement
+        expect((await flow.getType()).elemID).toEqual(
+          new ElemID(constants.SALESFORCE, 'Flow'),
+        )
         expect(flow.value.bla.bla).toBe(55)
         expect(flow.value.bla.bla2).toBe(false)
         expect(flow.value.bla.bla3).toBe(true)
@@ -1039,19 +1201,35 @@ describe('SalesforceAdapter fetch', () => {
       it('should add author annotations to metadata instance', async () => {
         mockFlowType()
         const { elements: result } = await adapter.fetch(mockFetchOpts)
-        const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
-        expect((await flow.getType()).elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
+        const flow = findElements(
+          result,
+          'Flow',
+          'FlowInstance',
+        ).pop() as InstanceElement
+        expect((await flow.getType()).elemID).toEqual(
+          new ElemID(constants.SALESFORCE, 'Flow'),
+        )
         expect(flow.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual('test')
-        expect(flow.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('2020-05-01T14:31:36.000Z')
+        expect(flow.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(
+          '2020-05-01T14:31:36.000Z',
+        )
         expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('test')
-        expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2020-05-01T14:41:36.000Z')
+        expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(
+          '2020-05-01T14:41:36.000Z',
+        )
       })
 
       it('should not have id field if id is empty string in fileProps', async () => {
         mockFlowType()
         const { elements: result } = await adapter.fetch(mockFetchOpts)
-        const flow = findElements(result, 'Flow', 'FlowInstanceNoId').pop() as InstanceElement
-        expect((await flow.getType()).elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
+        const flow = findElements(
+          result,
+          'Flow',
+          'FlowInstanceNoId',
+        ).pop() as InstanceElement
+        expect((await flow.getType()).elemID).toEqual(
+          new ElemID(constants.SALESFORCE, 'Flow'),
+        )
         expect(flow.value.id).toBeUndefined()
       })
 
@@ -1079,7 +1257,10 @@ describe('SalesforceAdapter fetch', () => {
           expect.any(String),
           expect.arrayContaining(['IgnoredNamespace__FlowInstance']),
         )
-        expect(spyReadMetadata).not.toHaveBeenCalledWith(expect.any(String), 'IgnoredNamespace__FlowInstance')
+        expect(spyReadMetadata).not.toHaveBeenCalledWith(
+          expect.any(String),
+          'IgnoredNamespace__FlowInstance',
+        )
       })
 
       it('should not fetch metadata types instances the will be fetch in filters', async () => {
@@ -1090,7 +1271,9 @@ describe('SalesforceAdapter fetch', () => {
         mockMetadataType(
           { xmlName: 'Queue' },
           {
-            valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }],
+            valueTypeFields: [
+              { name: 'fullName', soapType: 'string', valueRequired: true },
+            ],
           },
           instances,
         )
@@ -1107,10 +1290,16 @@ describe('SalesforceAdapter fetch', () => {
       it('should use existing elemID when fetching metadata instance', async () => {
         ;({ connection, adapter } = mockAdapter({
           adapterParams: {
-            getElemIdFunc: (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
+            getElemIdFunc: (
+              adapterName: string,
+              serviceIds: ServiceIds,
+              name: string,
+            ): ElemID =>
               new ElemID(
                 adapterName,
-                name === 'FlowInstance' && serviceIds[constants.INSTANCE_FULL_NAME_FIELD] === 'FlowInstance'
+                name === 'FlowInstance' &&
+                serviceIds[constants.INSTANCE_FULL_NAME_FIELD] ===
+                  'FlowInstance'
                   ? 'my_FlowInstance'
                   : name,
               ),
@@ -1120,9 +1309,17 @@ describe('SalesforceAdapter fetch', () => {
         mockFlowType()
 
         const { elements: result } = await adapter.fetch(mockFetchOpts)
-        const flow = findElements(result, 'Flow', 'my_FlowInstance').pop() as InstanceElement
-        expect((await flow.getType()).elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
-        expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('FlowInstance')
+        const flow = findElements(
+          result,
+          'Flow',
+          'my_FlowInstance',
+        ).pop() as InstanceElement
+        expect((await flow.getType()).elemID).toEqual(
+          new ElemID(constants.SALESFORCE, 'Flow'),
+        )
+        expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
+          'FlowInstance',
+        )
       })
 
       it('should use default configured chunk size', async () => {
@@ -1137,7 +1334,9 @@ describe('SalesforceAdapter fetch', () => {
         mockMetadataType(
           { xmlName: 'MyType' },
           {
-            valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }],
+            valueTypeFields: [
+              { name: 'fullName', soapType: 'string', valueRequired: true },
+            ],
           },
           instances,
         )
@@ -1146,12 +1345,12 @@ describe('SalesforceAdapter fetch', () => {
         expect(connection.metadata.read).toHaveBeenNthCalledWith(
           1,
           type,
-          instances.slice(0, chunkSize).map(e => e.values.fullName),
+          instances.slice(0, chunkSize).map((e) => e.values.fullName),
         )
         expect(connection.metadata.read).toHaveBeenNthCalledWith(
           2,
           type,
-          instances.slice(chunkSize).map(e => e.values.fullName),
+          instances.slice(chunkSize).map((e) => e.values.fullName),
         )
       })
       it('should use overridden configured chunk size', async () => {
@@ -1166,7 +1365,9 @@ describe('SalesforceAdapter fetch', () => {
         mockMetadataType(
           { xmlName: 'Test' },
           {
-            valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }],
+            valueTypeFields: [
+              { name: 'fullName', soapType: 'string', valueRequired: true },
+            ],
           },
           instances,
         )
@@ -1175,12 +1376,12 @@ describe('SalesforceAdapter fetch', () => {
         expect(connection.metadata.read).toHaveBeenNthCalledWith(
           1,
           type,
-          instances.slice(0, chunkSize).map(e => e.values.fullName),
+          instances.slice(0, chunkSize).map((e) => e.values.fullName),
         )
         expect(connection.metadata.read).toHaveBeenNthCalledWith(
           2,
           type,
-          instances.slice(chunkSize).map(e => e.values.fullName),
+          instances.slice(chunkSize).map((e) => e.values.fullName),
         )
       })
     })
@@ -1188,11 +1389,15 @@ describe('SalesforceAdapter fetch', () => {
     describe('with complicated metadata instance', () => {
       const LAYOUT_NAME = 'Order-Order Layout'
       const INSTALLED_PACKAGE_NAMESPACE_PREFIX = 'SBQQ'
-      const INSTALLED_PACKAGE_LAYOUT_NAME = 'SBQQ__SearchFilter__c-SearchFilter Layout'
+      const INSTALLED_PACKAGE_LAYOUT_NAME =
+        'SBQQ__SearchFilter__c-SearchFilter Layout'
 
       let fromRetrieveResultSpy: jest.SpyInstance
 
-      const createLayoutInstance = (layoutName: string, namespacePrefix?: string): MockInstanceParams => ({
+      const createLayoutInstance = (
+        layoutName: string,
+        namespacePrefix?: string,
+      ): MockInstanceParams => ({
         props: {
           fullName: layoutName,
           fileName: `layouts/${layoutName}.layout`,
@@ -1291,10 +1496,16 @@ describe('SalesforceAdapter fetch', () => {
           },
           [
             createLayoutInstance(LAYOUT_NAME),
-            createLayoutInstance(INSTALLED_PACKAGE_LAYOUT_NAME, INSTALLED_PACKAGE_NAMESPACE_PREFIX),
+            createLayoutInstance(
+              INSTALLED_PACKAGE_LAYOUT_NAME,
+              INSTALLED_PACKAGE_NAMESPACE_PREFIX,
+            ),
           ],
         )
-        fromRetrieveResultSpy = jest.spyOn(xmlTransformerModule, 'fromRetrieveResult')
+        fromRetrieveResultSpy = jest.spyOn(
+          xmlTransformerModule,
+          'fromRetrieveResult',
+        )
         fromRetrieveResultSpy.mockResolvedValue([
           {
             file: mockFileProperties({
@@ -1312,7 +1523,9 @@ describe('SalesforceAdapter fetch', () => {
                       layoutItems: [{ behavior: 'Edit', field: 'Description' }],
                     },
                     {
-                      layoutItems: [{ behavior: 'Edit2', field: 'Description2' }],
+                      layoutItems: [
+                        { behavior: 'Edit2', field: 'Description2' },
+                      ],
                     },
                   ],
                 },
@@ -1339,31 +1552,54 @@ describe('SalesforceAdapter fetch', () => {
 
       it('should fetch complicated metadata instance', async () => {
         const { elements: result } = await adapter.fetch(mockFetchOpts)
-        const layout = findElements(result, 'Layout', 'Order_Order_Layout@bs').pop() as InstanceElement
+        const layout = findElements(
+          result,
+          'Layout',
+          'Order_Order_Layout@bs',
+        ).pop() as InstanceElement
         expect(layout).toBeDefined()
         expect((await layout.getType()).elemID).toEqual(LAYOUT_TYPE_ID)
-        expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(LAYOUT_NAME)
+        expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(
+          LAYOUT_NAME,
+        )
         expect(layout.value.layoutSections.length).toBe(4)
-        expect(layout.value.layoutSections[0].label).toBe('Description Information')
-        expect(layout.value.layoutSections[0].layoutColumns[0].layoutItems[0].behavior).toBe('Edit')
-        expect(layout.value.layoutSections[0].layoutColumns[1].layoutItems[0].field).toBe('Description2')
-        expect(layout.value.layoutSections[1].label).toBe('Additional Information')
+        expect(layout.value.layoutSections[0].label).toBe(
+          'Description Information',
+        )
+        expect(
+          layout.value.layoutSections[0].layoutColumns[0].layoutItems[0]
+            .behavior,
+        ).toBe('Edit')
+        expect(
+          layout.value.layoutSections[0].layoutColumns[1].layoutItems[0].field,
+        ).toBe('Description2')
+        expect(layout.value.layoutSections[1].label).toBe(
+          'Additional Information',
+        )
         expect(layout.value.layoutSections[2].style).toBe('CustomLinks')
         expect(
           (
             (await (
-              (await (await layout.getType()).fields.processMetadataValues.getType()) as ListType
+              (await (
+                await layout.getType()
+              ).fields.processMetadataValues.getType()) as ListType
             ).getInnerType()) as ObjectType
           ).fields.name.refType.elemID.name,
         ).toBe('string')
-        expect(layout.value.processMetadataValues[1].name).toBe('leftHandSideReferenceTo')
+        expect(layout.value.processMetadataValues[1].name).toBe(
+          'leftHandSideReferenceTo',
+        )
         // empty objects should be omitted
-        expect(layout.value.processMetadataValues[2].name).toBe('leftHandSideReferenceTo2')
+        expect(layout.value.processMetadataValues[2].name).toBe(
+          'leftHandSideReferenceTo2',
+        )
         // empty strings should be kept
         expect(layout.value.processMetadataValues[2].value).toEqual({
           stringValue: '',
         })
-        expect(layout.value.processMetadataValues[3].name).toBe('leftHandSideReferenceTo3')
+        expect(layout.value.processMetadataValues[3].name).toBe(
+          'leftHandSideReferenceTo3',
+        )
         // nulls should be omitted
         expect(layout.value.processMetadataValues[3].value).toBeUndefined()
 
@@ -1376,7 +1612,8 @@ describe('SalesforceAdapter fetch', () => {
               fullName: 'Order-Order Layout',
             }),
             expect.objectContaining({
-              fileName: 'layouts/SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout.layout',
+              fileName:
+                'layouts/SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout.layout',
               fullName: 'SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout',
             }),
           ]),
@@ -1425,17 +1662,31 @@ describe('SalesforceAdapter fetch', () => {
       )
 
       const { elements: result } = await adapter.fetch(mockFetchOpts)
-      const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
-      expect((await flow.getType()).elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
-      expect(isListType(await (await flow.getType()).fields.listTest.getType())).toBeTruthy()
+      const flow = findElements(
+        result,
+        'Flow',
+        'FlowInstance',
+      ).pop() as InstanceElement
+      expect((await flow.getType()).elemID).toEqual(
+        new ElemID(constants.SALESFORCE, 'Flow'),
+      )
+      expect(
+        isListType(await (await flow.getType()).fields.listTest.getType()),
+      ).toBeTruthy()
 
-      expect(flow.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow', 'instance', 'FlowInstance'))
+      expect(flow.elemID).toEqual(
+        new ElemID(constants.SALESFORCE, 'Flow', 'instance', 'FlowInstance'),
+      )
       expect(flow.value.listTest[0].field).toEqual('Field1')
       expect(flow.value.listTest[0].editable).toBe(true)
       expect(flow.value.listTest[1].field).toEqual('Field2')
       expect(flow.value.listTest[1].editable).toBe(false)
 
-      const flow2 = findElements(result, 'Flow', 'FlowInstance2').pop() as InstanceElement
+      const flow2 = findElements(
+        result,
+        'Flow',
+        'FlowInstance2',
+      ).pop() as InstanceElement
       expect(flow2.value.listTest[0].field).toEqual('Field11')
       expect(flow2.value.listTest[0].editable).toBe(true)
     })
@@ -1450,17 +1701,25 @@ describe('SalesforceAdapter fetch', () => {
 
       await adapter.fetch(mockFetchOpts)
 
-      expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', ['Quote'])
+      expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', [
+        'Quote',
+      ])
     })
 
     it('should not fetch child metadata type', async () => {
-      mockMetadataType({ xmlName: 'Base', childXmlNames: ['Child'] }, { valueTypeFields: [] })
+      mockMetadataType(
+        { xmlName: 'Base', childXmlNames: ['Child'] },
+        { valueTypeFields: [] },
+      )
       await adapter.fetch(mockFetchOpts)
 
-      const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
+      const describeMock = connection.metadata
+        .describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
       expect(describeMock.mock.calls.length).toBe(1)
-      expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Base')
+      expect(describeMock.mock.calls[0][0]).toBe(
+        '{http://soap.sforce.com/2006/04/metadata}Base',
+      )
     })
 
     it('should fetch metadata instances using retrieve in chunks', async () => {
@@ -1477,7 +1736,7 @@ describe('SalesforceAdapter fetch', () => {
             { name: 'content', soapType: 'string', valueRequired: false },
           ],
         },
-        _.times(testMaxItemsInRetrieveRequest * 2).map(index => ({
+        _.times(testMaxItemsInRetrieveRequest * 2).map((index) => ({
           props: {
             fullName: `MyClass${index}`,
             fileName: `classes/MyClass${index}.cls`,
@@ -1509,12 +1768,32 @@ public class MyClass${index} {
       )
       const { elements: result } = await adapter.fetch(mockFetchOpts)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(2)
-      const [first] = findElements(result, 'ApexClass', 'MyClass0') as InstanceElement[]
-      const [second] = findElements(result, 'ApexClass', 'MyClass1') as InstanceElement[]
-      expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyClass0')
-      expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyClass1')
-      expect((await first.value.content.getContent()).toString().includes('Instance0')).toBeTruthy()
-      expect((await second.value.content.getContent()).toString().includes('Instance1')).toBeTruthy()
+      const [first] = findElements(
+        result,
+        'ApexClass',
+        'MyClass0',
+      ) as InstanceElement[]
+      const [second] = findElements(
+        result,
+        'ApexClass',
+        'MyClass1',
+      ) as InstanceElement[]
+      expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
+        'MyClass0',
+      )
+      expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
+        'MyClass1',
+      )
+      expect(
+        (await first.value.content.getContent())
+          .toString()
+          .includes('Instance0'),
+      ).toBeTruthy()
+      expect(
+        (await second.value.content.getContent())
+          .toString()
+          .includes('Instance1'),
+      ).toBeTruthy()
     })
     it('should fetch Profile metadata instances', async () => {
       mockMetadataTypes(
@@ -1523,7 +1802,9 @@ public class MyClass${index} {
           { xmlName: 'PermissionSet', metaFile: false },
         ],
         {
-          valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }],
+          valueTypeFields: [
+            { name: 'fullName', soapType: 'string', valueRequired: true },
+          ],
         },
         {
           Profile: [
@@ -1560,8 +1841,14 @@ public class MyClass${index} {
       )
       const { elements: result } = await adapter.fetch(mockFetchOpts)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(1)
-      const [instance] = findElements(result, 'Profile', 'SomeProfile') as InstanceElement[]
-      expect(instance.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('SomeProfile')
+      const [instance] = findElements(
+        result,
+        'Profile',
+        'SomeProfile',
+      ) as InstanceElement[]
+      expect(instance.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
+        'SomeProfile',
+      )
     })
     it('should fetch metadata instances folders using retrieve', async () => {
       mockMetadataType(
@@ -1606,8 +1893,15 @@ public class MyClass${index} {
       const [testElem] = findElements(result, 'EmailFolder', 'MyFolder')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
-      expect(testInst.path).toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'EmailFolder', 'MyFolder'])
-      expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder')
+      expect(testInst.path).toEqual([
+        constants.SALESFORCE,
+        constants.RECORDS_PATH,
+        'EmailFolder',
+        'MyFolder',
+      ])
+      expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
+        'MyFolder',
+      )
       expect(testInst.value.name).toEqual('My folder')
     })
 
@@ -1639,7 +1933,8 @@ public class MyClass${index} {
               },
               {
                 path: 'unpackaged/pages/th_con_app__ThHomepage.page',
-                content: '<apex:page sidebar="false" standardStylesheets="false"/>',
+                content:
+                  '<apex:page sidebar="false" standardStylesheets="false"/>',
               },
             ],
           },
@@ -1647,7 +1942,11 @@ public class MyClass${index} {
       )
 
       const { elements: result } = await adapter.fetch(mockFetchOpts)
-      const [testInst] = findElements(result, 'ApexPage', 'th_con_app__ThHomepage')
+      const [testInst] = findElements(
+        result,
+        'ApexPage',
+        'th_con_app__ThHomepage',
+      )
       expect(testInst).toBeDefined()
       expect(testInst.path).toEqual([
         constants.SALESFORCE,
@@ -1748,7 +2047,9 @@ public class MyClass${index} {
           },
         ])
         const { elements: result } = await adapter.fetch(mockFetchOpts)
-        const [testObject] = findElements(result, 'Account', 'Account') as [InstanceElement]
+        const [testObject] = findElements(result, 'Account', 'Account') as [
+          InstanceElement,
+        ]
         expect(testObject).toBeDefined()
         expect(testObject.value.internalId).toBeUndefined()
       })
@@ -1808,7 +2109,8 @@ public class LargeClass} {
         }),
       )
 
-      const { elements: result, updatedConfig: config } = await adapter.fetch(mockFetchOpts)
+      const { elements: result, updatedConfig: config } =
+        await adapter.fetch(mockFetchOpts)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(1)
       expect(findElements(result, 'ApexClass', 'LargeClass')).toBeEmpty()
       expect(config?.config[0]?.value.fetch.metadata.exclude).toEqual(
@@ -1841,7 +2143,7 @@ public class LargeClass} {
             { name: 'content', soapType: 'string', valueRequired: false },
           ],
         },
-        _.times(2).map(index => ({
+        _.times(2).map((index) => ({
           props: {
             fullName: `LargeClass${index}`,
             fileName: `classes/LargeClass${index}.cls`,
@@ -1873,12 +2175,25 @@ public class LargeClass${index} {
         1,
       )
 
-      const { elements: result, updatedConfig: config } = await adapter.fetch(mockFetchOpts)
+      const { elements: result, updatedConfig: config } =
+        await adapter.fetch(mockFetchOpts)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(3)
-      const [first] = findElements(result, 'ApexClass', 'LargeClass0') as InstanceElement[]
-      const [second] = findElements(result, 'ApexClass', 'LargeClass1') as InstanceElement[]
-      expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('LargeClass0')
-      expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('LargeClass1')
+      const [first] = findElements(
+        result,
+        'ApexClass',
+        'LargeClass0',
+      ) as InstanceElement[]
+      const [second] = findElements(
+        result,
+        'ApexClass',
+        'LargeClass1',
+      ) as InstanceElement[]
+      expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
+        'LargeClass0',
+      )
+      expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
+        'LargeClass1',
+      )
       expect(config?.config[0]?.value.fetch.metadata.exclude).not.toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -1903,23 +2218,25 @@ public class LargeClass${index} {
             { xmlName: 'Report', inFolder: true },
           ]),
         )
-        connection.metadata.describeValueType.mockImplementation(async (typeName: string) => {
-          if (typeName.endsWith('Test1')) {
-            throw new Error('fake error')
-          }
-          if (typeName.endsWith('Report')) {
-            return mockDescribeValueResult({
-              parentField: {
-                name: '',
-                soapType: 'string',
-                foreignKeyDomain: 'ReportFolder',
-              },
-              valueTypeFields: [],
-            })
-          }
-          return mockDescribeValueResult({ valueTypeFields: [] })
-        })
-        connection.metadata.list.mockImplementation(async inQuery => {
+        connection.metadata.describeValueType.mockImplementation(
+          async (typeName: string) => {
+            if (typeName.endsWith('Test1')) {
+              throw new Error('fake error')
+            }
+            if (typeName.endsWith('Report')) {
+              return mockDescribeValueResult({
+                parentField: {
+                  name: '',
+                  soapType: 'string',
+                  foreignKeyDomain: 'ReportFolder',
+                },
+                valueTypeFields: [],
+              })
+            }
+            return mockDescribeValueResult({ valueTypeFields: [] })
+          },
+        )
+        connection.metadata.list.mockImplementation(async (inQuery) => {
           const query = collections.array.makeArray(inQuery)[0]
           if (_.isEqual(query, { type: 'Report', folder: 'skip' })) {
             throw new Error('fake error')
@@ -1927,14 +2244,16 @@ public class LargeClass${index} {
           const fullName = query.type === 'ReportFolder' ? 'skip' : 'instance1'
           return [mockFileProperties({ fullName, type: query.type })]
         })
-        connection.metadata.read.mockImplementation(async (typeName: string, fullNames: string | string[]) => {
-          if (typeName === 'Test2') {
-            throw new Error('fake error')
-          }
-          return {
-            fullName: Array.isArray(fullNames) ? fullNames[0] : fullNames,
-          }
-        })
+        connection.metadata.read.mockImplementation(
+          async (typeName: string, fullNames: string | string[]) => {
+            if (typeName === 'Test2') {
+              throw new Error('fake error')
+            }
+            return {
+              fullName: Array.isArray(fullNames) ? fullNames[0] : fullNames,
+            }
+          },
+        )
 
         result = await adapter.fetch(mockFetchOpts)
         elements = result.elements
@@ -1960,32 +2279,42 @@ public class LargeClass${index} {
     describe('should not fetch SkippedList retrieve instance', () => {
       let result: Element[] = []
       beforeEach(async () => {
-        mockMetadataType({ xmlName: 'AssignmentRules' }, { valueTypeFields: [] }, [
-          {
-            props: {
-              fullName: 'MyRules',
-              fileName: 'assignmentRules/MyRules.rules',
-            },
-            values: { fullName: 'MyRules' },
-            zipFiles: [
-              {
-                path: 'unpackaged/assignmentRules/MyRules.rules',
-                content: `
+        mockMetadataType(
+          { xmlName: 'AssignmentRules' },
+          { valueTypeFields: [] },
+          [
+            {
+              props: {
+                fullName: 'MyRules',
+                fileName: 'assignmentRules/MyRules.rules',
+              },
+              values: { fullName: 'MyRules' },
+              zipFiles: [
+                {
+                  path: 'unpackaged/assignmentRules/MyRules.rules',
+                  content: `
 <?xml version="1.0" encoding="UTF-8"?>
 <AssignmentRules xmlns="http://soap.sforce.com/2006/04/metadata">
   <dummy>true</dummy>
 </ApexPage>
 `,
-              },
-            ],
-          },
-        ])
+                },
+              ],
+            },
+          ],
+        )
 
         result = (await adapter.fetch(mockFetchOpts)).elements
       })
 
       it('should skip SkippedList retrieve instances', () => {
-        expect(findElements(result, 'EmailTemplate', 'MyFolder_MyEmailTemplateSkippedList')).toHaveLength(0)
+        expect(
+          findElements(
+            result,
+            'EmailTemplate',
+            'MyFolder_MyEmailTemplateSkippedList',
+          ),
+        ).toHaveLength(0)
       })
     })
 
@@ -1993,7 +2322,9 @@ public class LargeClass${index} {
       let result: FetchResult
       let config: InstanceElement
 
-      const mockFailures = (connectionMock: MockInterface<Connection>): void => {
+      const mockFailures = (
+        connectionMock: MockInterface<Connection>,
+      ): void => {
         connectionMock.describeGlobal.mockImplementation(async () => ({
           sobjects: [],
         }))
@@ -2005,20 +2336,22 @@ public class LargeClass${index} {
             { xmlName: 'Report', inFolder: true },
           ]),
         )
-        connectionMock.metadata.describeValueType.mockImplementation(async (typeName: string) => {
-          if (typeName.endsWith('Report')) {
-            return mockDescribeValueResult({
-              parentField: {
-                name: '',
-                soapType: 'string',
-                foreignKeyDomain: 'ReportFolder',
-              },
-              valueTypeFields: [],
-            })
-          }
-          return mockDescribeValueResult({ valueTypeFields: [] })
-        })
-        connectionMock.metadata.list.mockImplementation(async inQuery => {
+        connectionMock.metadata.describeValueType.mockImplementation(
+          async (typeName: string) => {
+            if (typeName.endsWith('Report')) {
+              return mockDescribeValueResult({
+                parentField: {
+                  name: '',
+                  soapType: 'string',
+                  foreignKeyDomain: 'ReportFolder',
+                },
+                valueTypeFields: [],
+              })
+            }
+            return mockDescribeValueResult({ valueTypeFields: [] })
+          },
+        )
+        connectionMock.metadata.list.mockImplementation(async (inQuery) => {
           const query = collections.array.makeArray(inQuery)[0]
           const { type } = query
           if (type === 'MetadataTest2') {
@@ -2029,9 +2362,13 @@ public class LargeClass${index} {
             InstalledPackage: 'instance2',
           }
           const fullName = fullNames[type]
-          return fullName === undefined ? [] : [mockFileProperties({ fullName, type })]
+          return fullName === undefined
+            ? []
+            : [mockFileProperties({ fullName, type })]
         })
-        connectionMock.metadata.read.mockRejectedValue(new SFError('sf:UNKNOWN_EXCEPTION'))
+        connectionMock.metadata.read.mockRejectedValue(
+          new SFError('sf:UNKNOWN_EXCEPTION'),
+        )
 
         connectionMock.metadata.retrieve.mockReturnValue(
           mockRetrieveLocator({
@@ -2075,12 +2412,13 @@ public class LargeClass${index} {
         })
       })
       it('should return correct config when original config is empty', async () => {
-        const { connection: connectionMock, adapter: adapterMock } = mockAdapter({
-          adapterParams: {
-            getElemIdFunc: mockGetElemIdFunc,
-            config: {},
-          },
-        })
+        const { connection: connectionMock, adapter: adapterMock } =
+          mockAdapter({
+            adapterParams: {
+              getElemIdFunc: mockGetElemIdFunc,
+              config: {},
+            },
+          })
         mockFailures(connectionMock)
 
         result = await adapterMock.fetch(mockFetchOpts)
@@ -2179,7 +2517,10 @@ public class LargeClass${index} {
       let toRetrieveRequestSpy: jest.SpyInstance
 
       beforeEach(async () => {
-        toRetrieveRequestSpy = jest.spyOn(xmlTransformerModule, 'toRetrieveRequest')
+        toRetrieveRequestSpy = jest.spyOn(
+          xmlTransformerModule,
+          'toRetrieveRequest',
+        )
         ;({ connection, adapter } = mockAdapter({
           adapterParams: {
             getElemIdFunc: mockGetElemIdFunc,
@@ -2235,7 +2576,8 @@ public class LargeClass${index} {
               {
                 props: {
                   fullName: 'TestNestedReport',
-                  fileName: 'reports/ReportsFolder/NestedFolder/TestNestedReport.report',
+                  fileName:
+                    'reports/ReportsFolder/NestedFolder/TestNestedReport.report',
                 },
                 values: {
                   fullName: 'NestedFolder/TestNestedReport',
@@ -2275,7 +2617,8 @@ public class LargeClass${index} {
               type: 'Report',
             }),
             expect.objectContaining({
-              fileName: 'reports/ReportsFolder/NestedFolder/TestNestedReport.report',
+              fileName:
+                'reports/ReportsFolder/NestedFolder/TestNestedReport.report',
               fullName: 'TestNestedReport',
               type: 'Report',
             }),
@@ -2361,7 +2704,11 @@ public class LargeClass${index} {
         result = await adapter.fetch(mockFetchOpts)
       })
       it('should fetch sub instances of Workflow', () => {
-        expect(result.elements.filter(isInstanceElement).map(instance => apiNameSync(instance))).toIncludeAllMembers([
+        expect(
+          result.elements
+            .filter(isInstanceElement)
+            .map((instance) => apiNameSync(instance)),
+        ).toIncludeAllMembers([
           'TestObject__c.TestAlert1',
           'TestObject__c.TestAlert2',
         ])
@@ -2427,37 +2774,42 @@ public class LargeClass${index} {
         Object.assign(new Error(INVALID_CROSS_REFERENCE_KEY), {
           errorCode: INVALID_CROSS_REFERENCE_KEY,
         }),
-        ...NON_TRANSIENT_SALESFORCE_ERRORS.map(errorName => new SFError(errorName)),
-      ])('when client throws %p', thrownError => {
+        ...NON_TRANSIENT_SALESFORCE_ERRORS.map(
+          (errorName) => new SFError(errorName),
+        ),
+      ])('when client throws %p', (thrownError) => {
         beforeEach(() => {
-          connection.metadata.read.mockImplementation(async (_typeName, fullNames) => {
-            const names = makeArray(fullNames)
-            const [instanceName] = names
-            if (names.length > 1) {
-              throw thrownError
-            }
-            if (FAILING_ROLE_INSTANCE_NAMES.includes(instanceName)) {
-              throw thrownError
-            }
-            return {
-              fullName: instanceName,
-            }
-          })
+          connection.metadata.read.mockImplementation(
+            async (_typeName, fullNames) => {
+              const names = makeArray(fullNames)
+              const [instanceName] = names
+              if (names.length > 1) {
+                throw thrownError
+              }
+              if (FAILING_ROLE_INSTANCE_NAMES.includes(instanceName)) {
+                throw thrownError
+              }
+              return {
+                fullName: instanceName,
+              }
+            },
+          )
         })
         it('should create config suggestions for instances that failed', async () => {
           const fetchResult = await adapter.fetch(mockFetchOpts)
-          const expectedMetadataExcludes = FAILING_ROLE_INSTANCE_NAMES.map(instanceName =>
-            expect.objectContaining({
-              metadataType: 'Role',
-              name: instanceName,
-            }),
+          const expectedMetadataExcludes = FAILING_ROLE_INSTANCE_NAMES.map(
+            (instanceName) =>
+              expect.objectContaining({
+                metadataType: 'Role',
+                name: instanceName,
+              }),
           )
-          expect(fetchResult?.updatedConfig?.config[0].value.fetch.metadata.exclude).toEqual(
-            expect.arrayContaining(expectedMetadataExcludes),
-          )
+          expect(
+            fetchResult?.updatedConfig?.config[0].value.fetch.metadata.exclude,
+          ).toEqual(expect.arrayContaining(expectedMetadataExcludes))
           const fetchedInstancesNames = await awu(fetchResult.elements)
             .filter(isInstanceOfType('Role'))
-            .map(instance => apiName(instance))
+            .map((instance) => apiName(instance))
             .toArray()
           expect(fetchedInstancesNames).toEqual(ROLE_INSTANCE_NAMES)
         })
@@ -2488,7 +2840,10 @@ public class LargeClass${index} {
             },
           },
         }))
-        fromRetrieveResultSpy = jest.spyOn(xmlTransformerModule, 'fromRetrieveResult')
+        fromRetrieveResultSpy = jest.spyOn(
+          xmlTransformerModule,
+          'fromRetrieveResult',
+        )
         fromRetrieveResultSpy.mockResolvedValue([])
         mockMetadataType(
           { xmlName: TEST_TYPE_NAME, directoryName: 'tests', suffix: 'test' },
@@ -2562,15 +2917,22 @@ describe('Fetch via retrieve API', () => {
     failRetrieve?: boolean
   }
 
-  const updateProfileZipFileContents = (zipFile: ZipFile, fileProps: FileProperties[]): void => {
+  const updateProfileZipFileContents = (
+    zipFile: ZipFile,
+    fileProps: FileProperties[],
+  ): void => {
     const customObjectTypes = [
-      ...new Set(fileProps.filter(fileProp => fileProp.type === CUSTOM_OBJECT).map(fileProp => fileProp.fullName)),
+      ...new Set(
+        fileProps
+          .filter((fileProp) => fileProp.type === CUSTOM_OBJECT)
+          .map((fileProp) => fileProp.fullName),
+      ),
     ]
     zipFile.content = `<?xml version="1.0" encoding="UTF-8"?>
           <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
               <apiVersion>57.0</apiVersion>
               <custom>false</custom>`
-    customObjectTypes.forEach(type => {
+    customObjectTypes.forEach((type) => {
       zipFile.content += `<fieldPermissions>
         <editable>true</editable>
         <field>${type}.SomeField</field>
@@ -2583,7 +2945,9 @@ describe('Fetch via retrieve API', () => {
   const createFilePath = (fileName: string, type: MetadataObjectType): string =>
     `unpackaged/${fileName}${type.annotations.hasMetaFile ? '-meta.xml' : ''}`
 
-  const generateMockData = (instanceDefs: MockInstanceDef[]): { fileProps: FileProperties[]; zipFiles: ZipFile[] } => {
+  const generateMockData = (
+    instanceDefs: MockInstanceDef[],
+  ): { fileProps: FileProperties[]; zipFiles: ZipFile[] } => {
     const fileProps = instanceDefs.map(({ type, instanceName }) =>
       mockFileProperties({
         type: type.elemID.typeName,
@@ -2591,19 +2955,21 @@ describe('Fetch via retrieve API', () => {
       }),
     )
 
-    const zipFiles = _.zip(fileProps, instanceDefs).map(([fileProp, instanceDef]) => {
-      if (fileProp === undefined || instanceDef === undefined) {
-        // can't happen
-        return { path: '', content: '' }
-      }
-      return {
-        path: createFilePath(fileProp.fileName, instanceDef.type),
-        content: `<?xml version="1.0" encoding="UTF-8"?>
+    const zipFiles = _.zip(fileProps, instanceDefs).map(
+      ([fileProp, instanceDef]) => {
+        if (fileProp === undefined || instanceDef === undefined) {
+          // can't happen
+          return { path: '', content: '' }
+        }
+        return {
+          path: createFilePath(fileProp.fileName, instanceDef.type),
+          content: `<?xml version="1.0" encoding="UTF-8"?>
           <${fileProp.type} xmlns="http://soap.sforce.com/2006/04/metadata">
               <apiVersion>57.0</apiVersion>
           </${fileProp.type}>`,
-      }
-    })
+        }
+      },
+    )
     return {
       fileProps,
       zipFiles,
@@ -2611,24 +2977,28 @@ describe('Fetch via retrieve API', () => {
   }
 
   const setupMocks = async (mockDefs: MockInstanceDef[]): Promise<void> => {
-    const successfulMockDefs = mockDefs.filter(def => !def.failRetrieve)
+    const successfulMockDefs = mockDefs.filter((def) => !def.failRetrieve)
     const { fileProps, zipFiles } = generateMockData(successfulMockDefs)
-    connection.metadata.list.mockImplementation(async inputQueries => {
-      const queries = Array.isArray(inputQueries) ? inputQueries : [inputQueries]
+    connection.metadata.list.mockImplementation(async (inputQueries) => {
+      const queries = Array.isArray(inputQueries)
+        ? inputQueries
+        : [inputQueries]
       return _(queries)
-        .map(query => fileProps.filter(fileProp => fileProp.type === query.type))
+        .map((query) =>
+          fileProps.filter((fileProp) => fileProp.type === query.type),
+        )
         .flatten()
         .value()
     })
     zipFiles
-      .filter(zipFile => zipFile.content.includes('</Profile>'))
-      .forEach(zipFile => updateProfileZipFileContents(zipFile, fileProps))
+      .filter((zipFile) => zipFile.content.includes('</Profile>'))
+      .forEach((zipFile) => updateProfileZipFileContents(zipFile, fileProps))
     connection.metadata.retrieve.mockReturnValue(
       mockRetrieveLocator(
         mockRetrieveResult({
           messages: mockDefs
-            .filter(def => def.failRetrieve)
-            .map(def =>
+            .filter((def) => def.failRetrieve)
+            .map((def) =>
               mockFileProperties({
                 type: def.type.elemID.typeName,
                 fullName: def.instanceName,
@@ -2652,7 +3022,9 @@ describe('Fetch via retrieve API', () => {
     let elements: InstanceElement[] = []
 
     beforeEach(async () => {
-      await setupMocks([{ type: mockTypes.ApexClass, instanceName: 'SomeApexClass' }])
+      await setupMocks([
+        { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
+      ])
 
       elements = (
         await retrieveMetadataInstances({
@@ -2667,13 +3039,15 @@ describe('Fetch via retrieve API', () => {
 
     it('should fetch the correct instances', () => {
       expect(elements).toHaveLength(1)
-      expect(elements[0].elemID).toEqual(new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'))
+      expect(elements[0].elemID).toEqual(
+        new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'),
+      )
     })
   })
 
   describe.each([DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST, 1])(
     'Chunks of regular instances [chunk size = $chunkSize]',
-    chunkSize => {
+    (chunkSize) => {
       let elements: InstanceElement[] = []
 
       beforeEach(async () => {
@@ -2698,61 +3072,84 @@ describe('Fetch via retrieve API', () => {
         expect(elements).toHaveLength(2)
         expect(elements).toIncludeAllPartialMembers([
           {
-            elemID: new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'),
+            elemID: new ElemID(
+              SALESFORCE,
+              'ApexClass',
+              'instance',
+              'SomeApexClass',
+            ),
           },
           {
-            elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Account'),
+            elemID: new ElemID(
+              SALESFORCE,
+              'CustomObject',
+              'instance',
+              'Account',
+            ),
           },
         ])
       })
     },
   )
 
-  describe.each([DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST, 2])('chunks with one profile [chunk size = %d]', chunkSize => {
-    let elements: InstanceElement[] = []
+  describe.each([DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST, 2])(
+    'chunks with one profile [chunk size = %d]',
+    (chunkSize) => {
+      let elements: InstanceElement[] = []
 
-    beforeEach(async () => {
-      await setupMocks([
-        { type: mockTypes.CustomObject, instanceName: 'Case' },
-        { type: mockTypes.CustomObject, instanceName: 'Account' },
-        { type: mockTypes.Profile, instanceName: 'SomeProfile' },
-      ])
+      beforeEach(async () => {
+        await setupMocks([
+          { type: mockTypes.CustomObject, instanceName: 'Case' },
+          { type: mockTypes.CustomObject, instanceName: 'Account' },
+          { type: mockTypes.Profile, instanceName: 'SomeProfile' },
+        ])
 
-      elements = (
-        await retrieveMetadataInstances({
-          client,
-          types: [mockTypes.CustomObject, mockTypes.Profile],
-          fetchProfile: buildFetchProfile({
-            fetchParams: { addNamespacePrefixToFullName: false },
-            maxItemsInRetrieveRequest: chunkSize,
-          }),
-        })
-      ).elements
-    })
+        elements = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.CustomObject, mockTypes.Profile],
+            fetchProfile: buildFetchProfile({
+              fetchParams: { addNamespacePrefixToFullName: false },
+              maxItemsInRetrieveRequest: chunkSize,
+            }),
+          })
+        ).elements
+      })
 
-    it('should fetch the correct instances including a complete profile', () => {
-      expect(elements).toHaveLength(3)
-      expect(elements).toIncludeAllPartialMembers([
-        {
-          elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Case'),
-        },
-        {
-          elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Account'),
-        },
-        {
-          elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeProfile'),
-        },
-      ])
-      const profileInstance = elements[2]
-      expect(profileInstance.value.fieldPermissions).not.toBeEmpty()
-      const referencedTypes = _(profileInstance.value.fieldPermissions)
-        .map(({ field }: { field: string }) => field.split('.')[0])
-        .sortBy()
-        .value()
+      it('should fetch the correct instances including a complete profile', () => {
+        expect(elements).toHaveLength(3)
+        expect(elements).toIncludeAllPartialMembers([
+          {
+            elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Case'),
+          },
+          {
+            elemID: new ElemID(
+              SALESFORCE,
+              'CustomObject',
+              'instance',
+              'Account',
+            ),
+          },
+          {
+            elemID: new ElemID(
+              SALESFORCE,
+              'Profile',
+              'instance',
+              'SomeProfile',
+            ),
+          },
+        ])
+        const profileInstance = elements[2]
+        expect(profileInstance.value.fieldPermissions).not.toBeEmpty()
+        const referencedTypes = _(profileInstance.value.fieldPermissions)
+          .map(({ field }: { field: string }) => field.split('.')[0])
+          .sortBy()
+          .value()
 
-      expect(referencedTypes).toEqual(['Account', 'Case'])
-    })
-  })
+        expect(referencedTypes).toEqual(['Account', 'Case'])
+      })
+    },
+  )
 
   describe('Multiple chunks with multiple profiles', () => {
     let elements: InstanceElement[] = []
@@ -2788,11 +3185,16 @@ describe('Fetch via retrieve API', () => {
           elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeProfile'),
         },
         {
-          elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeOtherProfile'),
+          elemID: new ElemID(
+            SALESFORCE,
+            'Profile',
+            'instance',
+            'SomeOtherProfile',
+          ),
         },
       ])
       const profileInstances = elements.slice(2)
-      profileInstances.forEach(profileInstance => {
+      profileInstances.forEach((profileInstance) => {
         expect(profileInstance.value.fieldPermissions).not.toBeEmpty()
         const referencedTypes = _(profileInstance.value.fieldPermissions)
           .map(({ field }: { field: string }) => field.split('.')[0])

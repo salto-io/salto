@@ -23,12 +23,19 @@ import {
 } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD } from '../constants'
 
-export const wasFullNameChanged = (change: ModificationChange<InstanceElement>): boolean => {
+export const wasFullNameChanged = (
+  change: ModificationChange<InstanceElement>,
+): boolean => {
   const { before, after } = change.data
-  return before.value[INSTANCE_FULL_NAME_FIELD] !== after.value[INSTANCE_FULL_NAME_FIELD]
+  return (
+    before.value[INSTANCE_FULL_NAME_FIELD] !==
+    after.value[INSTANCE_FULL_NAME_FIELD]
+  )
 }
 
-const fullNameChangeError = (change: ModificationChange<InstanceElement>): ChangeError => {
+const fullNameChangeError = (
+  change: ModificationChange<InstanceElement>,
+): ChangeError => {
   const { before, after } = change.data
   return {
     elemID: after.elemID,
@@ -45,7 +52,11 @@ const fullNameChangeError = (change: ModificationChange<InstanceElement>): Chang
  * It is forbidden to modify the fullName property of objects - it is used as an identifier and
  * changing it is not supported.
  */
-const changeValidator: ChangeValidator = async changes =>
-  changes.filter(isModificationChange).filter(isInstanceChange).filter(wasFullNameChanged).map(fullNameChangeError)
+const changeValidator: ChangeValidator = async (changes) =>
+  changes
+    .filter(isModificationChange)
+    .filter(isInstanceChange)
+    .filter(wasFullNameChanged)
+    .map(fullNameChangeError)
 
 export default changeValidator

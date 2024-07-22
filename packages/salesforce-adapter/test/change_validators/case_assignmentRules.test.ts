@@ -27,7 +27,10 @@ describe('case AssignmentRules change validator', () => {
           fullName: 'Case',
           assignmentRule: [
             {
-              ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2', team: 'team1' }],
+              ruleEntry: [
+                { assignedTo: 'user1' },
+                { assignedTo: 'user2', team: 'team1' },
+              ],
             },
           ],
         },
@@ -48,7 +51,9 @@ describe('case AssignmentRules change validator', () => {
       const caseRule = createInstanceElement(
         {
           fullName: 'Case',
-          assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2' }] }],
+          assignmentRule: [
+            { ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2' }] },
+          ],
         },
         mockTypes.AssignmentRules,
       )

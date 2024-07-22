@@ -19,7 +19,10 @@ import { collections } from '@salto-io/lowerdash'
 import * as constants from '../src/constants'
 import { CustomField, ProfileInfo } from '../src/client/types'
 import { createDeployPackage } from '../src/transformers/xml_transformer'
-import { MetadataValues, createInstanceElement } from '../src/transformers/transformer'
+import {
+  MetadataValues,
+  createInstanceElement,
+} from '../src/transformers/transformer'
 import SalesforceClient from '../src/client/client'
 import { mockTypes, mockDefaultValues } from '../test/mock_elements'
 import { removeMetadataIfAlreadyExists } from './utils'
@@ -60,14 +63,18 @@ export const CUSTOM_FIELD_NAMES = {
   FORMULA: 'Whiskey__c',
 }
 
-export const removeCustomObjectsWithVariousFields = async (client: SalesforceClient): Promise<void> => {
+export const removeCustomObjectsWithVariousFields = async (
+  client: SalesforceClient,
+): Promise<void> => {
   const deployPkg = createDeployPackage()
   deployPkg.delete(mockTypes.CustomObject, customObjectWithFieldsName)
   deployPkg.delete(mockTypes.CustomObject, customObjectAddFieldsName)
   await client.deploy(await deployPkg.getZip())
 }
 
-export const verifyElementsExist = async (client: SalesforceClient): Promise<void> => {
+export const verifyElementsExist = async (
+  client: SalesforceClient,
+): Promise<void> => {
   const verifyObjectsDependentFieldsExist = async (): Promise<void> => {
     await client.upsert('GlobalValueSet', {
       fullName: gvsName,
@@ -90,7 +97,11 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
   }
 
   const addCustomObjectWithVariousFields = async (): Promise<void> => {
-    await removeMetadataIfAlreadyExists(client, constants.CUSTOM_FIELD, summaryFieldName)
+    await removeMetadataIfAlreadyExists(
+      client,
+      constants.CUSTOM_FIELD,
+      summaryFieldName,
+    )
     await removeCustomObjectsWithVariousFields(client)
     const objectToAdd = {
       deploymentStatus: 'Deployed',
@@ -287,7 +298,9 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
           fullName: CUSTOM_FIELD_NAMES.MASTER_DETAIL,
           label: 'MasterDetail label',
           referenceTo: ['Case'],
-          relationshipName: CUSTOM_FIELD_NAMES.MASTER_DETAIL.split(constants.SALESFORCE_CUSTOM_SUFFIX)[0],
+          relationshipName: CUSTOM_FIELD_NAMES.MASTER_DETAIL.split(
+            constants.SALESFORCE_CUSTOM_SUFFIX,
+          )[0],
           reparentableMasterDetail: true,
           required: false,
           type: constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
@@ -368,7 +381,9 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
       fullName: CUSTOM_FIELD_NAMES.LOOKUP,
       label: 'Lookup label',
       referenceTo: ['Opportunity'],
-      relationshipName: CUSTOM_FIELD_NAMES.LOOKUP.split(constants.SALESFORCE_CUSTOM_SUFFIX)[0],
+      relationshipName: CUSTOM_FIELD_NAMES.LOOKUP.split(
+        constants.SALESFORCE_CUSTOM_SUFFIX,
+      )[0],
       required: false,
       type: constants.FIELD_TYPE_NAMES.LOOKUP,
     } as CustomField
@@ -394,18 +409,25 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
     }
     await verifyObjectsDependentFieldsExist()
     await client.upsert(constants.CUSTOM_OBJECT, objectToAdd as MetadataInfo)
-    await client.upsert(constants.CUSTOM_FIELD, additionalFieldsToAdd as MetadataInfo[])
+    await client.upsert(
+      constants.CUSTOM_FIELD,
+      additionalFieldsToAdd as MetadataInfo[],
+    )
 
     // Add the fields permissions
     const objectFieldNames = objectToAdd.fields
-      .filter(field => !field.required)
-      .filter(field => field.type !== constants.FIELD_TYPE_NAMES.MASTER_DETAIL)
-      .map(field => `${customObjectWithFieldsName}.${field.fullName}`)
-    const additionalFieldNames = additionalFieldsToAdd.filter(field => !field.required).map(f => f.fullName)
+      .filter((field) => !field.required)
+      .filter(
+        (field) => field.type !== constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
+      )
+      .map((field) => `${customObjectWithFieldsName}.${field.fullName}`)
+    const additionalFieldNames = additionalFieldsToAdd
+      .filter((field) => !field.required)
+      .map((f) => f.fullName)
     const fieldNames = objectFieldNames.concat(additionalFieldNames)
     await client.upsert(constants.PROFILE_METADATA_TYPE, {
       fullName: constants.ADMIN_PROFILE,
-      fieldPermissions: fieldNames.map(name => ({
+      fieldPermissions: fieldNames.map((name) => ({
         field: name,
         editable: true,
         readable: true,
@@ -836,7 +858,10 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
       [mockDefaultValues.ApexClass, mockTypes.ApexClass],
       [mockDefaultValues.ApexPage, mockTypes.ApexPage],
       [mockDefaultValues.AuraDefinitionBundle, mockTypes.AuraDefinitionBundle],
-      [mockDefaultValues.LightningComponentBundle, mockTypes.LightningComponentBundle],
+      [
+        mockDefaultValues.LightningComponentBundle,
+        mockTypes.LightningComponentBundle,
+      ],
       [mockDefaultValues.StaticResource, mockTypes.StaticResource],
     ]
     const pkg = createDeployPackage()

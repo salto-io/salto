@@ -79,7 +79,10 @@ describe('profiles', () => {
 
         it('should create references', async () => {
           const expectedSource = ['fieldPermissions', 'Account', 'testField__c']
-          const expectedTarget = mockTypes.Account.elemID.createNestedID('field', 'testField__c')
+          const expectedTarget = mockTypes.Account.elemID.createNestedID(
+            'field',
+            'testField__c',
+          )
           expect(refs).toEqual([
             {
               source: profileInstance.elemID.createNestedID(...expectedSource),
@@ -93,9 +96,11 @@ describe('profiles', () => {
     })
 
     describe('custom apps', () => {
-      const customApp = new InstanceElement('SomeApplication', createMetadataTypeElement('CustomApplication', {}), {
-        [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication',
-      })
+      const customApp = new InstanceElement(
+        'SomeApplication',
+        createMetadataTypeElement('CustomApplication', {}),
+        { [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication' },
+      )
 
       describe('if neither default or visible', () => {
         beforeEach(async () => {
@@ -135,7 +140,10 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
+              source: profileInstance.elemID.createNestedID(
+                'applicationVisibilities',
+                'SomeApplication',
+              ),
               target: customApp.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -162,7 +170,10 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toIncludeAllPartialMembers([
             {
-              source: profileInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
+              source: profileInstance.elemID.createNestedID(
+                'applicationVisibilities',
+                'SomeApplication',
+              ),
               target: customApp.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -177,7 +188,12 @@ describe('profiles', () => {
             applicationVisibilities: {
               SomeApplication: {
                 application: new ReferenceExpression(
-                  new ElemID(SALESFORCE, CUSTOM_APPLICATION_METADATA_TYPE, 'instance', 'SomeApplication'),
+                  new ElemID(
+                    SALESFORCE,
+                    CUSTOM_APPLICATION_METADATA_TYPE,
+                    'instance',
+                    'SomeApplication',
+                  ),
                 ),
                 default: false,
                 visible: true,
@@ -194,9 +210,11 @@ describe('profiles', () => {
     })
 
     describe('Apex classes', () => {
-      const apexClass = new InstanceElement('SomeApexClass', mockTypes.ApexClass, {
-        [INSTANCE_FULL_NAME_FIELD]: 'SomeApexClass',
-      })
+      const apexClass = new InstanceElement(
+        'SomeApexClass',
+        mockTypes.ApexClass,
+        { [INSTANCE_FULL_NAME_FIELD]: 'SomeApexClass' },
+      )
 
       describe('when disabled', () => {
         beforeEach(async () => {
@@ -232,7 +250,10 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'),
+              source: profileInstance.elemID.createNestedID(
+                'classAccesses',
+                'SomeApexClass',
+              ),
               target: apexClass.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -247,7 +268,12 @@ describe('profiles', () => {
             classAccesses: {
               SomeApexClass: {
                 apexClass: new ReferenceExpression(
-                  new ElemID(SALESFORCE, APEX_CLASS_METADATA_TYPE, 'instance', 'SomeApexClass'),
+                  new ElemID(
+                    SALESFORCE,
+                    APEX_CLASS_METADATA_TYPE,
+                    'instance',
+                    'SomeApexClass',
+                  ),
                 ),
                 enabled: true,
               },
@@ -301,7 +327,10 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'),
+              source: profileInstance.elemID.createNestedID(
+                'flowAccesses',
+                'SomeFlow',
+              ),
               target: flow.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -316,7 +345,14 @@ describe('profiles', () => {
             flowAccesses: {
               SomeFlow: {
                 enabled: true,
-                flow: new ReferenceExpression(new ElemID(SALESFORCE, FLOW_METADATA_TYPE, 'instance', 'SomeFlow')),
+                flow: new ReferenceExpression(
+                  new ElemID(
+                    SALESFORCE,
+                    FLOW_METADATA_TYPE,
+                    'instance',
+                    'SomeFlow',
+                  ),
+                ),
               },
             },
           })
@@ -330,9 +366,11 @@ describe('profiles', () => {
     })
 
     describe('layouts', () => {
-      const layout = new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {
-        [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout',
-      })
+      const layout = new InstanceElement(
+        'Account_Account_Layout@bs',
+        mockTypes.Layout,
+        { [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout' },
+      )
 
       describe('when there is a reference to a layout', () => {
         beforeEach(async () => {
@@ -351,7 +389,10 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
+              source: profileInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
               target: layout.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -391,19 +432,28 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
+              source: profileInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
               target: layout.elemID,
               type: 'weak',
               sourceScope: 'value',
             },
             {
-              source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
+              source: profileInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
               target: recordTypes[0].elemID,
               type: 'weak',
               sourceScope: 'value',
             },
             {
-              source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
+              source: profileInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
               target: recordTypes[1].elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -418,13 +468,21 @@ describe('profiles', () => {
                 'Account_Account_Layout@bs': [
                   {
                     layout: new ReferenceExpression(
-                      new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, 'instance', 'Account-Account Layout'),
+                      new ElemID(
+                        SALESFORCE,
+                        LAYOUT_TYPE_ID_METADATA_TYPE,
+                        'instance',
+                        'Account-Account Layout',
+                      ),
                     ),
                   },
                 ],
               },
             })
-            refs = await profilesHandler.findWeakReferences([profileInstance], undefined)
+            refs = await profilesHandler.findWeakReferences(
+              [profileInstance],
+              undefined,
+            )
           })
 
           it('should not create references', async () => {
@@ -440,25 +498,41 @@ describe('profiles', () => {
                   {
                     layout: 'Account-Account Layout',
                     recordType: new ReferenceExpression(
-                      new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'SomeRecordType'),
+                      new ElemID(
+                        SALESFORCE,
+                        RECORD_TYPE_METADATA_TYPE,
+                        'instance',
+                        'SomeRecordType',
+                      ),
                     ),
                   },
                   {
                     layout: 'Account-Account Layout',
                     recordType: new ReferenceExpression(
-                      new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'SomeOtherRecordType'),
+                      new ElemID(
+                        SALESFORCE,
+                        RECORD_TYPE_METADATA_TYPE,
+                        'instance',
+                        'SomeOtherRecordType',
+                      ),
                     ),
                   },
                 ],
               },
             })
-            refs = await profilesHandler.findWeakReferences([profileInstance], undefined)
+            refs = await profilesHandler.findWeakReferences(
+              [profileInstance],
+              undefined,
+            )
           })
 
           it('should only create references to layout', () => {
             expect(refs).toEqual([
               {
-                source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
+                source: profileInstance.elemID.createNestedID(
+                  'layoutAssignments',
+                  'Account_Account_Layout@bs',
+                ),
                 target: layout.elemID,
                 type: 'weak',
                 sourceScope: 'value',
@@ -518,7 +592,10 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('objectPermissions', 'Account'),
+              source: profileInstance.elemID.createNestedID(
+                'objectPermissions',
+                'Account',
+              ),
               target: customObject.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -537,7 +614,9 @@ describe('profiles', () => {
                 allowEdit: true,
                 allowRead: true,
                 modifyAllRecords: false,
-                object: new ReferenceExpression(new ElemID(SALESFORCE, 'Account')),
+                object: new ReferenceExpression(
+                  new ElemID(SALESFORCE, 'Account'),
+                ),
                 viewAllRecords: false,
               },
             },
@@ -591,7 +670,10 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'),
+              source: profileInstance.elemID.createNestedID(
+                'pageAccesses',
+                'SomeApexPage',
+              ),
               target: apexPage.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -606,7 +688,12 @@ describe('profiles', () => {
             pageAccesses: {
               SomeApexPage: {
                 apexPage: new ReferenceExpression(
-                  new ElemID(SALESFORCE, APEX_PAGE_METADATA_TYPE, 'instance', 'SomeApexPage'),
+                  new ElemID(
+                    SALESFORCE,
+                    APEX_PAGE_METADATA_TYPE,
+                    'instance',
+                    'SomeApexPage',
+                  ),
                 ),
                 enabled: true,
               },
@@ -622,9 +709,11 @@ describe('profiles', () => {
     })
 
     describe('record types', () => {
-      const recordType = new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {
-        [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType',
-      })
+      const recordType = new InstanceElement(
+        'Case_SomeCaseRecordType',
+        mockTypes.RecordType,
+        { [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType' },
+      )
 
       describe('when neither default nor visible', () => {
         beforeEach(async () => {
@@ -666,7 +755,11 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'),
+              source: profileInstance.elemID.createNestedID(
+                'recordTypeVisibilities',
+                'Case',
+                'SomeCaseRecordType',
+              ),
               target: recordType.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -694,7 +787,11 @@ describe('profiles', () => {
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'),
+              source: profileInstance.elemID.createNestedID(
+                'recordTypeVisibilities',
+                'Case',
+                'SomeCaseRecordType',
+              ),
               target: recordType.elemID,
               type: 'weak',
               sourceScope: 'value',
@@ -711,7 +808,12 @@ describe('profiles', () => {
                 SomeCaseRecordType: {
                   default: false,
                   recordType: new ReferenceExpression(
-                    new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'Case.SomeCaseRecordType'),
+                    new ElemID(
+                      SALESFORCE,
+                      RECORD_TYPE_METADATA_TYPE,
+                      'instance',
+                      'Case.SomeCaseRecordType',
+                    ),
                   ),
                   visible: true,
                 },
@@ -799,7 +901,9 @@ describe('profiles', () => {
       })
 
       it('should drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([
+          profileInstance,
+        ])
         expect(fixedElements).toEqual([
           new InstanceElement('test', mockTypes.Profile, {
             fieldPermissions: {
@@ -820,7 +924,8 @@ describe('profiles', () => {
           {
             elemID: profileInstance.elemID,
             severity: 'Info',
-            message: 'Omitting profile entries which reference unavailable types',
+            message:
+              'Omitting profile entries which reference unavailable types',
             detailedMessage:
               'The profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
           },
@@ -841,12 +946,24 @@ describe('profiles', () => {
               [API_NAME]: 'Account',
             },
           }),
-          new InstanceElement('SomeApplication', mockTypes.CustomApplication, {}),
+          new InstanceElement(
+            'SomeApplication',
+            mockTypes.CustomApplication,
+            {},
+          ),
           new InstanceElement('SomeApexClass', mockTypes.ApexClass, {}),
           new InstanceElement('SomeFlow', mockTypes.Flow, {}),
-          new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {}),
+          new InstanceElement(
+            'Account_Account_Layout@bs',
+            mockTypes.Layout,
+            {},
+          ),
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
-          new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {}),
+          new InstanceElement(
+            'Case_SomeCaseRecordType',
+            mockTypes.RecordType,
+            {},
+          ),
         ])
         fixElementsFunc = profilesHandler.removeWeakReferences({
           elementsSource,
@@ -854,7 +971,9 @@ describe('profiles', () => {
       })
 
       it('should not drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([
+          profileInstance,
+        ])
         expect(fixedElements).toBeEmpty()
         expect(errors).toBeEmpty()
       })
@@ -863,10 +982,18 @@ describe('profiles', () => {
     describe('when some references are resolved', () => {
       beforeEach(() => {
         const elementsSource = buildElementsSourceFromElements([
-          new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {}),
+          new InstanceElement(
+            'Account_Account_Layout@bs',
+            mockTypes.Layout,
+            {},
+          ),
           mockTypes.Account,
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
-          new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {}),
+          new InstanceElement(
+            'Case_SomeCaseRecordType',
+            mockTypes.RecordType,
+            {},
+          ),
         ])
         fixElementsFunc = profilesHandler.removeWeakReferences({
           elementsSource,
@@ -874,7 +1001,9 @@ describe('profiles', () => {
       })
 
       it('should drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([
+          profileInstance,
+        ])
         expect(fixedElements).toEqual([
           new InstanceElement('test', mockTypes.Profile, {
             fieldPermissions: {
@@ -922,7 +1051,8 @@ describe('profiles', () => {
           {
             elemID: profileInstance.elemID,
             severity: 'Info',
-            message: 'Omitting profile entries which reference unavailable types',
+            message:
+              'Omitting profile entries which reference unavailable types',
             detailedMessage:
               'The profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
           },

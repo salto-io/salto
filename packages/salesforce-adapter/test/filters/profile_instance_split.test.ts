@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { ObjectType, Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  Element,
+  InstanceElement,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/profile_instance_split'
 import { generateProfileType, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
@@ -60,7 +65,8 @@ describe('Profile Instance Split filter', () => {
               Account_Account_Layout: [{ layout: 'Account-Account Layout' }],
               Account_random_characters_aaa___bbb: [
                 {
-                  layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                  layout:
+                    'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
                   recordType: 'something',
                 },
               ],
@@ -96,41 +102,68 @@ describe('Profile Instance Split filter', () => {
         ),
       ]
 
-      elements = [profileObj, ...profileInstances.map(e => e.clone())]
+      elements = [profileObj, ...profileInstances.map((e) => e.clone())]
       await filter.onFetch(elements)
     })
     it('should split each map field to its own path', () => {
-      const profElements = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile1')
+      const profElements = elements
+        .filter(isInstanceElement)
+        .filter((e) => e.elemID.name === 'profile1')
       expect(profElements).toHaveLength(4)
 
       const fieldsByPath = _.sortBy(
-        profElements.map(e => [e.path?.join('/'), Object.keys(e.value).sort()]),
-        item => item[0],
+        profElements.map((e) => [
+          e.path?.join('/'),
+          Object.keys(e.value).sort(),
+        ]),
+        (item) => item[0],
       )
       expect(fieldsByPath).toEqual([
-        ['salesforce/Records/Profile/profile1/ApplicationVisibilities', ['applicationVisibilities']],
-        ['salesforce/Records/Profile/profile1/Attributes', ['fullName', 'userLicense']],
-        ['salesforce/Records/Profile/profile1/FieldPermissions', ['fieldPermissions']],
-        ['salesforce/Records/Profile/profile1/LayoutAssignments', ['layoutAssignments']],
+        [
+          'salesforce/Records/Profile/profile1/ApplicationVisibilities',
+          ['applicationVisibilities'],
+        ],
+        [
+          'salesforce/Records/Profile/profile1/Attributes',
+          ['fullName', 'userLicense'],
+        ],
+        [
+          'salesforce/Records/Profile/profile1/FieldPermissions',
+          ['fieldPermissions'],
+        ],
+        [
+          'salesforce/Records/Profile/profile1/LayoutAssignments',
+          ['layoutAssignments'],
+        ],
       ])
     })
 
     it('should only create elements for defined fields', () => {
-      const profElements = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile2')
+      const profElements = elements
+        .filter(isInstanceElement)
+        .filter((e) => e.elemID.name === 'profile2')
       expect(profElements).toHaveLength(2)
 
       const fieldsByPath = _.sortBy(
-        profElements.map(e => [e.path?.join('/'), Object.keys(e.value).sort()]),
-        item => item[0],
+        profElements.map((e) => [
+          e.path?.join('/'),
+          Object.keys(e.value).sort(),
+        ]),
+        (item) => item[0],
       )
       expect(fieldsByPath).toEqual([
         ['salesforce/Records/Profile/profile2/Attributes', ['fullName']],
-        ['salesforce/Records/Profile/profile2/FieldPermissions', ['fieldPermissions']],
+        [
+          'salesforce/Records/Profile/profile2/FieldPermissions',
+          ['fieldPermissions'],
+        ],
       ])
     })
 
     it('should have the default Attributes element first', () => {
-      const profElements = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile1')
+      const profElements = elements
+        .filter(isInstanceElement)
+        .filter((e) => e.elemID.name === 'profile1')
       expect(profElements[0].path?.slice(-1)[0]).toEqual('Attributes')
     })
   })

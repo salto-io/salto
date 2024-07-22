@@ -45,18 +45,23 @@ const INVALID_FILTERSCOPES: ForbiddenFilterScope[] = [
   },
 ]
 
-export const isFilterScopeInvalid = async (instance: InstanceElement): Promise<boolean> => {
+export const isFilterScopeInvalid = async (
+  instance: InstanceElement,
+): Promise<boolean> => {
   if ((await apiName(await instance.getType())) !== 'ListView') {
     return false
   }
   return INVALID_FILTERSCOPES.some(
-    filterScopeDef =>
-      getParents(instance).some(parentType => parentType === filterScopeDef.parentType) &&
-      instance.value.filterScope === filterScopeDef.filterScope,
+    (filterScopeDef) =>
+      getParents(instance).some(
+        (parentType) => parentType === filterScopeDef.parentType,
+      ) && instance.value.filterScope === filterScopeDef.filterScope,
   )
 }
 
-const invalidListViewFilterScopeError = (element: InstanceElement): ChangeError => ({
+const invalidListViewFilterScopeError = (
+  element: InstanceElement,
+): ChangeError => ({
   elemID: element.elemID,
   severity: 'Error',
   message: 'Invalid filterScope value of a ListView',
@@ -67,14 +72,18 @@ const invalidListViewFilterScopeError = (element: InstanceElement): ChangeError 
  * Some scopes are not allowed for ListViews.
  * cf. https://developer.salesforce.com/docs/atlas.en-us.236.0.api_meta.meta/api_meta/meta_listview.htm#filterScope
  */
-const changeValidator: ChangeValidator = async changes => {
-  const typesOfInterest = INVALID_FILTERSCOPES.map(scopeDef => scopeDef.parentType)
+const changeValidator: ChangeValidator = async (changes) => {
+  const typesOfInterest = INVALID_FILTERSCOPES.map(
+    (scopeDef) => scopeDef.parentType,
+  )
   return awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(async elem => getParents(elem).some(isInstanceOfType(...typesOfInterest)))
-    .filter(async elem => isFilterScopeInvalid(elem))
+    .filter(async (elem) =>
+      getParents(elem).some(isInstanceOfType(...typesOfInterest)),
+    )
+    .filter(async (elem) => isFilterScopeInvalid(elem))
     .map(invalidListViewFilterScopeError)
     .toArray()
 }

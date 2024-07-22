@@ -38,7 +38,7 @@ const invalidRecordTypeError = (instance: InstanceElement): ChangeError => ({
   detailedMessage: `In ${instance.elemID.getFullName()}, The RecordTypeId field is missing even though RecordTypeContext requires a RecordTypeId.`,
 })
 
-const changeValidator = (): ChangeValidator => async changes =>
+const changeValidator = (): ChangeValidator => async (changes) =>
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)

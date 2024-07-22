@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BuiltinTypes, Change, ChangeValidator, Field, ObjectType, toChange } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  Change,
+  ChangeValidator,
+  Field,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { createCustomMetadataType, createCustomObjectType } from '../utils'
 import creator from '../../src/change_validators/new_fields_and_objects_fls'
@@ -26,17 +33,25 @@ describe('new Fields and Objects FLS Change Validator', () => {
   let changeValidator: ChangeValidator
 
   beforeEach(() => {
-    addedField = new Field(mockTypes.Account, 'TestField__c', BuiltinTypes.STRING, {
-      [API_NAME]: 'Account.TestField__c',
-    })
+    addedField = new Field(
+      mockTypes.Account,
+      'TestField__c',
+      BuiltinTypes.STRING,
+      { [API_NAME]: 'Account.TestField__c' },
+    )
     addedObject = createCustomObjectType('TestType__c', {
       annotations: { [API_NAME]: 'TestType__c' },
     })
     // Make sure we don't create info on Field that is added alongside it's parent
-    const addedObjectField = new Field(addedObject, 'TestField__c', BuiltinTypes.STRING, {
-      [API_NAME]: 'TestType__c.TestField__c',
-    })
-    changes = [addedField, addedObject, addedObjectField].map(element => toChange({ after: element }))
+    const addedObjectField = new Field(
+      addedObject,
+      'TestField__c',
+      BuiltinTypes.STRING,
+      { [API_NAME]: 'TestType__c.TestField__c' },
+    )
+    changes = [addedField, addedObject, addedObjectField].map((element) =>
+      toChange({ after: element }),
+    )
   })
 
   describe('when flsProfiles are defined in the config', () => {
@@ -54,14 +69,22 @@ describe('new Fields and Objects FLS Change Validator', () => {
       expect(fieldError).toEqual({
         elemID: addedField.elemID,
         severity: 'Info',
-        message: expect.stringContaining('Read/write access to this Custom Field will be granted to 2 profiles'),
-        detailedMessage: expect.stringContaining(CUSTOM_FLS_PROFILES.join(', ')),
+        message: expect.stringContaining(
+          'Read/write access to this Custom Field will be granted to 2 profiles',
+        ),
+        detailedMessage: expect.stringContaining(
+          CUSTOM_FLS_PROFILES.join(', '),
+        ),
       })
       expect(objectError).toEqual({
         elemID: addedObject.elemID,
         severity: 'Info',
-        message: expect.stringContaining('Read/write access to this Custom Object will be granted to 2 profiles'),
-        detailedMessage: expect.stringContaining(CUSTOM_FLS_PROFILES.join(', ')),
+        message: expect.stringContaining(
+          'Read/write access to this Custom Object will be granted to 2 profiles',
+        ),
+        detailedMessage: expect.stringContaining(
+          CUSTOM_FLS_PROFILES.join(', '),
+        ),
       })
     })
   })
@@ -81,7 +104,9 @@ describe('new Fields and Objects FLS Change Validator', () => {
         message: expect.stringContaining(
           'Read/write access to this Custom Field will be granted to the following profile: Admin',
         ),
-        detailedMessage: expect.stringContaining(DEFAULT_FLS_PROFILES.join(', ')),
+        detailedMessage: expect.stringContaining(
+          DEFAULT_FLS_PROFILES.join(', '),
+        ),
       })
       expect(objectError).toEqual({
         elemID: addedObject.elemID,
@@ -89,7 +114,9 @@ describe('new Fields and Objects FLS Change Validator', () => {
         message: expect.stringContaining(
           'Read/write access to this Custom Object will be granted to the following profile: Admin',
         ),
-        detailedMessage: expect.stringContaining(DEFAULT_FLS_PROFILES.join(', ')),
+        detailedMessage: expect.stringContaining(
+          DEFAULT_FLS_PROFILES.join(', '),
+        ),
       })
     })
 
@@ -101,7 +128,9 @@ describe('new Fields and Objects FLS Change Validator', () => {
             TestField__c: { refType: BuiltinTypes.STRING },
           },
         })
-        changes = [addedObject, ...Object.values(addedObject.fields)].map(element => toChange({ after: element }))
+        changes = [addedObject, ...Object.values(addedObject.fields)].map(
+          (element) => toChange({ after: element }),
+        )
       })
       it('should create FLS info on the added object only', async () => {
         const errors = await changeValidator(changes)
@@ -112,7 +141,9 @@ describe('new Fields and Objects FLS Change Validator', () => {
           message: expect.stringContaining(
             'Read/write access to this Custom Object will be granted to the following profile: Admin',
           ),
-          detailedMessage: expect.stringContaining(DEFAULT_FLS_PROFILES.join(', ')),
+          detailedMessage: expect.stringContaining(
+            DEFAULT_FLS_PROFILES.join(', '),
+          ),
         })
       })
     })

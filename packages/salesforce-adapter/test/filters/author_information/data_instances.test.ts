@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, InstanceElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  Element,
+  ObjectType,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
 import { mockFileProperties, mockQueryResult } from '../../connection'
@@ -21,7 +27,9 @@ import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
 import { Filter, FilterResult } from '../../../src/filter'
-import dataInstances, { WARNING_MESSAGE } from '../../../src/filters/author_information/data_instances'
+import dataInstances, {
+  WARNING_MESSAGE,
+} from '../../../src/filters/author_information/data_instances'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE } from '../../../src/constants'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
@@ -56,11 +64,22 @@ describe('data instances author information test', () => {
     ],
     totalSize: 2,
   })
-  const checkElementAnnotations = (object: Element, properties: FileProperties): void => {
-    expect(object.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual(properties.createdByName)
-    expect(object.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(properties.createdDate)
-    expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(properties.lastModifiedByName)
-    expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(properties.lastModifiedDate)
+  const checkElementAnnotations = (
+    object: Element,
+    properties: FileProperties,
+  ): void => {
+    expect(object.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual(
+      properties.createdByName,
+    )
+    expect(object.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(
+      properties.createdDate,
+    )
+    expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(
+      properties.lastModifiedByName,
+    )
+    expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(
+      properties.lastModifiedDate,
+    )
   }
   beforeEach(async () => {
     ;({ connection, client } = mockClient())
@@ -107,10 +126,18 @@ describe('data instances author information test', () => {
         },
       })
       await filter.onFetch?.([testInst])
-      expect(testInst.annotations[CORE_ANNOTATIONS.CREATED_BY]).not.toBeDefined()
-      expect(testInst.annotations[CORE_ANNOTATIONS.CREATED_AT]).not.toBeDefined()
-      expect(testInst.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
-      expect(testInst.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
+      expect(
+        testInst.annotations[CORE_ANNOTATIONS.CREATED_BY],
+      ).not.toBeDefined()
+      expect(
+        testInst.annotations[CORE_ANNOTATIONS.CREATED_AT],
+      ).not.toBeDefined()
+      expect(
+        testInst.annotations[CORE_ANNOTATIONS.CHANGED_BY],
+      ).not.toBeDefined()
+      expect(
+        testInst.annotations[CORE_ANNOTATIONS.CHANGED_AT],
+      ).not.toBeDefined()
     })
   })
 })

@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element, isObjectType, isField, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  Element,
+  isObjectType,
+  isField,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -37,7 +42,10 @@ import {
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
-const TYPES_WITH_NO_INTERNAL_IDS = [TOPICS_FOR_OBJECTS_METADATA_TYPE, GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE]
+const TYPES_WITH_NO_INTERNAL_IDS = [
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+  GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE,
+]
 
 // Used for logging
 const shouldHaveInternalId = (element: Element): boolean => {
@@ -45,7 +53,10 @@ const shouldHaveInternalId = (element: Element): boolean => {
     return false
   }
   if (isInstanceElement(element)) {
-    return isMetadataInstanceElementSync(element) && !isInstanceOfTypeSync(...TYPES_WITH_NO_INTERNAL_IDS)(element)
+    return (
+      isMetadataInstanceElementSync(element) &&
+      !isInstanceOfTypeSync(...TYPES_WITH_NO_INTERNAL_IDS)(element)
+    )
   }
   if (isField(element)) {
     return !isStandardField(element)
@@ -53,12 +64,15 @@ const shouldHaveInternalId = (element: Element): boolean => {
   return false
 }
 
-export const getIdsForType = async (client: SalesforceClient, type: string): Promise<Record<string, string>> => {
+export const getIdsForType = async (
+  client: SalesforceClient,
+  type: string,
+): Promise<Record<string, string>> => {
   const { result, errors } = await client.listMetadataObjects({ type })
   if (errors && errors.length > 0) {
     log.debug(`Encountered errors while listing ${type}: ${errors}`)
   }
-  return Object.fromEntries(result.map(info => [getFullName(info), info.id]))
+  return Object.fromEntries(result.map((info) => [getFullName(info), info.id]))
 }
 
 /**
@@ -67,10 +81,14 @@ export const getIdsForType = async (client: SalesforceClient, type: string): Pro
  * @param client          The salesforce client to use for the query
  * @param elementsByType  Elements missing internal ids, grouped by type
  */
-const addMissingIds = async (client: SalesforceClient, typeName: string, elements: Element[]): Promise<Element[]> => {
+const addMissingIds = async (
+  client: SalesforceClient,
+  typeName: string,
+  elements: Element[],
+): Promise<Element[]> => {
   const errorElements: Element[] = []
   const allIds = await getIdsForType(client, typeName)
-  await awu(elements).forEach(async element => {
+  await awu(elements).forEach(async (element) => {
     const id = allIds[await apiName(element)]
     if (id === undefined) {
       errorElements.push(element)
@@ -81,11 +99,19 @@ const addMissingIds = async (client: SalesforceClient, typeName: string, element
   return errorElements
 }
 
-const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> =>
+const elementsWithMissingIds = async (
+  elements: Element[],
+): Promise<Element[]> =>
   awu(elements)
-    .flatMap(e => (isObjectType(e) ? Object.values(e.fields) : [e]))
-    .filter(async e => (isInstanceElement(e) && !(await e.getType()).isSettings) || isField(e))
-    .filter(async e => (await apiName(e)) !== undefined && getInternalId(e) === undefined)
+    .flatMap((e) => (isObjectType(e) ? Object.values(e.fields) : [e]))
+    .filter(
+      async (e) =>
+        (isInstanceElement(e) && !(await e.getType()).isSettings) || isField(e),
+    )
+    .filter(
+      async (e) =>
+        (await apiName(e)) !== undefined && getInternalId(e) === undefined,
+    )
     .toArray()
 
 export const WARNING_MESSAGE =
@@ -102,8 +128,13 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'addMissingIds',
     fetchFilterFunc: async (elements: Element[]) => {
-      const groupedElements = await groupByAsync(await elementsWithMissingIds(elements), metadataType)
-      log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
+      const groupedElements = await groupByAsync(
+        await elementsWithMissingIds(elements),
+        metadataType,
+      )
+      log.debug(
+        `Getting missing ids for the following types: ${Object.keys(groupedElements)}`,
+      )
       const errorElements = (
         await Promise.all(
           Object.entries(groupedElements).map(([typeName, typeElements]) =>
@@ -120,7 +151,9 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
          */
         log.warn(
           'Could not add internalIds on the following elements (first 100): %s',
-          safeJsonStringify(errorElements.slice(0, 100).map(e => e.elemID.getFullName())),
+          safeJsonStringify(
+            errorElements.slice(0, 100).map((e) => e.elemID.getFullName()),
+          ),
         )
       }
     },

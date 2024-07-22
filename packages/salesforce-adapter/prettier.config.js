@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import { filter } from '@salto-io/adapter-utils'
-import { Filter, FilterResult } from '../../src/filter'
-
-export type FilterWith<M extends keyof Filter> = filter.FilterWith<
-  FilterResult,
-  M
->
+module.exports = {
+  semi: false,
+  singleQuote: true,
+  tabWidth: 2,
+  jsxSingleQuote: true,
+}

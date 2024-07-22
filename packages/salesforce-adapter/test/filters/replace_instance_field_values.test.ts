@@ -191,16 +191,18 @@ describe('replace instance field values filter', () => {
       ],
     })
 
-  const getAllNamesFromForecastingValue = (forecastValue: ForecastingSettingsValue): string[] => {
+  const getAllNamesFromForecastingValue = (
+    forecastValue: ForecastingSettingsValue,
+  ): string[] => {
     const res: string[] = []
-    forecastValue.forecastingTypeSettings.forEach(t => {
+    forecastValue.forecastingTypeSettings.forEach((t) => {
       const additionalNames = [
         ...t.opportunityListFieldsSelectedSettings.field,
         // opportunityListFieldsUnselectedSettings might be undefined due to value modification
         ...(t.opportunityListFieldsUnselectedSettings?.field ?? []),
       ]
-      additionalNames.forEach(name => res.push(name))
-      t.opportunityListFieldsLabelMappings.forEach(map => {
+      additionalNames.forEach((name) => res.push(name))
+      t.opportunityListFieldsLabelMappings.forEach((map) => {
         res.push(map.field)
       })
     })
@@ -241,7 +243,11 @@ describe('replace instance field values filter', () => {
       }),
       opportunityType,
     ]
-    return [types[FORECASTING_METADATA_TYPE], types[CUSTOM_OBJECT], ...instances]
+    return [
+      types[FORECASTING_METADATA_TYPE],
+      types[CUSTOM_OBJECT],
+      ...instances,
+    ]
   }
 
   beforeAll(() => {
@@ -265,11 +271,15 @@ describe('replace instance field values filter', () => {
       namesAfterFilter = []
       await awu(elements)
         .filter(isInstanceElement)
-        .filter(async e => (await metadataType(e)) === FORECASTING_METADATA_TYPE)
-        .map(e => e.value)
-        .forEach(val => {
-          const names = getAllNamesFromForecastingValue(val as ForecastingSettingsValue)
-          names.forEach(name => namesAfterFilter.push(name))
+        .filter(
+          async (e) => (await metadataType(e)) === FORECASTING_METADATA_TYPE,
+        )
+        .map((e) => e.value)
+        .forEach((val) => {
+          const names = getAllNamesFromForecastingValue(
+            val as ForecastingSettingsValue,
+          )
+          names.forEach((name) => namesAfterFilter.push(name))
         })
     })
 
@@ -320,11 +330,15 @@ describe('replace instance field values filter', () => {
       describe('the change is in selected/unselected fields', () => {
         beforeEach(async () => {
           // modify afterElem:
-          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsSelectedSettings.field = [
-            ...afterElem.value.forecastingTypeSettings[0].opportunityListFieldsSelectedSettings.field,
-            ...afterElem.value.forecastingTypeSettings[0].opportunityListFieldsUnselectedSettings.field,
-          ]
-          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsUnselectedSettings.field = []
+          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsSelectedSettings.field =
+            [
+              ...afterElem.value.forecastingTypeSettings[0]
+                .opportunityListFieldsSelectedSettings.field,
+              ...afterElem.value.forecastingTypeSettings[0]
+                .opportunityListFieldsUnselectedSettings.field,
+            ]
+          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsUnselectedSettings.field =
+            []
 
           change = {
             action: 'modify',
@@ -335,7 +349,9 @@ describe('replace instance field values filter', () => {
           }
 
           await filter.preDeploy([change])
-          namesAfterFilter = getAllNamesFromForecastingValue(afterElem.value as ForecastingSettingsValue)
+          namesAfterFilter = getAllNamesFromForecastingValue(
+            afterElem.value as ForecastingSettingsValue,
+          )
         })
         it('should replace names to ids', () => {
           expect(namesAfterFilter).toContain(BEFORE_ID_1)
@@ -360,7 +376,9 @@ describe('replace instance field values filter', () => {
             },
           }
           await filter.preDeploy([change])
-          namesAfterFilter = getAllNamesFromForecastingValue(afterElem.value as ForecastingSettingsValue)
+          namesAfterFilter = getAllNamesFromForecastingValue(
+            afterElem.value as ForecastingSettingsValue,
+          )
         })
 
         it('should replace names to ids', () => {
@@ -407,7 +425,9 @@ describe('replace instance field values filter', () => {
           },
         }
         await filter.onDeploy([change])
-        namesAfterFilter = getAllNamesFromForecastingValue(afterElem.value as ForecastingSettingsValue)
+        namesAfterFilter = getAllNamesFromForecastingValue(
+          afterElem.value as ForecastingSettingsValue,
+        )
       })
       it('should replace ids to names', () => {
         expect(namesAfterFilter).not.toContain(BEFORE_ID_1)

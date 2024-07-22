@@ -23,7 +23,10 @@ describe('fullName change validator', () => {
   describe('when fullName changes', () => {
     let fullNameChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'original_full_name' }, mockTypes.RecordType)
+      const beforeRecord = createInstanceElement(
+        { fullName: 'original_full_name' },
+        mockTypes.RecordType,
+      )
       const afterRecord = beforeRecord.clone()
       afterRecord.value[INSTANCE_FULL_NAME_FIELD] = 'modified_full_name'
       fullNameChange = toChange({ before: beforeRecord, after: afterRecord })
@@ -41,7 +44,10 @@ describe('fullName change validator', () => {
   describe('when fullName does not change', () => {
     let fullNameChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'original_full_name', status: 'ACTIVE' }, mockTypes.Flow)
+      const beforeRecord = createInstanceElement(
+        { fullName: 'original_full_name', status: 'ACTIVE' },
+        mockTypes.Flow,
+      )
       const afterRecord = beforeRecord.clone()
       afterRecord.value.status = 'INACTIVE'
       fullNameChange = toChange({ before: beforeRecord, after: afterRecord })

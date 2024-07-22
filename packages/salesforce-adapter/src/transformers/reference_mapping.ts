@@ -24,7 +24,10 @@ import {
   InstanceElement,
 } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
+import {
+  GetLookupNameFunc,
+  GetLookupNameFuncArgs,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -95,7 +98,11 @@ const safeApiName = ({
 }): Promise<string | Value> => {
   const { value } = ref
   if (!isElement(value)) {
-    log.warn('Unexpected non-element value for ref id %s in path %s', ref.elemID.getFullName(), path?.getFullName())
+    log.warn(
+      'Unexpected non-element value for ref id %s in path %s',
+      ref.elemID.getFullName(),
+      path?.getFullName(),
+    )
     return value
   }
   return apiName(value, relative)
@@ -110,57 +117,71 @@ type ReferenceSerializationStrategyName =
   | 'mapKey'
   | 'customLabel'
   | 'fromDataInstance'
-const ReferenceSerializationStrategyLookup: Record<ReferenceSerializationStrategyName, ReferenceSerializationStrategy> =
-  {
-    absoluteApiName: {
-      serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
-      lookup: val => val,
+const ReferenceSerializationStrategyLookup: Record<
+  ReferenceSerializationStrategyName,
+  ReferenceSerializationStrategy
+> = {
+  absoluteApiName: {
+    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
+    lookup: (val) => val,
+  },
+  relativeApiName: {
+    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
+    lookup: (val, context) =>
+      context !== undefined ? [context, val].join(API_NAME_SEPARATOR) : val,
+  },
+  configurationAttributeMapping: {
+    serialize: async ({ ref, path }) =>
+      _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[
+        await safeApiName({ ref, path })
+      ] ?? safeApiName({ ref, path }),
+    lookup: (val) =>
+      _.isString(val) ? DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val : val,
+  },
+  lookupQueryMapping: {
+    serialize: async ({ ref, path }) =>
+      _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ??
+      safeApiName({ ref, path }),
+    lookup: (val) =>
+      _.isString(val) ? TEST_OBJECT_TO_API_MAPPING[val] ?? val : val,
+  },
+  scheduleConstraintFieldMapping: {
+    serialize: async ({ ref, path }) => {
+      const relativeApiName = await safeApiName({ ref, path, relative: true })
+      return (
+        _.invert(SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ??
+        relativeApiName
+      )
     },
-    relativeApiName: {
-      serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
-      lookup: (val, context) => (context !== undefined ? [context, val].join(API_NAME_SEPARATOR) : val),
+    lookup: (val, context) => {
+      const mappedValue = SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING[val]
+      return context !== undefined
+        ? [context, mappedValue].join(API_NAME_SEPARATOR)
+        : mappedValue
     },
-    configurationAttributeMapping: {
-      serialize: async ({ ref, path }) =>
-        _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ?? safeApiName({ ref, path }),
-      lookup: val => (_.isString(val) ? DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val : val),
+  },
+  mapKey: {
+    serialize: async ({ ref }) => ref.elemID.name,
+    lookup: (val) => val,
+  },
+  customLabel: {
+    serialize: async ({ ref, path }) =>
+      `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
+    lookup: (val) => {
+      if (val.includes('$Label')) {
+        return val.split(API_NAME_SEPARATOR)[1]
+      }
+      return val
     },
-    lookupQueryMapping: {
-      serialize: async ({ ref, path }) =>
-        _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ?? safeApiName({ ref, path }),
-      lookup: val => (_.isString(val) ? TEST_OBJECT_TO_API_MAPPING[val] ?? val : val),
-    },
-    scheduleConstraintFieldMapping: {
-      serialize: async ({ ref, path }) => {
-        const relativeApiName = await safeApiName({ ref, path, relative: true })
-        return _.invert(SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ?? relativeApiName
-      },
-      lookup: (val, context) => {
-        const mappedValue = SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING[val]
-        return context !== undefined ? [context, mappedValue].join(API_NAME_SEPARATOR) : mappedValue
-      },
-    },
-    mapKey: {
-      serialize: async ({ ref }) => ref.elemID.name,
-      lookup: val => val,
-    },
-    customLabel: {
-      serialize: async ({ ref, path }) => `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
-      lookup: val => {
-        if (val.includes('$Label')) {
-          return val.split(API_NAME_SEPARATOR)[1]
-        }
-        return val
-      },
-    },
-    fromDataInstance: {
-      serialize: async args =>
-        (await isMetadataInstanceElement(args.ref.value))
-          ? instanceInternalId(args.ref.value)
-          : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args),
-      lookup: val => val,
-    },
-  }
+  },
+  fromDataInstance: {
+    serialize: async (args) =>
+      (await isMetadataInstanceElement(args.ref.value))
+        ? instanceInternalId(args.ref.value)
+        : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args),
+    lookup: (val) => val,
+  },
+}
 
 export type ReferenceContextStrategyName =
   | 'instanceParent'
@@ -292,7 +313,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'customLink',
-      parentTypes: [LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE],
+      parentTypes: [
+        LAYOUT_ITEM_METADATA_TYPE,
+        SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
+      ],
     },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: WEBLINK_METADATA_TYPE },
@@ -352,7 +376,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'apexClass',
-      parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'TransactionSecurityPolicy'],
+      parentTypes: [
+        'FlowApexPluginCall',
+        'FlowVariable',
+        'TransactionSecurityPolicy',
+      ],
     },
     target: { type: 'ApexClass' },
   },
@@ -586,7 +614,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'field',
-      parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment', 'FlowOutputFieldAssignment'],
+      parentTypes: [
+        'FlowRecordFilter',
+        'FlowInputFieldAssignment',
+        'FlowOutputFieldAssignment',
+      ],
     },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'parentObjectLookup', type: CUSTOM_FIELD },
@@ -732,7 +764,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'column',
-      parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'],
+      parentTypes: [
+        'ReportFilterItem',
+        'DashboardFilterColumn',
+        'DashboardTableColumn',
+      ],
     },
     target: { type: CUSTOM_FIELD },
   },
@@ -911,11 +947,15 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
 const matchName = (name: string, matcher: string | RegExp): boolean =>
   _.isString(matcher) ? matcher === name : matcher.test(name)
 
-const matchApiName = async (elem: Element, types: string[]): Promise<boolean> => types.includes(await apiName(elem))
+const matchApiName = async (elem: Element, types: string[]): Promise<boolean> =>
+  types.includes(await apiName(elem))
 
-const matchInstanceType = async (inst: InstanceElement, matchers: (string | RegExp)[]): Promise<boolean> => {
+const matchInstanceType = async (
+  inst: InstanceElement,
+  matchers: (string | RegExp)[],
+): Promise<boolean> => {
   const typeName = await apiName(await inst.getType())
-  return matchers.some(matcher => matchName(typeName, matcher))
+  return matchers.some((matcher) => matchName(typeName, matcher))
 }
 
 export class FieldReferenceResolver {
@@ -926,10 +966,17 @@ export class FieldReferenceResolver {
 
   constructor(def: FieldReferenceDefinition) {
     this.src = def.src
-    this.serializationStrategy = ReferenceSerializationStrategyLookup[def.serializationStrategy ?? 'absoluteApiName']
+    this.serializationStrategy =
+      ReferenceSerializationStrategyLookup[
+        def.serializationStrategy ?? 'absoluteApiName'
+      ]
     this.sourceTransformation =
-      referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
-    this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
+      referenceUtils.ReferenceSourceTransformationLookup[
+        def.sourceTransformation ?? 'asString'
+      ]
+    this.target = def.target
+      ? { ...def.target, lookup: this.serializationStrategy.lookup }
+      : undefined
   }
 
   static create(def: FieldReferenceDefinition): FieldReferenceResolver {
@@ -941,28 +988,38 @@ export class FieldReferenceResolver {
       matchName(field.name, this.src.field) &&
       (await matchApiName(field.parent, this.src.parentTypes)) &&
       (this.src.instanceTypes === undefined ||
-        (isInstanceElement(element) && matchInstanceType(element, this.src.instanceTypes)))
+        (isInstanceElement(element) &&
+          matchInstanceType(element, this.src.instanceTypes)))
     )
   }
 }
 
-export type ReferenceResolverFinder = (field: Field, element: Element) => Promise<FieldReferenceResolver[]>
+export type ReferenceResolverFinder = (
+  field: Field,
+  element: Element,
+) => Promise<FieldReferenceResolver[]>
 
 /**
  * Generates a function that filters the relevant resolvers for a given field.
  */
-export const generateReferenceResolverFinder = (defs: FieldReferenceDefinition[]): ReferenceResolverFinder => {
-  const referenceDefinitions = defs.map(def => FieldReferenceResolver.create(def))
+export const generateReferenceResolverFinder = (
+  defs: FieldReferenceDefinition[],
+): ReferenceResolverFinder => {
+  const referenceDefinitions = defs.map((def) =>
+    FieldReferenceResolver.create(def),
+  )
 
   const matchersByFieldName = _(referenceDefinitions)
-    .filter(def => _.isString(def.src.field))
-    .groupBy(def => def.src.field)
+    .filter((def) => _.isString(def.src.field))
+    .groupBy((def) => def.src.field)
     .value()
   const regexFieldMatchersByParent = _(referenceDefinitions)
-    .filter(def => _.isRegExp(def.src.field))
-    .flatMap(def => def.src.parentTypes.map(parentType => ({ parentType, def })))
+    .filter((def) => _.isRegExp(def.src.field))
+    .flatMap((def) =>
+      def.src.parentTypes.map((parentType) => ({ parentType, def })),
+    )
     .groupBy(({ parentType }) => parentType)
-    .mapValues(items => items.map(item => item.def))
+    .mapValues((items) => items.map((item) => item.def))
     .value()
 
   return async (field, element) =>
@@ -970,7 +1027,7 @@ export const generateReferenceResolverFinder = (defs: FieldReferenceDefinition[]
       ...(matchersByFieldName[field.name] ?? []),
       ...(regexFieldMatchersByParent[await apiName(field.parent)] || []),
     ])
-      .filter(resolver => resolver.match(field, element))
+      .filter((resolver) => resolver.match(field, element))
       .toArray()
 }
 
@@ -989,13 +1046,21 @@ const getLookUpNameImpl = ({
     args: GetLookupNameFuncArgs,
   ): Promise<ReferenceSerializationStrategy | undefined> => {
     if (args.field === undefined) {
-      log.debug('could not determine field for path %s', args.path?.getFullName())
+      log.debug(
+        'could not determine field for path %s',
+        args.path?.getFullName(),
+      )
       return undefined
     }
-    const strategies = (await resolverFinder(args.field, args.element)).map(def => def.serializationStrategy)
+    const strategies = (await resolverFinder(args.field, args.element)).map(
+      (def) => def.serializationStrategy,
+    )
 
     if (strategies.length === 0) {
-      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
+      log.debug(
+        'could not find matching strategy for field %s',
+        args.field.elemID.getFullName(),
+      )
       return undefined
     }
 
@@ -1026,7 +1091,8 @@ const getLookUpNameImpl = ({
         return strategy.serialize({ ref, field, element })
       }
       if (isElement(ref.value)) {
-        const defaultStrategy = ReferenceSerializationStrategyLookup[defaultStrategyName]
+        const defaultStrategy =
+          ReferenceSerializationStrategyLookup[defaultStrategyName]
         const resolvedValue = await defaultStrategy.serialize({ ref, element })
         if (resolvedValue !== undefined) {
           return resolvedValue

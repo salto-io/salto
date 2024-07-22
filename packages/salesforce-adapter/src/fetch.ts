@@ -15,7 +15,11 @@
  */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
+import {
+  FileProperties,
+  MetadataInfo,
+  MetadataObject,
+} from '@salto-io/jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -53,8 +57,17 @@ import {
   getAuthorAnnotations,
   MetadataObjectType,
 } from './transformers/transformer'
-import { fromRetrieveResult, getManifestTypeName, toRetrieveRequest } from './transformers/xml_transformer'
-import { getFullName, isInstanceOfTypeSync, isProfileRelatedMetadataType, listMetadataObjects } from './filters/utils'
+import {
+  fromRetrieveResult,
+  getManifestTypeName,
+  toRetrieveRequest,
+} from './transformers/xml_transformer'
+import {
+  getFullName,
+  isInstanceOfTypeSync,
+  isProfileRelatedMetadataType,
+  listMetadataObjects,
+} from './filters/utils'
 import { buildFilePropsMetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
@@ -70,7 +83,9 @@ export const fetchMetadataType = async (
   childTypeNames: Set<string>,
 ): Promise<TypeElement[]> => {
   const typeDesc = await client.describeMetadataType(typeInfo.xmlName)
-  const folderType = typeInfo.inFolder ? typeDesc.parentField?.foreignKeyDomain : undefined
+  const folderType = typeInfo.inFolder
+    ? typeDesc.parentField?.foreignKeyDomain
+    : undefined
   const mainTypes = await createMetadataTypeElements({
     name: typeInfo.xmlName,
     fields: typeDesc.valueTypeFields,
@@ -90,7 +105,8 @@ export const fetchMetadataType = async (
       ? []
       : await createMetadataTypeElements({
           name: folderType,
-          fields: (await client.describeMetadataType(folderType)).valueTypeFields,
+          fields: (await client.describeMetadataType(folderType))
+            .valueTypeFields,
           knownTypes,
           baseTypeNames,
           childTypeNames,
@@ -104,7 +120,10 @@ export const fetchMetadataType = async (
   return [...mainTypes, ...folderTypes]
 }
 
-const withFullPath = (props: FileProperties, folderPathByName: Record<string, string>): FileProperties => {
+const withFullPath = (
+  props: FileProperties,
+  folderPathByName: Record<string, string>,
+): FileProperties => {
   // the split is required since the fullName for a record within folder is FolderName/RecordName
   const folderName = props.fullName.split('/')[0]
   const fullPath = folderPathByName[folderName]
@@ -117,8 +136,14 @@ const withFullPath = (props: FileProperties, folderPathByName: Record<string, st
 }
 
 const getNamespace = (obj: FileProperties): string =>
-  obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
-export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean =>
+  obj.namespacePrefix === undefined || obj.namespacePrefix === ''
+    ? DEFAULT_NAMESPACE
+    : obj.namespacePrefix
+export const notInSkipList = (
+  metadataQuery: MetadataQuery,
+  file: FileProperties,
+  isFolderType: boolean,
+): boolean =>
   isFolderType
     ? // We should always list folders, even if they were not modified.
       metadataQuery.isInstanceIncluded({
@@ -146,17 +171,21 @@ const listMetadataObjectsWithinFolders = async (
   const folderPathByName = metadataQuery.getFolderPathsByName(folderType)
   const folders = await listMetadataObjects(client, folderType)
   const includedFolderElements = folders.elements
-    .map(props => withFullPath(props, folderPathByName))
-    .filter(props => notInSkipList(metadataQuery, props, true))
-  const folderNames = Object.keys(folderPathByName).concat(includedFolderElements.map(props => props.fullName))
+    .map((props) => withFullPath(props, folderPathByName))
+    .filter((props) => notInSkipList(metadataQuery, props, true))
+  const folderNames = Object.keys(folderPathByName).concat(
+    includedFolderElements.map((props) => props.fullName),
+  )
 
   const { result, errors } = await client.listMetadataObjects(
-    folderNames.map(folderName => ({ type, folder: folderName })),
+    folderNames.map((folderName) => ({ type, folder: folderName })),
     isUnhandledError,
   )
-  const elements = result.map(props => withFullPath(props, folderPathByName)).concat(includedFolderElements)
+  const elements = result
+    .map((props) => withFullPath(props, folderPathByName))
+    .concat(includedFolderElements)
   const configChanges = errors
-    .map(e => e.input)
+    .map((e) => e.input)
     .map(createListMetadataObjectsConfigChange)
     .concat(folders.configChanges)
   return { elements, configChanges }
@@ -188,7 +217,8 @@ const getInstanceFromMetadataInformation = (
   metadataType: ObjectType,
 ): InstanceElement => {
   const newMetadata =
-    filePropertiesMap[metadata.fullName]?.id !== undefined && filePropertiesMap[metadata.fullName]?.id !== ''
+    filePropertiesMap[metadata.fullName]?.id !== undefined &&
+    filePropertiesMap[metadata.fullName]?.id !== ''
       ? {
           ...metadata,
           [INTERNAL_ID_FIELD]: filePropertiesMap[metadata.fullName]?.id,
@@ -245,11 +275,11 @@ export const fetchMetadataInstances = async ({
   const metadataTypeName = await apiName(metadataType)
 
   const filePropsToRead = fileProps
-    .map(prop => ({
+    .map((prop) => ({
       ...prop,
       fullName: getFullName(prop, addNamespacePrefixToFullName),
     }))
-    .filter(prop =>
+    .filter((prop) =>
       metadataQuery.isInstanceMatch({
         namespace: getNamespace(prop),
         metadataType: metadataTypeName,
@@ -270,17 +300,21 @@ export const fetchMetadataInstances = async ({
     filePropsToRead.map(({ fullName }) => fullName),
   )
 
-  const fullNamesFromRead = new Set(metadataInfos.map(info => info?.fullName))
-  const missingMetadata = filePropsToRead.filter(prop => !fullNamesFromRead.has(prop.fullName))
+  const fullNamesFromRead = new Set(metadataInfos.map((info) => info?.fullName))
+  const missingMetadata = filePropsToRead.filter(
+    (prop) => !fullNamesFromRead.has(prop.fullName),
+  )
   if (missingMetadata.length > 0) {
     log.debug('Missing metadata with valid fileProps: %o', missingMetadata)
   }
 
   const filePropertiesMap = _.keyBy(filePropsToRead, 'fullName')
   const elements = metadataInfos
-    .filter(m => !_.isEmpty(m))
-    .filter(m => m.fullName !== undefined)
-    .map(m => getInstanceFromMetadataInformation(m, filePropertiesMap, metadataType))
+    .filter((m) => !_.isEmpty(m))
+    .filter((m) => m.fullName !== undefined)
+    .map((m) =>
+      getInstanceFromMetadataInformation(m, filePropertiesMap, metadataType),
+    )
   return {
     elements,
     configChanges: makeArray(errors).map(({ input, error }) =>
@@ -292,19 +326,23 @@ export const fetchMetadataInstances = async ({
   }
 }
 
-const getTypesWithContent = async (types: ReadonlyArray<ObjectType>): Promise<Set<string>> =>
+const getTypesWithContent = async (
+  types: ReadonlyArray<ObjectType>,
+): Promise<Set<string>> =>
   new Set(
     await awu(types)
-      .filter(t => Object.keys(t.fields).includes(METADATA_CONTENT_FIELD))
-      .map(t => apiName(t))
+      .filter((t) => Object.keys(t.fields).includes(METADATA_CONTENT_FIELD))
+      .map((t) => apiName(t))
       .toArray(),
   )
 
-const getTypesWithMetaFile = async (types: ReadonlyArray<MetadataObjectType>): Promise<Set<string>> =>
+const getTypesWithMetaFile = async (
+  types: ReadonlyArray<MetadataObjectType>,
+): Promise<Set<string>> =>
   new Set(
     await awu(types)
-      .filter(t => t.annotations.hasMetaFile === true)
-      .map(t => apiName(t))
+      .filter((t) => t.annotations.hasMetaFile === true)
+      .map((t) => apiName(t))
       .toArray(),
   )
 
@@ -327,9 +365,13 @@ type Partitions = {
 }
 
 const getPartitions = (includedProps: FileProperties[]): Partitions => {
-  const [profileProps, otherProps] = _.partition(includedProps, file => file.type === PROFILE_METADATA_TYPE)
-  const [profilesRelatedProps, nonProfileProps] = _.partition(otherProps, file =>
-    isProfileRelatedMetadataType(file.type),
+  const [profileProps, otherProps] = _.partition(
+    includedProps,
+    (file) => file.type === PROFILE_METADATA_TYPE,
+  )
+  const [profilesRelatedProps, nonProfileProps] = _.partition(
+    otherProps,
+    (file) => isProfileRelatedMetadataType(file.type),
   )
   return { profileProps, profilesRelatedProps, nonProfileProps }
 }
@@ -340,40 +382,65 @@ export const retrieveMetadataInstances = async ({
   fetchProfile,
   typesToSkip = new Set(),
   getFilesToRetrieveFunc,
-}: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
+}: RetrieveMetadataInstancesArgs): Promise<
+  FetchElements<InstanceElement[]>
+> => {
   const configChanges: ConfigChangeSuggestion[] = []
   const { metadataQuery, maxItemsInRetrieveRequest } = fetchProfile
   const getFilesToRetrieve =
-    getFilesToRetrieveFunc ?? (allProps => allProps.filter(props => notInSkipList(metadataQuery, props, false)))
+    getFilesToRetrieveFunc ??
+    ((allProps) =>
+      allProps.filter((props) => notInSkipList(metadataQuery, props, false)))
 
-  const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
+  const listFilesOfType = async (
+    type: MetadataObjectType,
+  ): Promise<FileProperties[]> => {
     const typeName = await apiName(type)
     const { folderType } = type.annotations
-    const { elements: res, configChanges: listObjectsConfigChanges } = isDefined(folderType)
-      ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName, folderType)
-      : await listMetadataObjects(client, typeName)
+    const { elements: res, configChanges: listObjectsConfigChanges } =
+      isDefined(folderType)
+        ? await listMetadataObjectsWithinFolders(
+            client,
+            metadataQuery,
+            typeName,
+            folderType,
+          )
+        : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
-      .uniqBy(file => file.fullName)
-      .map(file => getPropsWithFullName(file, fetchProfile.addNamespacePrefixToFullName, client.orgNamespace))
+      .uniqBy((file) => file.fullName)
+      .map((file) =>
+        getPropsWithFullName(
+          file,
+          fetchProfile.addNamespacePrefixToFullName,
+          client.orgNamespace,
+        ),
+      )
       .value()
   }
 
-  const typesByName = await keyByAsync(types, t => apiName(t))
+  const typesByName = await keyByAsync(types, (t) => apiName(t))
   const typesWithMetaFile = await getTypesWithMetaFile(types)
   const typesWithContent = await getTypesWithContent(types)
 
-  const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
+  const mergeProfileInstances = (
+    instances: ReadonlyArray<InstanceElement>,
+  ): InstanceElement => {
     const result = instances[0].clone()
-    result.value = _.merge({}, ...instances.map(instance => instance.value))
+    result.value = _.merge({}, ...instances.map((instance) => instance.value))
     return result
   }
 
-  const configChangeAlreadyExists = (change: ConfigChangeSuggestion): boolean => {
+  const configChangeAlreadyExists = (
+    change: ConfigChangeSuggestion,
+  ): boolean => {
     if (!isMetadataConfigSuggestions(change)) {
       return false
     }
-    if (change.value.metadataType === undefined || change.value.name === undefined) {
+    if (
+      change.value.metadataType === undefined ||
+      change.value.name === undefined
+    ) {
       return false
     }
     // Note: we assume metadata exclusion config changes refer to a single instance and do not include regexes.
@@ -385,7 +452,10 @@ export const retrieveMetadataInstances = async ({
       changedAt: undefined,
     }
     if (!fetchProfile.metadataQuery.isInstanceIncluded(metadataInstance)) {
-      log.debug('Would have ignored config change %o because the instance is already excluded', change)
+      log.debug(
+        'Would have ignored config change %o because the instance is already excluded',
+        change,
+      )
     }
     return false
   }
@@ -396,16 +466,22 @@ export const retrieveMetadataInstances = async ({
   ): Promise<InstanceElement[]> => {
     const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
-    const filesToRetrieve = allFileProps.map(inst => ({
+    const filesToRetrieve = allFileProps.map((inst) => ({
       ...inst,
       type: getManifestTypeName(typesByName[inst.type]),
     }))
-    const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
+    const typesToRetrieve = [
+      ...new Set(filesToRetrieve.map((prop) => prop.type)),
+    ].join(',')
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)
 
-    log.debug('retrieve result for types %s: %o', typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']))
+    log.debug(
+      'retrieve result for types %s: %o',
+      typesToRetrieve,
+      _.omit(result, ['zipFile', 'fileProperties']),
+    )
 
     if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
       if (fileProps.length <= 1) {
@@ -419,7 +495,7 @@ export const retrieveMetadataInstances = async ({
         }
 
         configChanges.push(
-          ...fileProps.map(fileProp =>
+          ...fileProps.map((fileProp) =>
             createSkippedListConfigChange({
               type: fileProp.type,
               instance: fileProp.fullName,
@@ -433,21 +509,30 @@ export const retrieveMetadataInstances = async ({
       }
 
       const chunkSize = Math.ceil(fileProps.length / 2)
-      log.debug('reducing retrieve item count %d -> %d', fileProps.length, chunkSize)
+      log.debug(
+        'reducing retrieve item count %d -> %d',
+        fileProps.length,
+        chunkSize,
+      )
       configChanges.push({
         type: MAX_ITEMS_IN_RETRIEVE_REQUEST,
         value: chunkSize,
       })
       return (
         await Promise.all(
-          _.chunk(fileProps, chunkSize - filePropsToSendWithEveryChunk.length).map(chunk =>
+          _.chunk(
+            fileProps,
+            chunkSize - filePropsToSendWithEveryChunk.length,
+          ).map((chunk) =>
             retrieveInstances(chunk, filePropsToSendWithEveryChunk),
           ),
         )
       ).flat()
     }
 
-    const newConfigChanges = createRetrieveConfigChange(result).filter(change => !configChangeAlreadyExists(change))
+    const newConfigChanges = createRetrieveConfigChange(result).filter(
+      (change) => !configChangeAlreadyExists(change),
+    )
     configChanges.push(...newConfigChanges)
     // if we get an error then result.zipFile will be a single 'nil' XML element, which will be parsed as an object by
     // our XML->json parser. Since we only deal with RETRIEVE_SIZE_LIMIT_ERROR above, here is where we handle all other
@@ -472,7 +557,12 @@ export const retrieveMetadataInstances = async ({
       fetchProfile.isFeatureEnabled('fixRetrieveFilePaths'),
     )
     return allValues.map(({ file, values }) =>
-      createInstanceElement(values, typesByName[file.type], file.namespacePrefix, getAuthorAnnotations(file)),
+      createInstanceElement(
+        values,
+        typesByName[file.type],
+        file.namespacePrefix,
+        getAuthorAnnotations(file),
+      ),
     )
   }
 
@@ -481,19 +571,24 @@ export const retrieveMetadataInstances = async ({
     contextFileProps: ReadonlyArray<FileProperties>,
   ): Promise<Array<InstanceElement>> => {
     const allInstances = await Promise.all(
-      _.chunk(contextFileProps, maxItemsInRetrieveRequest - profileFileProps.length)
-        .filter(filesChunk => filesChunk.length > 0)
-        .map(filesChunk => retrieveInstances(filesChunk, profileFileProps)),
+      _.chunk(
+        contextFileProps,
+        maxItemsInRetrieveRequest - profileFileProps.length,
+      )
+        .filter((filesChunk) => filesChunk.length > 0)
+        .map((filesChunk) => retrieveInstances(filesChunk, profileFileProps)),
     )
 
     const [partialProfileInstances, contextInstances] = _(allInstances)
       .flatten()
-      .partition(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+      .partition(
+        (instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE,
+      )
       .value()
 
     const profileInstances = _(partialProfileInstances)
-      .filter(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
-      .groupBy(instance => instance.value.fullName)
+      .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+      .groupBy((instance) => instance.value.fullName)
       .mapValues(mergeProfileInstances)
       .value()
 
@@ -504,12 +599,15 @@ export const retrieveMetadataInstances = async ({
     await Promise.all(
       types
         // We get folders as part of getting the records inside them
-        .filter(type => type.annotations.folderContentType === undefined)
+        .filter((type) => type.annotations.folderContentType === undefined)
         .map(listFilesOfType),
     ),
   )
   const filesToRetrieve = getFilesToRetrieve(allProps)
-  const [profileFiles, nonProfileFiles] = _.partition(filesToRetrieve, file => file.type === PROFILE_METADATA_TYPE)
+  const [profileFiles, nonProfileFiles] = _.partition(
+    filesToRetrieve,
+    (file) => file.type === PROFILE_METADATA_TYPE,
+  )
   // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
   // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
   if (nonProfileFiles.length === 0) {
@@ -519,64 +617,91 @@ export const retrieveMetadataInstances = async ({
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
-  const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
+  const instances = await retrieveProfilesWithContextTypes(
+    profileFiles,
+    nonProfileFiles,
+  )
 
   return {
-    elements: instances.filter(instance => !typesToSkip.has(instance.elemID.typeName)),
+    elements: instances.filter(
+      (instance) => !typesToSkip.has(instance.elemID.typeName),
+    ),
     configChanges,
   }
 }
 
-export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrieveMetadataInstances = async params => {
-  const metadataQuery = buildFilePropsMetadataQuery(params.fetchProfile.metadataQuery)
+export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrieveMetadataInstances =
+  async (params) => {
+    const metadataQuery = buildFilePropsMetadataQuery(
+      params.fetchProfile.metadataQuery,
+    )
 
-  const retrievePartialProfileInstances = retrieveMetadataInstances({
-    ...params,
-    getFilesToRetrieveFunc: allProps => {
-      const { profileProps, profilesRelatedProps } = getPartitions(allProps.filter(metadataQuery.isInstanceIncluded))
-      const modifiedProfilesRelatedProps = profilesRelatedProps.filter(props => metadataQuery.isInstanceMatch(props))
-      if (modifiedProfilesRelatedProps.length === 0) {
-        log.debug('No profile related props were changed')
-        return []
-      }
-      const nonModifiedProfilesProps = profileProps.filter(props => !metadataQuery.isInstanceMatch(props))
-      log.debug('Profiles modified related props: %s', safeJsonStringify(modifiedProfilesRelatedProps))
-      log.debug(
-        'going to retrieve %d Profiles with related props of the following types: %s',
-        profileProps.length,
-        safeJsonStringify(_.uniq(modifiedProfilesRelatedProps.map(p => p.type))),
-      )
-      return nonModifiedProfilesProps.concat(modifiedProfilesRelatedProps)
-    },
-  })
+    const retrievePartialProfileInstances = retrieveMetadataInstances({
+      ...params,
+      getFilesToRetrieveFunc: (allProps) => {
+        const { profileProps, profilesRelatedProps } = getPartitions(
+          allProps.filter(metadataQuery.isInstanceIncluded),
+        )
+        const modifiedProfilesRelatedProps = profilesRelatedProps.filter(
+          (props) => metadataQuery.isInstanceMatch(props),
+        )
+        if (modifiedProfilesRelatedProps.length === 0) {
+          log.debug('No profile related props were changed')
+          return []
+        }
+        const nonModifiedProfilesProps = profileProps.filter(
+          (props) => !metadataQuery.isInstanceMatch(props),
+        )
+        log.debug(
+          'Profiles modified related props: %s',
+          safeJsonStringify(modifiedProfilesRelatedProps),
+        )
+        log.debug(
+          'going to retrieve %d Profiles with related props of the following types: %s',
+          profileProps.length,
+          safeJsonStringify(
+            _.uniq(modifiedProfilesRelatedProps.map((p) => p.type)),
+          ),
+        )
+        return nonModifiedProfilesProps.concat(modifiedProfilesRelatedProps)
+      },
+    })
 
-  const retrieveChangedProfileInstances = retrieveMetadataInstances({
-    ...params,
-    getFilesToRetrieveFunc: allProps => {
-      const { profileProps, profilesRelatedProps } = getPartitions(allProps.filter(metadataQuery.isInstanceIncluded))
-      const modifiedProfilesProps = profileProps.filter(props => metadataQuery.isInstanceMatch(props))
-      if (modifiedProfilesProps.length === 0) {
-        log.debug('No profiles were changed')
-        return []
-      }
-      return modifiedProfilesProps.concat(profilesRelatedProps)
-    },
-  }).then(result => ({
-    ...result,
-    // We only want to handle Profile instances
-    elements: result.elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE)),
-  }))
-  const retrieveNonProfileInstances = retrieveMetadataInstances({
-    ...params,
-    getFilesToRetrieveFunc: allProps => getPartitions(allProps.filter(metadataQuery.isInstanceMatch)).nonProfileProps,
-  })
-  const result = await Promise.all([
-    retrievePartialProfileInstances,
-    retrieveChangedProfileInstances,
-    retrieveNonProfileInstances,
-  ])
-  return {
-    elements: result.flatMap(r => r.elements),
-    configChanges: result.flatMap(r => r.configChanges),
+    const retrieveChangedProfileInstances = retrieveMetadataInstances({
+      ...params,
+      getFilesToRetrieveFunc: (allProps) => {
+        const { profileProps, profilesRelatedProps } = getPartitions(
+          allProps.filter(metadataQuery.isInstanceIncluded),
+        )
+        const modifiedProfilesProps = profileProps.filter((props) =>
+          metadataQuery.isInstanceMatch(props),
+        )
+        if (modifiedProfilesProps.length === 0) {
+          log.debug('No profiles were changed')
+          return []
+        }
+        return modifiedProfilesProps.concat(profilesRelatedProps)
+      },
+    }).then((result) => ({
+      ...result,
+      // We only want to handle Profile instances
+      elements: result.elements.filter(
+        isInstanceOfTypeSync(PROFILE_METADATA_TYPE),
+      ),
+    }))
+    const retrieveNonProfileInstances = retrieveMetadataInstances({
+      ...params,
+      getFilesToRetrieveFunc: (allProps) =>
+        getPartitions(allProps.filter(metadataQuery.isInstanceMatch))
+          .nonProfileProps,
+    })
+    const result = await Promise.all([
+      retrievePartialProfileInstances,
+      retrieveChangedProfileInstances,
+      retrieveNonProfileInstances,
+    ])
+    return {
+      elements: result.flatMap((r) => r.elements),
+      configChanges: result.flatMap((r) => r.configChanges),
+    }
   }
-}

@@ -29,15 +29,24 @@ describe('picklist standard field change validator', () => {
   beforeEach(() => {
     const customObject = mockTypes.Account.clone()
     const svsInstance = mockInstances().StandardValueSet
-    fieldWithValueSet = createField(customObject, Types.primitiveDataTypes.Picklist, 'Account.StandardPicklist', {
-      [FIELD_ANNOTATIONS.VALUE_SET]: [{ fullName: 'testValue1', default: true, label: 'Test Value 1' }],
-    })
+    fieldWithValueSet = createField(
+      customObject,
+      Types.primitiveDataTypes.Picklist,
+      'Account.StandardPicklist',
+      {
+        [FIELD_ANNOTATIONS.VALUE_SET]: [
+          { fullName: 'testValue1', default: true, label: 'Test Value 1' },
+        ],
+      },
+    )
     customFieldWithValueSet = createField(
       customObject,
       Types.primitiveDataTypes.Picklist,
       'Account.CustomPicklist__c',
       {
-        [FIELD_ANNOTATIONS.VALUE_SET]: [{ fullName: 'testValue1', default: true, label: 'Test Value 1' }],
+        [FIELD_ANNOTATIONS.VALUE_SET]: [
+          { fullName: 'testValue1', default: true, label: 'Test Value 1' },
+        ],
       },
     )
     fieldWithStandardValueSet = createField(
@@ -45,16 +54,26 @@ describe('picklist standard field change validator', () => {
       Types.primitiveDataTypes.Picklist,
       'Account.PicklistWithSVS',
       {
-        [VALUE_SET_FIELDS.VALUE_SET_NAME]: new ReferenceExpression(svsInstance.elemID, svsInstance),
+        [VALUE_SET_FIELDS.VALUE_SET_NAME]: new ReferenceExpression(
+          svsInstance.elemID,
+          svsInstance,
+        ),
       },
     )
-    fieldWithNoValueSet = createField(customObject, Types.primitiveDataTypes.Picklist, 'Account.PicklistWithNoValueSet')
+    fieldWithNoValueSet = createField(
+      customObject,
+      Types.primitiveDataTypes.Picklist,
+      'Account.PicklistWithNoValueSet',
+    )
   })
   it('should create errors for standard picklist fields with valueSet', async () => {
     const errors = await changeValidator(
-      [fieldWithValueSet, customFieldWithValueSet, fieldWithStandardValueSet, fieldWithNoValueSet].map(field =>
-        toChange({ before: field, after: field }),
-      ),
+      [
+        fieldWithValueSet,
+        customFieldWithValueSet,
+        fieldWithStandardValueSet,
+        fieldWithNoValueSet,
+      ].map((field) => toChange({ before: field, after: field })),
     )
     expect(errors).toEqual([
       expect.objectContaining({

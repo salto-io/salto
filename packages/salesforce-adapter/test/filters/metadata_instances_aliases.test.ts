@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CORE_ANNOTATIONS, InstanceElement, Element } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  InstanceElement,
+  Element,
+} from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/metadata_instances_aliases'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -41,12 +45,20 @@ describe('metadataInstancesAliases filter', () => {
       [LABEL]: LABEL_VALUE,
     })
 
-    instanceWithNamespaceAndLabel = new InstanceElement(`${NAMESPACE}__TestInstance`, mockTypes.Flow, {
-      fullName: `${NAMESPACE}__TestInstance`,
-      [LABEL]: LABEL_VALUE,
-    })
+    instanceWithNamespaceAndLabel = new InstanceElement(
+      `${NAMESPACE}__TestInstance`,
+      mockTypes.Flow,
+      {
+        fullName: `${NAMESPACE}__TestInstance`,
+        [LABEL]: LABEL_VALUE,
+      },
+    )
 
-    instances = [basicInstance, instanceWithLabel, instanceWithNamespaceAndLabel]
+    instances = [
+      basicInstance,
+      instanceWithLabel,
+      instanceWithNamespaceAndLabel,
+    ]
     fetchElements = [...instances]
   })
   describe('when skipAliases is enabled', () => {
@@ -62,7 +74,10 @@ describe('metadataInstancesAliases filter', () => {
     })
     it('should not add aliases', async () => {
       await filter.onFetch(fetchElements)
-      expect(instances).toSatisfyAll(instance => instance.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
+      expect(instances).toSatisfyAll(
+        (instance) =>
+          instance.annotations[CORE_ANNOTATIONS.ALIAS] === undefined,
+      )
     })
   })
 
@@ -79,9 +94,15 @@ describe('metadataInstancesAliases filter', () => {
     })
     it('should add correct aliases', async () => {
       await filter.onFetch(fetchElements)
-      expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-      expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label')
-      expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label (SBQQ)')
+      expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+        'TestInstance',
+      )
+      expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+        'Test Label',
+      )
+      expect(
+        instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS],
+      ).toEqual('Test Label (SBQQ)')
     })
     describe('when useLabelAsAlias is disabled', () => {
       beforeEach(() => {
@@ -101,9 +122,15 @@ describe('metadataInstancesAliases filter', () => {
       })
       it('should add correct aliases', async () => {
         await filter.onFetch(fetchElements)
-        expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-        expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-        expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('SBQQ__TestInstance')
+        expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+          'TestInstance',
+        )
+        expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+          'TestInstance',
+        )
+        expect(
+          instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS],
+        ).toEqual('SBQQ__TestInstance')
       })
     })
   })

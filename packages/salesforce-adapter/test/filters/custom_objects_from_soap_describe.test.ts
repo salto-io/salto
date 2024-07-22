@@ -34,9 +34,16 @@ import {
 import mockAdapter from '../adapter'
 import { findElements, defaultFilterContext } from '../utils'
 import filterCreator from '../../src/filters/custom_objects_from_soap_describe'
-import { INSTANCE_TYPE_FIELD, INSTANCE_REQUIRED_FIELD } from '../../src/filters/custom_objects_to_object_type'
+import {
+  INSTANCE_TYPE_FIELD,
+  INSTANCE_REQUIRED_FIELD,
+} from '../../src/filters/custom_objects_to_object_type'
 import { generateCustomObjectType } from './custom_objects_to_object_type.test'
-import { mockSObjectDescribeGlobal, mockSObjectDescribe, mockFileProperties } from '../connection'
+import {
+  mockSObjectDescribeGlobal,
+  mockSObjectDescribe,
+  mockFileProperties,
+} from '../connection'
 import { FilterWith } from './mocks'
 
 describe('Custom Objects from describe filter', () => {
@@ -148,11 +155,16 @@ describe('Custom Objects from describe filter', () => {
             [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
             [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
               {
-                [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['Controlling1', 'Controlling2'],
+                [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
+                  'Controlling1',
+                  'Controlling2',
+                ],
                 [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
               },
               {
-                [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['Controlling1'],
+                [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
+                  'Controlling1',
+                ],
                 [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
               },
             ],
@@ -189,7 +201,9 @@ describe('Custom Objects from describe filter', () => {
   })
 
   describe('onFetch', () => {
-    type MockSingleSObjectProperties = Parameters<typeof mockSObjectDescribeGlobal>[0] &
+    type MockSingleSObjectProperties = Parameters<
+      typeof mockSObjectDescribeGlobal
+    >[0] &
       Parameters<typeof mockSObjectDescribe>[0] &
       Pick<DescribeSObjectResult, 'name'>
     const mockSingleSObject = (
@@ -200,13 +214,18 @@ describe('Custom Objects from describe filter', () => {
       connection.describeGlobal.mockResolvedValue({
         sobjects: [mockSObjectDescribeGlobal(properties)],
       })
-      connection.soap.describeSObjects.mockResolvedValue(mockSObjectDescribe(properties))
+      connection.soap.describeSObjects.mockResolvedValue(
+        mockSObjectDescribe(properties),
+      )
 
       connection.metadata.describe.mockResolvedValue({
-        metadataObjects: [CUSTOM_OBJECT, ...(isMetadataType ? [properties.name] : [])].map(xmlName => ({ xmlName })),
+        metadataObjects: [
+          CUSTOM_OBJECT,
+          ...(isMetadataType ? [properties.name] : []),
+        ].map((xmlName) => ({ xmlName })),
         organizationNamespace: '',
       })
-      connection.metadata.list.mockImplementation(async query => {
+      connection.metadata.list.mockImplementation(async (query) => {
         const { type } = collections.array.makeArray(query)[0]
         return type === CUSTOM_OBJECT && isInCustomObjectList
           ? [mockFileProperties({ fullName: properties.name, type })]
@@ -231,7 +250,7 @@ describe('Custom Objects from describe filter', () => {
         await filter.onFetch(elements)
       })
       it('should leave the instance unchanged', () => {
-        const leadInstances = elements.filter(o => o.elemID.name === 'Lead')
+        const leadInstances = elements.filter((o) => o.elemID.name === 'Lead')
         expect(leadInstances).toHaveLength(1)
         const [leadInstance] = leadInstances
         expect(leadInstance).toEqual(testInstanceElement)
@@ -269,7 +288,9 @@ describe('Custom Objects from describe filter', () => {
           await filter.onFetch(elements)
         })
         it('should keep the values from the metadata API when they exist', () => {
-          expect(testInstanceElement.value.fields).toContainEqual(testInstanceElement.value.fields[0])
+          expect(testInstanceElement.value.fields).toContainEqual(
+            testInstanceElement.value.fields[0],
+          )
         })
         it('should add information to existing fields', () => {
           const expectedField = {
@@ -277,7 +298,9 @@ describe('Custom Objects from describe filter', () => {
             [INSTANCE_TYPE_FIELD]: 'Currency',
             label: 'a label',
           }
-          expect(testInstanceElement.value.fields).toContainEqual(expect.objectContaining(expectedField))
+          expect(testInstanceElement.value.fields).toContainEqual(
+            expect.objectContaining(expectedField),
+          )
         })
       })
       describe('when soap has additional fields', () => {
@@ -308,7 +331,9 @@ describe('Custom Objects from describe filter', () => {
             required: false,
             label: 'OnlyField',
           }
-          expect(testInstanceElement.value.fields).toContainEqual(expect.objectContaining(expectedField))
+          expect(testInstanceElement.value.fields).toContainEqual(
+            expect.objectContaining(expectedField),
+          )
         })
       })
 
@@ -351,7 +376,9 @@ describe('Custom Objects from describe filter', () => {
             required: true,
             label: 'Home Address',
           }
-          expect(testInstanceElement.value.fields).toContainEqual(expect.objectContaining(expectedField))
+          expect(testInstanceElement.value.fields).toContainEqual(
+            expect.objectContaining(expectedField),
+          )
         })
       })
 
@@ -395,7 +422,9 @@ describe('Custom Objects from describe filter', () => {
               [INSTANCE_FULL_NAME_FIELD]: 'Name',
               [INSTANCE_TYPE_FIELD]: 'Name',
             }
-            expect(testInstanceElement.value.fields).toContainEqual(expect.objectContaining(expectedField))
+            expect(testInstanceElement.value.fields).toContainEqual(
+              expect.objectContaining(expectedField),
+            )
           })
         })
         describe('when instance does not have salutation', () => {
@@ -431,7 +460,9 @@ describe('Custom Objects from describe filter', () => {
               [INSTANCE_FULL_NAME_FIELD]: 'Name',
               [INSTANCE_TYPE_FIELD]: 'Name2',
             }
-            expect(testInstanceElement.value.fields).toContainEqual(expect.objectContaining(expectedField))
+            expect(testInstanceElement.value.fields).toContainEqual(
+              expect.objectContaining(expectedField),
+            )
           })
         })
         describe('when instance has field with the same compoundFieldName', () => {
@@ -456,7 +487,9 @@ describe('Custom Objects from describe filter', () => {
               [INSTANCE_FULL_NAME_FIELD]: 'Name',
               [INSTANCE_TYPE_FIELD]: 'Text',
             }
-            expect(testInstanceElement.value.fields).toContainEqual(expect.objectContaining(expectedField))
+            expect(testInstanceElement.value.fields).toContainEqual(
+              expect.objectContaining(expectedField),
+            )
           })
         })
       })

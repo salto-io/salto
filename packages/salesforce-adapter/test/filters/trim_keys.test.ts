@@ -15,7 +15,11 @@
  */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/trim_keys'
-import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import {
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+  METADATA_TYPE,
+  SALESFORCE,
+} from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
@@ -24,10 +28,14 @@ describe('trim keys filter', () => {
   const filter = filterCreator({
     config: defaultFilterContext,
   }) as FilterWith<'onFetch'>
-  const origInstance = new InstanceElement('test', new ObjectType({ elemID: new ElemID(SALESFORCE, 'instanceType') }), {
-    [notTrimmed]: 'some value',
-    leaveMeAlone: 'some other value',
-  })
+  const origInstance = new InstanceElement(
+    'test',
+    new ObjectType({ elemID: new ElemID(SALESFORCE, 'instanceType') }),
+    {
+      [notTrimmed]: 'some value',
+      leaveMeAlone: 'some other value',
+    },
+  )
 
   let instance: InstanceElement
   beforeEach(() => {
@@ -35,7 +43,8 @@ describe('trim keys filter', () => {
   })
 
   it('should trim keys', async () => {
-    ;(await instance.getType()).annotations[METADATA_TYPE] = LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE
+    ;(await instance.getType()).annotations[METADATA_TYPE] =
+      LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.value.trimMe).toBeDefined()
     expect(instance.value[notTrimmed]).toBeUndefined()
@@ -43,7 +52,8 @@ describe('trim keys filter', () => {
   })
 
   it('should not trim keys for non listed metadata type', async () => {
-    ;(await instance.getType()).annotations[METADATA_TYPE] = 'NOT LightningComponentBundle'
+    ;(await instance.getType()).annotations[METADATA_TYPE] =
+      'NOT LightningComponentBundle'
     await filter.onFetch([instance])
     expect(instance.value[notTrimmed]).toBeDefined()
     expect(instance.value.trimMe).toBeUndefined()

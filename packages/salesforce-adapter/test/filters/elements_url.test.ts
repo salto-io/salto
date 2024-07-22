@@ -28,7 +28,9 @@ import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import { Filter, FilterResult } from '../../src/filter'
-import elementsUrlFilter, { WARNING_MESSAGE } from '../../src/filters/elements_url'
+import elementsUrlFilter, {
+  WARNING_MESSAGE,
+} from '../../src/filters/elements_url'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import * as ElementsUrlRetrieverModule from '../../src/elements_url_retriever/elements_url_retriever'
@@ -60,7 +62,12 @@ describe('elements url filter', () => {
 
   it('should add a field its service url', async () => {
     connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
-    const field = new Field(standardObject, 'standardField', BuiltinTypes.NUMBER, { apiName: 'standardField' })
+    const field = new Field(
+      standardObject,
+      'standardField',
+      BuiltinTypes.NUMBER,
+      { apiName: 'standardField' },
+    )
     standardObject.fields.standardField = field
     await filter.onFetch?.([standardObject])
     expect(field.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
@@ -95,7 +102,9 @@ describe('elements url filter', () => {
       { internalId: 'someId' },
       [],
       {
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(standardObject.elemID)],
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(standardObject.elemID),
+        ],
       },
     )
 
@@ -109,14 +118,18 @@ describe('elements url filter', () => {
     connection.instanceUrl = ''
     expect(filter.onFetch).toBeDefined()
     await filter.onFetch?.([standardObject])
-    expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    expect(
+      standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL],
+    ).toBeUndefined()
   })
 
   it('when instance url is an invalid salesforce url should not add the service url', async () => {
     connection.instanceUrl = 'https://google.com'
     expect(filter.onFetch).toBeDefined()
     await filter.onFetch?.([standardObject])
-    expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    expect(
+      standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL],
+    ).toBeUndefined()
   })
 
   it('should not service url for unknown element', async () => {
@@ -130,7 +143,10 @@ describe('elements url filter', () => {
   })
 
   describe('when feature is throwing an error', () => {
-    const elementsUrlRetrieverSpy = jest.spyOn(ElementsUrlRetrieverModule, 'lightningElementsUrlRetriever')
+    const elementsUrlRetrieverSpy = jest.spyOn(
+      ElementsUrlRetrieverModule,
+      'lightningElementsUrlRetriever',
+    )
 
     beforeEach(() => {
       elementsUrlRetrieverSpy.mockImplementation(() => {
@@ -173,7 +189,9 @@ describe('elements url filter', () => {
         },
       })
       await filter.onFetch?.([standardObject])
-      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+      expect(
+        standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL],
+      ).toBeUndefined()
     })
   })
 })

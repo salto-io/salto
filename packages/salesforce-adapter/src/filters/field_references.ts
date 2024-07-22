@@ -48,14 +48,21 @@ import {
   PROFILE_METADATA_TYPE,
   PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName, isInstanceOfTypeSync } from './utils'
+import {
+  buildElementsSourceForFetch,
+  extractFlatCustomObjectFields,
+  hasApiName,
+  isInstanceOfTypeSync,
+} from './utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 const { flatMapAsync } = collections.asynciterable
 const { neighborContextGetter, replaceReferenceValues } = referenceUtils
 
-const workflowActionMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
+const workflowActionMapper: referenceUtils.ContextValueMapperFunc = (
+  val: string,
+) => {
   const typeMapping: Record<string, string> = {
     Alert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
     FieldUpdate: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
@@ -66,7 +73,9 @@ const workflowActionMapper: referenceUtils.ContextValueMapperFunc = (val: string
   return typeMapping[val]
 }
 
-const flowActionCallMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
+const flowActionCallMapper: referenceUtils.ContextValueMapperFunc = (
+  val: string,
+) => {
   const typeMapping: Record<string, string> = {
     apex: 'ApexClass',
     emailAlert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -89,12 +98,18 @@ const neighborContextFunc = (args: {
   contextFieldName: string
   levelsUp?: number | 'top'
   contextValueMapper?: referenceUtils.ContextValueMapperFunc
-}): referenceUtils.ContextFunc => neighborContextGetter({ ...args, getLookUpName })
+}): referenceUtils.ContextFunc =>
+  neighborContextGetter({ ...args, getLookUpName })
 
-const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
+const contextStrategyLookup: Record<
+  ReferenceContextStrategyName,
+  referenceUtils.ContextFunc
+> = {
   instanceParent: async ({ instance, elemByElemID }) => {
     const parentRef = getParents(instance)[0]
-    const parent = isReferenceExpression(parentRef) ? elemByElemID.get(parentRef.elemID.getFullName()) : undefined
+    const parent = isReferenceExpression(parentRef)
+      ? elemByElemID.get(parentRef.elemID.getFullName())
+      : undefined
     return parent !== undefined ? apiName(parent) : undefined
   },
   neighborTypeLookup: neighborContextFunc({ contextFieldName: 'type' }),
@@ -165,18 +180,21 @@ export const addReferences = async (
 ): Promise<void> => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
-  const elementsWithFields = flatMapAsync(await referenceElements.getAll(), extractFlatCustomObjectFields)
+  const elementsWithFields = flatMapAsync(
+    await referenceElements.getAll(),
+    extractFlatCustomObjectFields,
+  )
   const { elemLookup, elemByElemID } = await multiIndex
     .buildMultiIndex<Element>()
     .addIndex({
       name: 'elemLookup',
       filter: hasApiName,
-      key: async elem => [await metadataType(elem), await apiName(elem)],
+      key: async (elem) => [await metadataType(elem), await apiName(elem)],
     })
     .addIndex({
       name: 'elemByElemID',
-      filter: elem => !isField(elem),
-      key: elem => [elem.elemID.getFullName()],
+      filter: (elem) => !isField(elem),
+      key: (elem) => [elem.elemID.getFullName()],
     })
     .process(elementsWithFields)
 
@@ -184,9 +202,9 @@ export const addReferences = async (
   let instances = elements.filter(isInstanceElement)
   if (typesToIgnore.length > 0) {
     const isIgnoredInstance = isInstanceOfTypeSync(...typesToIgnore)
-    instances = instances.filter(instance => !isIgnoredInstance(instance))
+    instances = instances.filter((instance) => !isIgnoredInstance(instance))
   }
-  await awu(instances).forEach(async instance => {
+  await awu(instances).forEach(async (instance) => {
     instance.value = await replaceReferenceValues({
       instance,
       resolverFinder,
@@ -196,7 +214,9 @@ export const addReferences = async (
       contextStrategyLookup,
     })
   })
-  log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
+  log.debug('added references in the following fields: %s', [
+    ...fieldsWithResolvedReferences,
+  ])
 }
 
 /**
@@ -205,12 +225,14 @@ export const addReferences = async (
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
-  onFetch: async elements => {
+  onFetch: async (elements) => {
     const typesToIgnore: string[] = []
     if (!config.fetchProfile.isFeatureEnabled('generateRefsInProfiles')) {
       typesToIgnore.push(PROFILE_METADATA_TYPE)
     }
-    if (config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets')) {
+    if (
+      config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets')
+    ) {
       typesToIgnore.push(PERMISSION_SET_METADATA_TYPE)
     }
     await addReferences(

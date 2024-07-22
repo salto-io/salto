@@ -24,14 +24,19 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { loadElementsFromFolder } from '../../src/sfdx_parser/sfdx_parser'
-import { LAYOUT_TYPE_ID_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../../src/constants'
+import {
+  LAYOUT_TYPE_ID_METADATA_TYPE,
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+} from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 
 describe('loadElementsFromFolder', () => {
   let elements: Element[]
   beforeAll(async () => {
-    const elementsSource = buildElementsSourceFromElements(Object.values(mockTypes))
+    const elementsSource = buildElementsSourceFromElements(
+      Object.values(mockTypes),
+    )
     const loadElementsRes = await loadElementsFromFolder({
       baseDir: path.join(__dirname, 'test_sfdx_project'),
       elementsSource,
@@ -43,7 +48,7 @@ describe('loadElementsFromFolder', () => {
     beforeAll(() => {
       ;[layout] = elements
         .filter(isInstanceElement)
-        .filter(inst => inst.elemID.typeName === LAYOUT_TYPE_ID_METADATA_TYPE)
+        .filter((inst) => inst.elemID.typeName === LAYOUT_TYPE_ID_METADATA_TYPE)
     })
     it('should load layout type elements', () => {
       expect(layout).toBeDefined()
@@ -55,10 +60,14 @@ describe('loadElementsFromFolder', () => {
   describe('custom object', () => {
     let customObjectFragments: ObjectType[]
     beforeAll(() => {
-      customObjectFragments = elements.filter(isObjectType).filter(obj => obj.elemID.typeName === 'Test__c')
+      customObjectFragments = elements
+        .filter(isObjectType)
+        .filter((obj) => obj.elemID.typeName === 'Test__c')
     })
     it('should have fields', () => {
-      const fields = customObjectFragments.flatMap(fragment => Object.keys(fragment.fields))
+      const fields = customObjectFragments.flatMap((fragment) =>
+        Object.keys(fragment.fields),
+      )
       expect(fields).toContainEqual('Check__c')
       expect(fields).toContainEqual('One__c')
     })
@@ -66,7 +75,9 @@ describe('loadElementsFromFolder', () => {
   describe('type with content - apex class', () => {
     let apexClass: InstanceElement
     beforeAll(() => {
-      ;[apexClass] = elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'ApexClass')
+      ;[apexClass] = elements
+        .filter(isInstanceElement)
+        .filter((inst) => inst.elemID.typeName === 'ApexClass')
     })
     it('should have content as static file', () => {
       expect(apexClass.value.content).toBeInstanceOf(StaticFile)
@@ -77,11 +88,16 @@ describe('loadElementsFromFolder', () => {
     beforeAll(() => {
       ;[componentBundle] = elements
         .filter(isInstanceElement)
-        .filter(inst => inst.elemID.typeName === LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE)
+        .filter(
+          (inst) =>
+            inst.elemID.typeName === LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+        )
     })
     it('should have static files', () => {
       expect(componentBundle.value.lwcResources.lwcResource).toBeObject()
-      Object.values<{ source: StaticFile }>(componentBundle.value.lwcResources.lwcResource).forEach(resource => {
+      Object.values<{ source: StaticFile }>(
+        componentBundle.value.lwcResources.lwcResource,
+      ).forEach((resource) => {
         expect(resource.source).toBeInstanceOf(StaticFile)
       })
     })

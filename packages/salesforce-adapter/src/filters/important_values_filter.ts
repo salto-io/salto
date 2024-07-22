@@ -14,23 +14,29 @@
  * limitations under the License.
  */
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { isMetadataObjectType, MetadataObjectType } from '../transformers/transformer'
+import {
+  isMetadataObjectType,
+  MetadataObjectType,
+} from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'salesforceImportantValuesFilter',
-  onFetch: async elements => {
+  onFetch: async (elements) => {
     if (!config.fetchProfile.isFeatureEnabled('importantValues')) {
       return
     }
     const { importantValues } = config.fetchProfile
     const addImportantValues = (type: MetadataObjectType): void => {
       const typeFields = new Set(Object.keys(type.fields))
-      const typeImportantValues = importantValues.filter(importantValue => typeFields.has(importantValue.value))
+      const typeImportantValues = importantValues.filter((importantValue) =>
+        typeFields.has(importantValue.value),
+      )
       if (typeImportantValues.length > 0) {
-        type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = importantValues.filter(importantValue =>
-          typeFields.has(importantValue.value),
-        )
+        type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] =
+          importantValues.filter((importantValue) =>
+            typeFields.has(importantValue.value),
+          )
       }
     }
 

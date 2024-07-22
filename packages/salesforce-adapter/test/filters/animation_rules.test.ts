@@ -55,11 +55,15 @@ describe('animation rules filter', () => {
     },
   })
 
-  const mockAnimationRuleInstance = new InstanceElement('object_type', animationRuleType, {
-    [constants.INSTANCE_FULL_NAME_FIELD]: 'ObjectType',
-    [ANIMATION_FREQUENCY]: 'a',
-    [RECORD_TYPE_CONTEXT]: 'c',
-  })
+  const mockAnimationRuleInstance = new InstanceElement(
+    'object_type',
+    animationRuleType,
+    {
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'ObjectType',
+      [ANIMATION_FREQUENCY]: 'a',
+      [RECORD_TYPE_CONTEXT]: 'c',
+    },
+  )
 
   let testElements: Element[]
 
@@ -74,12 +78,18 @@ describe('animation rules filter', () => {
   describe('on fetch', () => {
     it('should rename instances', async () => {
       await filter.onFetch(testElements)
-      const animationRuleInstance = findElement(testElements, mockAnimationRuleInstance.elemID) as InstanceElement
+      const animationRuleInstance = findElement(
+        testElements,
+        mockAnimationRuleInstance.elemID,
+      ) as InstanceElement
       expect(animationRuleInstance.value[ANIMATION_FREQUENCY]).toEqual('always')
       expect(animationRuleInstance.value[RECORD_TYPE_CONTEXT]).toEqual('Custom')
     })
     it('should not rename if value is not short', async () => {
-      const animationRuleInstance = findElement(testElements, mockAnimationRuleInstance.elemID) as InstanceElement
+      const animationRuleInstance = findElement(
+        testElements,
+        mockAnimationRuleInstance.elemID,
+      ) as InstanceElement
       animationRuleInstance.value[ANIMATION_FREQUENCY] = 'often'
       animationRuleInstance.value[RECORD_TYPE_CONTEXT] = 'Master'
       await filter.onFetch(testElements)

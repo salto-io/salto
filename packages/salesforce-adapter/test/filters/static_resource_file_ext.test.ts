@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, isStaticFile, ObjectType, StaticFile } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  isStaticFile,
+  ObjectType,
+  StaticFile,
+} from '@salto-io/adapter-api'
 import filterCreator, {
   CONTENT_TYPE,
   STATIC_RESOURCE_METADATA_TYPE_ID,
 } from '../../src/filters/static_resource_file_ext'
-import { INSTANCE_FULL_NAME_FIELD, METADATA_CONTENT_FIELD } from '../../src/constants'
+import {
+  INSTANCE_FULL_NAME_FIELD,
+  METADATA_CONTENT_FIELD,
+} from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
@@ -55,7 +63,9 @@ describe('Static Resource File Extension Filter', () => {
     const updatedContent = staticResourceInstance.value[METADATA_CONTENT_FIELD]
     expect(isStaticFile(updatedContent)).toEqual(true)
     expect(await (updatedContent as StaticFile).getContent()).toEqual(content)
-    expect((updatedContent as StaticFile).filepath).toEqual('salesforce/staticresources/filename.png')
+    expect((updatedContent as StaticFile).filepath).toEqual(
+      'salesforce/staticresources/filename.png',
+    )
   })
 
   it('should do nothing if contentType is not a string', async () => {

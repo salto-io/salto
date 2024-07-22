@@ -30,11 +30,22 @@ import { MetadataInfo } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import * as constants from '../../src/constants'
-import { API_NAME, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../../src/constants'
+import {
+  API_NAME,
+  INSTANCE_FULL_NAME_FIELD,
+  VALUE_SET_FIELDS,
+} from '../../src/constants'
 import mockClient from '../client'
-import { makeFilter, STANDARD_VALUE, STANDARD_VALUE_SET } from '../../src/filters/standard_value_sets'
+import {
+  makeFilter,
+  STANDARD_VALUE,
+  STANDARD_VALUE_SET,
+} from '../../src/filters/standard_value_sets'
 import SalesforceClient from '../../src/client/client'
-import { createInstanceElement, Types } from '../../src/transformers/transformer'
+import {
+  createInstanceElement,
+  Types,
+} from '../../src/transformers/transformer'
 import { extractFullNamesFromValueList } from '../../src/filters/utils'
 import { defaultFilterContext } from '../utils'
 import { mockInstances, mockTypes } from '../mock_elements'
@@ -43,23 +54,29 @@ import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
 import { LastChangeDateOfTypesWithNestedInstances } from '../../src/types'
 
-const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
+const createStandardValueSetMetadataInfo = (
+  name: string,
+  values: string[],
+): MetadataInfo =>
   ({
     fullName: name,
     sorted: false,
-    standardValue: values.map(v => ({
+    standardValue: values.map((v) => ({
       fullName: v,
       default: 'false',
       label: v,
     })),
   }) as MetadataInfo
 
-const isStringArray = (val: unknown): val is string[] => _.isArray(val) && val.every(_.isString)
+const isStringArray = (val: unknown): val is string[] =>
+  _.isArray(val) && val.every(_.isString)
 
 const createPicklistObjectType = (
   mockElemID: ElemID,
   apiName: string,
-  pickListValues: string[] | { fullName: string; default: boolean; label: string }[],
+  pickListValues:
+    | string[]
+    | { fullName: string; default: boolean; label: string }[],
   isMultiPicklist = false,
 ): ObjectType =>
   new ObjectType({
@@ -74,7 +91,7 @@ const createPicklistObjectType = (
           [constants.API_NAME]: apiName,
           label: 'test label',
           [constants.FIELD_ANNOTATIONS.VALUE_SET]: isStringArray(pickListValues)
-            ? pickListValues.map(val => ({
+            ? pickListValues.map((val) => ({
                 [constants.CUSTOM_VALUE.FULL_NAME]: val,
                 [constants.CUSTOM_VALUE.LABEL]: val,
                 [constants.CUSTOM_VALUE.DEFAULT]: val === 'Bart',
@@ -124,12 +141,16 @@ describe('Standard Value Sets filter', () => {
     sfClient: SalesforceClient,
     isFetchWithChangesDetection = false,
   ): Promise<FilterType> => {
-    const elementsSource = buildElementsSourceFromElements([svsInstanceFromSource, mockInstances().ChangedAtSingleton])
+    const elementsSource = buildElementsSourceFromElements([
+      svsInstanceFromSource,
+      mockInstances().ChangedAtSingleton,
+    ])
     const metadataQuery = isFetchWithChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams: {},
           elementsSource,
-          lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
+          lastChangeDateOfTypesWithNestedInstances:
+            {} as unknown as LastChangeDateOfTypesWithNestedInstances,
           customObjectsWithDeletedFields: new Set(),
         })
       : defaultFilterContext.fetchProfile.metadataQuery
@@ -145,7 +166,11 @@ describe('Standard Value Sets filter', () => {
   beforeEach(async () => {
     client.readMetadata = jest.fn().mockImplementationOnce(() => ({
       result: [
-        createStandardValueSetMetadataInfo('Simpsons', ['Bart', 'Homer', 'Lisa']),
+        createStandardValueSetMetadataInfo('Simpsons', [
+          'Bart',
+          'Homer',
+          'Lisa',
+        ]),
         createStandardValueSetMetadataInfo('Numbers', ['One', 'Two', 'Three']),
       ],
     }))
@@ -166,60 +191,95 @@ describe('Standard Value Sets filter', () => {
       expect(client.readMetadata).toHaveBeenCalledTimes(1)
       expect(elements.length).toBe(3)
       const simpsonsSvs = elements[1]
-      expect(simpsonsSvs.elemID).toEqual(mockSVSType.elemID.createNestedID('instance', 'Simpsons'))
-      expect(simpsonsSvs.path).toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'standard_value_set', 'Simpsons'])
-      expect(extractFullNamesFromValueList((simpsonsSvs as InstanceElement).value[STANDARD_VALUE])).toEqual([
-        'Bart',
-        'Homer',
-        'Lisa',
+      expect(simpsonsSvs.elemID).toEqual(
+        mockSVSType.elemID.createNestedID('instance', 'Simpsons'),
+      )
+      expect(simpsonsSvs.path).toEqual([
+        constants.SALESFORCE,
+        constants.RECORDS_PATH,
+        'standard_value_set',
+        'Simpsons',
       ])
+      expect(
+        extractFullNamesFromValueList(
+          (simpsonsSvs as InstanceElement).value[STANDARD_VALUE],
+        ),
+      ).toEqual(['Bart', 'Homer', 'Lisa'])
       const numbersSvs = elements[2]
-      expect(numbersSvs.elemID).toEqual(mockSVSType.elemID.createNestedID('instance', 'Numbers'))
-      expect(numbersSvs.path).toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'standard_value_set', 'Numbers'])
-      expect(extractFullNamesFromValueList((numbersSvs as InstanceElement).value[STANDARD_VALUE])).toEqual([
-        'One',
-        'Two',
-        'Three',
+      expect(numbersSvs.elemID).toEqual(
+        mockSVSType.elemID.createNestedID('instance', 'Numbers'),
+      )
+      expect(numbersSvs.path).toEqual([
+        constants.SALESFORCE,
+        constants.RECORDS_PATH,
+        'standard_value_set',
+        'Numbers',
       ])
+      expect(
+        extractFullNamesFromValueList(
+          (numbersSvs as InstanceElement).value[STANDARD_VALUE],
+        ),
+      ).toEqual(['One', 'Two', 'Three'])
     })
     it('should replace value list with references for standard picklist fields', async () => {
       const apiName = 'simps'
       const pickListValues = ['Bart', 'Homer', 'Lisa']
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-      const typeElement = createPicklistObjectType(mockElemID, apiName, pickListValues)
+      const typeElement = createPicklistObjectType(
+        mockElemID,
+        apiName,
+        pickListValues,
+      )
       const elements: Element[] = [mockSVSType.clone(), typeElement]
       await filter.onFetch(elements)
       expect(elements.length).toBe(4)
       const simpsonsSvs = elements[2]
-      expect(typeElement.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-        new ReferenceExpression(simpsonsSvs.elemID),
-      )
+      expect(
+        typeElement.fields.state.annotations[
+          constants.VALUE_SET_FIELDS.VALUE_SET_NAME
+        ],
+      ).toEqual(new ReferenceExpression(simpsonsSvs.elemID))
     })
 
     it('should replace value list with references for standard multipicklist fields', async () => {
       const apiName = 'simps'
       const pickListValues = ['Bart', 'Homer', 'Lisa']
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-      const typeElement = createPicklistObjectType(mockElemID, apiName, pickListValues, true)
+      const typeElement = createPicklistObjectType(
+        mockElemID,
+        apiName,
+        pickListValues,
+        true,
+      )
       const elements: Element[] = [mockSVSType.clone(), typeElement]
       await filter.onFetch(elements)
       expect(elements.length).toBe(4)
       const simpsonsSvs = elements[2]
-      expect(typeElement.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-        new ReferenceExpression(simpsonsSvs.elemID),
-      )
+      expect(
+        typeElement.fields.state.annotations[
+          constants.VALUE_SET_FIELDS.VALUE_SET_NAME
+        ],
+      ).toEqual(new ReferenceExpression(simpsonsSvs.elemID))
     })
 
     it('should not replace value list with references for custom picklist fields', async () => {
       const apiName = 'simpsy__c'
       const pickListValues = ['Bart', 'Homer', 'Lisa']
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-      const typeElement = createPicklistObjectType(mockElemID, apiName, pickListValues)
+      const typeElement = createPicklistObjectType(
+        mockElemID,
+        apiName,
+        pickListValues,
+      )
       const elements: Element[] = [mockSVSType.clone(), typeElement]
       await filter.onFetch(elements)
       expect(elements.length).toBe(4)
       expect(
-        extractFullNamesFromValueList(typeElement.fields.state.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]),
+        extractFullNamesFromValueList(
+          typeElement.fields.state.annotations[
+            constants.FIELD_ANNOTATIONS.VALUE_SET
+          ],
+        ),
       ).toEqual(pickListValues)
     })
 
@@ -227,12 +287,20 @@ describe('Standard Value Sets filter', () => {
       const apiName = 'simps'
       const pickListValues = ['Marge', 'Homer', 'Lisa']
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-      const typeElement = createPicklistObjectType(mockElemID, apiName, pickListValues)
+      const typeElement = createPicklistObjectType(
+        mockElemID,
+        apiName,
+        pickListValues,
+      )
       const elements: Element[] = [mockSVSType.clone(), typeElement]
       await filter.onFetch(elements)
       expect(elements.length).toBe(4)
       expect(
-        extractFullNamesFromValueList(typeElement.fields.state.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]),
+        extractFullNamesFromValueList(
+          typeElement.fields.state.annotations[
+            constants.FIELD_ANNOTATIONS.VALUE_SET
+          ],
+        ),
       ).toEqual(pickListValues)
     })
 
@@ -250,9 +318,9 @@ describe('Standard Value Sets filter', () => {
         await filter.onFetch(elements)
         const field = objectType.fields.state as Field
         expect(field).toSatisfy(isField)
-        expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-          new ReferenceExpression(svsInstanceFromSource.elemID),
-        )
+        expect(
+          field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME],
+        ).toEqual(new ReferenceExpression(svsInstanceFromSource.elemID))
         // No reason to append a non modified SVS instance to the elements
         expect(elements).not.toContain(svsInstanceFromSource)
       })
@@ -290,7 +358,7 @@ describe('Standard Value Sets filter', () => {
     })
     it('should omit the valueSetName annotation on preDeploy', () => {
       expect(afterPreDeployChanges).toHaveLength(1)
-      expect(getAllChangeData(afterPreDeployChanges[0])).toSatisfyAll(field =>
+      expect(getAllChangeData(afterPreDeployChanges[0])).toSatisfyAll((field) =>
         _.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]),
       )
     })

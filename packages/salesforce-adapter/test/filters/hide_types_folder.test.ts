@@ -28,7 +28,8 @@ describe('hideTypesFolder filter', () => {
     let elementNestedWithinTypesFolder: ObjectType
     let elementOutsideTypesFolder: ObjectType
 
-    const toBeHidden = (element: ObjectType): boolean => element.annotations?.[CORE_ANNOTATIONS.HIDDEN] === true
+    const toBeHidden = (element: ObjectType): boolean =>
+      element.annotations?.[CORE_ANNOTATIONS.HIDDEN] === true
 
     beforeEach(() => {
       elementWithinTypesFolder = new ObjectType({
@@ -57,7 +58,11 @@ describe('hideTypesFolder filter', () => {
       })
 
       it('should hide elements within the Types folder', async () => {
-        await filter.onFetch([elementWithinTypesFolder, elementNestedWithinTypesFolder, elementOutsideTypesFolder])
+        await filter.onFetch([
+          elementWithinTypesFolder,
+          elementNestedWithinTypesFolder,
+          elementOutsideTypesFolder,
+        ])
         expect(elementWithinTypesFolder).toSatisfy(toBeHidden)
         expect(elementNestedWithinTypesFolder).toSatisfy(toBeHidden)
         expect(elementOutsideTypesFolder).not.toSatisfy(toBeHidden)
@@ -77,7 +82,11 @@ describe('hideTypesFolder filter', () => {
       })
 
       it('should not hide elements within the Types folder', async () => {
-        await filter.onFetch([elementWithinTypesFolder, elementNestedWithinTypesFolder, elementOutsideTypesFolder])
+        await filter.onFetch([
+          elementWithinTypesFolder,
+          elementNestedWithinTypesFolder,
+          elementOutsideTypesFolder,
+        ])
         expect(elementWithinTypesFolder).not.toSatisfy(toBeHidden)
         expect(elementNestedWithinTypesFolder).not.toSatisfy(toBeHidden)
         expect(elementOutsideTypesFolder).not.toSatisfy(toBeHidden)

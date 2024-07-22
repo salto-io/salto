@@ -13,15 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Change, CORE_ANNOTATIONS, getAllChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  CORE_ANNOTATIONS,
+  getAllChangeData,
+  InstanceElement,
+  toChange,
+} from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/invalid_list_view_filter_scope'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
 const createListView = (filterScopeValue: string): InstanceElement =>
-  createInstanceElement({ fullName: 'Some.FullName', filterScope: filterScopeValue }, mockTypes.ListView, undefined, {
-    [CORE_ANNOTATIONS.PARENT]: 'Opportunity',
-  })
+  createInstanceElement(
+    { fullName: 'Some.FullName', filterScope: filterScopeValue },
+    mockTypes.ListView,
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: 'Opportunity' },
+  )
 
 describe('ListView filterScope validator', () => {
   describe('when filterScope changes to invalid value', () => {
@@ -37,7 +46,9 @@ describe('ListView filterScope validator', () => {
     })
 
     it('should fail validation', async () => {
-      const changeErrors = await changeValidator([filterScopeModificationChange])
+      const changeErrors = await changeValidator([
+        filterScopeModificationChange,
+      ])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       const [beforeData] = getAllChangeData(filterScopeModificationChange)

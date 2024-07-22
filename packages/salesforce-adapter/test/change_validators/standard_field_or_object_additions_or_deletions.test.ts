@@ -23,7 +23,9 @@ describe('standardCustomFieldOrObject Change Validator', () => {
       // A real scenario of CustomObject addition will also include addition of each of its fields
       const changeErrors = await changeValidator([
         toChange({ after: mockTypes.Account }),
-        ...Object.values(mockTypes.Account.fields).map(field => toChange({ after: field })),
+        ...Object.values(mockTypes.Account.fields).map((field) =>
+          toChange({ after: field }),
+        ),
       ])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors).toEqual([
@@ -38,7 +40,9 @@ describe('standardCustomFieldOrObject Change Validator', () => {
       // A real scenario of CustomObject removal will also include removal of each of its fields
       const changeErrors = await changeValidator([
         toChange({ before: mockTypes.Account }),
-        ...Object.values(mockTypes.Account.fields).map(field => toChange({ before: field })),
+        ...Object.values(mockTypes.Account.fields).map((field) =>
+          toChange({ before: field }),
+        ),
       ])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors).toEqual([
@@ -54,7 +58,9 @@ describe('standardCustomFieldOrObject Change Validator', () => {
       // A real scenario of CustomObject addition will also include addition of each of its fields
       const changeErrors = await changeValidator([
         toChange({ after: mockTypes.TestCustomObject__c }),
-        ...Object.values(mockTypes.TestCustomObject__c.fields).map(field => toChange({ after: field })),
+        ...Object.values(mockTypes.TestCustomObject__c.fields).map((field) =>
+          toChange({ after: field }),
+        ),
       ])
       expect(changeErrors).toBeEmpty()
     })
@@ -63,19 +69,25 @@ describe('standardCustomFieldOrObject Change Validator', () => {
       // A real scenario of CustomObject removal will also include removal of each of its fields
       const changeErrors = await changeValidator([
         toChange({ before: mockTypes.TestCustomObject__c }),
-        ...Object.values(mockTypes.TestCustomObject__c.fields).map(field => toChange({ before: field })),
+        ...Object.values(mockTypes.TestCustomObject__c.fields).map((field) =>
+          toChange({ before: field }),
+        ),
       ])
       expect(changeErrors).toBeEmpty()
     })
   })
   describe('Addition or removal of custom event', () => {
     it('should not have error for custom event addition', async () => {
-      const changeErrors = await changeValidator([toChange({ after: mockTypes.TestCustomEvent__e })])
+      const changeErrors = await changeValidator([
+        toChange({ after: mockTypes.TestCustomEvent__e }),
+      ])
       expect(changeErrors).toBeEmpty()
     })
 
     it('should not have error for custom event removals', async () => {
-      const changeErrors = await changeValidator([toChange({ before: mockTypes.TestCustomEvent__e })])
+      const changeErrors = await changeValidator([
+        toChange({ before: mockTypes.TestCustomEvent__e }),
+      ])
       expect(changeErrors).toBeEmpty()
     })
   })

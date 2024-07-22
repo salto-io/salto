@@ -18,7 +18,10 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ConfigValidationError, validateRegularExpressions } from './config_validation'
+import {
+  ConfigValidationError,
+  validateRegularExpressions,
+} from './config_validation'
 import { validateDataManagementConfig } from './fetch_profile/data_management'
 import {
   DataManagementConfig,
@@ -44,9 +47,15 @@ const log = logger(module)
 
 export const PACKAGES_INSTANCES_REGEX = `^.+\\.(?!standard_)[^_]+__(?!(${INSTANCE_SUFFIXES.join('|')})([^a-zA-Z\\d_]+|$)).+$`
 
-const DEPRECATED_FIELDS = [INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, DATA_MANAGEMENT]
+const DEPRECATED_FIELDS = [
+  INSTANCES_REGEX_SKIPPED_LIST,
+  METADATA_TYPES_SKIPPED_LIST,
+  DATA_MANAGEMENT,
+]
 
-const validateDeprecatedParameters = (config: Readonly<InstanceElement>): void => {
+const validateDeprecatedParameters = (
+  config: Readonly<InstanceElement>,
+): void => {
   if (config.value[METADATA_TYPES_SKIPPED_LIST] !== undefined) {
     log.warn(
       `${METADATA_TYPES_SKIPPED_LIST} configuration option is deprecated. ${FETCH_CONFIG}.${METADATA_CONFIG} should be used instead`,
@@ -56,7 +65,9 @@ const validateDeprecatedParameters = (config: Readonly<InstanceElement>): void =
     log.warn(
       `${INSTANCES_REGEX_SKIPPED_LIST} configuration option is deprecated. ${FETCH_CONFIG}.${METADATA_CONFIG} should be used instead`,
     )
-    validateRegularExpressions(config?.value?.[INSTANCES_REGEX_SKIPPED_LIST], [INSTANCES_REGEX_SKIPPED_LIST])
+    validateRegularExpressions(config?.value?.[INSTANCES_REGEX_SKIPPED_LIST], [
+      INSTANCES_REGEX_SKIPPED_LIST,
+    ])
   }
   if (config.value[DATA_MANAGEMENT] !== undefined) {
     if (config.value[FETCH_CONFIG]?.[DATA_CONFIGURATION] !== undefined) {
@@ -70,21 +81,31 @@ const validateDeprecatedParameters = (config: Readonly<InstanceElement>): void =
       `${DATA_MANAGEMENT} configuration option is deprecated. ${FETCH_CONFIG}.${DATA_CONFIGURATION} should be used instead`,
     )
 
-    validateDataManagementConfig(config.value[DATA_MANAGEMENT], [DATA_MANAGEMENT])
+    validateDataManagementConfig(config.value[DATA_MANAGEMENT], [
+      DATA_MANAGEMENT,
+    ])
   }
 }
 
 const convertDeprecatedRegex = (filePathRegex: string): string => {
   let newPathRegex = filePathRegex
 
-  newPathRegex = filePathRegex.startsWith('^') ? newPathRegex.substring(1) : newPathRegex
-
-  newPathRegex = !filePathRegex.startsWith('.*') && !filePathRegex.startsWith('^') ? `.*${newPathRegex}` : newPathRegex
-
-  newPathRegex = filePathRegex.endsWith('$') ? newPathRegex.substring(0, newPathRegex.length - 1) : newPathRegex
+  newPathRegex = filePathRegex.startsWith('^')
+    ? newPathRegex.substring(1)
+    : newPathRegex
 
   newPathRegex =
-    !filePathRegex.endsWith('$') && (!filePathRegex.endsWith('.*') || filePathRegex.endsWith('\\.*'))
+    !filePathRegex.startsWith('.*') && !filePathRegex.startsWith('^')
+      ? `.*${newPathRegex}`
+      : newPathRegex
+
+  newPathRegex = filePathRegex.endsWith('$')
+    ? newPathRegex.substring(0, newPathRegex.length - 1)
+    : newPathRegex
+
+  newPathRegex =
+    !filePathRegex.endsWith('$') &&
+    (!filePathRegex.endsWith('.*') || filePathRegex.endsWith('\\.*'))
       ? `${newPathRegex}.*`
       : newPathRegex
 
@@ -97,8 +118,8 @@ const convertDeprecatedMetadataParams = (
 ): MetadataParams => {
   const excludes = [
     ...makeArray(deprecatedParams.instancesRegexSkippedList)
-      .filter(re => re !== PACKAGES_INSTANCES_REGEX)
-      .map(re => {
+      .filter((re) => re !== PACKAGES_INSTANCES_REGEX)
+      .map((re) => {
         const regexParts = re.split('.')
         if (regexParts.length < 2) {
           return { name: convertDeprecatedRegex(re) }
@@ -108,12 +129,14 @@ const convertDeprecatedMetadataParams = (
           name: convertDeprecatedRegex(`^${regexParts.slice(1).join('.')}`),
         }
       }),
-    ...makeArray(deprecatedParams.metadataTypesSkippedList).map(type => ({
+    ...makeArray(deprecatedParams.metadataTypesSkippedList).map((type) => ({
       metadataType: type,
     })),
   ]
 
-  const includes = makeArray(deprecatedParams.instancesRegexSkippedList).includes(PACKAGES_INSTANCES_REGEX)
+  const includes = makeArray(
+    deprecatedParams.instancesRegexSkippedList,
+  ).includes(PACKAGES_INSTANCES_REGEX)
     ? [{ namespace: '', name: '.*', metadataType: '.*' }]
     : []
 
@@ -122,11 +145,13 @@ const convertDeprecatedMetadataParams = (
       include: [...(currentParams.include ?? []), ...includes],
       exclude: [...(currentParams.exclude ?? []), ...excludes],
     },
-    value => value.length !== 0,
+    (value) => value.length !== 0,
   )
 }
 
-const convertDeprecatedDataConf = (conf: DataManagementConfig): DataManagementConfig => ({
+const convertDeprecatedDataConf = (
+  conf: DataManagementConfig,
+): DataManagementConfig => ({
   ..._.pickBy(
     {
       ...conf,
@@ -140,7 +165,7 @@ const convertDeprecatedDataConf = (conf: DataManagementConfig): DataManagementCo
     ..._.pickBy(
       {
         ...conf.saltoIDSettings,
-        overrides: conf.saltoIDSettings.overrides?.map(override => ({
+        overrides: conf.saltoIDSettings.overrides?.map((override) => ({
           ...override,
           objectsRegex: convertDeprecatedRegex(override.objectsRegex),
         })),
@@ -158,7 +183,10 @@ const convertDeprecatedFetchParameters = (
   const metadata =
     deprecatedFetchParameters?.instancesRegexSkippedList !== undefined ||
     deprecatedFetchParameters?.metadataTypesSkippedList !== undefined
-      ? convertDeprecatedMetadataParams(fetchParameters?.metadata ?? {}, deprecatedFetchParameters)
+      ? convertDeprecatedMetadataParams(
+          fetchParameters?.metadata ?? {},
+          deprecatedFetchParameters,
+        )
       : fetchParameters?.metadata
 
   const data =
@@ -185,7 +213,10 @@ export const updateDeprecatedConfiguration = (
       message: string
     }
   | undefined => {
-  if (configuration === undefined || DEPRECATED_FIELDS.every(field => configuration.value[field] === undefined)) {
+  if (
+    configuration === undefined ||
+    DEPRECATED_FIELDS.every((field) => configuration.value[field] === undefined)
+  ) {
     return undefined
   }
 
@@ -194,7 +225,10 @@ export const updateDeprecatedConfiguration = (
   const updatedConf = configuration.clone()
   updatedConf.value = {
     ..._.omit(updatedConf.value, DEPRECATED_FIELDS),
-    [FETCH_CONFIG]: convertDeprecatedFetchParameters(updatedConf.value[FETCH_CONFIG], updatedConf.value),
+    [FETCH_CONFIG]: convertDeprecatedFetchParameters(
+      updatedConf.value[FETCH_CONFIG],
+      updatedConf.value,
+    ),
   }
   return { config: updatedConf, message: DEPRECATED_OPTIONS_MESSAGE }
 }

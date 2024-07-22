@@ -23,9 +23,15 @@ import {
   MetadataQuery,
   CustomReferencesSettings,
 } from '../types'
-import { buildDataManagement, validateDataManagementConfig } from './data_management'
+import {
+  buildDataManagement,
+  validateDataManagementConfig,
+} from './data_management'
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../constants'
+import {
+  DEFAULT_MAX_INSTANCES_PER_TYPE,
+  DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+} from '../constants'
 import { mergeWithDefaultImportantValues } from './important_values'
 import { customReferencesConfiguration } from '../custom_references/handlers'
 
@@ -70,36 +76,48 @@ export const buildFetchProfile = ({
     warningSettings,
     additionalImportantValues,
   } = fetchParams
-  const enabledCustomReferencesHandlers = customReferencesConfiguration(customReferencesSettings)
+  const enabledCustomReferencesHandlers = customReferencesConfiguration(
+    customReferencesSettings,
+  )
   return {
     dataManagement: data && buildDataManagement(data),
-    isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
-    isCustomReferencesHandlerEnabled: name => enabledCustomReferencesHandlers[name] ?? false,
+    isFeatureEnabled: (name) =>
+      optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
+    isCustomReferencesHandlerEnabled: (name) =>
+      enabledCustomReferencesHandlers[name] ?? false,
     shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
     maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
     preferActiveFlowVersions: preferActiveFlowVersions ?? false,
     addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
-    isWarningEnabled: name => warningSettings?.[name] ?? true,
+    isWarningEnabled: (name) => warningSettings?.[name] ?? true,
     metadataQuery,
     maxItemsInRetrieveRequest,
     importantValues: mergeWithDefaultImportantValues(additionalImportantValues),
   }
 }
 
-export const validateFetchParameters = (params: Partial<FetchParameters>, fieldPath: string[]): void => {
+export const validateFetchParameters = (
+  params: Partial<FetchParameters>,
+  fieldPath: string[],
+): void => {
   validateMetadataParams(params.metadata ?? {}, [...fieldPath, METADATA_CONFIG])
 
   if (params.data !== undefined) {
-    validateDataManagementConfig(params.data, [...fieldPath, DATA_CONFIGURATION])
+    validateDataManagementConfig(params.data, [
+      ...fieldPath,
+      DATA_CONFIGURATION,
+    ])
   }
   if (params.additionalImportantValues !== undefined) {
     const duplicateDefs = _(params.additionalImportantValues)
-      .groupBy(def => def.value)
+      .groupBy((def) => def.value)
       .filter((defs, _value) => defs.length > 1)
       .keys()
       .value()
     if (duplicateDefs.length > 0) {
-      throw new Error(`Duplicate definitions for additionalImportantValues: [${duplicateDefs.join(', ')}]`)
+      throw new Error(
+        `Duplicate definitions for additionalImportantValues: [${duplicateDefs.join(', ')}]`,
+      )
     }
   }
 }

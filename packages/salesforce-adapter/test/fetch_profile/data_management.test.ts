@@ -63,11 +63,23 @@ describe('buildDataManagement', () => {
   })
   describe('shouldFetchObjectType', () => {
     it('should fetch included objects', async () => {
-      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaa', {}))).toEqual('Always')
-      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaaccc', {}))).toEqual('Always')
+      expect(
+        await dataManagement.shouldFetchObjectType(
+          createCustomObjectType('aaa', {}),
+        ),
+      ).toEqual('Always')
+      expect(
+        await dataManagement.shouldFetchObjectType(
+          createCustomObjectType('aaaccc', {}),
+        ),
+      ).toEqual('Always')
     })
     it('should fetch objects we allow refs to if they are not managed by Salto', async () => {
-      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('ccc', {}))).toEqual('IfReferenced')
+      expect(
+        await dataManagement.shouldFetchObjectType(
+          createCustomObjectType('ccc', {}),
+        ),
+      ).toEqual('IfReferenced')
     })
     it('should fetch objects we allow refs to if they may be managed by Salto', async () => {
       const objType = createCustomObjectType('ccc', {
@@ -80,22 +92,40 @@ describe('buildDataManagement', () => {
           },
         },
       })
-      expect(await dataManagement.shouldFetchObjectType(objType)).toEqual('Always')
+      expect(await dataManagement.shouldFetchObjectType(objType)).toEqual(
+        'Always',
+      )
     })
     it('should not fetch objects that are excluded', async () => {
-      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('bbb', {}))).toEqual('Never')
-      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('cccbbb', {}))).toEqual('Never')
+      expect(
+        await dataManagement.shouldFetchObjectType(
+          createCustomObjectType('bbb', {}),
+        ),
+      ).toEqual('Never')
+      expect(
+        await dataManagement.shouldFetchObjectType(
+          createCustomObjectType('cccbbb', {}),
+        ),
+      ).toEqual('Never')
     })
     it('should not fetch objects that are both included and excluded', async () => {
-      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaabbb', {}))).toEqual('Never')
+      expect(
+        await dataManagement.shouldFetchObjectType(
+          createCustomObjectType('aaabbb', {}),
+        ),
+      ).toEqual('Never')
     })
   })
   describe('brokenReferenceBehaviorForTargetType', () => {
     it('should return the default for target types that are not overridden', () => {
-      expect(dataManagement.brokenReferenceBehaviorForTargetType('SomeType')).toEqual('BrokenReference')
+      expect(
+        dataManagement.brokenReferenceBehaviorForTargetType('SomeType'),
+      ).toEqual('BrokenReference')
     })
     it('should return the overridden value for target types that are overridden', () => {
-      expect(dataManagement.brokenReferenceBehaviorForTargetType('User')).toEqual('InternalId')
+      expect(
+        dataManagement.brokenReferenceBehaviorForTargetType('User'),
+      ).toEqual('InternalId')
     })
   })
 
@@ -104,13 +134,20 @@ describe('buildDataManagement', () => {
     expect(dataManagement.getObjectIdsFields('aaab')).toEqual(['field'])
   })
   it('getObjectAliasFields should return correct results', () => {
-    expect(dataManagement.getObjectAliasFields('Account')).toEqual([DETECTS_PARENTS_INDICATOR, 'Name'])
-    expect(dataManagement.getObjectAliasFields('SBQQ__LookupQuery__c')).toEqual([
+    expect(dataManagement.getObjectAliasFields('Account')).toEqual([
       DETECTS_PARENTS_INDICATOR,
-      'SBQQ__PriceRule2__c',
       'Name',
     ])
-    expect(dataManagement.getObjectAliasFields('TestOverrideType')).toEqual(['TestField1', 'TestField2'])
-    expect(dataManagement.getObjectAliasFields('Product2')).toEqual(['Name', 'IsActive'])
+    expect(dataManagement.getObjectAliasFields('SBQQ__LookupQuery__c')).toEqual(
+      [DETECTS_PARENTS_INDICATOR, 'SBQQ__PriceRule2__c', 'Name'],
+    )
+    expect(dataManagement.getObjectAliasFields('TestOverrideType')).toEqual([
+      'TestField1',
+      'TestField2',
+    ])
+    expect(dataManagement.getObjectAliasFields('Product2')).toEqual([
+      'Name',
+      'IsActive',
+    ])
   })
 })

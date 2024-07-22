@@ -17,10 +17,17 @@ import { Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { RemoteFilterCreator } from '../../filter'
-import { apiNameSync, ensureSafeFilterFetch, isMetadataInstanceElementSync } from '../utils'
+import {
+  apiNameSync,
+  ensureSafeFilterFetch,
+  isMetadataInstanceElementSync,
+} from '../utils'
 import { WORKFLOW_FIELD_TO_TYPE } from '../workflow'
 import { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from '../custom_objects_to_object_type'
-import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
+import {
+  getAuthorAnnotations,
+  MetadataInstanceElement,
+} from '../../transformers/transformer'
 import SalesforceClient from '../../client/client'
 
 const log = logger(module)
@@ -38,7 +45,8 @@ const NESTED_INSTANCES_METADATA_TYPES = [
   ...Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME),
 ] as const
 
-type NestedInstanceMetadataType = (typeof NESTED_INSTANCES_METADATA_TYPES)[number]
+type NestedInstanceMetadataType =
+  (typeof NESTED_INSTANCES_METADATA_TYPES)[number]
 
 type SetAuthorInformationForTypeParams = {
   client: SalesforceClient
@@ -51,10 +59,12 @@ const setAuthorInformationForInstancesOfType = async ({
   typeName,
   instances,
 }: SetAuthorInformationForTypeParams): Promise<void> => {
-  const { result: filesProps } = await client.listMetadataObjects([{ type: typeName }])
-  const filePropsByFullName = _.keyBy(filesProps, props => props.fullName)
+  const { result: filesProps } = await client.listMetadataObjects([
+    { type: typeName },
+  ])
+  const filePropsByFullName = _.keyBy(filesProps, (props) => props.fullName)
   const instancesWithMissingFileProps: MetadataInstanceElement[] = []
-  instances.forEach(instance => {
+  instances.forEach((instance) => {
     const instanceFullName = apiNameSync(instance)
     if (instanceFullName === undefined) {
       return
@@ -68,7 +78,7 @@ const setAuthorInformationForInstancesOfType = async ({
   })
   if (instancesWithMissingFileProps.length > 0) {
     log.debug(
-      `Failed to populate author information for the following ${typeName} instances: ${instancesWithMissingFileProps.map(instance => apiNameSync(instance)).join(', ')}`,
+      `Failed to populate author information for the following ${typeName} instances: ${instancesWithMissingFileProps.map((instance) => apiNameSync(instance)).join(', ')}`,
     )
   }
 }
@@ -85,11 +95,13 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
       const nestedInstancesByType = _.pick(
-        _.groupBy(elements.filter(isMetadataInstanceElementSync), e => apiNameSync(e.getTypeSync())),
+        _.groupBy(elements.filter(isMetadataInstanceElementSync), (e) =>
+          apiNameSync(e.getTypeSync()),
+        ),
         NESTED_INSTANCES_METADATA_TYPES,
       )
       await Promise.all(
-        NESTED_INSTANCES_METADATA_TYPES.map(typeName => ({
+        NESTED_INSTANCES_METADATA_TYPES.map((typeName) => ({
           typeName,
           instances: nestedInstancesByType[typeName] ?? [],
         }))

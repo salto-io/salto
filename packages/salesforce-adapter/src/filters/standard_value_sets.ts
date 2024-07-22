@@ -30,11 +30,22 @@ import {
   ModificationChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { collections, promises, types, values as lowerdashValues } from '@salto-io/lowerdash'
+import {
+  collections,
+  promises,
+  types,
+  values as lowerdashValues,
+} from '@salto-io/lowerdash'
 
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
-import { metadataType, apiName, isCustomObject, Types, isCustom } from '../transformers/transformer'
+import {
+  metadataType,
+  apiName,
+  isCustomObject,
+  Types,
+  isCustom,
+} from '../transformers/transformer'
 import { extractFullNamesFromValueList, isInstanceOfTypeSync } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
@@ -119,13 +130,18 @@ const STANDARD_VALUE_SETS: StandardValuesSets = new Set<string>([
 
 const encodeValues = (values: string[]): string => values.sort().join(';')
 
-const svsValuesToRef = (svsInstances: InstanceElement[]): StandardValueSetsLookup =>
+const svsValuesToRef = (
+  svsInstances: InstanceElement[],
+): StandardValueSetsLookup =>
   _.fromPairs(
     svsInstances
-      .filter(i => i.value[STANDARD_VALUE])
-      .map(i => {
+      .filter((i) => i.value[STANDARD_VALUE])
+      .map((i) => {
         const standardValue = makeArray(i.value[STANDARD_VALUE])
-        return [encodeValues(extractFullNamesFromValueList(standardValue)), new ReferenceExpression(i.elemID)]
+        return [
+          encodeValues(extractFullNamesFromValueList(standardValue)),
+          new ReferenceExpression(i.elemID),
+        ]
       }),
   )
 
@@ -133,7 +149,9 @@ const isStandardPickList = async (f: Field): Promise<boolean> => {
   const apiNameResult = await apiName(f)
   return apiNameResult
     ? (f.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID) ||
-        f.refType.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID)) &&
+        f.refType.elemID.isEqual(
+          Types.primitiveDataTypes.MultiselectPicklist.elemID,
+        )) &&
         !isCustom(apiNameResult)
     : false
 }
@@ -142,12 +160,19 @@ const calculatePicklistFieldsToUpdate = async (
   customObjectFields: Record<string, Field>,
   svsValuesToName: StandardValueSetsLookup,
 ): Promise<Record<string, Field>> =>
-  mapValuesAsync(customObjectFields, async field => {
-    if (!(await isStandardPickList(field)) || _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
+  mapValuesAsync(customObjectFields, async (field) => {
+    if (
+      !(await isStandardPickList(field)) ||
+      _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+    ) {
       return field
     }
 
-    const encodedPlVals = encodeValues(extractFullNamesFromValueList(field.annotations[FIELD_ANNOTATIONS.VALUE_SET]))
+    const encodedPlVals = encodeValues(
+      extractFullNamesFromValueList(
+        field.annotations[FIELD_ANNOTATIONS.VALUE_SET],
+      ),
+    )
     const foundStandardValueSet = svsValuesToName[encodedPlVals]
 
     if (!foundStandardValueSet) {
@@ -155,14 +180,18 @@ const calculatePicklistFieldsToUpdate = async (
     }
     const newField = field.clone()
     delete newField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-    newField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = foundStandardValueSet
+    newField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] =
+      foundStandardValueSet
     return newField
   })
 
-const findStandardValueSetType = async (elements: Element[]): Promise<ObjectType | undefined> =>
-  awu(elements).find(async (element: Element) => (await metadataType(element)) === STANDARD_VALUE_SET) as Promise<
-    ObjectType | undefined
-  >
+const findStandardValueSetType = async (
+  elements: Element[],
+): Promise<ObjectType | undefined> =>
+  awu(elements).find(
+    async (element: Element) =>
+      (await metadataType(element)) === STANDARD_VALUE_SET,
+  ) as Promise<ObjectType | undefined>
 
 const updateSVSReferences = async (
   objects: ObjectType[],
@@ -170,8 +199,11 @@ const updateSVSReferences = async (
 ): Promise<void> => {
   const svsValuesToName = svsValuesToRef(svsInstances)
 
-  await awu(objects).forEach(async customObjType => {
-    const fieldsToUpdate = await calculatePicklistFieldsToUpdate(customObjType.fields, svsValuesToName)
+  await awu(objects).forEach(async (customObjType) => {
+    const fieldsToUpdate = await calculatePicklistFieldsToUpdate(
+      customObjType.fields,
+      svsValuesToName,
+    )
     _.assign(customObjType, { fields: fieldsToUpdate })
   })
 }
@@ -189,8 +221,12 @@ const emptyFileProperties = (fullName: string): FileProperties => ({
   type: STANDARD_VALUE_SET,
 })
 
-const toDeployableStandardPicklistFieldChange = (change: ModificationChange<Field>): ModificationChange<Field> => {
-  const [deployableBefore, deployableAfter] = getAllChangeData(change).map(field => field.clone())
+const toDeployableStandardPicklistFieldChange = (
+  change: ModificationChange<Field>,
+): ModificationChange<Field> => {
+  const [deployableBefore, deployableAfter] = getAllChangeData(change).map(
+    (field) => field.clone(),
+  )
   delete deployableBefore.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   delete deployableAfter.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   return {
@@ -221,7 +257,8 @@ export const makeFilter =
        * @param elements the already fetched elements
        */
       onFetch: async (elements: Element[]): Promise<FilterResult> => {
-        const svsMetadataType: ObjectType | undefined = await findStandardValueSetType(elements)
+        const svsMetadataType: ObjectType | undefined =
+          await findStandardValueSetType(elements)
         let configChanges: ConfigChangeSuggestion[] = []
         let fetchedSVSInstances: InstanceElement[] = []
         if (svsMetadataType !== undefined) {
@@ -238,14 +275,22 @@ export const makeFilter =
           fetchedSVSInstances = svsInstances.elements
         }
 
-        const customObjectTypeElements = await awu(elements).filter(isObjectType).filter(isCustomObject).toArray()
+        const customObjectTypeElements = await awu(elements)
+          .filter(isObjectType)
+          .filter(isCustomObject)
+          .toArray()
 
         if (customObjectTypeElements.length > 0) {
-          const svsInstances = !config.fetchProfile.metadataQuery.isPartialFetch()
-            ? fetchedSVSInstances
-            : await awu(await buildElementsSourceFromElements(elements, [config.elementsSource]).getAll())
-                .filter(isInstanceOfTypeSync(STANDARD_VALUE_SET))
-                .toArray()
+          const svsInstances =
+            !config.fetchProfile.metadataQuery.isPartialFetch()
+              ? fetchedSVSInstances
+              : await awu(
+                  await buildElementsSourceFromElements(elements, [
+                    config.elementsSource,
+                  ]).getAll(),
+                )
+                  .filter(isInstanceOfTypeSync(STANDARD_VALUE_SET))
+                  .toArray()
           if (types.isNonEmptyArray(svsInstances)) {
             await updateSVSReferences(customObjectTypeElements, svsInstances)
           }
@@ -255,29 +300,36 @@ export const makeFilter =
           configSuggestions: configChanges,
         }
       },
-      preDeploy: async changes => {
+      preDeploy: async (changes) => {
         const standardPicklistFieldChanges = await awu(changes)
           .filter(isModificationChange)
           .filter(isFieldChange)
-          .filter(change => isStandardPickList(getChangeData(change)))
+          .filter((change) => isStandardPickList(getChangeData(change)))
           .toArray()
-        originalChanges = await keyByAsync(standardPicklistFieldChanges, change => apiName(getChangeData(change)))
-        const deployableChanges = standardPicklistFieldChanges.map(toDeployableStandardPicklistFieldChange)
+        originalChanges = await keyByAsync(
+          standardPicklistFieldChanges,
+          (change) => apiName(getChangeData(change)),
+        )
+        const deployableChanges = standardPicklistFieldChanges.map(
+          toDeployableStandardPicklistFieldChange,
+        )
         _.pullAll(changes, standardPicklistFieldChanges)
         changes.push(...deployableChanges)
       },
-      onDeploy: async changes => {
+      onDeploy: async (changes) => {
         const appliedStandardPicklistFieldChanges = await awu(changes)
           .filter(isModificationChange)
           .filter(isFieldChange)
-          .filter(change => isStandardPickList(getChangeData(change)))
+          .filter((change) => isStandardPickList(getChangeData(change)))
           .toArray()
         const appliedApiNames = await awu(changes)
-          .map(change => apiName(getChangeData(change)))
+          .map((change) => apiName(getChangeData(change)))
           .toArray()
-        const appliedOriginalChanges = appliedApiNames.map(name => originalChanges[name]).filter(isDefined)
+        const appliedOriginalChanges = appliedApiNames
+          .map((name) => originalChanges[name])
+          .filter(isDefined)
         _.pullAll(changes, appliedStandardPicklistFieldChanges)
-        appliedOriginalChanges.forEach(change => changes.push(change))
+        appliedOriginalChanges.forEach((change) => changes.push(change))
       },
     }
   }

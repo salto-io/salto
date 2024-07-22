@@ -23,29 +23,42 @@ describe('CPQ Billing Triggers Change Validator', () => {
   let billingMockType: ObjectType
 
   beforeEach(() => {
-    billingMockType = createCustomObjectType(`${BILLING_NAMESPACE}__MockType__c`, {})
+    billingMockType = createCustomObjectType(
+      `${BILLING_NAMESPACE}__MockType__c`,
+      {},
+    )
   })
 
   describe("when there's no change of Billing records", () => {
     it('should return no errors', async () => {
-      const dataInstance = new InstanceElement('TestInstance', mockTypes.SBQQ__LineColumn__c, {
-        Id: '123',
-        Name: 'Test',
-      })
-      const changeErrors = await cpqBillingTriggersChangeValidator([toChange({ after: dataInstance })])
+      const dataInstance = new InstanceElement(
+        'TestInstance',
+        mockTypes.SBQQ__LineColumn__c,
+        { Id: '123', Name: 'Test' },
+      )
+      const changeErrors = await cpqBillingTriggersChangeValidator([
+        toChange({ after: dataInstance }),
+      ])
       expect(changeErrors).toBeEmpty()
     })
   })
 
   describe("when there's a change of Billing records", () => {
     it('should return no errors', async () => {
-      const dataInstance = new InstanceElement('TestInstance', billingMockType, { Id: '123', Name: 'Test' })
-      const anotherDataInstance = new InstanceElement('AnotherTestInstance', billingMockType, {
-        Id: '123',
-        Name: 'Test',
-      })
+      const dataInstance = new InstanceElement(
+        'TestInstance',
+        billingMockType,
+        { Id: '123', Name: 'Test' },
+      )
+      const anotherDataInstance = new InstanceElement(
+        'AnotherTestInstance',
+        billingMockType,
+        { Id: '123', Name: 'Test' },
+      )
       const changeErrors = await cpqBillingTriggersChangeValidator(
-        [dataInstance, anotherDataInstance].map(instance => toChange({ after: instance })),
+        [dataInstance, anotherDataInstance].map((instance) =>
+          toChange({ after: instance }),
+        ),
       )
       expect(changeErrors).toHaveLength(1)
     })

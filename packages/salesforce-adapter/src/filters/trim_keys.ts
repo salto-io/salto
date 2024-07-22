@@ -28,7 +28,9 @@ const log = logger(module)
 const trimKeys: MapKeyFunc = ({ key }) => {
   const trimmedKey = key.trim()
   if (key !== trimmedKey) {
-    log.warn(`The key "${key}" is not trimmed, trimming it to avoid parsing error`)
+    log.warn(
+      `The key "${key}" is not trimmed, trimming it to avoid parsing error`,
+    )
   }
   return trimmedKey
 }
@@ -42,8 +44,12 @@ const filterCreator: LocalFilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     await awu(elements)
       .filter(isInstanceElement)
-      .filter(async instance => (await metadataType(instance)) === LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE)
-      .forEach(inst => {
+      .filter(
+        async (instance) =>
+          (await metadataType(instance)) ===
+          LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+      )
+      .forEach((inst) => {
         inst.value = mapKeysRecursive(inst.value, trimKeys, inst.elemID)
       })
   },

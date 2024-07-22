@@ -39,7 +39,10 @@ describe('currencyIsoCodes ChangeValidator', () => {
   let instances: InstanceElement[]
   let changeErrors: readonly ChangeError[]
 
-  const createInstanceWithCurrencyIsoCode = (instanceName: string, currencyIsoCode: string): InstanceElement =>
+  const createInstanceWithCurrencyIsoCode = (
+    instanceName: string,
+    currencyIsoCode: string,
+  ): InstanceElement =>
     new InstanceElement(
       instanceName,
       new ObjectType({
@@ -54,7 +57,9 @@ describe('currencyIsoCodes ChangeValidator', () => {
       },
     )
 
-  const createCurrencyIsoCodesInstance = (supportedIsoCodes: string[]): InstanceElement =>
+  const createCurrencyIsoCodesInstance = (
+    supportedIsoCodes: string[],
+  ): InstanceElement =>
     new InstanceElement(
       CURRENCY_CODE_TYPE_NAME,
       new ObjectType({
@@ -66,13 +71,15 @@ describe('currencyIsoCodes ChangeValidator', () => {
         },
       }),
       {
-        [FIELD_ANNOTATIONS.VALUE_SET]: supportedIsoCodes.map(isoCode => ({
+        [FIELD_ANNOTATIONS.VALUE_SET]: supportedIsoCodes.map((isoCode) => ({
           [INSTANCE_FULL_NAME_FIELD]: isoCode,
         })),
       },
     )
 
-  const createElementsSource = (currencyIsoCodesInstance?: InstanceElement): ReadOnlyElementsSource => ({
+  const createElementsSource = (
+    currencyIsoCodesInstance?: InstanceElement,
+  ): ReadOnlyElementsSource => ({
     getAll: async () => awu([]),
     list: async () => awu([]),
     has: async (_elemID: ElemID) => true,
@@ -87,12 +94,14 @@ describe('currencyIsoCodes ChangeValidator', () => {
         createInstanceWithCurrencyIsoCode('instance3', 'EUR'),
       ]
       changeErrors = await changeValidator(
-        instances.map(instance => toChange({ after: instance })),
+        instances.map((instance) => toChange({ after: instance })),
         createElementsSource(),
       )
     })
     it('should create change errors', () => {
-      expect(changeErrors.map(err => err.elemID)).toEqual(instances.map(instance => instance.elemID))
+      expect(changeErrors.map((err) => err.elemID)).toEqual(
+        instances.map((instance) => instance.elemID),
+      )
     })
   })
 
@@ -105,7 +114,7 @@ describe('currencyIsoCodes ChangeValidator', () => {
           createInstanceWithCurrencyIsoCode('instance3', 'EUR'),
         ]
         changeErrors = await changeValidator(
-          instances.map(instance => toChange({ after: instance })),
+          instances.map((instance) => toChange({ after: instance })),
           createElementsSource(createCurrencyIsoCodesInstance(['ILS', 'EUR'])),
         )
       })
@@ -116,19 +125,25 @@ describe('currencyIsoCodes ChangeValidator', () => {
     describe('when some currencies are not supported', () => {
       let unsupportedInstances: InstanceElement[]
       beforeEach(async () => {
-        unsupportedInstances = [createInstanceWithCurrencyIsoCode('instance1', 'ILS')]
+        unsupportedInstances = [
+          createInstanceWithCurrencyIsoCode('instance1', 'ILS'),
+        ]
         instances = [
           createInstanceWithCurrencyIsoCode('instance2', 'EUR'),
           createInstanceWithCurrencyIsoCode('instance3', 'EUR'),
         ]
         changeErrors = await changeValidator(
-          instances.concat(unsupportedInstances).map(instance => toChange({ after: instance })),
+          instances
+            .concat(unsupportedInstances)
+            .map((instance) => toChange({ after: instance })),
           createElementsSource(createCurrencyIsoCodesInstance(['EUR'])),
         )
       })
       it('should create change errors', () => {
         expect(changeErrors).not.toBeEmpty()
-        expect(changeErrors.map(err => err.elemID)).toEqual(unsupportedInstances.map(instance => instance.elemID))
+        expect(changeErrors.map((err) => err.elemID)).toEqual(
+          unsupportedInstances.map((instance) => instance.elemID),
+        )
       })
     })
   })

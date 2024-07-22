@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
   IS_ATTRIBUTE,
@@ -33,7 +38,8 @@ const noIsAttribute = 'noIsAttribute'
 const fieldWithAttributes = 'fieldWithAttributes'
 const fieldWithoutAttributes = 'fieldWithoutAttributes'
 
-const withAttributePrefix = (str: string): string => `${XML_ATTRIBUTE_PREFIX}${str}`
+const withAttributePrefix = (str: string): string =>
+  `${XML_ATTRIBUTE_PREFIX}${str}`
 
 describe('XML Attributes Filter', () => {
   const typeWithAttributes = new ObjectType({
@@ -103,51 +109,83 @@ describe('XML Attributes Filter', () => {
       _.clone(instanceValues),
     )
 
-    const instanceWithNestedAttributes = new InstanceElement('instanceWithNestedAttributes', nestedTypeWithAttributes, {
-      [fieldWithAttributes]: _.clone(instanceValues),
-      [fieldWithoutAttributes]: _.clone(instanceValues),
-    })
+    const instanceWithNestedAttributes = new InstanceElement(
+      'instanceWithNestedAttributes',
+      nestedTypeWithAttributes,
+      {
+        [fieldWithAttributes]: _.clone(instanceValues),
+        [fieldWithoutAttributes]: _.clone(instanceValues),
+      },
+    )
 
     beforeAll(async () => {
-      await filter.onFetch([instanceWithAttributes, instanceWithoutAttributes, instanceWithNestedAttributes])
+      await filter.onFetch([
+        instanceWithAttributes,
+        instanceWithoutAttributes,
+        instanceWithNestedAttributes,
+      ])
     })
 
     it('should remove the XML_ATTRIBUTE_PREFIX prefix from keys when type has attributes', () => {
-      expect(instanceWithAttributes.value[isAttributeTrue]).toEqual(isAttributeTrue)
+      expect(instanceWithAttributes.value[isAttributeTrue]).toEqual(
+        isAttributeTrue,
+      )
       expect(instanceWithAttributes.value[isAttributeFalse]).toBeUndefined()
       expect(instanceWithAttributes.value[noIsAttribute]).toBeUndefined()
-      expect(instanceWithAttributes.value[withAttributePrefix(isAttributeTrue)]).toBeUndefined()
-      expect(instanceWithAttributes.value[withAttributePrefix(isAttributeFalse)]).toEqual(isAttributeFalse)
-      expect(instanceWithAttributes.value[withAttributePrefix(noIsAttribute)]).toEqual(noIsAttribute)
+      expect(
+        instanceWithAttributes.value[withAttributePrefix(isAttributeTrue)],
+      ).toBeUndefined()
+      expect(
+        instanceWithAttributes.value[withAttributePrefix(isAttributeFalse)],
+      ).toEqual(isAttributeFalse)
+      expect(
+        instanceWithAttributes.value[withAttributePrefix(noIsAttribute)],
+      ).toEqual(noIsAttribute)
     })
 
     it('should not remove the XML_ATTRIBUTE_PREFIX prefix from keys when type has no attributes', () => {
       expect(instanceWithoutAttributes.value[isAttributeTrue]).toBeUndefined()
       expect(instanceWithoutAttributes.value[isAttributeFalse]).toBeUndefined()
       expect(instanceWithoutAttributes.value[noIsAttribute]).toBeUndefined()
-      expect(instanceWithoutAttributes.value[withAttributePrefix(isAttributeTrue)]).toEqual(isAttributeTrue)
-      expect(instanceWithoutAttributes.value[withAttributePrefix(isAttributeFalse)]).toEqual(isAttributeFalse)
-      expect(instanceWithoutAttributes.value[withAttributePrefix(noIsAttribute)]).toEqual(noIsAttribute)
+      expect(
+        instanceWithoutAttributes.value[withAttributePrefix(isAttributeTrue)],
+      ).toEqual(isAttributeTrue)
+      expect(
+        instanceWithoutAttributes.value[withAttributePrefix(isAttributeFalse)],
+      ).toEqual(isAttributeFalse)
+      expect(
+        instanceWithoutAttributes.value[withAttributePrefix(noIsAttribute)],
+      ).toEqual(noIsAttribute)
     })
 
     it('should remove the XML_ATTRIBUTE_PREFIX prefix from nested fields', () => {
-      const nestedField = instanceWithNestedAttributes.value[fieldWithAttributes]
+      const nestedField =
+        instanceWithNestedAttributes.value[fieldWithAttributes]
       expect(nestedField[isAttributeTrue]).toEqual(isAttributeTrue)
       expect(nestedField[isAttributeFalse]).toBeUndefined()
       expect(nestedField[noIsAttribute]).toBeUndefined()
       expect(nestedField[withAttributePrefix(isAttributeTrue)]).toBeUndefined()
-      expect(nestedField[withAttributePrefix(isAttributeFalse)]).toEqual(isAttributeFalse)
-      expect(nestedField[withAttributePrefix(noIsAttribute)]).toEqual(noIsAttribute)
+      expect(nestedField[withAttributePrefix(isAttributeFalse)]).toEqual(
+        isAttributeFalse,
+      )
+      expect(nestedField[withAttributePrefix(noIsAttribute)]).toEqual(
+        noIsAttribute,
+      )
     })
 
     it('should remove the XML_ATTRIBUTE_PREFIX prefix from nested fields even for a type without attributes', () => {
-      const nestedField = instanceWithNestedAttributes.value[fieldWithoutAttributes]
+      const nestedField =
+        instanceWithNestedAttributes.value[fieldWithoutAttributes]
       expect(nestedField[isAttributeTrue]).toEqual(isAttributeTrue)
       expect(nestedField[isAttributeFalse]).toBeUndefined()
       expect(nestedField[noIsAttribute]).toBeUndefined()
       expect(nestedField[withAttributePrefix(isAttributeTrue)]).toBeUndefined()
-      expect(nestedField[withAttributePrefix(isAttributeFalse)]).toEqual(isAttributeFalse)
-      expect(nestedField[withAttributePrefix(noIsAttribute)]).toEqual(noIsAttribute)
+      expect(nestedField[withAttributePrefix(isAttributeFalse)]).toEqual(
+        isAttributeFalse,
+      )
+      expect(nestedField[withAttributePrefix(noIsAttribute)]).toEqual(
+        noIsAttribute,
+      )
     })
 
     it('should put attribute fields first', () => {

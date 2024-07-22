@@ -28,7 +28,10 @@ import {
   SETTINGS_METADATA_TYPE,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
-import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
+import {
+  ConfigValidationError,
+  validateRegularExpressions,
+} from '../config_validation'
 import {
   FetchParameters,
   LastChangeDateOfTypesWithNestedInstances,
@@ -74,29 +77,38 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
 const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = ['InstalledPackage']
 
 const getDefaultNamespace = (metadataType: string): string =>
-  DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST.includes(metadataType) ? '.*' : DEFAULT_NAMESPACE
+  DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST.includes(metadataType)
+    ? '.*'
+    : DEFAULT_NAMESPACE
 
 const getPaths = (regexString: string): string[] =>
   regexString
     .replace(/[()^$]/g, '')
     .split('|')
-    .filter(path => VALID_FOLDER_PATH_RE.test(path))
+    .filter((path) => VALID_FOLDER_PATH_RE.test(path))
 
 // Since fullPaths are provided for nested Folder names, a special handling is required
-const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance, name: string): boolean =>
-  getPaths(name).some(path => path.endsWith(instanceName)) || regex.isFullRegexMatch(instanceName, name)
+const isFolderMetadataTypeNameMatch = (
+  { name: instanceName }: MetadataInstance,
+  name: string,
+): boolean =>
+  getPaths(name).some((path) => path.endsWith(instanceName)) ||
+  regex.isFullRegexMatch(instanceName, name)
 
 type BuildMetadataQueryParams = {
   fetchParams: FetchParameters
 }
 
-type BuildFetchWithChangesDetectionMetadataQueryParams = BuildMetadataQueryParams & {
-  elementsSource: ReadOnlyElementsSource
-  lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
-  customObjectsWithDeletedFields: Set<string>
-}
+type BuildFetchWithChangesDetectionMetadataQueryParams =
+  BuildMetadataQueryParams & {
+    elementsSource: ReadOnlyElementsSource
+    lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
+    customObjectsWithDeletedFields: Set<string>
+  }
 
-export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): MetadataQuery => {
+export const buildMetadataQuery = ({
+  fetchParams,
+}: BuildMetadataQueryParams): MetadataQuery => {
   const metadata = fetchParams.metadata ?? {}
   const target: readonly string[] | undefined =
     fetchParams.target && getFetchTargetsWithDependencies(fetchParams.target)
@@ -113,30 +125,40 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
     if (target.includes(type)) {
       return true
     }
-    if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {
+    if (
+      type === TOPICS_FOR_OBJECTS_METADATA_TYPE &&
+      target.includes(CUSTOM_OBJECT)
+    ) {
       return true
     }
     // We should really do this only when config.preferActiveFlowVersions is true
     // if you have another use-case to pass the config here also handle this please
-    if (type === FLOW_DEFINITION_METADATA_TYPE && target.includes(FLOW_METADATA_TYPE)) {
+    if (
+      type === FLOW_DEFINITION_METADATA_TYPE &&
+      target.includes(FLOW_METADATA_TYPE)
+    ) {
       return true
     }
     return false
   }
 
   const isTypeIncluded = (type: string): boolean =>
-    include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type)) &&
-    isIncludedInPartialFetch(type)
+    include.some(({ metadataType = '.*' }) =>
+      new RegExp(`^${metadataType}$`).test(type),
+    ) && isIncludedInPartialFetch(type)
   const isTypeExcluded = (type: string): boolean =>
     fullExcludeList.some(
       ({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
-        namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type),
+        namespace === '.*' &&
+        name === '.*' &&
+        new RegExp(`^${metadataType}$`).test(type),
     )
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
     { metadataType = '.*', namespace = '.*', name = '.*' }: MetadataQueryParams,
   ): boolean => {
-    const realNamespace = namespace === '' ? getDefaultNamespace(instance.metadataType) : namespace
+    const realNamespace =
+      namespace === '' ? getDefaultNamespace(instance.metadataType) : namespace
     if (
       !regex.isFullRegexMatch(instance.metadataType, metadataType) ||
       !regex.isFullRegexMatch(instance.namespace, realNamespace)
@@ -149,11 +171,13 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   }
 
   const isInstanceIncluded = (instance: MetadataInstance): boolean =>
-    include.some(params => isInstanceMatchQueryParams(instance, params)) &&
-    !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
+    include.some((params) => isInstanceMatchQueryParams(instance, params)) &&
+    !fullExcludeList.some((params) =>
+      isInstanceMatchQueryParams(instance, params),
+    )
   const isTargetedFetch = (): boolean => target !== undefined
   return {
-    isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
+    isTypeMatch: (type) => isTypeIncluded(type) && !isTypeExcluded(type),
     isTargetedFetch,
     isInstanceIncluded,
     isInstanceMatch: isInstanceIncluded,
@@ -161,19 +185,20 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
     isPartialFetch: isTargetedFetch,
     getFolderPathsByName: (folderType: string) => {
       const folderPaths = include
-        .filter(params => params.metadataType === folderType)
-        .flatMap(params => {
+        .filter((params) => params.metadataType === folderType)
+        .flatMap((params) => {
           const { name: nameRegex } = params
           return isDefined(nameRegex) ? getPaths(nameRegex) : []
         })
-      return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
+      return _.keyBy(folderPaths, (path) => _.last(path.split('/')) ?? path)
     },
     logData: () => ({}),
   }
 }
 
-const isValidDateString = (dateString: string | undefined): dateString is string =>
-  dateString !== undefined && dateString !== ''
+const isValidDateString = (
+  dateString: string | undefined,
+): dateString is string => dateString !== undefined && dateString !== ''
 
 export const buildMetadataQueryForFetchWithChangesDetection = async (
   params: BuildFetchWithChangesDetectionMetadataQueryParams,
@@ -184,21 +209,27 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
     throw new Error('First fetch does not support changes detection')
   }
   const { value: singletonValues } = changedAtSingleton
-  const lastChangeDateOfTypesWithNestedInstancesFromSingleton: LastChangeDateOfTypesWithNestedInstances = {
-    AssignmentRules: singletonValues.AssignmentRules ?? {},
-    AutoResponseRules: singletonValues.AutoResponseRules ?? {},
-    CustomObject: singletonValues.CustomObject ?? {},
-    EscalationRules: singletonValues.EscalationRules ?? {},
-    SharingRules: singletonValues.SharingRules ?? {},
-    Workflow: singletonValues.Workflow ?? {},
-    CustomLabels: singletonValues.CustomLabels,
-  }
+  const lastChangeDateOfTypesWithNestedInstancesFromSingleton: LastChangeDateOfTypesWithNestedInstances =
+    {
+      AssignmentRules: singletonValues.AssignmentRules ?? {},
+      AutoResponseRules: singletonValues.AutoResponseRules ?? {},
+      CustomObject: singletonValues.CustomObject ?? {},
+      EscalationRules: singletonValues.EscalationRules ?? {},
+      SharingRules: singletonValues.SharingRules ?? {},
+      Workflow: singletonValues.Workflow ?? {},
+      CustomLabels: singletonValues.CustomLabels,
+    }
   const metadataQuery = buildMetadataQuery(params)
-  const isInstanceWithNestedInstancesIncluded = (type: TypeWithNestedInstances): boolean => {
-    const dateFromSingleton = lastChangeDateOfTypesWithNestedInstancesFromSingleton[type]
+  const isInstanceWithNestedInstancesIncluded = (
+    type: TypeWithNestedInstances,
+  ): boolean => {
+    const dateFromSingleton =
+      lastChangeDateOfTypesWithNestedInstancesFromSingleton[type]
     const lastChangeDate = lastChangeDateOfTypesWithNestedInstances[type]
-    return isValidDateString(dateFromSingleton) && isValidDateString(lastChangeDate)
-      ? new Date(dateFromSingleton).getTime() < new Date(lastChangeDate).getTime()
+    return isValidDateString(dateFromSingleton) &&
+      isValidDateString(lastChangeDate)
+      ? new Date(dateFromSingleton).getTime() <
+          new Date(lastChangeDate).getTime()
       : true
   }
 
@@ -207,8 +238,10 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
     instanceName: string,
   ): boolean => {
     const parentName = instanceName.split('.')[0]
-    const dateFromSingleton = lastChangeDateOfTypesWithNestedInstancesFromSingleton[type][parentName]
-    const lastChangeDate = lastChangeDateOfTypesWithNestedInstances[type][parentName]
+    const dateFromSingleton =
+      lastChangeDateOfTypesWithNestedInstancesFromSingleton[type][parentName]
+    const lastChangeDate =
+      lastChangeDateOfTypesWithNestedInstances[type][parentName]
     if (parentName === 'Parent') {
       log.debug('lastChangeDate of Parent: %s', lastChangeDate)
     }
@@ -216,8 +249,10 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
     if (lastChangeDate === undefined) {
       return false
     }
-    return isValidDateString(dateFromSingleton) && isValidDateString(lastChangeDate)
-      ? new Date(dateFromSingleton).getTime() < new Date(lastChangeDate).getTime()
+    return isValidDateString(dateFromSingleton) &&
+      isValidDateString(lastChangeDate)
+      ? new Date(dateFromSingleton).getTime() <
+          new Date(lastChangeDate).getTime()
       : true
   }
 
@@ -226,14 +261,31 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
     changedAtFromSingleton: string | undefined
   })[] = []
 
-  const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
-    const dateFromSingleton = _.get(singletonValues, [instance.metadataType, instance.name])
-    if (!(isValidDateString(dateFromSingleton) && isValidDateString(instance.changedAt))) {
+  const isIncludedInFetchWithChangesDetection = (
+    instance: MetadataInstance,
+  ): boolean => {
+    const dateFromSingleton = _.get(singletonValues, [
+      instance.metadataType,
+      instance.name,
+    ])
+    if (
+      !(
+        isValidDateString(dateFromSingleton) &&
+        isValidDateString(instance.changedAt)
+      )
+    ) {
       missingOrInvalidChangedAtInstances.push(instance)
       return true
     }
-    if (new Date(dateFromSingleton).getTime() < new Date(instance.changedAt).getTime()) {
-      log.trace('The instance %s of type %s will be fetched since it was updated', instance.name, instance.metadataType)
+    if (
+      new Date(dateFromSingleton).getTime() <
+      new Date(instance.changedAt).getTime()
+    ) {
+      log.trace(
+        'The instance %s of type %s will be fetched since it was updated',
+        instance.name,
+        instance.metadataType,
+      )
       updatedInstances.push({
         ...instance,
         changedAtFromSingleton: dateFromSingleton,
@@ -246,19 +298,25 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
     ...metadataQuery,
     isPartialFetch: () => true,
     isFetchWithChangesDetection: () => true,
-    isInstanceMatch: instance => {
+    isInstanceMatch: (instance) => {
       if (!metadataQuery.isInstanceIncluded(instance)) {
         return false
       }
       const { metadataType, name } = instance
-      if (metadataType === CUSTOM_OBJECT && params.customObjectsWithDeletedFields.has(name)) {
+      if (
+        metadataType === CUSTOM_OBJECT &&
+        params.customObjectsWithDeletedFields.has(name)
+      ) {
         return true
       }
       if (isTypeWithNestedInstances(metadataType)) {
         return isInstanceWithNestedInstancesIncluded(metadataType)
       }
       if (isTypeWithNestedInstancesPerParent(metadataType)) {
-        return isInstanceWithNestedInstancesPerParentIncluded(metadataType, name)
+        return isInstanceWithNestedInstancesPerParentIncluded(
+          metadataType,
+          name,
+        )
       }
       return isIncludedInFetchWithChangesDetection(instance)
     },
@@ -267,7 +325,9 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
         'The following instances were fetched in fetch with changes detection since they were updated: %s',
         safeJsonStringify(updatedInstances),
       )
-      ;(missingOrInvalidChangedAtInstances.length > 100 ? log.trace : log.debug)(
+      ;(missingOrInvalidChangedAtInstances.length > 100
+        ? log.trace
+        : log.debug)(
         'The following instances were fetched in fetch with changes detection due to invalid or missing changedAt: %s',
         safeJsonStringify(missingOrInvalidChangedAtInstances),
       )
@@ -281,8 +341,11 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
   }
 }
 
-const validateMetadataQueryParams = (params: MetadataQueryParams[], fieldPath: string[]): void => {
-  params.forEach(queryParams =>
+const validateMetadataQueryParams = (
+  params: MetadataQueryParams[],
+  fieldPath: string[],
+): void => {
+  params.forEach((queryParams) =>
     Object.entries(queryParams).forEach(([queryField, pattern]) => {
       if (pattern === undefined) {
         return
@@ -292,13 +355,23 @@ const validateMetadataQueryParams = (params: MetadataQueryParams[], fieldPath: s
   )
 }
 
-export const validateMetadataParams = (params: Partial<MetadataParams>, fieldPath: string[]): void => {
-  validateMetadataQueryParams(params.include ?? [], [...fieldPath, METADATA_INCLUDE_LIST])
-  validateMetadataQueryParams(params.exclude ?? [], [...fieldPath, METADATA_EXCLUDE_LIST])
+export const validateMetadataParams = (
+  params: Partial<MetadataParams>,
+  fieldPath: string[],
+): void => {
+  validateMetadataQueryParams(params.include ?? [], [
+    ...fieldPath,
+    METADATA_INCLUDE_LIST,
+  ])
+  validateMetadataQueryParams(params.exclude ?? [], [
+    ...fieldPath,
+    METADATA_EXCLUDE_LIST,
+  ])
 
   if (
     params.objectsToSeperateFieldsToFiles !== undefined &&
-    params.objectsToSeperateFieldsToFiles.length > MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD
+    params.objectsToSeperateFieldsToFiles.length >
+      MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD
   ) {
     throw new ConfigValidationError(
       [...fieldPath, METADATA_SEPARATE_FIELD_LIST],
@@ -307,14 +380,19 @@ export const validateMetadataParams = (params: Partial<MetadataParams>, fieldPat
   }
 }
 
-export const buildFilePropsMetadataQuery = (metadataQuery: MetadataQuery): MetadataQuery<FileProperties> => {
+export const buildFilePropsMetadataQuery = (
+  metadataQuery: MetadataQuery,
+): MetadataQuery<FileProperties> => {
   const filePropsToMetadataInstance = ({
     namespacePrefix,
     type: metadataType,
     fullName: name,
     lastModifiedDate: changedAt,
   }: FileProperties): MetadataInstance => ({
-    namespace: namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix,
+    namespace:
+      namespacePrefix === undefined || namespacePrefix === ''
+        ? DEFAULT_NAMESPACE
+        : namespacePrefix,
     metadataType,
     name,
     changedAt,
@@ -322,7 +400,9 @@ export const buildFilePropsMetadataQuery = (metadataQuery: MetadataQuery): Metad
   })
   return {
     ...metadataQuery,
-    isInstanceIncluded: instance => metadataQuery.isInstanceIncluded(filePropsToMetadataInstance(instance)),
-    isInstanceMatch: instance => metadataQuery.isInstanceMatch(filePropsToMetadataInstance(instance)),
+    isInstanceIncluded: (instance) =>
+      metadataQuery.isInstanceIncluded(filePropsToMetadataInstance(instance)),
+    isInstanceMatch: (instance) =>
+      metadataQuery.isInstanceMatch(filePropsToMetadataInstance(instance)),
   }
 }

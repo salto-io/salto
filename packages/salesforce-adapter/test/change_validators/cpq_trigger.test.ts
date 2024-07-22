@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, ObjectType, toChange, InstanceElement, BuiltinTypes } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  ObjectType,
+  toChange,
+  InstanceElement,
+  BuiltinTypes,
+} from '@salto-io/adapter-api'
 import cpqChangeValidator from '../../src/change_validators/cpq_trigger'
 import { CUSTOM_OBJECT } from '../../src/constants'
 
@@ -34,7 +40,9 @@ describe('cpq trigger change validator', () => {
   const after = new InstanceElement('myInst', objCpq, { newField: 'newValue' })
   describe('onUpdate', () => {
     it('should have error when cpq element has been modified', async () => {
-      const changeErrors = await cpqChangeValidator([toChange({ before, after })])
+      const changeErrors = await cpqChangeValidator([
+        toChange({ before, after }),
+      ])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       expect(changeError.elemID).toEqual(before.elemID)
@@ -43,7 +51,9 @@ describe('cpq trigger change validator', () => {
     })
 
     it('should have error when cpq element has been deleted', async () => {
-      const changeErrors = await cpqChangeValidator([toChange({ before, after: undefined })])
+      const changeErrors = await cpqChangeValidator([
+        toChange({ before, after: undefined }),
+      ])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       expect(changeError.elemID).toEqual(before.elemID)
@@ -52,7 +62,9 @@ describe('cpq trigger change validator', () => {
     })
 
     it('should have error when cpq element has been created', async () => {
-      const changeErrors = await cpqChangeValidator([toChange({ before: undefined, after })])
+      const changeErrors = await cpqChangeValidator([
+        toChange({ before: undefined, after }),
+      ])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       expect(changeError.elemID).toEqual(after.elemID)
@@ -73,7 +85,9 @@ describe('cpq trigger change validator', () => {
       const afterNOTcpq = new InstanceElement('myInst', objNOTcpq, {
         newField: 'newField',
       })
-      const changeErrors = await cpqChangeValidator([toChange({ before: beforeNOTcpq, after: afterNOTcpq })])
+      const changeErrors = await cpqChangeValidator([
+        toChange({ before: beforeNOTcpq, after: afterNOTcpq }),
+      ])
       expect(changeErrors).toHaveLength(0)
     })
     it('should have a single error when there are many cpq related changes', async () => {

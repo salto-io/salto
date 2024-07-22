@@ -33,8 +33,17 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, multiIndex, values } from '@salto-io/lowerdash'
-import { getDetailedChanges, getValuesChanges, resolvePath, WALK_NEXT_STEP, walkOnValue } from '@salto-io/adapter-utils'
-import { isCustomObject, isFieldOfCustomObject } from './transformers/transformer'
+import {
+  getDetailedChanges,
+  getValuesChanges,
+  resolvePath,
+  WALK_NEXT_STEP,
+  walkOnValue,
+} from '@salto-io/adapter-utils'
+import {
+  isCustomObject,
+  isFieldOfCustomObject,
+} from './transformers/transformer'
 import { isInstanceOfType, safeApiName } from './filters/utils'
 import {
   APEX_CLASS_METADATA_TYPE,
@@ -61,7 +70,9 @@ const OBJECT_SECTION = 'objectPermissions'
 const APEX_PAGE_SECTION = 'pageAccesses'
 const RECORD_TYPE_SECTION = 'recordTypeVisibilities'
 
-type AdditionOrModificationChange<T = ChangeDataType> = ModificationChange<T> | AdditionChange<T>
+type AdditionOrModificationChange<T = ChangeDataType> =
+  | ModificationChange<T>
+  | AdditionChange<T>
 
 const createReferenceMapping = (
   source: ModificationChange<InstanceElement>,
@@ -71,7 +82,10 @@ const createReferenceMapping = (
 ): ReferenceMapping[] => {
   const { before: beforeSource, after: afterSource } = source.data
 
-  const sourceId = afterSource.elemID.createNestedID(profileSection, ...sectionEntryKey.split(API_NAME_SEPARATOR))
+  const sourceId = afterSource.elemID.createNestedID(
+    profileSection,
+    ...sectionEntryKey.split(API_NAME_SEPARATOR),
+  )
 
   const sourceDetailedChanges = getValuesChanges({
     id: sourceId,
@@ -82,8 +96,8 @@ const createReferenceMapping = (
   })
 
   const targetDetailedChanges = getDetailedChanges(target)
-  return targetDetailedChanges.flatMap(targetChange =>
-    sourceDetailedChanges.map(sourceChange => ({
+  return targetDetailedChanges.flatMap((targetChange) =>
+    sourceDetailedChanges.map((sourceChange) => ({
       source: sourceChange.id,
       target: targetChange.id,
     })),
@@ -95,7 +109,10 @@ const newFieldWithNoAccess = (
   fieldApiName: string,
 ): boolean => {
   const [before, after] = getAllChangeData(profileOrPermissionSetChange)
-  const sectionEntryBefore = _.get(before.value[FIELD_PERMISSIONS], fieldApiName)
+  const sectionEntryBefore = _.get(
+    before.value[FIELD_PERMISSIONS],
+    fieldApiName,
+  )
   const sectionEntryAfter = _.get(after.value[FIELD_PERMISSIONS], fieldApiName)
   return sectionEntryBefore === undefined && sectionEntryAfter === 'NoAccess'
 }
@@ -117,10 +134,20 @@ const fieldRefsFromProfileOrPermissionSet = async (
     return []
   }
   return profilesAndPermissionSetsChanges
-    .filter(profileOrPermissionSet => _.get(getChangeData(profileOrPermissionSet).value[FIELD_PERMISSIONS], apiName))
-    .filter(change => !newFieldWithNoAccess(change, apiName))
-    .flatMap(profileOrPermissionSet =>
-      createReferenceMapping(profileOrPermissionSet, potentialTarget, apiName, FIELD_PERMISSIONS),
+    .filter((profileOrPermissionSet) =>
+      _.get(
+        getChangeData(profileOrPermissionSet).value[FIELD_PERMISSIONS],
+        apiName,
+      ),
+    )
+    .filter((change) => !newFieldWithNoAccess(change, apiName))
+    .flatMap((profileOrPermissionSet) =>
+      createReferenceMapping(
+        profileOrPermissionSet,
+        potentialTarget,
+        apiName,
+        FIELD_PERMISSIONS,
+      ),
     )
 }
 
@@ -133,15 +160,21 @@ type RefNameGetter = (element: Value, key: string) => RefTargetName[]
 
 const refNameFromField =
   (typeName: string, fieldName: string): RefNameGetter =>
-  element => [{ typeName, refName: element[fieldName] }]
+  (element) => [{ typeName, refName: element[fieldName] }]
 
 const instanceRefsFromProfileOrPermissionSet = async (
   profileAndPermissionSetChanges: ModificationChange<InstanceElement>[],
   profileSection: string,
   instanceNameGetter: RefNameGetter,
   shouldCreateReference: (elementBefore: Value, elementAfter: Value) => boolean,
-  instanceApiNameIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
-  instanceElemIdIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
+  instanceApiNameIndex: multiIndex.Index<
+    [string, string],
+    AdditionOrModificationChange
+  >,
+  instanceElemIdIndex: multiIndex.Index<
+    [string, string],
+    AdditionOrModificationChange
+  >,
 ): Promise<ReferenceMapping[]> => {
   const extractRefFromSectionEntry = async (
     profileOrPermissionSetChange: ModificationChange<InstanceElement>,
@@ -156,20 +189,32 @@ const instanceRefsFromProfileOrPermissionSet = async (
           : instanceApiNameIndex.get(typeName, refName),
       )
       .filter(isDefined)
-      .flatMap(refTarget =>
-        createReferenceMapping(profileOrPermissionSetChange, refTarget, sectionEntryKey, profileSection),
+      .flatMap((refTarget) =>
+        createReferenceMapping(
+          profileOrPermissionSetChange,
+          refTarget,
+          sectionEntryKey,
+          profileSection,
+        ),
       )
   }
 
   return awu(profileAndPermissionSetChanges)
-    .filter(change => profileSection in getChangeData(change).value)
-    .flatMap(async change =>
+    .filter((change) => profileSection in getChangeData(change).value)
+    .flatMap(async (change) =>
       awu(Object.entries(getChangeData(change).value[profileSection]))
         .filter(([entryKey, entryContents]) =>
-          shouldCreateReference(_.get(change.data.before.value[profileSection], entryKey), entryContents),
+          shouldCreateReference(
+            _.get(change.data.before.value[profileSection], entryKey),
+            entryContents,
+          ),
         )
         .flatMap(async ([sectionEntryKey, sectionEntryContents]) =>
-          extractRefFromSectionEntry(change, sectionEntryKey, sectionEntryContents),
+          extractRefFromSectionEntry(
+            change,
+            sectionEntryKey,
+            sectionEntryContents,
+          ),
         )
         .filter(isDefined)
         .toArray(),
@@ -177,7 +222,11 @@ const instanceRefsFromProfileOrPermissionSet = async (
     .toArray()
 }
 
-const getAllRefNamesFromSection = (rootElemId: ElemID, section: Value, fieldName: string): string[] => {
+const getAllRefNamesFromSection = (
+  rootElemId: ElemID,
+  section: Value,
+  fieldName: string,
+): string[] => {
   const recordTypeRefNames: string[] = []
   walkOnValue({
     elemId: rootElemId,
@@ -195,25 +244,39 @@ const getAllRefNamesFromSection = (rootElemId: ElemID, section: Value, fieldName
 
 const createRecordTypeRef = (
   profileOrPermSet: ModificationChange<InstanceElement>,
-  instancesIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
+  instancesIndex: multiIndex.Index<
+    [string, string],
+    AdditionOrModificationChange
+  >,
   sectionName: string,
   sourceSectionEntry: string[],
   targetRefName: string,
 ): ReferenceMapping[] =>
   createReferenceMapping(
     profileOrPermSet,
-    instancesIndex.get(RECORD_TYPE_METADATA_TYPE, targetRefName) as AdditionOrModificationChange,
+    instancesIndex.get(
+      RECORD_TYPE_METADATA_TYPE,
+      targetRefName,
+    ) as AdditionOrModificationChange,
     sourceSectionEntry.join(API_NAME_SEPARATOR),
     sectionName,
   )
 
-const createRefIfExistingOrDefaultOrVisible = (valueBefore: Value, valueAfter: Value): boolean =>
+const createRefIfExistingOrDefaultOrVisible = (
+  valueBefore: Value,
+  valueAfter: Value,
+): boolean =>
   valueBefore !== undefined || valueAfter.default || valueAfter.visible
 
-const createRefIfExistingOrEnabled = (valueBefore: Value, valueAfter: Value): boolean =>
-  valueBefore !== undefined || valueAfter.enabled
+const createRefIfExistingOrEnabled = (
+  valueBefore: Value,
+  valueAfter: Value,
+): boolean => valueBefore !== undefined || valueAfter.enabled
 
-const createRefIfExistingOrAnyAccess = (valueBefore: Value, valueAfter: Value): boolean =>
+const createRefIfExistingOrAnyAccess = (
+  valueBefore: Value,
+  valueAfter: Value,
+): boolean =>
   valueBefore !== undefined ||
   valueAfter.allowCreate ||
   valueAfter.allowDelete ||
@@ -222,22 +285,28 @@ const createRefIfExistingOrAnyAccess = (valueBefore: Value, valueAfter: Value): 
   valueAfter.modifyAllRecords ||
   valueAfter.viewAllRecords
 
-const createRefIfFieldsExistingOrAnyAccess = (valueBefore: Value, valueAfter: Value): boolean =>
+const createRefIfFieldsExistingOrAnyAccess = (
+  valueBefore: Value,
+  valueAfter: Value,
+): boolean =>
   valueBefore !== undefined ||
-  (_.isPlainObject(valueAfter) && Object.values(valueAfter).some(val => val !== 'NoAccess'))
+  (_.isPlainObject(valueAfter) &&
+    Object.values(valueAfter).some((val) => val !== 'NoAccess'))
 
 const alwaysCreateRefs = (): boolean => true
 
-export const getAdditionalReferences: GetAdditionalReferencesFunc = async changes => {
+export const getAdditionalReferences: GetAdditionalReferencesFunc = async (
+  changes,
+) => {
   const relevantFieldChanges = await awu(changes)
     .filter(isFieldChange)
     .filter(isAdditionOrModificationChange)
-    .filter(change => isFieldOfCustomObject(getChangeData(change)))
+    .filter((change) => isFieldOfCustomObject(getChangeData(change)))
     .toArray()
 
   const customObjectChanges = awu(changes)
     .filter(isAdditionOrModificationChange)
-    .filter(change => isCustomObject(getChangeData(change)))
+    .filter((change) => isCustomObject(getChangeData(change)))
 
   const instanceChanges: AdditionOrModificationChange[] = changes
     .filter(isInstanceChange)
@@ -246,18 +315,29 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
   const profilesAndPermSetsChanges = await awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .filter(change => isInstanceOfType(PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE)(getChangeData(change)))
+    .filter((change) =>
+      isInstanceOfType(
+        PROFILE_METADATA_TYPE,
+        PERMISSION_SET_METADATA_TYPE,
+      )(getChangeData(change)),
+    )
     .toArray()
 
   const instancesIndex = await multiIndex
     .buildMultiIndex<AdditionOrModificationChange>()
     .addIndex({
       name: 'byTypeAndApiName',
-      key: async change => [getChangeData(change).elemID.typeName, (await safeApiName(getChangeData(change))) ?? ''],
+      key: async (change) => [
+        getChangeData(change).elemID.typeName,
+        (await safeApiName(getChangeData(change))) ?? '',
+      ],
     })
     .addIndex({
       name: 'byTypeAndElemId',
-      key: async change => [getChangeData(change).elemID.typeName, getChangeData(change).elemID.getFullName()],
+      key: async (change) => [
+        getChangeData(change).elemID.typeName,
+        getChangeData(change).elemID.getFullName(),
+      ],
     })
     .process(awu(instanceChanges).concat(customObjectChanges))
 
@@ -288,7 +368,9 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     instancesIndex.byTypeAndElemId,
   )
 
-  const getRefsFromLayoutAssignment = (layoutAssignment: Value): RefTargetName[] => [
+  const getRefsFromLayoutAssignment = (
+    layoutAssignment: Value,
+  ): RefTargetName[] => [
     {
       typeName: LAYOUT_TYPE_ID_METADATA_TYPE,
       refName: layoutAssignment[0]?.layout,
@@ -340,25 +422,28 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     instancesIndex.byTypeAndElemId,
   )
 
-  const fieldPermissionsRefs = awu(relevantFieldChanges).flatMap(async field =>
-    fieldRefsFromProfileOrPermissionSet(profilesAndPermSetsChanges, field),
+  const fieldPermissionsRefs = awu(relevantFieldChanges).flatMap(
+    async (field) =>
+      fieldRefsFromProfileOrPermissionSet(profilesAndPermSetsChanges, field),
   )
 
-  const recordTypeRefs = profilesAndPermSetsChanges.flatMap(change => {
+  const recordTypeRefs = profilesAndPermSetsChanges.flatMap((change) => {
     const recordTypeRefNames = getAllRefNamesFromSection(
       getChangeData(change).elemID,
       getChangeData(change).value[RECORD_TYPE_SECTION],
       'recordType',
     )
     return recordTypeRefNames
-      .filter(refName => instancesIndex.byTypeAndApiName.get(RECORD_TYPE_METADATA_TYPE, refName))
-      .filter(refName =>
+      .filter((refName) =>
+        instancesIndex.byTypeAndApiName.get(RECORD_TYPE_METADATA_TYPE, refName),
+      )
+      .filter((refName) =>
         createRefIfExistingOrDefaultOrVisible(
           _.get(change.data.before.value[RECORD_TYPE_SECTION], refName),
           _.get(change.data.after.value[RECORD_TYPE_SECTION], refName),
         ),
       )
-      .flatMap(refName =>
+      .flatMap((refName) =>
         createRecordTypeRef(
           change,
           instancesIndex.byTypeAndApiName,

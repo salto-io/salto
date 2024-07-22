@@ -33,7 +33,12 @@ import { collections } from '@salto-io/lowerdash'
 import _, { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { ACTIVE, FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
-import { apiNameSync, isDeactivatedFlowChange, isDeactivatedFlowChangeOnly, isInstanceOfType } from '../filters/utils'
+import {
+  apiNameSync,
+  isDeactivatedFlowChange,
+  isDeactivatedFlowChangeOnly,
+  isInstanceOfType,
+} from '../filters/utils'
 import { SalesforceConfig } from '../types'
 import SalesforceClient from '../client/client'
 import { FLOW_URL_SUFFIX } from '../elements_url_retriever/lightning_url_resolvers'
@@ -51,21 +56,33 @@ export const getDeployAsActiveFlag = async (
 ): Promise<boolean> => {
   const flowSettings = isUndefined(elementsSource)
     ? undefined
-    : await elementsSource.get(new ElemID(SALESFORCE, 'FlowSettings', 'instance'))
-  return isUndefined(flowSettings) || isUndefined(flowSettings.value.enableFlowDeployAsActiveEnabled)
+    : await elementsSource.get(
+        new ElemID(SALESFORCE, 'FlowSettings', 'instance'),
+      )
+  return isUndefined(flowSettings) ||
+    isUndefined(flowSettings.value.enableFlowDeployAsActiveEnabled)
     ? defaultValue
     : flowSettings.value.enableFlowDeployAsActiveEnabled
 }
 
-export const getFlowStatus = (instance: InstanceElement): string => instance.value[STATUS]
+export const getFlowStatus = (instance: InstanceElement): string =>
+  instance.value[STATUS]
 
-export const isActiveFlowChange = (change: ModificationChange<InstanceElement>): boolean =>
-  getFlowStatus(change.data.before) === ACTIVE && getFlowStatus(change.data.after) === ACTIVE
+export const isActiveFlowChange = (
+  change: ModificationChange<InstanceElement>,
+): boolean =>
+  getFlowStatus(change.data.before) === ACTIVE &&
+  getFlowStatus(change.data.after) === ACTIVE
 
-export const isActivatingChange = (change: ModificationChange<InstanceElement>): boolean =>
-  getFlowStatus(change.data.before) !== ACTIVE && getFlowStatus(change.data.after) === ACTIVE
+export const isActivatingChange = (
+  change: ModificationChange<InstanceElement>,
+): boolean =>
+  getFlowStatus(change.data.before) !== ACTIVE &&
+  getFlowStatus(change.data.after) === ACTIVE
 
-export const isActivatingChangeOnly = (change: ModificationChange<InstanceElement>): boolean => {
+export const isActivatingChangeOnly = (
+  change: ModificationChange<InstanceElement>,
+): boolean => {
   const beforeClone = change.data.before.clone()
   beforeClone.value[STATUS] = ACTIVE
   const diffWithoutStatus = detailedCompare(beforeClone, change.data.after)
@@ -82,7 +99,10 @@ const testCoveragePostDeploy = (instance: InstanceElement): DeployActions => ({
   },
 })
 
-const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): DeployActions => {
+const deployAsInactivePostDeploy = (
+  instance: InstanceElement,
+  baseUrl?: URL,
+): DeployActions => {
   const url = instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]
   if (url !== undefined) {
     return {
@@ -132,19 +152,26 @@ const removeFlowError = (instance: InstanceElement): ChangeError => ({
   detailedMessage: `Cannot delete flow via metadata API. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/7936713-cannot-delete-flow`,
 })
 
-const newVersionInfo = (instance: InstanceElement, active: boolean): ChangeError => ({
+const newVersionInfo = (
+  instance: InstanceElement,
+  active: boolean,
+): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Info',
   message: `Deploying these changes will create a new ${active ? 'active' : 'inactive'} version of this flow`,
   detailedMessage: `Deploying these changes will create a new ${active ? 'active' : 'inactive'} version of this flow. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
 })
 
-const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean): ChangeError => {
+const inActiveNewVersionInfo = (
+  instance: InstanceElement,
+  preferActive: boolean,
+): ChangeError => {
   if (preferActive) {
     return {
       elemID: instance.elemID,
       severity: 'Info',
-      message: 'Deploying these changes will create a new inactive version of this flow',
+      message:
+        'Deploying these changes will create a new inactive version of this flow',
       detailedMessage: `Bear in mind that the new inactive version will not appear in Salto since your Salto environment is configured to prefer fetching active flow versions. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
     }
   }
@@ -160,7 +187,8 @@ const activeFlowModificationError = (
     return {
       elemID: instance.elemID,
       severity: 'Info',
-      message: 'Deploying these changes will create a new active version of this flow',
+      message:
+        'Deploying these changes will create a new active version of this flow',
       detailedMessage: `Deploying these changes will create a new active version of this flow in case the test coverage percentage is greater than the number specified in your salesforce org config. Otherwise, a new inactive version of this flow will be created. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
       deployActions: testCoveragePostDeploy(instance),
     }
@@ -171,7 +199,10 @@ const activeFlowModificationError = (
   }
 }
 
-const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: boolean): ChangeError => {
+const activatingFlowError = (
+  instance: InstanceElement,
+  enableActiveDeploy: boolean,
+): ChangeError => {
   if (enableActiveDeploy) {
     return {
       elemID: instance.elemID,
@@ -185,7 +216,8 @@ const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: bool
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Your salesforce org is configured to disallow flow activations via the API',
+    message:
+      'Your salesforce org is configured to disallow flow activations via the API',
     detailedMessage: `Your salesforce org is configured to disallow flow activations via the API. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
   }
 }
@@ -211,7 +243,9 @@ const activeFlowAdditionError = (
   }
 }
 
-const createDeactivatedFlowChangeInfo = (flowInstance: InstanceElement): ChangeError => ({
+const createDeactivatedFlowChangeInfo = (
+  flowInstance: InstanceElement,
+): ChangeError => ({
   elemID: flowInstance.elemID,
   severity: 'Info',
   message: 'Flow will be deactivated',
@@ -222,30 +256,39 @@ const createDeactivatedFlowChangeInfo = (flowInstance: InstanceElement): ChangeE
  * Handling all changes regarding active flows
  */
 const activeFlowValidator =
-  (config: SalesforceConfig, isSandbox: boolean, client: SalesforceClient): ChangeValidator =>
+  (
+    config: SalesforceConfig,
+    isSandbox: boolean,
+    client: SalesforceClient,
+  ): ChangeValidator =>
   async (changes, elementsSource) => {
-    const isPreferActiveVersion = config.fetch?.preferActiveFlowVersions ?? PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT
+    const isPreferActiveVersion =
+      config.fetch?.preferActiveFlowVersions ??
+      PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT
     const isEnableFlowDeployAsActiveEnabled = await getDeployAsActiveFlag(
       elementsSource,
       ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT,
     )
     const baseUrl = await client.getUrl()
-    const flowChanges = await awu(changes).filter(isInstanceChange).filter(isFlowChange).toArray()
+    const flowChanges = await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isFlowChange)
+      .toArray()
 
     const removingFlowChangeErrors = flowChanges
       .filter(isRemovalChange)
-      .map(change => removeFlowError(getChangeData(change)))
+      .map((change) => removeFlowError(getChangeData(change)))
 
     const [deactivatedFlowOnlyChanges, deactivatedFlowChanges] = _.partition(
       flowChanges.filter(isDeactivatedFlowChange),
       isDeactivatedFlowChangeOnly,
     )
 
-    const inactiveNewVersionChangeInfo = deactivatedFlowChanges.map(change =>
+    const inactiveNewVersionChangeInfo = deactivatedFlowChanges.map((change) =>
       inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion),
     )
-    const deactivatedFlowOnlyChangeInfo = deactivatedFlowOnlyChanges.map(change =>
-      createDeactivatedFlowChangeInfo(getChangeData(change)),
+    const deactivatedFlowOnlyChangeInfo = deactivatedFlowOnlyChanges.map(
+      (change) => createDeactivatedFlowChangeInfo(getChangeData(change)),
     )
 
     if (isSandbox) {
@@ -253,7 +296,7 @@ const activeFlowValidator =
         .filter(isModificationChange)
         .filter(isActiveFlowChange)
         .map(getChangeData)
-        .map(instance => newVersionInfo(instance, true))
+        .map((instance) => newVersionInfo(instance, true))
       return [
         ...inactiveNewVersionChangeInfo,
         ...deactivatedFlowOnlyChangeInfo,
@@ -265,23 +308,42 @@ const activeFlowValidator =
       .filter(isModificationChange)
       .filter(isActiveFlowChange)
       .map(getChangeData)
-      .map(flow => activeFlowModificationError(flow, isEnableFlowDeployAsActiveEnabled, baseUrl))
+      .map((flow) =>
+        activeFlowModificationError(
+          flow,
+          isEnableFlowDeployAsActiveEnabled,
+          baseUrl,
+        ),
+      )
 
     const activatingFlow = flowChanges
       .filter(isModificationChange)
       .filter(isActivatingChange)
-      .map(change => {
+      .map((change) => {
         if (isActivatingChangeOnly(change)) {
-          return activatingFlowError(getChangeData(change), isEnableFlowDeployAsActiveEnabled)
+          return activatingFlowError(
+            getChangeData(change),
+            isEnableFlowDeployAsActiveEnabled,
+          )
         }
-        return activeFlowModificationError(getChangeData(change), isEnableFlowDeployAsActiveEnabled, baseUrl)
+        return activeFlowModificationError(
+          getChangeData(change),
+          isEnableFlowDeployAsActiveEnabled,
+          baseUrl,
+        )
       })
 
     const activeFlowAddition = flowChanges
       .filter(isAdditionChange)
       .map(getChangeData)
-      .filter(flow => getFlowStatus(flow) === ACTIVE)
-      .map(flow => activeFlowAdditionError(flow, isEnableFlowDeployAsActiveEnabled, baseUrl))
+      .filter((flow) => getFlowStatus(flow) === ACTIVE)
+      .map((flow) =>
+        activeFlowAdditionError(
+          flow,
+          isEnableFlowDeployAsActiveEnabled,
+          baseUrl,
+        ),
+      )
 
     return [
       ...inactiveNewVersionChangeInfo,

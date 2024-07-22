@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BuiltinTypes, ChangeError, CORE_ANNOTATIONS, Field, InstanceElement, toChange } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ChangeError,
+  CORE_ANNOTATIONS,
+  Field,
+  InstanceElement,
+  toChange,
+} from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { API_NAME, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 import changeValidator from '../../src/change_validators/package'
 
 describe('package change validator', () => {
   const NAMESPACE = 'testNamespace'
-  const SERVICE_URL = 'https://test.lightning.force.com/lightning/_classic/%2F01p8d00000MJldAAAT'
+  const SERVICE_URL =
+    'https://test.lightning.force.com/lightning/_classic/%2F01p8d00000MJldAAAT'
 
   let managedElement: InstanceElement
   let changeErrors: readonly ChangeError[]
@@ -48,11 +56,18 @@ describe('package change validator', () => {
       },
     )
 
-    const nonManagedCustomField = new Field(mockTypes.Account, 'NonManagedField', BuiltinTypes.STRING, {
-      [API_NAME]: 'Account.NonManagedField__c',
-    })
+    const nonManagedCustomField = new Field(
+      mockTypes.Account,
+      'NonManagedField',
+      BuiltinTypes.STRING,
+      {
+        [API_NAME]: 'Account.NonManagedField__c',
+      },
+    )
     changeErrors = await changeValidator(
-      [managedElement, nonManagedElement, nonManagedCustomField].map(e => toChange({ after: e })),
+      [managedElement, nonManagedElement, nonManagedCustomField].map((e) =>
+        toChange({ after: e }),
+      ),
     )
   })
   it('should create change warning on elements from managed package', () => {
@@ -60,7 +75,9 @@ describe('package change validator', () => {
       expect.objectContaining({
         elemID: managedElement.elemID,
         severity: 'Warning',
-        detailedMessage: expect.stringContaining(NAMESPACE) && expect.stringContaining(SERVICE_URL),
+        detailedMessage:
+          expect.stringContaining(NAMESPACE) &&
+          expect.stringContaining(SERVICE_URL),
       }),
     ])
   })

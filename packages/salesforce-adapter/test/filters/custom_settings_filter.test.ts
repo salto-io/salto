@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, ObjectType, Element, ServiceIds, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  ObjectType,
+  Element,
+  ServiceIds,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { createCustomSettingsObject, defaultFilterContext } from '../utils'
 import SalesforceClient from '../../src/client/client'
@@ -50,8 +56,11 @@ describe('Custom settings filter', () => {
   let filter: FilterType
 
   const NAME_FROM_GET_ELEM_ID = 'getElemIDPrefix'
-  const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
-    new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
+  const mockGetElemIdFunc = (
+    adapterName: string,
+    _serviceIds: ServiceIds,
+    name: string,
+  ): ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
   const TestCustomSettingsRecords = [
     {
       attributes: {
@@ -86,7 +95,10 @@ describe('Custom settings filter', () => {
   })
 
   describe('Custom settings filter ', () => {
-    const customSettingsObject = createCustomSettingsObject('configurationobj', LIST_CUSTOM_SETTINGS_TYPE)
+    const customSettingsObject = createCustomSettingsObject(
+      'configurationobj',
+      LIST_CUSTOM_SETTINGS_TYPE,
+    )
     let elements: Element[]
     beforeEach(() => {
       filter = filterCreator({
@@ -101,26 +113,41 @@ describe('Custom settings filter', () => {
     })
 
     it('Should no change the objects', () => {
-      const validObject = elements.find(elm => elm.elemID.isEqual(customSettingsObject.elemID))
+      const validObject = elements.find((elm) =>
+        elm.elemID.isEqual(customSettingsObject.elemID),
+      )
       expect(validObject).toEqual(customSettingsObject)
-      const noNameObject = elements.find(elm => elm.elemID.isEqual(customSettingsWithNoNameField.elemID))
+      const noNameObject = elements.find((elm) =>
+        elm.elemID.isEqual(customSettingsWithNoNameField.elemID),
+      )
       expect(noNameObject).toEqual(customSettingsWithNoNameField)
     })
 
     it('Should add two instances for the valid object and no instances for noName one', async () => {
       const validObjectInstances = await awu(elements)
-        .filter(async elm => isInstanceElement(elm) && elm.refType.elemID.isEqual(customSettingsObject.elemID))
+        .filter(
+          async (elm) =>
+            isInstanceElement(elm) &&
+            elm.refType.elemID.isEqual(customSettingsObject.elemID),
+        )
         .toArray()
       expect(validObjectInstances).toHaveLength(2)
       const noNameObjectInstances = await awu(elements)
-        .filter(async elm => isInstanceElement(elm) && elm.refType.elemID.isEqual(customSettingsWithNoNameField.elemID))
+        .filter(
+          async (elm) =>
+            isInstanceElement(elm) &&
+            elm.refType.elemID.isEqual(customSettingsWithNoNameField.elemID),
+        )
         .toArray()
       expect(noNameObjectInstances).toHaveLength(0)
     })
   })
 
   describe('fetchAllCustomSettings', () => {
-    const customSettingsObject = createCustomSettingsObject('configurationobj', LIST_CUSTOM_SETTINGS_TYPE)
+    const customSettingsObject = createCustomSettingsObject(
+      'configurationobj',
+      LIST_CUSTOM_SETTINGS_TYPE,
+    )
     let elements: Element[]
     beforeEach(() => {
       elements = [customSettingsObject]
@@ -138,7 +165,11 @@ describe('Custom settings filter', () => {
       }) as FilterType
       await filter.onFetch(elements)
       expect(
-        elements.filter(elm => isInstanceElement(elm) && elm.refType.elemID.isEqual(customSettingsObject.elemID)),
+        elements.filter(
+          (elm) =>
+            isInstanceElement(elm) &&
+            elm.refType.elemID.isEqual(customSettingsObject.elemID),
+        ),
       ).toHaveLength(0)
     })
 
@@ -154,7 +185,11 @@ describe('Custom settings filter', () => {
       }) as FilterType
       await filter.onFetch(elements)
       expect(
-        elements.filter(elm => isInstanceElement(elm) && elm.refType.elemID.isEqual(customSettingsObject.elemID)),
+        elements.filter(
+          (elm) =>
+            isInstanceElement(elm) &&
+            elm.refType.elemID.isEqual(customSettingsObject.elemID),
+        ),
       ).toHaveLength(2)
     })
 
@@ -165,13 +200,20 @@ describe('Custom settings filter', () => {
       }) as FilterType
       await filter.onFetch(elements)
       expect(
-        elements.filter(elm => isInstanceElement(elm) && elm.refType.elemID.isEqual(customSettingsObject.elemID)),
+        elements.filter(
+          (elm) =>
+            isInstanceElement(elm) &&
+            elm.refType.elemID.isEqual(customSettingsObject.elemID),
+        ),
       ).toHaveLength(2)
     })
   })
 
   describe('Custom settings filter ignores hierarchical', () => {
-    const customSettingsObject = createCustomSettingsObject('configurationobj', 'Hierarchical')
+    const customSettingsObject = createCustomSettingsObject(
+      'configurationobj',
+      'Hierarchical',
+    )
     let elements: Element[]
     beforeEach(() => {
       filter = filterCreator({

@@ -31,10 +31,16 @@ import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
 import { Filter, FilterResult } from '../../../src/filter'
-import customObjects, { WARNING_MESSAGE } from '../../../src/filters/author_information/custom_objects'
+import customObjects, {
+  WARNING_MESSAGE,
+} from '../../../src/filters/author_information/custom_objects'
 import { defaultFilterContext } from '../../utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
-import { API_NAME, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../../src/constants'
+import {
+  API_NAME,
+  CUSTOM_OBJECT,
+  INTERNAL_ID_ANNOTATION,
+} from '../../../src/constants'
 import { mockTypes } from '../../mock_elements'
 
 describe('custom objects author information test', () => {
@@ -44,8 +50,13 @@ describe('custom objects author information test', () => {
   let customObject: ObjectType
   let instancesWithParent: InstanceElement[]
 
-  const withParent = (instance: InstanceElement, parent: ObjectType): InstanceElement => {
-    instance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, parent)]
+  const withParent = (
+    instance: InstanceElement,
+    parent: ObjectType,
+  ): InstanceElement => {
+    instance.annotations[CORE_ANNOTATIONS.PARENT] = [
+      new ReferenceExpression(parent.elemID, parent),
+    ]
     return instance
   }
 
@@ -85,11 +96,22 @@ describe('custom objects author information test', () => {
     annotationRefsOrTypes: {},
     annotations: {},
   })
-  const checkElementAnnotations = (object: Element, properties: FileProperties): void => {
-    expect(object.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual(properties.createdByName)
-    expect(object.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(properties.createdDate)
-    expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(properties.lastModifiedByName)
-    expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(properties.lastModifiedDate)
+  const checkElementAnnotations = (
+    object: Element,
+    properties: FileProperties,
+  ): void => {
+    expect(object.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual(
+      properties.createdByName,
+    )
+    expect(object.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(
+      properties.createdDate,
+    )
+    expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(
+      properties.lastModifiedByName,
+    )
+    expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(
+      properties.lastModifiedDate,
+    )
     expect(object.annotations[INTERNAL_ID_ANNOTATION]).toEqual(properties.id)
   }
   const objectWithoutInformation = new ObjectType({
@@ -117,43 +139,71 @@ describe('custom objects author information test', () => {
       },
     })
     instancesWithParent = [
-      new InstanceElement('testWebLink1', mockTypes.WebLink, { fullName: 'testWebLink1' }, undefined, {
-        [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
-        [CORE_ANNOTATIONS.CHANGED_BY]: 'Test User',
-        [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
-        [CORE_ANNOTATIONS.CHANGED_AT]: '2023-02-19T16:28:30.000Z',
-      }),
+      new InstanceElement(
+        'testWebLink1',
+        mockTypes.WebLink,
+        { fullName: 'testWebLink1' },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
+          [CORE_ANNOTATIONS.CHANGED_BY]: 'Test User',
+          [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
+          [CORE_ANNOTATIONS.CHANGED_AT]: '2023-02-19T16:28:30.000Z',
+        },
+      ),
       // This is the most recent file properties
-      new InstanceElement('testWebLink2', mockTypes.WebLink, { fullName: 'testWebLink2' }, undefined, {
-        [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
-        [CORE_ANNOTATIONS.CHANGED_BY]: 'Another Test User',
-        [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
-        [CORE_ANNOTATIONS.CHANGED_AT]: '2023-03-19T16:28:30.000Z',
-      }),
+      new InstanceElement(
+        'testWebLink2',
+        mockTypes.WebLink,
+        { fullName: 'testWebLink2' },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
+          [CORE_ANNOTATIONS.CHANGED_BY]: 'Another Test User',
+          [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
+          [CORE_ANNOTATIONS.CHANGED_AT]: '2023-03-19T16:28:30.000Z',
+        },
+      ),
       // While this sub-instance has the most recent file properties, we use it to make sure we only
       // take into consideration sub-instances of CustomObjects and not Workflow for example
-      new InstanceElement('workflowAlert', mockTypes.WorkflowAlert, { fullName: 'workflowAlert' }, undefined, {
-        [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
-        [CORE_ANNOTATIONS.CHANGED_BY]: 'Another Test User',
-        [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
-        [CORE_ANNOTATIONS.CHANGED_AT]: '2023-04-19T16:28:30.000Z',
-      }),
-    ].map(instance => withParent(instance, customObject))
+      new InstanceElement(
+        'workflowAlert',
+        mockTypes.WorkflowAlert,
+        { fullName: 'workflowAlert' },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
+          [CORE_ANNOTATIONS.CHANGED_BY]: 'Another Test User',
+          [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
+          [CORE_ANNOTATIONS.CHANGED_AT]: '2023-04-19T16:28:30.000Z',
+        },
+      ),
+    ].map((instance) => withParent(instance, customObject))
   })
   describe('success', () => {
     beforeEach(() => {
       connection.metadata.list.mockResolvedValueOnce([objectProperties])
-      connection.metadata.list.mockResolvedValueOnce([fieldProperties, nonExistentFieldProperties])
+      connection.metadata.list.mockResolvedValueOnce([
+        fieldProperties,
+        nonExistentFieldProperties,
+      ])
     })
     it('should add correct author annotations to custom object', async () => {
-      await filter.onFetch?.([customObject, objectWithoutInformation, ...instancesWithParent])
+      await filter.onFetch?.([
+        customObject,
+        objectWithoutInformation,
+        ...instancesWithParent,
+      ])
       expect(customObject.annotations).toMatchObject({
         [CORE_ANNOTATIONS.CREATED_BY]: 'created_name',
         [CORE_ANNOTATIONS.CHANGED_BY]: 'Another Test User',
         [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-01T16:28:30.000Z',
         [CORE_ANNOTATIONS.CHANGED_AT]: '2023-03-19T16:28:30.000Z',
       })
-      checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
+      checkElementAnnotations(
+        customObject.fields.StringField__c,
+        fieldProperties,
+      )
     })
   })
   describe('failure', () => {
@@ -182,10 +232,18 @@ describe('custom objects author information test', () => {
         },
       })
       await filter.onFetch?.([customObject])
-      expect(customObject.annotations[CORE_ANNOTATIONS.CREATED_BY]).not.toBeDefined()
-      expect(customObject.annotations[CORE_ANNOTATIONS.CREATED_AT]).not.toBeDefined()
-      expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
-      expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
+      expect(
+        customObject.annotations[CORE_ANNOTATIONS.CREATED_BY],
+      ).not.toBeDefined()
+      expect(
+        customObject.annotations[CORE_ANNOTATIONS.CREATED_AT],
+      ).not.toBeDefined()
+      expect(
+        customObject.annotations[CORE_ANNOTATIONS.CHANGED_BY],
+      ).not.toBeDefined()
+      expect(
+        customObject.annotations[CORE_ANNOTATIONS.CHANGED_AT],
+      ).not.toBeDefined()
     })
   })
 })

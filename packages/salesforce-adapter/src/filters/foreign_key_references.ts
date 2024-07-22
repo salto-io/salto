@@ -27,7 +27,11 @@ import { values, collections, multiIndex } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { FOREIGN_KEY_DOMAIN } from '../constants'
 import { metadataType, apiName } from '../transformers/transformer'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName } from './utils'
+import {
+  buildElementsSourceForFetch,
+  extractFlatCustomObjectFields,
+  hasApiName,
+} from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -51,7 +55,7 @@ const resolveReferences = async (
 
     const refTarget = makeArray(field.annotations[FOREIGN_KEY_DOMAIN])
       .filter(isReferenceExpression)
-      .map(ref => externalIDToElemIDs.get(ref.elemID.typeName, value))
+      .map((ref) => externalIDToElemIDs.get(ref.elemID.typeName, value))
       .find(values.isDefined)
     return refTarget !== undefined ? new ReferenceExpression(refTarget) : value
   }
@@ -76,16 +80,19 @@ const filter: LocalFilterCreator = ({ config }) => ({
   name: 'foreignKeyReferencesFilter',
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
-    const elementsWithFields = flatMapAsync(await referenceElements.getAll(), extractFlatCustomObjectFields)
+    const elementsWithFields = flatMapAsync(
+      await referenceElements.getAll(),
+      extractFlatCustomObjectFields,
+    )
     const elementIndex = await multiIndex.keyByAsync({
       iter: elementsWithFields,
       filter: hasApiName,
-      key: async elem => [await metadataType(elem), await apiName(elem)],
-      map: elem => elem.elemID,
+      key: async (elem) => [await metadataType(elem), await apiName(elem)],
+      map: (elem) => elem.elemID,
     })
     await awu(elements)
       .filter(isInstanceElement)
-      .forEach(async instance => {
+      .forEach(async (instance) => {
         await resolveReferences(instance, elementIndex)
       })
   },

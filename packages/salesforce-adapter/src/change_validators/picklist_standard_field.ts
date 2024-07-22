@@ -25,7 +25,9 @@ import { FIELD_ANNOTATIONS } from '../constants'
 import { isPicklistField, isStandardField } from '../filters/utils'
 
 const isStandardPicklistFieldWithValueSet = (field: Field): boolean =>
-  isStandardField(field) && isPicklistField(field) && field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined
+  isStandardField(field) &&
+  isPicklistField(field) &&
+  field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined
 
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
@@ -37,12 +39,12 @@ const createChangeError = (field: Field): ChangeError => ({
 /**
  * It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed.
  */
-const changeValidator: ChangeValidator = async changes =>
+const changeValidator: ChangeValidator = async (changes) =>
   changes
     .filter(isFieldChange)
     .filter(isModificationChange)
     .map(getChangeData)
     .filter(isStandardPicklistFieldWithValueSet)
-    .map(field => createChangeError(field))
+    .map((field) => createChangeError(field))
 
 export default changeValidator

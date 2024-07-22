@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element, ElemID, InstanceElement, isStaticFile, StaticFile } from '@salto-io/adapter-api'
+import {
+  Element,
+  ElemID,
+  InstanceElement,
+  isStaticFile,
+  StaticFile,
+} from '@salto-io/adapter-api'
 import { findInstances } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -26,11 +32,16 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export const STATIC_RESOURCE_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'StaticResource')
+export const STATIC_RESOURCE_METADATA_TYPE_ID = new ElemID(
+  SALESFORCE,
+  'StaticResource',
+)
 export const CONTENT_TYPE = 'contentType'
 const RESOURCE_SUFFIX_LENGTH = 'resource'.length
 
-const modifyFileExtension = async (staticResourceInstance: InstanceElement): Promise<void> => {
+const modifyFileExtension = async (
+  staticResourceInstance: InstanceElement,
+): Promise<void> => {
   const staticFile = staticResourceInstance.value[METADATA_CONTENT_FIELD]
   if (!isStaticFile(staticFile)) {
     log.debug(
@@ -77,7 +88,10 @@ const filterCreator: LocalFilterCreator = () => ({
    * from '.resource' to the correct extension based on the CONTENT_TYPE field
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const staticResourceInstances = findInstances(elements, STATIC_RESOURCE_METADATA_TYPE_ID)
+    const staticResourceInstances = findInstances(
+      elements,
+      STATIC_RESOURCE_METADATA_TYPE_ID,
+    )
     await awu(staticResourceInstances).forEach(modifyFileExtension)
   },
 })

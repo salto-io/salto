@@ -13,8 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ObjectType, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
-import { SALESFORCE, FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from '../../src/constants'
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
+import {
+  SALESFORCE,
+  FIELD_ANNOTATIONS,
+  FOREIGN_KEY_DOMAIN,
+} from '../../src/constants'
 import filterCreator from '../../src/filters/reference_annotations'
 import { defaultFilterContext, createMetadataTypeElement } from '../utils'
 import { FilterWith } from './mocks'
@@ -51,29 +60,55 @@ describe('reference_annotations filter', () => {
 
   describe('replace values', () => {
     it('should convert REFERENCE_TO to reference when found', () => {
-      expect(nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO]).toHaveLength(2)
-      expect(nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0]).toBeInstanceOf(
-        ReferenceExpression,
-      )
-      expect(nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0].elemID).toEqual(
-        new ElemID(SALESFORCE, objTypeName),
-      )
-      expect(nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0].value).toEqual(
-        objType,
-      )
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[
+          FIELD_ANNOTATIONS.REFERENCE_TO
+        ],
+      ).toHaveLength(2)
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[
+          FIELD_ANNOTATIONS.REFERENCE_TO
+        ][0],
+      ).toBeInstanceOf(ReferenceExpression)
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[
+          FIELD_ANNOTATIONS.REFERENCE_TO
+        ][0].elemID,
+      ).toEqual(new ElemID(SALESFORCE, objTypeName))
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[
+          FIELD_ANNOTATIONS.REFERENCE_TO
+        ][0].value,
+      ).toEqual(objType)
 
-      expect(nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][1]).toEqual('unknown')
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[
+          FIELD_ANNOTATIONS.REFERENCE_TO
+        ][1],
+      ).toEqual('unknown')
     })
     it('should convert FOREIGN_KEY_DOMAIN to reference when found', () => {
-      expect(nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN]).toHaveLength(2)
-      expect(nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0]).toBeInstanceOf(
-        ReferenceExpression,
-      )
-      expect(nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0].elemID).toEqual(
-        new ElemID(SALESFORCE, objTypeName),
-      )
-      expect(nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0].value).toEqual(objType)
-      expect(nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][1]).toEqual('something')
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN],
+      ).toHaveLength(2)
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[
+          FOREIGN_KEY_DOMAIN
+        ][0],
+      ).toBeInstanceOf(ReferenceExpression)
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0]
+          .elemID,
+      ).toEqual(new ElemID(SALESFORCE, objTypeName))
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0]
+          .value,
+      ).toEqual(objType)
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[
+          FOREIGN_KEY_DOMAIN
+        ][1],
+      ).toEqual('something')
     })
   })
 })

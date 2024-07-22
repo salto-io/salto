@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, ElemID, ObjectType, OAuthMethod, FetchOptions, ProgressReporter } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ElemID,
+  ObjectType,
+  OAuthMethod,
+  FetchOptions,
+  ProgressReporter,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { adapter, getConfigChange } from '../src/adapter_creator'
@@ -33,13 +40,17 @@ jest.mock('../src/client/client')
 jest.mock('../src/adapter')
 
 describe('SalesforceAdapter creator', () => {
-  const credentials = new InstanceElement(ElemID.CONFIG_NAME, usernamePasswordCredentialsType, {
-    username: 'myUser',
-    password: 'myPassword',
-    token: 'myToken',
-    sandbox: false,
-    authType: 'basic',
-  })
+  const credentials = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    usernamePasswordCredentialsType,
+    {
+      username: 'myUser',
+      password: 'myPassword',
+      token: 'myToken',
+      sandbox: false,
+      authType: 'basic',
+    },
+  )
   const oauthConfigObj = {
     refreshToken: 'refreshToken',
     accessToken: 'accessToken',
@@ -49,23 +60,35 @@ describe('SalesforceAdapter creator', () => {
     sandbox: false,
     authType: 'oauth',
   }
-  const oauthCredentials = new InstanceElement(ElemID.CONFIG_NAME, accessTokenCredentialsType, oauthConfigObj)
-  const config = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-    fetch: {
-      metadata: {
-        exclude: [{ metadataType: 'test1' }, { name: 'test2' }, { name: 'test3' }],
+  const oauthCredentials = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    accessTokenCredentialsType,
+    oauthConfigObj,
+  )
+  const config = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    adapter.configType as ObjectType,
+    {
+      fetch: {
+        metadata: {
+          exclude: [
+            { metadataType: 'test1' },
+            { name: 'test2' },
+            { name: 'test3' },
+          ],
+        },
+      },
+      notExist: ['not exist'],
+      client: {
+        maxConcurrentApiRequests: {
+          list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+          read: 55,
+          retrieve: 3,
+          total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        },
       },
     },
-    notExist: ['not exist'],
-    client: {
-      maxConcurrentApiRequests: {
-        list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-        read: 55,
-        retrieve: 3,
-        total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-      },
-    },
-  })
+  )
 
   const mockFetchOpts: MockInterface<FetchOptions> = {
     progressReporter: {
@@ -113,17 +136,27 @@ describe('SalesforceAdapter creator', () => {
   })
 
   describe('when creating oauth request', () => {
-    const oauthLoginInput = new InstanceElement(ElemID.CONFIG_NAME, oauthRequestParameters, {
-      consumerKey: 'testConsumerKey',
-      port: 8080,
-    })
+    const oauthLoginInput = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      oauthRequestParameters,
+      {
+        consumerKey: 'testConsumerKey',
+        port: 8080,
+      },
+    )
     it('creates oauth request with url using parameters', () => {
-      const request = (adapter.authenticationMethods.oauth as OAuthMethod).createOAuthRequest(oauthLoginInput)
-      expect(request.url.includes(oauthLoginInput.value.consumerKey)).toBeTruthy()
+      const request = (
+        adapter.authenticationMethods.oauth as OAuthMethod
+      ).createOAuthRequest(oauthLoginInput)
+      expect(
+        request.url.includes(oauthLoginInput.value.consumerKey),
+      ).toBeTruthy()
       expect(request.url.includes(oauthLoginInput.value.port)).toBeTruthy()
     })
     it('creates the right object from the response', async () => {
-      const responseCredentials = await (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
+      const responseCredentials = await (
+        adapter.authenticationMethods.oauth as OAuthMethod
+      ).createFromOauthResponse(
         {
           sandbox: false,
           consumerKey: oauthConfigObj.clientId,
@@ -185,7 +218,11 @@ describe('SalesforceAdapter creator', () => {
         config: {
           fetch: {
             metadata: {
-              exclude: [{ metadataType: 'test1' }, { name: 'test2' }, { name: 'test3' }],
+              exclude: [
+                { metadataType: 'test1' },
+                { name: 'test2' },
+                { name: 'test3' },
+              ],
             },
           },
           client: {
@@ -204,9 +241,11 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw an error when creating the adapter with an invalid regex for instancesRegexSkippedList', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        fetch: { metadata: { include: [{ name: '\\' }] } },
-      })
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { fetch: { metadata: { include: [{ name: '\\' }] } } },
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -217,16 +256,20 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.includeObjects', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        fetch: {
-          data: {
-            includeObjects: ['\\'],
-            saltoIDSettings: {
-              defaultIdFields: ['field'],
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            data: {
+              includeObjects: ['\\'],
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+              },
             },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -239,17 +282,21 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.excludeObjects', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        fetch: {
-          data: {
-            includeObjects: ['obj'],
-            excludeObjects: ['\\'],
-            saltoIDSettings: {
-              defaultIdFields: ['field'],
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+              excludeObjects: ['\\'],
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+              },
             },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -262,17 +309,21 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.allowReferenceTo', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        fetch: {
-          data: {
-            includeObjects: ['obj'],
-            allowReferenceTo: ['\\'],
-            saltoIDSettings: {
-              defaultIdFields: ['field'],
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+              allowReferenceTo: ['\\'],
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+              },
             },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -285,17 +336,21 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.saltoIDSettings.overrides objectsRegex', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        fetch: {
-          data: {
-            includeObjects: ['obj'],
-            saltoIDSettings: {
-              defaultIdFields: ['field'],
-              overrides: [{ objectsRegex: '\\', idFields: ['Id'] }],
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+                overrides: [{ objectsRegex: '\\', idFields: ['Id'] }],
+              },
             },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -308,16 +363,20 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw error when dataManagement is created without includeObjects', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        fetch: {
-          data: {
-            saltoIDSettings: {
-              defaultIdFields: ['field'],
-              overrides: [{ objectsRegex: '\\', idFields: ['Id'] }],
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            data: {
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+                overrides: [{ objectsRegex: '\\', idFields: ['Id'] }],
+              },
             },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -330,13 +389,17 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw error when dataManagement is created without saltoIDSettings', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        fetch: {
-          data: {
-            includeObjects: ['obj'],
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+            },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -349,16 +412,20 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw error when dataManagement is created without saltoIDSettings.defaultIdFields', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        fetch: {
-          data: {
-            includeObjects: ['obj'],
-            saltoIDSettings: {
-              overrides: [{ objectsRegex: '\\', idFields: ['Id'] }],
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+              saltoIDSettings: {
+                overrides: [{ objectsRegex: '\\', idFields: ['Id'] }],
+              },
             },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -371,16 +438,20 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw an error when creating adapter with invalid rate limits in client.maxConcurrentApiRequests', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        client: {
-          maxConcurrentApiRequests: {
-            list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-            read: 0,
-            retrieve: 3,
-            total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          client: {
+            maxConcurrentApiRequests: {
+              list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+              read: 0,
+              retrieve: 3,
+              total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+            },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -392,15 +463,19 @@ describe('SalesforceAdapter creator', () => {
       )
     })
     it('should not throw an error when all rate limits client.maxConcurrentApiRequests are valid', () => {
-      const validConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        client: {
-          maxConcurrentApiRequests: {
-            list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-            retrieve: 3,
-            total: undefined,
+      const validConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          client: {
+            maxConcurrentApiRequests: {
+              list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+              retrieve: 3,
+              total: undefined,
+            },
           },
         },
-      })
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -411,7 +486,11 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should not throw an error when maxConcurrentApiRequests is not set', () => {
-      const validConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {})
+      const validConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {},
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -422,15 +501,19 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should not throw an error when a valid retry strategy is set', () => {
-      const validConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        client: {
-          retry: {
-            maxAttempts: 5,
-            retryDelay: 5000,
-            retryStrategy: 'HttpError',
+      const validConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          client: {
+            retry: {
+              maxAttempts: 5,
+              retryDelay: 5000,
+              retryStrategy: 'HttpError',
+            },
           },
         },
-      })
+      )
       const adapterContext = {
         credentials,
         config: validConfig,
@@ -446,9 +529,11 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should throw an error when an invalid retry strategy is set', () => {
-      const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
-        client: { retry: { retryStrategy: 'somethingElse' } },
-      })
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { client: { retry: { retryStrategy: 'somethingElse' } } },
+      )
       expect(() =>
         adapter.operations({
           credentials,
@@ -613,7 +698,9 @@ describe('SalesforceAdapter creator', () => {
   })
 
   describe('deprecated configuration', () => {
-    SalesforceAdapter.prototype.fetch = jest.fn().mockResolvedValue({ elements: [] })
+    SalesforceAdapter.prototype.fetch = jest
+      .fn()
+      .mockResolvedValue({ elements: [] })
 
     const deprecatedConfig = config.clone()
     deprecatedConfig.value[METADATA_TYPES_SKIPPED_LIST] = ['aaa']
@@ -628,7 +715,12 @@ describe('SalesforceAdapter creator', () => {
         config: {
           fetch: {
             metadata: {
-              exclude: [{ metadataType: 'test1' }, { name: 'test2' }, { name: 'test3' }, { metadataType: 'aaa' }],
+              exclude: [
+                { metadataType: 'test1' },
+                { name: 'test2' },
+                { name: 'test3' },
+                { metadataType: 'aaa' },
+              ],
             },
           },
           client: {
@@ -647,7 +739,9 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('return update from fetch', async () => {
-      expect((await operations.fetch(mockFetchOpts)).updatedConfig).toBeDefined()
+      expect(
+        (await operations.fetch(mockFetchOpts)).updatedConfig,
+      ).toBeDefined()
     })
   })
 

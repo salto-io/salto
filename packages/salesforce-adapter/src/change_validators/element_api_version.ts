@@ -15,8 +15,18 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { ChangeValidator, ElemID, getChangeData, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { FLOW_METADATA_TYPE, ORGANIZATION_API_VERSION, ORGANIZATION_SETTINGS, SALESFORCE } from '../constants'
+import {
+  ChangeValidator,
+  ElemID,
+  getChangeData,
+  ReadOnlyElementsSource,
+} from '@salto-io/adapter-api'
+import {
+  FLOW_METADATA_TYPE,
+  ORGANIZATION_API_VERSION,
+  ORGANIZATION_SETTINGS,
+  SALESFORCE,
+} from '../constants'
 import { LATEST_SUPPORTED_API_VERSION_FIELD } from '../filters/organization_settings'
 import { isInstanceOfTypeSync } from '../filters/utils'
 
@@ -24,16 +34,22 @@ const log = logger(module)
 
 const VERSIONED_TYPES = [FLOW_METADATA_TYPE]
 
-const getLatestSupportedApiVersion = async (elementsSource?: ReadOnlyElementsSource): Promise<number | undefined> => {
+const getLatestSupportedApiVersion = async (
+  elementsSource?: ReadOnlyElementsSource,
+): Promise<number | undefined> => {
   if (elementsSource === undefined) {
     return undefined
   }
 
-  const orgSettings = await elementsSource.get(new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance'))
+  const orgSettings = await elementsSource.get(
+    new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance'),
+  )
   let latestApiVersion = orgSettings?.value[LATEST_SUPPORTED_API_VERSION_FIELD]
   if (latestApiVersion === undefined) {
     // TODO (SALTO-5978): Remove once we enable the optional feature.
-    const orgApiVersion = await elementsSource.get(new ElemID(SALESFORCE, ORGANIZATION_API_VERSION, 'instance'))
+    const orgApiVersion = await elementsSource.get(
+      new ElemID(SALESFORCE, ORGANIZATION_API_VERSION, 'instance'),
+    )
     latestApiVersion = orgApiVersion?.value[LATEST_SUPPORTED_API_VERSION_FIELD]
   }
 
@@ -50,7 +66,10 @@ const getLatestSupportedApiVersion = async (elementsSource?: ReadOnlyElementsSou
   return latestApiVersion
 }
 
-const elementApiVersionValidator: ChangeValidator = async (changes, elementsSource) => {
+const elementApiVersionValidator: ChangeValidator = async (
+  changes,
+  elementsSource,
+) => {
   const latestApiVersion = await getLatestSupportedApiVersion(elementsSource)
   if (latestApiVersion === undefined) {
     return []
@@ -59,8 +78,12 @@ const elementApiVersionValidator: ChangeValidator = async (changes, elementsSour
   return changes
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(...VERSIONED_TYPES))
-    .filter(instance => _.isNumber(instance.value.apiVersion) && instance.value.apiVersion > latestApiVersion)
-    .map(instance => ({
+    .filter(
+      (instance) =>
+        _.isNumber(instance.value.apiVersion) &&
+        instance.value.apiVersion > latestApiVersion,
+    )
+    .map((instance) => ({
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Unsupported API version',

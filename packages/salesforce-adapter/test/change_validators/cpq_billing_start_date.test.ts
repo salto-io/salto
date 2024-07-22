@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BuiltinTypes, ChangeError, InstanceElement, toChange } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ChangeError,
+  InstanceElement,
+  toChange,
+} from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
 import changeValidator from '../../src/change_validators/cpq_billing_start_date'
@@ -29,7 +34,11 @@ describe('CPQ billing StartDateTime', () => {
   })
   describe('When the change is to an instance of an irrelevant type', () => {
     beforeEach(async () => {
-      const instance = new InstanceElement('SomeInstance', mockTypes.Account, {})
+      const instance = new InstanceElement(
+        'SomeInstance',
+        mockTypes.Account,
+        {},
+      )
       result = await changeValidator([toChange({ after: instance })])
     })
     it('should have no errors', () => {
@@ -67,8 +76,13 @@ describe('CPQ billing StartDateTime', () => {
     it('should have an error', () => {
       expect(result).toHaveLength(1)
       expect(result[0]).toSatisfy(
-        error =>
-          error.elemID.isEqual(objectType.elemID.createNestedID('instance', 'SomeInvoiceScheduler')) &&
+        (error) =>
+          error.elemID.isEqual(
+            objectType.elemID.createNestedID(
+              'instance',
+              'SomeInvoiceScheduler',
+            ),
+          ) &&
           error.severity === 'Error' &&
           error.message.includes('blng__InvoiceScheduler__c'),
       )

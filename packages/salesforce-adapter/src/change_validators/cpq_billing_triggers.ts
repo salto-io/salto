@@ -13,8 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeValidator, getChangeData, ChangeError, ElemID } from '@salto-io/adapter-api'
-import { getNamespaceSync, isInstanceOfCustomObjectChangeSync } from '../filters/utils'
+import {
+  ChangeValidator,
+  getChangeData,
+  ChangeError,
+  ElemID,
+} from '@salto-io/adapter-api'
+import {
+  getNamespaceSync,
+  isInstanceOfCustomObjectChangeSync,
+} from '../filters/utils'
 import { BILLING_NAMESPACE } from '../constants'
 
 const getBillingError = (elemID: ElemID): ChangeError => ({
@@ -25,7 +33,8 @@ const getBillingError = (elemID: ElemID): ChangeError => ({
   deployActions: {
     preAction: {
       title: 'Disable Salesforce Billing Triggers',
-      description: 'Salesforce Billing triggers should be disabled before deploying:',
+      description:
+        'Salesforce Billing triggers should be disabled before deploying:',
       subActions: [
         'In Salesforce, navigate to Setup > Installed Packages > Salesforce Billing > Configure',
         'Enable the "Disable triggers" setting',
@@ -47,12 +56,17 @@ const getBillingError = (elemID: ElemID): ChangeError => ({
   },
 })
 
-const changeValidator: ChangeValidator = async changes => {
+const changeValidator: ChangeValidator = async (changes) => {
   const billingInstance = changes
     .filter(isInstanceOfCustomObjectChangeSync)
-    .map(change => getChangeData(change))
-    .find(instance => getNamespaceSync(instance.getTypeSync()) === BILLING_NAMESPACE)
-  return billingInstance !== undefined ? [getBillingError(billingInstance.elemID)] : []
+    .map((change) => getChangeData(change))
+    .find(
+      (instance) =>
+        getNamespaceSync(instance.getTypeSync()) === BILLING_NAMESPACE,
+    )
+  return billingInstance !== undefined
+    ? [getBillingError(billingInstance.elemID)]
+    : []
 }
 
 export default changeValidator

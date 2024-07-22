@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeError, ChangeValidator, Element, getChangeData } from '@salto-io/adapter-api'
+import {
+  ChangeError,
+  ChangeValidator,
+  Element,
+  getChangeData,
+} from '@salto-io/adapter-api'
 import { CURRENCY_CODE_TYPE_NAME } from '../constants'
 
 const createCurrencyIsoCodeError = (element: Element): ChangeError => ({
@@ -24,10 +29,10 @@ const createCurrencyIsoCodeError = (element: Element): ChangeError => ({
   severity: 'Error',
 })
 
-const changeValidator: ChangeValidator = async changes =>
+const changeValidator: ChangeValidator = async (changes) =>
   changes
     .map(getChangeData)
-    .filter(element => element.elemID.typeName === CURRENCY_CODE_TYPE_NAME)
+    .filter((element) => element.elemID.typeName === CURRENCY_CODE_TYPE_NAME)
     .map(createCurrencyIsoCodeError)
 
 export default changeValidator

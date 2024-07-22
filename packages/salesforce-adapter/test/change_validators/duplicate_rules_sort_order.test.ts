@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeError, getChangeData, InstanceElement, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import {
+  ChangeError,
+  getChangeData,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  toChange,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import changeValidator from '../../src/change_validators/duplicate_rules_sort_order'
 import { mockTypes } from '../mock_elements'
@@ -47,7 +53,9 @@ describe('duplicateRulesSortOrder', () => {
       sortOrder,
     })
 
-  const createMockElementsSource = (instances: InstanceElement[]): ReadOnlyElementsSource => ({
+  const createMockElementsSource = (
+    instances: InstanceElement[],
+  ): ReadOnlyElementsSource => ({
     getAll: async () => awu(instances),
     list: async () => awu([]),
     has: async () => true,
@@ -89,12 +97,17 @@ describe('duplicateRulesSortOrder', () => {
       ]
       const changes = [additionChange, modificationChange]
       changedInstances = changes.map(getChangeData)
-      const allInstances = [...existingDuplicateRuleInstances, ...changedInstances]
+      const allInstances = [
+        ...existingDuplicateRuleInstances,
+        ...changedInstances,
+      ]
       const elementsSource = createMockElementsSource(allInstances)
       changeErrors = await changeValidator(changes, elementsSource)
     })
     it('should create errors', () => {
-      expect(changeErrors.map(error => error.elemID)).toEqual(changedInstances.map(instance => instance.elemID))
+      expect(changeErrors.map((error) => error.elemID)).toEqual(
+        changedInstances.map((instance) => instance.elemID),
+      )
     })
   })
 
@@ -133,7 +146,10 @@ describe('duplicateRulesSortOrder', () => {
       ]
       const changes = [additionChange, modificationChange]
       changedInstances = changes.map(getChangeData)
-      const allInstances = [...existingDuplicateRuleInstances, ...changedInstances]
+      const allInstances = [
+        ...existingDuplicateRuleInstances,
+        ...changedInstances,
+      ]
       const elementsSource = createMockElementsSource(allInstances)
       changeErrors = await changeValidator(changes, elementsSource)
     })

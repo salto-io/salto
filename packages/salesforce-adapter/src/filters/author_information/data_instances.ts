@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CORE_ANNOTATIONS, Element, InstanceElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObject } from '../../transformers/transformer'
 import { RemoteFilterCreator } from '../../filter'
@@ -28,28 +32,43 @@ const getIDToNameMap = async (
   instances: InstanceElement[],
 ): Promise<Record<string, string>> => {
   const instancesIDs = Array.from(
-    new Set(instances.flatMap(instance => [instance.value.CreatedById, instance.value.LastModifiedById])),
+    new Set(
+      instances.flatMap((instance) => [
+        instance.value.CreatedById,
+        instance.value.LastModifiedById,
+      ]),
+    ),
   )
   const queries = conditionQueries(
     GET_ID_AND_NAMES_OF_USERS_QUERY,
-    instancesIDs.map(id => [{ fieldName: 'Id', operator: 'IN', value: `'${id}'` }]),
+    instancesIDs.map((id) => [
+      { fieldName: 'Id', operator: 'IN', value: `'${id}'` },
+    ]),
   )
   const records = await queryClient(client, queries)
-  return Object.fromEntries(records.map(record => [record.Id, record.Name]))
+  return Object.fromEntries(records.map((record) => [record.Id, record.Name]))
 }
 
-const moveAuthorFieldsToAnnotations = (instance: InstanceElement, IDToNameMap: Record<string, string>): void => {
+const moveAuthorFieldsToAnnotations = (
+  instance: InstanceElement,
+  IDToNameMap: Record<string, string>,
+): void => {
   instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = instance.value.CreatedDate
-  instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = IDToNameMap[instance.value.CreatedById]
-  instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = instance.value.LastModifiedDate
-  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = IDToNameMap[instance.value.LastModifiedById]
+  instance.annotations[CORE_ANNOTATIONS.CREATED_BY] =
+    IDToNameMap[instance.value.CreatedById]
+  instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] =
+    instance.value.LastModifiedDate
+  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] =
+    IDToNameMap[instance.value.LastModifiedById]
 }
 
 const moveInstancesAuthorFieldsToAnnotations = (
   instances: InstanceElement[],
   IDToNameMap: Record<string, string>,
 ): void => {
-  instances.forEach(instance => moveAuthorFieldsToAnnotations(instance, IDToNameMap))
+  instances.forEach((instance) =>
+    moveAuthorFieldsToAnnotations(instance, IDToNameMap),
+  )
 }
 
 export const WARNING_MESSAGE =

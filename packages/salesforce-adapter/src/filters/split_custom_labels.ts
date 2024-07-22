@@ -30,7 +30,11 @@ import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard, pathNaclCase } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
-import { apiName, createInstanceElement, metadataAnnotationTypes } from '../transformers/transformer'
+import {
+  apiName,
+  createInstanceElement,
+  metadataAnnotationTypes,
+} from '../transformers/transformer'
 import { getDataFromChanges, isInstanceOfType } from './utils'
 import {
   CUSTOM_LABEL_METADATA_TYPE,
@@ -76,15 +80,20 @@ const isCustomLabelsType = isInstanceOfType(CUSTOM_LABELS_METADATA_TYPE)
 const isCustomLabel = createSchemeGuard(CUSTOM_LABEL_SCHEMA)
 
 const isCustomLabelsInstance = async (e: InstanceElement): Promise<boolean> =>
-  (await isCustomLabelsType(e)) && makeArray(e.value.labels).every(isCustomLabel)
+  (await isCustomLabelsType(e)) &&
+  makeArray(e.value.labels).every(isCustomLabel)
 
 const isCustomLabelType = isInstanceOfType(CUSTOM_LABEL_METADATA_TYPE)
 
-const isCustomLabelChange = async (change: Change): Promise<boolean> => isCustomLabelType(getChangeData(change))
+const isCustomLabelChange = async (change: Change): Promise<boolean> =>
+  isCustomLabelType(getChangeData(change))
 
-const isCustomLabelsChange = async (change: Change): Promise<boolean> => isCustomLabelsType(getChangeData(change))
+const isCustomLabelsChange = async (change: Change): Promise<boolean> =>
+  isCustomLabelsType(getChangeData(change))
 
-const resolveCustomLabelsType = async (changes: Change[]): Promise<ObjectType> => {
+const resolveCustomLabelsType = async (
+  changes: Change[],
+): Promise<ObjectType> => {
   const customLabelInstance = getChangeData(changes[0])
   if (!isInstanceElement(customLabelInstance)) {
     throw new Error('Could not determine CustomLabel type')
@@ -105,14 +114,16 @@ const resolveCustomLabelsType = async (changes: Change[]): Promise<ObjectType> =
   })
 }
 
-const createCustomLabelsChange = async (customLabelChanges: Change[]): Promise<Change> => {
+const createCustomLabelsChange = async (
+  customLabelChanges: Change[],
+): Promise<Change> => {
   const customLabelsType = await resolveCustomLabelsType(customLabelChanges)
   const beforeCustomLabelsInstance = createInstanceElement(
     {
       [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABELS_FULL_NAME,
       labels: getDataFromChanges('before', customLabelChanges)
         .filter(isInstanceElement)
-        .map(e => e.value),
+        .map((e) => e.value),
     },
     customLabelsType,
   )
@@ -121,7 +132,7 @@ const createCustomLabelsChange = async (customLabelChanges: Change[]): Promise<C
       [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABELS_FULL_NAME,
       labels: getDataFromChanges('after', customLabelChanges)
         .filter(isInstanceElement)
-        .map(e => e.value),
+        .map((e) => e.value),
     },
     customLabelsType,
   )
@@ -141,10 +152,10 @@ const filterCreator: LocalFilterCreator = () => {
   let customLabelChanges: Change[]
   return {
     name: 'splitCustomLabels',
-    onFetch: async elements => {
+    onFetch: async (elements) => {
       const customLabelType = await awu(elements)
         .filter(isObjectType)
-        .find(async e => (await apiName(e)) === CUSTOM_LABEL_METADATA_TYPE)
+        .find(async (e) => (await apiName(e)) === CUSTOM_LABEL_METADATA_TYPE)
       if (customLabelType === undefined) {
         log.info('CustomLabel type does not exist, skipping filter')
         return
@@ -158,12 +169,16 @@ const filterCreator: LocalFilterCreator = () => {
         return
       }
       if (customLabelsInstances.length > 1) {
-        log.error('Found more than one instance of CustomLabels, skipping filter')
+        log.error(
+          'Found more than one instance of CustomLabels, skipping filter',
+        )
         return
       }
       const customLabelsInstance = customLabelsInstances[0]
-      const customLabelInstances = makeArray(customLabelsInstance.value.labels).map(
-        label =>
+      const customLabelInstances = makeArray(
+        customLabelsInstance.value.labels,
+      ).map(
+        (label) =>
           new InstanceElement(
             label[INSTANCE_FULL_NAME_FIELD],
             customLabelType,
@@ -174,16 +189,20 @@ const filterCreator: LocalFilterCreator = () => {
       _.pull(elements, customLabelsInstance)
       elements.push(...customLabelInstances)
     },
-    preDeploy: async changes => {
-      customLabelChanges = await awu(changes).filter(isCustomLabelChange).toArray()
+    preDeploy: async (changes) => {
+      customLabelChanges = await awu(changes)
+        .filter(isCustomLabelChange)
+        .toArray()
       if (_.isEmpty(customLabelChanges)) {
         return
       }
       changes.push(await createCustomLabelsChange(customLabelChanges))
       _.pullAll(changes, customLabelChanges)
     },
-    onDeploy: async changes => {
-      const customLabelsChanges = await awu(changes).filter(isCustomLabelsChange).toArray()
+    onDeploy: async (changes) => {
+      const customLabelsChanges = await awu(changes)
+        .filter(isCustomLabelsChange)
+        .toArray()
       if (_.isEmpty(customLabelsChanges)) {
         return
       }

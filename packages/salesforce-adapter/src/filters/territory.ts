@@ -24,9 +24,17 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import { isMetadataObjectType, metadataType, apiName } from '../transformers/transformer'
+import {
+  isMetadataObjectType,
+  metadataType,
+  apiName,
+} from '../transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../transformers/xml_transformer'
-import { TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, TERRITORY2_RULE_TYPE } from '../constants'
+import {
+  TERRITORY2_TYPE,
+  TERRITORY2_MODEL_TYPE,
+  TERRITORY2_RULE_TYPE,
+} from '../constants'
 import { isInstanceOfTypeChange, parentApiName } from './utils'
 
 const { awu } = collections.asynciterable
@@ -38,26 +46,40 @@ const territory2TypesToNestedDirName: Record<string, string[]> = {
   [TERRITORY2_TYPE]: ['territories'],
 }
 
-const territory2Types = [...Object.keys(territory2TypesToNestedDirName), TERRITORY2_MODEL_TYPE]
+const territory2Types = [
+  ...Object.keys(territory2TypesToNestedDirName),
+  TERRITORY2_MODEL_TYPE,
+]
 
-const removeCustomFieldsFromTypes = async (elements: Element[], typeNames: string[]): Promise<void> => {
-  const elementsOfTypes = elements.filter(async elem => typeNames.includes(await metadataType(elem)))
-  elementsOfTypes.filter(isMetadataObjectType).forEach(type => {
+const removeCustomFieldsFromTypes = async (
+  elements: Element[],
+  typeNames: string[],
+): Promise<void> => {
+  const elementsOfTypes = elements.filter(async (elem) =>
+    typeNames.includes(await metadataType(elem)),
+  )
+  elementsOfTypes.filter(isMetadataObjectType).forEach((type) => {
     delete type.fields.customFields
   })
-  elementsOfTypes.filter(isInstanceElement).forEach(inst => {
+  elementsOfTypes.filter(isInstanceElement).forEach((inst) => {
     delete inst.value.customFields
   })
 }
 
-const isTerritoryRelatedChange = async (change: Change): Promise<Change<InstanceElement> | undefined> =>
+const isTerritoryRelatedChange = async (
+  change: Change,
+): Promise<Change<InstanceElement> | undefined> =>
   isInstanceChange(change) &&
   isAdditionOrModificationChange(change) &&
-  (await awu(territory2Types).some(typeName => isInstanceOfTypeChange(typeName)(change)))
+  (await awu(territory2Types).some((typeName) =>
+    isInstanceOfTypeChange(typeName)(change),
+  ))
     ? change
     : undefined
 
-const setTerritoryDeployPkgStructure = async (element: InstanceElement): Promise<void> => {
+const setTerritoryDeployPkgStructure = async (
+  element: InstanceElement,
+): Promise<void> => {
   const { suffix } = (await element.getType()).annotations
   const instanceName = await apiName(element, true)
   const contentPath = [
@@ -70,27 +92,30 @@ const setTerritoryDeployPkgStructure = async (element: InstanceElement): Promise
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'territoryFilter',
-  onFetch: async elements => {
+  onFetch: async (elements) => {
     // Territory2 and Territory2Model support custom fields - these are returned
     // in a CustomObject with the appropriate name and also in each instance of these types
     // We remove the fields from the instances to avoid duplication
-    await removeCustomFieldsFromTypes(elements, [TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE])
+    await removeCustomFieldsFromTypes(elements, [
+      TERRITORY2_TYPE,
+      TERRITORY2_MODEL_TYPE,
+    ])
   },
 
   // territory2 types require a special deploy pkg structure (SALTO-1200)
-  preDeploy: async changes => {
+  preDeploy: async (changes) => {
     await awu(changes)
       .map(isTerritoryRelatedChange)
       .filter(isDefined)
       .map(getChangeData)
-      .forEach(async elm => setTerritoryDeployPkgStructure(elm))
+      .forEach(async (elm) => setTerritoryDeployPkgStructure(elm))
   },
-  onDeploy: async changes => {
+  onDeploy: async (changes) => {
     await awu(changes)
       .map(isTerritoryRelatedChange)
       .filter(isDefined)
       .map(getChangeData)
-      .forEach(elem => {
+      .forEach((elem) => {
         delete elem.annotations[CONTENT_FILENAME_OVERRIDE]
       })
   },

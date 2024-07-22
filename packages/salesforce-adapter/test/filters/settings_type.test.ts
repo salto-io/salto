@@ -13,12 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType, Element } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  isObjectType,
+  ObjectType,
+  Element,
+} from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/settings_type'
 import mockClient from '../client'
 import * as constants from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { mockFileProperties, mockDescribeValueResult, mockValueTypeField } from '../connection'
+import {
+  mockFileProperties,
+  mockDescribeValueResult,
+  mockValueTypeField,
+} from '../connection'
 import { defaultFilterContext } from '../utils'
 import { API_NAME } from '../../src/constants'
 import { FilterWith } from './mocks'
@@ -78,7 +89,9 @@ describe('Test Settings Type', () => {
     beforeEach(() => {
       testElements = [mockInstance, mockObject, anotherMockInstance]
       connection.metadata.list.mockResolvedValue(
-        ['Macro', 'Case'].map(fullName => mockFileProperties({ fullName, type: 'Settings' })),
+        ['Macro', 'Case'].map((fullName) =>
+          mockFileProperties({ fullName, type: 'Settings' }),
+        ),
       )
       connection.metadata.describeValueType.mockResolvedValue(
         mockDescribeValueResult({
@@ -100,7 +113,9 @@ describe('Test Settings Type', () => {
 
     it('should generate all settings type', async () => {
       await filter.onFetch(testElements)
-      expect(connection.metadata.describeValueType).toHaveBeenCalledWith(expect.stringMatching(/.*MacroSettings$/))
+      expect(connection.metadata.describeValueType).toHaveBeenCalledWith(
+        expect.stringMatching(/.*MacroSettings$/),
+      )
       expect(testElements).toHaveLength(5)
       expect(isObjectType(testElements[3])).toBeTruthy()
       const { path } = testElements[3]
@@ -112,7 +127,9 @@ describe('Test Settings Type', () => {
         expect(path[2]).toEqual('MacroSettings')
       }
       expect(isInstanceElement(testElements[4])).toBeTruthy()
-      expect(await (testElements[4] as InstanceElement).getType()).toEqual(testElements[3])
+      expect(await (testElements[4] as InstanceElement).getType()).toEqual(
+        testElements[3],
+      )
     })
     it('should not add existing object types', async () => {
       const macroSettingsType = new ObjectType({
@@ -124,7 +141,11 @@ describe('Test Settings Type', () => {
       testElements.push(macroSettingsType)
       await filter.onFetch(testElements)
       expect(testElements.filter(isObjectType)).toHaveLength(2)
-      expect(testElements.filter(isObjectType).filter(e => e.elemID.typeName === MACRO_SETTINGS)).toHaveLength(1)
+      expect(
+        testElements
+          .filter(isObjectType)
+          .filter((e) => e.elemID.typeName === MACRO_SETTINGS),
+      ).toHaveLength(1)
     })
   })
 })

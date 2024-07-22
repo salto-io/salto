@@ -31,10 +31,14 @@ import { isInstanceOfType, isInstanceOfTypeChange } from '../filters/utils'
 
 const { awu, keyByAsync, groupByAsync } = collections.asynciterable
 
-const getObjectName = async (layoutInstance: InstanceElement): Promise<string> =>
-  (await apiName(layoutInstance)).split('-')[0]
+const getObjectName = async (
+  layoutInstance: InstanceElement,
+): Promise<string> => (await apiName(layoutInstance)).split('-')[0]
 
-const createLastLayoutDeletionError = ({ elemID }: InstanceElement, objectName: string): ChangeError => ({
+const createLastLayoutDeletionError = (
+  { elemID }: InstanceElement,
+  objectName: string,
+): ChangeError => ({
   elemID,
   severity: 'Error',
   message: 'Custom objects must have at least one layout',
@@ -57,13 +61,19 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   }
 
   const removedObjectNames = Object.keys(
-    await keyByAsync(await awu(changes).filter(isObjectTypeChange).filter(isRemovalChange).toArray(), change =>
-      apiName(getChangeData(change)),
+    await keyByAsync(
+      await awu(changes)
+        .filter(isObjectTypeChange)
+        .filter(isRemovalChange)
+        .toArray(),
+      (change) => apiName(getChangeData(change)),
     ),
   )
 
   const relevantChangesByObjectName = _.pickBy(
-    await groupByAsync(relevantChanges, change => getObjectName(getChangeData(change))),
+    await groupByAsync(relevantChanges, (change) =>
+      getObjectName(getChangeData(change)),
+    ),
     // If the Object is fully removed, it's a valid change.
     (_value, objectName) => !removedObjectNames.includes(objectName),
   )
@@ -81,7 +91,9 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   return Object.entries(relevantChangesByObjectName)
     .filter(([objectName]) => !objectsWithRemainingLayouts.includes(objectName))
     .flatMap(([objectName, deletedLayoutChanges]) =>
-      deletedLayoutChanges.map(getChangeData).map(instance => createLastLayoutDeletionError(instance, objectName)),
+      deletedLayoutChanges
+        .map(getChangeData)
+        .map((instance) => createLastLayoutDeletionError(instance, objectName)),
     )
 }
 

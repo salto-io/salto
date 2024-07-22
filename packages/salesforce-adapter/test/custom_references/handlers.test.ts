@@ -17,7 +17,10 @@
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../../src/adapter_creator'
-import { fixElementsFunc, getCustomReferences } from '../../src/custom_references/handlers'
+import {
+  fixElementsFunc,
+  getCustomReferences,
+} from '../../src/custom_references/handlers'
 
 describe('custom references handlers', () => {
   const elementsSource = buildElementsSourceFromElements([])
@@ -28,10 +31,12 @@ describe('custom references handlers', () => {
     })
 
     it('should define an elements fixer', async () => {
-      expect(await fixElementsFunc({ elementsSource, config: {} })([])).toEqual({
-        fixedElements: [],
-        errors: [],
-      })
+      expect(await fixElementsFunc({ elementsSource, config: {} })([])).toEqual(
+        {
+          fixedElements: [],
+          errors: [],
+        },
+      )
     })
   })
 
@@ -50,7 +55,11 @@ describe('custom references handlers', () => {
         },
       },
     }
-    const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)
+    const adapterConfig = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      adapter.configType as ObjectType,
+      config,
+    )
     it('should define a custom references getter', async () => {
       expect(await getCustomReferences([], adapterConfig)).toEqual([])
     })

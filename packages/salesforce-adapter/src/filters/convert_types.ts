@@ -34,8 +34,8 @@ const filterCreator: LocalFilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     wu(elements)
       .filter(isInstanceElement)
-      .filter(instance => isObjectType(instance.getTypeSync()))
-      .forEach(instance => {
+      .filter((instance) => isObjectType(instance.getTypeSync()))
+      .forEach((instance) => {
         instance.value =
           transformValuesSync({
             values: instance.value,

@@ -9,31 +9,16 @@ import {
   Change,
   InstanceElement,
   ReferenceExpression,
-  // SaltoElementError,
-  // SeverityLevel,
   getChangeData,
-  // isAdditionChange,
   isInstanceChange,
   isRemovalChange,
-  // isModificationChange,
-  // isRemovalChange,
-  // isSaltoError,
 } from '@salto-io/adapter-api'
-// import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-// import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import {
-  // FIELD_CONTEXT_OPTION_TYPE_NAME,
-  // FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME,
-  OPTIONS_ORDER_TYPE_NAME,
-} from './constants'
-// import { setContextOptionsSplitted } from './context_options_splitted'
+import { OPTIONS_ORDER_TYPE_NAME } from './constants'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { getContextAndFieldIds } from '../../common/fields'
-import { reorderContextOptions } from './context_options_splitted'
-
-// const log = logger(module)
+import { reorderContextOptions } from './context_options'
 
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'fieldContextOptionsOrderDeploymentFilter',
@@ -43,7 +28,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === OPTIONS_ORDER_TYPE_NAME,
     ) as [Change<InstanceElement>[], Change[]]
     if (!config.fetch.splitFieldContextOptions || relevantChanges.length === 0) {
-      return { leftoverChanges, deployResult: { errors: [], appliedChanges: [] } }
+      return { leftoverChanges: changes, deployResult: { errors: [], appliedChanges: [] } }
     }
 
     const deployResult = await deployChanges(relevantChanges, async change => {

@@ -130,7 +130,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
-    customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
+    customFieldsWith10KOptions: customFieldsWith10KOptionValidator(config),
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
     boardColumnConfig: boardColumnConfigValidator,

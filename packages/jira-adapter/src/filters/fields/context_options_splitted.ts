@@ -5,54 +5,25 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { InstanceElement, isMapType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
-import Joi from 'joi'
-import { createSchemeGuard, getParent, naclCase } from '@salto-io/adapter-utils'
+import { InstanceElement, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
+import { getInstancesFromElementSource, getParent, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../client/client'
-import { setFieldDeploymentAnnotations } from '../../utils'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME } from './constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './constants'
+import {
+  getAllOptionPaginator,
+  OPTIONS_MAXIMUM_BATCH_SIZE,
+  PUBLIC_API_OPTIONS_LIMIT,
+  transformOption,
+  Option,
+} from './context_options'
+import { getContextParent } from '../../common/fields'
 
 const log = logger(module)
-const { makeArray } = collections.array
-const { toArrayAsync } = collections.asynciterable
 const { awu } = collections.asynciterable
-
-const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
-const PUBLIC_API_OPTIONS_LIMIT = 10000
-
-// Transform option back to the format expected by Jira API
-const transformOption = (option: Values): Values => ({
-  ..._.omit(option, ['position', 'parentValue', 'cascadingOptions']),
-})
-
-type UpdateContextOptionsParams = {
-  addedOptions: Value[]
-  modifiedOptions: Value[]
-  removedOptions: Value[]
-  client: JiraClient
-  baseUrl: string
-  contextId: string
-  paginator: clientUtils.Paginator | undefined
-  isCascade: boolean
-  numberOfAlreadyAddedOptions: number
-}
-
-type Option = {
-  id: string
-  value: string
-  optionId?: string
-}
-
-const EXPECTED_OPTION_SCHEMA = Joi.object({
-  id: Joi.string().required(),
-  value: Joi.string().required(),
-}).unknown(true)
-
-const isOption = createSchemeGuard<Option>(EXPECTED_OPTION_SCHEMA, 'Received invalid response from private API')
 
 const processContextOptionsPrivateApiResponse = (resp: Option[], addedOptions: Value[]): void => {
   const idToOption = _.keyBy(addedOptions, option => option.id)
@@ -60,28 +31,47 @@ const processContextOptionsPrivateApiResponse = (resp: Option[], addedOptions: V
   const optionIds = new Set(Object.keys(idToOption))
   const respToProcess = resp.filter(newOption => !optionIds.has(newOption.id))
   respToProcess.forEach(newOption => {
-    if (newOption.optionId !== undefined) {
-      idToOption[newOption.optionId].cascadingOptions[naclCase(newOption.value)].id = newOption.id
-    } else {
-      optionsMap[naclCase(newOption.value)].id = newOption.id
-    }
+    optionsMap[naclCase(newOption.value)].id = newOption.id
   })
 }
-const getAllOptionPaginator = async (paginator: clientUtils.Paginator, baseUrl: string): Promise<Option[]> => {
-  const paginationArgs: clientUtils.ClientGetWithPaginationParams = {
-    url: baseUrl,
-    paginationField: 'startAt',
-    queryParams: {
-      maxResults: '1000',
-    },
-    pageSizeArgName: 'maxResults',
-  }
 
-  const options = await toArrayAsync(
-    paginator(paginationArgs, page => makeArray(page.values) as clientUtils.ResponseValue[]),
-  )
-  const values = options.flat().filter(isOption)
-  return values
+const addPrivateApiOptions = async ({
+  addedOptions,
+  privateApiOptions,
+  contextId,
+  client,
+  baseUrl,
+  paginator,
+  isCascade,
+}: {
+  addedOptions: Value[]
+  privateApiOptions: Value[]
+  client: JiraClient
+  baseUrl: string
+  contextId: string
+  paginator: clientUtils.Paginator | undefined
+  isCascade: boolean
+  optionsCount: number
+}): Promise<void> => {
+  if (paginator === undefined) {
+    log.error('Received unexpected paginator undefined')
+    throw new Error('Received unexpected paginator undefined')
+  }
+  await awu(privateApiOptions).forEach(async option => {
+    const commonData = {
+      addValue: option.value,
+      fieldConfigId: contextId,
+    }
+    const data: Record<string, string> = isCascade
+      ? { ...commonData, selectedParentOptionId: option.optionId }
+      : commonData
+    await client.jspPost({
+      url: '/secure/admin/EditCustomFieldOptions!add.jspa',
+      data,
+    })
+  })
+  const resp = await getAllOptionPaginator(paginator, baseUrl)
+  processContextOptionsPrivateApiResponse(resp, addedOptions)
 }
 
 const updateContextOptions = async ({
@@ -93,8 +83,18 @@ const updateContextOptions = async ({
   baseUrl,
   paginator,
   isCascade,
-  numberOfAlreadyAddedOptions,
-}: UpdateContextOptionsParams): Promise<void> => {
+  optionsCount,
+}: {
+  addedOptions: Value[]
+  modifiedOptions: Value[]
+  removedOptions: Value[]
+  client: JiraClient
+  baseUrl: string
+  contextId: string
+  paginator: clientUtils.Paginator | undefined
+  isCascade: boolean
+  optionsCount: number
+}): Promise<void> => {
   if (removedOptions.length !== 0) {
     await Promise.all(
       removedOptions.map(async (option: Value) => {
@@ -106,8 +106,7 @@ const updateContextOptions = async ({
   }
 
   if (addedOptions.length !== 0) {
-    const optionLengthBefore = modifiedOptions.length + numberOfAlreadyAddedOptions
-    const numberOfPublicApiOptions = Math.max(PUBLIC_API_OPTIONS_LIMIT - optionLengthBefore, 0)
+    const numberOfPublicApiOptions = Math.max(addedOptions.length + PUBLIC_API_OPTIONS_LIMIT - optionsCount, 0) // options count includes also addedOptions
     const publicApiOptions = addedOptions.slice(0, numberOfPublicApiOptions)
     const privateApiOptions = addedOptions.slice(numberOfPublicApiOptions, addedOptions.length)
     const addedOptionsChunks = _.chunk(publicApiOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
@@ -129,28 +128,19 @@ const updateContextOptions = async ({
         })
       }
     })
-    // Jira API doesn't support adding more than 10000 through the API.
-    // We need to add the rest through the private API.
-    await awu(privateApiOptions).forEach(async option => {
-      const commonData = {
-        addValue: option.value,
-        fieldConfigId: contextId,
-      }
-      const data: Record<string, string> = isCascade
-        ? { ...commonData, selectedParentOptionId: option.optionId }
-        : commonData
-      await client.jspPost({
-        url: '/secure/admin/EditCustomFieldOptions!add.jspa',
-        data,
-      })
-    })
     if (privateApiOptions.length !== 0) {
-      if (paginator === undefined) {
-        log.error('Received unexpected paginator undefined')
-        return
-      }
-      const resp = await getAllOptionPaginator(paginator, baseUrl)
-      processContextOptionsPrivateApiResponse(resp, addedOptions)
+      // Jira API doesn't support adding more than 10000 through the API.
+      // We need to add the rest through the private API.
+      await addPrivateApiOptions({
+        addedOptions,
+        privateApiOptions,
+        contextId,
+        client,
+        baseUrl,
+        paginator,
+        isCascade,
+        optionsCount,
+      })
     }
   }
 
@@ -168,50 +158,22 @@ const updateContextOptions = async ({
   }
 }
 
-export const reorderContextOptions = async (
-  // Should get order change
-  options: Value[],
-  client: JiraClient,
-  baseUrl: string,
-): Promise<void> => {
-  const optionsGroups = _(options)
-    .groupBy(option => option.optionId)
-    .values()
-    .value()
-
-  // Data center plugin expects all options in one request.
-  const requestBodies = client.isDataCenter
-    ? optionsGroups.map(group => [
-        {
-          url: `${baseUrl}/move`,
-          data: {
-            customFieldOptionIds: group.map(option => option.id),
-            position: 'First',
-          },
-        },
-      ])
-    : optionsGroups.map(group =>
-        _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) => ({
-          url: `${baseUrl}/move`,
-          data: {
-            customFieldOptionIds: chunk.map(option => option.id),
-            position: index === 0 ? 'First' : 'Last',
-          },
-        })),
-      )
-  await awu(requestBodies)
-    .flat()
-    .forEach(async body => client.put(body))
-}
-
 const isCascadeOption = (option: InstanceElement): boolean =>
   getParent(option).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME
 
 const updateParentIds = (options: InstanceElement[], parentOptions: InstanceElement[]): void => {
   const elemIdToOption = _.keyBy(parentOptions, parentOption => parentOption.elemID.getFullName())
-  options.forEach(option => {
-    option.value.optionId = elemIdToOption[getParent(option).elemID.getFullName()]?.value.id
-    option.value.parentValue = elemIdToOption[getParent(option).elemID.getFullName()]?.value.value
+  options
+    .filter(option => option.value.optionId === undefined)
+    .forEach(option => {
+      option.value.optionId = elemIdToOption[getParent(option).elemID.getFullName()]?.value.id
+      option.value.parentValue = elemIdToOption[getParent(option).elemID.getFullName()]?.value.value
+    })
+}
+const setCascadeOptions = (options: InstanceElement[]): void => {
+  options.filter(isCascadeOption).forEach(option => {
+    option.value.optionId = getParent(option).value.id
+    option.value.parentValue = getParent(option).value.value
   })
 }
 
@@ -223,6 +185,7 @@ export const setContextOptionsSplitted = async ({
   removed,
   client,
   paginator,
+  elementsSource,
 }: {
   contextId: string
   fieldId: string
@@ -230,25 +193,30 @@ export const setContextOptionsSplitted = async ({
   modified: InstanceElement[]
   removed: InstanceElement[]
   client: JiraClient
+  elementsSource: ReadOnlyElementsSource
   paginator?: clientUtils.Paginator
 }): Promise<void> => {
-  if (added.length === 0 && modified.length === 0 && removed.length === 0) {
-    return
-  }
-
   const [addedCascade, addedSimple] = _.partition(added, isCascadeOption)
 
-  const url = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
+  setCascadeOptions(modified)
+  setCascadeOptions(addedCascade)
+
+  const optionsCount = (await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME]))
+    .filter(instance => getContextParent(instance).value.id === contextId)
+    .map(instance => instance.value.options.length)
+    .reduce((acc, num) => acc + num, 0)
+
+  const baseUrl = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
   await updateContextOptions({
     addedOptions: addedSimple.map(option => option.value),
     modifiedOptions: modified.map(option => option.value),
     removedOptions: removed.map(option => option.value),
     contextId,
     client,
-    baseUrl: url,
+    baseUrl,
     paginator,
     isCascade: false,
-    numberOfAlreadyAddedOptions: 0,
+    optionsCount: optionsCount - addedCascade.length, // the cascade were not added yet
   })
   updateParentIds(addedCascade, addedSimple)
 
@@ -258,31 +226,9 @@ export const setContextOptionsSplitted = async ({
     removedOptions: [],
     contextId,
     client,
-    baseUrl: url,
+    baseUrl,
     paginator,
     isCascade: true,
-    numberOfAlreadyAddedOptions: addedSimple.length,
-  })
-}
-
-export const setOptionTypeDeploymentAnnotations = async (fieldContextType: ObjectType): Promise<void> => {
-  // TODO what here?
-  setFieldDeploymentAnnotations(fieldContextType, 'options')
-
-  const optionMapType = await fieldContextType.fields.options?.getType()
-  if (!isMapType(optionMapType)) {
-    throw new Error(`Expected field options ${fieldContextType.fields.options?.elemID.getFullName()} to be a map type`)
-  }
-  const optionType = await optionMapType.getInnerType()
-  if (!isObjectType(optionType)) {
-    throw new Error(
-      `Expected inner type of field options ${fieldContextType.fields.options.elemID.getFullName()} to be an object type`,
-    )
-  }
-
-  ;['value', 'optionId', 'disabled', 'position', 'cascadingOptions'].forEach((fieldName: string) => {
-    if (fieldName in optionType.fields) {
-      setFieldDeploymentAnnotations(optionType, fieldName)
-    }
+    optionsCount,
   })
 }

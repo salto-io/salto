@@ -16,10 +16,10 @@ import {
   isInstanceChange,
   isInstanceElement,
   isModificationChange,
-  isSaltoError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './constants'
 import { setContextOptionsSplitted } from './context_options_splitted'
@@ -27,15 +27,15 @@ import { getContextAndFieldIds } from '../../common/fields'
 
 const log = logger(module)
 
-const filter: FilterCreator = ({ config, client, paginator }) => ({
-  name: 'fieldContextOptionsFilter',
+const filter: FilterCreator = ({ config, client, paginator, elementsSource }) => ({
+  name: 'fieldContextOptionsDeploymentFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME,
     ) as [Change<InstanceElement>[], Change[]]
-    if (!config.fetch.splitFieldContextOptions || relevantChanges.length === 0) {
-      return { leftoverChanges, deployResult: { errors: [], appliedChanges: [] } }
+    if (!config.fetch.splitFieldContextOptions || relevantChanges.length === 0 || elementsSource === undefined) {
+      return { leftoverChanges: changes, deployResult: { errors: [], appliedChanges: [] } }
     }
     const errors: SaltoElementError[] = []
     let appliedChanges = relevantChanges
@@ -75,6 +75,7 @@ const filter: FilterCreator = ({ config, client, paginator }) => ({
         modified: modifyChanges.map(getChangeData),
         removed: removeChanges.map(getChangeData),
         client,
+        elementsSource,
         paginator,
       })
       // update the ids of added options
@@ -92,26 +93,14 @@ const filter: FilterCreator = ({ config, client, paginator }) => ({
           })
       })
     } catch (err) {
-      if (isSaltoError(err) && err.severity !== 'Error') {
-        log.error('An error occurred during deployment of custom field context options: %o', err.message)
-
-        errors.push(
-          ...changes.map(change => ({
-            message: err.message,
-            severity: err.severity,
-            elemID: getChangeData(change).elemID,
-          })),
-        )
-      } else {
-        log.error('An error occurred during deployment of custom field context options: %o', err)
-        errors.push(
-          ...changes.map(change => ({
-            message: `${err}`,
-            severity: 'Error' as SeverityLevel,
-            elemID: getChangeData(change).elemID,
-          })),
-        )
-      }
+      log.error('An error occurred during deployment of custom field context options: %o', err)
+      errors.push(
+        ...relevantChanges.map(change => ({
+          message: inspectValue(err),
+          severity: 'Error' as SeverityLevel,
+          elemID: getChangeData(change).elemID,
+        })),
+      )
       appliedChanges = []
     }
 

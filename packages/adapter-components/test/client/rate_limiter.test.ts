@@ -17,9 +17,10 @@ import { RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS } from '../../src/client'
 import { RateLimiter, RateLimiterOptions } from '../../src/client/rate_limiter'
 
 describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck => {
-  const DEFAULT_RATE_LIMITER = new RateLimiter({ useBottleneck })
+  let DEFAULT_RATE_LIMITER: RateLimiter
 
   beforeEach(() => {
+    DEFAULT_RATE_LIMITER = new RateLimiter({ useBottleneck })
     jest.resetAllMocks() // Reset all mocks after each test
     jest.restoreAllMocks()
   })
@@ -186,79 +187,90 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
       expect(asyncTask1).toHaveBeenCalledWith(1)
       expect(asyncTask2).toHaveBeenCalledWith(2)
     })
-  })
 
-  it('should add a single async function to the queue and execute it', async () => {
-    const rateLimiter = new RateLimiter({ useBottleneck })
+    it('should add a single async function to the queue and execute it', async () => {
+      const rateLimiter = new RateLimiter({ useBottleneck })
 
-    const asyncTask = jest.fn(async (taskId: number) => taskId)
+      const asyncTask = jest.fn(async (taskId: number) => taskId)
 
-    const result = await rateLimiter.add(() => asyncTask(1))
-    expect(result).toBe(1)
-    expect(asyncTask).toHaveBeenCalledWith(1)
-  })
-
-  it('should add multiple tasks to the queue and execute them', async () => {
-    const rateLimiter = new RateLimiter({ useBottleneck })
-
-    const asyncTask = jest.fn(async (taskId: number) => taskId)
-
-    const tasks = [() => asyncTask(1), () => asyncTask(2), () => asyncTask(3)]
-
-    const results = await Promise.all(rateLimiter.addAll(tasks))
-
-    expect(results).toEqual([1, 2, 3])
-    expect(asyncTask).toHaveBeenCalledWith(1)
-    expect(asyncTask).toHaveBeenCalledWith(2)
-    expect(asyncTask).toHaveBeenCalledWith(3)
-  })
-  it('should properly calculate the next delay for a task.', () => {
-    let timeElapsed = 0
-    jest.spyOn(Date, 'now').mockReturnValue(timeElapsed) // Mock current time
-    const delayMS = 500
-    const rateLimiter = new RateLimiter({ delayMS })
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.nextDelay()).toBe(delayMS)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.nextDelay()).toBe(delayMS * 2)
-
-    // Partial delay
-    timeElapsed = 100
-    jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.nextDelay()).toBe(delayMS * 3 - timeElapsed)
-
-    // No delay needed
-    // @ts-expect-error accessing private member/function
-    timeElapsed = rateLimiter.prevInvocationTime + delayMS
-    jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.nextDelay()).toBe(0)
-  })
-  it('should properly wrap task with delay.', async () => {
-    const delayMS = 500
-    const rateLimiter = new RateLimiter({ delayMS })
-
-    const timer = {
-      // @ts-expect-error accessing private member/function
-      startTime: rateLimiter.prevInvocationTime,
-      timeElapsed: 0,
-    }
-    // @ts-expect-error accessing private member/function
-    const delayedTask = rateLimiter.getDelayedTask(() => {
-      timer.timeElapsed = Date.now() - timer.startTime
+      const result = await rateLimiter.add(() => asyncTask(1))
+      expect(result).toBe(1)
+      expect(asyncTask).toHaveBeenCalledWith(1)
     })
-    await delayedTask()
-    const { timeElapsed, startTime } = timer
 
-    const toleranceMS = 5 // required tolerance for delays
+    it('should add multiple tasks to the queue and execute them', async () => {
+      const rateLimiter = new RateLimiter({ useBottleneck })
 
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.prevInvocationTime).toBeGreaterThanOrEqual(startTime + delayMS - toleranceMS)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.prevInvocationTime).toBeLessThan(startTime + delayMS * 2 + toleranceMS)
+      const asyncTask = jest.fn(async (taskId: number) => taskId)
 
-    expect(timeElapsed).toBeGreaterThanOrEqual(delayMS - toleranceMS)
-    expect(timeElapsed).toBeLessThan(delayMS * 2 + toleranceMS)
+      const tasks = [() => asyncTask(1), () => asyncTask(2), () => asyncTask(3)]
+
+      const results = await Promise.all(rateLimiter.addAll(tasks))
+
+      expect(results).toEqual([1, 2, 3])
+      expect(asyncTask).toHaveBeenCalledWith(1)
+      expect(asyncTask).toHaveBeenCalledWith(2)
+      expect(asyncTask).toHaveBeenCalledWith(3)
+    })
+    it('should properly calculate the next delay for a task.', () => {
+      let timeElapsed = 0
+      jest.spyOn(Date, 'now').mockReturnValue(timeElapsed) // Mock current time
+      const delayMS = 500
+      const rateLimiter = new RateLimiter({ delayMS })
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.nextDelay()).toBe(delayMS)
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.nextDelay()).toBe(delayMS * 2)
+
+      // Partial delay
+      timeElapsed = 100
+      jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.nextDelay()).toBe(delayMS * 3 - timeElapsed)
+
+      // No delay needed
+      // @ts-expect-error accessing private member/function
+      timeElapsed = rateLimiter.prevInvocationTime + delayMS
+      jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.nextDelay()).toBe(0)
+    })
+    it('should properly wrap task with delay.', async () => {
+      const delayMS = 500
+      const rateLimiter = new RateLimiter({ delayMS })
+
+      const timer = {
+        // @ts-expect-error accessing private member/function
+        startTime: rateLimiter.prevInvocationTime,
+        timeElapsed: 0,
+      }
+      // @ts-expect-error accessing private member/function
+      const delayedTask = rateLimiter.getDelayedTask(() => {
+        timer.timeElapsed = Date.now() - timer.startTime
+      })
+      await delayedTask()
+      const { timeElapsed, startTime } = timer
+
+      const toleranceMS = 5 // required tolerance for delays
+
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.prevInvocationTime).toBeGreaterThanOrEqual(startTime + delayMS - toleranceMS)
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.prevInvocationTime).toBeLessThan(startTime + delayMS * 2 + toleranceMS)
+
+      expect(timeElapsed).toBeGreaterThanOrEqual(delayMS - toleranceMS)
+      expect(timeElapsed).toBeLessThan(delayMS * 2 + toleranceMS)
+    })
+  })
+  describe('Configuring retry', () => {
+    it('should not retry if not configured.', async () => {
+      const errorMessage = 'Some error'
+      const throwingTask = jest.fn(() => {
+        throw new Error(errorMessage)
+      })
+      expect(async () => DEFAULT_RATE_LIMITER.add(throwingTask)).rejects.toThrow(errorMessage)
+      expect(DEFAULT_RATE_LIMITER.counters.retries).toEqual(0)
+      expect(DEFAULT_RATE_LIMITER.counters.failed).toEqual(1)
+    })
   })
 })

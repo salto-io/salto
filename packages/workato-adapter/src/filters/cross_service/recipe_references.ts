@@ -26,7 +26,7 @@ import { fetch as fetchUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
-import { FETCH_CONFIG } from '../../config'
+import { ENABLE_DEPLOY_SUPPORT_FLAG, FETCH_CONFIG } from '../../config'
 import { SALESFORCE, NETSUITE, ZUORA_BILLING, JIRA, ZENDESK } from '../../constants'
 import { addNetsuiteRecipeReferences } from './netsuite/reference_finder'
 import { addSalesforceRecipeReferences } from './salesforce/reference_finder'
@@ -146,6 +146,10 @@ const filter: FilterCreator = ({ config }) => ({
   }: PostFetchOptions): Promise<void> => {
     const { serviceConnectionNames } = config[FETCH_CONFIG]
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
+      return
+    }
+    if (config[ENABLE_DEPLOY_SUPPORT_FLAG] === true) {
+      log.warn('encountered cross references config while deploy is enabled, skipping creation of cross references')
       return
     }
     const supportedAdapters = Object.keys(accountToServiceNameMap ?? {})

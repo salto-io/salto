@@ -1558,6 +1558,7 @@ describe('Recipe references filter', () => {
             types: DEFAULT_TYPES,
             supportedTypes: SUPPORTED_TYPES,
           },
+          enableDeploySupport: false,
         },
         fetchQuery: elementUtils.query.createMockQuery(),
       }) as FilterType
@@ -2497,6 +2498,7 @@ describe('Recipe references filter', () => {
             types: DEFAULT_TYPES,
             supportedTypes: SUPPORTED_TYPES,
           },
+          enableDeploySupport: false,
         },
         fetchQuery: elementUtils.query.createMockQuery(),
       }) as FilterType
@@ -2602,6 +2604,70 @@ describe('Recipe references filter', () => {
           },
         ])
       })
+    })
+  })
+
+  describe('when deploy is enabled', () => {
+    let currentAdapterElements: Element[]
+    let salesforceElements: Element[]
+    let netsuiteElements: Element[]
+
+    beforeAll(async () => {
+      filter = filterCreator({
+        client,
+        paginator: clientUtils.createPaginator({
+          client,
+          paginationFuncCreator: paginate,
+        }),
+        config: {
+          fetch: {
+            ...getDefaultConfig()[FETCH_CONFIG],
+            serviceConnectionNames: {
+              salesforce: ['salesforce sandbox 1'],
+              netsuite: ['netsuite sbx 123'],
+            },
+          },
+          apiDefinitions: {
+            typeDefaults: {
+              transformation: {
+                idFields: DEFAULT_ID_FIELDS,
+              },
+            },
+            types: DEFAULT_TYPES,
+            supportedTypes: SUPPORTED_TYPES,
+          },
+          enableDeploySupport: true,
+        },
+        fetchQuery: elementUtils.query.createMockQuery(),
+      }) as FilterType
+
+      currentAdapterElements = generateCurrentAdapterElements()
+      salesforceElements = generateSalesforceElements()
+      netsuiteElements = generateNetsuiteElements()
+      await filter.onPostFetch({
+        currentAdapterElements,
+        elementsByAccount: {
+          salesforce: salesforceElements,
+          netsuite: netsuiteElements,
+        },
+        accountToServiceNameMap: {
+          salesforce: 'salesforce',
+          netsuite: 'netsuite',
+        },
+        progressReporter: { reportProgress: () => null },
+      })
+    })
+    it('should do nothing when deploy is enabled', () => {
+      const recipeCode = currentAdapterElements.find(
+        e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe1_code',
+      ) as InstanceElement
+      expect(recipeCode).toBeDefined()
+      expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+
+      expect(recipeCode.value.input.sobject_name).toEqual('Opportunity')
+      expect(recipeCode.value.dynamicPickListSelection.sobject_name).toEqual(
+        'Opportunity',
+      )
     })
   })
 })

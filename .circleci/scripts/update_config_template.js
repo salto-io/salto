@@ -28,6 +28,8 @@ const generateE2eMatrix = (templateName, outputName) => {
   console.log('e2ePackagesToTest:', e2ePackagesToTest)
   const e2ePackages = e2ePackagesToTest.filter(pkg => !adaptersWithJava.includes(pkg))
   const e2ePackagesWithJava = e2ePackagesToTest.filter(pkg => adaptersWithJava.includes(pkg))
+  const e2ePackagesWithPrettyName = e2ePackages.map((pkg) => { return `${pkg.split('/').pop()}:${pkg}` })
+  const e2ePackagesWithJavaWithPrettyName = e2ePackagesWithJava.map((pkg) => { return `${pkg.split('/').pop()}:${pkg}` })
 
   const e2eTestMatrix = `
       - e2e_tests:
@@ -37,7 +39,7 @@ const generateE2eMatrix = (templateName, outputName) => {
             alias: e2e_tests_without_java
             parameters:
               package_name: 
-                - ${e2ePackages.join('\n                - ')}
+                - ${e2ePackagesWithPrettyName.join('\n                - ')}
               should_install_java: 
                 - false
 `
@@ -49,18 +51,18 @@ const generateE2eMatrix = (templateName, outputName) => {
             alias: e2e_tests_with_java
             parameters:
               package_name: 
-                - ${e2ePackagesWithJava.join('\n                - ')}
+                - ${e2ePackagesWithJavaWithPrettyName.join('\n                - ')}
               should_install_java: 
                 - true
 `
   const alteredConfigWithJavaE2es =
-    e2ePackagesWithJava.length > 0
+    e2ePackagesWithJavaWithPrettyName.length > 0
       ? configTemplate
           .replace(/# <NEEDS_E2E_TEST_REQUIREMENT_JAVA>/g, '- e2e_tests_with_java')
           .replace(/# <TEST_MATRIX_E2E_JAVA>/g, e2eTestMatrixWithJava)
       : configTemplate.replace(/# <NEEDS_E2E_TEST_REQUIREMENT_JAVA>/g, '').replace(/# <TEST_MATRIX_E2E_JAVA>/g, '')
   const alteredConfigTemplate =
-    e2ePackages.length > 0
+    e2ePackagesWithPrettyName.length > 0
       ? alteredConfigWithJavaE2es
           .replace(/# <NEEDS_E2E_TEST_REQUIREMENT>/g, '- e2e_tests_without_java')
           .replace(/# <TEST_MATRIX_E2E>/g, e2eTestMatrix)

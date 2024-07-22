@@ -177,9 +177,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/api/v1/apps/{id}/lifecycle/activate',
                   method: 'post',
                 },
-                transformation: {
-                  pick: [],
-                },
               },
             },
           ],
@@ -199,9 +196,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/api/v1/apps/{id}/lifecycle/deactivate',
                   method: 'post',
-                },
-                transformation: {
-                  pick: [],
                 },
               },
             },

@@ -61,10 +61,6 @@ const createDeployAppPolicyRequest = (
       path: '/api/v1/apps/{source}/policies/{target}',
       method: 'put',
     },
-    transformation: {
-      // Don't send any Application fields in the request body.
-      pick: [],
-    },
     context: {
       source: '{id}',
       target: `{${policyName}}`,

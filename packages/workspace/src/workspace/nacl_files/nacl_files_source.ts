@@ -19,6 +19,7 @@ import { logger } from '@salto-io/logging'
 import {
   Change,
   DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   isAdditionChange,
@@ -97,7 +98,7 @@ export type SourceLoadParams = {
 }
 
 export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 'clear'> & {
-  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Changes>
+  updateNaclFiles: (changes: DetailedChangeWithBaseChange[], mode?: RoutingMode) => Promise<Changes>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -801,7 +802,7 @@ const buildNaclFilesSource = (
   }
 
   const groupChangesByFilename = async (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
   ): Promise<Record<string, DetailedChangeWithSource[]>> => {
     const naclFiles = _.uniq(
       await awu(changes)
@@ -837,7 +838,7 @@ const buildNaclFilesSource = (
     )
   }
 
-  const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+  const updateNaclFiles = async (changes: DetailedChangeWithBaseChange[]): Promise<ChangeSet<Change>> => {
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)

@@ -20,11 +20,13 @@ import {
   ObjectType,
   ReadOnlyElementsSource,
   SaltoError,
+  toChange,
 } from '@salto-io/adapter-api'
 import {
   applyDetailedChanges,
   buildElementsSourceFromElements,
   detailedCompare,
+  getDetailedChanges,
   transformElement,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -152,11 +154,9 @@ export const buildAdaptersConfigSource = async ({
     const configsArr = collections.array.makeArray(configs)
 
     await naclSource.updateNaclFiles(
-      _.uniqBy(configsArr, conf => conf.elemID.getFullName()).map(conf => ({
-        id: conf.elemID,
-        action: 'remove',
-        data: { before: conf },
-      })),
+      _.uniqBy(configsArr, conf => conf.elemID.getFullName()).flatMap(conf =>
+        getDetailedChanges(toChange({ before: conf })),
+      ),
     )
 
     const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
@@ -171,12 +171,12 @@ export const buildAdaptersConfigSource = async ({
 
     const configsToUpdate = await Promise.all(configsArr.map(removeUndefined))
     await naclSource.updateNaclFiles(
-      configsToUpdate.map(conf => ({
-        id: conf.elemID,
-        action: 'add',
-        data: { after: conf },
-        path: [...CONFIG_PATH, conf.elemID.adapter, ...(conf.path ?? [conf.elemID.adapter])],
-      })),
+      configsToUpdate.flatMap(conf =>
+        getDetailedChanges(toChange({ after: conf })).map(change => ({
+          ...change,
+          path: [...CONFIG_PATH, conf.elemID.adapter, ...(conf.path ?? [conf.elemID.adapter])],
+        })),
+      ),
     )
   }
 

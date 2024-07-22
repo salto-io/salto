@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import objectHash from 'object-hash'
 import {
-  ChangeDataType,
+  Element,
   DetailedChange,
   Value,
   isReferenceExpression,
@@ -297,7 +297,7 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
  *   In such scenario it is not clear whether the results should be ['b', 'a'] or ['a', 'b'].
  *   Here we chose the results for such case to be ['a', 'b'].
  */
-export const applyListChanges = (element: ChangeDataType, changes: DetailedChange[]): void =>
+export const applyListChanges = (element: Element, changes: DetailedChange[]): void =>
   log.timeDebug(() => {
     const ids = changes.map(change => change.id)
     if (

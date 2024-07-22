@@ -61,7 +61,9 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
       return transformedItems
     }
     return awu(transformedItems)
-      .map(async transformedItem => ({ ...transformedItem, ...(await adjust(transformedItem)) }))
+      .flatMap(async transformedItem =>
+        collections.array.makeArray(await adjust(transformedItem)).map(res => ({ ...transformedItem, ...res })),
+      )
       .toArray()
   }
   if (!def.single) {

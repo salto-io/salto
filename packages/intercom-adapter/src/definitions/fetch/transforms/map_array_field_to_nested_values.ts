@@ -34,7 +34,7 @@ type FieldAdjustment = {
  */
 
 export const mapArrayFieldToNestedValues =
-  (fieldAdjustments: FieldAdjustment[]): definitions.AdjustFunction =>
+  (fieldAdjustments: FieldAdjustment[]): definitions.AdjustFunctionSingle =>
   async ({ value }) => {
     validateItemValue(value)
     const mapField = ({ fieldName, fromField, nestedField, fallbackValue }: FieldAdjustment): Value => {

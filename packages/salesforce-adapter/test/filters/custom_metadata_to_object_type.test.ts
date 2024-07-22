@@ -44,10 +44,7 @@ import {
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { apiName, Types } from '../../src/transformers/transformer'
-import {
-  apiNameSync,
-  isInstanceOfTypeChangeSync,
-} from '../../src/filters/utils'
+import { apiNameSync, isInstanceOfTypeChangeSync } from '../../src/filters/utils'
 import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 

@@ -19,6 +19,7 @@ import _ from 'lodash'
 import { transform as transformGuideItem } from './guide_adjuster'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../../../constants'
 
+// this transformer adds direct_parent_id and direct_parent_type to sections, this is used later in filters
 export const transform: definitions.AdjustFunction = async ({ value, context, typeName }) => {
   const valueWithGuide = await transformGuideItem({ value, context, typeName })
   const retVal: Values = { ...valueWithGuide.value }

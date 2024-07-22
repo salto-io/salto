@@ -15,7 +15,6 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-// import { Values } from '@salto-io/adapter-api'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { EVERYONE_USER_TYPE } from '../../constants'
@@ -1345,8 +1344,6 @@ const createCustomizations = (): Record<
     },
   },
 
-  category_order: {},
-
   category: {
     requests: [
       {
@@ -1438,8 +1435,6 @@ const createCustomizations = (): Record<
     },
   },
 
-  section_order: {},
-
   section: {
     requests: [
       {
@@ -1497,8 +1492,6 @@ const createCustomizations = (): Record<
     },
   },
 
-  article_order: {},
-
   article: {
     requests: [
       {
@@ -1536,14 +1529,14 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: {
-          parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }, { fieldName: 'id' }],
+          parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }],
         },
         path: { pathParts: [{ parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }] }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
-        position: { hide: true, fieldType: 'number' },
+        position: { hide: true },
         author_id: { fieldType: 'unknown' },
         vote_sum: { omit: true },
         vote_count: { omit: true },
@@ -1609,6 +1602,7 @@ const createCustomizations = (): Record<
         created_at: { hide: true },
         updated_at: { hide: true },
         url: { omit: true },
+        article_attachments: { fieldType: 'List<article_attachment>' },
       },
     },
   },

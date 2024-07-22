@@ -110,7 +110,7 @@ export const createStringValue = (
   tokens: Required<Token>[],
   createSimpleStringValueFunc = createSimpleStringValue,
 ): string | TemplateExpression => {
-  const simpleString = _.every(tokens, token =>
+  const isSimpleString = _.every(tokens, token =>
     [TOKEN_TYPES.CONTENT, TOKEN_TYPES.ESCAPE, TOKEN_TYPES.NEWLINE].includes(token.type),
   )
   return simpleString

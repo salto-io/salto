@@ -49,13 +49,7 @@ import {
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
 import { FilterContext, FilterResult, RemoteFilterCreator } from '../filter'
-import {
-  apiName,
-  Types,
-  createInstanceServiceIds,
-  isNameField,
-  toRecord,
-} from '../transformers/transformer'
+import { apiName, Types, createInstanceServiceIds, isNameField, toRecord } from '../transformers/transformer'
 import {
   getNamespace,
   isMasterDetailField,
@@ -103,8 +97,7 @@ const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const aliasSeparator = ' '
 
-const getQueryableFields = (object: ObjectType): Field[] =>
-  Object.values(object.fields).filter(isQueryableField)
+const getQueryableFields = (object: ObjectType): Field[] => Object.values(object.fields).filter(isQueryableField)
 
 type GetRecordsParams = {
   client: SalesforceClient
@@ -114,12 +107,7 @@ type GetRecordsParams = {
 
 const getRecords = async ({
   client,
-  customObjectFetchSettings: {
-    objectType,
-    managedBySaltoField,
-    omittedFields,
-    changedSince,
-  },
+  customObjectFetchSettings: { objectType, managedBySaltoField, omittedFields, changedSince },
   ids,
 }: GetRecordsParams): Promise<SalesforceRecord[]> => {
   const typeName = apiNameSync(objectType)
@@ -129,7 +117,7 @@ const getRecords = async ({
   }
 
   const queryableFields = getQueryableFields(objectType).filter(
-    (field) => !omittedFields.includes(apiNameSync(field) ?? ''),
+    field => !omittedFields.includes(apiNameSync(field) ?? ''),
   )
   // queryableFields can't be empty - at least the ID fields are queryable and not omitted or we'll consider the config
   // for the object to be invalid and won't get here.
@@ -140,13 +128,7 @@ const getRecords = async ({
     managedBySaltoField ? `, filtering by ${managedBySaltoField}` : '',
     changedSince ? `, changed since ${changedSince}` : '',
   )
-  const queries = await buildDataRecordsSoqlQueries(
-    typeName,
-    queryableFields,
-    ids,
-    managedBySaltoField,
-    changedSince,
-  )
+  const queries = await buildDataRecordsSoqlQueries(typeName, queryableFields, ids, managedBySaltoField, changedSince)
   log.debug('Queries: %o', queries)
   const records = await queryClient(client, queries)
   log.debug(`Fetched ${records.length} records of type ${typeName}`)
@@ -167,9 +149,7 @@ const transformCompoundNameValues = async (
 ): Promise<SalesforceRecord> => {
   const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
   // We assume there's only one Name field
-  const nameFieldName = Object.keys(
-    await pickAsync(type.fields, isNameField),
-  )[0]
+  const nameFieldName = Object.keys(await pickAsync(type.fields, isNameField))[0]
   const subNameValues = _.pick(recordValue, nameSubFields)
   return _.isUndefined(nameFieldName) || _.isEmpty(subNameValues)
     ? recordValue
@@ -189,10 +169,7 @@ export const transformRecordToValues = async (
   type: ObjectType,
   recordValue: SalesforceRecord,
 ): Promise<SalesforceRecord> => {
-  const valuesWithTransformedName = await transformCompoundNameValues(
-    type,
-    recordValue,
-  )
+  const valuesWithTransformedName = await transformCompoundNameValues(type, recordValue)
   return omitDefaultKeys(valuesWithTransformedName)
 }
 
@@ -207,32 +184,21 @@ const recordToInstance = async ({
     const typeNamespace = await getNamespace(type)
     const instanceFileName = pathNaclCase(instanceName)
     if (typeNamespace) {
-      return [
-        SALESFORCE,
-        INSTALLED_PACKAGES_PATH,
-        typeNamespace,
-        RECORDS_PATH,
-        type.elemID.typeName,
-        instanceFileName,
-      ]
+      return [SALESFORCE, INSTALLED_PACKAGES_PATH, typeNamespace, RECORDS_PATH, type.elemID.typeName, instanceFileName]
     }
     return [SALESFORCE, RECORDS_PATH, type.elemID.typeName, instanceFileName]
   }
   const { name } = Types.getElemId(
     instanceSaltoName,
     true,
-    regenerateSaltoIds
-      ? undefined
-      : createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), type),
+    regenerateSaltoIds ? undefined : createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), type),
   )
   return new InstanceElement(
     name,
     type,
     await transformRecordToValues(type, record),
     await getInstancePath(name),
-    instanceAlias !== undefined && instanceAlias !== ''
-      ? { [CORE_ANNOTATIONS.ALIAS]: instanceAlias }
-      : {},
+    instanceAlias !== undefined && instanceAlias !== '' ? { [CORE_ANNOTATIONS.ALIAS]: instanceAlias } : {},
   )
 }
 
@@ -245,10 +211,7 @@ const typesRecordsToInstances = async (
   configChangeSuggestions: ConfigChangeSuggestion[]
 }> => {
   const typesToUnresolvedRefFields = {} as Record<TypeName, Set<string>>
-  const addUnresolvedRefFieldByType = (
-    typeName: string,
-    unresolvedFieldName: string,
-  ): void => {
+  const addUnresolvedRefFieldByType = (typeName: string, unresolvedFieldName: string): void => {
     if (typesToUnresolvedRefFields[typeName] === undefined) {
       typesToUnresolvedRefFields[typeName] = new Set([unresolvedFieldName])
     }
@@ -256,41 +219,25 @@ const typesRecordsToInstances = async (
   }
   const saltoNameByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
   const aliasByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
-  const setSaltoName = (
-    typeName: TypeName,
-    recordId: string,
-    saltoName: string,
-  ): void => {
+  const setSaltoName = (typeName: TypeName, recordId: string, saltoName: string): void => {
     if (saltoNameByIdAndType[typeName] === undefined) {
       saltoNameByIdAndType[typeName] = {}
     }
     saltoNameByIdAndType[typeName][recordId] = saltoName
   }
-  const getSaltoName = (
-    typeName: TypeName,
-    recordId: string,
-  ): string | undefined => saltoNameByIdAndType[typeName]?.[recordId]
+  const getSaltoName = (typeName: TypeName, recordId: string): string | undefined =>
+    saltoNameByIdAndType[typeName]?.[recordId]
 
-  const getAlias = (typeName: TypeName, recordId: string): string | undefined =>
-    aliasByIdAndType[typeName]?.[recordId]
-  const setAlias = (
-    typeName: TypeName,
-    recordId: string,
-    alias: string,
-  ): void => {
+  const getAlias = (typeName: TypeName, recordId: string): string | undefined => aliasByIdAndType[typeName]?.[recordId]
+  const setAlias = (typeName: TypeName, recordId: string, alias: string): void => {
     if (aliasByIdAndType[typeName] === undefined) {
       aliasByIdAndType[typeName] = {}
     }
     aliasByIdAndType[typeName][recordId] = alias
   }
 
-  const getRecordSaltoName = async (
-    typeName: string,
-    record: SalesforceRecord,
-  ): Promise<string> => {
-    const fieldToSaltoName = async (
-      field: Field,
-    ): Promise<string | undefined> => {
+  const getRecordSaltoName = async (typeName: string, record: SalesforceRecord): Promise<string> => {
+    const fieldToSaltoName = async (field: Field): Promise<string | undefined> => {
       const fieldValue = record[field.name]
       if (fieldValue === null || fieldValue === undefined) {
         return undefined
@@ -300,7 +247,7 @@ const typesRecordsToInstances = async (
       }
       const referencedTypeNames = referenceFieldTargetTypes(field)
       const referencedName = await awu(referencedTypeNames)
-        .map((referencedTypeName) => {
+        .map(referencedTypeName => {
           const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
           if (rec === undefined) {
             log.debug(
@@ -322,7 +269,7 @@ const typesRecordsToInstances = async (
     }
     const saltoIdFields = customObjectFetchSetting[typeName].idFields
     const saltoIdsValues = await awu(saltoIdFields)
-      .map((field) => fieldToSaltoName(field))
+      .map(field => fieldToSaltoName(field))
       .filter(isDefined)
       .toArray()
     const fullName = saltoIdsValues.join(nameSeparator)
@@ -330,10 +277,7 @@ const typesRecordsToInstances = async (
     return fullName
   }
 
-  const getRecordAlias = async (
-    typeName: string,
-    record: SalesforceRecord,
-  ): Promise<string> => {
+  const getRecordAlias = async (typeName: string, record: SalesforceRecord): Promise<string> => {
     const fieldToAlias = async (field: Field): Promise<string | undefined> => {
       const fieldValue = record[field.name]
       if (fieldValue === null || fieldValue === undefined) {
@@ -344,7 +288,7 @@ const typesRecordsToInstances = async (
       }
       const referencedTypeNames = referenceFieldTargetTypes(field)
       return awu(referencedTypeNames)
-        .map((referencedTypeName) => {
+        .map(referencedTypeName => {
           const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
           if (rec === undefined) {
             log.debug(
@@ -362,8 +306,8 @@ const typesRecordsToInstances = async (
     }
     const alias = (
       await awu(customObjectFetchSetting[typeName].aliasFields)
-        .map((field) => fieldToAlias(field))
-        .filter((fieldAlias) => fieldAlias !== undefined && fieldAlias !== '')
+        .map(field => fieldToAlias(field))
+        .filter(fieldAlias => fieldAlias !== undefined && fieldAlias !== '')
         .toArray()
     ).join(aliasSeparator)
     setAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD], alias)
@@ -373,7 +317,7 @@ const typesRecordsToInstances = async (
   const instances = await awu(Object.entries(recordByIdAndType))
     .flatMap(async ([typeName, idToRecord]) =>
       awu(Object.values(idToRecord))
-        .map(async (record) => ({
+        .map(async record => ({
           type: customObjectFetchSetting[typeName].objectType,
           record,
           instanceSaltoName: await getRecordSaltoName(typeName, record),
@@ -381,17 +325,13 @@ const typesRecordsToInstances = async (
           regenerateSaltoIds,
         }))
         .filter(
-          async (recToInstanceParams) =>
-            !Object.keys(typesToUnresolvedRefFields).includes(
-              await apiName(recToInstanceParams.type),
-            ),
+          async recToInstanceParams =>
+            !Object.keys(typesToUnresolvedRefFields).includes(await apiName(recToInstanceParams.type)),
         )
         .map(recordToInstance),
     )
     .toArray()
-  const configChangeSuggestions = Object.entries(
-    typesToUnresolvedRefFields,
-  ).map(([typeName, unresolvedRefFields]) =>
+  const configChangeSuggestions = Object.entries(typesToUnresolvedRefFields).map(([typeName, unresolvedRefFields]) =>
     createUnresolvedRefIdFieldConfigChange(typeName, [...unresolvedRefFields]),
   )
   return {
@@ -408,18 +348,16 @@ const getTargetRecordIds = (
   const referenceFieldsToTargets = Object.fromEntries(
     Object.values(type.fields)
       .filter(isReferenceField)
-      .map((field) => [
+      .map(field => [
         field.name,
-        referenceFieldTargetTypes(field).filter((typeName) =>
-          allowedRefToTypeNames.includes(typeName),
-        ),
+        referenceFieldTargetTypes(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
       ]),
   )
-  return records.flatMap((record) =>
+  return records.flatMap(record =>
     Object.entries(referenceFieldsToTargets)
       .filter(([fieldName]) => _.isString(record[fieldName]))
       .flatMap(([fieldName, targets]) =>
-        targets.map((targetTypeName) => ({
+        targets.map(targetTypeName => ({
           targetTypeName,
           id: record[fieldName],
         })),
@@ -435,22 +373,16 @@ const getElementSourceRecordsByTypeAndId = async (
   types: Set<string>,
   ignoredRecordIds: Set<string>,
 ): Promise<SalesforceRecordsByTypeAndId> => {
-  const instancesToRecords = async (
-    instances: ReadonlyArray<InstanceElement>,
-  ): Promise<SalesforceRecord[]> => {
-    const resolveRecordReferences = async (
-      record: SalesforceRecord,
-    ): Promise<void> =>
+  const instancesToRecords = async (instances: ReadonlyArray<InstanceElement>): Promise<SalesforceRecord[]> => {
+    const resolveRecordReferences = async (record: SalesforceRecord): Promise<void> =>
       awu(Object.entries(record))
         .filter(([, value]) => isReferenceExpression(value))
         .forEach(async ([fieldName, refExpr]) => {
-          record[fieldName] = apiNameSync(
-            await refExpr.getResolvedValue(elementsSource),
-          )
+          record[fieldName] = apiNameSync(await refExpr.getResolvedValue(elementsSource))
         })
 
     const records = await awu(instances)
-      .map((instance) => toRecord(instance, FIELD_ANNOTATIONS.QUERYABLE, true))
+      .map(instance => toRecord(instance, FIELD_ANNOTATIONS.QUERYABLE, true))
       .toArray()
 
     await awu(records).forEach(resolveRecordReferences)
@@ -460,21 +392,14 @@ const getElementSourceRecordsByTypeAndId = async (
   const elementSourceRecordsByType: Record<string, Values> = {}
   const elementSourceInstancesByType = await awu(await elementsSource.getAll())
     .filter(isInstanceOfCustomObjectSync)
-    .filter((instance) => types.has(apiNameSync(instance.getTypeSync()) ?? ''))
-    .filter(
-      (instance) =>
-        !ignoredRecordIds.has(instance.value[CUSTOM_OBJECT_ID_FIELD]),
-    )
-    .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
+    .filter(instance => types.has(apiNameSync(instance.getTypeSync()) ?? ''))
+    .filter(instance => !ignoredRecordIds.has(instance.value[CUSTOM_OBJECT_ID_FIELD]))
+    .groupBy(instance => apiNameSync(instance.getTypeSync()) ?? '')
 
-  await awu(Object.entries(elementSourceInstancesByType)).forEach(
-    async ([type, instances]) => {
-      elementSourceRecordsByType[type] = await instancesToRecords(instances)
-    },
-  )
-  return _.mapValues(elementSourceRecordsByType, (records) =>
-    _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD]),
-  )
+  await awu(Object.entries(elementSourceInstancesByType)).forEach(async ([type, instances]) => {
+    elementSourceRecordsByType[type] = await instancesToRecords(instances)
+  })
+  return _.mapValues(elementSourceRecordsByType, records => _.keyBy(records, record => record[CUSTOM_OBJECT_ID_FIELD]))
 }
 
 const getReferencedRecords = async (
@@ -484,73 +409,46 @@ const getReferencedRecords = async (
   fallbackElementsSource?: ReadOnlyElementsSource,
 ): Promise<RecordsByTypeAndId> => {
   const allReferenceRecords = {} as RecordsByTypeAndId
-  const allowedRefToTypeNames = Object.keys(
-    _.pickBy(customObjectFetchSetting, (setting) => !setting.isBase),
-  )
-  const getMissingReferencedIds = (
-    records: RecordsByTypeAndId,
-  ): Record<TypeName, RecordID[]> => {
-    const missingReferencedRecordIds = Object.entries(records).flatMap(
-      ([typeName, idToRecords]) => {
-        const type = customObjectFetchSetting[typeName].objectType
-        const sfRecords = Object.values(idToRecords)
-        const targetRecordIds = getTargetRecordIds(
-          type,
-          sfRecords,
-          allowedRefToTypeNames,
-        )
-        return (
-          targetRecordIds
-            // Filter out already fetched target records
-            .filter(
-              ({ targetTypeName, id }) =>
-                allReferenceRecords[targetTypeName]?.[id] === undefined,
-            )
-        )
-      },
-    )
-    const referencedRecordsById = _.groupBy(
-      missingReferencedRecordIds,
-      (t) => t.targetTypeName,
-    )
-    return _.mapValues(referencedRecordsById, (tuples) =>
-      _.uniq(tuples.map((t) => t.id)),
-    )
+  const allowedRefToTypeNames = Object.keys(_.pickBy(customObjectFetchSetting, setting => !setting.isBase))
+  const getMissingReferencedIds = (records: RecordsByTypeAndId): Record<TypeName, RecordID[]> => {
+    const missingReferencedRecordIds = Object.entries(records).flatMap(([typeName, idToRecords]) => {
+      const type = customObjectFetchSetting[typeName].objectType
+      const sfRecords = Object.values(idToRecords)
+      const targetRecordIds = getTargetRecordIds(type, sfRecords, allowedRefToTypeNames)
+      return (
+        targetRecordIds
+          // Filter out already fetched target records
+          .filter(({ targetTypeName, id }) => allReferenceRecords[targetTypeName]?.[id] === undefined)
+      )
+    })
+    const referencedRecordsById = _.groupBy(missingReferencedRecordIds, t => t.targetTypeName)
+    return _.mapValues(referencedRecordsById, tuples => _.uniq(tuples.map(t => t.id)))
   }
 
-  const getReferencedRecordsRecursively = async (
-    currentLevelRecords: RecordsByTypeAndId,
-  ): Promise<void> => {
+  const getReferencedRecordsRecursively = async (currentLevelRecords: RecordsByTypeAndId): Promise<void> => {
     const typeToMissingIds = getMissingReferencedIds(currentLevelRecords)
-    const newReferencedRecords = await mapValuesAsync(
-      typeToMissingIds,
-      async (ids, typeName) => {
-        const fetchSettings = customObjectFetchSetting[typeName]
-        const records = await getRecords({
-          client,
-          customObjectFetchSettings: fetchSettings,
-          ids,
-        })
-        const fetchedRecordsById = _.keyBy(
-          records,
-          (record) => record[CUSTOM_OBJECT_ID_FIELD],
+    const newReferencedRecords = await mapValuesAsync(typeToMissingIds, async (ids, typeName) => {
+      const fetchSettings = customObjectFetchSetting[typeName]
+      const records = await getRecords({
+        client,
+        customObjectFetchSettings: fetchSettings,
+        ids,
+      })
+      const fetchedRecordsById = _.keyBy(records, record => record[CUSTOM_OBJECT_ID_FIELD])
+      const missingIds = ids.filter(id => !_.has(fetchedRecordsById, id))
+      let elementsSourceRecordsByTypeById: SalesforceRecordsByTypeAndId = {}
+      if (missingIds.length > 0 && fallbackElementsSource) {
+        elementsSourceRecordsByTypeById = await getElementSourceRecordsByTypeAndId(
+          fallbackElementsSource,
+          new Set([typeName]),
+          new Set(),
         )
-        const missingIds = ids.filter((id) => !_.has(fetchedRecordsById, id))
-        let elementsSourceRecordsByTypeById: SalesforceRecordsByTypeAndId = {}
-        if (missingIds.length > 0 && fallbackElementsSource) {
-          elementsSourceRecordsByTypeById =
-            await getElementSourceRecordsByTypeAndId(
-              fallbackElementsSource,
-              new Set([typeName]),
-              new Set(),
-            )
-        }
-        return {
-          ..._.pick(elementsSourceRecordsByTypeById[typeName], missingIds),
-          ...fetchedRecordsById,
-        }
-      },
-    )
+      }
+      return {
+        ..._.pick(elementsSourceRecordsByTypeById[typeName], missingIds),
+        ...fetchedRecordsById,
+      }
+    })
     if (_.isEmpty(newReferencedRecords)) {
       return
     }
@@ -570,14 +468,10 @@ export const getAllInstances = async (
   instances: InstanceElement[]
   configChangeSuggestions: ConfigChangeSuggestion[]
 }> => {
-  const baseTypesSettings = _.pickBy(
-    customObjectFetchSetting,
-    (setting) => setting.isBase,
-  )
+  const baseTypesSettings = _.pickBy(customObjectFetchSetting, setting => setting.isBase)
   log.debug('Base types: %o', _.keys(baseTypesSettings))
-  const fetchedBaseRecordsByType = await mapValuesAsync(
-    baseTypesSettings,
-    (setting) => getRecords({ client, customObjectFetchSettings: setting }),
+  const fetchedBaseRecordsByType = await mapValuesAsync(baseTypesSettings, setting =>
+    getRecords({ client, customObjectFetchSettings: setting }),
   )
 
   const elementsSource = buildElementsSourceForFetch([], config)
@@ -587,7 +481,7 @@ export const getAllInstances = async (
     const fetchedRecordIds = new Set(
       Object.values(fetchedBaseRecordsByType)
         .flat()
-        .map((record) => record[CUSTOM_OBJECT_ID_FIELD]),
+        .map(record => record[CUSTOM_OBJECT_ID_FIELD]),
     )
     elementSourceRecordsByTypeAndId = await getElementSourceRecordsByTypeAndId(
       elementsSource,
@@ -596,76 +490,53 @@ export const getAllInstances = async (
     )
   }
 
-  const fetchedBaseRecordByTypeAndId = _.mapValues(
-    fetchedBaseRecordsByType,
-    (records) => _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD]),
+  const fetchedBaseRecordByTypeAndId = _.mapValues(fetchedBaseRecordsByType, records =>
+    _.keyBy(records, record => record[CUSTOM_OBJECT_ID_FIELD]),
   )
 
   // Get reference to records
-  const referencedRecordsByTypeAndIdFromFetchedRecords =
-    await getReferencedRecords(
-      client,
-      customObjectFetchSetting,
-      fetchedBaseRecordByTypeAndId,
-      config.fetchProfile.metadataQuery.isFetchWithChangesDetection()
-        ? elementsSource
-        : undefined,
-    )
+  const referencedRecordsByTypeAndIdFromFetchedRecords = await getReferencedRecords(
+    client,
+    customObjectFetchSetting,
+    fetchedBaseRecordByTypeAndId,
+    config.fetchProfile.metadataQuery.isFetchWithChangesDetection() ? elementsSource : undefined,
+  )
 
-  const referencedRecordsByTypeAndIdFromElementSourceRecords =
-    await getReferencedRecords(
-      client,
-      customObjectFetchSetting,
-      elementSourceRecordsByTypeAndId,
-    )
+  const referencedRecordsByTypeAndIdFromElementSourceRecords = await getReferencedRecords(
+    client,
+    customObjectFetchSetting,
+    elementSourceRecordsByTypeAndId,
+  )
 
   const mergedRecords = {
     ...referencedRecordsByTypeAndIdFromElementSourceRecords,
     ...referencedRecordsByTypeAndIdFromFetchedRecords,
     ...fetchedBaseRecordByTypeAndId,
   }
-  return typesRecordsToInstances(
-    mergedRecords,
-    customObjectFetchSetting,
-    regenerateSaltoIds,
-  )
+  return typesRecordsToInstances(mergedRecords, customObjectFetchSetting, regenerateSaltoIds)
 }
 
-const getParentFieldNames = (fields: Field[]): string[] =>
-  fields.filter(isMasterDetailField).map((field) => field.name)
+const getParentFieldNames = (fields: Field[]): string[] => fields.filter(isMasterDetailField).map(field => field.name)
 
 export const getIdFields = async (
   type: ObjectType,
   dataManagement: DataManagement,
-): Promise<
-  Pick<
-    CustomObjectFetchSetting,
-    'idFields' | 'aliasFields' | 'invalidIdFields' | 'invalidAliasFields'
-  >
-> => {
+): Promise<Pick<CustomObjectFetchSetting, 'idFields' | 'aliasFields' | 'invalidIdFields' | 'invalidAliasFields'>> => {
   const typeName = await apiName(type)
   const idFieldsNames = dataManagement.getObjectIdsFields(typeName)
-  const idFieldsWithParents = idFieldsNames.flatMap((fieldName) =>
-    fieldName === DETECTS_PARENTS_INDICATOR
-      ? getParentFieldNames(Object.values(type.fields))
-      : fieldName,
+  const idFieldsWithParents = idFieldsNames.flatMap(fieldName =>
+    fieldName === DETECTS_PARENTS_INDICATOR ? getParentFieldNames(Object.values(type.fields)) : fieldName,
   )
   const aliasFieldNames = dataManagement.getObjectAliasFields(typeName)
-  const aliasFieldsWithParents = aliasFieldNames.flatMap((fieldName) =>
-    fieldName === DETECTS_PARENTS_INDICATOR
-      ? getParentFieldNames(Object.values(type.fields))
-      : fieldName,
+  const aliasFieldsWithParents = aliasFieldNames.flatMap(fieldName =>
+    fieldName === DETECTS_PARENTS_INDICATOR ? getParentFieldNames(Object.values(type.fields)) : fieldName,
   )
   const invalidIdFieldNames = idFieldsWithParents.filter(
-    (fieldName) =>
-      type.fields[fieldName] === undefined ||
-      !isQueryableField(type.fields[fieldName]),
+    fieldName => type.fields[fieldName] === undefined || !isQueryableField(type.fields[fieldName]),
   )
   const [aliasFields, invalidAliasFields] = _.partition(
     aliasFieldsWithParents,
-    (fieldName) =>
-      type.fields[fieldName] !== undefined &&
-      isQueryableField(type.fields[fieldName]),
+    fieldName => type.fields[fieldName] !== undefined && isQueryableField(type.fields[fieldName]),
   )
   if (invalidIdFieldNames.length > 0) {
     return {
@@ -676,8 +547,8 @@ export const getIdFields = async (
     }
   }
   return {
-    idFields: idFieldsWithParents.map((fieldName) => type.fields[fieldName]),
-    aliasFields: aliasFields.map((fieldName) => type.fields[fieldName]),
+    idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]),
+    aliasFields: aliasFields.map(fieldName => type.fields[fieldName]),
     invalidIdFields: [],
     invalidAliasFields,
   }
@@ -692,42 +563,26 @@ export const getCustomObjectsFetchSettings = async (
     if (changedAtSingleton === undefined) {
       return undefined
     }
-    const lastChangedAt = _.get(changedAtSingleton.value, [
-      DATA_INSTANCES_CHANGED_AT_MAGIC,
-      typeName,
-    ])
-    return _.isString(lastChangedAt)
-      ? new Date(lastChangedAt).toISOString()
-      : undefined
+    const lastChangedAt = _.get(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName])
+    return _.isString(lastChangedAt) ? new Date(lastChangedAt).toISOString() : undefined
   }
   const isInvalidManagedBySaltoField = (type: ObjectType): boolean => {
     const isBooleanField = (field: Field): boolean => {
       const fieldType = field.getTypeSync()
-      return (
-        isPrimitiveType(fieldType) &&
-        fieldType.isEqual(Types.primitiveDataTypes.Checkbox)
-      )
+      return isPrimitiveType(fieldType) && fieldType.isEqual(Types.primitiveDataTypes.Checkbox)
     }
-    const managedBySaltoFieldName =
-      dataManagement.managedBySaltoFieldForType(type)
+    const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
     if (managedBySaltoFieldName === undefined) {
       return false
     }
     return (
-      (type.fields[managedBySaltoFieldName].annotations[
-        FIELD_ANNOTATIONS.QUERYABLE
-      ] ?? true) === false ||
+      (type.fields[managedBySaltoFieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false ||
       !isBooleanField(type.fields[managedBySaltoFieldName])
     )
   }
-  const typeToFetchSettings = async (
-    type: ObjectType,
-  ): Promise<CustomObjectFetchSetting> => {
-    const managedBySaltoFieldName =
-      dataManagement.managedBySaltoFieldForType(type)
-    const managedBySaltoField = managedBySaltoFieldName
-      ? type.fields[managedBySaltoFieldName]
-      : undefined
+  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
+    const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
+    const managedBySaltoField = managedBySaltoFieldName ? type.fields[managedBySaltoFieldName] : undefined
     const typeApiName = apiNameSync(type)
     if (typeApiName === undefined) {
       log.warn('Type %s has no API name', type.elemID.getFullName())
@@ -737,23 +592,14 @@ export const getCustomObjectsFetchSettings = async (
       isBase: (await dataManagement.shouldFetchObjectType(type)) === 'Always',
       ...(await getIdFields(type, dataManagement)),
       managedBySaltoField: managedBySaltoFieldName,
-      invalidManagedBySaltoField: isInvalidManagedBySaltoField(type)
-        ? managedBySaltoField
-        : undefined,
-      omittedFields: typeApiName
-        ? dataManagement.omittedFieldsForType(typeApiName)
-        : [],
-      changedSince: typeApiName
-        ? lastChangedInstanceForType(typeApiName)
-        : undefined,
+      invalidManagedBySaltoField: isInvalidManagedBySaltoField(type) ? managedBySaltoField : undefined,
+      omittedFields: typeApiName ? dataManagement.omittedFieldsForType(typeApiName) : [],
+      changedSince: typeApiName ? lastChangedInstanceForType(typeApiName) : undefined,
     }
   }
 
   return awu(types)
-    .filter(
-      async (type) =>
-        (await dataManagement.shouldFetchObjectType(type)) !== 'Never',
-    )
+    .filter(async type => (await dataManagement.shouldFetchObjectType(type)) !== 'Never')
     .map(typeToFetchSettings)
     .toArray()
 }
@@ -797,20 +643,17 @@ const filterTypesWithManyInstances = async ({
     })
 
   return {
-    filteredChangesFetchSettings: _.omit(
-      validChangesFetchSettings,
-      typesToFilter,
-    ),
+    filteredChangesFetchSettings: _.omit(validChangesFetchSettings, typesToFilter),
     heavyTypesSuggestions,
   }
 }
 
 const getInaccessibleCustomFields = (objectType: ObjectType): string[] =>
   Object.values(objectType.fields)
-    .filter((field) => !isQueryableField(field))
+    .filter(field => !isQueryableField(field))
     // these fields are either hidden or will end up being hidden
-    .filter((field) => !isHiddenField(field) && !isReadOnlyField(field))
-    .map((field) => apiNameSync(field))
+    .filter(field => !isHiddenField(field) && !isReadOnlyField(field))
+    .map(field => apiNameSync(field))
     .filter(isDefined)
 
 const createInvalidAliasFieldFetchWarning = ({
@@ -828,10 +671,7 @@ const createInvalidManagedBySaltoFieldFetchWarning = (
   const fieldName = apiNameSync(invalidManagedBySaltoField) as string
   const typeName = apiNameSync(objectType) as string
   const errorPreamble = `The field ${typeName}${API_NAME_SEPARATOR}${fieldName} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration.`
-  if (
-    (objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ??
-      true) === false
-  ) {
+  if ((objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false) {
     return {
       message: `${errorPreamble} However, the user configured for fetch does not have read access to this field. Records of type ${typeName} will not be fetched.`,
       severity: 'Warning',
@@ -844,10 +684,7 @@ const createInvalidManagedBySaltoFieldFetchWarning = (
   }
 }
 
-const createInaccessibleFieldsFetchWarning = (
-  objectType: ObjectType,
-  inaccessibleFields: string[],
-): SaltoError => ({
+const createInaccessibleFieldsFetchWarning = (objectType: ObjectType, inaccessibleFields: string[]): SaltoError => ({
   message: `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')}. If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`,
   severity: 'Info',
 })
@@ -856,22 +693,18 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
-    const getAllCustomObjects = async (
-      elementsSource: ReadOnlyElementsSource,
-    ): Promise<ObjectType[]> => {
+    const getAllCustomObjects = async (elementsSource: ReadOnlyElementsSource): Promise<ObjectType[]> => {
       const customObjects = await awu(await elementsSource.getAll())
         .filter(isCustomObjectSync)
         .toArray()
 
       // Resolve referenceTo fields from Elements Source for partial fetch
       await awu(customObjects)
-        .flatMap((customObject) => Object.values(customObject.fields))
+        .flatMap(customObject => Object.values(customObject.fields))
         .filter(isReferenceField)
-        .flatMap((field) =>
-          makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]),
-        )
+        .flatMap(field => makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]))
         .filter(isReferenceExpression)
-        .forEach(async (reference) => {
+        .forEach(async reference => {
           reference.value = await reference.getResolvedValue(elementsSource)
         })
       return customObjects
@@ -887,18 +720,14 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     } => {
       const [validFetchSettings, invalidFetchSettings] = _.partition(
         customObjectFetchSetting,
-        (setting) =>
-          setting.invalidIdFields.length === 0 &&
-          setting.invalidManagedBySaltoField === undefined,
+        setting => setting.invalidIdFields.length === 0 && setting.invalidManagedBySaltoField === undefined,
       )
 
       const fatalErrors: SaltoError[] = []
       if (
         validFetchSettings.length === 0 &&
         invalidFetchSettings.length > 0 &&
-        invalidFetchSettings.every(
-          (setting) => setting.invalidManagedBySaltoField !== undefined,
-        )
+        invalidFetchSettings.every(setting => setting.invalidManagedBySaltoField !== undefined)
       ) {
         fatalErrors.push({
           message:
@@ -908,24 +737,20 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       }
 
       const invalidAliasFieldWarnings = customObjectFetchSetting
-        .filter((setting) => setting.invalidAliasFields.length > 0)
+        .filter(setting => setting.invalidAliasFields.length > 0)
         .map(createInvalidAliasFieldFetchWarning)
 
       const invalidManagedBySaltoFieldWarnings = invalidFetchSettings
-        .filter((setting) => setting.invalidManagedBySaltoField !== undefined)
-        .map((settings) => ({
+        .filter(setting => setting.invalidManagedBySaltoField !== undefined)
+        .map(settings => ({
           type: settings.objectType,
           field: settings.invalidManagedBySaltoField as Field,
         }))
-        .map(({ type, field }) =>
-          createInvalidManagedBySaltoFieldFetchWarning(type, field),
-        )
+        .map(({ type, field }) => createInvalidManagedBySaltoFieldFetchWarning(type, field))
       return {
         validFetchSettings,
         invalidFetchSettings,
-        warnings: invalidAliasFieldWarnings.concat(
-          invalidManagedBySaltoFieldWarnings,
-        ),
+        warnings: invalidAliasFieldWarnings.concat(invalidManagedBySaltoFieldWarnings),
         fatalErrors,
       }
     }
@@ -939,8 +764,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     // parameter but there may be instances that changed even though their types remained the same. So we must iterate
     // over all the object types in the elements source.
     const elementsSource = buildElementsSourceForFetch(elements, config)
-    const changedAtSingleton =
-      await getChangedAtSingletonInstance(elementsSource)
+    const changedAtSingleton = await getChangedAtSingletonInstance(elementsSource)
 
     const customObjects = await getAllCustomObjects(elementsSource)
     const customObjectFetchSetting = await getCustomObjectsFetchSettings(
@@ -962,17 +786,13 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       }
     }
 
-    const validChangesFetchSettings = _.keyBy(
-      validFetchSettings,
-      (setting) => apiNameSync(setting.objectType) ?? '',
-    )
+    const validChangesFetchSettings = _.keyBy(validFetchSettings, setting => apiNameSync(setting.objectType) ?? '')
 
-    const { filteredChangesFetchSettings, heavyTypesSuggestions } =
-      await filterTypesWithManyInstances({
-        validChangesFetchSettings,
-        maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
-        client,
-      })
+    const { filteredChangesFetchSettings, heavyTypesSuggestions } = await filterTypesWithManyInstances({
+      validChangesFetchSettings,
+      maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
+      client,
+    })
 
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
@@ -980,22 +800,19 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       config,
       dataManagement.regenerateSaltoIds,
     )
-    instances.forEach((instance) => elements.push(instance))
+    instances.forEach(instance => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)
     const invalidFieldSuggestions = await awu(invalidFetchSettings)
-      .filter((settings) => settings.invalidIdFields.length > 0)
-      .map(async (setting) =>
-        createInvalidIdFieldConfigChange(
-          await apiName(setting.objectType),
-          makeArray(setting.invalidIdFields),
-        ),
+      .filter(settings => settings.invalidIdFields.length > 0)
+      .map(async setting =>
+        createInvalidIdFieldConfigChange(await apiName(setting.objectType), makeArray(setting.invalidIdFields)),
       )
       .toArray()
 
     const typesOfFetchedInstances = new Set(
       elements
         .filter(isInstanceElement)
-        .map((instance) => instance.getTypeSync())
+        .map(instance => instance.getTypeSync())
         .filter(isCustomObjectSync), // we don't deploy metadata objects, so no reason to warn about them.
     )
 
@@ -1003,25 +820,19 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
 
     if (config.fetchProfile.isWarningEnabled('nonQueryableFields') ?? false) {
       invalidPermissionsWarnings = customObjectFetchSetting
-        .map((fetchSettings) => fetchSettings.objectType)
+        .map(fetchSettings => fetchSettings.objectType)
         .filter(isCustomObjectSync)
-        .map((objectType) => ({
+        .map(objectType => ({
           type: objectType,
           fields: getInaccessibleCustomFields(objectType),
         }))
         .filter(({ fields }) => fields.length > 0)
         .filter(({ type }) => typesOfFetchedInstances.has(type))
-        .map(({ type, fields }) =>
-          createInaccessibleFieldsFetchWarning(type, fields),
-        )
+        .map(({ type, fields }) => createInaccessibleFieldsFetchWarning(type, fields))
     }
 
     return {
-      configSuggestions: [
-        ...invalidFieldSuggestions,
-        ...heavyTypesSuggestions,
-        ...configChangeSuggestions,
-      ],
+      configSuggestions: [...invalidFieldSuggestions, ...heavyTypesSuggestions, ...configChangeSuggestions],
       errors: fetchSettingsWarnings.concat(invalidPermissionsWarnings),
     }
   },

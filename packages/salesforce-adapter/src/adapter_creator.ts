@@ -55,14 +55,11 @@ import { getAdditionalReferences } from './additional_references'
 import { getCustomReferences } from './custom_references/handlers'
 import { dependencyChanger } from './dependency_changer'
 
-type ValidatorsActivationConfig =
-  deployment.changeValidators.ValidatorsActivationConfig
+type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
 const log = logger(module)
 
-const credentialsFromConfig = (
-  config: Readonly<InstanceElement>,
-): Credentials => {
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
     return new OauthAccessTokenCredentials({
       refreshToken: config.value.refreshToken,
@@ -81,16 +78,12 @@ const credentialsFromConfig = (
   })
 }
 
-const adapterConfigFromConfig = (
-  config: Readonly<InstanceElement> | undefined,
-): SalesforceConfig => {
-  const validateClientConfig = (
-    clientConfig: SalesforceClientConfig | undefined,
-  ): void => {
+const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): SalesforceConfig => {
+  const validateClientConfig = (clientConfig: SalesforceClientConfig | undefined): void => {
     if (clientConfig?.maxConcurrentApiRequests !== undefined) {
-      const invalidValues = Object.entries(
-        clientConfig.maxConcurrentApiRequests,
-      ).filter(([_name, value]) => value === 0)
+      const invalidValues = Object.entries(clientConfig.maxConcurrentApiRequests).filter(
+        ([_name, value]) => value === 0,
+      )
       if (invalidValues.length > 0) {
         throw new ConfigValidationError(
           [CLIENT_CONFIG, 'maxConcurrentApiRequests'],
@@ -118,9 +111,7 @@ const adapterConfigFromConfig = (
       }
       const overrides = clientConfig?.readMetadataChunkSize.overrides
       if (overrides) {
-        const invalidValues = Object.entries(overrides).filter(
-          ([_name, value]) => value < 1 || value > 10,
-        )
+        const invalidValues = Object.entries(overrides).filter(([_name, value]) => value < 1 || value > 10)
         if (invalidValues.length > 0) {
           throw new ConfigValidationError(
             [CLIENT_CONFIG, 'readMetadataChunkSize'],
@@ -142,9 +133,7 @@ const adapterConfigFromConfig = (
     }
   }
 
-  const validateValidatorsConfig = (
-    validators: ValidatorsActivationConfig | undefined,
-  ): void => {
+  const validateValidatorsConfig = (validators: ValidatorsActivationConfig | undefined): void => {
     if (validators !== undefined && !_.isPlainObject(validators)) {
       throw new ConfigValidationError(
         ['validators'],
@@ -161,22 +150,14 @@ const adapterConfigFromConfig = (
           )
         }
         if (!_.isBoolean(value)) {
-          throw new ConfigValidationError(
-            ['validators', key],
-            'Value must be true or false',
-          )
+          throw new ConfigValidationError(['validators', key], 'Value must be true or false')
         }
       })
     }
   }
 
-  const validateEnumFieldPermissions = (
-    enumFieldPermissions: boolean | undefined,
-  ): void => {
-    if (
-      enumFieldPermissions !== undefined &&
-      !_.isBoolean(enumFieldPermissions)
-    ) {
+  const validateEnumFieldPermissions = (enumFieldPermissions: boolean | undefined): void => {
+    if (enumFieldPermissions !== undefined && !_.isBoolean(enumFieldPermissions)) {
       throw new ConfigValidationError(
         ['enumFieldPermissions'],
         'Enabled enumFieldPermissions configuration must be true or false if it is defined',
@@ -205,8 +186,8 @@ const adapterConfigFromConfig = (
     // Deprecated and used for backwards compatibility (SALTO-4468)
   }
   Object.keys(config?.value ?? {})
-    .filter((k) => !Object.keys(adapterConfig).includes(k))
-    .forEach((k) => log.debug('Unknown config property was found: %s', k))
+    .filter(k => !Object.keys(adapterConfig).includes(k))
+    .forEach(k => log.debug('Unknown config property was found: %s', k))
 
   return adapterConfig
 }
@@ -216,9 +197,7 @@ export const createUrlFromUserInput = (value: Values): string => {
   return `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${value.consumerKey}&scope=refresh_token%20full&redirect_uri=http://localhost:${value.port}&prompt=login%20consent`
 }
 
-const createOAuthRequest = (
-  userInput: InstanceElement,
-): OAuthRequestParameters => ({
+const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => ({
   url: createUrlFromUserInput(userInput.value),
   oauthRequiredFields: ['refresh_token', 'instance_url', 'access_token'],
 })
@@ -243,12 +222,9 @@ In Addition, ${configFromFetch.message}`,
 }
 
 export const adapter: Adapter = {
-  operations: (context) => {
-    const updatedConfig =
-      context.config && updateDeprecatedConfiguration(context.config)
-    const config = adapterConfigFromConfig(
-      updatedConfig?.config ?? context.config,
-    )
+  operations: context => {
+    const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
+    const config = adapterConfigFromConfig(updatedConfig?.config ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const client = new SalesforceClient({
       credentials,
@@ -266,7 +242,7 @@ export const adapter: Adapter = {
     }
 
     return {
-      fetch: async (opts) => {
+      fetch: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
         const fetchResults = await salesforceAdapter.fetch(opts)
         fetchResults.updatedConfig = getConfigChange(
@@ -279,12 +255,12 @@ export const adapter: Adapter = {
         return fetchResults
       },
 
-      deploy: async (opts) => {
+      deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.deploy(opts)
       },
 
-      validate: async (opts) => {
+      validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.validate(opts)
       },
@@ -309,14 +285,13 @@ export const adapter: Adapter = {
         }),
       },
 
-      fixElements: async (elements) => {
+      fixElements: async elements => {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.fixElements(elements)
       },
     }
   },
-  validateCredentials: async (config) =>
-    validateCredentials(credentialsFromConfig(config)),
+  validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
   authenticationMethods: {
     basic: {
       credentialsType: usernamePasswordCredentialsType,
@@ -325,10 +300,7 @@ export const adapter: Adapter = {
       createOAuthRequest,
       credentialsType: accessTokenCredentialsType,
       oauthRequestParameters,
-      createFromOauthResponse: async (
-        oldConfig: Values,
-        response: OauthAccessTokenResponse,
-      ) => ({
+      createFromOauthResponse: async (oldConfig: Values, response: OauthAccessTokenResponse) => ({
         sandbox: oldConfig.sandbox,
         clientId: oldConfig.consumerKey,
         clientSecret: oldConfig.consumerSecret,

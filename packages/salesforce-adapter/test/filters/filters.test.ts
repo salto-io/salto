@@ -19,11 +19,7 @@ import SalesforceAdapter from '../../src/adapter'
 import { LocalFilterCreator } from '../../src/filter'
 import mockAdapter from '../adapter'
 import { mockDeployResult, mockDeployMessage } from '../connection'
-import {
-  apiName,
-  createInstanceElement,
-  metadataType,
-} from '../../src/transformers/transformer'
+import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { nullProgressReporter } from '../utils'
@@ -31,11 +27,7 @@ import { nullProgressReporter } from '../utils'
 describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {
     let adapter: SalesforceAdapter
-    let filter: MockInterface<
-      FilterWith<
-        'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy' | 'onPostFetch'
-      >
-    >
+    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy' | 'onPostFetch'>>
     let filterCreator: jest.MockedFunction<LocalFilterCreator>
     let connection: ReturnType<typeof mockAdapter>['connection']
     const mockFetchOpts: MockInterface<FetchOptions> = {
@@ -46,13 +38,10 @@ describe('SalesforceAdapter filters', () => {
       filter = {
         name: 'salesforceTestFilters',
         onFetch: mockFunction<(typeof filter)['onFetch']>().mockResolvedValue(),
-        preDeploy:
-          mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
+        preDeploy: mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
         deploy: mockFunction<(typeof filter)['deploy']>(),
-        onDeploy:
-          mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue(),
-        onPostFetch:
-          mockFunction<(typeof filter)['onPostFetch']>().mockResolvedValue(),
+        onDeploy: mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue(),
+        onPostFetch: mockFunction<(typeof filter)['onPostFetch']>().mockResolvedValue(),
       }
 
       filterCreator = mockFunction<LocalFilterCreator>().mockReturnValue(filter)
@@ -74,10 +63,7 @@ describe('SalesforceAdapter filters', () => {
       let inputChanges: Change[]
       let preDeployInputChanges: Change[]
       beforeEach(async () => {
-        const instance = createInstanceElement(
-          { fullName: 'TestLayout' },
-          mockTypes.Layout,
-        )
+        const instance = createInstanceElement({ fullName: 'TestLayout' }, mockTypes.Layout)
         connection.metadata.deploy.mockReturnValueOnce(
           mockDeployResult({
             componentSuccess: [
@@ -93,7 +79,7 @@ describe('SalesforceAdapter filters', () => {
         replacementChange = toChange({ before: instance })
         inputChanges = [originalChange]
 
-        filter.preDeploy.mockImplementationOnce(async (changes) => {
+        filter.preDeploy.mockImplementationOnce(async changes => {
           // Copy the input changes before modifying the list
           preDeployInputChanges = [...changes]
           changes.pop()
@@ -122,10 +108,7 @@ describe('SalesforceAdapter filters', () => {
 
       it('should call onDeploy with the changes set by preDeploy', () => {
         expect(filter.onDeploy).toHaveBeenCalledTimes(1)
-        expect(filter.onDeploy).toHaveBeenCalledWith(
-          [replacementChange],
-          undefined,
-        )
+        expect(filter.onDeploy).toHaveBeenCalledWith([replacementChange], undefined)
       })
 
       it('should create the filter only once', () => {

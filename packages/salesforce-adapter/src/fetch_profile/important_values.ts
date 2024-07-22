@@ -44,18 +44,13 @@ const DEFAULT_IMPORTANT_VALUES: ImportantValues = [
   highlightedAndIndexed('active'),
 ]
 
-export const mergeWithDefaultImportantValues = (
-  additionalImportantValues?: ImportantValues,
-): ImportantValues => {
+export const mergeWithDefaultImportantValues = (additionalImportantValues?: ImportantValues): ImportantValues => {
   if (additionalImportantValues === undefined) {
     return DEFAULT_IMPORTANT_VALUES
   }
   // The additional important values should override the default ones
-  const additionalImportantValuesValues = new Set(
-    additionalImportantValues.map((value) => value.value),
-  )
+  const additionalImportantValuesValues = new Set(additionalImportantValues.map(value => value.value))
   return DEFAULT_IMPORTANT_VALUES.filter(
-    (importantValue) =>
-      !additionalImportantValuesValues.has(importantValue.value),
+    importantValue => !additionalImportantValuesValues.has(importantValue.value),
   ).concat(additionalImportantValues)
 }

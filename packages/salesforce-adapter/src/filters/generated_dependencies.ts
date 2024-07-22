@@ -13,12 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ChangeDataType,
-  CORE_ANNOTATIONS,
-  getChangeData,
-  isAdditionOrModificationChange,
-} from '@salto-io/adapter-api'
+import { ChangeDataType, CORE_ANNOTATIONS, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 
@@ -36,36 +31,29 @@ const filterCreator: LocalFilterCreator = () => {
 
   return {
     name: 'generatedDependencies',
-    preDeploy: async (changes) => {
+    preDeploy: async changes => {
       generatedDependencies = Object.fromEntries(
         changes
           .filter(isAdditionOrModificationChange)
           .map(getChangeData)
           .filter(
             (element): element is ElementWithGeneratedDependencies =>
-              element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] !==
-              undefined,
+              element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] !== undefined,
           )
-          .map((element) => {
-            const deps =
-              element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+          .map(element => {
+            const deps = element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
             const optionalElement: ChangeDataType = element // Deletion not supported for required keys
-            delete optionalElement.annotations[
-              CORE_ANNOTATIONS.GENERATED_DEPENDENCIES
-            ]
+            delete optionalElement.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
             return [element.elemID.getFullName(), deps]
           }),
       )
     },
-    onDeploy: async (changes) => {
+    onDeploy: async changes => {
       changes
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
-        .filter(
-          (element) =>
-            generatedDependencies[element.elemID.getFullName()] !== undefined,
-        )
-        .forEach((element) => {
+        .filter(element => generatedDependencies[element.elemID.getFullName()] !== undefined)
+        .forEach(element => {
           element.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] =
             generatedDependencies[element.elemID.getFullName()]
         })

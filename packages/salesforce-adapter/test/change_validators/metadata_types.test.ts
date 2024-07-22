@@ -13,22 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ChangeError,
-  InstanceElement,
-  toChange,
-  BuiltinTypes,
-  ObjectType,
-  ElemID,
-} from '@salto-io/adapter-api'
+import { ChangeError, InstanceElement, toChange, BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
 import deployNonDeployableTypes from '../../src/change_validators/metadata_types'
 import { createMetadataObjectType } from '../../src/transformers/transformer'
-import {
-  CUSTOM_METADATA,
-  CUSTOM_OBJECT,
-  METADATA_TYPE,
-  SALESFORCE,
-} from '../../src/constants'
+import { CUSTOM_METADATA, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { createField } from '../utils'
 
@@ -50,9 +38,7 @@ describe('deployNonDeployableTypes', () => {
       elemID: new ElemID(SALESFORCE, 'SomeType'),
     })
     beforeEach(async () => {
-      validatorResult = await deployNonDeployableTypes([
-        toChange({ after: artificialType }),
-      ])
+      validatorResult = await deployNonDeployableTypes([toChange({ after: artificialType })])
     })
     it('should not generate errors', () => {
       expect(validatorResult).toBeEmpty()
@@ -77,14 +63,10 @@ describe('deployNonDeployableTypes', () => {
       },
     })
     beforeEach(async () => {
-      validatorResult = await deployNonDeployableTypes([
-        toChange({ after: metadataType }),
-      ])
+      validatorResult = await deployNonDeployableTypes([toChange({ after: metadataType })])
     })
     it('should generate errors', () => {
-      expect(validatorResult).toSatisfyAll((error) =>
-        error.elemID.isEqual(metadataType.elemID),
-      )
+      expect(validatorResult).toSatisfyAll(error => error.elemID.isEqual(metadataType.elemID))
     })
   })
   describe('When deploying the CustomObject and CustomMetadata metadata types', () => {
@@ -108,9 +90,7 @@ describe('deployNonDeployableTypes', () => {
       expect(validatorResult).toHaveLength(2)
       const [customObjectError, customMetadataError] = validatorResult
       expect(customObjectError.elemID).toEqual(customObjectMetadataType.elemID)
-      expect(customMetadataError.elemID).toEqual(
-        customMetadataMetadataType.elemID,
-      )
+      expect(customMetadataError.elemID).toEqual(customMetadataMetadataType.elemID)
     })
   })
   describe('When deploying a field change', () => {
@@ -121,14 +101,10 @@ describe('deployNonDeployableTypes', () => {
     })
     const field = createField(metadataType, BuiltinTypes.STRING, 'SomeField')
     beforeEach(async () => {
-      validatorResult = await deployNonDeployableTypes([
-        toChange({ after: field }),
-      ])
+      validatorResult = await deployNonDeployableTypes([toChange({ after: field })])
     })
     it('should generate errors', () => {
-      expect(validatorResult).toSatisfyAll((error) =>
-        error.elemID.isEqual(metadataType.elemID),
-      )
+      expect(validatorResult).toSatisfyAll(error => error.elemID.isEqual(metadataType.elemID))
     })
   })
 })

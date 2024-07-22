@@ -141,7 +141,7 @@ describe('organization-wide defaults filter', () => {
               name: 'Name',
               nameField: true,
             },
-            ...fieldsOfInterest.map((fieldName) => ({
+            ...fieldsOfInterest.map(fieldName => ({
               name: fieldName,
               ...fieldDefaults,
             })),
@@ -165,12 +165,7 @@ describe('organization-wide defaults filter', () => {
           isSettings: true,
         },
         {
-          elemID: new ElemID(
-            SALESFORCE,
-            ORGANIZATION_SETTINGS,
-            'instance',
-            '_config',
-          ),
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance', '_config'),
           value: {
             DefaultAccountAccess: 'Edit',
             DefaultCalendarAccess: 'HideDetailsInsert',
@@ -194,12 +189,7 @@ describe('organization-wide defaults filter', () => {
           isSettings: true,
         },
         {
-          elemID: new ElemID(
-            SALESFORCE,
-            ORGANIZATION_API_VERSION,
-            'instance',
-            '_config',
-          ),
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION, 'instance', '_config'),
           value: {
             LatestSupportedApiVersion: 60,
           },
@@ -229,12 +219,7 @@ describe('organization-wide defaults filter', () => {
           isSettings: true,
         },
         {
-          elemID: new ElemID(
-            SALESFORCE,
-            ORGANIZATION_SETTINGS,
-            'instance',
-            '_config',
-          ),
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance', '_config'),
           value: {
             DefaultAccountAccess: 'Edit',
             DefaultCalendarAccess: 'HideDetailsInsert',
@@ -257,12 +242,7 @@ describe('organization-wide defaults filter', () => {
           isSettings: true,
         },
         {
-          elemID: new ElemID(
-            SALESFORCE,
-            ORGANIZATION_API_VERSION,
-            'instance',
-            '_config',
-          ),
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION, 'instance', '_config'),
           value: {
             LatestSupportedApiVersion: 60,
           },

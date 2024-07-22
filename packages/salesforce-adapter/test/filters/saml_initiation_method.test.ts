@@ -61,18 +61,13 @@ describe('saml initiation method filter', () => {
   describe('on fetch', () => {
     it('should transform illegal val to None', async () => {
       await filter.onFetch(testElements)
-      expect(
-        (testElements[1] as InstanceElement).value[SAML_INIT_METHOD_FIELD_NAME],
-      ).toEqual('None')
+      expect((testElements[1] as InstanceElement).value[SAML_INIT_METHOD_FIELD_NAME]).toEqual('None')
     })
 
     it('should keep legal val to', async () => {
-      ;(testElements[1] as InstanceElement).value[SAML_INIT_METHOD_FIELD_NAME] =
-        'IdpInitiated'
+      ;(testElements[1] as InstanceElement).value[SAML_INIT_METHOD_FIELD_NAME] = 'IdpInitiated'
       await filter.onFetch(testElements)
-      expect(
-        (testElements[1] as InstanceElement).value[SAML_INIT_METHOD_FIELD_NAME],
-      ).toEqual('IdpInitiated')
+      expect((testElements[1] as InstanceElement).value[SAML_INIT_METHOD_FIELD_NAME]).toEqual('IdpInitiated')
     })
   })
 })

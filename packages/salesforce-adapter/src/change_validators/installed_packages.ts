@@ -62,7 +62,7 @@ const createInstalledPackageInstanceChangeError = async (
   }
 }
 
-const changeValidator: ChangeValidator = async (changes) =>
+const changeValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isInstanceChange)
     .filter(isInstanceOfTypeChange(INSTALLED_PACKAGE_METADATA))

@@ -32,12 +32,7 @@ import {
   UNIX_TIME_ZERO_STRING,
 } from '../src/constants'
 import { mockInstances, mockTypes } from './mock_elements'
-import {
-  mockDescribeResult,
-  mockFileProperties,
-  mockRetrieveLocator,
-  mockRetrieveResult,
-} from './connection'
+import { mockDescribeResult, mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import { createCustomObjectType, mockFetchOpts } from './utils'
 import { Types } from '../src/transformers/transformer'
 
@@ -53,22 +48,19 @@ describe('Salesforce Fetch With Changes Detection', () => {
   let changedAtSingleton: InstanceElement
   beforeEach(async () => {
     changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
-    const objectWithDeletedField = createCustomObjectType(
-      OBJECT_WITH_DELETED_FIELD_NAME,
-      {
-        fields: {
-          DeletedField__c: {
-            refType: BuiltinTypes.STRING,
-            annotations: {
-              [FIELD_ANNOTATIONS.QUERYABLE]: true,
-              [FIELD_ANNOTATIONS.CREATABLE]: true,
-              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-              [API_NAME]: 'DeletedField__c',
-            },
+    const objectWithDeletedField = createCustomObjectType(OBJECT_WITH_DELETED_FIELD_NAME, {
+      fields: {
+        DeletedField__c: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            [API_NAME]: 'DeletedField__c',
           },
         },
       },
-    )
+    })
     const nonUpdatedObject = createCustomObjectType(NON_UPDATED_OBJECT_NAME, {
       fields: {
         TestField__c: {
@@ -122,11 +114,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
     }))
   })
   describe('fetch with changes detection for types with nested instances', () => {
-    const RELATED_TYPES = [
-      ...CUSTOM_OBJECT_FIELDS,
-      CUSTOM_FIELD,
-      CUSTOM_OBJECT,
-    ] as const
+    const RELATED_TYPES = [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD, CUSTOM_OBJECT] as const
     type RelatedType = (typeof RELATED_TYPES)[number]
     // This standard object has no custom fields or sub instances, and will have no lastChangeDate value
     const NON_UPDATED_STANDARD_OBJECT = 'NonUpdatedStandardObject'
@@ -215,15 +203,11 @@ describe('Salesforce Fetch With Changes Detection', () => {
         WebLink: [],
       }
 
-      connection.metadata.describe.mockResolvedValue(
-        mockDescribeResult(RELATED_TYPES.map((type) => ({ xmlName: type }))),
+      connection.metadata.describe.mockResolvedValue(mockDescribeResult(RELATED_TYPES.map(type => ({ xmlName: type }))))
+      connection.metadata.list.mockImplementation(async queries =>
+        makeArray(queries).flatMap(({ type }) => filePropByRelatedType[type as RelatedType] ?? []),
       )
-      connection.metadata.list.mockImplementation(async (queries) =>
-        makeArray(queries).flatMap(
-          ({ type }) => filePropByRelatedType[type as RelatedType] ?? [],
-        ),
-      )
-      connection.metadata.retrieve.mockImplementation((request) => {
+      connection.metadata.retrieve.mockImplementation(request => {
         retrieveRequest = request
         return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
       })

@@ -31,8 +31,7 @@ import { metadataType } from '../transformers/transformer'
 import { metadataTypesWithAttributes } from '../transformers/xml_transformer'
 
 const { awu } = collections.asynciterable
-const isAttributeField = (field?: Field): boolean =>
-  field?.annotations[IS_ATTRIBUTE] ?? false
+const isAttributeField = (field?: Field): boolean => field?.annotations[IS_ATTRIBUTE] ?? false
 
 const handleAttributeValues = (value: Values, type: ObjectType): Values => {
   if (!_.isPlainObject(value)) {
@@ -40,21 +39,15 @@ const handleAttributeValues = (value: Values, type: ObjectType): Values => {
   }
 
   // We put the attributes first for backwards compatibility.
-  const [attrEntries, entries] = _.partition(
-    Object.entries(value),
-    ([key, _val]) =>
-      isAttributeField(type.fields[key.replace(XML_ATTRIBUTE_PREFIX, '')]),
+  const [attrEntries, entries] = _.partition(Object.entries(value), ([key, _val]) =>
+    isAttributeField(type.fields[key.replace(XML_ATTRIBUTE_PREFIX, '')]),
   )
   return Object.fromEntries(
-    attrEntries
-      .map(([key, val]) => [key.slice(XML_ATTRIBUTE_PREFIX.length), val])
-      .concat(entries),
+    attrEntries.map(([key, val]) => [key.slice(XML_ATTRIBUTE_PREFIX.length), val]).concat(entries),
   )
 }
 
-const removeAttributePrefix = async (
-  instance: InstanceElement,
-): Promise<void> => {
+const removeAttributePrefix = async (instance: InstanceElement): Promise<void> => {
   const type = await instance.getType()
   instance.value = handleAttributeValues(instance.value, type)
   instance.value =
@@ -66,9 +59,7 @@ const removeAttributePrefix = async (
       allowEmptyObjects: true,
       transformFunc: async ({ value, field }) => {
         const fieldType = await field?.getType()
-        return isObjectType(fieldType)
-          ? handleAttributeValues(value, fieldType)
-          : value
+        return isObjectType(fieldType) ? handleAttributeValues(value, fieldType) : value
       },
     })) ?? instance.value
 }
@@ -81,9 +72,7 @@ const filterCreator: LocalFilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     await awu(elements)
       .filter(isInstanceElement)
-      .filter(async (inst) =>
-        metadataTypesWithAttributes.includes(await metadataType(inst)),
-      )
+      .filter(async inst => metadataTypesWithAttributes.includes(await metadataType(inst)))
       .forEach(removeAttributePrefix)
   },
 })

@@ -59,39 +59,19 @@ const fieldsToSort: ReadonlyArray<UnorderedList> = [
     orderBy: 'fieldName',
   },
   {
-    elemID: new ElemID(
-      SALESFORCE,
-      'FieldMappingRow',
-      'field',
-      'fieldMappingFields',
-    ),
+    elemID: new ElemID(SALESFORCE, 'FieldMappingRow', 'field', 'fieldMappingFields'),
     orderBy: 'dataServiceField',
   },
   {
-    elemID: new ElemID(
-      SALESFORCE,
-      'DuplicateRule',
-      'field',
-      'duplicateRuleMatchRules',
-    ),
+    elemID: new ElemID(SALESFORCE, 'DuplicateRule', 'field', 'duplicateRuleMatchRules'),
     orderBy: 'matchingRule',
   },
   {
-    elemID: new ElemID(
-      SALESFORCE,
-      'DuplicateRuleMatchRule',
-      'field',
-      'objectMapping',
-    ),
+    elemID: new ElemID(SALESFORCE, 'DuplicateRuleMatchRule', 'field', 'objectMapping'),
     orderBy: ['inputObject', 'outputObject'],
   },
   {
-    elemID: new ElemID(
-      SALESFORCE,
-      'LeadConvertSettings',
-      'field',
-      'objectMapping',
-    ),
+    elemID: new ElemID(SALESFORCE, 'LeadConvertSettings', 'field', 'objectMapping'),
     orderBy: ['inputObject', 'outputObject'],
   },
   {
@@ -103,49 +83,28 @@ const fieldsToSort: ReadonlyArray<UnorderedList> = [
     orderBy: 'fullName',
   },
   {
-    elemID: new ElemID(
-      SALESFORCE,
-      'PlatformActionList',
-      'field',
-      'platformActionListItems',
-    ),
-    orderBy: (val) => Number(val.sortOrder),
+    elemID: new ElemID(SALESFORCE, 'PlatformActionList', 'field', 'platformActionListItems'),
+    orderBy: val => Number(val.sortOrder),
   },
   {
-    elemID: new ElemID(
-      SALESFORCE,
-      'QuickActionList',
-      'field',
-      'quickActionListItems',
-    ),
+    elemID: new ElemID(SALESFORCE, 'QuickActionList', 'field', 'quickActionListItems'),
     orderBy: 'quickActionName',
   },
 ]
 
 const annotationsToSort: ReadonlyArray<UnorderedList> = [
   {
-    elemID: new ElemID(
-      SALESFORCE,
-      'MacroInstruction',
-      'field',
-      'Target',
-      'valueSet',
-    ),
+    elemID: new ElemID(SALESFORCE, 'MacroInstruction', 'field', 'Target', 'valueSet'),
     orderBy: 'fullName',
   },
 ]
 
-const markListRecursively = async (
-  type: ObjectType,
-  values: Values,
-): Promise<void> => {
+const markListRecursively = async (type: ObjectType, values: Values): Promise<void> => {
   // Mark all lists as ListType
   const markList = async (field: Field, value: Value): Promise<Value> => {
     if (_.isArray(value) && !isListType(await field.getType())) {
       // This assumes Salesforce does not have list of lists fields
-      field.refType = createRefToElmWithValue(
-        new ListType(await field.getType()),
-      )
+      field.refType = createRefToElmWithValue(new ListType(await field.getType()))
     }
     return value
   }
@@ -157,23 +116,14 @@ const castListRecursively = async (
   values: Values,
   unorderedLists: ReadonlyArray<UnorderedList> = [],
 ): Promise<void> => {
-  const listOrders = _.fromPairs(
-    unorderedLists.map((sortDef) => [
-      sortDef.elemID.getFullName(),
-      sortDef.orderBy,
-    ]),
-  )
+  const listOrders = _.fromPairs(unorderedLists.map(sortDef => [sortDef.elemID.getFullName(), sortDef.orderBy]))
   // Cast all lists to list
   const castLists = async (field: Field, value: Value): Promise<Value> => {
     if (isListType(await field.getType()) && !_.isArray(value)) {
       return [value]
     }
     // We get from sfdc api list with empty strings for empty object (possibly jsforce issue)
-    if (
-      isListType(await field.getType()) &&
-      _.isArray(value) &&
-      _.isEmpty(value.filter((v) => !_.isEmpty(v)))
-    ) {
+    if (isListType(await field.getType()) && _.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
       return []
     }
 
@@ -183,13 +133,10 @@ const castListRecursively = async (
   await applyRecursive(type, values, castLists)
 }
 
-const markHardcodedLists = async (
-  type: ObjectType,
-  knownListIds: Set<string>,
-): Promise<void> =>
+const markHardcodedLists = async (type: ObjectType, knownListIds: Set<string>): Promise<void> =>
   awu(_.values(type.fields))
-    .filter((f) => knownListIds.has(f.elemID.getFullName()))
-    .forEach(async (f) => {
+    .filter(f => knownListIds.has(f.elemID.getFullName()))
+    .forEach(async f => {
       const fieldType = await f.getType()
       // maps are created synthetically and should not be converted here
       if (!isContainerType(fieldType)) {
@@ -197,10 +144,7 @@ const markHardcodedLists = async (
       }
     })
 
-const sortAnnotations = (
-  type: ObjectType,
-  unorderedLists: ReadonlyArray<UnorderedList> = [],
-): void => {
+const sortAnnotations = (type: ObjectType, unorderedLists: ReadonlyArray<UnorderedList> = []): void => {
   unorderedLists.forEach(({ elemID: elemId, orderBy }) => {
     const parentId = elemId.createParentID()
     const parent = resolvePath(type, parentId)
@@ -212,42 +156,24 @@ const sortAnnotations = (
   })
 }
 
-export const convertList = async (
-  type: ObjectType,
-  values: Values,
-): Promise<void> => {
+export const convertList = async (type: ObjectType, values: Values): Promise<void> => {
   await markListRecursively(type, values)
   await castListRecursively(type, values)
 }
 
 const getMapFieldIds = async (types: ObjectType[]): Promise<Set<string>> => {
   const objectsWithMapFields = await awu(types)
-    .filter(async (obj) =>
-      Object.keys(metadataTypeToFieldToMapDef).includes(
-        await metadataType(obj),
-      ),
-    )
+    .filter(async obj => Object.keys(metadataTypeToFieldToMapDef).includes(await metadataType(obj)))
     .toArray()
 
   if (objectsWithMapFields.length > 0) {
-    const allObjectsFields = objectsWithMapFields.flatMap((obj) =>
-      Object.values(obj.fields),
-    )
+    const allObjectsFields = objectsWithMapFields.flatMap(obj => Object.values(obj.fields))
 
     return new Set(
       await awu(allObjectsFields)
-        .filter(
-          async (f) =>
-            metadataTypeToFieldToMapDef[await metadataType(f.parent)] !==
-            undefined,
-        )
-        .filter(
-          async (f) =>
-            metadataTypeToFieldToMapDef[await metadataType(f.parent)][
-              f.name
-            ] !== undefined,
-        )
-        .map((f) => f.elemID.getFullName())
+        .filter(async f => metadataTypeToFieldToMapDef[await metadataType(f.parent)] !== undefined)
+        .filter(async f => metadataTypeToFieldToMapDef[await metadataType(f.parent)][f.name] !== undefined)
+        .map(f => f.elemID.getFullName())
         .toArray(),
     )
   }
@@ -278,30 +204,23 @@ export const makeFilter =
     onFetch: async (elements: Element[]) => {
       const instances = await awu(elements)
         .filter(isInstanceElement)
-        .filter(async (inst) => isObjectType(await inst.getType()))
+        .filter(async inst => isObjectType(await inst.getType()))
         .toArray()
       const objectTypes = elements.filter(isObjectType)
 
       const mapFieldIds = await getMapFieldIds(objectTypes)
       const knownListIds = new Set(
-        [
-          ...hardcodedLists,
-          ...unorderedListFields.map((sortDef) => sortDef.elemID.getFullName()),
-        ].filter((id) => !mapFieldIds.has(id)),
-      )
-
-      await awu(objectTypes).forEach((t) => markHardcodedLists(t, knownListIds))
-      await awu(instances).forEach(async (inst) =>
-        markListRecursively(await inst.getType(), inst.value),
-      )
-      await awu(instances).forEach(async (inst) =>
-        castListRecursively(
-          await inst.getType(),
-          inst.value,
-          unorderedListFields,
+        [...hardcodedLists, ...unorderedListFields.map(sortDef => sortDef.elemID.getFullName())].filter(
+          id => !mapFieldIds.has(id),
         ),
       )
-      objectTypes.forEach((t) => sortAnnotations(t, unorderedListAnnotations))
+
+      await awu(objectTypes).forEach(t => markHardcodedLists(t, knownListIds))
+      await awu(instances).forEach(async inst => markListRecursively(await inst.getType(), inst.value))
+      await awu(instances).forEach(async inst =>
+        castListRecursively(await inst.getType(), inst.value, unorderedListFields),
+      )
+      objectTypes.forEach(t => sortAnnotations(t, unorderedListAnnotations))
     },
   })
 

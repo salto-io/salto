@@ -13,12 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  BuiltinTypes,
-  ElemID,
-  ObjectType,
-  toChange,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/animation_rule_record_type'
 import { METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { createInstanceElement } from '../../src/transformers/transformer'
@@ -40,12 +35,7 @@ describe('Invalid AnimationRule RecordType change validator', () => {
   })
   const animationRuleInstance = createInstanceElement(
     {
-      fullName: new ElemID(
-        SALESFORCE,
-        'AnimationRule',
-        'instance',
-        'SomeAnimationRule',
-      ).getFullName(),
+      fullName: new ElemID(SALESFORCE, 'AnimationRule', 'instance', 'SomeAnimationRule').getFullName(),
     },
     animationRuleType,
   )

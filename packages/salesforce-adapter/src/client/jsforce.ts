@@ -48,52 +48,24 @@ export interface Metadata {
   pollInterval: number
   pollTimeout: number
 
-  checkDeployStatus(
-    id: string,
-    includeDetails?: boolean,
-    callback?: Callback<DeployResult>,
-  ): Promise<DeployResult>
+  checkDeployStatus(id: string, includeDetails?: boolean, callback?: Callback<DeployResult>): Promise<DeployResult>
   describe(): Promise<{
     metadataObjects: MetadataObject[]
     organizationNamespace: string
   }>
   describeValueType(type: string): Promise<DescribeValueTypeResult>
-  read(
-    type: string,
-    fullNames: string | string[],
-  ): Promise<MetadataInfo | MetadataInfo[]>
-  list(
-    queries: ListMetadataQuery | ListMetadataQuery[],
-  ): Promise<FileProperties[]>
-  upsert(
-    type: string,
-    metadata: MetadataInfo | MetadataInfo[],
-  ): Promise<UpsertResult | UpsertResult[]>
-  delete(
-    type: string,
-    fullNames: string | string[],
-  ): Promise<SaveResult | SaveResult[]>
-  update(
-    type: string,
-    updateMetadata: MetadataInfo | MetadataInfo[],
-  ): Promise<SaveResult | SaveResult[]>
-  retrieve(
-    request: RetrieveRequest,
-    callback?: Callback<RetrieveResult>,
-  ): RetrieveResultLocator<RetrieveResult>
-  deploy(
-    zipInput: Buffer | string | Stream,
-    options: DeployOptions,
-  ): DeployResultLocator<DeployResult>
-  deployRecentValidation(
-    validationId: string,
-  ): DeployResultLocator<DeployResult>
+  read(type: string, fullNames: string | string[]): Promise<MetadataInfo | MetadataInfo[]>
+  list(queries: ListMetadataQuery | ListMetadataQuery[]): Promise<FileProperties[]>
+  upsert(type: string, metadata: MetadataInfo | MetadataInfo[]): Promise<UpsertResult | UpsertResult[]>
+  delete(type: string, fullNames: string | string[]): Promise<SaveResult | SaveResult[]>
+  update(type: string, updateMetadata: MetadataInfo | MetadataInfo[]): Promise<SaveResult | SaveResult[]>
+  retrieve(request: RetrieveRequest, callback?: Callback<RetrieveResult>): RetrieveResultLocator<RetrieveResult>
+  deploy(zipInput: Buffer | string | Stream, options: DeployOptions): DeployResultLocator<DeployResult>
+  deployRecentValidation(validationId: string): DeployResultLocator<DeployResult>
 }
 
 export interface Soap {
-  describeSObjects(
-    typeNames: string | string[],
-  ): Promise<DescribeSObjectResult | DescribeSObjectResult[]>
+  describeSObjects(typeNames: string | string[]): Promise<DescribeSObjectResult | DescribeSObjectResult[]>
 }
 
 export interface Global {
@@ -111,12 +83,7 @@ export type Limits = {
 export interface Bulk {
   pollInterval: number
   pollTimeout: number
-  load(
-    type: string,
-    operation: BulkLoadOperation,
-    options?: BulkOptions,
-    input?: SfRecord[],
-  ): Batch
+  load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: SfRecord[]): Batch
 }
 
 export interface Tooling {

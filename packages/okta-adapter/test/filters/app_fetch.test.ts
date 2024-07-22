@@ -18,9 +18,7 @@ import {
   ElemID,
   InstanceElement,
   ObjectType,
-  toChange,
   isInstanceElement,
-  ModificationChange,
   isObjectType,
   CORE_ANNOTATIONS,
   ListType,
@@ -30,10 +28,10 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
-import appDeploymentFilter, { isInactiveCustomAppChange } from '../../src/filters/app_fetch'
+import appDeploymentFilter from '../../src/filters/app_fetch'
 import { APPLICATION_TYPE_NAME, OKTA, ORG_SETTING_TYPE_NAME } from '../../src/constants'
 
-describe('appDeploymentFilter', () => {
+describe('appFetchFilter', () => {
   let client: OktaClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
   let filter: FilterType
@@ -98,28 +96,6 @@ describe('appDeploymentFilter', () => {
       expect(type?.fields.features.annotations[CORE_ANNOTATIONS.CREATABLE]).toEqual(false)
       expect(type?.fields.features.annotations[CORE_ANNOTATIONS.UPDATABLE]).toEqual(false)
       expect(type?.fields.features.annotations[CORE_ANNOTATIONS.DELETABLE]).toEqual(false)
-    })
-  })
-
-  describe('isInactiveCustomAppChange', () => {
-    const customApp = new InstanceElement('custom', appType, { customName: 'a', id: 'aa', status: 'INACTIVE' })
-    it('should return true for custom app change in status INACTIVE', () => {
-      const change = toChange({ before: customApp, after: customApp }) as ModificationChange<InstanceElement>
-      expect(isInactiveCustomAppChange(change)).toEqual(true)
-    })
-
-    it('should return false for regular app change in status INACTIVE', () => {
-      const app = customApp.clone()
-      delete app.value.customName
-      const change = toChange({ before: app, after: app }) as ModificationChange<InstanceElement>
-      expect(isInactiveCustomAppChange(change)).toEqual(false)
-    })
-
-    it('should return false for custom app change with change in status', () => {
-      const activeApp = customApp.clone()
-      activeApp.value.status = 'ACTIVE'
-      const change = toChange({ before: customApp, after: activeApp }) as ModificationChange<InstanceElement>
-      expect(isInactiveCustomAppChange(change)).toEqual(false)
     })
   })
 })

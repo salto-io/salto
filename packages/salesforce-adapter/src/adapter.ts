@@ -492,10 +492,7 @@ export default class SalesforceAdapter implements AdapterOperations {
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
     await listMetadataObjects(this.client, CUSTOM_FIELD)
-    const listedFields = this.client.listedInstancesByType.getOrUndefined(constants.CUSTOM_FIELD)
-    if (listedFields === undefined) {
-      return new Set()
-    }
+    const listedFields = this.client.listedInstancesByType.get(constants.CUSTOM_FIELD)
     const fieldsFromElementsSource = await awu(await this.elementsSource.getAll())
       .filter(isCustomObjectSync)
       .flatMap(obj => Object.values(obj.fields))

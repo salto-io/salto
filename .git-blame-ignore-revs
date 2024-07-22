@@ -7,3 +7,5 @@
 
 # SALTO-5404 Format the entire project with prettier (#5466)
 13d9dcb73a106d8c4b299f1f69b543d1df9d41ea
+# SALTO-5404 align salesforce-adapter prettier config (#6255)
+8bff120c533a854753649a88cea6eebb436110af

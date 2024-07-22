@@ -67,7 +67,7 @@ export type DefQuery<T, K extends string = string> = {
   getAll: () => Record<K, T>
 }
 
-export const queryWithDefault = <T, K extends string = string>(
+export const queryWithDefaultNoCache = <T, K extends string = string>(
   defsWithDefault: DefaultWithCustomizations<T, K>,
 ): DefQuery<T, K> => {
   const query: DefQuery<T, K>['query'] = key =>
@@ -83,11 +83,37 @@ export const queryWithDefault = <T, K extends string = string>(
   }
 }
 
+export const queryWithDefault = <T, K extends string = string>(
+  defsWithDefault: DefaultWithCustomizations<T, K>,
+): DefQuery<T, K> => {
+  const cache = {} as Record<K, T | undefined>
+  let all: Record<K, T> | undefined
+  const query = queryWithDefaultNoCache<T, K>(defsWithDefault)
+  return {
+    allKeys: () => query.allKeys(),
+    query: key => {
+      if (all !== undefined) {
+        return all[key]
+      }
+      if (!Object.prototype.hasOwnProperty.call(cache, key)) {
+        cache[key] = query.query(key)
+      }
+      return cache[key]
+    },
+    getAll: () => {
+      if (all === undefined) {
+        all = query.getAll()
+      }
+      return all
+    },
+  }
+}
+
 export function mergeWithDefault<T, K extends string = string>(
   defsWithDefault: DefaultWithCustomizations<T, K>,
 ): Record<K, T>
 export function mergeWithDefault<T>(defsWithDefault: DefaultWithCustomizations<T, string>): Record<string, T> {
-  const query = queryWithDefault<T>(defsWithDefault)
+  const query = queryWithDefaultNoCache<T>(defsWithDefault)
   return _.pickBy(
     _.mapValues(defsWithDefault.customizations, (_val, k) => query.query(k)),
     lowerdashValues.isDefined,

@@ -71,35 +71,46 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
         customNameMappingFunctions,
       })
 
-      const instances = entries
-        .map(value => recursiveNaclCase(value))
-        .map((entry, index) =>
-          createInstance({
-            entry,
-            type,
-            toElemName,
-            toPath,
-            // TODO pick better default name, include service id
-            defaultName: `unnamed_${index}`,
-            allowEmptyArrays: elementDef.topLevel?.allowEmptyArrays,
-          }),
-        )
-        .filter(isDefined)
+      const instances = log.timeTrace(
+        () =>
+          entries
+            .map(value => recursiveNaclCase(value))
+            .map((entry, index) =>
+              createInstance({
+                entry,
+                type,
+                toElemName,
+                toPath,
+                // TODO pick better default name, include service id
+                defaultName: `unnamed_${index}`,
+                allowEmptyArrays: elementDef.topLevel?.allowEmptyArrays,
+              }),
+            )
+            .filter(isDefined),
+        'generateInstancesWithInitialTypes: create instances for %s',
+        typeName,
+      )
 
       // TODO filter instances by fetch query before extracting standalone fields (SALTO-5425)
 
-      const instancesWithStandalone = extractStandaloneInstances({
-        adapterName,
-        instances,
-        defQuery,
-        getElemIdFunc,
-        customNameMappingFunctions,
-        definedTypes,
-      })
+      const instancesWithStandalone = log.timeTrace(
+        () =>
+          extractStandaloneInstances({
+            adapterName,
+            instances,
+            defQuery,
+            getElemIdFunc,
+            customNameMappingFunctions,
+            definedTypes,
+          }),
+        'generateInstancesWithInitialTypes: extractStandaloneInstances for %s',
+        typeName,
+      )
 
       return { types: [type, ...nestedTypes], instances: instancesWithStandalone }
     },
-    'generateInstancesWithInitialTypes for %s.%s',
+    'generateInstancesWithInitialTypes for %s.%s, %s entries',
     args.adapterName,
     args.typeName,
+    args.entries.length,
   )

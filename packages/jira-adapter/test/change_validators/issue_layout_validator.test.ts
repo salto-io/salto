@@ -550,4 +550,15 @@ describe('issue layouts validator', () => {
         'This issue layout references a screen (jira.Screen.instance.screen2) that is not associated with its project (jira.Project.instance.project1). Learn more at https://help.salto.io/en/articles/9306685-deploying-issue-layouts',
     })
   })
+  it('should return an error if the IssueTypeScheme has no issueTypeIds', async () => {
+    issueTypeSchemeInstance1.value.issueTypeIds = undefined
+    issueTypeScreenSchemeInstance1.value.issueTypeMappings = [
+      {
+        issueTypeId: 'default',
+        screenSchemeId: new ReferenceExpression(screenSchemeInstance2.elemID, screenSchemeInstance2),
+      },
+    ]
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
 })

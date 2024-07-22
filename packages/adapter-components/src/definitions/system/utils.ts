@@ -92,9 +92,6 @@ export const queryWithDefault = <T, K extends string = string>(
   return {
     allKeys: () => query.allKeys(),
     query: key => {
-      if (all !== undefined) {
-        return all[key]
-      }
       if (!Object.prototype.hasOwnProperty.call(cache, key)) {
         cache[key] = query.query(key)
       }

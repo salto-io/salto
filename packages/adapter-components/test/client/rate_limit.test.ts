@@ -89,7 +89,7 @@ describe('client_rate_limit', () => {
       resolvables.push(p)
       return p.promise
     }
-    const ZERO_COUNTERS = { total: 0, pending: 0, running: 0, done: 0, failed: 0, succeeded: 0 }
+    const ZERO_COUNTERS = { total: 0, pending: 0, running: 0, done: 0, failed: 0, succeeded: 0, retries: 0 }
     it('should throttle when bucket is limited', async () => {
       const resolvables: Resolvable<number>[] = []
       // eslint-disable-next-line @typescript-eslint/no-floating-promises

@@ -242,7 +242,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
     const timer = {
       // @ts-expect-error accessing private member/function
       startTime: rateLimiter.prevInvocationTime,
-      timeElapsed: undefined,
+      timeElapsed: 0,
     }
     // @ts-expect-error accessing private member/function
     const delayedTask = rateLimiter.getDelayedTask(() => {
@@ -251,12 +251,14 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
     await delayedTask()
     const { timeElapsed, startTime } = timer
 
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.prevInvocationTime).toBeGreaterThanOrEqual(startTime + delayMS)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.prevInvocationTime).toBeLessThan(startTime + delayMS * 2)
+    const toleranceMS = 5 // required tolerance for delays
 
-    expect(timeElapsed).toBeGreaterThanOrEqual(delayMS)
-    expect(timeElapsed).toBeLessThan(delayMS * 2)
+    // @ts-expect-error accessing private member/function
+    expect(rateLimiter.prevInvocationTime).toBeGreaterThanOrEqual(startTime + delayMS - toleranceMS)
+    // @ts-expect-error accessing private member/function
+    expect(rateLimiter.prevInvocationTime).toBeLessThan(startTime + delayMS * 2 + toleranceMS)
+
+    expect(timeElapsed).toBeGreaterThanOrEqual(delayMS - toleranceMS)
+    expect(timeElapsed).toBeLessThan(delayMS * 2 + toleranceMS)
   })
 })

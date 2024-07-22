@@ -17,9 +17,14 @@ import PQueue from 'p-queue'
 import Bottleneck from 'bottleneck'
 import {
   RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
+  RATE_LIMIT_DEFAULT_CARRY_RUNNING_CALLS_OVER,
   RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+  RATE_LIMIT_DEFAULT_INTERVAL_LENGTH_MS,
+  RATE_LIMIT_DEFAULT_MAX_CALLS_PER_INTERVAL,
+  RATE_LIMIT_DEFAULT_MAX_CONCURRENT_CALLS,
   RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
   RATE_LIMIT_DEFAULT_SHOULD_RETRY,
+  RATE_LIMIT_DEFAULT_START_PAUSED,
   RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
 } from './constants'
 
@@ -112,6 +117,7 @@ export type RateLimiterCounters = {
   done: number
   succeeded: number
   failed: number
+  retries: number
 }
 
 const toValidNumber = (defaultValue: number, value?: number): number =>
@@ -132,8 +138,8 @@ export class RateLimiter {
    * @param options Configuration options for the rate limiter.
    */
   constructor(options: Partial<RateLimiterOptions> = {}) {
-    const maxCallsPerInterval = toValidNumber(Infinity, options.maxCallsPerInterval)
-    const intervalLengthMS = toValidNumber(0, options.intervalLengthMS)
+    const maxCallsPerInterval = toValidNumber(RATE_LIMIT_DEFAULT_MAX_CALLS_PER_INTERVAL, options.maxCallsPerInterval)
+    const intervalLengthMS = toValidNumber(RATE_LIMIT_DEFAULT_INTERVAL_LENGTH_MS, options.intervalLengthMS)
 
     if (
       (maxCallsPerInterval !== Infinity && intervalLengthMS === 0) ||
@@ -145,19 +151,16 @@ export class RateLimiter {
     }
 
     this.internalOptions = {
-      maxConcurrentCalls: toValidNumber(Infinity, options.maxConcurrentCalls),
+      maxConcurrentCalls: toValidNumber(RATE_LIMIT_DEFAULT_MAX_CONCURRENT_CALLS, options.maxConcurrentCalls),
       maxCallsPerInterval,
       intervalLengthMS,
-      carryRunningCallsOver: options.carryRunningCallsOver ?? true,
+      carryRunningCallsOver: options.carryRunningCallsOver ?? RATE_LIMIT_DEFAULT_CARRY_RUNNING_CALLS_OVER,
       delayMS: toValidNumber(RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS, options.delayMS),
-      startPaused: options.startPaused ?? false,
+      startPaused: options.startPaused ?? RATE_LIMIT_DEFAULT_START_PAUSED,
       useBottleneck: options.useBottleneck ?? RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
       retryPredicate: options.retryPredicate ?? RATE_LIMIT_DEFAULT_SHOULD_RETRY,
       calculateRetryDelay: options.calculateRetryDelay ?? RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
-      pauseDuringRetryDelay:
-        options.pauseDuringRetryDelay !== undefined
-          ? options.pauseDuringRetryDelay
-          : RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
+      pauseDuringRetryDelay: options.pauseDuringRetryDelay ?? RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
     }
 
     if (
@@ -194,6 +197,7 @@ export class RateLimiter {
       done: 0,
       succeeded: 0,
       failed: 0,
+      retries: 0,
     }
     this.prevInvocationTime = Date.now()
     this.resumeTime = Date.now()
@@ -242,10 +246,13 @@ export class RateLimiter {
    * @param task The task to be wrapped with bookkeeping.
    * @returns A function that returns a promise resolving to the result of the task.
    */
-  private wrapWithBookKeeping<T>(task: () => Promise<T>): () => Promise<T> {
+  private wrapWithBookKeeping<T>(task: () => Promise<T>, isRetry: boolean = false): () => Promise<T> {
     return async (): Promise<T> => {
       this.internalCounters.pending -= 1
       this.internalCounters.running += 1
+      if (isRetry) {
+        this.internalCounters.retries += 1
+      }
       let res
       try {
         res = await task()
@@ -270,12 +277,12 @@ export class RateLimiter {
   async add<T>(task: () => Promise<T>): Promise<T> {
     this.internalCounters.total += 1
     this.internalCounters.pending += 1
-    const wrappedTask = this.wrapWithBookKeeping(this.getDelayedTask(task))
     let res: Promise<T>
     let numAttempts = 0
     while (true) {
+      numAttempts += 1
+      const wrappedTask = this.wrapWithBookKeeping(this.getDelayedTask(task), numAttempts > 1)
       try {
-        numAttempts += 1
         res = this.internalOptions.useBottleneck
           ? (this.queue as Bottleneck).schedule(wrappedTask)
           : (this.queue as PQueue).add(wrappedTask)

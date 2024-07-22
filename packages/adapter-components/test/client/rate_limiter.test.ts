@@ -268,9 +268,65 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
       const throwingTask = jest.fn(() => {
         throw new Error(errorMessage)
       })
-      expect(async () => DEFAULT_RATE_LIMITER.add(throwingTask)).rejects.toThrow(errorMessage)
+      await expect(DEFAULT_RATE_LIMITER.add(throwingTask)).rejects.toThrow(errorMessage)
       expect(DEFAULT_RATE_LIMITER.counters.retries).toEqual(0)
       expect(DEFAULT_RATE_LIMITER.counters.failed).toEqual(1)
+    })
+    it('should retry if configured.', async () => {
+      const errorMessage = 'Some error'
+      const maxAttempts = 3
+      const throwingTask = jest.fn(async () => {
+        throw new Error(errorMessage)
+      })
+      const retryPredicate = jest.fn(
+        (numAttempts: number, error: Error): boolean =>
+          error instanceof Error && error.message === errorMessage && numAttempts < maxAttempts,
+      )
+      const rateLimiter = new RateLimiter({ retryPredicate, useBottleneck })
+
+      await expect(rateLimiter.add(throwingTask)).rejects.toThrow(errorMessage)
+      expect(throwingTask).toHaveBeenCalledTimes(maxAttempts)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxAttempts)
+      expect(rateLimiter.counters.retries).toEqual(maxAttempts - 1)
+      expect(rateLimiter.counters.failed).toEqual(maxAttempts)
+      expect(rateLimiter.counters.total).toEqual(maxAttempts)
+      expect(rateLimiter.counters.done).toEqual(maxAttempts)
+    })
+    it('should delay between retries.', async () => {
+      const toleranceMS = 5
+      const errorMessage = 'Some error'
+      const retryDelayMS = 50
+      const maxAttempts = 3
+      const throwingTask = jest.fn(async () => {
+        throw new Error(errorMessage)
+      })
+      const retryPredicate = jest.fn(
+        (numAttempts: number, error: Error): boolean =>
+          error instanceof Error && error.message === errorMessage && numAttempts < maxAttempts,
+      )
+      const calculateRetryDelayMS = jest.fn((numAttempts: number, error: Error): number =>
+        error instanceof Error && error.message === errorMessage ? numAttempts * retryDelayMS : 0,
+      )
+      const startTime = Date.now()
+      const rateLimiter = new RateLimiter({ retryPredicate, calculateRetryDelayMS, useBottleneck: true })
+
+      await expect(rateLimiter.add(throwingTask)).rejects.toThrow(errorMessage)
+      const timeElapsed = Date.now() - startTime
+
+      expect(throwingTask).toHaveBeenCalledTimes(maxAttempts)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxAttempts)
+      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxAttempts - 1)
+
+      let expectedTimeElapsed = 0
+      for (let index = 1; index < maxAttempts; index += 1) {
+        expectedTimeElapsed += index * retryDelayMS
+      }
+      expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed - toleranceMS)
+      expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
+      expect(rateLimiter.counters.retries).toEqual(maxAttempts - 1)
+      expect(rateLimiter.counters.failed).toEqual(maxAttempts)
+      expect(rateLimiter.counters.total).toEqual(maxAttempts)
+      expect(rateLimiter.counters.done).toEqual(maxAttempts)
     })
   })
 })

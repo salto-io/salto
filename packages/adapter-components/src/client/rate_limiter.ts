@@ -89,7 +89,7 @@ export type RateLimiterOptions = {
    * @returns A boolean indicating whether the task should be retried.
    * @default () => false
    */
-  retryPredicate: (attempt: number, error: unknown) => boolean
+  retryPredicate: (attempt: number, error: Error) => boolean
 
   /**
    * Function to calculate the delay before retrying a task based on the number of attempts and the error encountered.
@@ -98,7 +98,7 @@ export type RateLimiterOptions = {
    * @returns The delay in milliseconds before the next retry.
    * @default () => 0
    */
-  calculateRetryDelay: (attempt: number, error: unknown) => number
+  calculateRetryDelayMS: (attempt: number, error: Error) => number
 
   /**
    * Flag indicating whether to pause the queue for the delay calculated.
@@ -159,7 +159,7 @@ export class RateLimiter {
       startPaused: options.startPaused ?? RATE_LIMIT_DEFAULT_START_PAUSED,
       useBottleneck: options.useBottleneck ?? RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
       retryPredicate: options.retryPredicate ?? RATE_LIMIT_DEFAULT_SHOULD_RETRY,
-      calculateRetryDelay: options.calculateRetryDelay ?? RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
+      calculateRetryDelayMS: options.calculateRetryDelayMS ?? RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
       pauseDuringRetryDelay: options.pauseDuringRetryDelay ?? RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
     }
 
@@ -275,11 +275,11 @@ export class RateLimiter {
    * @returns A promise that resolves when the task is completed.
    */
   async add<T>(task: () => Promise<T>): Promise<T> {
-    this.internalCounters.total += 1
-    this.internalCounters.pending += 1
     let res: Promise<T>
     let numAttempts = 0
     while (true) {
+      this.internalCounters.total += 1
+      this.internalCounters.pending += 1
       numAttempts += 1
       const wrappedTask = this.wrapWithBookKeeping(this.getDelayedTask(task), numAttempts > 1)
       try {
@@ -292,12 +292,14 @@ export class RateLimiter {
         if (!this.internalOptions.retryPredicate(numAttempts, e)) {
           throw e
         }
-        const delay = this.internalOptions.calculateRetryDelay(numAttempts, e)
-        if (this.internalOptions.pauseDuringRetryDelay) {
-          this.pause(delay)
-        } else {
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise(resolve => setTimeout(resolve, delay))
+        const delay = this.internalOptions.calculateRetryDelayMS(numAttempts, e)
+        if (delay > 0) {
+          if (this.internalOptions.pauseDuringRetryDelay) {
+            this.pause(delay)
+          } else {
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
         }
       }
     }

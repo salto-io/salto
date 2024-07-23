@@ -611,7 +611,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       )
     }
     metadataQuery.logData()
-    await this.client.finalize()
+    await this.client.awaitCompletionOfAllListRequests()
     return {
       elements,
       errors: onFetchFilterResult.errors ?? [],

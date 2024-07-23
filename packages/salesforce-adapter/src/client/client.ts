@@ -577,7 +577,9 @@ interface ISalesforceClient {
   bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>
   request(url: string): Promise<unknown>
 }
-export type CustomListFunc = (client: ISalesforceClient) => ReturnType<ISalesforceClient['listMetadataObjects']>
+
+type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
+export type CustomListFunc = (client: ISalesforceClient) => ListMetadataObjectsResult
 
 export type CustomListFuncDef = {
   func: CustomListFunc
@@ -598,12 +600,9 @@ export default class SalesforceClient implements ISalesforceClient {
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
   readonly listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
-  private readonly listMetadataObjectsOfTypePromises: Record<
-    string,
-    ReturnType<ISalesforceClient['listMetadataObjects']>
-  >
+  private readonly listMetadataObjectsOfTypePromises: Record<string, ListMetadataObjectsResult>
 
-  private readonly fullListPromisesByType: Record<string, ReturnType<ISalesforceClient['listMetadataObjects']>>
+  private readonly fullListPromisesByType: Record<string, ListMetadataObjectsResult>
   private customListFuncDefByType: Record<string, CustomListFuncDef>
 
   constructor({ credentials, connection, config }: SalesforceClientOpts) {
@@ -710,10 +709,7 @@ export default class SalesforceClient implements ISalesforceClient {
     return listResult
   }
 
-  private async sendChunkedList(
-    input: ListMetadataQuery[],
-    isUnhandledError: ErrorFilter,
-  ): ReturnType<ISalesforceClient['listMetadataObjects']> {
+  private async sendChunkedList(input: ListMetadataQuery[], isUnhandledError: ErrorFilter): ListMetadataObjectsResult {
     return sendChunked({
       operationInfo: 'listMetadataObjects',
       input,
@@ -726,13 +722,13 @@ export default class SalesforceClient implements ISalesforceClient {
   private async listMetadataObjectsOfType(
     type: string,
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ): ReturnType<ISalesforceClient['listMetadataObjects']> {
+  ): ListMetadataObjectsResult {
     const existingRequest = this.listMetadataObjectsOfTypePromises[type]
     if (existingRequest !== undefined) {
       return existingRequest
     }
     const customListFuncDef: CustomListFuncDef | undefined = this.customListFuncDefByType[type]
-    // For partial custom list result, we run additional full list request
+    // For partial custom list functions we run an additional full list request
     if (customListFuncDef?.isPartial) {
       this.fullListPromisesByType[type] = this.sendChunkedList([{ type }], isUnhandledError)
     }
@@ -759,7 +755,7 @@ export default class SalesforceClient implements ISalesforceClient {
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ): ReturnType<ISalesforceClient['listMetadataObjects']> {
+  ): ListMetadataObjectsResult {
     const queries = makeArray(listMetadataQuery)
     if (queries.some(query => query.folder !== undefined)) {
       // We can't cache folder queries, so we just send them all at once
@@ -1089,7 +1085,7 @@ export default class SalesforceClient implements ISalesforceClient {
   }
 
   @logDecorator()
-  public async finalize(): Promise<void> {
+  public async awaitCompletionOfAllListRequests(): Promise<void> {
     await Promise.all(Object.values(this.fullListPromisesByType))
   }
 }

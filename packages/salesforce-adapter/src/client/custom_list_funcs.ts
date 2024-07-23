@@ -17,11 +17,13 @@ import _ from 'lodash'
 import { FileProperties } from '@salto-io/jsforce'
 import { collections } from '@salto-io/lowerdash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { CustomListFuncDef } from './client'
 import { getChangedAtSingletonInstance } from '../filters/utils'
 import { APEX_CLASS_METADATA_TYPE } from '../constants'
 
 const { toArrayAsync } = collections.asynciterable
+const log = logger(module)
 
 const latestChangedInstanceOfType = async (
   elementsSource: ReadOnlyElementsSource,
@@ -38,11 +40,14 @@ const latestChangedInstanceOfType = async (
   return _.maxBy(Object.values(allChangedAtOfType).filter(_.isString), dateTime => new Date(dateTime).getTime())
 }
 
-export const createListApexClassesDef = async (
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<CustomListFuncDef> => ({
+export const createListApexClassesDef = async (elementsSource: ReadOnlyElementsSource): Promise<CustomListFuncDef> => ({
   func: async client => {
-    const sinceDate = elementsSource && (await latestChangedInstanceOfType(elementsSource, APEX_CLASS_METADATA_TYPE))
+    const sinceDate = await latestChangedInstanceOfType(elementsSource, APEX_CLASS_METADATA_TYPE)
+    if (sinceDate === undefined) {
+      log.warn(
+        'Expected latestChangedInstanceOfType ApexClass to be defined. Will query all of the ApexClasses instead',
+      )
+    }
     const query =
       'SELECT Id, NamespacePrefix, Name, CreatedDate, CreatedBy.Name, LastModifiedDate, LastModifiedBy.Name FROM ApexClass'
     const whereClause = sinceDate ? ` WHERE LastModifiedDate > ${sinceDate}` : ''

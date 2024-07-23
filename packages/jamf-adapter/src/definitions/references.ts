@@ -34,7 +34,7 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   CustomReferenceSerializationStrategyName
 >[] = [
   {
-    src: { field: 'categoryId', parentTypes: [PACKAGE_TYPE_NAME] },
+    src: { field: 'categoryId', parentTypes: [PACKAGE_TYPE_NAME, SCRIPT_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: CATEGORY_TYPE_NAME },
   },
@@ -100,16 +100,9 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     sourceTransformation: 'asString',
     target: { type: CATEGORY_TYPE_NAME },
   },
-  // fullValue must come before id strategy, we need fullValue for resolution
   {
-    src: { field: 'scripts', parentTypes: [POLICY_TYPE_NAME] },
-    serializationStrategy: 'idAndNameObject',
-    target: { type: SCRIPT_TYPE_NAME },
-  },
-  {
-    src: { field: 'scripts', parentTypes: [POLICY_TYPE_NAME] },
-    serializationStrategy: 'id',
-    sourceTransformation: 'asString',
+    src: { field: 'name', parentTypes: ['policy__scripts'] },
+    serializationStrategy: 'name',
     target: { type: SCRIPT_TYPE_NAME },
   },
   {
@@ -128,5 +121,5 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
       lookup: referenceUtils.basicLookUp,
     },
   },
-  fieldsToGroupBy: ['id'],
+  fieldsToGroupBy: ['id', 'name'],
 }

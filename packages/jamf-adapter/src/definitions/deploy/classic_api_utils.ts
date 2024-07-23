@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { ActionName } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -27,6 +28,9 @@ import { AdditionalAction, ClientOptions } from '../types'
 export const createClassicApiDefinitionsForType = (
   typeName: string,
   plural: string,
+  adjustFunctions?: Partial<
+    Record<AdditionalAction | ActionName, definitions.AdjustFunction<definitions.deploy.ChangeAndContext>>
+  >,
 ): Partial<definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>> => ({
   requestsByAction: {
     customizations: {
@@ -55,7 +59,9 @@ export const createClassicApiDefinitionsForType = (
               },
             },
             transformation: {
-              adjust: async ({ value }) => {
+              adjust: async item => {
+                adjustFunctions?.add?.(item)
+                const { value } = item
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
                 }
@@ -77,7 +83,9 @@ export const createClassicApiDefinitionsForType = (
               },
             },
             transformation: {
-              adjust: async ({ value }) => {
+              adjust: async item => {
+                adjustFunctions?.modify?.(item)
+                const { value } = item
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
                 }
@@ -94,6 +102,12 @@ export const createClassicApiDefinitionsForType = (
             endpoint: {
               path: `/JSSResource/${plural}/id/{id}` as definitions.EndpointPath,
               method: 'delete',
+            },
+            transformation: {
+              adjust: async item => {
+                adjustFunctions?.remove?.(item)
+                return item
+              },
             },
           },
         },

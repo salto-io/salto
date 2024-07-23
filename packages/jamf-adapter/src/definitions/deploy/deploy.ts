@@ -31,6 +31,7 @@ import {
   SITE_TYPE_NAME,
 } from '../../constants'
 import { createClassicApiDefinitionsForType } from './classic_api_utils'
+import { adjustPolicyOnDeploy } from './policy'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
@@ -47,7 +48,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   })
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
     [CLASS_TYPE_NAME]: createClassicApiDefinitionsForType(CLASS_TYPE_NAME, `${CLASS_TYPE_NAME}es`),
-    [POLICY_TYPE_NAME]: createClassicApiDefinitionsForType(POLICY_TYPE_NAME, 'policies'),
+    [POLICY_TYPE_NAME]: createClassicApiDefinitionsForType(POLICY_TYPE_NAME, 'policies', {
+      add: adjustPolicyOnDeploy,
+      modify: adjustPolicyOnDeploy,
+    }),
     [OS_X_CONFIGURATION_PROFILE_TYPE_NAME]: createClassicApiDefinitionsForType(
       OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
       'osxconfigurationprofiles',

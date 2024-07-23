@@ -45,10 +45,10 @@ export const adjustCategoryObjectToCategoryId = (value: Record<string, unknown>)
 /*
  * Convert scripts object array to scripts ids to make reference
  */
-export const adjustScriptsObjectArrayToScriptsIds = (value: Record<string, unknown>): void => {
+export const removeIdsForScriptsObjectArray = (value: Record<string, unknown>): void => {
   const { scripts } = value
   if (Array.isArray(scripts) && scripts.every(isWithIdType)) {
-    value.scripts = scripts.map(({ id }) => id)
+    value.scripts = scripts.map(script => _.omit(script, 'id'))
   }
 }
 

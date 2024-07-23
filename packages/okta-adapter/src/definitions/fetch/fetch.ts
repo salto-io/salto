@@ -15,7 +15,12 @@
  */
 import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
-import { definitions, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
+import {
+  definitions,
+  fetch as fetchUtils,
+  client as clientUtils,
+  elements as elementUtils,
+} from '@salto-io/adapter-components'
 import { POLICY_TYPE_NAME_TO_PARAMS } from '../../config'
 import { OktaOptions } from '../types'
 import { OktaUserConfig } from '../../user_config'
@@ -30,11 +35,13 @@ import {
   DEVICE_ASSURANCE_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+  GROUP_MEMBERSHIP_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
+import { shouldConvertUserIds } from '../../user_utils'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -219,9 +226,13 @@ const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFet
 const createCustomizations = ({
   usePrivateAPI,
   includeProfileMappingProperties,
+  includeGroupMemberships,
+  userIdentifier,
 }: {
   usePrivateAPI: boolean
   includeProfileMappingProperties: boolean
+  includeGroupMemberships: boolean
+  userIdentifier: 'id' | 'email'
 }): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => ({
   // top-level types
   Group: {
@@ -229,11 +240,43 @@ const createCustomizations = ({
       {
         endpoint: {
           path: '/api/v1/groups',
+          queryArgs: { expand: 'stats' },
+        },
+        transformation: {
+          adjust: async ({ value }) => ({
+            value: {
+              ...(_.isObject(value) ? { ..._.omit(value, '_embedded') } : {}),
+              hasUsersAssigned: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
+            },
+          }),
         },
       },
     ],
     resource: {
       directFetch: true,
+      recurseInto: {
+        ...(includeGroupMemberships
+          ? {
+              [GROUP_MEMBERSHIP_TYPE_NAME]: {
+                typeName: GROUP_MEMBERSHIP_TYPE_NAME,
+                context: {
+                  args: {
+                    groupId: {
+                      root: 'id',
+                    },
+                  },
+                },
+                conditions: [
+                  {
+                    // only recurse into groups with assigned users
+                    match: ['true'],
+                    fromField: 'hasUsersAssigned',
+                  },
+                ],
+              },
+            }
+          : {}),
+      },
     },
     element: {
       topLevel: {
@@ -246,6 +289,15 @@ const createCustomizations = ({
         source: { fieldType: 'Group__source' },
         _links: { omit: true },
         lastMembershipUpdated: { omit: true },
+        hasUsersAssigned: { omit: true },
+        [GROUP_MEMBERSHIP_TYPE_NAME]: {
+          standalone: {
+            typeName: GROUP_MEMBERSHIP_TYPE_NAME,
+            addParentAnnotation: true,
+            referenceFromParent: false,
+            nestPathUnderParent: false,
+          },
+        },
       },
     },
   },
@@ -260,6 +312,38 @@ const createCustomizations = ({
       fieldCustomizations: {
         id: { hide: true },
         allGroupsValid: { fieldType: 'boolean' },
+      },
+    },
+  },
+  [GROUP_MEMBERSHIP_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: { path: '/api/v1/groups/{groupId}/users' },
+        transformation: {
+          // assign groupId from request context to value so we can use mergeAndTransform
+          adjust: async ({ value, context }) => ({
+            value: { ...(_.isObject(value) ? { ...value, groupId: context.groupId } : {}) },
+          }),
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+      serviceIDFields: ['groupId'],
+      mergeAndTransform: {
+        adjust: async ({ context }) => ({
+          value: {
+            members: context.fragments.map(fragment =>
+              _.get(fragment.value, userIdentifier === 'id' ? 'id' : 'profile.login'),
+            ),
+          },
+        }),
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [], extendsParent: true, useOldFormat: false },
       },
     },
   },
@@ -1191,12 +1275,14 @@ const getInsufficientPermissionsError: definitions.fetch.FetchResourceDefinition
 
 export const createFetchDefinitions = (
   userConfig: OktaUserConfig,
+  fetchQuery: elementUtils.query.ElementQuery,
   usePrivateAPI: boolean,
   baseUrl?: string,
 ): definitions.fetch.FetchApiDefinitions<OktaOptions> => {
   const {
-    fetch: { includeProfileMappingProperties },
+    fetch: { includeProfileMappingProperties, includeGroupMemberships },
   } = userConfig
+  const userIdentifier = shouldConvertUserIds(fetchQuery, userConfig) ? 'email' : 'id'
   return {
     instances: {
       default: {
@@ -1215,6 +1301,8 @@ export const createFetchDefinitions = (
       customizations: createCustomizations({
         usePrivateAPI,
         includeProfileMappingProperties: includeProfileMappingProperties === true,
+        includeGroupMemberships: includeGroupMemberships === true,
+        userIdentifier,
       }),
     },
   }

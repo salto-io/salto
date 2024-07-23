@@ -29,26 +29,22 @@ describe('adjustPolicyOnDeploy', () => {
     it('should change scripts array to object with size and script fields', async () => {
       const value = { scripts: ['script1', 'script2'] }
       expect(
-        (
-          await adjustPolicyOnDeploy({
-            value,
-            context: {} as definitions.deploy.ChangeAndContext,
-            typeName: POLICY_TYPE_NAME,
-          })
-        ).value,
-      ).toEqual({ scripts: { size: 2, script: ['script1', 'script2'] } })
+        await adjustPolicyOnDeploy({
+          value,
+          context: {} as definitions.deploy.ChangeAndContext,
+          typeName: POLICY_TYPE_NAME,
+        }),
+      ).toEqual({ value: { scripts: { size: 2, script: ['script1', 'script2'] } } })
     })
     it('should not change anything if scripts is not an array', async () => {
       const value = { scripts: 'not an array' }
       expect(
-        (
-          await adjustPolicyOnDeploy({
-            value,
-            context: {} as definitions.deploy.ChangeAndContext,
-            typeName: POLICY_TYPE_NAME,
-          })
-        ).value,
-      ).toEqual({ scripts: 'not an array' })
+        await adjustPolicyOnDeploy({
+          value,
+          context: {} as definitions.deploy.ChangeAndContext,
+          typeName: POLICY_TYPE_NAME,
+        }),
+      ).toEqual({ value: { scripts: 'not an array' } })
     })
   })
 })

@@ -60,7 +60,7 @@ export const createClassicApiDefinitionsForType = (
             },
             transformation: {
               adjust: async item => {
-                adjustFunctions?.add?.(item)
+                await adjustFunctions?.add?.(item)
                 const { value } = item
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
@@ -84,7 +84,7 @@ export const createClassicApiDefinitionsForType = (
             },
             transformation: {
               adjust: async item => {
-                adjustFunctions?.modify?.(item)
+                await adjustFunctions?.modify?.(item)
                 const { value } = item
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
@@ -105,7 +105,7 @@ export const createClassicApiDefinitionsForType = (
             },
             transformation: {
               adjust: async item => {
-                adjustFunctions?.remove?.(item)
+                await adjustFunctions?.remove?.(item)
                 return item
               },
             },

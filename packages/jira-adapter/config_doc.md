@@ -53,12 +53,12 @@ jira {
 ### Client configuration options
 
 | Name                                             | Default when undefined | Description                                                         |
-| ------------------------------------------------ | ---------------------- | ------------------------------------------------------------------- |
+| ------------------------------------------------ |------------------------| ------------------------------------------------------------------- |
 | [retry](#retry-configuration-options)            | `{}` (no overrides)    | Configuration for retrying on errors                                |
 | [rateLimit](#rate-limit-configuration-options)   | `{}` (no overrides)    | Limits on the number of concurrent requests of different types      |
 | [maxRequestsPerMinute]                           | unlimited              | Limits on the number of requests per minute                         |
-| [delayPerRequestMS]                              | 3                      | Delay waited between each request in milliseconds                   |
-| [useBottleneck]                                  | false                  | Flag indicating usage of Bottleneck package for rate limiting       |
+| [delayPerRequestMS]                              | 0                      | Delay waited between each request in milliseconds                   |
+| [useBottleneck]                                  | true                   | Flag indicating usage of Bottleneck package for rate limiting       |
 | usePrivateAPI                                    | true                   | Whether to use Jira Private API when fetching and deploying changes |
 | [timeout](#client-timeout-configuration-options) | `{}` (no overrides)    | Configuration for setting request timeouts                          |
 

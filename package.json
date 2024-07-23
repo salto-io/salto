@@ -27,7 +27,6 @@
     "build-all": "yarn workspaces foreach -vpAi -j 4 run build",
     "clean": "./build_utils/turbo_run.sh clean",
     "test": "./build_utils/turbo_run.sh test",
-    "e2e-test": "RUN_E2E_TESTS=1 yarn test",
     "generate-notices-file": "./build_utils/generate_notices.sh",
     "lerna-version": "lerna version --no-git-tag-version --exact",
     "lerna-version-pr": "./build_utils/create_version_pr.sh",

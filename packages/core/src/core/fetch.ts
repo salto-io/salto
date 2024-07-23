@@ -193,7 +193,7 @@ const toChangesWithPath =
   (accountElementByFullName: (id: ElemID) => Promise<Element[]> | Element[]): ChangeTransformFunction =>
   async change => {
     const changeID: ElemID = change.change.id
-    if (isRemovalChange(change.change) || (changeID.isBaseID() && isModificationChange(change.change))) {
+    if (isRemovalChange(change.change)) {
       return [change]
     }
 
@@ -212,6 +212,10 @@ const toChangesWithPath =
     if (originalElements.length === 0) {
       log.trace(`no original elements found for change element id ${changeID.getFullName()}`)
       return [change]
+    }
+
+    if (changeID.isBaseID() && isModificationChange(change.change)) {
+      return [_.merge({}, change, { change: { data: { after: originalElements[0] } } })]
     }
 
     // Replace merged element with original elements that have a path hint

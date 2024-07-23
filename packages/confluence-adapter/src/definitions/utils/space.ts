@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-import { definitions, deployment } from '@salto-io/adapter-components'
+import { definitions, deployment, fetch as fetchUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { getChangeData, isAdditionChange, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { validateValue } from './generic'
 import { UserConfig } from '../../config'
+import { SPACE_TYPE_NAME } from '../../constants'
+import { FetchCriteria } from '../types'
 
 const log = logger(module)
 
@@ -115,25 +117,48 @@ export const spaceChangeGroupWithItsHomepage: deployment.grouping.ChangeIdFuncti
   return changeData.elemID.getFullName()
 }
 
-const addParamsToSpaceUrl = (params: Record<string, string[]>): `/${string}` => {
-  const paramEntries = Object.entries(params)
-  return paramEntries.reduce(
-    (url, [paramName, paramValues], index) =>
-      `${url}${index === 0 ? '' : '&'}${paramName}=${paramValues.join(`&${paramName}=`)}`,
-    `${SPACE_URL_WITHOUT_PARAMS}?`,
-  ) as `/${string}`
+const addParamsToSpaceUrl = (paramsDict: Record<string, string[]>): `/${string}` => {
+  const paramEntries = Object.entries(paramsDict)
+  const paramsAsStrings = paramEntries.map(([key, params]) => {
+    const valueStr = params.join(`&${key}=`)
+    return `${key}=${valueStr}`
+  })
+  return `${SPACE_URL_WITHOUT_PARAMS}?`.concat(paramsAsStrings.join('&')) as `/${string}`
+}
+
+const isSpaceTypeMatch = (typeRegex: string): boolean => fetchUtils.query.isTypeMatch(SPACE_TYPE_NAME, typeRegex)
+
+type FetchEntry = definitions.FetchEntry<FetchCriteria>
+
+const getSpaceDefaults = (query: 'type' | 'status'): string[] => query === 'type' ? ALL_SPACE_TYPES : ALL_SPACE_STATUSES
+
+const getTypesOrStatusesToFetch = ({
+  excludeSpaceDefs,
+  includeSpaceDefs,
+  query,
+}: {
+  excludeSpaceDefs: FetchEntry[]
+  includeSpaceDefs: FetchEntry[]
+  query: 'type' | 'status'
+}): string[] => {
+  const excludeSpaceQuery = excludeSpaceDefs.map(exclude => exclude.criteria?.[query]).filter(values.isDefined)
+  const includeSpaceQuery = includeSpaceDefs.map(include => include.criteria?.[query]).filter(values.isDefined)
+  const includeSpaceQueryWithDefault = Array.from(
+    new Set(includeSpaceQuery.length === 0 ? getSpaceDefaults(query) : includeSpaceQuery),
+  )
+  return includeSpaceQueryWithDefault.filter(t => !excludeSpaceQuery.includes(t))
 }
 
 /*
  * Fetch spaces endpoint with the relevant params according to the user config.
  * We fetch all space types and statuses by default, unless specified otherwise in the user config.
  */
-export const getFetchSpacesEndpoint = (userConfig: UserConfig): `/${string}` => {
-  const excludeSpaceDefs = userConfig.fetch.exclude.filter(e => e.type === 'space')
-  const excludeSpaceTypes = excludeSpaceDefs.map(e => e.criteria?.type).filter(values.isDefined)
-  const excludeSpaceStatuses = excludeSpaceDefs.map(e => e.criteria?.status).filter(values.isDefined)
-  const spaceTypesToFetch = ALL_SPACE_TYPES.filter(t => !excludeSpaceTypes.includes(t))
-  const spaceStatusesToFetch = ALL_SPACE_STATUSES.filter(s => !excludeSpaceStatuses.includes(s))
+export const getFetchSpacesEndpointWithParams = (userConfig: UserConfig): `/${string}` => {
+  const excludeSpaceDefs = userConfig.fetch.exclude.filter(exclude => isSpaceTypeMatch(exclude.type))
+  const includeSpaceDefs = userConfig.fetch.include.filter(include => isSpaceTypeMatch(include.type))
+
+  const spaceTypesToFetch = getTypesOrStatusesToFetch({ excludeSpaceDefs, includeSpaceDefs, query: 'type' })
+  const spaceStatusesToFetch = getTypesOrStatusesToFetch({ excludeSpaceDefs, includeSpaceDefs, query: 'status' })
   if (spaceTypesToFetch.length === 0 || spaceStatusesToFetch.length === 0) {
     log.warn('No space types or statuses to fetch, returning space url without params')
     return SPACE_URL_WITHOUT_PARAMS

@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 import { elements, definitions } from '@salto-io/adapter-components'
+import { FetchCriteria } from './definitions/types'
 
 export type UserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
-  fetchCriteria: {
-    name?: string
-    type?: string
-    status?: string
-  }
+  fetchCriteria: FetchCriteria
 }> & { managePagesForSpaces?: string[] }
 
 export type UserConfig = definitions.UserConfig<

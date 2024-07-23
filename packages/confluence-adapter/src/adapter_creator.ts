@@ -76,7 +76,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     },
   },
   customConvertError,
-  criterionFunctions: {
+  allCriteria: {
     name: fetchUtils.query.nameCriterion,
     status: fetchUtils.query.fieldCriterionCreator('status'),
     type: fetchUtils.query.fieldCriterionCreator('type'),

@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } fr
 import {
   createAdjustUserReferences,
   createPermissionUniqueKey,
-  getFetchSpacesEndpoint,
+  getFetchSpacesEndpointWithParams,
   isPermissionObject,
   restructurePermissionsAndCreateInternalIdMap,
   spaceChangeGroupWithItsHomepage,
@@ -263,28 +263,42 @@ describe('space definitions utils', () => {
       })
     })
   })
-  describe('getFetchSpacesEndpoint', () => {
-    const createMockUserConfig = (statuses: string[], types: string[]): UserConfig => ({
+  describe('getFetchSpacesEndpointWithParams', () => {
+    const createMockUserConfig = (
+      statusesToExclude: string[],
+      typesToExclude: string[],
+      statusesToInclude: string[] = [],
+      typesToInclude: string[] = [],
+    ): UserConfig => ({
       fetch: {
-        include: [],
+        include: [
+          ...statusesToInclude.map(status => ({ type: 'space', criteria: { status } })),
+          ...typesToInclude.map(type => ({ type: 'spa.*', criteria: { type } })),
+        ],
         exclude: [
-          ...statuses.map(status => ({ type: 'space', criteria: { status } })),
-          ...types.map(type => ({ type: 'space', criteria: { type } })),
+          ...statusesToExclude.map(status => ({ type: 's.*', criteria: { status } })),
+          ...typesToExclude.map(type => ({ type: 'space', criteria: { type } })),
         ],
       },
     })
     it('should return url without params when user exclude all statuses', () => {
-      expect(getFetchSpacesEndpoint(createMockUserConfig(['current', 'archived'], []))).toEqual('/wiki/api/v2/spaces')
+      expect(getFetchSpacesEndpointWithParams(createMockUserConfig(['current', 'archived'], []))).toEqual(
+        '/wiki/api/v2/spaces',
+      )
     })
     it('should return url without params when user exclude all types', () => {
       expect(
-        getFetchSpacesEndpoint(createMockUserConfig([], ['global', 'collaboration', 'knowledge_base', 'personal'])),
+        getFetchSpacesEndpointWithParams(
+          createMockUserConfig([], ['global', 'collaboration', 'knowledge_base', 'personal']),
+        ),
       ).toEqual('/wiki/api/v2/spaces')
     })
     it('should return url with the correct params', () => {
-      expect(getFetchSpacesEndpoint(createMockUserConfig(['archived'], ['personal', 'collaboration']))).toEqual(
-        '/wiki/api/v2/spaces?type=global&type=knowledge_base&status=current',
-      )
+      expect(
+        getFetchSpacesEndpointWithParams(
+          createMockUserConfig([], ['personal'], ['current'], ['knowledge_base', 'global', 'personal']),
+        ),
+      ).toEqual('/wiki/api/v2/spaces?type=knowledge_base&type=global&status=current')
     })
   })
 })

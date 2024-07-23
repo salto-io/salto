@@ -64,7 +64,7 @@ export interface AdapterParams<
   elementSource: ReadOnlyElementsSource
   adapterName: string
   fixElements: FixElementsFunc | undefined
-  criterionFunctions: Record<string, QueryCriterion>
+  allCriteria: Record<string, QueryCriterion>
   // TODO SALTO-5578 pass in account name as well
 }
 

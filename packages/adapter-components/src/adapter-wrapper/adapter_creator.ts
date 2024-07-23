@@ -70,7 +70,7 @@ export const createAdapter = <
   operationsCustomizations,
   clientDefaults,
   customConvertError,
-  criterionFunctions = DEFAULT_CRITERIA,
+  allCriteria = DEFAULT_CRITERIA,
 }: {
   adapterName: string
   // helper for determining the names of all clients that should be created
@@ -99,7 +99,7 @@ export const createAdapter = <
     additionalChangeValidators?: (args: { config: Co }) => Record<string, ChangeValidator>
     customizeFixElements?: (args: FixElementsArgs<Options, Co>) => Record<string, FixElementsFunc>
   }
-  criterionFunctions?: Record<string, QueryCriterion>
+  allCriteria?: Record<string, QueryCriterion>
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
   customConvertError?: ConvertError
 }): Adapter => {
@@ -161,7 +161,7 @@ export const createAdapter = <
           configInstance: context.config,
           additionalChangeValidators,
           fixElements,
-          criterionFunctions,
+          allCriteria,
         },
         adapterImpl ?? AdapterImpl,
       )

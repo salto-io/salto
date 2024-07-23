@@ -27,7 +27,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { getFetchSpacesEndpoint, spaceMergeAndTransformAdjust } from '../utils/space'
+import { getFetchSpacesEndpointWithParams, spaceMergeAndTransformAdjust } from '../utils/space'
 import { UserConfig } from '../../config'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
@@ -98,7 +98,7 @@ const createCustomizations = (
     requests: [
       {
         endpoint: {
-          path: getFetchSpacesEndpoint(userConfig),
+          path: getFetchSpacesEndpointWithParams(userConfig),
           queryArgs: {
             'description-format': 'plain',
           },

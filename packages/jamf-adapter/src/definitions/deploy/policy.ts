@@ -19,7 +19,7 @@ import { values } from '@salto-io/lowerdash'
 /*
  * change scripts array to object with size and script fields, so when converting to xml it will be in the correct format
  */
-export const adjustScriptStructureBeforeDeploy = (value: Record<string, unknown>): void => {
+const adjustScriptStructureBeforeDeploy = (value: Record<string, unknown>): void => {
   const { scripts: currentScripts } = value
   if (Array.isArray(currentScripts)) {
     value.scripts = {

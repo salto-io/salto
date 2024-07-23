@@ -130,7 +130,8 @@ const isSpaceTypeMatch = (typeRegex: string): boolean => fetchUtils.query.isType
 
 type FetchEntry = definitions.FetchEntry<FetchCriteria>
 
-const getSpaceDefaults = (query: 'type' | 'status'): string[] => query === 'type' ? ALL_SPACE_TYPES : ALL_SPACE_STATUSES
+const getSpaceDefaults = (query: 'type' | 'status'): string[] =>
+  query === 'type' ? ALL_SPACE_TYPES : ALL_SPACE_STATUSES
 
 const getTypesOrStatusesToFetch = ({
   excludeSpaceDefs,

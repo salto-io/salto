@@ -29,6 +29,8 @@ import {
   TemplateExpression,
   StaticFile,
   isModificationChange,
+  ElemID,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import wu from 'wu'
@@ -62,6 +64,9 @@ type ListChange =
       afterIndex: number
       afterValue: Value
     }
+
+export const getChangeRealId = (change: DetailedChange): ElemID =>
+  isRemovalChange(change) ? change.elemIDs?.before ?? change.id : change.elemIDs?.after ?? change.id
 
 /**
  * This function returns if a change contains a moving of a item in a list for one index to another
@@ -310,16 +315,16 @@ const toListChange = (change: DetailedChange): ListChange => {
   // eslint-disable-next-line default-case
   switch (change.action) {
     case 'remove': {
-      return { action: 'remove', beforeIndex: Number(change.elemIDs?.before) }
+      return { action: 'remove', beforeIndex: Number(change.elemIDs?.before?.name) }
     }
     case 'add': {
-      return { action: 'add', afterIndex: Number(change.elemIDs?.after), afterValue: change.data.after }
+      return { action: 'add', afterIndex: Number(change.elemIDs?.after?.name), afterValue: change.data.after }
     }
     case 'modify': {
       return {
         action: 'modify',
-        beforeIndex: Number(change.elemIDs?.before),
-        afterIndex: Number(change.elemIDs?.after),
+        beforeIndex: Number(change.elemIDs?.before?.name),
+        afterIndex: Number(change.elemIDs?.after?.name),
         afterValue: change.data.after,
       }
     }
@@ -366,7 +371,7 @@ const updateListWithFilteredChanges = (
   }))
 
   listChangesToIgnore.forEach(changeToIgnore => {
-    const indexShiftValue = hasAfterIndex(changeToIgnore) ? 1 : -1
+    const indexShiftValue = hasAfterIndex(changeToIgnore) ? -1 : 1
     const changeToIgnoreIndex = hasAfterIndex(changeToIgnore) ? changeToIgnore.afterIndex : changeToIgnore.beforeIndex
 
     additionsToApplyWithFixedIndex.forEach(additionToApply => {
@@ -425,7 +430,7 @@ export const applyListChanges = (
       return
     }
 
-    const parentId = changes[0].id.createParentID().replaceParentId(element.elemID)
+    const parentId = getChangeRealId(changes[0]).createParentID().replaceParentId(element.elemID)
     const list = resolvePath(element, parentId)
 
     if (matchingChanges.length === changes.length) {

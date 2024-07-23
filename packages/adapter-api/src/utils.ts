@@ -32,7 +32,7 @@ type SubElementSearchResult = {
   path: ReadonlyArray<string>
 }
 
-export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
+export const isIndexPathPart = (key: string): boolean => key !== '' && !Number.isNaN(Number(key))
 
 export const getDeepInnerType = async (
   type: TypeElement,

@@ -40,7 +40,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getIndependentElemIDs, resolvePath, setPath } from './utils'
-import { applyListChanges, getArrayIndexMapping, isOrderChange } from './list_comparison'
+import { applyListChanges, getArrayIndexMapping, getChangeRealId, isOrderChange } from './list_comparison'
 
 const log = logger(module)
 
@@ -390,21 +390,21 @@ export const applyDetailedChanges = (
   )
 
   const [realListItemGroup, otherGroups] = _.partition(Object.values(potentialListItemGroups), group =>
-    Array.isArray(resolvePath(element, group[0].id.createParentID())),
+    Array.isArray(resolvePath(element, getChangeRealId(group[0]).createParentID())),
   )
 
   _(otherChanges)
     .concat(otherGroups.flat())
     .filter(filterFunc)
     .forEach(detailedChange => {
-      const id = isRemovalChange(detailedChange)
-        ? detailedChange.elemIDs?.before ?? detailedChange.id
-        : detailedChange.elemIDs?.after ?? detailedChange.id
+      const id = getChangeRealId(detailedChange)
       const data = isRemovalChange(detailedChange) ? undefined : detailedChange.data.after
       setPath(element, id.replaceParentId(element.elemID), data)
     })
 
-  realListItemGroup.forEach(changes => {
+  // we want inner lists to be applied before outer lists, because the indexes may change
+  const orderedListItemGroups = _.orderBy(realListItemGroup, group => group[0].id.nestingLevel, 'desc')
+  orderedListItemGroups.forEach(changes => {
     applyListChanges(element, changes, filterFunc)
   })
 }

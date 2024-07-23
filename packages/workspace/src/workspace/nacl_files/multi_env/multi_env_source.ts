@@ -379,16 +379,11 @@ const buildMultiEnvSource = (
     _(changes)
       .groupBy(change => change.id.getFullName())
       .values()
-      .flatMap(elemChanges => {
-        const first = elemChanges[0]
-        if (!first.id.isBaseID()) {
-          return elemChanges
-        }
-
-        return removalChangeFromModificationChanges(elemChanges.filter(isModificationChange)).concat(
-          elemChanges.map(change => (isModificationChange(change) ? additionFromModificationChange(change) : change)),
-        )
-      })
+      .flatMap(elemChanges =>
+        elemChanges[0].id.isBaseID() && elemChanges.every(isModificationChange)
+          ? removalChangeFromModificationChanges(elemChanges).concat(elemChanges.map(additionFromModificationChange))
+          : elemChanges,
+      )
       .value()
 
   const applyRoutedChanges = async (routedChanges: RoutedChanges): Promise<EnvsChanges> => ({

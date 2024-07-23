@@ -17,3 +17,4 @@
 export { adjust as adjustClass } from './class'
 export { adjust as adjustPolicy } from './policy'
 export { adjust as adjustConfigurationProfile } from './configuration_profile'
+export { adjust as adjustMacApplication } from './mac_applications'

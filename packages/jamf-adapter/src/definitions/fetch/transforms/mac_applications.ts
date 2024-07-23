@@ -14,20 +14,26 @@
  * limitations under the License.
  */
 import { definitions } from '@salto-io/adapter-components'
+import { values } from '@salto-io/lowerdash'
+import {
+  adjustCategoryObjectToCategoryId,
+  adjustServiceIdToTopLevel,
+  adjustSiteObjectToSiteId,
+  removeSelfServiceIcon,
+} from './utils'
 
-export type AdditionalAction = never
-export type ClientOptions = 'main' | 'classicApi'
-export type PaginationOptions = 'increasePageUntilEmpty'
-
-export type ReferenceContextStrategies = never
-export type CustomReferenceSerializationStrategyName = 'idAndNameObject'
-export type CustomIndexField = CustomReferenceSerializationStrategyName
-
-export type Options = definitions.APIDefinitionsOptions & {
-  clientOptions: ClientOptions
-  paginationOptions: PaginationOptions
-  additionalAction: AdditionalAction
-  referenceContextStrategies: ReferenceContextStrategies
-  referenceSerializationStrategies: CustomReferenceSerializationStrategyName
-  referenceIndexNames: CustomIndexField
+/*
+ * Adjust os or mobile configuration profile instance
+ */
+export const adjust: definitions.AdjustFunction = async ({ value }) => {
+  if (!values.isPlainRecord(value)) {
+    throw new Error('Expected value to be a record')
+  }
+  ;[
+    adjustCategoryObjectToCategoryId,
+    adjustServiceIdToTopLevel,
+    adjustSiteObjectToSiteId,
+    removeSelfServiceIcon,
+  ].forEach(fn => fn(value))
+  return { value }
 }

@@ -20,17 +20,8 @@ import {
   adjustScriptsObjectArrayToScriptsIds,
   adjustServiceIdToTopLevel,
   adjustSiteObjectToSiteId,
+  removeSelfServiceIcon,
 } from './utils'
-
-/*
- * Remove self_service_icon from self_service object
- */
-const removeSelfServiceIcon = (value: Record<string, unknown>): void => {
-  const { self_service: selfService } = value
-  if (values.isPlainRecord(selfService)) {
-    delete selfService.self_service_icon
-  }
-}
 
 /*
  * Adjust policy instance

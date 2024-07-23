@@ -329,7 +329,7 @@ describe('adapter', () => {
       expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
       expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
       const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
-      expect(getChangeData(addRes).value.id).toEqual('20')
+      expect(getChangeData(addRes).value.id).toEqual(20)
     })
   })
 })

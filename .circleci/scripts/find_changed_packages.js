@@ -40,7 +40,7 @@ const hasE2eTests = packagePath => {
 
 const main = () => {
   const workspaceInfo = getWorkspacesInfo()
-  const e2ePackagesToTest = Object.keys(Object.fromEntries(Object.entries(workspaceInfo).filter(([name, details]) => hasE2eTests(details.location))))
+  const e2ePackagesToTest = Object.entries(workspaceInfo).filter(([_name, details]) => hasE2eTests(details.location)).map(([name, _details]) => name)
   const packagesWithE2eTestsFilePath = path.join(__dirname, '..', 'e2e_packages_to_test.txt')
   writeFileSync(packagesWithE2eTestsFilePath, e2ePackagesToTest.join('\n'))
 }

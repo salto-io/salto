@@ -21,8 +21,9 @@ import {
   updateDefaultValues,
 } from '../../../src/filters/fields/default_values'
 import { JIRA } from '../../../src/constants'
-import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
+import { createEmptyType } from '../../utils'
 
 describe('default values', () => {
   describe('updateDefaultValues', () => {
@@ -150,6 +151,56 @@ describe('default values', () => {
       })
       await updateDefaultValues(toChange({ before }), client, config)
       expect(client.put).not.toHaveBeenCalled()
+    })
+    it('should call the APIs correctly when splitFieldContextOptions is true', async () => {
+      config.fetch.splitFieldContextOptions = true
+      const optionInstance = new InstanceElement('option', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {
+        id: 111,
+      })
+
+      const before = new InstanceElement('instance', type, {
+        name: 'a',
+        id: 3,
+        defaultValue: {
+          optionId: new ReferenceExpression(optionInstance.elemID, optionInstance),
+          type: 'float',
+          number: 9,
+        },
+      })
+
+      const after = new InstanceElement(
+        'instance',
+        type,
+        {
+          name: 'a',
+          id: 3,
+          defaultValue: {
+            optionId: new ReferenceExpression(optionInstance.elemID, optionInstance),
+            type: 'float',
+            number: 8,
+          },
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [{ id: '2' }],
+        },
+      )
+
+      await updateDefaultValues(toChange({ before, after }), client, config)
+
+      expect(client.put).toHaveBeenCalledWith({
+        url: '/rest/api/3/field/2/context/defaultValue',
+        data: {
+          defaultValues: [
+            {
+              optionId: 111,
+              contextId: 3,
+              type: 'float',
+              number: 8,
+            },
+          ],
+        },
+      })
     })
   })
 

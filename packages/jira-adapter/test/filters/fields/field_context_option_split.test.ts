@@ -315,37 +315,32 @@ describe('fieldContextOptionSplitFilter', () => {
   })
   describe('editDefaultValue', () => {
     it('should edit defaultValue to include references', async () => {
-      const context = new InstanceElement(
-        'contextName',
-        contextType,
-        {
-          options: {
-            option1: {
-              value: 'option1',
-              disabled: false,
-              id: '1',
-              position: 1,
-            },
-            option2: {
-              value: 'option2',
-              disabled: false,
-              id: '2',
-              position: 2,
-            },
-            option3: {
-              value: 'option3',
-              disabled: false,
-              id: '3',
-              position: 3,
-            },
+      const context = new InstanceElement('contextName', contextType, {
+        options: {
+          option1: {
+            value: 'option1',
+            disabled: false,
+            id: '1',
+            position: 1,
           },
-          defaultValue: {
-            type: 'option.multiple',
-            optionIds: ['1', '3'],
+          option2: {
+            value: 'option2',
+            disabled: false,
+            id: '2',
+            position: 2,
+          },
+          option3: {
+            value: 'option3',
+            disabled: false,
+            id: '3',
+            position: 3,
           },
         },
-        ['Jira', 'Records', 'Field', 'FieldName', 'contextName'],
-      )
+        defaultValue: {
+          type: 'option.multiple',
+          optionIds: ['1', '3'],
+        },
+      })
       const elements = [contextType, optionType, context]
       await filter.onFetch(elements)
       // 3 types, 1 context, 3 options, 1 orders

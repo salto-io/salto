@@ -38,9 +38,8 @@ const filter: FilterCreator = ({ config, client }) => ({
       }
       const { contextId, fieldId } = getContextAndFieldIds(change)
       const baseUrl = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
-      const optionsValues = getChangeData(change).value.options?.map(
-        (optionRef: ReferenceExpression) => optionRef.value.value,
-      )
+      const optionsValues =
+        getChangeData(change).value.options?.map((optionRef: ReferenceExpression) => optionRef.value.value) ?? []
       await reorderContextOptions(optionsValues, client, baseUrl)
     })
 

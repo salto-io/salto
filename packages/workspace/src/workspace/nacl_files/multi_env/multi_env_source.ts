@@ -23,7 +23,6 @@ import {
   getChangeData,
   DetailedChange,
   AdditionChange,
-  RemovalChange,
   ModificationChange,
   Change,
   ChangeDataType,
@@ -359,7 +358,7 @@ const buildMultiEnvSource = (
 
   const removalChangeFromModificationChanges = <T>(
     changes: (DetailedChange<T> & ModificationChange<T>)[],
-  ): (DetailedChange<T> & RemovalChange<T>)[] =>
+  ): DetailedChange<T>[] =>
     changes.length > 0
       ? [
           {
@@ -374,22 +373,21 @@ const buildMultiEnvSource = (
 
   // The update NaCl file logic doesn't know how to handle modifications that span multiple files,
   // so we split them into a removal and additions.
+  // For this to work for modifications of elements spread across multiple files, this relies on the
+  // fact that we receive a separate modification for the part of the element in each file.
   const normalizeChanges = (changes: DetailedChange[]): DetailedChange[] =>
     _(changes)
       .groupBy(change => change.id.getFullName())
       .values()
-      .filter(elemChanges => elemChanges.length > 0)
       .flatMap(elemChanges => {
         const first = elemChanges[0]
-        if (first.id.isBaseID()) {
-          return (
-            removalChangeFromModificationChanges(elemChanges.filter(isModificationChange)) as DetailedChange[]
-          ).concat(
-            elemChanges.map(change => (isModificationChange(change) ? additionFromModificationChange(change) : change)),
-          )
+        if (!first.id.isBaseID()) {
+          return elemChanges
         }
 
-        return elemChanges
+        return removalChangeFromModificationChanges(elemChanges.filter(isModificationChange)).concat(
+          elemChanges.map(change => (isModificationChange(change) ? additionFromModificationChange(change) : change)),
+        )
       })
       .value()
 

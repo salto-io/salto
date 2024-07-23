@@ -38,6 +38,7 @@ import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
 import { BEHAVIOR_TYPE } from '../src/constants'
+import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../src/filters/fields/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype

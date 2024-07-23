@@ -22,6 +22,7 @@ import {
   CATEGORY_TYPE_NAME,
   CLASS_TYPE_NAME,
   DEPARTMENT_TYPE_NAME,
+  MAC_APPLICATION_TYPE_NAME,
   MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
   OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
   PACKAGE_TYPE_NAME,
@@ -50,12 +51,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     [OS_X_CONFIGURATION_PROFILE_TYPE_NAME]: createClassicApiDefinitionsForType(
       OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
       'osxconfigurationprofiles',
-      true,
     ),
     [MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME]: createClassicApiDefinitionsForType(
       'configuration_profile',
       'mobiledeviceconfigurationprofiles',
-      true,
     ),
     [API_ROLE_TYPE_NAME]: {
       requestsByAction: {
@@ -97,6 +96,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     [SITE_TYPE_NAME]: createClassicApiDefinitionsForType(SITE_TYPE_NAME, `${SITE_TYPE_NAME}s`),
+    [MAC_APPLICATION_TYPE_NAME]: createClassicApiDefinitionsForType(MAC_APPLICATION_TYPE_NAME, 'macapplications'),
   }
   return _.merge(standardRequestDefinitions, customDefinitions)
 }

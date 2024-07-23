@@ -64,3 +64,13 @@ export const adjustServiceIdToTopLevel = (value: Record<string, unknown>): void 
   _.set(general, 'id', undefined)
   value.id = id
 }
+
+/*
+ * Remove self_service_icon from self_service object
+ */
+export const removeSelfServiceIcon = (value: Record<string, unknown>): void => {
+  const { self_service: selfService } = value
+  if (values.isPlainRecord(selfService)) {
+    delete selfService.self_service_icon
+  }
+}

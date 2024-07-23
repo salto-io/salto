@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
-import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } from './types'
+import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName, Options } from './types'
 import {
   CATEGORY_TYPE_NAME,
   CLASS_TYPE_NAME,
+  MAC_APPLICATION_TYPE_NAME,
+  MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
+  OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
   PACKAGE_TYPE_NAME,
   POLICY_TYPE_NAME,
   SCRIPT_TYPE_NAME,
   SITE_TYPE_NAME,
 } from '../constants'
+
+const addGeneralToTypes = (types: string[]): string[] => types.map(type => `${type}__general`)
 
 const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategies,
@@ -33,22 +38,73 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     serializationStrategy: 'id',
     target: { type: CATEGORY_TYPE_NAME },
   },
+  // idAndNameObject must come before id strategy, we need idAndNameObject for resolution
   {
-    src: { field: 'site', parentTypes: [CLASS_TYPE_NAME] },
-    serializationStrategy: 'fullValue',
+    src: {
+      field: 'site',
+      parentTypes: [
+        CLASS_TYPE_NAME,
+        ...addGeneralToTypes([
+          MAC_APPLICATION_TYPE_NAME,
+          OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
+          MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
+          POLICY_TYPE_NAME,
+        ]),
+      ],
+    },
+    serializationStrategy: 'idAndNameObject',
     target: { type: SITE_TYPE_NAME },
   },
   {
-    src: { field: 'site', parentTypes: [CLASS_TYPE_NAME] },
+    src: {
+      field: 'site',
+      parentTypes: [
+        CLASS_TYPE_NAME,
+        ...addGeneralToTypes([
+          MAC_APPLICATION_TYPE_NAME,
+          OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
+          MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
+          POLICY_TYPE_NAME,
+        ]),
+      ],
+    },
     serializationStrategy: 'id',
     sourceTransformation: 'asString',
     target: { type: SITE_TYPE_NAME },
   },
+  // idAndNameObject must come before id strategy, we need idAndNameObject for resolution
   {
-    src: { field: 'category', parentTypes: [POLICY_TYPE_NAME] },
+    src: {
+      field: 'category',
+      parentTypes: addGeneralToTypes([
+        MAC_APPLICATION_TYPE_NAME,
+        OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
+        MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
+        POLICY_TYPE_NAME,
+      ]),
+    },
+    serializationStrategy: 'idAndNameObject',
+    target: { type: CATEGORY_TYPE_NAME },
+  },
+  {
+    src: {
+      field: 'category',
+      parentTypes: addGeneralToTypes([
+        MAC_APPLICATION_TYPE_NAME,
+        OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
+        MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
+        POLICY_TYPE_NAME,
+      ]),
+    },
     serializationStrategy: 'id',
     sourceTransformation: 'asString',
     target: { type: CATEGORY_TYPE_NAME },
+  },
+  // fullValue must come before id strategy, we need fullValue for resolution
+  {
+    src: { field: 'scripts', parentTypes: [POLICY_TYPE_NAME] },
+    serializationStrategy: 'idAndNameObject',
+    target: { type: SCRIPT_TYPE_NAME },
   },
   {
     src: { field: 'scripts', parentTypes: [POLICY_TYPE_NAME] },
@@ -64,6 +120,13 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   },
 ]
 
-export const REFERENCES: definitions.ApiDefinitions['references'] = {
+export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
+  serializationStrategyLookup: {
+    idAndNameObject: {
+      serialize: async ({ ref }) => ({ name: ref.value.value.name, id: ref.value.value.id }),
+      lookup: referenceUtils.basicLookUp,
+    },
+  },
+  fieldsToGroupBy: ['id'],
 }

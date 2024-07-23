@@ -640,7 +640,8 @@ export default class SalesforceClient implements ISalesforceClient {
       func: def.isPartial
         ? def.func
         : // Populate the listedInstancesByType for non-partial custom list functions
-          async (client: ISalesforceClient) => def.func(client).then(this.populateListedInstancesByType),
+          async (client: ISalesforceClient) =>
+            def.func(client).then(result => this.populateListedInstancesByType(result)),
       isPartial: def.isPartial,
     }))
   }
@@ -716,7 +717,7 @@ export default class SalesforceClient implements ISalesforceClient {
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
-    }).then(this.populateListedInstancesByType)
+    }).then(result => this.populateListedInstancesByType(result))
   }
 
   private async listMetadataObjectsOfType(

@@ -87,9 +87,6 @@ const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { INVALID_CROSS_REFERENCE_KEY } = SALESFORCE_ERRORS
 
-jest.mock('../src/client/custom_list_funcs')
-const mockedCustomListFuncs = jest.mocked(customListFuncsModule)
-
 const createCustomObject = (name: string, additionalFields?: Record<string, FieldDefinition>): ObjectType => {
   const stringType = new PrimitiveType({
     elemID: new ElemID(SALESFORCE, 'string'),
@@ -314,7 +311,7 @@ describe('SalesforceAdapter fetch', () => {
             fileName: testData.anotherApexClass.zipFileName,
           }),
         ]
-        mockedCustomListFuncs.createListApexClassesDef.mockResolvedValue({
+        jest.spyOn(customListFuncsModule, 'createListApexClassesDef').mockReturnValue({
           func: async _client => ({ result: apexClassFileProperties, errors: [] }),
           isPartial: true,
         })

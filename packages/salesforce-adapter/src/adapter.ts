@@ -515,7 +515,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.client.setCustomListFuncDefByType(
       withChangesDetection
         ? {
-            [APEX_CLASS_METADATA_TYPE]: await createListApexClassesDef(this.elementsSource),
+            [APEX_CLASS_METADATA_TYPE]: createListApexClassesDef(this.elementsSource),
           }
         : {},
     )

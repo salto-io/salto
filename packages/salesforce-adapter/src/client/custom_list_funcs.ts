@@ -40,7 +40,7 @@ const latestChangedInstanceOfType = async (
   return _.maxBy(Object.values(allChangedAtOfType).filter(_.isString), dateTime => new Date(dateTime).getTime())
 }
 
-export const createListApexClassesDef = async (elementsSource: ReadOnlyElementsSource): Promise<CustomListFuncDef> => ({
+export const createListApexClassesDef = (elementsSource: ReadOnlyElementsSource): CustomListFuncDef => ({
   func: async client => {
     const sinceDate = await latestChangedInstanceOfType(elementsSource, APEX_CLASS_METADATA_TYPE)
     if (sinceDate === undefined) {

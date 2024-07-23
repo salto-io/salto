@@ -1273,12 +1273,17 @@ const getInsufficientPermissionsError: definitions.fetch.FetchResourceDefinition
   value: false,
 }
 
-export const createFetchDefinitions = (
-  userConfig: OktaUserConfig,
-  fetchQuery: elementUtils.query.ElementQuery,
-  usePrivateAPI: boolean,
-  baseUrl?: string,
-): definitions.fetch.FetchApiDefinitions<OktaOptions> => {
+export const createFetchDefinitions = ({
+  userConfig,
+  fetchQuery,
+  usePrivateAPI,
+  baseUrl,
+}: {
+  userConfig: OktaUserConfig
+  fetchQuery: elementUtils.query.ElementQuery
+  usePrivateAPI: boolean
+  baseUrl?: string
+}): definitions.fetch.FetchApiDefinitions<OktaOptions> => {
   const {
     fetch: { includeProfileMappingProperties, includeGroupMemberships },
   } = userConfig

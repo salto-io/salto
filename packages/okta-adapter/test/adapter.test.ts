@@ -426,14 +426,16 @@ describe('adapter', () => {
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: nullProgressReporter })
-        const groupMembersType = elements.filter(isObjectType).find(e => e.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
+        const groupMembersType = elements
+          .filter(isObjectType)
+          .find(e => e.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
         expect(groupMembersType).toBeDefined()
         const groupMembersInstances = elements
           .filter(isInstanceElement)
           .filter(inst => inst.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
         expect(groupMembersInstances).toHaveLength(1)
         expect(groupMembersInstances[0]?.value).toEqual({
-          members: ['myMail@salto.nacl']
+          members: ['myMail@salto.nacl'],
         })
       })
     })

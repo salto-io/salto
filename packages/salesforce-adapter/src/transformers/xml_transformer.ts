@@ -520,12 +520,13 @@ export type DeployPackage = {
   getZip(): Promise<Buffer>
   getPackageXmlContent(): string
   getDeletionsPackageName(): string
+  getZipContent(): Map<string, string | Buffer>
 }
 
 export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage => {
-  const zip = new JSZip()
   const addManifest = new collections.map.DefaultMap<string, string[]>(() => [])
   const deleteManifest = new collections.map.DefaultMap<string, string[]>(() => [])
+  const zipContent = new Map<string, string | Buffer>()
   const deletionsPackageName = deleteBeforeUpdate ? 'destructiveChanges.xml' : 'destructiveChangesPost.xml'
 
   const addToManifest: DeployPackage['addToManifest'] = (type, name) => {
@@ -548,7 +549,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
 
           // Add instance metadata
           const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
-          zip.file(
+          zipContent.set(
             complexType.getMetadataFilePath(instanceName, values),
             toMetadataXml(typeName, complexType.sortMetadataValues?.(metadataValues) ?? metadataValues),
           )
@@ -556,7 +557,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
           // Add instance content fields
           const fileNameToContentMaps = Object.values(fieldToFileToContent)
           fileNameToContentMaps.forEach(fileNameToContentMap =>
-            Object.entries(fileNameToContentMap).forEach(([fileName, content]) => zip.file(fileName, content)),
+            Object.entries(fileNameToContentMap).forEach(([fileName, content]) => zipContent.set(fileName, content)),
           )
         } else {
           const { dirName, suffix, hasMetaFile } = (await instance.getType()).annotations
@@ -568,15 +569,15 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
             ]),
           ].join('/')
           if (hasMetaFile) {
-            zip.file(
+            zipContent.set(
               `${instanceContentPath}${METADATA_XML_SUFFIX}`,
               toMetadataXml(typeName, _.omit(values, METADATA_CONTENT_FIELD)),
             )
             if (values[METADATA_CONTENT_FIELD] !== undefined) {
-              zip.file(instanceContentPath, values[METADATA_CONTENT_FIELD])
+              zipContent.set(instanceContentPath, values[METADATA_CONTENT_FIELD])
             }
           } else {
-            zip.file(instanceContentPath, toMetadataXml(typeName, values))
+            zipContent.set(instanceContentPath, toMetadataXml(typeName, values))
           }
         }
       } catch (e) {
@@ -594,22 +595,29 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       deleteManifest.get(typeName).push(name)
     },
     getZip: () => {
-      zip.file(`${PACKAGE}/package.xml`, toPackageXml(addManifest))
+      zipContent.set(`${PACKAGE}/package.xml`, toPackageXml(addManifest))
       if (deleteManifest.size !== 0) {
-        zip.file(`${PACKAGE}/${deletionsPackageName}`, toPackageXml(deleteManifest))
+        zipContent.set(`${PACKAGE}/${deletionsPackageName}`, toPackageXml(deleteManifest))
       }
 
+      const zip = new JSZip()
       // Set a constant date for all files in the zip in order to keep the zip hash constant when
       // the contents are the same.
       // this is important for the "quickDeploy" feature
       const date = new Date('2023-06-15T00:00:00.000+01:00')
-      Object.values(zip.files).forEach(info => {
-        info.date = date
-      })
+      Array.from(zipContent.entries()).forEach(([fileName, content]) => zip.file(fileName, content, { date }))
+
+      // We need another iteration here to also set the date on all the folders
+      Object.values(zip.files)
+        .filter(info => info.dir)
+        .forEach(info => {
+          info.date = date
+        })
 
       return zip.generateAsync({ type: 'nodebuffer' })
     },
     getDeletionsPackageName: () => deletionsPackageName,
     getPackageXmlContent: () => toPackageXml(addManifest),
+    getZipContent: () => zipContent,
   }
 }

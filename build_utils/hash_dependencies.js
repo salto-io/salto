@@ -69,7 +69,7 @@ const main = () => {
     console.log(fs.readFileSync(tempFile.name, { encoding: 'utf8' }))
   }
 
-  console.log(execSync(`xargs shasum < ${tempFile.name} | shasum`).toString().split(' ')[0])
+  console.log(execSync(`xargs sha1sum < ${tempFile.name} | sha1sum`).toString().split(' ')[0])
 }
 
 main()

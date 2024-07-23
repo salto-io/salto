@@ -46,24 +46,15 @@ else
     fi
   done
 
-  __CMD_HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  _dependency_hash=""
-
-  pushd "$__CMD_HERE/.."
-
   if [ -n "$filter" ]; then
     echo "node ./build_utils/hash_dependencies.js -p $filter"
-    _dependency_hash="$(node ./build_utils/hash_dependencies.js -p "$filter")"
+    export SALTO_DEPENDENCIES_HASH="$(node ./build_utils/hash_dependencies.js -p "$filter")"
   else
-    echo "node $__CMD_HERE/hash_dependencies.js"
-    _dependency_hash="$(node "$__CMD_HERE"/hash_dependencies.js)"
+    echo "node ./build_utils/hash_dependencies.js"
+    export SALTO_DEPENDENCIES_HASH="$(node ./build_utils/hash_dependencies.js)"
   fi
 
-  popd
-
-  export SALTO_DEPENDENCIES_HASH="$_dependency_hash"
 fi
 
-yarn turbo run \
-  --no-update-notifier --concurrency="$TURBO_CONCURRENCY" \
-  "${ORG_ARG[@]}"
+yarn turbo run "${ORG_ARG[@]}" \
+  --concurrency="$TURBO_CONCURRENCY"

@@ -63,9 +63,9 @@ export const createClientDefinitions = (
           },
           '/api/v1/users': {
             get: {
-              queryArgs: { 
+              queryArgs: {
                 limit: '200', // maximum page size allowed
-                search: 'id pr' // The search query is needed to fetch deprovisioned users
+                search: 'id pr', // The search query is needed to fetch deprovisioned users
               },
             },
           },

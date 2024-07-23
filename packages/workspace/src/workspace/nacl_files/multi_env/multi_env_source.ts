@@ -347,29 +347,51 @@ const buildMultiEnvSource = (
     return naclFile ? { ...naclFile, filename } : undefined
   }
 
-  // The update NaCl file logic doesn't know how to handle modifications that span multiple files,
-  // so we split them into removals and additions.
-  const splitChange = <T>(
+  const additionFromModificationChange = <T>(
     change: DetailedChange<T> & ModificationChange<T>,
-  ): [DetailedChange<T> & RemovalChange<T>, DetailedChange<T> & AdditionChange<T>] => [
-    {
-      action: 'remove',
-      data: { before: change.data.before },
-      id: change.id,
-      elemIDs: change.elemIDs?.before ? { before: change.elemIDs.before } : undefined,
-      path: change.path,
-    },
-    {
-      action: 'add',
-      data: { after: change.data.after },
-      id: change.id,
-      elemIDs: change.elemIDs?.after ? { after: change.elemIDs.after } : undefined,
-      path: change.path,
-    },
-  ]
+  ): DetailedChange<T> & AdditionChange<T> => ({
+    action: 'add',
+    data: { after: change.data.after },
+    id: change.id,
+    elemIDs: change.elemIDs?.after ? { after: change.elemIDs.after } : undefined,
+    path: change.path,
+  })
 
+  const removalChangeFromModificationChanges = <T>(
+    changes: (DetailedChange<T> & ModificationChange<T>)[],
+  ): (DetailedChange<T> & RemovalChange<T>)[] =>
+    changes.length > 0
+      ? [
+          {
+            action: 'remove',
+            data: { before: changes[0].data.before },
+            id: changes[0].id,
+            elemIDs: { before: changes[0].id },
+            path: changes[0].path,
+          },
+        ]
+      : []
+
+  // The update NaCl file logic doesn't know how to handle modifications that span multiple files,
+  // so we split them into a removal and additions.
   const normalizeChanges = (changes: DetailedChange[]): DetailedChange[] =>
-    changes.flatMap(change => (change.id.isBaseID() && isModificationChange(change) ? splitChange(change) : change))
+    _(changes)
+      .groupBy(change => change.id.getFullName())
+      .values()
+      .filter(elemChanges => elemChanges.length > 0)
+      .flatMap(elemChanges => {
+        const first = elemChanges[0]
+        if (first.id.isBaseID()) {
+          return (
+            removalChangeFromModificationChanges(elemChanges.filter(isModificationChange)) as DetailedChange[]
+          ).concat(
+            elemChanges.map(change => (isModificationChange(change) ? additionFromModificationChange(change) : change)),
+          )
+        }
+
+        return elemChanges
+      })
+      .value()
 
   const applyRoutedChanges = async (routedChanges: RoutedChanges): Promise<EnvsChanges> => ({
     ...(await resolveValues({

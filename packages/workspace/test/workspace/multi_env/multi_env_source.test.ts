@@ -592,6 +592,19 @@ describe('multi env source', () => {
         {
           action: 'modify',
           data: {
+            before: envObject,
+            after: envObjectMeta,
+          },
+          id: envObject.elemID,
+          elemIDs: {
+            before: envObject.elemID,
+            after: envObjectMeta.elemID,
+          },
+          path: envObject.path,
+        },
+        {
+          action: 'modify',
+          data: {
             before: field,
             after: fieldNumber,
           },
@@ -610,6 +623,13 @@ describe('multi env source', () => {
           data: { before: envObject },
           id: envObject.elemID,
           elemIDs: { before: envObject.elemID },
+          path: envObject.path,
+        },
+        {
+          action: 'add',
+          data: { after: envObjectMeta },
+          id: envObject.elemID,
+          elemIDs: { after: envObjectMeta.elemID },
           path: envObject.path,
         },
         {

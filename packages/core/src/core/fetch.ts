@@ -214,10 +214,6 @@ const toChangesWithPath =
       return [change]
     }
 
-    if (changeID.isBaseID() && isModificationChange(change.change)) {
-      return [_.merge({}, change, { change: { data: { after: originalElements[0] } } })]
-    }
-
     // Replace merged element with original elements that have a path hint
     return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
   }

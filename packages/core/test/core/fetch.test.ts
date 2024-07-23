@@ -319,7 +319,7 @@ describe('fetch', () => {
         })
       })
 
-      it('should use the existing elements to resolve the fetched elements when calculating changes', async () => {
+      it('should use the existing elements to resolve the fetched elements when calculcating changes', async () => {
         const beforeElement = new InstanceElement(
           'name',
           new ObjectType({
@@ -655,7 +655,7 @@ describe('fetch', () => {
           )
           changes = [...result.changes]
         })
-        it('should call emit on changesWillBeFetched & diffWillBeCalculated', () => {
+        it('should call emit on changesWillBeFetched & diffWillBeCalculcated', () => {
           expect(progressEmitter.emit).toHaveBeenCalledTimes(2)
           expect(progressEmitter.emit).toHaveBeenCalledWith(
             'changesWillBeFetched',
@@ -681,7 +681,7 @@ describe('fetch', () => {
           )
           changes = [...result.changes]
         })
-        it('should call emit on changesWillBeFetched & diffWillBeCalculated and adapter events', () => {
+        it('should call emit on changesWillBeFetched & diffWillBeCalculcated and adapter events', () => {
           expect(progressEmitter.emit).toHaveBeenCalledTimes(3)
           expect(progressEmitter.emit).toHaveBeenCalledWith(
             'changesWillBeFetched',
@@ -1522,7 +1522,7 @@ describe('fetch', () => {
       })
       const dummy2 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
       const dummy3 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
-      const expectedDummy3ObjectAfterRename = new ObjectType({ elemID: new ElemID('dummy3', 'type') })
+      const expectedDummy3ObjectAterRename = new ObjectType({ elemID: new ElemID('dummy3', 'type') })
       const dummy1Type1 = new ObjectType({ elemID: new ElemID('dummy1', 'd1t1'), fields: {} })
       const dummy2Type1 = new ObjectType({ elemID: new ElemID('dummy2', 'd2t1'), fields: {} })
       const dummy3Type1 = new ObjectType({ elemID: new ElemID('dummy2', 'd3t1'), fields: {} })
@@ -1614,7 +1614,7 @@ describe('fetch', () => {
         await fetchChanges(
           _.pick(adapters, [expectedDummy1.elemID.adapter, 'dummy2']),
           createElementSource([]),
-          createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAfterRename]),
+          createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAterRename]),
           {
             [expectedDummy1.elemID.adapter]: 'dummy1',
             dummy2: 'dummy2',
@@ -1629,7 +1629,7 @@ describe('fetch', () => {
             [expectedDummy1.elemID.adapter]: expect.arrayContaining([expectedDummy1Type1, expectedDummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
             // dummy3 was not fetched so it includes only elements from the workspace
-            dummy3: expect.arrayContaining([expectedDummy3ObjectAfterRename]),
+            dummy3: expect.arrayContaining([expectedDummy3ObjectAterRename]),
           },
           accountToServiceNameMap: {
             [expectedDummy1.elemID.adapter]: 'dummy1',
@@ -1648,7 +1648,7 @@ describe('fetch', () => {
           fetchChanges(
             _.pick(adapters, [expectedDummy1.elemID.adapter, 'dummy2']),
             createElementSource([]),
-            createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAfterRename]),
+            createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAterRename]),
             {
               [expectedDummy1.elemID.adapter]: 'dummy1',
               dummy2: 'dummy2',
@@ -1664,7 +1664,7 @@ describe('fetch', () => {
             [expectedDummy1.elemID.adapter]: expect.arrayContaining([expectedDummy1Type1, expectedDummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
             // dummy3 was not fetched so it includes only elements from the workspace
-            dummy3: expect.arrayContaining([expectedDummy3ObjectAfterRename]),
+            dummy3: expect.arrayContaining([expectedDummy3ObjectAterRename]),
           },
           accountToServiceNameMap: {
             [expectedDummy1.elemID.adapter]: 'dummy1',
@@ -1692,14 +1692,14 @@ describe('fetch from workspace', () => {
         createInMemoryElementSource([]),
         createInMemoryElementSource([]),
         [],
-        'nonexisting',
+        'nonexisiting',
         false,
       )
       expect([...fetchRes.changes]).toHaveLength(0)
       expect(fetchRes.elements).toHaveLength(0)
       expect(fetchRes.unmergedElements).toHaveLength(0)
       expect(fetchRes.errors).toHaveLength(1)
-      expect(fetchRes.errors[0].message).toBe('nonexisting env does not exist in the source workspace.')
+      expect(fetchRes.errors[0].message).toBe('nonexisiting env does not exist in the source workspace.')
       expect(fetchRes.errors[0].severity).toBe('Error')
     })
 
@@ -2039,7 +2039,7 @@ describe('fetch from workspace', () => {
           expect(editElements[0].isEqual(editNaclElem)).toBeTruthy()
         })
 
-        it('should return all unmerged elements fragments with the same paths as the source paths', () => {
+        it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
           const unmerged = [...fetchRes.unmergedElements]
           const expectedFrags = unmergedElementsWithEditNaclElem.filter(e => e.elemID.adapter === 'salto')
           expect(unmerged).toHaveLength(expectedFrags.length)
@@ -2069,11 +2069,11 @@ describe('fetch from workspace', () => {
         expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent()).toEqual(
           await fileThree.getContent(),
         )
-        const modifyStaticValues = changes
+        const modifyStaticVals = changes
           .filter(change => change.change.id.createTopLevelParentID().parent.isEqual(editNaclExistingInstance.elemID))
           .map(change => getChangeData(change.change))
-        expect(modifyStaticValues).toHaveLength(3)
-        const staticFileModifies = modifyStaticValues.filter(val => isStaticFile(val))
+        expect(modifyStaticVals).toHaveLength(3)
+        const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
         expect(staticFileModifies).toHaveLength(3)
       })
 
@@ -2140,7 +2140,7 @@ describe('fetch from workspace', () => {
           expect(editElements[0].isEqual(editStateElem)).toBeTruthy()
         })
 
-        it('should return all unmerged elements fragments with the same paths as the source paths', () => {
+        it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
           const unmerged = [...fetchRes.unmergedElements]
           const expectedFrags = unmergedElements.filter(e => e.elemID.adapter === 'salto')
           expect(unmerged).toHaveLength(expectedFrags.length)
@@ -2167,13 +2167,13 @@ describe('fetch from workspace', () => {
           expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent()).toEqual(
             await fileThree.getContent(),
           )
-          const modifyStaticValues = changes
+          const modifyStaticVals = changes
             .filter(change =>
               change.change.id.createTopLevelParentID().parent.isEqual(editStateExistingInstance.elemID),
             )
             .map(change => getChangeData(change.change))
-          expect(modifyStaticValues).toHaveLength(3)
-          const staticFileModifies = modifyStaticValues.filter(val => isStaticFile(val))
+          expect(modifyStaticVals).toHaveLength(3)
+          const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
           expect(staticFileModifies).toHaveLength(3)
         })
 
@@ -2303,14 +2303,13 @@ describe('fetch from workspace', () => {
 
 // TODO: SALTO-4460 only deletion scenarios are covered here. The rest should be moved from under “fetchChanges”
 describe('calc fetch changes', () => {
+  const existingElement = new ObjectType({
+    elemID: new ElemID('salto', 'existing'),
+    path: ['salto', 'existing', 'all'],
+  })
+  const instanceA = new InstanceElement('instanceA', existingElement)
+  const instanceB = new InstanceElement('instanceB', existingElement)
   it('should calculate a remove change when instanceA was deleted in service', async () => {
-    const existingElement = new ObjectType({
-      elemID: new ElemID('salto', 'existing'),
-      path: ['salto', 'existing', 'all'],
-    })
-    const instanceA = new InstanceElement('instanceA', existingElement)
-    const instanceB = new InstanceElement('instanceB', existingElement)
-
     const { changes, serviceToStateChanges } = await calcFetchChanges(
       [existingElement],
       [existingElement],
@@ -2321,52 +2320,17 @@ describe('calc fetch changes', () => {
     )
 
     expect(changes).toHaveLength(1)
-    const change = changes[0]
-    expect(change.change.action).toEqual('remove')
-    expect(change.change.id.getFullName()).toEqual(instanceA.elemID.getFullName())
+    expect(changes[0].change.action).toEqual('remove')
+    expect(changes[0].change.id.getFullName()).toEqual(instanceA.elemID.getFullName())
 
-    expect(change.serviceChanges).toHaveLength(1)
-    const serviceChange = change.serviceChanges[0]
-    expect(serviceChange.action).toEqual('remove')
-    expect(serviceChange.id.getFullName()).toEqual(instanceA.elemID.getFullName())
+    expect(changes[0].serviceChanges).toHaveLength(1)
+    expect(changes[0].serviceChanges[0].action).toEqual('remove')
+    expect(changes[0].serviceChanges[0].id.getFullName()).toEqual(instanceA.elemID.getFullName())
 
-    expect(change.pendingChanges ?? []).toHaveLength(0)
+    expect(changes[0].pendingChanges ?? []).toHaveLength(0)
 
     expect(serviceToStateChanges).toHaveLength(1)
-    const serviceToStateChange = serviceToStateChanges[0]
-    expect(serviceToStateChange.action).toEqual('remove')
-    expect(serviceToStateChange.id.getFullName()).toEqual(instanceA.elemID.getFullName())
-  })
-
-  it('should handle whole element modifications', async () => {
-    const metaType = new ObjectType({ elemID: new ElemID('salto', 'meta') })
-    const existingType = new ObjectType({ elemID: new ElemID('salto', 'type') })
-    const newType = new ObjectType({ elemID: new ElemID('salto', 'type'), metaType })
-
-    const { changes, serviceToStateChanges } = await calcFetchChanges(
-      [existingType, metaType],
-      [existingType, metaType],
-      createInMemoryElementSource([existingType, metaType, newType]),
-      createInMemoryElementSource([existingType, metaType, newType]),
-      new Map([]),
-      new Set(['salto']),
-    )
-
-    expect(changes).toHaveLength(1)
-    const change = changes[0]
-    expect(change.change.action).toEqual('modify')
-    expect(change.change.id.getFullName()).toEqual(newType.elemID.getFullName())
-
-    expect(change.serviceChanges).toHaveLength(1)
-    const serviceChange = change.serviceChanges[0]
-    expect(serviceChange.action).toEqual('modify')
-    expect(serviceChange.id.getFullName()).toEqual(newType.elemID.getFullName())
-
-    expect(change.pendingChanges ?? []).toHaveLength(0)
-
-    expect(serviceToStateChanges).toHaveLength(1)
-    const serviceToStateChange = serviceToStateChanges[0]
-    expect(serviceToStateChange.action).toEqual('modify')
-    expect(serviceToStateChange.id.getFullName()).toEqual(newType.elemID.getFullName())
+    expect(serviceToStateChanges[0].action).toEqual('remove')
+    expect(serviceToStateChanges[0].id.getFullName()).toEqual(instanceA.elemID.getFullName())
   })
 })

@@ -140,6 +140,15 @@ describe('fieldContextOptionsOrderDeploymentFilter', () => {
     expect(result.deployResult.appliedChanges).toHaveLength(2)
     expect(result.leftoverChanges).toHaveLength(1)
   })
+  it('should call with empty list when order does not have options', async () => {
+    getChangeData(changes[0]).value.options = undefined
+    const result = await filter.deploy(changes.slice(0, 1))
+    expect(reorderMock).toHaveBeenCalledTimes(1)
+    expect(reorderMock).toHaveBeenCalledWith([], client, '/rest/api/3/field/1field/context/1context/option')
+    expect(result.deployResult.errors).toHaveLength(0)
+    expect(result.deployResult.appliedChanges).toHaveLength(1)
+    expect(result.leftoverChanges).toHaveLength(0)
+  })
   it('should not deploy if flag is off', async () => {
     config.fetch.splitFieldContextOptions = false
     filter = orderDeploymentFilter(

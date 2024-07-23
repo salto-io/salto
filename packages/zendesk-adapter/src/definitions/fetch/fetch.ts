@@ -1236,6 +1236,29 @@ const createCustomizations = (): Record<
   // placeholder for order nacls
   workspace_order: {},
 
+  layout: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/layouts' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'title' }] },
+        serviceUrl: { path: 'admin/workspaces/agent-workspace/layouts' },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'string' },
+        created_by_user_id: { hide: true },
+        updated_by_user_id: { hide: true },
+      },
+    },
+  },
+
   permission_group: {
     requests: [
       {

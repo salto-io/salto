@@ -66,7 +66,7 @@ type ListChange =
     }
 
 export const getChangeRealId = (change: DetailedChange): ElemID =>
-  isRemovalChange(change) ? change.elemIDs?.before ?? change.id : change.elemIDs?.after ?? change.id
+  (isRemovalChange(change) ? change.elemIDs?.before : change.elemIDs?.after) ?? change.id
 
 /**
  * This function returns if a change contains a moving of a item in a list for one index to another

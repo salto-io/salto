@@ -15,27 +15,26 @@
  */
 import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
-import {
-  adjustCategoryObjectToCategoryId,
-  removeIdsForScriptsObjectArray,
-  adjustServiceIdToTopLevel,
-  adjustSiteObjectToSiteId,
-  removeSelfServiceIcon,
-} from './utils'
 
 /*
- * Adjust policy instance
+ * change scripts array to object with size and script fields, so when converting to xml it will be in the correct format
  */
-export const adjust: definitions.AdjustFunctionSingle = async ({ value }) => {
+const adjustScriptStructureBeforeDeploy = (value: Record<string, unknown>): void => {
+  const { scripts: currentScripts } = value
+  if (Array.isArray(currentScripts)) {
+    value.scripts = {
+      size: currentScripts?.length ?? 0,
+      script: currentScripts,
+    }
+  }
+}
+
+export const adjustPolicyOnDeploy: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({
+  value,
+}) => {
   if (!values.isPlainRecord(value)) {
     throw new Error('Expected value to be a record')
   }
-  ;[
-    adjustCategoryObjectToCategoryId,
-    adjustSiteObjectToSiteId,
-    removeIdsForScriptsObjectArray,
-    adjustServiceIdToTopLevel,
-    removeSelfServiceIcon,
-  ].forEach(fn => fn(value))
+  ;[adjustScriptStructureBeforeDeploy].forEach(fn => fn(value))
   return { value }
 }

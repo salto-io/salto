@@ -14,13 +14,7 @@
  * limitations under the License.
  */
 import wu from 'wu'
-import {
-  Element,
-  ElemID,
-  ObjectType,
-  InstanceElement,
-  getRestriction,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, getRestriction } from '@salto-io/adapter-api'
 import { findObjectType, findInstances } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -48,53 +42,29 @@ const filterCreator: LocalFilterCreator = () => ({
       fieldName: string,
       fieldFullValueNames: ReadonlyArray<string>,
     ): void => {
-      const isShortValueName = (val: string): boolean =>
-        val !== undefined && val.length === 1
+      const isShortValueName = (val: string): boolean => val !== undefined && val.length === 1
 
-      const fullValueName = (
-        fullNameValues: ReadonlyArray<string>,
-        shortValue: string,
-      ): string =>
-        fullNameValues.find((v) =>
-          v.toLowerCase().startsWith(shortValue.toLowerCase()),
-        ) ?? shortValue
+      const fullValueName = (fullNameValues: ReadonlyArray<string>, shortValue: string): string =>
+        fullNameValues.find(v => v.toLowerCase().startsWith(shortValue.toLowerCase())) ?? shortValue
 
       const fieldValue = animationRule.value[fieldName]
       if (isShortValueName(fieldValue)) {
-        animationRule.value[fieldName] = fullValueName(
-          fieldFullValueNames,
-          fieldValue,
-        )
+        animationRule.value[fieldName] = fullValueName(fieldFullValueNames, fieldValue)
       }
     }
 
-    const animationRuleType = findObjectType(
-      elements,
-      ANIMATION_RULE_TYPE_ID,
-    ) as ObjectType
+    const animationRuleType = findObjectType(elements, ANIMATION_RULE_TYPE_ID) as ObjectType
     const getValues = (fieldName: string): ReadonlyArray<string> => {
       const field = animationRuleType?.fields[fieldName]
-      return field === undefined
-        ? []
-        : ((getRestriction(field).values ?? []) as ReadonlyArray<string>)
+      return field === undefined ? [] : ((getRestriction(field).values ?? []) as ReadonlyArray<string>)
     }
     const animationFrequencyValues = getValues(ANIMATION_FREQUENCY)
     const recordTypeContextValues = getValues(RECORD_TYPE_CONTEXT)
 
-    wu(findInstances(elements, ANIMATION_RULE_TYPE_ID)).forEach(
-      (animationRule) => {
-        transformShortValues(
-          animationRule,
-          ANIMATION_FREQUENCY,
-          animationFrequencyValues,
-        )
-        transformShortValues(
-          animationRule,
-          RECORD_TYPE_CONTEXT,
-          recordTypeContextValues,
-        )
-      },
-    )
+    wu(findInstances(elements, ANIMATION_RULE_TYPE_ID)).forEach(animationRule => {
+      transformShortValues(animationRule, ANIMATION_FREQUENCY, animationFrequencyValues)
+      transformShortValues(animationRule, RECORD_TYPE_CONTEXT, recordTypeContextValues)
+    })
   },
 })
 

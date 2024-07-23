@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  Element,
-  ElemID,
-  ObjectType,
-  InstanceElement,
-  BuiltinTypes,
-  Field,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator, {
-  WARNING_MESSAGE,
-} from '../../src/filters/add_missing_ids'
+import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
 import mockClient from '../client'
 import {
   SALESFORCE,
@@ -153,9 +144,7 @@ describe('Internal IDs filter', () => {
     })
     it('should make the right requests from listMetadataObjects', () => {
       expect(mockListMetadataObjects).toHaveBeenCalledTimes(2)
-      expect(mockListMetadataObjects.mock.calls[0][0].type).toEqual(
-        'CustomField',
-      )
+      expect(mockListMetadataObjects.mock.calls[0][0].type).toEqual('CustomField')
       expect(mockListMetadataObjects.mock.calls[1][0].type).toEqual('obj')
     })
 
@@ -163,21 +152,15 @@ describe('Internal IDs filter', () => {
       expect(elements[0]).toBeInstanceOf(ObjectType)
       const objType = elements[0] as ObjectType
       expect(objType.fields.custom).toBeInstanceOf(Field)
-      expect(
-        objType.fields.custom.annotations?.[INTERNAL_ID_ANNOTATION],
-      ).toEqual('custom field id 123')
+      expect(objType.fields.custom.annotations?.[INTERNAL_ID_ANNOTATION]).toEqual('custom field id 123')
       expect(objType.fields.special).toBeInstanceOf(Field)
-      expect(
-        objType.fields.special.annotations?.[INTERNAL_ID_ANNOTATION],
-      ).toEqual('custom field id 456')
+      expect(objType.fields.special.annotations?.[INTERNAL_ID_ANNOTATION]).toEqual('custom field id 456')
     })
 
     it('should not add id annotation for standard field', () => {
       expect(elements[0]).toBeInstanceOf(ObjectType)
       const objType = elements[0] as ObjectType
-      expect(
-        objType.fields.standard?.annotations?.[INTERNAL_ID_ANNOTATION],
-      ).toBeUndefined()
+      expect(objType.fields.standard?.annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
     })
 
     it('should add id field for instance element', () => {

@@ -29,6 +29,7 @@ import {
   isField,
   isIndexPathPart,
   isInstanceElement,
+  isModificationChange,
   isObjectType,
   isPrimitiveType,
   isRemovalChange,
@@ -377,6 +378,14 @@ export const getIndependentChanges = (changes: DetailedChange[]): DetailedChange
  * function in a single call
  */
 export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: DetailedChange[]): void => {
+  if (detailedChanges.length === 1) {
+    const change = detailedChanges[0]
+    if (change.id.isEqual(element.elemID) && isModificationChange(change)) {
+      element.assign(change.data.after)
+      return
+    }
+  }
+
   const changesToApply = getIndependentChanges(detailedChanges)
   const [potentialListItemChanges, otherChanges] = _.partition(changesToApply, change =>
     isIndexPathPart(change.id.name),

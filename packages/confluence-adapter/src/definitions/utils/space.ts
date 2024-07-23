@@ -86,7 +86,7 @@ export const restructurePermissionsAndCreateInternalIdMap = (value: Record<strin
  * Adjust function for transforming space instances upon fetch.
  * We reconstruct the permissions so we use this function on resource and not on request.
  */
-export const spaceMergeAndTransformAdjust: definitions.AdjustFunction<{
+export const spaceMergeAndTransformAdjust: definitions.AdjustFunctionSingle<{
   fragments: definitions.GeneratedItem[]
 }> = async item => {
   const value = validateValue(item.value)

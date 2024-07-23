@@ -35,7 +35,7 @@ export const replaceFieldWithNestedValue =
     fieldName: string
     nestedField: string
     fallbackValue: Value
-  }): definitions.AdjustFunction =>
+  }): definitions.AdjustFunctionSingle =>
   async ({ value }) => {
     validateItemValue(value)
 

@@ -49,9 +49,15 @@ export type SingleValueTransformationFunction<TContext = ContextParams, TSourceV
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,
 ) => Promise<GeneratedItem<TContext, TTargetVal> | undefined>
 
-export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTargetVal = Values> = (
+export type AdjustFunctionSingle<TContext = ContextParams, TSourceVal = unknown, TTargetVal = Values> = (
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,
 ) => Promise<types.PickyRequired<Partial<GeneratedItem<TContext, TTargetVal>>, 'value'>>
+export type AdjustFunctionMulti<TContext = ContextParams, TSourceVal = unknown, TTargetVal = Values> = (
+  item: GeneratedItem<ContextParams & TContext, TSourceVal>,
+) => Promise<types.PickyRequired<Partial<GeneratedItem<TContext, TTargetVal>>, 'value'>[]>
+export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTargetVal = Values> =
+  | AdjustFunctionSingle<TContext, TSourceVal, TTargetVal>
+  | AdjustFunctionMulti<TContext, TSourceVal, TTargetVal>
 
 /**
  * transformation steps:

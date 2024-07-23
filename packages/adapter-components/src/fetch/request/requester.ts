@@ -204,7 +204,11 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
             mergedDef.context?.custom !== undefined
               ? mergedDef.context.custom(mergedDef.context)
               : (v: ContextParams) => v
-          const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots).map(contextFunc)
+          const contexts = computeArgCombinations(
+            contextPossibleArgs,
+            relevantArgRoots?.length === 0 ? undefined : relevantArgRoots,
+          ).map(contextFunc)
+
           return request({
             contexts,
             requestDef,

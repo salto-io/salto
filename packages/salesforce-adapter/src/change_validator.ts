@@ -56,8 +56,7 @@ import cpqBillingTriggers from './change_validators/cpq_billing_triggers'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
-const { createChangeValidator, getDefaultChangeValidators } =
-  deployment.changeValidators
+const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
 type ChangeValidatorCreator = (
   config: SalesforceConfig,
@@ -72,10 +71,7 @@ export const defaultChangeValidatorsValidateConfig: Record<string, boolean> = {
   dataChange: false,
 }
 
-export const changeValidators: Record<
-  ChangeValidatorName,
-  ChangeValidatorCreator
-> = {
+export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
   managedPackage: () => packageValidator,
   picklistStandardField: () => picklistStandardFieldValidator,
   customObjectInstances: () => customObjectInstancesValidator,
@@ -87,8 +83,7 @@ export const changeValidators: Record<
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
   recordTypeDeletion: () => recordTypeDeletionValidator,
-  flowsValidator: (config, isSandbox, client) =>
-    flowsValidator(config, isSandbox, client),
+  flowsValidator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
   fullNameChangedValidator: () => fullNameChangedValidator,
   invalidListViewFilterScope: () => invalidListViewFilterScope,
   caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
@@ -103,18 +98,17 @@ export const changeValidators: Record<
   unknownPicklistValues: () => unknownPicklistValues,
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
-  standardFieldOrObjectAdditionsOrDeletions: () =>
-    standardFieldOrObjectAdditionsOrDeletions,
+  standardFieldOrObjectAdditionsOrDeletions: () => standardFieldOrObjectAdditionsOrDeletions,
   deletedNonQueryableFields: () => deletedNonQueryableFields,
   instanceWithUnknownType: () => instanceWithUnknownType,
   artificialTypes: () => artificialTypes,
   metadataTypes: () => metadataTypes,
   taskOrEventFieldsModifications: () => taskOrEventFieldsModifications,
-  newFieldsAndObjectsFLS: (config) => newFieldsAndObjectsFLS(config),
+  newFieldsAndObjectsFLS: config => newFieldsAndObjectsFLS(config),
   elementApiVersion: () => elementApiVersionValidator,
   cpqBillingStartDate: () => cpqBillingStartDate,
   cpqBillingTriggers: () => cpqBillingTriggers,
-  ..._.mapValues(getDefaultChangeValidators(), (validator) => () => validator),
+  ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 
 const createSalesforceChangeValidator = ({
@@ -134,9 +128,7 @@ const createSalesforceChangeValidator = ({
     : defaultChangeValidatorsDeployConfig
 
   const changeValidator = createChangeValidator({
-    validators: _.mapValues(changeValidators, (validator) =>
-      validator(config, isSandbox, client),
-    ),
+    validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),
     validatorsActivationConfig: {
       ...defaultValidatorsActivationConfig,
       ...config[DEPLOY_CONFIG]?.changeValidators,
@@ -148,10 +140,7 @@ const createSalesforceChangeValidator = ({
   return async (changes, elementSource) =>
     elementSource === undefined
       ? changeValidator(changes, elementSource)
-      : changeValidator(
-          changes,
-          buildLazyShallowTypeResolverElementsSource(elementSource),
-        )
+      : changeValidator(changes, buildLazyShallowTypeResolverElementsSource(elementSource))
 }
 
 export default createSalesforceChangeValidator

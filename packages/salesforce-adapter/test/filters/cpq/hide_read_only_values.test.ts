@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import {
-  ObjectType,
-  ElemID,
-  Element,
-  CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { buildDataManagement } from '../../../src/fetch_profile/data_management'
 import { SaltoIDSettings, DataManagementConfig } from '../../../src/types'
 import {
@@ -108,20 +103,12 @@ describe('hide read only values filter', () => {
       await filter.onFetch(elements)
       const notCustomObjAfterFilter = elements[1] as ObjectType
       expect(notCustomObjAfterFilter).toBeDefined()
+      expect(notCustomObjAfterFilter.fields.readOnlyField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
       expect(
-        notCustomObjAfterFilter.fields.readOnlyField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
+        notCustomObjAfterFilter.fields.nonCreateableField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE],
       ).toBeUndefined()
       expect(
-        notCustomObjAfterFilter.fields.nonCreateableField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeUndefined()
-      expect(
-        notCustomObjAfterFilter.fields.nonUpdateableField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
+        notCustomObjAfterFilter.fields.nonUpdateableField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE],
       ).toBeUndefined()
     })
     it('Should add "_hidden_value = true" to read only fields on custom object when showReadOnlyValue flag is undefined', async () => {
@@ -130,21 +117,9 @@ describe('hide read only values filter', () => {
       await filter.onFetch(elements)
       const customObjAfterFilter = elements[0] as ObjectType
       expect(customObjAfterFilter).toBeDefined()
-      expect(
-        customObjAfterFilter.fields.readOnlyField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeTruthy()
-      expect(
-        customObjAfterFilter.fields.nonCreateableField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeUndefined()
-      expect(
-        customObjAfterFilter.fields.nonUpdateableField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeUndefined()
+      expect(customObjAfterFilter.fields.readOnlyField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
+      expect(customObjAfterFilter.fields.nonCreateableField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
+      expect(customObjAfterFilter.fields.nonUpdateableField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
     })
     it('Should add "_hidden_value = true" to read only fields on custom object when showReadOnlyValue flag = false', async () => {
       const dataManagementConfig = {
@@ -164,21 +139,9 @@ describe('hide read only values filter', () => {
       await filter.onFetch(elements)
       const customObjAfterFilter = elements[0] as ObjectType
       expect(customObjAfterFilter).toBeDefined()
-      expect(
-        customObjAfterFilter.fields.readOnlyField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeTruthy()
-      expect(
-        customObjAfterFilter.fields.nonCreateableField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeUndefined()
-      expect(
-        customObjAfterFilter.fields.nonUpdateableField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeUndefined()
+      expect(customObjAfterFilter.fields.readOnlyField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
+      expect(customObjAfterFilter.fields.nonCreateableField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
+      expect(customObjAfterFilter.fields.nonUpdateableField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
     })
     it('Should do nothing to read only fields on custom object when showReadOnlyValue flag = true', async () => {
       const dataManagementConfig = {
@@ -198,21 +161,9 @@ describe('hide read only values filter', () => {
       await filter.onFetch(elements)
       const customObjAfterFilter = elements[0] as ObjectType
       expect(customObjAfterFilter).toBeDefined()
-      expect(
-        customObjAfterFilter.fields.readOnlyField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeUndefined()
-      expect(
-        customObjAfterFilter.fields.nonCreateableField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeUndefined()
-      expect(
-        customObjAfterFilter.fields.nonUpdateableField.annotations[
-          CORE_ANNOTATIONS.HIDDEN_VALUE
-        ],
-      ).toBeUndefined()
+      expect(customObjAfterFilter.fields.readOnlyField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
+      expect(customObjAfterFilter.fields.nonCreateableField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
+      expect(customObjAfterFilter.fields.nonUpdateableField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
     })
   })
 })

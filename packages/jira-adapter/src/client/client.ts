@@ -41,8 +41,8 @@ const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
 
 const RATE_LIMIT_HEADER_PREFIX = 'x-ratelimit-'
 
-export const USE_BOTTLENECK = false
-export const DELAY_PER_REQUEST_MS = 3
+export const USE_BOTTLENECK = true
+export const DELAY_PER_REQUEST_MS = 0
 
 export const GET_CLOUD_ID_URL = '/_edge/tenant_info'
 export const GQL_BASE_URL_GIRA = '/rest/gira/1'

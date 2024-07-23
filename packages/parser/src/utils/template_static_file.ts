@@ -13,60 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { isReferenceExpression, StaticFile, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
+import { isReferenceExpression, StaticFile, TemplateExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import type { Token } from 'moo'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { escapeTemplateMarker } from '../parser/internal/utils'
-import { createReferenceExpression, unescapeTemplateMarker } from '../parser/internal/native/helpers'
-import { IllegalReference } from '../parser'
-import { REFERENCE_PART } from '../parser/internal/native/lexer'
+import { unescapeTemplateMarker } from '../parser/internal/native/helpers'
+import { stringLexerFromString } from '../parser/internal/native/lexer'
+import { createStringValue } from '../parser/internal/native/consumers/values'
+import type { ParseError } from '../parser'
 
 const log = logger(module)
 
-type PartWithReferenceIndicator = { isReference: boolean; part: string }
+const createSimpleStringValue = (_context: unknown, tokens: Required<Token>[]): string =>
+  unescapeTemplateMarker(tokens.map(token => token.text).join(''))
 
-const splitByReferencesMarker = (stringToParse: string): PartWithReferenceIndicator[] => {
-  const regex = new RegExp(`${REFERENCE_PART}`, 'g')
-  const parts: PartWithReferenceIndicator[] = []
-  let lastIndex = 0
-
-  stringToParse.replace(regex, (match, index) => {
-    // Add the part of the string before the match
-    parts.push({ isReference: false, part: stringToParse.slice(lastIndex, index) })
-    parts.push({ isReference: true, part: match })
-    lastIndex = index + match.length
-    return match
-  })
-
-  // Add the remaining part of the string if any
-  if (lastIndex < stringToParse.length) {
-    parts.push({ isReference: false, part: stringToParse.slice(lastIndex) })
-  }
-  return parts
-}
-
-const createReferencesFromStringParts = (parts: PartWithReferenceIndicator[]): TemplatePart[] =>
-  parts.map(part => {
-    if (part.isReference) {
-      // remove the ${ and }
-      const refParts = part.part.split(/\${|}/)
-      if (refParts.length !== 3) {
-        log.warn(`refParts is invalid, received ${refParts.toString()}`)
-        return part.part
-      }
-      const ref = createReferenceExpression(refParts[1].trim())
-      return ref instanceof IllegalReference ? part.part : ref
+const parseBufferToTemplateExpression = (
+  buffer: Buffer,
+): { templateExpression: TemplateExpression; errors: string[] } => {
+  const tokens = stringLexerFromString(buffer.toString())
+  const context = { errors: [] as ParseError[], filename: '' }
+  const value = createStringValue(context, tokens, createSimpleStringValue)
+  const errors = context.errors.map(err => err.message)
+  if (typeof value === 'string') {
+    log.trace('Template static file is a string. Creating a TemplateExpression from it')
+    return {
+      templateExpression: createTemplateExpression({ parts: [value] }),
+      errors,
     }
-    return part.part
-  })
-
-const parseBufferToTemplateExpression = (buffer: Buffer): TemplateExpression => {
-  const parts = createReferencesFromStringParts(splitByReferencesMarker(buffer.toString()))
-  const unescapedTemplateMarkerParts = parts.map(part =>
-    isReferenceExpression(part) ? part : unescapeTemplateMarker(part),
-  )
-
-  return createTemplateExpression({ parts: unescapedTemplateMarkerParts })
+  }
+  return { templateExpression: value, errors }
 }
 
 export const templateExpressionToStaticFile = (expression: TemplateExpression, filepath: string): StaticFile => {
@@ -87,5 +63,10 @@ export const staticFileToTemplateExpression = async (
     log.warn(`content is undefined for staticFile with path ${staticFile.filepath}`)
     return undefined
   }
-  return parseBufferToTemplateExpression(content)
+  const { templateExpression, errors } = parseBufferToTemplateExpression(content)
+  if (errors.length > 0) {
+    log.warn(`Failed to parse template static file with path ${staticFile.filepath}. Errors: ${errors}`)
+  }
+
+  return templateExpression
 }

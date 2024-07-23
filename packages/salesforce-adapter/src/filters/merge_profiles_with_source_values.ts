@@ -33,44 +33,34 @@ const log = logger(module)
  */
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'mergeProfilesWithSourceValues',
-  onFetch: async (elements) => {
-    const profileInstances = elements.filter(
-      isInstanceOfTypeSync(PROFILE_METADATA_TYPE),
-    )
+  onFetch: async elements => {
+    const profileInstances = elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
     if (!config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
       return
     }
     log.debug(
       'about to merge the following profiles with their source values: %s',
-      safeJsonStringify(
-        profileInstances.map((instance) => apiNameSync(instance)),
-      ),
+      safeJsonStringify(profileInstances.map(instance => apiNameSync(instance))),
     )
     if (profileInstances.length === 0) {
       return
     }
-    const profileValuesFromSourceByFullName = await awu(
-      await config.elementsSource.getAll(),
-    )
+    const profileValuesFromSourceByFullName = await awu(await config.elementsSource.getAll())
       .filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
       .reduce<Record<string, Values>>((acc, instanceFromSource) => {
         const fullName = apiNameSync(instanceFromSource)
         if (fullName === undefined) {
-          log.warn(
-            'profile instance from source %s does not have fullName',
-            instanceFromSource.elemID.getFullName(),
-          )
+          log.warn('profile instance from source %s does not have fullName', instanceFromSource.elemID.getFullName())
           return acc
         }
         acc[fullName] = instanceFromSource.value
         return acc
       }, {})
 
-    profileInstances.forEach((profileInstance) => {
+    profileInstances.forEach(profileInstance => {
       profileInstance.value = _.merge(
         {},
-        profileValuesFromSourceByFullName[apiNameSync(profileInstance) ?? ''] ??
-          {},
+        profileValuesFromSourceByFullName[apiNameSync(profileInstance) ?? ''] ?? {},
         profileInstance.value,
       )
     })

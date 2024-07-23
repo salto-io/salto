@@ -27,9 +27,7 @@ import { isInstanceOfTypeChange } from '../filters/utils'
 
 const { awu } = collections.asynciterable
 
-const destructiveDataCategoryGroupDeployError = (
-  instance: InstanceElement,
-): ChangeError => ({
+const destructiveDataCategoryGroupDeployError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Warning',
   message: 'DataCategoryGroup deployments may be destructive',
@@ -42,7 +40,7 @@ Changes in DataCategoryGroup can be destructive (remove elements from the curren
 Issue a warning on all such changes
 */
 function changeValidator(): ChangeValidator {
-  return async (changes) =>
+  return async changes =>
     awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)

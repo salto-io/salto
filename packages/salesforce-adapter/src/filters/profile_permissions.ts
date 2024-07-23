@@ -40,16 +40,8 @@ import {
   MetadataTypeAnnotations,
 } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
-import {
-  ProfileInfo,
-  FieldPermissions,
-  ObjectPermissions,
-} from '../client/types'
-import {
-  apiNameSync,
-  isInstanceOfTypeChangeSync,
-  isMasterDetailField,
-} from './utils'
+import { ProfileInfo, FieldPermissions, ObjectPermissions } from '../client/types'
+import { apiNameSync, isInstanceOfTypeChangeSync, isMasterDetailField } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -107,30 +99,23 @@ const addMissingPermissions = (
   const profileValues = profile.value as ProfileInfo
   const existingIds = new Set(
     elemType === 'object'
-      ? profileValues.objectPermissions.map((permission) => permission.object)
-      : profileValues.fieldPermissions.map((permission) => permission.field),
+      ? profileValues.objectPermissions.map(permission => permission.object)
+      : profileValues.fieldPermissions.map(permission => permission.field),
   )
 
   const missingIds = newElements
-    .map((elem) => apiNameSync(elem))
+    .map(elem => apiNameSync(elem))
     .filter(isDefined)
-    .filter((id) => !existingIds.has(id))
+    .filter(id => !existingIds.has(id))
 
   if (missingIds.length === 0) {
     return
   }
 
-  log.info(
-    'adding %s read / write permissions to new %ss: %s',
-    apiNameSync(profile),
-    elemType,
-    missingIds.join(', '),
-  )
+  log.info('adding %s read / write permissions to new %ss: %s', apiNameSync(profile), elemType, missingIds.join(', '))
 
   if (elemType === 'object') {
-    profileValues.objectPermissions.push(
-      ...missingIds.map(getObjectPermissions),
-    )
+    profileValues.objectPermissions.push(...missingIds.map(getObjectPermissions))
   } else {
     profileValues.fieldPermissions.push(...missingIds.map(getFieldPermissions))
   }
@@ -149,7 +134,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
   let shouldRunOnDeploy = false
   return {
     name: 'profilePermissionsFilter',
-    preDeploy: async (changes) => {
+    preDeploy: async changes => {
       const allAdditions = changes.filter(isAdditionChange)
 
       const newCustomObjects = (await awu(allAdditions)
@@ -158,7 +143,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         .toArray()) as ObjectType[]
 
       const newFields = [
-        ...newCustomObjects.flatMap((objType) => Object.values(objType.fields)),
+        ...newCustomObjects.flatMap(objType => Object.values(objType.fields)),
         ...allAdditions.filter(isFieldChange).map(getChangeData),
       ].filter(shouldSetDefaultPermissions)
 
@@ -168,10 +153,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
 
       const { flsProfiles } = config
       shouldRunOnDeploy = true
-      log.debug(
-        'adding FLS permissions to the following Profiles: %s',
-        safeJsonStringify(flsProfiles),
-      )
+      log.debug('adding FLS permissions to the following Profiles: %s', safeJsonStringify(flsProfiles))
 
       // No reason to add FLS Permissions to a Profile that is being deleted
       const [flsProfileChanges, removedFLSProfileChanges] = _.partition(
@@ -179,36 +161,27 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         isAdditionOrModificationChange,
       )
 
-      originalProfileChangesByName = _.keyBy(
-        flsProfileChanges,
-        (change) => apiNameSync(getChangeData(change)) ?? '',
-      )
+      originalProfileChangesByName = _.keyBy(flsProfileChanges, change => apiNameSync(getChangeData(change)) ?? '')
       const removedFLSProfileNames = new Set(
-        removedFLSProfileChanges.map(
-          (change) => apiNameSync(getChangeData(change)) ?? '',
-        ),
+        removedFLSProfileChanges.map(change => apiNameSync(getChangeData(change)) ?? ''),
       )
 
       flsProfiles
-        .filter((flsProfile) => !removedFLSProfileNames.has(flsProfile))
-        .forEach((profileName) => {
+        .filter(flsProfile => !removedFLSProfileNames.has(flsProfile))
+        .forEach(profileName => {
           const profileChange = originalProfileChangesByName[profileName]
           if (profileChange !== undefined) {
             _.pull(changes, profileChange)
           }
           const before =
-            profileChange === undefined || isAdditionChange(profileChange)
-              ? undefined
-              : profileChange.data.before
-          const after = profileChange
-            ? profileChange.data.after.clone()
-            : createProfile(profileName)
+            profileChange === undefined || isAdditionChange(profileChange) ? undefined : profileChange.data.before
+          const after = profileChange ? profileChange.data.after.clone() : createProfile(profileName)
           addMissingPermissions(after, 'object', newCustomObjects)
           addMissingPermissions(after, 'field', newFields)
           changes.push(toChange({ before, after }))
         })
     },
-    onDeploy: async (changes) => {
+    onDeploy: async changes => {
       if (!shouldRunOnDeploy) {
         return
       }
@@ -216,14 +189,8 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       const appliedFLSProfileChanges = changes
         .filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE))
         .filter(isAdditionOrModificationChange)
-        .filter((profileChange) =>
-          config.flsProfiles.includes(
-            apiNameSync(getChangeData(profileChange)) ?? '',
-          ),
-        )
-      const appliedFLSProfileNames = appliedFLSProfileChanges.map(
-        (change) => apiNameSync(getChangeData(change)) ?? '',
-      )
+        .filter(profileChange => config.flsProfiles.includes(apiNameSync(getChangeData(profileChange)) ?? ''))
+      const appliedFLSProfileNames = appliedFLSProfileChanges.map(change => apiNameSync(getChangeData(change)) ?? '')
 
       // Revert to the original Profile Addition/Modification changes that were applied
       _.pullAll(changes, appliedFLSProfileChanges)

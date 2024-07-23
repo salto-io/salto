@@ -4508,6 +4508,7 @@ __metadata:
     prettier: 3.2.5
     ts-jest: ^29.2.0
     tsc-watch: ^2.2.1
+    turbo: ^2.0.6
     typescript: 4.8.4
     xml-js: ^1.6.11
   languageName: unknown

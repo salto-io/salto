@@ -14,24 +14,14 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import {
-  BuiltinTypes,
-  Change,
-  Field,
-  InstanceElement,
-  ObjectType,
-  toChange,
-  Values,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, Field, InstanceElement, ObjectType, toChange, Values } from '@salto-io/adapter-api'
 import { API_NAME, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 import { getAdditionalReferences } from '../src/additional_references'
 import { mockTypes } from './mock_elements'
 import { createCustomObjectType, createMetadataTypeElement } from './utils'
 
 describe('getAdditionalReferences', () => {
-  const createTestInstances = (
-    fields: Values,
-  ): [InstanceElement, InstanceElement] => [
+  const createTestInstances = (fields: Values): [InstanceElement, InstanceElement] => [
     new InstanceElement('test', mockTypes.Profile, fields),
     new InstanceElement('test', mockTypes.PermissionSet, fields),
   ]
@@ -40,31 +30,24 @@ describe('getAdditionalReferences', () => {
     let field: Field
 
     beforeEach(() => {
-      field = new Field(
-        mockTypes.Account,
-        'testField__c',
-        BuiltinTypes.STRING,
-        {
-          [API_NAME]: 'Account.testField__c',
-        },
-      )
+      field = new Field(mockTypes.Account, 'testField__c', BuiltinTypes.STRING, {
+        [API_NAME]: 'Account.testField__c',
+      })
     })
 
     it('should not create references for new field with no access', async () => {
-      const [permissionSetInstanceBefore, profileInstanceBefore] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {},
+      const [permissionSetInstanceBefore, profileInstanceBefore] = createTestInstances({
+        fieldPermissions: {
+          Account: {},
+        },
+      })
+      const [permissionSetInstanceAfter, profileInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'NoAccess',
           },
-        })
-      const [permissionSetInstanceAfter, profileInstanceAfter] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField__c: 'NoAccess',
-            },
-          },
-        })
+        },
+      })
       const refs = await getAdditionalReferences([
         toChange({
           before: permissionSetInstanceBefore,
@@ -81,20 +64,18 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should create references for new field with access enabled', async () => {
-      const [permissionSetInstanceBefore, profileInstanceBefore] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {},
+      const [permissionSetInstanceBefore, profileInstanceBefore] = createTestInstances({
+        fieldPermissions: {
+          Account: {},
+        },
+      })
+      const [permissionSetInstanceAfter, profileInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'ReadWrite',
           },
-        })
-      const [permissionSetInstanceAfter, profileInstanceAfter] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField__c: 'ReadWrite',
-            },
-          },
-        })
+        },
+      })
       const refs = await getAdditionalReferences([
         toChange({
           before: permissionSetInstanceBefore,
@@ -109,41 +90,31 @@ describe('getAdditionalReferences', () => {
 
       expect(refs).toEqual([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'fieldPermissions',
-            'Account',
-            'testField__c',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c'),
           target: field.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'fieldPermissions',
-            'Account',
-            'testField__c',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c'),
           target: field.elemID,
         },
       ])
     })
 
     it('should add references only for each detailed change in a modification', async () => {
-      const [permissionSetInstanceBefore, profileInstanceBefore] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField__c: 'Read',
-            },
+      const [permissionSetInstanceBefore, profileInstanceBefore] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'Read',
           },
-        })
-      const [permissionSetInstanceAfter, profileInstanceAfter] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField__c: 'ReadWrite',
-            },
+        },
+      })
+      const [permissionSetInstanceAfter, profileInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'ReadWrite',
           },
-        })
+        },
+      })
       const fieldAfter = field.clone()
       fieldAfter.annotations.someAnn = 'val'
 
@@ -161,33 +132,24 @@ describe('getAdditionalReferences', () => {
 
       expect(refs).toEqual([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'fieldPermissions',
-            'Account',
-            'testField__c',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c'),
           target: field.elemID.createNestedID('someAnn'),
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'fieldPermissions',
-            'Account',
-            'testField__c',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c'),
           target: field.elemID.createNestedID('someAnn'),
         },
       ])
     })
 
     it('should not add references for addition profiles and permission sets', async () => {
-      const [permissionSetInstanceAfter, profileInstanceAfter] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField__c: 'ReadWrite',
-            },
+      const [permissionSetInstanceAfter, profileInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'ReadWrite',
           },
-        })
+        },
+      })
       const refs = await getAdditionalReferences([
         toChange({ after: permissionSetInstanceAfter }),
         toChange({ after: profileInstanceAfter }),
@@ -198,20 +160,18 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should not add references if not contained the field section', async () => {
-      const [permissionSetInstanceBefore, profileInstanceBefore] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {},
+      const [permissionSetInstanceBefore, profileInstanceBefore] = createTestInstances({
+        fieldPermissions: {
+          Account: {},
+        },
+      })
+      const [permissionSetInstanceAfter, profileInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField2__c: 'ReadWrite',
           },
-        })
-      const [permissionSetInstanceAfter, profileInstanceAfter] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField2__c: 'ReadWrite',
-            },
-          },
-        })
+        },
+      })
       const refs = await getAdditionalReferences([
         toChange({
           before: permissionSetInstanceBefore,
@@ -228,20 +188,18 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should not add references if field does not have an api name', async () => {
-      const [permissionSetInstanceBefore, profileInstanceBefore] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {},
+      const [permissionSetInstanceBefore, profileInstanceBefore] = createTestInstances({
+        fieldPermissions: {
+          Account: {},
+        },
+      })
+      const [permissionSetInstanceAfter, profileInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'ReadWrite',
           },
-        })
-      const [permissionSetInstanceAfter, profileInstanceAfter] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              testField__c: 'ReadWrite',
-            },
-          },
-        })
+        },
+      })
       delete field.annotations[API_NAME]
       const refs = await getAdditionalReferences([
         toChange({
@@ -263,28 +221,24 @@ describe('getAdditionalReferences', () => {
     let changes: Change[]
 
     beforeEach(() => {
-      customApp = new InstanceElement(
-        'SomeApplication',
-        createMetadataTypeElement('CustomApplication', {}),
-        { [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication' },
-      )
+      customApp = new InstanceElement('SomeApplication', createMetadataTypeElement('CustomApplication', {}), {
+        [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication',
+      })
     })
 
     it('should not create a reference to addition if neither default or visible', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          applicationVisibilities: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: 'SomeApplication',
-              default: false,
-              visible: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        applicationVisibilities: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        applicationVisibilities: {
+          SomeApplication: {
+            application: 'SomeApplication',
+            default: false,
+            visible: false,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -301,20 +255,18 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should create a reference to addition if default', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          applicationVisibilities: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: 'SomeApplication',
-              default: true,
-              visible: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        applicationVisibilities: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        applicationVisibilities: {
+          SomeApplication: {
+            application: 'SomeApplication',
+            default: true,
+            visible: false,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -329,37 +281,29 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'applicationVisibilities',
-            'SomeApplication',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
           target: customApp.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'applicationVisibilities',
-            'SomeApplication',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
           target: customApp.elemID,
         },
       ])
     })
 
     it('should create a reference to addition if visible', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          applicationVisibilities: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: 'SomeApplication',
-              default: false,
-              visible: true,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        applicationVisibilities: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        applicationVisibilities: {
+          SomeApplication: {
+            application: 'SomeApplication',
+            default: false,
+            visible: true,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -374,42 +318,34 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'applicationVisibilities',
-            'SomeApplication',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
           target: customApp.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'applicationVisibilities',
-            'SomeApplication',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
           target: customApp.elemID,
         },
       ])
     })
     it('should create a reference to modification', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: 'SomeApplication',
-              default: false,
-              visible: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        applicationVisibilities: {
+          SomeApplication: {
+            application: 'SomeApplication',
+            default: false,
+            visible: false,
           },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          applicationVisibilities: {
-            SomeApplication: {
-              application: 'SomeApplication',
-              default: true,
-              visible: true,
-            },
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        applicationVisibilities: {
+          SomeApplication: {
+            application: 'SomeApplication',
+            default: true,
+            visible: true,
           },
-        })
+        },
+      })
       const customAppAfter = customApp.clone()
       customApp.annotations.someAnn = 'val'
       changes = [
@@ -427,19 +363,11 @@ describe('getAdditionalReferences', () => {
 
       expect(refs).toEqual([
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'applicationVisibilities',
-            'SomeApplication',
-            'default',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication', 'default'),
           target: customApp.elemID.createNestedID('someAnn'),
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'applicationVisibilities',
-            'SomeApplication',
-            'visible',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication', 'visible'),
           target: customApp.elemID.createNestedID('someAnn'),
         },
         {
@@ -472,19 +400,17 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should not create a reference to addition if disabled', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          classAccesses: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          classAccesses: {
-            SomeApexClass: {
-              apexClass: 'SomeApexClass',
-              enabled: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        classAccesses: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        classAccesses: {
+          SomeApexClass: {
+            apexClass: 'SomeApexClass',
+            enabled: false,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -501,19 +427,17 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should create a reference to addition if enabled', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          classAccesses: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          classAccesses: {
-            SomeApexClass: {
-              apexClass: 'SomeApexClass',
-              enabled: true,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        classAccesses: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        classAccesses: {
+          SomeApexClass: {
+            apexClass: 'SomeApexClass',
+            enabled: true,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -528,42 +452,34 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'classAccesses',
-            'SomeApexClass',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('classAccesses', 'SomeApexClass'),
           target: apexClass.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'classAccesses',
-            'SomeApexClass',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('classAccesses', 'SomeApexClass'),
           target: apexClass.elemID,
         },
       ])
     })
 
     it('should create a reference to modification', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          classAccesses: {
-            SomeApexClass: {
-              apexClass: 'SomeApexClass',
-              enabled: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        classAccesses: {
+          SomeApexClass: {
+            apexClass: 'SomeApexClass',
+            enabled: false,
           },
-        })
+        },
+      })
 
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          classAccesses: {
-            SomeApexClass: {
-              apexClass: 'SomeApexClass',
-              enabled: true,
-            },
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        classAccesses: {
+          SomeApexClass: {
+            apexClass: 'SomeApexClass',
+            enabled: true,
           },
-        })
+        },
+      })
 
       const apexClassAfter = apexClass.clone()
       apexClass.annotations.someAnn = 'val'
@@ -582,19 +498,11 @@ describe('getAdditionalReferences', () => {
 
       expect(refs).toEqual([
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'classAccesses',
-            'SomeApexClass',
-            'enabled',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('classAccesses', 'SomeApexClass', 'enabled'),
           target: apexClass.elemID.createNestedID('someAnn'),
         },
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'classAccesses',
-            'SomeApexClass',
-            'enabled',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('classAccesses', 'SomeApexClass', 'enabled'),
           target: apexClass.elemID.createNestedID('someAnn'),
         },
       ])
@@ -611,19 +519,17 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should not create a reference to addition if disabled', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          flowAccesses: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          flowAccesses: {
-            SomeFlow: {
-              enabled: false,
-              flow: 'SomeFlow',
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        flowAccesses: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        flowAccesses: {
+          SomeFlow: {
+            enabled: false,
+            flow: 'SomeFlow',
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -640,19 +546,17 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should create a reference to addition if enabled', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          flowAccesses: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          flowAccesses: {
-            SomeFlow: {
-              enabled: true,
-              flow: 'SomeFlow',
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        flowAccesses: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        flowAccesses: {
+          SomeFlow: {
+            enabled: true,
+            flow: 'SomeFlow',
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -667,41 +571,33 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'flowAccesses',
-            'SomeFlow',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('flowAccesses', 'SomeFlow'),
           target: flow.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'flowAccesses',
-            'SomeFlow',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('flowAccesses', 'SomeFlow'),
           target: flow.elemID,
         },
       ])
     })
 
     it('should create a reference to modification', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          flowAccesses: {
-            SomeFlow: {
-              enabled: false,
-              flow: 'SomeFlow',
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        flowAccesses: {
+          SomeFlow: {
+            enabled: false,
+            flow: 'SomeFlow',
           },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          flowAccesses: {
-            SomeFlow: {
-              enabled: true,
-              flow: 'SomeFlow',
-            },
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        flowAccesses: {
+          SomeFlow: {
+            enabled: true,
+            flow: 'SomeFlow',
           },
-        })
+        },
+      })
       const flowAfter = flow.clone()
       flow.annotations.someAnn = 'val'
       changes = [
@@ -719,19 +615,11 @@ describe('getAdditionalReferences', () => {
 
       expect(refs).toEqual([
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'flowAccesses',
-            'SomeFlow',
-            'enabled',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('flowAccesses', 'SomeFlow', 'enabled'),
           target: flow.elemID.createNestedID('someAnn'),
         },
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'flowAccesses',
-            'SomeFlow',
-            'enabled',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('flowAccesses', 'SomeFlow', 'enabled'),
           target: flow.elemID.createNestedID('someAnn'),
         },
       ])
@@ -742,28 +630,24 @@ describe('getAdditionalReferences', () => {
     let changes: Change[]
 
     beforeEach(() => {
-      layout = new InstanceElement(
-        'Account_Account_Layout@bs',
-        mockTypes.Layout,
-        { [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout' },
-      )
+      layout = new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {
+        [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout',
+      })
     })
 
     it('should create a reference to addition', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          layoutAssignments: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          layoutAssignments: {
-            'Account_Account_Layout@bs': [
-              {
-                layout: 'Account-Account Layout',
-              },
-            ],
-          },
-        })
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        layoutAssignments: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        layoutAssignments: {
+          'Account_Account_Layout@bs': [
+            {
+              layout: 'Account-Account Layout',
+            },
+          ],
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -779,43 +663,35 @@ describe('getAdditionalReferences', () => {
       expect(refs).toHaveLength(2)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'layoutAssignments',
-            'Account_Account_Layout@bs',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
           target: layout.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'layoutAssignments',
-            'Account_Account_Layout@bs',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
           target: layout.elemID,
         },
       ])
     })
 
     it('should create a reference to modification', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          layoutAssignments: {
-            'Account_Account_Layout@bs': [
-              {
-                layout: 'Account-Account Other Layout',
-              },
-            ],
-          },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          layoutAssignments: {
-            'Account_Account_Layout@bs': [
-              {
-                layout: 'Account-Account Layout',
-              },
-            ],
-          },
-        })
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        layoutAssignments: {
+          'Account_Account_Layout@bs': [
+            {
+              layout: 'Account-Account Other Layout',
+            },
+          ],
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        layoutAssignments: {
+          'Account_Account_Layout@bs': [
+            {
+              layout: 'Account-Account Layout',
+            },
+          ],
+        },
+      })
       const layoutAfter = layout.clone()
       layout.annotations.someAnn = 'val'
       changes = [
@@ -867,25 +743,23 @@ describe('getAdditionalReferences', () => {
       })
 
       it('should create recordType references on addition', async () => {
-        const [profileInstanceBefore, permissionSetInstanceBefore] =
-          createTestInstances({
-            layoutAssignments: {},
-          })
-        const [profileInstanceAfter, permissionSetInstanceAfter] =
-          createTestInstances({
-            layoutAssignments: {
-              'Account_Account_Layout@bs': [
-                {
-                  layout: 'Account-Account Layout',
-                  recordType: 'SomeRecordType',
-                },
-                {
-                  layout: 'Account-Account Layout',
-                  recordType: 'SomeOtherRecordType',
-                },
-              ],
-            },
-          })
+        const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+          layoutAssignments: {},
+        })
+        const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+          layoutAssignments: {
+            'Account_Account_Layout@bs': [
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeRecordType',
+              },
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeOtherRecordType',
+              },
+            ],
+          },
+        })
         changes = [
           toChange({
             before: profileInstanceBefore,
@@ -896,63 +770,53 @@ describe('getAdditionalReferences', () => {
             after: permissionSetInstanceAfter,
           }),
           toChange({ after: layout }),
-          ...recordTypes.map((recordType) => toChange({ after: recordType })),
+          ...recordTypes.map(recordType => toChange({ after: recordType })),
         ]
 
         const refs = await getAdditionalReferences(changes)
         expect(refs).toIncludeAllPartialMembers([
           {
-            source: profileInstanceAfter.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: recordTypes[0].elemID,
           },
           {
-            source: profileInstanceAfter.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: recordTypes[1].elemID,
           },
         ])
       })
 
       it('should create recordType references on modification', async () => {
-        const [profileInstanceBefore, permissionSetInstanceBefore] =
-          createTestInstances({
-            layoutAssignments: {
-              'Account_Account_Layout@bs': [
-                {
-                  layout: 'Account-Account Layout',
-                  recordType: 'SomeRecordType2',
-                },
-                {
-                  layout: 'Account-Account Layout',
-                  recordType: 'SomeOtherRecordType2',
-                },
-              ],
-            },
-          })
-        const [profileInstanceAfter, permissionSetInstanceAfter] =
-          createTestInstances({
-            layoutAssignments: {
-              'Account_Account_Layout@bs': [
-                {
-                  layout: 'Account-Account Layout',
-                  recordType: 'SomeRecordType',
-                },
-                {
-                  layout: 'Account-Account Layout',
-                  recordType: 'SomeOtherRecordType',
-                },
-              ],
-            },
-          })
-        const recordTypesAfter = recordTypes.map((recordType) =>
-          recordType.clone(),
-        )
-        recordTypesAfter.forEach((recordType) => {
+        const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+          layoutAssignments: {
+            'Account_Account_Layout@bs': [
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeRecordType2',
+              },
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeOtherRecordType2',
+              },
+            ],
+          },
+        })
+        const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+          layoutAssignments: {
+            'Account_Account_Layout@bs': [
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeRecordType',
+              },
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeOtherRecordType',
+              },
+            ],
+          },
+        })
+        const recordTypesAfter = recordTypes.map(recordType => recordType.clone())
+        recordTypesAfter.forEach(recordType => {
           recordType.annotations.someAnn = 'val'
         })
         const layoutAfter = layout.clone()
@@ -967,9 +831,7 @@ describe('getAdditionalReferences', () => {
             after: permissionSetInstanceAfter,
           }),
           toChange({ before: layout, after: layoutAfter }),
-          ..._.zip(recordTypes, recordTypesAfter).map(([before, after]) =>
-            toChange({ before, after }),
-          ),
+          ..._.zip(recordTypes, recordTypesAfter).map(([before, after]) => toChange({ before, after })),
         ]
         const refs = await getAdditionalReferences(changes)
 
@@ -1006,24 +868,22 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should not create a reference to addition if all permissions are disabled', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          objectPermissions: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          objectPermissions: {
-            Account: {
-              allowCreate: false,
-              allowDelete: false,
-              allowEdit: false,
-              allowRead: false,
-              modifyAllRecords: false,
-              object: 'Account',
-              viewAllRecords: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        objectPermissions: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        objectPermissions: {
+          Account: {
+            allowCreate: false,
+            allowDelete: false,
+            allowEdit: false,
+            allowRead: false,
+            modifyAllRecords: false,
+            object: 'Account',
+            viewAllRecords: false,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1039,24 +899,22 @@ describe('getAdditionalReferences', () => {
       expect(refs).toBeEmpty()
     })
     it('should create a reference to addition if any permission is enabled', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          objectPermissions: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          objectPermissions: {
-            Account: {
-              allowCreate: true,
-              allowDelete: true,
-              allowEdit: true,
-              allowRead: true,
-              modifyAllRecords: false,
-              object: 'Account',
-              viewAllRecords: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        objectPermissions: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        objectPermissions: {
+          Account: {
+            allowCreate: true,
+            allowDelete: true,
+            allowEdit: true,
+            allowRead: true,
+            modifyAllRecords: false,
+            object: 'Account',
+            viewAllRecords: false,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1071,51 +929,43 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'objectPermissions',
-            'Account',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('objectPermissions', 'Account'),
           target: customObject.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'objectPermissions',
-            'Account',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('objectPermissions', 'Account'),
           target: customObject.elemID,
         },
       ])
     })
 
     it('should create a reference to modification', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          objectPermissions: {
-            Account: {
-              allowCreate: false,
-              allowDelete: true,
-              allowEdit: true,
-              allowRead: true,
-              modifyAllRecords: false,
-              object: 'Account',
-              viewAllRecords: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        objectPermissions: {
+          Account: {
+            allowCreate: false,
+            allowDelete: true,
+            allowEdit: true,
+            allowRead: true,
+            modifyAllRecords: false,
+            object: 'Account',
+            viewAllRecords: false,
           },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          objectPermissions: {
-            Account: {
-              allowCreate: true,
-              allowDelete: true,
-              allowEdit: true,
-              allowRead: true,
-              modifyAllRecords: false,
-              object: 'Account',
-              viewAllRecords: false,
-            },
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        objectPermissions: {
+          Account: {
+            allowCreate: true,
+            allowDelete: true,
+            allowEdit: true,
+            allowRead: true,
+            modifyAllRecords: false,
+            object: 'Account',
+            viewAllRecords: false,
           },
-        })
+        },
+      })
       const customObjectAfter = customObject.clone()
       customObjectAfter.annotations.someAnn = 'val'
       changes = [
@@ -1132,19 +982,11 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toEqual([
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'objectPermissions',
-            'Account',
-            'allowCreate',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('objectPermissions', 'Account', 'allowCreate'),
           target: customObject.elemID.createNestedID('attr', 'someAnn'),
         },
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'objectPermissions',
-            'Account',
-            'allowCreate',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('objectPermissions', 'Account', 'allowCreate'),
           target: customObject.elemID.createNestedID('attr', 'someAnn'),
         },
       ])
@@ -1161,18 +1003,16 @@ describe('getAdditionalReferences', () => {
           },
         },
       })
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          fieldPermissions: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              someField: 'Read',
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        fieldPermissions: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            someField: 'Read',
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1187,17 +1027,11 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'fieldPermissions',
-            'Account',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('fieldPermissions', 'Account'),
           target: customObject.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'fieldPermissions',
-            'Account',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('fieldPermissions', 'Account'),
           target: customObject.elemID,
         },
       ])
@@ -1214,18 +1048,16 @@ describe('getAdditionalReferences', () => {
           },
         },
       })
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          fieldPermissions: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          fieldPermissions: {
-            Account: {
-              someField: 'NoAccess',
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        fieldPermissions: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            someField: 'NoAccess',
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1253,19 +1085,17 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should create a reference to addition if enabled', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          pageAccesses: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          pageAccesses: {
-            SomeApexPage: {
-              apexPage: 'SomeApexPage',
-              enabled: true,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        pageAccesses: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        pageAccesses: {
+          SomeApexPage: {
+            apexPage: 'SomeApexPage',
+            enabled: true,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1280,36 +1110,28 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'pageAccesses',
-            'SomeApexPage',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('pageAccesses', 'SomeApexPage'),
           target: apexPage.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'pageAccesses',
-            'SomeApexPage',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('pageAccesses', 'SomeApexPage'),
           target: apexPage.elemID,
         },
       ])
     })
 
     it('should not create a reference if not enabled', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          pageAccesses: {},
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          pageAccesses: {
-            SomeApexPage: {
-              apexPage: 'SomeApexPage',
-              enabled: false,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        pageAccesses: {},
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        pageAccesses: {
+          SomeApexPage: {
+            apexPage: 'SomeApexPage',
+            enabled: false,
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1325,24 +1147,22 @@ describe('getAdditionalReferences', () => {
       expect(refs).toBeEmpty()
     })
     it('should create a reference to modification', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          pageAccesses: {
-            SomeApexPage: {
-              apexPage: 'SomeApexPage',
-              enabled: true,
-            },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        pageAccesses: {
+          SomeApexPage: {
+            apexPage: 'SomeApexPage',
+            enabled: true,
           },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          pageAccesses: {
-            SomeApexPage: {
-              apexPage: 'SomeApexPage',
-              enabled: false,
-            },
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        pageAccesses: {
+          SomeApexPage: {
+            apexPage: 'SomeApexPage',
+            enabled: false,
           },
-        })
+        },
+      })
       const apexPageAfter = apexPage.clone()
       apexPageAfter.annotations.someAnn = 'val'
       changes = [
@@ -1359,19 +1179,11 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         {
-          source: permissionSetInstanceAfter.elemID.createNestedID(
-            'pageAccesses',
-            'SomeApexPage',
-            'enabled',
-          ),
+          source: permissionSetInstanceAfter.elemID.createNestedID('pageAccesses', 'SomeApexPage', 'enabled'),
           target: apexPage.elemID.createNestedID('someAnn'),
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'pageAccesses',
-            'SomeApexPage',
-            'enabled',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('pageAccesses', 'SomeApexPage', 'enabled'),
           target: apexPage.elemID.createNestedID('someAnn'),
         },
       ])
@@ -1383,32 +1195,28 @@ describe('getAdditionalReferences', () => {
     let changes: Change[]
 
     beforeEach(() => {
-      recordType = new InstanceElement(
-        'Case_SomeCaseRecordType',
-        mockTypes.RecordType,
-        { [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType' },
-      )
+      recordType = new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {
+        [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType',
+      })
     })
 
     it('should not create a reference to addition if neither default nor visible', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          recordTypeVisibilities: {
-            Case: {},
-          },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          recordTypeVisibilities: {
-            Case: {
-              SomeCaseRecordType: {
-                default: false,
-                recordType: 'Case.SomeCaseRecordType',
-                visible: false,
-              },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {},
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+            SomeCaseRecordType: {
+              default: false,
+              recordType: 'Case.SomeCaseRecordType',
+              visible: false,
             },
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1425,24 +1233,22 @@ describe('getAdditionalReferences', () => {
     })
 
     it('should create a reference to addition if default', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          recordTypeVisibilities: {
-            Case: {},
-          },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          recordTypeVisibilities: {
-            Case: {
-              SomeCaseRecordType: {
-                default: true,
-                recordType: 'Case.SomeCaseRecordType',
-                visible: false,
-              },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {},
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+            SomeCaseRecordType: {
+              default: true,
+              recordType: 'Case.SomeCaseRecordType',
+              visible: false,
             },
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1465,35 +1271,29 @@ describe('getAdditionalReferences', () => {
           target: recordType.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'recordTypeVisibilities',
-            'Case',
-            'SomeCaseRecordType',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'),
           target: recordType.elemID,
         },
       ])
     })
 
     it('should create a reference to addition if visible', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          recordTypeVisibilities: {
-            Case: {},
-          },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          recordTypeVisibilities: {
-            Case: {
-              SomeCaseRecordType: {
-                default: false,
-                recordType: 'Case.SomeCaseRecordType',
-                visible: true,
-              },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {},
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+            SomeCaseRecordType: {
+              default: false,
+              recordType: 'Case.SomeCaseRecordType',
+              visible: true,
             },
           },
-        })
+        },
+      })
       changes = [
         toChange({
           before: profileInstanceBefore,
@@ -1516,40 +1316,34 @@ describe('getAdditionalReferences', () => {
           target: recordType.elemID,
         },
         {
-          source: profileInstanceAfter.elemID.createNestedID(
-            'recordTypeVisibilities',
-            'Case',
-            'SomeCaseRecordType',
-          ),
+          source: profileInstanceAfter.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'),
           target: recordType.elemID,
         },
       ])
     })
     it('should create a reference to modification', async () => {
-      const [profileInstanceBefore, permissionSetInstanceBefore] =
-        createTestInstances({
-          recordTypeVisibilities: {
-            Case: {
-              SomeCaseRecordType: {
-                default: false,
-                recordType: 'Case.SomeCaseRecordType',
-                visible: true,
-              },
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+            SomeCaseRecordType: {
+              default: false,
+              recordType: 'Case.SomeCaseRecordType',
+              visible: true,
             },
           },
-        })
-      const [profileInstanceAfter, permissionSetInstanceAfter] =
-        createTestInstances({
-          recordTypeVisibilities: {
-            Case: {
-              SomeCaseRecordType: {
-                default: true,
-                recordType: 'Case.SomeCaseRecordType',
-                visible: true,
-              },
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+            SomeCaseRecordType: {
+              default: true,
+              recordType: 'Case.SomeCaseRecordType',
+              visible: true,
             },
           },
-        })
+        },
+      })
       const recordTypeAfter = recordType.clone()
       recordTypeAfter.annotations.someAnn = 'val'
       changes = [

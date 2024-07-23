@@ -16,25 +16,20 @@
 
 import { FIELD_ANNOTATIONS } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import {
-  ensureSafeFilterFetch,
-  isCustomObjectSync,
-  isStandardField,
-} from './utils'
+import { ensureSafeFilterFetch, isCustomObjectSync, isStandardField } from './utils'
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'omitStandardFieldsNonDeployableValues',
   onFetch: ensureSafeFilterFetch({
     config,
     filterName: 'omitStandardFieldsNonDeployableValues',
-    warningMessage:
-      'Error occurred when attempting to omit standard fields non deployable values',
-    fetchFilterFunc: async (elements) =>
+    warningMessage: 'Error occurred when attempting to omit standard fields non deployable values',
+    fetchFilterFunc: async elements =>
       elements
         .filter(isCustomObjectSync)
-        .flatMap((customObject) => Object.values(customObject.fields))
+        .flatMap(customObject => Object.values(customObject.fields))
         .filter(isStandardField)
-        .forEach((field) => {
+        .forEach(field => {
           delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
           delete field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]
         }),

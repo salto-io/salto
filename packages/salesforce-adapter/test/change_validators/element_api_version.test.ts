@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  ReadOnlyElementsSource,
-  toChange,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import {
-  ORGANIZATION_API_VERSION,
-  ORGANIZATION_SETTINGS,
-  SALESFORCE,
-} from '../../src/constants'
+import { ORGANIZATION_API_VERSION, ORGANIZATION_SETTINGS, SALESFORCE } from '../../src/constants'
 import { LATEST_SUPPORTED_API_VERSION_FIELD } from '../../src/filters/organization_settings'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
@@ -72,8 +62,7 @@ describe('Element API version Change Validator', () => {
         expect.objectContaining({
           elemID: flow.elemID,
           severity: 'Error',
-          detailedMessage:
-            expect.stringContaining('50') && expect.stringContaining('51'),
+          detailedMessage: expect.stringContaining('50') && expect.stringContaining('51'),
         }),
       ])
     })
@@ -183,8 +172,7 @@ describe('Element API version Change Validator', () => {
         expect.objectContaining({
           elemID: flow.elemID,
           severity: 'Error',
-          detailedMessage:
-            expect.stringContaining('50') && expect.stringContaining('51'),
+          detailedMessage: expect.stringContaining('50') && expect.stringContaining('51'),
         }),
       ])
     })

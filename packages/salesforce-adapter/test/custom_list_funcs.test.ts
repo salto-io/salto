@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import Connection from '../src/client/jsforce'
 import { mockInstances } from './mock_elements'
-import { CHANGED_AT_SINGLETON } from '../src/constants'
+import { APEX_CLASS_METADATA_TYPE, CHANGED_AT_SINGLETON } from '../src/constants'
 import { createListApexClassesDef } from '../src/client/custom_list_funcs'
 import { SalesforceClient } from '../index'
 import mockClient from './client'
@@ -46,12 +46,68 @@ describe('Custom List Functions', () => {
       return buildElementsSourceFromElements([changedAtSingleton])
     }
     describe('when latestChangedInstanceOfType ApexClass is undefined', () => {
-      it('should query for all the ApexClasses', async () => {
+      beforeEach(() => {
+        connection.query.mockResolvedValue({
+          records: [
+            {
+              Id: '1',
+              Name: 'ApexClass1',
+              CreatedDate: '2024-01-01T00:00:00.000Z',
+              CreatedBy: { Name: 'user1' },
+              LastModifiedDate: '2024-01-01T00:00:00.000Z',
+              LastModifiedBy: { Name: 'user1' },
+            },
+            {
+              Id: '2',
+              NamespacePrefix: 'namespace',
+              Name: 'ApexClass2',
+              CreatedDate: '2024-01-02T00:00:00.000Z',
+              CreatedBy: { Name: 'user2' },
+              LastModifiedDate: '2024-01-02T00:00:00.000Z',
+              LastModifiedBy: { Name: 'user2' },
+            },
+          ],
+          done: true,
+          totalSize: 2,
+        })
+      })
+      it('should return FileProperties for all the ApexClasses', async () => {
         const elementsSource = createElementsSource({ withLatestChangedAt: false })
-        await createListApexClassesDef(elementsSource).func(client)
+        const result = await createListApexClassesDef(elementsSource).func(client)
         expect(connection.query).toHaveBeenCalledWith(
           'SELECT Id, NamespacePrefix, Name, CreatedDate, CreatedBy.Name, LastModifiedDate, LastModifiedBy.Name FROM ApexClass',
         )
+        expect(result).toStrictEqual({
+          errors: [],
+          result: [
+            {
+              type: APEX_CLASS_METADATA_TYPE,
+              namespacePrefix: undefined,
+              fullName: 'ApexClass1',
+              fileName: 'classes/ApexClass1.cls',
+              id: '1',
+              createdDate: '2024-01-01T00:00:00.000Z',
+              createdByName: 'user1',
+              lastModifiedDate: '2024-01-01T00:00:00.000Z',
+              lastModifiedByName: 'user1',
+              lastModifiedById: '',
+              createdById: '',
+            },
+            {
+              type: APEX_CLASS_METADATA_TYPE,
+              namespacePrefix: 'namespace',
+              fullName: 'namespace__ApexClass2',
+              fileName: 'classes/namespace__ApexClass2.cls',
+              id: '2',
+              createdDate: '2024-01-02T00:00:00.000Z',
+              createdByName: 'user2',
+              lastModifiedDate: '2024-01-02T00:00:00.000Z',
+              lastModifiedByName: 'user2',
+              lastModifiedById: '',
+              createdById: '',
+            },
+          ],
+        })
       })
     })
     describe('when latestChangedInstanceOfType ApexClass is defined', () => {

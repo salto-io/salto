@@ -24,6 +24,7 @@ import SalesforceAdapter from '../index'
 import mockAdapter from './adapter'
 import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
 import {
+  APEX_CLASS_METADATA_TYPE,
   API_NAME,
   CHANGED_AT_SINGLETON,
   CUSTOM_FIELD,
@@ -31,10 +32,11 @@ import {
   FIELD_ANNOTATIONS,
   UNIX_TIME_ZERO_STRING,
 } from '../src/constants'
-import { mockInstances, mockTypes } from './mock_elements'
+import { mockDefaultValues, mockInstances, mockTypes } from './mock_elements'
 import { mockDescribeResult, mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import { createCustomObjectType, mockFetchOpts } from './utils'
-import { Types } from '../src/transformers/transformer'
+import { createInstanceElement, Types } from '../src/transformers/transformer'
+import * as customListFuncsModule from '../src/client/custom_list_funcs'
 
 const { makeArray } = collections.array
 
@@ -46,6 +48,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
   let changedAtSingleton: InstanceElement
+  let deletedApexClasss: InstanceElement
   beforeEach(async () => {
     changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
     const objectWithDeletedField = createCustomObjectType(OBJECT_WITH_DELETED_FIELD_NAME, {
@@ -87,6 +90,19 @@ describe('Salesforce Fetch With Changes Detection', () => {
         },
       },
     })
+    const apexClass1 = createInstanceElement(
+      { ...mockDefaultValues.ApexClass, fullName: 'ApexClass1' },
+      mockTypes.ApexClass,
+    )
+    const apexClass2 = createInstanceElement(
+      { ...mockDefaultValues.ApexClass, fullName: 'ApexClass2' },
+      mockTypes.ApexClass,
+    )
+    deletedApexClasss = createInstanceElement(
+      { ...mockDefaultValues.ApexClass, fullName: 'DeletedApex' },
+      mockTypes.ApexClass,
+    )
+
     const sourceElements = [
       ...Object.values(mockTypes),
       ...Types.getAllMissingTypes(),
@@ -94,6 +110,9 @@ describe('Salesforce Fetch With Changes Detection', () => {
       objectWithDeletedField,
       nonUpdatedObject,
       updatedObject,
+      apexClass1,
+      apexClass2,
+      deletedApexClasss,
     ]
     const elementsSource = buildElementsSourceFromElements(sourceElements)
     ;({ connection, adapter } = mockAdapter({
@@ -226,6 +245,39 @@ describe('Salesforce Fetch With Changes Detection', () => {
           members: [UPDATED_OBJECT_NAME, OBJECT_WITH_DELETED_FIELD_NAME],
         },
       ])
+    })
+  })
+  describe('custom list functions', () => {
+    describe('type with partial custom list function', () => {
+      beforeEach(() => {
+        connection.metadata.describe.mockResolvedValue(mockDescribeResult([{ xmlName: APEX_CLASS_METADATA_TYPE }]))
+        connection.metadata.list.mockResolvedValue([
+          mockFileProperties({
+            fullName: 'ApexClass1',
+            type: APEX_CLASS_METADATA_TYPE,
+            lastModifiedDate: '2023-11-01T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: 'ApexClass2',
+            type: APEX_CLASS_METADATA_TYPE,
+            lastModifiedDate: '2023-11-03T00:00:00.000Z',
+          }),
+        ])
+        // No ApexClasses were updated
+        jest.spyOn(customListFuncsModule, 'createListApexClassesDef').mockReturnValue({
+          func: async _client => ({ result: [], errors: [] }),
+          isPartial: true,
+        })
+        changedAtSingleton.value[APEX_CLASS_METADATA_TYPE] = {
+          ApexClass1: '2023-11-01T00:00:00.000Z',
+          ApexClass2: '2023-11-03T00:00:00.000Z',
+          Deleted: '2023-11-01T00:00:00.000Z',
+        }
+      })
+      it('should return correct deleted elements of type that was listed partially', async () => {
+        const result = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(result.partialFetchData?.deletedElements).toEqual([deletedApexClasss.elemID])
+      })
     })
   })
 })

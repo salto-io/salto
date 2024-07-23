@@ -53,7 +53,7 @@ export const createListApexClassesDef = (elementsSource: ReadOnlyElementsSource)
     const whereClause = sinceDate ? ` WHERE LastModifiedDate > ${sinceDate}` : ''
     const result = (await toArrayAsync(await client.queryAll(query.concat(whereClause)))).flat()
     const props = result.map((record): FileProperties => {
-      const namespacePrefix = record.namespacePrefix != null ? record.namespacePrefix : undefined
+      const namespacePrefix = record.NamespacePrefix != null ? record.NamespacePrefix : undefined
       const fullName = namespacePrefix ? `${namespacePrefix}__${record.Name}` : record.Name
       return {
         id: record.Id,

@@ -297,10 +297,6 @@ export const updateNaclFileData = async (
         }
       } else if (isElement(elem)) {
         newData = await parser.dumpElements([elem], functions, indentationLevel)
-        if (change.action === 'modify') {
-          // When replacing entire elements we already have a newline after the block so we don't need another one
-          newData = newData.trimEnd()
-        }
       } else if (isListElement) {
         newData = await parser.dumpValues(elem, functions, indentationLevel)
       } else {
@@ -360,7 +356,12 @@ export const updateNaclFileData = async (
       [{ start: 0, end: 0, newData: '' }],
     )
 
-  return allBufferParts.map(part => part.newData).join('')
+  // Some changes can end in extra newlines at the beginning and end of the file, so just dropping them
+  return allBufferParts
+    .map(part => part.newData)
+    .join('')
+    .trim()
+    .concat('\n')
 }
 
 const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition => {

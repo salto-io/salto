@@ -54,11 +54,10 @@ const filterCreator: FilterCreator = () => ({
     const subdomain = orgInstance?.value?.subdomain
     if (!_.isString(subdomain)) {
       log.error('Could not create customName field for custom apps because subdomain was missing')
-      return
     }
     appInstances.forEach(app => {
-      // create customName field for non custom apps and delete name field as its value is not multienv
-      if (isCustomApp(app.value, subdomain)) {
+      // create customName field for non-custom apps and delete name field as its value is not multienv
+      if (_.isString(subdomain) && isCustomApp(app.value, subdomain)) {
         app.value.customName = app.value.name
         delete app.value.name
       }

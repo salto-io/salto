@@ -23,6 +23,7 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionChange,
+  isEqualValues,
   isInstanceElement,
   isModificationChange,
   ReadOnlyElementsSource,
@@ -50,7 +51,7 @@ const createDeployAppPolicyRequest = (
           }
           if (isModificationChange(change)) {
             const [before, after] = getAllChangeData(change).map(data => getPolicy(data.value))
-            return isDefined(before) && isDefined(after) && before !== after
+            return isDefined(before) && isDefined(after) && !isEqualValues(before, after)
           }
         }
         return false

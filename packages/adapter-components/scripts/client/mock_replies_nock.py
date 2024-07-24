@@ -46,7 +46,7 @@ def convert_to_nock_format(http_data: dict[str, Any]) -> dict[str, Any]:
         params = urllib.parse.urlencode(http_data.pop("queryParams"))
         http_data["path"] = f"{http_data['path']}?{str(params)}"
 
-    property_order = ["scope", "path", "method", "status"]
+    property_order = ["path", "scope", "method", "status"]
     ordered_http_data = OrderedDict()
     for prop in property_order:
         ordered_http_data[prop] = http_data[prop]

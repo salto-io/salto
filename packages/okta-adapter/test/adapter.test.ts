@@ -31,6 +31,7 @@ import {
   ProgressReporter,
   BuiltinTypes,
   ReferenceExpression,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -56,6 +57,7 @@ import {
   ORG_SETTING_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
+  BRAND_THEME_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -1342,6 +1344,135 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy brand theme', () => {
+      let brandThemeType: ObjectType
+
+      beforeEach(() => {
+        brandThemeType = new ObjectType({
+          elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add a brand theme', async () => {
+        loadMockReplies('brand_theme_add.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ after: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'brandtheme-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify a brand theme', async () => {
+        loadMockReplies('brand_theme_modify.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const updatedBrandTheme = brandTheme.clone()
+        updatedBrandTheme.value.primaryColorHex = '#ff0000'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme, after: updatedBrandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.primaryColorHex).toEqual(
+          '#ff0000',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove a brand theme', async () => {
+        loadMockReplies('brand_theme_remove.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        // In production, a BrandTheme can only be removed alongside its parent Brand (this is enforced by a change
+        // validator). CVs don't run in this test though, so we only run the change group for the BrandTheme removal
+        // and the mock HTTP response will behave as if the Brand was removed as well.
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should fail to remove a brand theme if it still exists', async () => {
+        loadMockReplies('brand_theme_remove_failure.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0].message).toEqual('Expected BrandTheme to be deleted')
+        expect(result.appliedChanges).toHaveLength(0)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

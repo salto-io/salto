@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 import { definitions } from '@salto-io/adapter-components'
-import { ClientOptions, PaginationOptions } from '../types'
+import { Options } from '../types'
 
 export const GRAPH_V1_PATH = '/v1.0'
 export const GRAPH_BETA_PATH = '/beta'
 
 export const createClientDefinitions = (
-  clients: Record<ClientOptions, definitions.RESTApiClientDefinition<PaginationOptions>['httpClient']>,
-): definitions.ApiDefinitions<{ clientOptions: ClientOptions; paginationOptions: PaginationOptions }>['clients'] => ({
+  clients: Record<
+    definitions.ResolveClientOptionsType<Options>,
+    definitions.RESTApiClientDefinition<definitions.ResolvePaginationOptionsType<Options>>['httpClient']
+  >,
+): definitions.ApiDefinitions<Options>['clients'] => ({
   default: 'main',
   options: {
     main: {

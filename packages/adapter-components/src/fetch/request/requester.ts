@@ -28,6 +28,7 @@ import { computeArgCombinations } from '../resource/request_parameters'
 import {
   APIDefinitionsOptions,
   HTTPEndpointDetails,
+  PaginationDefinitions,
   ResolveClientOptionsType,
   ResolvePaginationOptionsType,
 } from '../../definitions/system'
@@ -126,11 +127,16 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
     // * add promises for in-flight requests, to avoid making the same request multiple times in parallel
     const { merged: mergedRequestDef, clientName } = getMergedRequestDefinition(requestDef)
 
-    const paginationOption = mergedRequestDef.endpoint.pagination
-    const paginationDef =
-      paginationOption !== undefined
-        ? pagination[paginationOption]
-        : { funcCreator: noPagination, clientArgs: undefined }
+    const paginationOption = mergedRequestDef.endpoint.pagination ?? 'none'
+    const nonePaginationDef: PaginationDefinitions<ResolveClientOptionsType<Options>> = {
+      funcCreator: noPagination,
+      clientArgs: undefined,
+    }
+    const paginationWithNone = {
+      ...pagination,
+      none: nonePaginationDef,
+    } as Record<ResolvePaginationOptionsType<Options>, PaginationDefinitions<ResolveClientOptionsType<Options>>>
+    const paginationDef = paginationWithNone[paginationOption]
 
     const { clientArgs } = paginationDef
     // order of precedence in case of overlaps: pagination defaults < endpoint < resource-specific request

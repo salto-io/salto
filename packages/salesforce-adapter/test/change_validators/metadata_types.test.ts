@@ -16,7 +16,15 @@
 import { ChangeError, InstanceElement, toChange, BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
 import deployNonDeployableTypes from '../../src/change_validators/metadata_types'
 import { createMetadataObjectType } from '../../src/transformers/transformer'
-import { CUSTOM_METADATA, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import {
+  CUSTOM_METADATA,
+  CUSTOM_METADATA_TYPE_NAME,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_TYPE_NAME,
+  INSTANCE_FULL_NAME_FIELD,
+  METADATA_TYPE,
+  SALESFORCE,
+} from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { createField } from '../utils'
 
@@ -70,14 +78,26 @@ describe('deployNonDeployableTypes', () => {
     })
   })
   describe('When deploying the CustomObject and CustomMetadata metadata types', () => {
-    const customObjectMetadataType = createMetadataObjectType({
+    const customObjectMetadataType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT_TYPE_NAME),
       annotations: {
         [METADATA_TYPE]: CUSTOM_OBJECT,
       },
+      fields: {
+        [INSTANCE_FULL_NAME_FIELD]: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
+      },
     })
-    const customMetadataMetadataType = createMetadataObjectType({
+    const customMetadataMetadataType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
       annotations: {
         [METADATA_TYPE]: CUSTOM_METADATA,
+      },
+      fields: {
+        [INSTANCE_FULL_NAME_FIELD]: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
       },
     })
     beforeEach(async () => {

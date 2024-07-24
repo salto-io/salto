@@ -33,8 +33,9 @@ import {
   Element,
   ProgressReporter,
   isInstanceElement,
+  ServiceIds,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
+import { filter, logDuration, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
@@ -113,7 +114,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
 import generatedDependenciesFilter from './filters/generated_dependencies'
-import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
+import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, FETCH_CONFIG, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import { getConfigFromConfigChanges } from './config_change'
 import {
@@ -504,8 +505,18 @@ export default class SalesforceAdapter implements AdapterOperations {
         filterCreators,
         concatObjects,
       )
-    if (getElemIdFunc) {
-      Types.setElemIdGetter(getElemIdFunc)
+    // TODO (SALTO-6264): Revert this once hide types is enabled.
+    const getElemIdFuncWithRename = config[FETCH_CONFIG]?.optionalFeatures?.metaTypes
+      ? (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
+          const updatedName = name === constants.CUSTOM_METADATA ? constants.CUSTOM_METADATA_TYPE_NAME : name
+          return (
+            getElemIdFunc?.(adapterName, serviceIds, updatedName) ??
+            new ElemID(constants.SALESFORCE, naclCase(updatedName))
+          )
+        }
+      : getElemIdFunc
+    if (getElemIdFuncWithRename) {
+      Types.setElemIdGetter(getElemIdFuncWithRename)
     }
     this.fixElementsFunc = fixElementsFunc({ elementsSource, config })
   }

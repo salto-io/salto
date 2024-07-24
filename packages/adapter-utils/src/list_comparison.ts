@@ -41,14 +41,14 @@ const log = logger(module)
 
 type KeyFunction = (value: Value) => string
 
-type TopLevelType = PrimitiveValue | ReferenceExpression | TemplateExpression | StaticFile
+type FlatValue = PrimitiveValue | ReferenceExpression | TemplateExpression | StaticFile
 
 type IndexMappingItem = {
   beforeIndex?: number
   afterIndex?: number
 }
 
-type ListChange =
+type ListChange<T> =
   | {
       action: 'remove'
       beforeIndex: number
@@ -56,20 +56,20 @@ type ListChange =
   | {
       action: 'add'
       afterIndex: number
-      afterValue: Value
+      afterValue: T
     }
   | {
       action: 'modify'
       beforeIndex: number
       afterIndex: number
-      afterValue: Value
+      afterValue: T
     }
 
 export const getChangeRealId = (change: DetailedChange): ElemID =>
   (isRemovalChange(change) ? change.elemIDs?.before : change.elemIDs?.after) ?? change.id
 
 /**
- * This function returns if a change contains a moving of a item in a list for one index to another
+ * Returns whether a change contains a moving of an item in a list for one index to another
  */
 export const isOrderChange = (change: DetailedChange): boolean =>
   isIndexPathPart(change.id.name) &&
@@ -93,13 +93,13 @@ const getListItemExactKey: KeyFunction = value =>
     },
   })
 
-const isValidTopLevelType = (value: unknown): value is TopLevelType =>
+const isValidFlatValue = (value: unknown): value is FlatValue =>
   isPrimitiveValue(value) || isReferenceExpression(value) || isTemplateExpression(value) || isStaticFile(value)
 
 /**
  * Note: this function ignores the value of compareReferencesByValue and always looks at the reference id
  */
-const getSingleValueKey = (value: TopLevelType): string => {
+const getSingleValueKey = (value: FlatValue): string => {
   if (isReferenceExpression(value)) {
     return value.elemID.getFullName()
   }
@@ -114,21 +114,21 @@ const getSingleValueKey = (value: TopLevelType): string => {
 
 /**
  * Calculate a string to represent an item in the list
- * based only on its top level values
+ * based only on its flat values (without lists/objects)
  *
- * Based on experiments, we found looking only on the top level values
+ * Based on experiments, we found looking only on the flat values
  * to be a good heuristic for representing an item in a list
  */
 const getListItemTopLevelKey: KeyFunction = value => {
   if (_.isPlainObject(value) || Array.isArray(value)) {
     return Object.keys(value)
-      .filter(key => isValidTopLevelType(value[key]))
+      .filter(key => isValidFlatValue(value[key]))
       .sort()
       .flatMap(key => [key, ':', getSingleValueKey(value[key])])
       .join('')
   }
 
-  if (isValidTopLevelType(value)) {
+  if (isValidFlatValue(value)) {
     return getSingleValueKey(value)
   }
 
@@ -304,25 +304,23 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
   return orderedItems
 }
 
-const hasBeforeIndex = (change: ListChange): change is ListChange & { action: 'remove' | 'modify' } =>
+const hasBeforeIndex = <T>(change: ListChange<T>): change is ListChange<T> & { action: 'remove' | 'modify' } =>
   change.action !== 'add'
 
-const hasAfterIndex = (change: ListChange): change is ListChange & { action: 'add' | 'modify' } =>
+const hasAfterIndex = <T>(change: ListChange<T>): change is ListChange<T> & { action: 'add' | 'modify' } =>
   change.action !== 'remove'
 
-// eslint-disable-next-line consistent-return
-const toListChange = (change: DetailedChange): ListChange => {
-  // eslint-disable-next-line default-case
+const toListChange = <T>(change: DetailedChange<T>): ListChange<T> => {
   switch (change.action) {
     case 'remove': {
-      return { action: 'remove', beforeIndex: Number(change.elemIDs?.before?.name) }
+      return { action: change.action, beforeIndex: Number(change.elemIDs?.before?.name) }
     }
     case 'add': {
-      return { action: 'add', afterIndex: Number(change.elemIDs?.after?.name), afterValue: change.data.after }
+      return { action: change.action, afterIndex: Number(change.elemIDs?.after?.name), afterValue: change.data.after }
     }
-    case 'modify': {
+    default: {
       return {
-        action: 'modify',
+        action: change.action,
         beforeIndex: Number(change.elemIDs?.before?.name),
         afterIndex: Number(change.elemIDs?.after?.name),
         afterValue: change.data.after,
@@ -331,7 +329,7 @@ const toListChange = (change: DetailedChange): ListChange => {
   }
 }
 
-const updateList = (list: unknown[], changes: ListChange[]): void => {
+const updateList = <T>(list: unknown[], changes: ListChange<T>[]): void => {
   const removalsAndModifications = changes.filter(hasBeforeIndex)
   removalsAndModifications.forEach(({ beforeIndex }) => {
     list[beforeIndex] = undefined

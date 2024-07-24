@@ -207,8 +207,8 @@ const getAnnotationTypeChanges = ({
   afterId,
 }: {
   id: ElemID
-  before: Value
-  after: Value
+  before: Element
+  after: Element
   beforeId: ElemID
   afterId: ElemID
 }): DetailedChange[] => {

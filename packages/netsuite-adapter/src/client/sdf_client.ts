@@ -749,9 +749,11 @@ export default class SdfClient {
       },
       executor,
     )
-    return results.data.map(({ type, scriptId }: { type: string; scriptId: string }) => ({
+    const instancesIds = results.data as Array<{ type: string; scriptId: string }>
+    return instancesIds.map(({ type, scriptId }) => ({
       type: SdfClient.fixTypeName(type),
       instanceId: scriptId,
+      suiteAppId,
     }))
   }
 

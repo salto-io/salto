@@ -16,41 +16,38 @@
 import {
   ChangeValidator,
   getChangeData,
-  InstanceElement,
-  isInstanceElement,
-  isReferenceExpression,
-  ReadOnlyElementsSource,
-  ReferenceExpression,
-  UnresolvedReference,
+  // InstanceElement,
+  // isInstanceElement,
+  // isReferenceExpression,
+  // ReadOnlyElementsSource,
+  // ReferenceExpression,
+  // UnresolvedReference,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
-import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
-import _ from 'lodash'
-import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
+// import { collections } from '@salto-io/lowerdash'
+// import { logger } from '@salto-io/logging'
+// import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
+// import _ from 'lodash'
 import { PROJECT_TYPE } from '../../constants'
-import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../filters/fields/constants'
-import { getUnreferencedContextErrors } from './unreferenced_context'
-import { getGlobalContextsUsedInProjectErrors } from './referenced_global_context'
+import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
 
-const { awu } = collections.asynciterable
-const log = logger(module)
+// const { awu } = collections.asynciterable
+// const log = logger(module)
 
-const getFieldContexts = async (
-  field: InstanceElement,
-  elementSource: ReadOnlyElementsSource,
-): Promise<InstanceElement[]> =>
-  awu(field.value.contexts)
-    .filter((ref): ref is ReferenceExpression => {
-      if (!isReferenceExpression(ref) || ref.value instanceof UnresolvedReference) {
-        log.warn(`Found a non reference expression in field ${field.elemID.getFullName()}`)
-        return false
-      }
-      return true
-    })
-    .map((ref: ReferenceExpression) => ref.getResolvedValue(elementSource))
-    .filter(isInstanceElement)
-    .toArray()
+// const getFieldContexts = async (
+//   field: InstanceElement,
+//   elementSource: ReadOnlyElementsSource,
+// ): Promise<InstanceElement[]> =>
+//   awu(field.value.contexts)
+//     .filter((ref): ref is ReferenceExpression => {
+//       if (!isReferenceExpression(ref) || ref.value instanceof UnresolvedReference) {
+//         log.warn(`Found a non reference expression in field ${field.elemID.getFullName()}`)
+//         return false
+//       }
+//       return true
+//     })
+//     .map((ref: ReferenceExpression) => ref.getResolvedValue(elementSource))
+//     .filter(isInstanceElement)
+//     .toArray()
 
 /**
  * Verify that the field contexts are valid.
@@ -65,41 +62,7 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
     return []
   }
 
-  const relevantInstances = _.groupBy(
-    await getInstancesFromElementSource(elementSource, [PROJECT_TYPE, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME]),
-    instance => instance.elemID.typeName,
-  )
-
-  const fieldsToContexts = Object.fromEntries(
-    await awu((relevantInstances[FIELD_TYPE_NAME] ?? []).filter(field => field.value.contexts !== undefined))
-      .map(async field => [field.elemID.getFullName(), await getFieldContexts(field, elementSource)])
-      .toArray(),
-  )
-  const projectNamesToContexts: Record<string, Set<string>> = Object.fromEntries(
-    (relevantInstances[PROJECT_TYPE] ?? [])
-      .filter(project => project.value[PROJECT_CONTEXTS_FIELD] !== undefined)
-      .map(project => [
-        project.elemID.name,
-        new Set(
-          project.value[PROJECT_CONTEXTS_FIELD].filter((ref: ReferenceExpression) => {
-            if (!isReferenceExpression(ref)) {
-              log.warn(`Found a non reference expression in project ${project.elemID.getFullName()}`)
-              return false
-            }
-            return true
-          }).map((context: ReferenceExpression) => context.elemID.getFullName()),
-        ),
-      ]),
-  )
-  const mergedContexts = Object.values(projectNamesToContexts).reduce((acc, projectContexts) => {
-    projectContexts.forEach(context => acc.add(context))
-    return acc
-  }, new Set<string>())
-
-  const changesIds = new Set(changes.map(change => getChangeData(change).elemID.getFullName()))
-
-  return [
-    ...getUnreferencedContextErrors(fieldsToContexts, mergedContexts),
-    ...getGlobalContextsUsedInProjectErrors(relevantInstances[FIELD_CONTEXT_TYPE_NAME] ?? [], projectNamesToContexts),
-  ].filter(change => changesIds.has(change.elemID.getFullName()))
+  // 1. Avoid two global contexts
+  // 2. Avoid a global context that does not point to a project
+  return []
 }

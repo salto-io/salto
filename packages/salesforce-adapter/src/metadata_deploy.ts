@@ -147,17 +147,18 @@ const addNestedInstancesToPackageManifest = async (
   return Object.assign({}, ...(await Promise.all(nestedTypeInfo.nestedInstanceFields.map(addNestedInstancesFromField))))
 }
 
-const addChangeToPackage = async (
+export const addChangeToPackage = async (
   pkg: DeployPackage,
   change: Change<MetadataInstanceElement>,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
+  options?: { forceAddToManifest: boolean },
 ): Promise<MetadataIdsMap> => {
   const instance = getChangeData(change)
   const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
   const instanceMetadataType = await metadataType(instance)
   const instanceApiName = await apiName(instance)
 
-  const addInstanceToManifest = !isWrapperInstance
+  const addInstanceToManifest = options?.forceAddToManifest || !isWrapperInstance
   const addedIds = addInstanceToManifest ? { [instanceMetadataType]: new Set([instanceApiName]) } : {}
   if (isRemovalChange(change)) {
     pkg.delete(assertMetadataObjectType(await instance.getType()), instanceApiName)
@@ -381,7 +382,7 @@ const getChangeError = async (change: Change): Promise<SaltoElementError | undef
   return undefined
 }
 
-const validateChanges = async (
+export const validateChanges = async (
   changes: ReadonlyArray<Change>,
 ): Promise<{
   validChanges: ReadonlyArray<Change<MetadataInstanceElement>>

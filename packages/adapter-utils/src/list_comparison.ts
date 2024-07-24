@@ -99,7 +99,7 @@ const isValidLeafValue = (value: unknown): value is LeafValue =>
 /**
  * Note: this function ignores the value of compareReferencesByValue and always looks at the reference id
  */
-const getSingleValueKey = (value: FlatValue): string => {
+const getSingleValueKey = (value: LeafValue): string => {
   if (isReferenceExpression(value)) {
     return value.elemID.getFullName()
   }

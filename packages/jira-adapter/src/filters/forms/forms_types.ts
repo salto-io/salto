@@ -21,16 +21,14 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { JIRA, FORM_TYPE } from '../../constants'
 
 type DetailedFormDataResponse = {
-  uuid: string
+  id: string
   design: {
     settings: {
-      templateId: string
       name: string
       submit: {
         lock: boolean
         pdf: boolean
       }
-      templateFormUuid: string
     }
     questions: {}
     sections: {}
@@ -39,7 +37,7 @@ type DetailedFormDataResponse = {
 }
 
 type FormResponse = {
-  id: number
+  id: string
   name?: string
 }
 
@@ -50,7 +48,7 @@ type FormsResponse = {
 export const FORMS_RESPONSE_SCHEME = Joi.object({
   data: Joi.array().items(
     Joi.object({
-      id: Joi.number().required(),
+      id: Joi.string().required(),
       name: Joi.string().allow(''),
     })
       .unknown(true)
@@ -61,10 +59,9 @@ export const FORMS_RESPONSE_SCHEME = Joi.object({
   .required()
 
 export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
-  uuid: Joi.string().required(),
+  id: Joi.string().required(),
   design: Joi.object({
     settings: Joi.object({
-      templateId: Joi.number().required(),
       name: Joi.string().required(),
       submit: Joi.object({
         lock: Joi.boolean().required(),
@@ -72,7 +69,6 @@ export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
       })
         .unknown(true)
         .required(),
-      templateFormUuid: Joi.string(),
     })
       .unknown(true)
       .required(),
@@ -105,19 +101,11 @@ export const createFormType = (): {
   const formSettingsType = new ObjectType({
     elemID: new ElemID(JIRA, 'FormSettings'),
     fields: {
-      templateId: {
-        refType: BuiltinTypes.NUMBER,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-      },
       name: {
         refType: BuiltinTypes.STRING,
       },
       submit: {
         refType: formSubmitType,
-      },
-      templateFormUuid: {
-        refType: BuiltinTypes.STRING,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
     },
   })
@@ -219,10 +207,6 @@ export const createFormType = (): {
     elemID: new ElemID(JIRA, FORM_TYPE),
     fields: {
       id: {
-        refType: BuiltinTypes.NUMBER,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-      },
-      uuid: {
         refType: BuiltinTypes.SERVICE_ID,
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
@@ -262,7 +246,7 @@ type createFormResponse = {
 }
 
 const CREATE_FORM_RESPONSE_SCHEME = Joi.object({
-  id: Joi.number().required(),
+  id: Joi.string().required(),
 })
   .unknown(true)
   .required()

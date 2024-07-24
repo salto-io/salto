@@ -211,6 +211,17 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     throw new Error('Failed to get GQL response')
   }
 
+  public async atlassianApiSendRequest(
+    method: keyof clientUtils.HttpMethodToClientParams,
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.sendRequest(method, {
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
   public async getPrivate(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {

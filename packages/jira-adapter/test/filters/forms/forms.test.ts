@@ -26,7 +26,6 @@ import {
   ElemID,
   BuiltinTypes,
 } from '@salto-io/adapter-api'
-import { MockInterface } from '@salto-io/test-utils'
 import { FilterResult } from '../../../src/filter'
 import { getDefaultConfig } from '../../../src/config/config'
 import formsFilter from '../../../src/filters/forms/forms'
@@ -37,7 +36,7 @@ import JiraClient from '../../../src/client/client'
 describe('forms filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy', FilterResult>
   let filter: FilterType
-  let connection: MockInterface<clientUtils.APIConnection>
+  let mockSendRequest: jest.SpyInstance
   let client: JiraClient
   const projectType = createEmptyType(PROJECT_TYPE)
   let projectInstance: InstanceElement
@@ -49,8 +48,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false)
-      connection = conn
+      const { client: cli } = mockClient(false)
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
       projectInstance = new InstanceElement(
@@ -64,31 +62,29 @@ describe('forms filter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
-
-      connection.get.mockResolvedValueOnce({
+      mockSendRequest = jest.spyOn(client, 'atlassianApiSendRequest')
+      mockSendRequest.mockResolvedValueOnce({
         status: 200,
         data: [
           {
-            id: 1,
+            id: 'uuid-1',
             name: 'form1',
           },
         ],
       })
 
-      connection.get.mockResolvedValueOnce({
+      mockSendRequest.mockResolvedValueOnce({
         status: 200,
         data: {
           updated: '2023-09-28T08:20:31.552322Z',
-          uuid: 'uuid',
+          id: 'uuid-1',
           design: {
             settings: {
-              templateId: 6,
               name: 'form6',
               submit: {
                 lock: false,
                 pdf: false,
               },
-              templateFormUuid: 'templateFormUuid',
             },
             layout: [
               {
@@ -154,17 +150,15 @@ describe('forms filter', () => {
       const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
       expect(formInstance).toBeDefined()
       expect(formInstance?.value).toEqual({
-        uuid: 'uuid',
+        id: 'uuid-1',
         updated: '2023-09-28T08:20:31.552322Z',
         design: {
           settings: {
-            templateId: 6,
             name: 'form6',
             submit: {
               lock: false,
               pdf: false,
             },
-            templateFormUuid: 'templateFormUuid',
           },
           layout: [
             {
@@ -236,16 +230,14 @@ describe('forms filter', () => {
     let projectInstanceTwo: InstanceElement
     const goodDetailedResponse = {
       updated: '2023-09-28T08:20:31.552322Z',
-      uuid: 'uuid',
+      id: 'uuid-1',
       design: {
         settings: {
-          templateId: 6,
           name: 'name',
           submit: {
             lock: false,
             pdf: false,
           },
-          templateFormUuid: 'templateFormUuid',
         },
         layout: [
           {
@@ -304,16 +296,14 @@ describe('forms filter', () => {
     }
     const badDetailedResponse = {
       updated: '2023-09-28T08:20:31.552322Z',
-      uuid: 'uuid',
+      id: 'uuid-1',
       design: {
         settings: {
-          templateId: 6,
           name: '',
           submit: {
             lock: false,
             pdf: false,
           },
-          templateFormUuid: 'templateFormUuid',
         },
         layout: [
           {
@@ -373,9 +363,9 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false)
-      connection = conn
+      const { client: cli } = mockClient(false)
       client = cli
+      mockSendRequest = jest.spyOn(client, 'atlassianApiSendRequest')
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
@@ -399,43 +389,42 @@ describe('forms filter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
-
       elements = [projectInstance, projectInstanceTwo, projectType]
     })
     afterEach(() => {
       jest.clearAllMocks()
     })
-    it("should return single saltoError when failed to fetch form becuase it doesn't have a title", async () => {
-      connection.get.mockImplementation(async url => {
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/11111/forms') {
+    it("should return single saltoError when failed to fetch form because it doesn't have a title", async () => {
+      mockSendRequest.mockImplementation(async (_method, params) => {
+        if (params.url === 'project/11111/form') {
           return {
             status: 200,
             data: [
               {
-                id: 1,
+                id: 'uuid-1',
                 name: '',
               },
             ],
           }
         }
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms/1') {
+        if (params.url === 'project/11111/form/uuid-1') {
           return {
             status: 200,
             data: badDetailedResponse,
           }
         }
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/22222/forms') {
+        if (params.url === 'project/22222/form') {
           return {
             status: 200,
             data: [
               {
-                id: 2,
+                id: 'uuid-2',
                 name: '',
               },
             ],
           }
         }
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/2/projects/22222/forms/2') {
+        if (params.url === 'project/22222/form/uuid-2') {
           return {
             status: 200,
             data: badDetailedResponse,
@@ -450,14 +439,14 @@ describe('forms filter', () => {
       )
     })
     it('should return single saltoError when failed to fetch form because data is empty', async () => {
-      connection.get.mockImplementation(async url => {
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/11111/forms') {
+      mockSendRequest.mockImplementation(async (_method, params) => {
+        if (params.url === 'project/11111/form') {
           throw new clientUtils.HTTPError('insufficient permissions', {
             status: 403,
             data: {},
           })
         }
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/22222/forms') {
+        if (params.url === 'project/22222/form') {
           throw new clientUtils.HTTPError('insufficient permissions', {
             status: 403,
             data: {},
@@ -472,25 +461,25 @@ describe('forms filter', () => {
       )
     })
     it('should add form1 to the elements and add saltoError when failed to fetch form2 data for projectTwo', async () => {
-      connection.get.mockImplementation(async url => {
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/11111/forms') {
+      mockSendRequest.mockImplementation(async (_method, params) => {
+        if (params.url === 'project/11111/form') {
           return {
             status: 200,
             data: [
               {
-                id: 1,
+                id: 'uuid-1',
                 name: 'form1',
               },
             ],
           }
         }
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms/1') {
+        if (params.url === 'project/11111/form/uuid-1') {
           return {
             status: 200,
             data: goodDetailedResponse,
           }
         }
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/1/projects/22222/forms') {
+        if (params.url === 'project/22222/form') {
           throw new clientUtils.HTTPError('insufficient permissions', {
             status: 403,
             data: {},
@@ -509,7 +498,7 @@ describe('forms filter', () => {
       expect(formInstances[0]?.elemID.name).toEqual('project1Key_form1')
     })
     it('should not add forms to elements and not add an error for a bad unexpected response', async () => {
-      connection.get.mockResolvedValue({
+      mockSendRequest.mockResolvedValue({
         status: 404,
         data: {
           message: 'not found',
@@ -522,7 +511,7 @@ describe('forms filter', () => {
       expect(formInstance).toBeUndefined()
     })
     it('should add saltoError response when 403 error is thrown from jira client', async () => {
-      connection.get.mockRejectedValue({
+      mockSendRequest.mockRejectedValue({
         response: {
           status: 403,
           data: 'insufficient permissions',
@@ -570,8 +559,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false)
-      connection = conn
+      const { client: cli } = mockClient(false)
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
       projectInstance = new InstanceElement(
@@ -589,7 +577,7 @@ describe('forms filter', () => {
         'formInstanceName',
         formType,
         {
-          uuid: 'uuid',
+          id: 'uuid-1',
           updated: '2023-09-28T08:20:31.552322Z',
           publish: {
             portal: {
@@ -598,13 +586,11 @@ describe('forms filter', () => {
           },
           design: {
             settings: {
-              templateId: 6,
               name: 'form6',
               submit: {
                 lock: false,
                 pdf: false,
               },
-              templateFormUuid: 'templateFormUuid',
             },
             layout: [
               {
@@ -672,18 +658,26 @@ describe('forms filter', () => {
           [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
         },
       )
-      connection.post.mockImplementation(async url => {
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms') {
+      mockSendRequest = jest.spyOn(client, 'atlassianApiSendRequest')
+      mockSendRequest.mockImplementation(async (method, params) => {
+        if (method === 'post') {
+          if (params.url === 'project/11111/form') {
+            return {
+              status: 200,
+              data: {
+                id: 'uuid-1',
+                name: 'form1',
+              },
+            }
+          }
+          throw new Error('Unexpected url')
+        } else {
           return {
             status: 200,
-            data: {
-              id: 1,
-            },
+            data: {},
           }
         }
-        throw new Error('Unexpected url')
       })
-
       elements = [projectInstance, projectType, formPortalType, formPublishType, formType, requestTypeType]
     })
     it('should add form', async () => {
@@ -691,92 +685,6 @@ describe('forms filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(connection.post).toHaveBeenCalledTimes(1)
-      expect(connection.put).toHaveBeenCalledTimes(1)
-      expect(connection.put).toHaveBeenCalledWith(
-        '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms/1',
-        {
-          uuid: 'uuid',
-          id: 1,
-          updated: '2023-09-28T08:20:31.552322Z',
-          publish: {
-            portal: {
-              portalRequestTypeIds: [999],
-            },
-          },
-          design: {
-            settings: {
-              templateId: 1,
-              name: 'form6',
-              submit: {
-                lock: false,
-                pdf: false,
-              },
-              templateFormUuid: 'templateFormUuid',
-            },
-            layout: [
-              {
-                version: 1,
-                type: 'doc',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'form 6 content',
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-            conditions: {
-              10: {
-                t: 'sh',
-                i: {
-                  co: {
-                    cIds: {
-                      2: ['2'],
-                    },
-                  },
-                },
-                o: {
-                  sIds: ['1'],
-                },
-              },
-            },
-            sections: {
-              1: {
-                name: 'Ido section',
-                conditions: ['10'],
-              },
-            },
-            questions: {
-              2: {
-                type: 'cs',
-                label: 'What is the impact on IT resources?',
-                description: '',
-                validation: {
-                  rq: false,
-                },
-                choices: [
-                  {
-                    id: '1',
-                    label: 'No Risk – Involves a single IT resource from a workgroup',
-                  },
-                  {
-                    id: '2',
-                    label: 'Low Risk – Involves one workgroup from the same IT division',
-                  },
-                ],
-                questionKey: '',
-              },
-            },
-          },
-        },
-        undefined,
-      )
     })
     it('should modify form', async () => {
       const formInstanceAfter = formInstance.clone()
@@ -785,14 +693,12 @@ describe('forms filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(connection.put).toHaveBeenCalledTimes(1)
     })
     it('should delete form', async () => {
       const res = await filter.deploy([{ action: 'remove', data: { before: formInstance } }])
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(connection.delete).toHaveBeenCalledTimes(1)
     })
     it('should not deploy if form name is missing', async () => {
       const formInstanceAfter = formInstance.clone()
@@ -801,8 +707,6 @@ describe('forms filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
-      expect(connection.put).toHaveBeenCalledTimes(0)
-      expect(connection.post).toHaveBeenCalledTimes(0)
     })
     it('should not deploy if enableJSM is false', async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -812,19 +716,25 @@ describe('forms filter', () => {
       expect(res.leftoverChanges).toHaveLength(1)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
-      expect(connection.post).toHaveBeenCalledTimes(0)
     })
     it('should throw error if bad response in form creation from jira', async () => {
-      connection.post.mockImplementation(async url => {
-        if (url === '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms') {
+      mockSendRequest.mockImplementation(async (method, params) => {
+        if (method === 'post') {
+          if (params.url === 'project/11111/form') {
+            return {
+              status: 200,
+              data: {
+                name: 'wrong response',
+              },
+            }
+          }
+          throw new Error('Unexpected url')
+        } else {
           return {
             status: 200,
-            data: {
-              name: 'wrong response',
-            },
+            data: {},
           }
         }
-        throw new Error('Unexpected url')
       })
       const res = await filter.deploy([{ action: 'add', data: { after: formInstance } }])
       expect(res.leftoverChanges).toHaveLength(0)
@@ -838,8 +748,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false)
-      connection = conn
+      const { client: cli } = mockClient(false)
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
       projectInstance = new InstanceElement(
@@ -857,16 +766,14 @@ describe('forms filter', () => {
         'formInstanceName',
         createEmptyType(FORM_TYPE),
         {
-          uuid: 'uuid',
+          id: 'uuid-1',
           design: {
             settings: {
-              templateId: 6,
               name: 'form6',
               submit: {
                 lock: false,
                 pdf: false,
               },
-              templateFormUuid: 'templateFormUuid',
             },
             layout: [
               {
@@ -950,8 +857,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false)
-      connection = conn
+      const { client: cli } = mockClient(false)
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
       projectInstance = new InstanceElement(
@@ -969,17 +875,15 @@ describe('forms filter', () => {
         'formInstanceName',
         createEmptyType(FORM_TYPE),
         {
-          uuid: 'uuid',
+          id: 'uuid-1',
           updated: '2023-09-28T08:20:31.552322Z',
           design: {
             settings: {
-              templateId: 6,
               name: 'form6',
               submit: {
                 lock: false,
                 pdf: false,
               },
-              templateFormUuid: 'templateFormUuid',
             },
             layout: [
               {

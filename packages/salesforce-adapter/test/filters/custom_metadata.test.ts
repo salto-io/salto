@@ -303,7 +303,7 @@ describe('CustomMetadata filter', () => {
       })
       it('should convert deployed instance type to CustomMetadata', async () => {
         const instanceType = await afterPreDeployInstance.getType()
-        expect(instanceType.elemID).toEqual(new ElemID(SALESFORCE, CUSTOM_METADATA))
+        expect(instanceType.elemID).toEqual(mockTypes.CustomMetadata.elemID)
       })
       it('should add XML namespace attributes', () => {
         expect(afterPreDeployInstance.value).toHaveProperty(

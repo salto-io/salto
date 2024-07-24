@@ -56,6 +56,7 @@ export type InstanceLimiterFunc = (type: string, instanceCount: number) => boole
 export interface ObjectID {
   type: string
   instanceId: string
+  suiteAppId?: string
 }
 
 export type NetsuiteTypesQueryParams = Record<string, string[]>

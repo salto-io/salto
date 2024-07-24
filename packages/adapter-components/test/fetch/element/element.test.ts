@@ -295,7 +295,9 @@ describe('element', () => {
           generator.handleError({ typeName: 'myType', error: fetchError })
           generator.generate()
           expect(logErrorSpy).toHaveBeenCalledWith(
-            'failed to fetch type %s:%s, generating custom Salto error', expect.any(String), expect.any(String)
+            'failed to fetch type %s:%s, generating custom Salto error',
+            expect.any(String),
+            expect.any(String),
           )
         })
 
@@ -343,7 +345,7 @@ describe('element', () => {
                     onError: {
                       action: 'configSuggestion',
                       value: configSuggestion,
-                      ignore: false
+                      ignore: false,
                     },
                   },
                 },
@@ -368,7 +370,7 @@ describe('element', () => {
                     onError: {
                       action: 'configSuggestion',
                       value: configSuggestion,
-                      ignore: false
+                      ignore: false,
                     },
                   },
                 },
@@ -378,7 +380,9 @@ describe('element', () => {
           generator.handleError({ typeName: 'myType', error: fetchError })
           generator.generate()
           expect(logErrorSpy).toHaveBeenCalledWith(
-            'failed to fetch type %s:%s, generating config suggestions', expect.any(String), expect.any(String)
+            'failed to fetch type %s:%s, generating config suggestions',
+            expect.any(String),
+            expect.any(String),
           )
         })
 
@@ -394,7 +398,7 @@ describe('element', () => {
                     onError: {
                       action: 'configSuggestion',
                       value: configSuggestion,
-                      ignore: true
+                      ignore: true,
                     },
                   },
                 },
@@ -462,7 +466,10 @@ describe('element', () => {
           generator.handleError({ typeName: 'myType', error: fetchError })
           generator.generate()
           expect(logErrorSpy).toHaveBeenCalledWith(
-            'failed to fetch type %s:%s: %s', expect.any(String), expect.any(String), fetchError.message
+            'failed to fetch type %s:%s: %s',
+            expect.any(String),
+            expect.any(String),
+            fetchError.message,
           )
         })
       })

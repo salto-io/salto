@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import wu from 'wu'
 import _ from 'lodash'
 import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import { RetrieveResult, FileProperties, RetrieveRequest } from '@salto-io/jsforce'
@@ -605,7 +606,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       // the contents are the same.
       // this is important for the "quickDeploy" feature
       const date = new Date('2023-06-15T00:00:00.000+01:00')
-      Array.from(zipContent.entries()).forEach(([fileName, content]) => zip.file(fileName, content, { date }))
+      wu(zipContent.entries()).forEach(([fileName, content]) => zip.file(fileName, content, { date }))
 
       // We need another iteration here to also set the date on all the folders
       Object.values(zip.files)

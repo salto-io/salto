@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
-import { ClientOptions, PaginationOptions } from '../types'
+import { Options } from '../types'
 import { CURSOR_BASED_PAGINATION_FIELD, PAGE_SIZE } from '../../config'
 
 const { cursorPagination } = fetchUtils.request.pagination
@@ -22,7 +22,7 @@ const { cursorPagination } = fetchUtils.request.pagination
 export const pathChecker: fetchUtils.request.pagination.PathCheckerFunc = (current, next) =>
   next === `${current}.json` || next === `${current}`
 
-export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
+export const PAGINATION: definitions.ApiDefinitions<Options>['pagination'] = {
   basic_cursor: {
     funcCreator: () => cursorPagination({ pathChecker, paginationField: 'next_page' }),
   },

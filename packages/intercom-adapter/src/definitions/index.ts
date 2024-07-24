@@ -16,4 +16,4 @@
 
 export * from './fetch'
 export * from './requests'
-export { ClientOptions, PaginationOptions } from './types'
+export { ClientOptions } from './types'

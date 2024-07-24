@@ -17,7 +17,7 @@ import { definitions } from '@salto-io/adapter-components'
 
 export type AdditionalAction = never
 export type ClientOptions = 'main' | 'classicApi'
-export type PaginationOptions = 'increasePageUntilEmpty'
+type PaginationOptions = 'increasePageUntilEmpty'
 
 export type ReferenceContextStrategies = never
 export type CustomReferenceSerializationStrategyName = 'idAndNameObject'

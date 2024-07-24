@@ -347,7 +347,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
       const rateLimiter = new RateLimiter({
         retryPredicate,
         calculateRetryDelayMS,
-        useBottleneck: true,
+        useBottleneck,
         maxConcurrentCalls: 1,
         delayMS: 0,
       })
@@ -383,7 +383,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
 
 describe.only('RateLimiter (useBottleneck: false) performance', () => {
   const ratePerSecond = 100000
-  
+
   it.each([1, 10, 100, 1000, 10000, 100000, 1000000])(
     'should be performant and not add a big overhead between invocations (numTasks: %s).',
     async numTasks => {

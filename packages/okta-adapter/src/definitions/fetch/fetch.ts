@@ -320,7 +320,7 @@ const createCustomizations = ({
       {
         endpoint: { path: '/api/v1/groups/{groupId}/users' },
         transformation: {
-          // assign groupId from request context to value so we can use mergeAndTransform
+          // assign groupId which was set by the parent group to request context, to group membership's value so we can use mergeAndTransform
           adjust: async ({ value, context }) => ({
             value: { ...(_.isObject(value) ? { ...value, groupId: context.groupId } : {}) },
           }),
@@ -329,6 +329,7 @@ const createCustomizations = ({
     ],
     resource: {
       directFetch: false,
+      // merge all users assigned to the same group into a single instance based on 'groupId'
       serviceIDFields: ['groupId'],
       mergeAndTransform: {
         adjust: async ({ context }) => ({

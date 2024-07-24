@@ -212,9 +212,19 @@ describe('dumpElementsToFolder', () => {
         expect(dumpResult.errors).toHaveLength(0)
       })
       it('should create an XML for the new field', async () => {
-        await expect(
-          exists(path.join(project.name(), 'force-app/main/default/objects/Test__c/fields/New__c.field-meta.xml')),
-        ).resolves.toBeTrue()
+        const metadataContent = await readTextFile.notFoundAsUndefined(
+          path.join(project.name(), 'force-app/main/default/objects/Test__c/fields/New__c.field-meta.xml'),
+        )
+        expect(metadataContent).toEqual(`<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>New__c</fullName>
+    <type>Text</type>
+    <length>80</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>
+`)
       })
     })
     describe('when deleting a field', () => {

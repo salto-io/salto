@@ -86,7 +86,7 @@ const compactPathList = (paths: string[]): string[] => {
     .filter(values.isDefined)
 }
 
-type DumpElementsToFolderFunc = Required<Adapter>['dumpElementsToFolder']
+type DumpElementsToFolderFunc = NonNullable<Adapter['dumpElementsToFolder']>
 export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, changes, elementsSource }) => {
   const [customObjectInstanceChanges, metadataChanges] = _.partition(changes, isInstanceOfCustomObjectChangeSync)
 
@@ -123,8 +123,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
   )
 
   // Load the components we wish to merge with the current project
-  const buffer = await pkg.getZip()
-  const zipTree = await ZipTreeContainer.create(buffer)
+  const zipTree = await ZipTreeContainer.create(await pkg.getZip())
   const tree = new SyncZipTreeContainer(zipTree, pkg.getZipContent())
   const converter = new MetadataConverter()
   const saltoComponentSet = ComponentSet.fromSource({

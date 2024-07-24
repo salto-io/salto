@@ -24,11 +24,8 @@ import {
 } from '@salto-io/adapter-api'
 import { Types } from '../transformers/transformer'
 
-export const isUnknownField = (
-  changedElement: ChangeDataType,
-): changedElement is Field =>
-  isField(changedElement) &&
-  changedElement.refType.elemID.isEqual(Types.primitiveDataTypes.Unknown.elemID)
+export const isUnknownField = (changedElement: ChangeDataType): changedElement is Field =>
+  isField(changedElement) && changedElement.refType.elemID.isEqual(Types.primitiveDataTypes.Unknown.elemID)
 
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
@@ -41,11 +38,7 @@ const createChangeError = (field: Field): ChangeError => ({
  * It is forbidden to add or modify a field with unknown type.
  * A missing type means this field is not accessible on Salesforce.
  */
-const changeValidator: ChangeValidator = async (changes) =>
-  changes
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(isUnknownField)
-    .map(createChangeError)
+const changeValidator: ChangeValidator = async changes =>
+  changes.filter(isAdditionOrModificationChange).map(getChangeData).filter(isUnknownField).map(createChangeError)
 
 export default changeValidator

@@ -46,6 +46,8 @@ okta {
 | [retry](#retry-configuration-options)            | `{}` (no overrides)    | Configuration for retrying on errors                                |
 | [rateLimit](#rate-limit-configuration-options)   | `{}` (no overrides)    | Limits on the number of concurrent requests of different types      |
 | maxRequestsPerMinute                             | 700                    | Limits on the number of requests per minute                         |
+| delayPerRequestMS                                | 0                      | Delay waited between each request in milliseconds                   |
+| useBottleneck                                    | true                   | Flag indicating usage of Bottleneck package for rate limiting       |
 | usePrivateAPI                                    | true                   | Whether to use Okta Private API when fetching and deploying changes |
 | [timeout](#client-timeout-configuration-options) | `{}` (no overrides)    | Configuration for setting request timeouts                          |
 

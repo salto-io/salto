@@ -21,7 +21,13 @@ import { Credentials } from '../auth'
 
 const log = logger(module)
 
-const { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const {
+  DEFAULT_RETRY_OPTS,
+  DEFAULT_TIMEOUT_OPTS,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+  RATE_LIMIT_USE_BOTTLENECK,
+} = clientUtils
 
 // https://knowledgecenter.zuora.com/BB_Introducing_Z_Business/Policies/Concurrent_Request_Limits#Rate_limits
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
@@ -40,6 +46,8 @@ export default class ZuoraClient extends clientUtils.AdapterHTTPClient<Credentia
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+      useBottleneck: RATE_LIMIT_USE_BOTTLENECK,
       retry: DEFAULT_RETRY_OPTS,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })

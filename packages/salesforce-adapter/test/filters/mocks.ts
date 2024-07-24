@@ -17,7 +17,4 @@
 import { filter } from '@salto-io/adapter-utils'
 import { Filter, FilterResult } from '../../src/filter'
 
-export type FilterWith<M extends keyof Filter> = filter.FilterWith<
-  FilterResult,
-  M
->
+export type FilterWith<M extends keyof Filter> = filter.FilterWith<FilterResult, M>

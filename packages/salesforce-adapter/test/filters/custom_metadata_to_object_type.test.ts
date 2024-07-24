@@ -115,24 +115,18 @@ describe('customMetadataToObjectTypeFilter', () => {
           },
         },
       }
-      customMetadataInstance = new InstanceElement(
-        CUSTOM_METADATA_RECORD_TYPE_NAME,
-        mockTypes.CustomObject,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: CUSTOM_METADATA_RECORD_TYPE_NAME,
-          [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
-          [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
-          [INTERNAL_ID_FIELD]: CUSTOM_METADATA_RECORD_INTERNAL_ID,
-          fields: [checkboxField, picklistField],
-        },
-      )
+      customMetadataInstance = new InstanceElement(CUSTOM_METADATA_RECORD_TYPE_NAME, mockTypes.CustomObject, {
+        [INSTANCE_FULL_NAME_FIELD]: CUSTOM_METADATA_RECORD_TYPE_NAME,
+        [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
+        [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
+        [INTERNAL_ID_FIELD]: CUSTOM_METADATA_RECORD_INTERNAL_ID,
+        fields: [checkboxField, picklistField],
+      })
       afterOnFetchElements = [customMetadataInstance, mockTypes.CustomMetadata]
       await filter.onFetch(afterOnFetchElements)
       customMetadataRecordType = (await awu(afterOnFetchElements)
         .filter(isObjectType)
-        .find(
-          async (e) => (await apiName(e)) === CUSTOM_METADATA_RECORD_TYPE_NAME,
-        )) as ObjectType
+        .find(async e => (await apiName(e)) === CUSTOM_METADATA_RECORD_TYPE_NAME)) as ObjectType
       expect(customMetadataRecordType).toBeDefined()
     })
     it('should create type with correct annotations', () => {
@@ -152,8 +146,8 @@ describe('customMetadataToObjectTypeFilter', () => {
       ])
     })
     it('should remove the original CustomObject instance', () => {
-      expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(
-        (e) => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
+      expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(e =>
+        e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
       )
     })
 
@@ -163,9 +157,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         const partialFetchFilter = filterCreator({
           config: {
             ...defaultFilterContext,
-            elementsSource: buildElementsSourceFromElements([
-              mockTypes.CustomMetadata,
-            ]),
+            elementsSource: buildElementsSourceFromElements([mockTypes.CustomMetadata]),
             fetchProfile: buildFetchProfile({
               fetchParams: {
                 optionalFeatures: { skipAliases: false },
@@ -177,10 +169,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         await partialFetchFilter.onFetch(elements)
         customMetadataRecordType = elements
           .filter(isObjectType)
-          .find(
-            (element) =>
-              apiNameSync(element) === CUSTOM_METADATA_RECORD_TYPE_NAME,
-          ) as ObjectType
+          .find(element => apiNameSync(element) === CUSTOM_METADATA_RECORD_TYPE_NAME) as ObjectType
         expect(customMetadataRecordType).toBeDefined()
       })
 
@@ -194,17 +183,15 @@ describe('customMetadataToObjectTypeFilter', () => {
         })
       })
       it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {
-        expect(Object.keys(customMetadataRecordType.fields)).toContainAllValues(
-          [
-            CHECKBOX_FIELD_NAME,
-            PICKLIST_FIELD_NAME,
-            ...Object.keys(mockTypes.CustomMetadata.fields),
-          ],
-        )
+        expect(Object.keys(customMetadataRecordType.fields)).toContainAllValues([
+          CHECKBOX_FIELD_NAME,
+          PICKLIST_FIELD_NAME,
+          ...Object.keys(mockTypes.CustomMetadata.fields),
+        ])
       })
       it('should remove the original CustomObject instance', () => {
-        expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(
-          (e) => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
+        expect(afterOnFetchElements.filter(isInstanceElement)).not.toSatisfyAny(e =>
+          e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
         )
       })
     })
@@ -250,12 +237,8 @@ describe('customMetadataToObjectTypeFilter', () => {
       expect(customObjectChange).toBeDefined()
       expect(afterPreDeployChanges).toHaveLength(1)
 
-      const deployableInstance = getChangeData(
-        afterPreDeployChanges[0],
-      ) as InstanceElement
-      expect(deployableInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'MDType__mdt',
-      )
+      const deployableInstance = getChangeData(afterPreDeployChanges[0]) as InstanceElement
+      expect(deployableInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual('MDType__mdt')
       expect(deployableInstance.value.fields).toEqual([
         // Should include the added field only
         { fullName: PICKLIST_FIELD_NAME, required: false, type: 'Picklist' },

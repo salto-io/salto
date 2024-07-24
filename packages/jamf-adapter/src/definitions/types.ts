@@ -20,7 +20,7 @@ export type ClientOptions = 'main' | 'classicApi'
 export type PaginationOptions = 'increasePageUntilEmpty'
 
 export type ReferenceContextStrategies = never
-export type CustomReferenceSerializationStrategyName = never
+export type CustomReferenceSerializationStrategyName = 'idAndNameObject'
 export type CustomIndexField = CustomReferenceSerializationStrategyName
 
 export type Options = definitions.APIDefinitionsOptions & {

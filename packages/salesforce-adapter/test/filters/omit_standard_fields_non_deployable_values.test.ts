@@ -50,9 +50,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
             refType: Types.primitiveDataTypes.Picklist,
             annotations: {
               apiName: STANDARD_PICKLIST_FIELD,
-              valueSet: [
-                { fullName: 'value1', default: true, label: 'value1' },
-              ],
+              valueSet: [{ fullName: 'value1', default: true, label: 'value1' }],
               referenceTo: ['Case', 'User'],
             },
           },
@@ -60,9 +58,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
             refType: Types.primitiveDataTypes.Picklist,
             annotations: {
               apiName: CUSTOM_PICKLIST_FIELD,
-              valueSet: [
-                { fullName: 'value1', default: true, label: 'value1' },
-              ],
+              valueSet: [{ fullName: 'value1', default: true, label: 'value1' }],
               referenceTo: ['Case', 'User'],
             },
           },
@@ -71,12 +67,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
             annotations: {
               apiName: STANDARD_VALUE_SET_FIELD,
               valueSetName: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  STANDARD_VALUE_SET,
-                  'instance',
-                  'TestStandardValueSet',
-                ),
+                new ElemID(SALESFORCE, STANDARD_VALUE_SET, 'instance', 'TestStandardValueSet'),
               ),
               referenceTo: ['Case', 'User'],
             },

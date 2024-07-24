@@ -985,8 +985,7 @@ const createCustomizations = ({
     requests: [
       {
         endpoint: {
-          // The search query is needed to fetch deprovisioned users
-          path: '/api/v1/users?search=id+pr',
+          path: '/api/v1/users',
         },
       },
     ],

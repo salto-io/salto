@@ -89,11 +89,7 @@ describe('deprecated config', () => {
       }
 
       const config = updateDeprecatedConfiguration(
-        new InstanceElement(
-          ElemID.CONFIG_NAME,
-          configType,
-          configWithOldOptions,
-        ),
+        new InstanceElement(ElemID.CONFIG_NAME, configType, configWithOldOptions),
       )
       expect(config?.config.value).toEqual(updatedConfig)
       expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
@@ -129,11 +125,7 @@ describe('deprecated config', () => {
       }
 
       const config = updateDeprecatedConfiguration(
-        new InstanceElement(
-          ElemID.CONFIG_NAME,
-          configType,
-          configWithOldOptions,
-        ),
+        new InstanceElement(ElemID.CONFIG_NAME, configType, configWithOldOptions),
       )
       // _.isEqual is used instead of '.toEqual' because '.toEqual'
       // will return true of objects like {a: undefined} and {}
@@ -146,16 +138,10 @@ describe('deprecated config', () => {
       configWithOldOptions.metadataTypesSkippedList = ['a', 'b']
 
       const expectedConfig = _.cloneDeep(currentConfig)
-      expectedConfig.fetch?.metadata?.exclude?.push(
-        ...[{ metadataType: 'a' }, { metadataType: 'b' }],
-      )
+      expectedConfig.fetch?.metadata?.exclude?.push(...[{ metadataType: 'a' }, { metadataType: 'b' }])
 
       const config = updateDeprecatedConfiguration(
-        new InstanceElement(
-          ElemID.CONFIG_NAME,
-          configType,
-          configWithOldOptions,
-        ),
+        new InstanceElement(ElemID.CONFIG_NAME, configType, configWithOldOptions),
       )
       expect(config?.config.value).toEqual(expectedConfig)
       expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
@@ -163,20 +149,11 @@ describe('deprecated config', () => {
 
     it('instancesRegexSkippedList should be converted correctly', () => {
       const configWithOldOptions = _.cloneDeep(currentConfig)
-      configWithOldOptions.instancesRegexSkippedList = [
-        'a',
-        'a.b',
-        'a.b.c',
-        PACKAGES_INSTANCES_REGEX,
-      ]
+      configWithOldOptions.instancesRegexSkippedList = ['a', 'a.b', 'a.b.c', PACKAGES_INSTANCES_REGEX]
 
       const expectedConfig = _.cloneDeep(currentConfig)
       expectedConfig.fetch?.metadata?.exclude?.push(
-        ...[
-          { name: '.*a.*' },
-          { metadataType: '.*a', name: 'b.*' },
-          { metadataType: '.*a', name: 'b.c.*' },
-        ],
+        ...[{ name: '.*a.*' }, { metadataType: '.*a', name: 'b.*' }, { metadataType: '.*a', name: 'b.c.*' }],
       )
 
       _.assign(expectedConfig.fetch?.metadata, {
@@ -184,11 +161,7 @@ describe('deprecated config', () => {
       })
 
       const config = updateDeprecatedConfiguration(
-        new InstanceElement(
-          ElemID.CONFIG_NAME,
-          configType,
-          configWithOldOptions,
-        ),
+        new InstanceElement(ElemID.CONFIG_NAME, configType, configWithOldOptions),
       )
       expect(config?.config.value).toEqual(expectedConfig)
       expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)

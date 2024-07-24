@@ -30,12 +30,9 @@ const filter: LocalFilterCreator = ({ config }) => ({
     await awu(elements)
       .filter(isCustomObject)
       .filter(isObjectType)
-      .forEach((type) => {
-        Object.values(type.fields).forEach((field) => {
-          if (
-            !field.annotations[FIELD_ANNOTATIONS.CREATABLE] &&
-            !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
-          ) {
+      .forEach(type => {
+        Object.values(type.fields).forEach(field => {
+          if (!field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]) {
             field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
           }
         })

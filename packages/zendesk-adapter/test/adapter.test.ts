@@ -692,6 +692,7 @@ describe('adapter', () => {
                   brands: ['.*'],
                 },
                 useNewInfra: true,
+                useGuideNewInfra: true,
                 omitInactive: {
                   default: false,
                   customizations: {},

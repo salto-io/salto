@@ -46,7 +46,8 @@ describe('template static file', () => {
 
   const singleLineWithTemplateMarkerTemplate = createTemplateExpression({
     parts: [
-      '/hc/test\\${/test/articles/',
+      // eslint-disable-next-line no-template-curly-in-string
+      '/hc/test ${ test-articles }',
       new ReferenceExpression(article.elemID),
       // eslint-disable-next-line no-template-curly-in-string
       '/test ${hc/test/test/articles/}',
@@ -144,7 +145,7 @@ describe('template static file', () => {
       await testTemplateExpressionToStaticFile(
         singleLineWithTemplateMarkerTemplate,
         // eslint-disable-next-line no-template-curly-in-string
-        '/hc/test\\\\${/test/articles/${ zendesk.article.instance.article }/test \\${hc/test/test/articles/}${ zendesk.macro.instance.macro1 }/test}',
+        '/hc/test \\${ test-articles }${ zendesk.article.instance.article }/test \\${hc/test/test/articles/}${ zendesk.macro.instance.macro1 }/test}',
       )
     })
     it('should create static files correctly for singleLineRefAtBeginningAndEnd', async () => {

@@ -13,14 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  DetailedChange,
-  Element,
-  ElemID,
-  getChangeData,
-  isAdditionChange,
-  isRemovalChange,
-} from '@salto-io/adapter-api'
+import { DetailedChange, Element, ElemID, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -95,14 +88,16 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
         change.id.createTopLevelParentID().parent.getFullName(),
       )
       await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
-        const elemID = elemChanges[0].id
-        // If the first change is top level, it means the element was added or removed, and it will include all changes
+        const firstChange = elemChanges[0]
+        const elemID = firstChange.id
+        // If the first change is top level it will include all changes
         if (elemID.isTopLevel()) {
-          if (isRemovalChange(elemChanges[0])) {
+          if (isRemovalChange(firstChange)) {
             await removeId(elemID)
-          } else if (isAdditionChange(elemChanges[0])) {
-            await state.set(getChangeData(elemChanges[0]))
+          } else {
+            await state.set(getChangeData(firstChange))
           }
+
           return
         }
 

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Change, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { definitions as definitionUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { defaultDeployWithStatus, deployChanges } from '../deployment'
+import { defaultDeployWithStatus, deployChanges } from '../deprecated_deployment'
 
 const { queryWithDefault } = definitionUtils
 

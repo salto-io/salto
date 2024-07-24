@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { JIRA } from '../constants'
 import { createScriptRunnerConnection } from './script_runner_connection'
-import JiraClient from './client'
+import JiraClient, { DELAY_PER_REQUEST_MS, USE_BOTTLENECK } from './client'
 import { ScriptRunnerCredentials } from '../auth'
 
 const log = logger(module)
@@ -52,6 +52,8 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      delayPerRequestMS: DELAY_PER_REQUEST_MS,
+      useBottleneck: USE_BOTTLENECK,
       retry: DEFAULT_RETRY_OPTS,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })

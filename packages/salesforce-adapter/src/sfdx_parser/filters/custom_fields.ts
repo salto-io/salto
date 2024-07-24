@@ -17,13 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
-import {
-  ElemID,
-  InstanceElement,
-  isObjectType,
-  ReadOnlyElementsSource,
-  Values,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, isObjectType, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
 import { readTextFile } from '@salto-io/file'
 import { CUSTOM_OBJECT, FIELD_ANNOTATIONS, SALESFORCE } from '../../constants'
 import { isInstanceOfType } from '../../filters/utils'
@@ -53,16 +47,14 @@ const getFieldsOfCustomObject = async (
   // a folder with the same name as the object. but the fields must be under the structure
   // as described above
   // const [/* pkgName */, /* appName */, /* typeFolder */, objectName] = fileName.split(path.sep)
-  const fieldFileNames = sourceFileNames.filter((fileName) => {
+  const fieldFileNames = sourceFileNames.filter(fileName => {
     const match = fileName.match(FIELD_FILE_NAME_REGEXP)
     return match?.groups?.object === customObjectName
   })
 
   return awu(fieldFileNames)
-    .map(async (fileName) => {
-      const fileContent = await readTextFile.notFoundAsUndefined(
-        path.join(packageDir, fileName),
-      )
+    .map(async fileName => {
+      const fileContent = await readTextFile.notFoundAsUndefined(path.join(packageDir, fileName))
       if (fileContent === undefined) {
         // Should never happen
         log.warn('skipping %s because we could not get its content', fileName)
@@ -79,11 +71,9 @@ const addFieldAccessAnnotations = async (
   fields: Values[],
   elementsSource: ReadOnlyElementsSource,
 ): Promise<Values[]> => {
-  const elem = await elementsSource.get(
-    new ElemID(SALESFORCE, customObjectName),
-  )
+  const elem = await elementsSource.get(new ElemID(SALESFORCE, customObjectName))
   const fieldAnnotations = isObjectType(elem)
-    ? _.mapValues(elem.fields, (fieldFromElem) =>
+    ? _.mapValues(elem.fields, fieldFromElem =>
         _.pick(fieldFromElem.annotations, [
           FIELD_ANNOTATIONS.CREATABLE,
           FIELD_ANNOTATIONS.UPDATEABLE,
@@ -91,7 +81,7 @@ const addFieldAccessAnnotations = async (
         ]),
       )
     : {}
-  return fields.map((field) => ({
+  return fields.map(field => ({
     ...field,
     ...(fieldAnnotations[field.fullName] ?? {
       [FIELD_ANNOTATIONS.CREATABLE]: true,
@@ -103,29 +93,24 @@ const addFieldAccessAnnotations = async (
 
 const filterCreator: FilesFilterCreator = ({ files, config }) => ({
   name: 'sfdxCustomFieldsFilter',
-  onFetch: async (elements) => {
-    const customObjects = (await awu(elements)
-      .filter(isInstanceOfType(CUSTOM_OBJECT))
-      .keyBy(apiName)) as Record<string, InstanceElement>
+  onFetch: async elements => {
+    const customObjects = (await awu(elements).filter(isInstanceOfType(CUSTOM_OBJECT)).keyBy(apiName)) as Record<
+      string,
+      InstanceElement
+    >
 
-    await awu(Object.entries(customObjects)).forEach(
-      async ([customObjectName, customObjectInstance]) => {
-        const fields = await getFieldsOfCustomObject(
-          customObjectName,
-          files.baseDirName,
-          files.sourceFileNames,
-        )
-        // An issue that is specific to custom fields - because we don't have the soap API
-        // to tell us about the field's access, we get all fields as if we have no access to them
-        // in order to work around this issue, we try to take the values from the existing fields
-        // annotations (from the element source), and assume all new fields have full access
-        customObjectInstance.value.fields = await addFieldAccessAnnotations(
-          customObjectName,
-          fields,
-          config.elementsSource,
-        )
-      },
-    )
+    await awu(Object.entries(customObjects)).forEach(async ([customObjectName, customObjectInstance]) => {
+      const fields = await getFieldsOfCustomObject(customObjectName, files.baseDirName, files.sourceFileNames)
+      // An issue that is specific to custom fields - because we don't have the soap API
+      // to tell us about the field's access, we get all fields as if we have no access to them
+      // in order to work around this issue, we try to take the values from the existing fields
+      // annotations (from the element source), and assume all new fields have full access
+      customObjectInstance.value.fields = await addFieldAccessAnnotations(
+        customObjectName,
+        fields,
+        config.elementsSource,
+      )
+    })
 
     // TODO: merge system fields into the custom object as well, otherwise we are missing
     // references in layouts and this can cause conflicts

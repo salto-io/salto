@@ -35,12 +35,10 @@ const filterCreator: LocalFilterCreator = () => ({
    */
   onFetch: async (elements: Element[]) => {
     const canvasType = findObjectType(elements, CANVAS_METADATA_TYPE_ID)
-    const initMethods = canvasType
-      ? canvasType.fields[SAML_INIT_METHOD_FIELD_NAME]
-      : undefined
+    const initMethods = canvasType ? canvasType.fields[SAML_INIT_METHOD_FIELD_NAME] : undefined
     const values = initMethods ? getRestriction(initMethods).values : undefined
 
-    wu(findInstances(elements, CANVAS_METADATA_TYPE_ID)).forEach((canvas) => {
+    wu(findInstances(elements, CANVAS_METADATA_TYPE_ID)).forEach(canvas => {
       const saml = canvas.value[SAML_INIT_METHOD_FIELD_NAME]
       if (saml && values && !values.includes(saml)) {
         canvas.value[SAML_INIT_METHOD_FIELD_NAME] = 'None'

@@ -20,7 +20,7 @@ describe('client_config', () => {
   describe('createClientConfigType', () => {
     it('should return default type when no custom buckets were added', async () => {
       const type = createClientConfigType({ adapter: 'myAdapter' })
-      expect(Object.keys(type.fields)).toHaveLength(5)
+      expect(Object.keys(type.fields)).toHaveLength(7)
       expect(type.fields.rateLimit).toBeDefined()
       expect(type.fields.retry).toBeDefined()
       expect(type.fields.pageSize).toBeDefined()
@@ -36,7 +36,7 @@ describe('client_config', () => {
         a: number
         b: number
       }>({ adapter: 'myAdapter', bucketNames: ['a', 'b'] })
-      expect(Object.keys(type.fields)).toHaveLength(5)
+      expect(Object.keys(type.fields)).toHaveLength(7)
       expect(type.fields.rateLimit).toBeDefined()
       expect(type.fields.retry).toBeDefined()
       expect(type.fields.pageSize).toBeDefined()
@@ -63,7 +63,7 @@ describe('client_config', () => {
             },
           },
         })
-        expect(Object.keys(type.fields)).toHaveLength(7)
+        expect(Object.keys(type.fields)).toHaveLength(9)
         expect(type.fields.myField).toBeDefined()
         const myFields = type.fields.myField.getTypeSync()
         expect(myFields).toBe(BuiltinTypes.BOOLEAN)
@@ -83,7 +83,7 @@ describe('client_config', () => {
             myField: { refType: BuiltinTypes.BOOLEAN },
           },
         })
-        expect(Object.keys(type.fields)).toHaveLength(5)
+        expect(Object.keys(type.fields)).toHaveLength(7)
         const rateLimitType = (await type.fields.rateLimit.getType()) as ObjectType
         expect(rateLimitType.fields.myField).toBeDefined()
       })

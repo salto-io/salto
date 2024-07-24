@@ -15,32 +15,14 @@
  */
 import _ from 'lodash'
 import Joi from 'joi'
-import {
-  Change,
-  InstanceElement,
-  Element,
-  getChangeData,
-  isInstanceElement,
-  Values,
-  isModificationChange,
-  ModificationChange,
-  isObjectType,
-  CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import {
-  APPLICATION_TYPE_NAME,
-  INACTIVE_STATUS,
-  ORG_SETTING_TYPE_NAME,
-  CUSTOM_NAME_FIELD,
-  SAML_2_0_APP,
-} from '../constants'
+import { APPLICATION_TYPE_NAME, ORG_SETTING_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
+import { isCustomApp } from '../definitions/fetch/types/application'
 
 const log = logger(module)
-
-const AUTO_LOGIN_APP = 'AUTO_LOGIN'
 
 type Application = {
   id: string
@@ -59,23 +41,11 @@ export const isAppResponse = createSchemeGuard<Application>(
   'Received an invalid application response',
 )
 
-export const isCustomApp = (value: Values, subdomain: string): boolean =>
-  [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) &&
-  value.name !== undefined &&
-  // custom app names starts with subdomain and '_'
-  _.startsWith(value.name, `${subdomain}_`)
-
-export const isInactiveCustomAppChange = (change: ModificationChange<InstanceElement>): boolean =>
-  change.data.before.value.status === INACTIVE_STATUS &&
-  change.data.after.value.status === INACTIVE_STATUS &&
-  // customName field only exist in custom applications
-  getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
-
 /**
- * Application type is deployed separately to update application's configuration, status and application's policies
+ * Handle custom apps and set deployment annotations for `features` field.
  */
 const filterCreator: FilterCreator = () => ({
-  name: 'appDeploymentFilter',
+  name: 'appFetchFilter',
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
     const appInstances = instances.filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
@@ -84,11 +54,10 @@ const filterCreator: FilterCreator = () => ({
     const subdomain = orgInstance?.value?.subdomain
     if (!_.isString(subdomain)) {
       log.error('Could not create customName field for custom apps because subdomain was missing')
-      return
     }
     appInstances.forEach(app => {
-      // create customName field for non custom apps and delete name field as its value is not multienv
-      if (isCustomApp(app.value, subdomain)) {
+      // create customName field for non-custom apps and delete name field as its value is not multienv
+      if (_.isString(subdomain) && isCustomApp(app.value, subdomain)) {
         app.value.customName = app.value.name
         delete app.value.name
       }
@@ -98,26 +67,13 @@ const filterCreator: FilterCreator = () => ({
       }
     })
 
-    // Set deployment annotaitons for `features` field which cannot be managed through the API
+    // Set deployment annotations for `features` field which cannot be managed through the API
     const appType = elements.filter(isObjectType).find(type => type.elemID.name === APPLICATION_TYPE_NAME)
     if (appType?.fields.features !== undefined) {
       appType.fields.features.annotations[CORE_ANNOTATIONS.CREATABLE] = false
       appType.fields.features.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
       appType.fields.features.annotations[CORE_ANNOTATIONS.DELETABLE] = false
     }
-  },
-  preDeploy: async (changes: Change<InstanceElement>[]) => {
-    changes
-      .filter(isModificationChange)
-      .map(getChangeData)
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-      .forEach(instance => {
-        const { customName } = instance.value
-        if (customName !== undefined) {
-          instance.value.name = customName
-        }
-      })
   },
 })
 

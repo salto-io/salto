@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createAdapter, credentials, filters, client } from '@salto-io/adapter-components'
+import { createAdapter, credentials, filters } from '@salto-io/adapter-components'
 import { Credentials, credentialsType } from './auth'
 import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
@@ -59,7 +59,5 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       get: 5,
       deploy: 5,
     },
-    maxRequestsPerMinute: client.RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-    retry: client.DEFAULT_RETRY_OPTS,
   },
 })

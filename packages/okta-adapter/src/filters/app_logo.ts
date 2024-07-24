@@ -34,7 +34,7 @@ import {
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
 import { createFileType, deployLogo, getLogo } from '../logo'
-import { deployChanges } from '../deployment'
+import { deployChanges } from '../deprecated_deployment'
 import OktaClient from '../client/client'
 
 const log = logger(module)

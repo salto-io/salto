@@ -18,10 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
 import { getInstanceAlias } from './utils'
-import {
-  isMetadataInstanceElement,
-  MetadataInstanceElement,
-} from '../transformers/transformer'
+import { isMetadataInstanceElement, MetadataInstanceElement } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -35,7 +32,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     }
     await awu(elements)
       .filter(isMetadataInstanceElement)
-      .forEach(async (instance) => {
+      .forEach(async instance => {
         instance.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(
           instance as MetadataInstanceElement,
           config.fetchProfile.isFeatureEnabled('useLabelAsAlias'),

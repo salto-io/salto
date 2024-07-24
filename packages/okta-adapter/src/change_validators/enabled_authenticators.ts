@@ -27,7 +27,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { AUTHENTICATOR_TYPE_NAME, MFA_POLICY_TYPE_NAME } from '../constants'
-import { isDeactivation } from '../deployment'
+import { isDeactivation } from '../deprecated_deployment'
 
 const log = logger(module)
 

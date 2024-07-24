@@ -23,6 +23,7 @@ import {
   Change,
   getChangeData,
   StaticFile,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
@@ -512,7 +513,7 @@ describe('multi env source', () => {
       const removal = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
       const addition = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
       const envObjectRemoval = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
-      const modificaton = {
+      const modification = {
         action: 'modify',
         data: { before: envFragment, after: newEnvFragment },
       } as Change<ObjectType>
@@ -523,7 +524,7 @@ describe('multi env source', () => {
       })
       const primarySourceName = 'env1'
       const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject], {}, undefined, undefined, {
-        changes: [envObjectRemoval, modificaton],
+        changes: [envObjectRemoval, modification],
         cacheValid: true,
       })
       const multiEnvSourceWithMockSources = multiEnvSource(
@@ -566,6 +567,93 @@ describe('multi env source', () => {
         _.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName()).map(dc => _.omit(dc, ['path', 'id'])),
       )
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
+    })
+    it('should split base element modifications', async () => {
+      const envObjectMeta = envObject.clone()
+      envObjectMeta.metaType = new TypeReference(new ElemID('salto', 'meta'))
+      const { field } = envObject.fields
+      const fieldNumber = field.clone()
+      fieldNumber.refType = new TypeReference(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER)
+
+      const changes: DetailedChange[] = [
+        {
+          action: 'modify',
+          data: {
+            before: envObject,
+            after: envObjectMeta,
+          },
+          id: envObject.elemID,
+          elemIDs: {
+            before: envObject.elemID,
+            after: envObjectMeta.elemID,
+          },
+          path: envObject.path,
+        },
+        {
+          action: 'modify',
+          data: {
+            before: envObject,
+            after: envObjectMeta,
+          },
+          id: envObject.elemID,
+          elemIDs: {
+            before: envObject.elemID,
+            after: envObjectMeta.elemID,
+          },
+          path: envObject.path,
+        },
+        {
+          action: 'modify',
+          data: {
+            before: field,
+            after: fieldNumber,
+          },
+          id: field.elemID,
+          elemIDs: {
+            before: field.elemID,
+            after: fieldNumber.elemID,
+          },
+          path: field.path,
+        },
+      ]
+      await source.updateNaclFiles(activePrefix, changes)
+      expect(envSource.updateNaclFiles).toHaveBeenCalledWith([
+        {
+          action: 'remove',
+          data: { before: envObject },
+          id: envObject.elemID,
+          elemIDs: { before: envObject.elemID },
+          path: envObject.path,
+        },
+        {
+          action: 'add',
+          data: { after: envObjectMeta },
+          id: envObject.elemID,
+          elemIDs: { after: envObjectMeta.elemID },
+          path: envObject.path,
+        },
+        {
+          action: 'add',
+          data: { after: envObjectMeta },
+          id: envObject.elemID,
+          elemIDs: { after: envObjectMeta.elemID },
+          path: envObject.path,
+        },
+        {
+          action: 'remove',
+          data: { before: field },
+          id: field.elemID,
+          elemIDs: { before: field.elemID },
+          path: field.path,
+        },
+        {
+          action: 'add',
+          data: { after: fieldNumber },
+          id: fieldNumber.elemID,
+          elemIDs: { after: fieldNumber.elemID },
+          path: field.path,
+        },
+      ])
     })
   })
   describe('flush', () => {
@@ -656,7 +744,7 @@ describe('multi env source', () => {
     })
   })
   describe('listNaclFiles', () => {
-    it('shoud list all Nacl files', async () => {
+    it('should list all Nacl files', async () => {
       const naclFiles = await source.listNaclFiles(activePrefix)
       expect(naclFiles).toHaveLength(4)
       await expectToContainAllItems(naclFiles, [

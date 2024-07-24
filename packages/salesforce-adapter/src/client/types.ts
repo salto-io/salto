@@ -25,8 +25,7 @@ const RELATIONSHIP_FIELD_NAMES: string[] = [
   FIELD_TYPE_NAMES.HIERARCHY,
 ]
 
-const isRelationshipFieldName = (fieldName: string): boolean =>
-  RELATIONSHIP_FIELD_NAMES.includes(fieldName)
+const isRelationshipFieldName = (fieldName: string): boolean => RELATIONSHIP_FIELD_NAMES.includes(fieldName)
 
 export type JSONBool = boolean | 'true' | 'false'
 
@@ -201,8 +200,7 @@ export class CustomField implements MetadataInfo {
   ) {
     this.type = type
     if (metadataRelationshipControllingField !== undefined) {
-      this.metadataRelationshipControllingField =
-        metadataRelationshipControllingField
+      this.metadataRelationshipControllingField = metadataRelationshipControllingField
     }
     if (formula) {
       this.formula = formula
@@ -228,10 +226,7 @@ export class CustomField implements MetadataInfo {
     }
 
     // For Picklist we save the default value in defaultVal but Metadata requires it at Value level
-    if (
-      type === FIELD_TYPE_NAMES.PICKLIST ||
-      type === FIELD_TYPE_NAMES.MULTIPICKLIST
-    ) {
+    if (type === FIELD_TYPE_NAMES.PICKLIST || type === FIELD_TYPE_NAMES.MULTIPICKLIST) {
       if ((values && !_.isEmpty(values)) || valueSetName) {
         if (values && !_.isEmpty(values)) {
           this.valueSet = {
@@ -239,14 +234,7 @@ export class CustomField implements MetadataInfo {
             valueSetDefinition: {
               ...(picklistSorted ? { sorted: true } : {}),
               value: values.map(
-                (val) =>
-                  new CustomPicklistValue(
-                    val.fullName,
-                    val.default,
-                    val.isActive ?? true,
-                    val.label,
-                    val.color,
-                  ),
+                val => new CustomPicklistValue(val.fullName, val.default, val.isActive ?? true, val.label, val.color),
               ),
             },
           }

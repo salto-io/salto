@@ -1,0 +1,15 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/apps/app-fakeid1/policies/enrollmentpolicy-fakeid2",
+    "method": "PUT",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "48",
+      "x-rate-limit-reset": "1721205214"
+    }
+  }
+]

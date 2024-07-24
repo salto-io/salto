@@ -22,9 +22,12 @@ import {
   ElemID,
   getChangeData,
   DetailedChange,
+  AdditionChange,
+  ModificationChange,
   Change,
   ChangeDataType,
   StaticFile,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
@@ -343,6 +346,46 @@ const buildMultiEnvSource = (
     return naclFile ? { ...naclFile, filename } : undefined
   }
 
+  const additionFromModificationChange = <T>(
+    change: DetailedChange<T> & ModificationChange<T>,
+  ): DetailedChange<T> & AdditionChange<T> => ({
+    action: 'add',
+    data: { after: change.data.after },
+    id: change.id,
+    elemIDs: change.elemIDs?.after ? { after: change.elemIDs.after } : undefined,
+    path: change.path,
+  })
+
+  const removalChangeFromModificationChanges = <T>(
+    changes: (DetailedChange<T> & ModificationChange<T>)[],
+  ): DetailedChange<T>[] =>
+    changes.length > 0
+      ? [
+          {
+            action: 'remove',
+            data: { before: changes[0].data.before },
+            id: changes[0].id,
+            elemIDs: { before: changes[0].id },
+            path: changes[0].path,
+          },
+        ]
+      : []
+
+  // The update NaCl file logic doesn't know how to handle modifications that span multiple files,
+  // so we split them into a removal and additions.
+  // For this to work for modifications of elements spread across multiple files, this relies on the
+  // fact that we receive a separate modification for the part of the element in each file.
+  const normalizeChanges = (changes: DetailedChange[]): DetailedChange[] =>
+    _(changes)
+      .groupBy(change => change.id.getFullName())
+      .values()
+      .flatMap(elemChanges =>
+        elemChanges[0].id.isBaseID() && elemChanges.every(isModificationChange)
+          ? removalChangeFromModificationChanges(elemChanges).concat(elemChanges.map(additionFromModificationChange))
+          : elemChanges,
+      )
+      .value()
+
   const applyRoutedChanges = async (routedChanges: RoutedChanges): Promise<EnvsChanges> => ({
     ...(await resolveValues({
       [commonSourceName]: commonSource().updateNaclFiles(routedChanges.commonSource ?? []),
@@ -355,7 +398,8 @@ const buildMultiEnvSource = (
     changes: DetailedChange[],
     mode: RoutingMode = 'default',
   ): Promise<EnvsChanges> => {
-    const routedChanges = await routeChanges(changes, env, commonSource(), envSources(), mode)
+    const normalizedChanges = normalizeChanges(changes)
+    const routedChanges = await routeChanges(normalizedChanges, env, commonSource(), envSources(), mode)
     const elementChanges = await applyRoutedChanges(routedChanges)
     const buildRes = await buildMultiEnvState({ envChanges: elementChanges })
     state = buildRes.state

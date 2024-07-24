@@ -18,6 +18,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { EVERYONE_USER_TYPE } from '../../constants'
+import { transformGuideItem, transformSectionItem } from './transforms'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -1342,20 +1343,488 @@ const createCustomizations = (): Record<
       },
     },
   },
+
+  category: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v2/help_center/categories',
+          queryArgs: { include: 'translations' },
+          client: 'guide',
+          params: {
+            brand: { id: '{brandId}' },
+          },
+        },
+        transformation: { root: 'categories', adjust: transformGuideItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      context: {
+        dependsOn: {
+          brandId: {
+            parentTypeName: 'brand',
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'brand', isReference: true }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }, { fieldName: 'brand', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        position: { hide: true },
+        sections: { fieldType: 'list<section>' },
+        html_url: { omit: true },
+        translations: {
+          standalone: {
+            typeName: 'category_translation',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+
+  category_translation: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+        brand: { fieldType: 'number' },
+        created_by_id: { fieldType: 'unknown' },
+        updated_by_id: { fieldType: 'unknown' },
+        html_url: { omit: true },
+        source_id: { omit: true },
+        source_type: { omit: true },
+      },
+    },
+  },
+
+  section_translation: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+        brand: { fieldType: 'number' },
+        created_by_id: { fieldType: 'unknown' },
+        updated_by_id: { fieldType: 'unknown' },
+        html_url: { omit: true },
+        source_id: { omit: true },
+        source_type: { omit: true },
+      },
+    },
+  },
+
+  section: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v2/help_center/sections',
+          queryArgs: { include: 'translations' },
+          client: 'guide',
+          params: {
+            brand: { id: '{brandId}' },
+          },
+        },
+        transformation: { root: 'sections', adjust: transformSectionItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      context: {
+        dependsOn: {
+          brandId: {
+            parentTypeName: 'brand',
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'direct_parent_id', isReference: true }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }, { fieldName: 'direct_parent_id', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        // directParent and parentType are created to avoid collisions
+        direct_parent_id: { hide: true },
+        direct_parent_type: { hide: true, fieldType: 'string' },
+        position: { hide: true },
+        parent_section_id: { fieldType: 'number' },
+        sections: { fieldType: 'list<section>' },
+        articles: { fieldType: 'list<article>' },
+        html_url: { omit: true },
+        translations: {
+          // extract each item in the holidays field to its own instance
+          standalone: {
+            typeName: 'section_translation',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+
+  article: {
+    requests: [
+      {
+        // we are doing this for better parallelization of requests on large accounts
+        // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
+        endpoint: {
+          path: '/api/v2/help_center/categories/{parent.id}/articles',
+          queryArgs: { include: 'translations', sort_by: 'updated_at' },
+          client: 'guide',
+          params: {
+            brand: { id: '{parent.brand}' },
+          },
+        },
+        transformation: { root: 'articles', adjust: transformGuideItem },
+        context: {
+          lookFor: 'category.brand',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      context: {
+        dependsOn: {
+          parent: { parentTypeName: 'category', transformation: { pick: ['id', 'brand'] } },
+        },
+      },
+      recurseInto: {
+        attachments: {
+          typeName: 'article_attachment',
+          context: { args: { parent: { pick: ['id', 'brand'] } } },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }],
+        },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }, { fieldName: 'section_id', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        position: { hide: true },
+        author_id: { fieldType: 'unknown' },
+        vote_sum: { omit: true },
+        vote_count: { omit: true },
+        edited_at: { omit: true },
+        name: { omit: true },
+        html_url: { omit: true },
+        attachments: {
+          standalone: {
+            typeName: 'article_attachment',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+        translations: {
+          standalone: {
+            typeName: 'article_translation',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+
+  // currently articles do not share attachments, if this changes the attachment code should be reviewed!
+  article_attachment: {
+    requests: [
+      {
+        // we are doing this for better parallelization of requests on large accounts
+        // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
+        endpoint: {
+          path: '/api/v2/help_center/articles/{parent.id}/attachments',
+          client: 'guide',
+          params: {
+            brand: { id: '{parent.brand}' },
+          },
+        },
+        transformation: { root: 'article_attachments', adjust: transformGuideItem },
+      },
+    ],
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'file_name' }, { fieldName: 'inline' }],
+          extendsParent: true,
+        },
+        path: { pathParts: [{ parts: [{ fieldName: 'file_name' }, { fieldName: 'inline' }], extendsParent: true }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      ignoreDefaultFieldCustomizations: true,
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        content_url: { hide: true, fieldType: 'string' },
+        size: { hide: true, fieldType: 'number' },
+        relative_path: { hide: true, fieldType: 'string' },
+        content: { fieldType: 'string' },
+        hash: { hide: true, fieldType: 'string' },
+        display_file_name: { omit: true },
+        article_id: { omit: true },
+        created_at: { hide: true },
+        updated_at: { hide: true },
+        url: { omit: true },
+        article_attachments: { fieldType: 'List<article_attachment>' },
+      },
+    },
+  },
+
+  article_translation: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true, extendsParent: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        brand: { fieldType: 'number' },
+        created_by_id: { fieldType: 'unknown' },
+        updated_by_id: { fieldType: 'unknown' },
+        html_url: { omit: true },
+        source_id: { omit: true },
+        source_type: { omit: true },
+      },
+    },
+  },
+
+  theme: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v2/guide/theming/themes',
+        },
+        transformation: { root: 'themes', adjust: transformGuideItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'brand_id', isReference: true }, { fieldName: 'name' }],
+        },
+        path: { pathParts: [{ parts: [{ fieldName: 'brand_id', isReference: true }, { fieldName: 'name' }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'string' },
+        live: { hide: true, fieldType: 'boolean' },
+        author: { hide: true, fieldType: 'string' },
+        version: { hide: true, fieldType: 'string' },
+        root: { fieldType: 'theme_folder' },
+      },
+    },
+  },
+
+  theme_file: {
+    element: {
+      fieldCustomizations: {
+        filename: { fieldType: 'string' },
+        content: { fieldType: 'unknown' },
+      },
+    },
+  },
+
+  theme_folder: {
+    element: {
+      fieldCustomizations: {
+        files: { fieldType: 'map<theme_file>' },
+        folders: { fieldType: 'map<theme_folder>' },
+      },
+    },
+  },
+
+  theme_settings: {
+    element: {
+      fieldCustomizations: {
+        brand: { fieldType: 'number' },
+        liveTheme: { fieldType: 'string' },
+      },
+    },
+  },
+
+  guide_language_settings: {
+    requests: [
+      {
+        endpoint: {
+          path: '/hc/api/internal/help_center_translations',
+          client: 'guide',
+          params: {
+            brand: { id: '{brandId}' },
+          },
+        },
+        transformation: { root: '.', adjust: transformGuideItem },
+      },
+    ],
+    resource: {
+      serviceIDFields: [],
+      directFetch: true,
+      context: {
+        dependsOn: {
+          brandId: {
+            parentTypeName: 'brand',
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'locale' }] },
+        path: {
+          pathParts: [
+            { parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'locale' }, { fieldName: 'locale' }] },
+          ],
+        },
+        // serviceUrl is created in help_center_service_url filter
+      },
+    },
+  },
+
+  guide_settings: {
+    requests: [
+      {
+        endpoint: {
+          path: '/hc/api/internal/general_settings',
+          client: 'guide',
+          params: {
+            brand: { id: '{brandId}' },
+          },
+        },
+        transformation: { root: '.', adjust: transformGuideItem },
+      },
+    ],
+    resource: {
+      serviceIDFields: [],
+      directFetch: true,
+      context: {
+        dependsOn: {
+          brandId: {
+            parentTypeName: 'brand',
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'brand', isReference: true }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'brand', isReference: true }] }] },
+        // serviceUrl is created in help_center_service_url filter
+      },
+      fieldCustomizations: {
+        default_locale: { fieldType: 'string' },
+      },
+    },
+  },
+
+  guide_settings__help_center: {
+    element: {
+      fieldCustomizations: {
+        feature_restrictions: { omit: true }, // omitted as it does not appear in the http request
+      },
+    },
+  },
+
+  guide_settings__help_center__settings: {
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
+        account_id: { omit: true },
+        help_center_id: { omit: true },
+        created_at: { omit: true },
+        updated_at: { omit: true },
+        draft: { omit: true },
+        kind: { omit: true },
+      },
+    },
+  },
+
+  guide_settings__help_center__text_filter: {
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
+        account_id: { omit: true },
+        help_center_id: { omit: true },
+        created_at: { omit: true },
+        updated_at: { omit: true },
+      },
+    },
+  },
 })
 
 export const createFetchDefinitions = (
   _fetchConfig: ZendeskConfig,
-  typesToOmit: string[],
-): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => ({
-  instances: {
-    default: {
-      resource: { serviceIDFields: ['id'] },
-      element: {
-        topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },
-        fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
-      },
-    },
-    customizations: _.omit(createCustomizations(), typesToOmit),
+  {
+    typesToOmit,
+    typesToPick,
+  }: {
+    typesToOmit?: string[]
+    typesToPick?: string[]
   },
-})
+): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
+  const initialCustomizations = createCustomizations()
+  const withoutOmitted = typesToOmit !== undefined ? _.omit(initialCustomizations, typesToOmit) : initialCustomizations
+  const finalCustomizations = typesToPick !== undefined ? _.pick(withoutOmitted, typesToPick) : withoutOmitted
+
+  return {
+    instances: {
+      default: {
+        resource: { serviceIDFields: ['id'] },
+        element: {
+          topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },
+          fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
+        },
+      },
+      customizations: finalCustomizations,
+    },
+  }
+}

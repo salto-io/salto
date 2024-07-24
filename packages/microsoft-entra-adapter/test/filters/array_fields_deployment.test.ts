@@ -342,7 +342,7 @@ describe('deploy array fields filter', () => {
     const res = await filter.deploy(changes, { changes, groupID: 'a' })
     expect(res.deployResult.appliedChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)
-    expect(res.deployResult.errors[0].message).toEqual('Error: Failed to modify the top level instance')
+    expect(res.deployResult.errors[0].message).toEqual('Failed to modify the top level instance')
     expect(res.deployResult.errors[0].severity).toEqual('Error')
     expect(client.post).not.toHaveBeenCalled()
     expect(client.delete).not.toHaveBeenCalled()

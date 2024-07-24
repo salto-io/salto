@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployChange } from '../deployment'
+import { deployChanges, defaultDeployChange } from '../deprecated_deployment'
 
 const log = logger(module)
 

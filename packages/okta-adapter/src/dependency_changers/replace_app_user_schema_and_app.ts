@@ -27,7 +27,7 @@ import {
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
-import { isActivation } from '../deployment'
+import { isActivation } from '../deprecated_deployment'
 import { getParentApp } from '../change_validators/app_schema_with_inactive_app'
 
 const createDependencyChange = (

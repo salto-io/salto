@@ -30,19 +30,11 @@ import { isDefined } from '@salto-io/lowerdash/src/values'
 import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { ProfileInfo } from '../../src/client/types'
-import {
-  Types,
-  createInstanceElement,
-  metadataType,
-  apiName,
-} from '../../src/transformers/transformer'
+import { Types, createInstanceElement, metadataType, apiName } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
-import {
-  apiNameSync,
-  isInstanceOfTypeChangeSync,
-} from '../../src/filters/utils'
+import { apiNameSync, isInstanceOfTypeChangeSync } from '../../src/filters/utils'
 
 describe('Profile Permissions filter', () => {
   const TEST_PROFILE = 'Test Profile'
@@ -52,9 +44,7 @@ describe('Profile Permissions filter', () => {
     parent: string,
     name: string,
     annotations: Values = {},
-    refType: TypeReference = createRefToElmWithValue(
-      Types.primitiveDataTypes.Text,
-    ),
+    refType: TypeReference = createRefToElmWithValue(Types.primitiveDataTypes.Text),
   ): Record<string, FieldDefinition> => ({
     [name]: {
       refType,
@@ -76,12 +66,7 @@ describe('Profile Permissions filter', () => {
       fields: {
         ...createField(name, 'desc__c'),
         ...createField(name, 'req__c', { [CORE_ANNOTATIONS.REQUIRED]: true }),
-        ...createField(
-          name,
-          'master__c',
-          {},
-          createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
-        ),
+        ...createField(name, 'master__c', {}, createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)),
         ...createField(name, 'standard'),
       },
     })
@@ -89,17 +74,13 @@ describe('Profile Permissions filter', () => {
     objectPermissions: ProfileInfo['objectPermissions'],
     fieldPermissions: ProfileInfo['fieldPermissions'],
     fullName = 'Admin',
-  ): InstanceElement =>
-    createInstanceElement(
-      { fullName, objectPermissions, fieldPermissions },
-      mockTypes.Profile,
-    )
+  ): InstanceElement => createInstanceElement({ fullName, objectPermissions, fieldPermissions }, mockTypes.Profile)
 
   const getChangeProfilesNames = (changes: Change[]): string[] =>
     changes
       .filter(isInstanceOfTypeChangeSync(constants.PROFILE_METADATA_TYPE))
       .map(getChangeData)
-      .map((instance) => apiNameSync(instance))
+      .map(instance => apiNameSync(instance))
       .filter(isDefined)
 
   let filter: FilterWith<'preDeploy' | 'onDeploy'>
@@ -112,17 +93,12 @@ describe('Profile Permissions filter', () => {
     describe('preDeploy & onDeploy', () => {
       beforeEach(async () => {
         const objWithNewField = mockObject('Test2__c')
-        changes = [
-          toChange({ after: mockObject('Test__c') }),
-          toChange({ after: objWithNewField.fields.desc__c }),
-        ]
+        changes = [toChange({ after: mockObject('Test__c') }), toChange({ after: objWithNewField.fields.desc__c })]
         await filter.preDeploy(changes)
       })
       it('should create a change for the admin profile and remove them on onDeploy', async () => {
         expect(changes).toHaveLength(3)
-        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
-          constants.ADMIN_PROFILE,
-        ])
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([constants.ADMIN_PROFILE])
         await filter.onDeploy(changes)
         expect(getChangeProfilesNames(changes)).toBeEmpty()
       })
@@ -133,9 +109,7 @@ describe('Profile Permissions filter', () => {
         })
         it('should be a profile instance', async () => {
           expect(adminProfile).toBeInstanceOf(InstanceElement)
-          expect(await metadataType(adminProfile)).toEqual(
-            constants.PROFILE_METADATA_TYPE,
-          )
+          expect(await metadataType(adminProfile)).toEqual(constants.PROFILE_METADATA_TYPE)
           expect(await apiName(adminProfile)).toEqual(constants.ADMIN_PROFILE)
         })
         it('should have object permission for new object', () => {
@@ -209,10 +183,7 @@ describe('Profile Permissions filter', () => {
     describe('preDeploy & onDeploy', () => {
       beforeEach(() => {
         const objWithNewField = mockObject('Test2__c')
-        const updatedProfile = mockFLSProfile(
-          [presetObjectPermission],
-          [presetFieldPermission],
-        )
+        const updatedProfile = mockFLSProfile([presetObjectPermission], [presetFieldPermission])
         changes = [
           toChange({ after: mockObject('Test__c') }),
           toChange({ after: objWithNewField.fields.desc__c }),
@@ -232,10 +203,7 @@ describe('Profile Permissions filter', () => {
 
         // Make sure we remove the custom changes we've created on onDeploy (Test Profile)
         await filter.onDeploy(changes)
-        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
-          constants.ADMIN_PROFILE,
-          REMOVED_PROFILE,
-        ])
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([constants.ADMIN_PROFILE, REMOVED_PROFILE])
       })
     })
   })
@@ -266,10 +234,7 @@ describe('Profile Permissions filter', () => {
     })
     describe('preDeploy & onDeploy', () => {
       beforeEach(() => {
-        const updatedProfile = mockFLSProfile(
-          [presetObjectPermission],
-          [presetFieldPermission],
-        )
+        const updatedProfile = mockFLSProfile([presetObjectPermission], [presetFieldPermission])
         changes = [
           toChange({ before: mockFLSProfile([], []), after: updatedProfile }),
           toChange({ before: mockFLSProfile([], [], REMOVED_PROFILE) }),
@@ -278,17 +243,11 @@ describe('Profile Permissions filter', () => {
       it('should have correct changes pre & on deploy', async () => {
         await filter.preDeploy(changes)
         expect(changes).toHaveLength(2)
-        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
-          constants.ADMIN_PROFILE,
-          REMOVED_PROFILE,
-        ])
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([constants.ADMIN_PROFILE, REMOVED_PROFILE])
 
         // Make sure onDeploy does not remove Changes on FLS Profiles that were not handled in preDeploy
         await filter.onDeploy(changes)
-        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
-          constants.ADMIN_PROFILE,
-          REMOVED_PROFILE,
-        ])
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([constants.ADMIN_PROFILE, REMOVED_PROFILE])
       })
     })
   })

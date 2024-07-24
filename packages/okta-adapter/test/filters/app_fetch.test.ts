@@ -33,7 +33,7 @@ import { APPLICATION_TYPE_NAME, OKTA, ORG_SETTING_TYPE_NAME } from '../../src/co
 
 describe('appFetchFilter', () => {
   let client: OktaClient
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   const appType = new ObjectType({
     elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),

@@ -145,9 +145,8 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
         typeName,
       )
 
-    const callArgs = mergedEndpointDef.omitBody
-      ? _.pick(mergedEndpointDef, ['queryArgs', 'headers'])
-      : _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body'])
+    const allCallArgs = _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body', 'params'])
+    const callArgs = mergedEndpointDef.omitBody ? _.omit(mergedEndpointDef, 'body') : allCallArgs
 
     log.trace(
       'traversing pages for adapter %s client %s endpoint %s.%s',
@@ -205,7 +204,11 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
             mergedDef.context?.custom !== undefined
               ? mergedDef.context.custom(mergedDef.context)
               : (v: ContextParams) => v
-          const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots).map(contextFunc)
+          const contexts = computeArgCombinations(
+            contextPossibleArgs,
+            relevantArgRoots?.length === 0 ? undefined : relevantArgRoots,
+          ).map(contextFunc)
+
           return request({
             contexts,
             requestDef,

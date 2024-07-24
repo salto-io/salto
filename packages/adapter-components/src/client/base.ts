@@ -21,13 +21,13 @@ import {
   ClientPageSizeConfig,
 } from '../definitions/user/client_config'
 import { APIConnection } from './http_connection'
-import { BottleneckBuckets, createRateLimitersFromConfig } from './rate_limit'
+import { RateLimitBuckets, createRateLimitersFromConfig } from './rate_limit'
 
 export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimitConfig> {
   readonly clientName: string
   protected isLoggedIn = false
   protected readonly config?: ClientBaseConfig<TRateLimitConfig>
-  protected readonly rateLimiters: BottleneckBuckets<TRateLimitConfig>
+  protected readonly rateLimiters: RateLimitBuckets<TRateLimitConfig>
   protected apiClient?: APIConnection
   protected loginPromise?: Promise<APIConnection>
   private getPageSizeInner: number
@@ -39,6 +39,8 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
       retry: Required<ClientRetryConfig>
       rateLimit: Required<TRateLimitConfig>
       maxRequestsPerMinute: number
+      delayPerRequestMS: number
+      useBottleneck: boolean
       pageSize: Required<ClientPageSizeConfig>
     },
   ) {
@@ -48,6 +50,8 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
       rateLimit: _.defaults({}, config?.rateLimit, defaults.rateLimit),
       clientName: this.clientName,
       maxRequestsPerMinute: config?.maxRequestsPerMinute ?? defaults.maxRequestsPerMinute,
+      delayPerRequestMS: config?.delayPerRequestMS ?? defaults.delayPerRequestMS,
+      useBottleneck: config?.useBottleneck ?? defaults.useBottleneck,
     })
     this.getPageSizeInner = this.config?.pageSize?.get ?? defaults.pageSize.get
   }

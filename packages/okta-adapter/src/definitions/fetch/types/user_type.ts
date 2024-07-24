@@ -55,7 +55,7 @@ const getUserSchemaId = (value: UserType): string => {
   throw new Error('Could not find id for UserSchema value')
 }
 
-export const extractSchemaIdFromUserType: definitions.AdjustFunction<
+export const extractSchemaIdFromUserType: definitions.AdjustFunctionSingle<
   definitions.ContextParams,
   unknown,
   string

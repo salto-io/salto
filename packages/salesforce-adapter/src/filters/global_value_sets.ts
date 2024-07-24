@@ -13,14 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  Element,
-  ObjectType,
-  Field,
-  ReferenceExpression,
-  ElemID,
-  isObjectType,
-} from '@salto-io/adapter-api'
+import { Element, ObjectType, Field, ReferenceExpression, ElemID, isObjectType } from '@salto-io/adapter-api'
 import { multiIndex } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { VALUE_SET_FIELDS } from '../constants'
@@ -31,23 +24,17 @@ export const GLOBAL_VALUE_SET = 'GlobalValueSet'
 export const CUSTOM_VALUE = 'customValue'
 export const MASTER_LABEL = 'master_label'
 
-const addGlobalValueSetRefToObject = (
-  object: ObjectType,
-  gvsToRef: multiIndex.Index<[string], ElemID>,
-): void => {
-  const getValueSetName = (field: Field): string | undefined =>
-    field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+const addGlobalValueSetRefToObject = (object: ObjectType, gvsToRef: multiIndex.Index<[string], ElemID>): void => {
+  const getValueSetName = (field: Field): string | undefined => field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
 
-  Object.values(object.fields).forEach((f) => {
+  Object.values(object.fields).forEach(f => {
     const valueSetName = getValueSetName(f)
     if (valueSetName === undefined) {
       return
     }
     const valueSetId = gvsToRef.get(valueSetName)
     if (valueSetId) {
-      f.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(
-        valueSetId,
-      )
+      f.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(valueSetId)
     }
   })
 }
@@ -65,13 +52,11 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     const valueSetNameToRef = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
       filter: isInstanceOfType(GLOBAL_VALUE_SET),
-      key: async (inst) => [await apiName(inst)],
-      map: (inst) => inst.elemID,
+      key: async inst => [await apiName(inst)],
+      map: inst => inst.elemID,
     })
     const customObjects = elements.filter(isObjectType).filter(isCustomObject)
-    customObjects.forEach((object) =>
-      addGlobalValueSetRefToObject(object, valueSetNameToRef),
-    )
+    customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))
   },
 })
 

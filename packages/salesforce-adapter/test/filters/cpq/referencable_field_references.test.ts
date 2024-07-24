@@ -77,38 +77,23 @@ describe('cpqReferencableFieldReferences', () => {
         [CPQ_TARGET_OBJECT]: 'Quote',
         [CPQ_TARGET_FIELD]: 'Primary',
       })
-      const elements = [
-        instance,
-        mockTypes[CPQ_QUOTE],
-        mockTypes.Product2,
-        mockTypes.Account,
-      ]
+      const elements = [instance, mockTypes[CPQ_QUOTE], mockTypes.Product2, mockTypes.Account]
       await filter.onFetch(elements)
     })
 
     it('should add references to Case 1: Product2.ProductCode', async () => {
       const { value } = instance
-      expect(value[CPQ_FILTER_SOURCE_OBJECT].elemID).toEqual(
-        mockTypes.Product2.elemID,
-      )
-      expect(value[CPQ_FILTER_SOURCE_FIELD].elemID).toEqual(
-        mockTypes.Product2.fields.ProductCode.elemID,
-      )
+      expect(value[CPQ_FILTER_SOURCE_OBJECT].elemID).toEqual(mockTypes.Product2.elemID)
+      expect(value[CPQ_FILTER_SOURCE_FIELD].elemID).toEqual(mockTypes.Product2.fields.ProductCode.elemID)
     })
     it('should add references to Case 2: Account.Name', async () => {
       const { value } = instance
-      expect(value[CPQ_HIDDEN_SOURCE_OBJECT].elemID).toEqual(
-        mockTypes.Account.elemID,
-      )
-      expect(value[CPQ_HIDDEN_SOURCE_FIELD].elemID).toEqual(
-        mockTypes.Account.fields.Name.elemID,
-      )
+      expect(value[CPQ_HIDDEN_SOURCE_OBJECT].elemID).toEqual(mockTypes.Account.elemID)
+      expect(value[CPQ_HIDDEN_SOURCE_FIELD].elemID).toEqual(mockTypes.Account.fields.Name.elemID)
     })
     it('should add references to Case 3: SBQQ__Quote__c.SBQQ__Primary__c', async () => {
       const { value } = instance
-      expect(value[CPQ_TARGET_OBJECT].elemID).toEqual(
-        mockTypes[CPQ_QUOTE].elemID,
-      )
+      expect(value[CPQ_TARGET_OBJECT].elemID).toEqual(mockTypes[CPQ_QUOTE].elemID)
       expect(value[CPQ_TARGET_FIELD]).toEqual('Primary')
     })
   })
@@ -135,9 +120,7 @@ describe('cpqReferencableFieldReferences', () => {
     })
 
     it('should revert the references on preDeploy and enrich the original changes on onDeploy with extra properties from the applied change', async () => {
-      const originalChange = await applyFunctionToChangeData(change, (i) =>
-        i.clone(),
-      )
+      const originalChange = await applyFunctionToChangeData(change, i => i.clone())
       const afterPreDeployChanges = [change]
       await filter.preDeploy(afterPreDeployChanges)
       const afterPreDeployInstance = getChangeData(afterPreDeployChanges[0])

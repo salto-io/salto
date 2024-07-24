@@ -13,19 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  BuiltinTypes,
-  ElemID,
-  Field,
-  ObjectType,
-  toChange,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, ObjectType, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/task_or_event_fields_modifications'
-import {
-  EVENT_CUSTOM_OBJECT,
-  SALESFORCE,
-  TASK_CUSTOM_OBJECT,
-} from '../../src/constants'
+import { EVENT_CUSTOM_OBJECT, SALESFORCE, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { createCustomObjectType, createField } from '../utils'
 
 describe('Task or Event Fields Modifications Change Validator', () => {
@@ -49,9 +39,7 @@ describe('Task or Event Fields Modifications Change Validator', () => {
   })
   it('should create correct change errors', async () => {
     const errors = await changeValidator(
-      [taskField, eventField, taskFieldOfNonCustomObject].map((field) =>
-        toChange({ after: field }),
-      ),
+      [taskField, eventField, taskFieldOfNonCustomObject].map(field => toChange({ after: field })),
     )
     expect(errors).toHaveLength(2)
 
@@ -60,23 +48,15 @@ describe('Task or Event Fields Modifications Change Validator', () => {
     expect(taskFieldError).toEqual({
       elemID: taskField.elemID,
       severity: 'Error',
-      message: expect.stringContaining(
-        'Modifying a field of Task or Event is not allowed',
-      ),
-      detailedMessage:
-        expect.stringContaining(FIELD_NAME) &&
-        expect.stringContaining(TASK_CUSTOM_OBJECT),
+      message: expect.stringContaining('Modifying a field of Task or Event is not allowed'),
+      detailedMessage: expect.stringContaining(FIELD_NAME) && expect.stringContaining(TASK_CUSTOM_OBJECT),
     })
 
     expect(eventFieldError).toEqual({
       elemID: eventField.elemID,
       severity: 'Error',
-      message: expect.stringContaining(
-        'Modifying a field of Task or Event is not allowed',
-      ),
-      detailedMessage:
-        expect.stringContaining(FIELD_NAME) &&
-        expect.stringContaining(EVENT_CUSTOM_OBJECT),
+      message: expect.stringContaining('Modifying a field of Task or Event is not allowed'),
+      detailedMessage: expect.stringContaining(FIELD_NAME) && expect.stringContaining(EVENT_CUSTOM_OBJECT),
     })
   })
 })

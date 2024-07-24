@@ -41,21 +41,13 @@ import {
   CPQ_TARGET_FIELD,
   CPQ_TARGET_OBJECT,
 } from '../../constants'
-import {
-  apiName,
-  isCustomObject,
-  relativeApiName,
-} from '../../transformers/transformer'
+import { apiName, isCustomObject, relativeApiName } from '../../transformers/transformer'
 import { getNamespace } from '../utils'
 
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
 
-const REFERENCABLE_FIELD_NAMES = [
-  CPQ_FILTER_SOURCE_FIELD,
-  CPQ_HIDDEN_SOURCE_FIELD,
-  CPQ_TARGET_FIELD,
-] as const
+const REFERENCABLE_FIELD_NAMES = [CPQ_FILTER_SOURCE_FIELD, CPQ_HIDDEN_SOURCE_FIELD, CPQ_TARGET_FIELD] as const
 
 type ReferencableFieldName = (typeof REFERENCABLE_FIELD_NAMES)[number]
 
@@ -76,10 +68,7 @@ const CPQ_TO_SERVICE_API_NAME: types.ReverseRecord<ServiceToCPQApiName> = {
   [CPQ_SUBSCRIPTION]: 'Subscription',
 }
 
-const REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD: Record<
-  ReferencableFieldName,
-  string
-> = {
+const REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD: Record<ReferencableFieldName, string> = {
   [CPQ_FILTER_SOURCE_FIELD]: CPQ_FILTER_SOURCE_OBJECT,
   [CPQ_HIDDEN_SOURCE_FIELD]: CPQ_HIDDEN_SOURCE_OBJECT,
   [CPQ_TARGET_FIELD]: CPQ_TARGET_OBJECT,
@@ -89,20 +78,15 @@ const isCPQInstance = async (instance: InstanceElement): Promise<boolean> =>
   (await getNamespace(await instance.getType())) === CPQ_NAMESPACE
 
 const getCPQObjectApiName = (serviceApiName: string): string =>
-  (SERVICE_TO_CPQ_API_NAME as Record<string, string>)[serviceApiName] ??
-  serviceApiName
+  (SERVICE_TO_CPQ_API_NAME as Record<string, string>)[serviceApiName] ?? serviceApiName
 
 const setReferences = async (
   { value }: InstanceElement,
   referencableFieldName: ReferencableFieldName,
   customObjectsByApiName: Record<string, ObjectType>,
 ): Promise<void> => {
-  const controllingFieldName =
-    REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD[referencableFieldName]
-  if (
-    value[referencableFieldName] === undefined ||
-    value[controllingFieldName] === undefined
-  ) {
+  const controllingFieldName = REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD[referencableFieldName]
+  if (value[referencableFieldName] === undefined || value[controllingFieldName] === undefined) {
     return
   }
   const objectApiName = getCPQObjectApiName(value[controllingFieldName])
@@ -125,7 +109,7 @@ const setCustomFieldReferences = async (
   instance: InstanceElement,
   customObjectByApiName: Record<string, ObjectType>,
 ): Promise<void> => {
-  await awu(REFERENCABLE_FIELD_NAMES).forEach((referencableFieldName) =>
+  await awu(REFERENCABLE_FIELD_NAMES).forEach(referencableFieldName =>
     setReferences(instance, referencableFieldName, customObjectByApiName),
   )
 }
@@ -133,39 +117,24 @@ const setCustomFieldReferences = async (
 const isRelatedChange = (change: Change<InstanceElement>): boolean => {
   const instance = getChangeData(change)
   const instanceFieldNames = Object.keys(instance.value)
-  return instanceFieldNames.some((fieldName) =>
-    (REFERENCABLE_FIELD_NAMES as ReadonlyArray<string>).includes(fieldName),
-  )
+  return instanceFieldNames.some(fieldName => (REFERENCABLE_FIELD_NAMES as ReadonlyArray<string>).includes(fieldName))
 }
 
 const getServiceObjectApiName = (cpqApiName: string): string => {
   const actualCPQApiName = relativeApiName(cpqApiName)
-  return (
-    (CPQ_TO_SERVICE_API_NAME as Record<string, string>)[actualCPQApiName] ??
-    actualCPQApiName
-  )
+  return (CPQ_TO_SERVICE_API_NAME as Record<string, string>)[actualCPQApiName] ?? actualCPQApiName
 }
 
-const createDeployableInstance = (
-  instance: InstanceElement,
-): InstanceElement => {
+const createDeployableInstance = (instance: InstanceElement): InstanceElement => {
   const deployableInstance = instance.clone()
   const { value } = deployableInstance
-  REFERENCABLE_FIELD_NAMES.forEach((referencableFieldName) => {
-    const controllingFieldName =
-      REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD[referencableFieldName]
-    if (
-      value[referencableFieldName] === undefined ||
-      value[controllingFieldName] === undefined
-    ) {
+  REFERENCABLE_FIELD_NAMES.forEach(referencableFieldName => {
+    const controllingFieldName = REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD[referencableFieldName]
+    if (value[referencableFieldName] === undefined || value[controllingFieldName] === undefined) {
       return
     }
-    value[controllingFieldName] = getServiceObjectApiName(
-      value[controllingFieldName],
-    )
-    value[referencableFieldName] = getServiceObjectApiName(
-      value[referencableFieldName],
-    )
+    value[controllingFieldName] = getServiceObjectApiName(value[controllingFieldName])
+    value[referencableFieldName] = getServiceObjectApiName(value[referencableFieldName])
   })
   return deployableInstance
 }
@@ -175,80 +144,52 @@ const filter: LocalFilterCreator = () => {
   return {
     name: 'cpqReferencableFieldReferencesFilter',
     onFetch: async (elements: Element[]) => {
-      const customObjects = await awu(elements)
-        .filter(isObjectType)
-        .filter(isCustomObject)
-        .toArray()
+      const customObjects = await awu(elements).filter(isObjectType).filter(isCustomObject).toArray()
       const customObjectsByApiName = await keyByAsync(customObjects, apiName)
       await awu(elements)
         .filter(isInstanceElement)
         .filter(isCPQInstance)
-        .forEach((instance) =>
-          setCustomFieldReferences(instance, customObjectsByApiName),
-        )
+        .forEach(instance => setCustomFieldReferences(instance, customObjectsByApiName))
     },
-    preDeploy: async (changes) => {
+    preDeploy: async changes => {
       const relatedChanges = changes
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
         .filter(isRelatedChange) as Change<InstanceElement>[]
-      originalChangesByFullName = _.keyBy(relatedChanges, (c) =>
-        getChangeData(c).elemID.getFullName(),
-      )
+      originalChangesByFullName = _.keyBy(relatedChanges, c => getChangeData(c).elemID.getFullName())
       const deployableChanges = await awu(relatedChanges)
-        .map((change) =>
-          applyFunctionToChangeData(change, createDeployableInstance),
-        )
+        .map(change => applyFunctionToChangeData(change, createDeployableInstance))
         .toArray()
       _.pullAll(changes, relatedChanges)
-      deployableChanges.forEach((deployableChange) =>
-        changes.push(deployableChange),
-      )
+      deployableChanges.forEach(deployableChange => changes.push(deployableChange))
     },
-    onDeploy: async (changes) => {
-      const appliedChangesByFullName = _.keyBy(
-        changes.filter(isInstanceChange),
-        (change) => getChangeData(change).elemID.getFullName(),
+    onDeploy: async changes => {
+      const appliedChangesByFullName = _.keyBy(changes.filter(isInstanceChange), change =>
+        getChangeData(change).elemID.getFullName(),
       )
-      const appliedChangesFullNames = new Set(
-        Object.keys(appliedChangesByFullName),
-      )
-      const relatedAppliedChanges = _.pick(
-        appliedChangesByFullName,
-        Object.keys(originalChangesByFullName),
-      )
+      const appliedChangesFullNames = new Set(Object.keys(appliedChangesByFullName))
+      const relatedAppliedChanges = _.pick(appliedChangesByFullName, Object.keys(originalChangesByFullName))
       // Enrich the original changes with any extra data from the applied changes (e.g. Id, OwnerId etc...)
-      Object.entries(originalChangesByFullName).forEach(
-        ([changeApiName, originalChange]) => {
-          const appliedChange = appliedChangesByFullName[changeApiName]
-          if (appliedChange === undefined) {
-            return
-          }
-          const appliedInstanceValue = getChangeData(appliedChange).value
-          const originalInstance = getChangeData(originalChange)
-          const originalInstanceValue = originalInstance.value
-          originalInstance.value = {
-            ...originalInstanceValue,
-            ...appliedInstanceValue,
-            // Override only the value of the fields that this filter handles
-            ..._.pick(
-              originalInstanceValue,
-              _.flatten(
-                Object.entries(REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD),
-              ),
-            ),
-          }
-        },
-      )
+      Object.entries(originalChangesByFullName).forEach(([changeApiName, originalChange]) => {
+        const appliedChange = appliedChangesByFullName[changeApiName]
+        if (appliedChange === undefined) {
+          return
+        }
+        const appliedInstanceValue = getChangeData(appliedChange).value
+        const originalInstance = getChangeData(originalChange)
+        const originalInstanceValue = originalInstance.value
+        originalInstance.value = {
+          ...originalInstanceValue,
+          ...appliedInstanceValue,
+          // Override only the value of the fields that this filter handles
+          ..._.pick(originalInstanceValue, _.flatten(Object.entries(REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD))),
+        }
+      })
       // Revert the changes from preDeploy and use the original changes for the applied changes
       _.pullAll(changes, Object.values(relatedAppliedChanges))
       Object.entries(originalChangesByFullName)
-        .filter(([elemIdFullName, _originalChange]) =>
-          appliedChangesFullNames.has(elemIdFullName),
-        )
-        .forEach(([_elemIdFullName, originalChange]) =>
-          changes.push(originalChange),
-        )
+        .filter(([elemIdFullName, _originalChange]) => appliedChangesFullNames.has(elemIdFullName))
+        .forEach(([_elemIdFullName, originalChange]) => changes.push(originalChange))
     },
   }
 }

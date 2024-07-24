@@ -40,10 +40,7 @@ export const LAYOUT_ASSIGNMENTS_FIELD = 'layoutAssignments'
 const { awu, keyByAsync } = collections.asynciterable
 const { isDefined } = values
 
-const typeToRemainingFields: Record<
-  string,
-  Record<string, { default?: Value }>
-> = {
+const typeToRemainingFields: Record<string, Record<string, { default?: Value }>> = {
   [PROFILE_METADATA_TYPE]: {
     [INSTANCE_FULL_NAME_FIELD]: {},
     [LOGIN_IP_RANGES_FIELD]: { default: [] },
@@ -57,44 +54,36 @@ const isRelatedChange = async (change: Change): Promise<boolean> =>
 const fillRemainingFields = (type: string, afterValues: Values): Values => {
   const remainingFields = typeToRemainingFields[type]
   return Object.fromEntries(
-    Object.keys(remainingFields).map((fieldName) => [
+    Object.keys(remainingFields).map(fieldName => [
       fieldName,
       afterValues[fieldName] ?? remainingFields[fieldName].default,
     ]),
   )
 }
 
-const toMinifiedChange = async (
-  change: Change<InstanceElement>,
-): Promise<Change<InstanceElement>> => {
+const toMinifiedChange = async (change: Change<InstanceElement>): Promise<Change<InstanceElement>> => {
   const [before, after] = getAllChangeData(change)
   const detailedChanges = detailedCompare(before, after, {
     createFieldChanges: true,
   })
   const minifiedAfter = after.clone()
-  minifiedAfter.value = fillRemainingFields(
-    await metadataType(before),
-    after.value,
-  )
+  minifiedAfter.value = fillRemainingFields(await metadataType(before), after.value)
   const newLayoutAssignmentNames: string[] = []
-  detailedChanges
-    .filter(isAdditionOrModificationChange)
-    .forEach((detailedChange) => {
-      const changePath = getPath(before, detailedChange.id)
-      if (_.isUndefined(changePath)) {
-        return
-      }
-      if (changePath.includes(LAYOUT_ASSIGNMENTS_FIELD)) {
-        newLayoutAssignmentNames.push(changePath[changePath.length - 1])
-        return
-      }
-      const minifiedValuePath =
-        changePath.length > 2 ? changePath.slice(0, -1) : changePath
-      const afterChange = _.get(after, minifiedValuePath)
-      if (isDefined(afterChange)) {
-        _.set(minifiedAfter, minifiedValuePath, afterChange)
-      }
-    })
+  detailedChanges.filter(isAdditionOrModificationChange).forEach(detailedChange => {
+    const changePath = getPath(before, detailedChange.id)
+    if (_.isUndefined(changePath)) {
+      return
+    }
+    if (changePath.includes(LAYOUT_ASSIGNMENTS_FIELD)) {
+      newLayoutAssignmentNames.push(changePath[changePath.length - 1])
+      return
+    }
+    const minifiedValuePath = changePath.length > 2 ? changePath.slice(0, -1) : changePath
+    const afterChange = _.get(after, minifiedValuePath)
+    if (isDefined(afterChange)) {
+      _.set(minifiedAfter, minifiedValuePath, afterChange)
+    }
+  })
 
   if (newLayoutAssignmentNames.length > 0) {
     minifiedAfter.value[LAYOUT_ASSIGNMENTS_FIELD] = _.pick(
@@ -124,35 +113,31 @@ const filterCreator: LocalFilterCreator = () => {
   let originalChanges: Record<string, Change>
   return {
     name: 'minifyDeployFilter',
-    preDeploy: async (changes) => {
+    preDeploy: async changes => {
       const relatedChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
         .filter(isRelatedChange)
         .toArray()
-      originalChanges = await keyByAsync(relatedChanges, (change) =>
-        apiName(getChangeData(change)),
-      )
+      originalChanges = await keyByAsync(relatedChanges, change => apiName(getChangeData(change)))
 
       _.pullAll(changes, relatedChanges)
       changes.push(...(await Promise.all(relatedChanges.map(toMinifiedChange))))
     },
-    onDeploy: async (changes) => {
+    onDeploy: async changes => {
       const appliedChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
         .filter(isRelatedChange)
         .toArray()
       const appliedChangesApiNames = await awu(appliedChanges)
-        .map((change) => apiName(getChangeData(change)))
+        .map(change => apiName(getChangeData(change)))
         .toArray()
 
-      const appliedOriginalChanges = appliedChangesApiNames
-        .map((name) => originalChanges[name])
-        .filter(isDefined)
+      const appliedOriginalChanges = appliedChangesApiNames.map(name => originalChanges[name]).filter(isDefined)
 
       _.pullAll(changes, appliedChanges)
-      appliedOriginalChanges.forEach((change) => changes.push(change))
+      appliedOriginalChanges.forEach(change => changes.push(change))
     },
   }
 }

@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-module.exports = {
-  semi: false,
-  singleQuote: true,
-  tabWidth: 2,
-  jsxSingleQuote: true,
-}
+
+export { transform as transformGuideItem } from './guide_adjuster'
+export { transform as transformSectionItem } from './section_adjuster'

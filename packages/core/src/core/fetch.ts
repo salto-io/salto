@@ -57,6 +57,7 @@ import {
   TypeReference,
   Value,
   Values,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults,
@@ -192,6 +193,10 @@ const toChangesWithPath =
   (accountElementByFullName: (id: ElemID) => Promise<Element[]> | Element[]): ChangeTransformFunction =>
   async change => {
     const changeID: ElemID = change.change.id
+    if (isRemovalChange(change.change)) {
+      return [change]
+    }
+
     if (!changeID.isTopLevel() && change.change.action === 'add') {
       const path = findNestedElementPath(
         changeID,
@@ -202,11 +207,13 @@ const toChangesWithPath =
       )
       return path ? [_.merge({}, change, { change: { path } })] : [change]
     }
+
     const originalElements = await accountElementByFullName(changeID)
     if (originalElements.length === 0) {
       log.trace(`no original elements found for change element id ${changeID.getFullName()}`)
       return [change]
     }
+
     // Replace merged element with original elements that have a path hint
     return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
   }

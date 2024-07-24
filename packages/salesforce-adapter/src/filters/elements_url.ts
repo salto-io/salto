@@ -18,11 +18,7 @@ import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { RemoteFilterCreator } from '../filter'
 import { lightningElementsUrlRetriever } from '../elements_url_retriever/elements_url_retriever'
-import {
-  buildElementsSourceForFetch,
-  extractFlatCustomObjectFields,
-  ensureSafeFilterFetch,
-} from './utils'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields, ensureSafeFilterFetch } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -49,9 +45,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       }
 
       const referenceElements = buildElementsSourceForFetch(elements, config)
-      const urlRetriever = lightningElementsUrlRetriever(url, (id) =>
-        referenceElements.get(id),
-      )
+      const urlRetriever = lightningElementsUrlRetriever(url, id => referenceElements.get(id))
 
       if (urlRetriever === undefined) {
         log.error('Failed to get salesforce URL')
@@ -66,9 +60,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         }
       }
 
-      await awu(getRelevantElements(elements)).forEach(async (element) =>
-        updateElementUrl(element),
-      )
+      await awu(getRelevantElements(elements)).forEach(async element => updateElementUrl(element))
     },
   }),
 })

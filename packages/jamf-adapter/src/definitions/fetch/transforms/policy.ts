@@ -17,32 +17,23 @@ import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import {
   adjustCategoryObjectToCategoryId,
-  adjustScriptsObjectArrayToScriptsIds,
+  removeIdsForScriptsObjectArray,
   adjustServiceIdToTopLevel,
   adjustSiteObjectToSiteId,
+  removeSelfServiceIcon,
 } from './utils'
-
-/*
- * Remove self_service_icon from self_service object
- */
-const removeSelfServiceIcon = (value: Record<string, unknown>): void => {
-  const { self_service: selfService } = value
-  if (values.isPlainRecord(selfService)) {
-    delete selfService.self_service_icon
-  }
-}
 
 /*
  * Adjust policy instance
  */
-export const adjust: definitions.AdjustFunction = async ({ value }) => {
+export const adjust: definitions.AdjustFunctionSingle = async ({ value }) => {
   if (!values.isPlainRecord(value)) {
     throw new Error('Expected value to be a record')
   }
   ;[
     adjustCategoryObjectToCategoryId,
     adjustSiteObjectToSiteId,
-    adjustScriptsObjectArrayToScriptsIds,
+    removeIdsForScriptsObjectArray,
     adjustServiceIdToTopLevel,
     removeSelfServiceIcon,
   ].forEach(fn => fn(value))

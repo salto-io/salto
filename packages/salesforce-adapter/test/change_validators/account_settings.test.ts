@@ -15,23 +15,14 @@
  */
 
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import {
-  BuiltinTypes,
-  ElemID,
-  ObjectType,
-  ReadOnlyElementsSource,
-  toChange,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import changeValidatorCreator from '../../src/change_validators/account_settings'
 import { SALESFORCE, TYPES_PATH } from '../../src/constants'
 
 describe('Account settings validator', () => {
-  const instanceBefore = createInstanceElement(
-    { fullName: 'whatever' },
-    mockTypes.AccountSettings,
-  )
+  const instanceBefore = createInstanceElement({ fullName: 'whatever' }, mockTypes.AccountSettings)
   const changeValidator = changeValidatorCreator
 
   const ORGANIZATION_OBJECT_TYPE = new ObjectType({
@@ -45,9 +36,7 @@ describe('Account settings validator', () => {
     path: [SALESFORCE, TYPES_PATH],
   })
 
-  const mockElementsSource = (
-    defaultAccountAccess: string,
-  ): ReadOnlyElementsSource => {
+  const mockElementsSource = (defaultAccountAccess: string): ReadOnlyElementsSource => {
     const element = createInstanceElement(
       {
         fullName: 'OrganizationSettings',
@@ -84,9 +73,7 @@ describe('Account settings validator', () => {
       const change = toChange({ before: instanceBefore, after: instanceAfter })
       const errors = await changeValidator([change], elementsSource)
       expect(errors).toHaveLength(1)
-      expect(errors).toIncludeAllPartialMembers([
-        { elemID: instanceBefore.elemID },
-      ])
+      expect(errors).toIncludeAllPartialMembers([{ elemID: instanceBefore.elemID }])
     })
     it('Should pass validation if enableAccountOwnerReport does not exist', async () => {
       const instanceAfter = instanceBefore.clone()

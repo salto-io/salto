@@ -13,13 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ObjectType,
-  ElemID,
-  BuiltinTypes,
-  Element,
-  CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { makeFilter } from '../../src/filters/remove_restriction_annotations'
 import * as constants from '../../src/constants'
 import { defaultFilterContext } from '../utils'
@@ -84,22 +78,16 @@ describe('remove restriction annotations filter', () => {
     it('should not remove restriction for unrelated fields', () => {
       const testType = testElements[0] as ObjectType
       expect(testType.fields.unrelated).toBeDefined()
-      expect(testType.fields.unrelated.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.RESTRICTION,
-      )
+      expect(testType.fields.unrelated.annotations).toHaveProperty(CORE_ANNOTATIONS.RESTRICTION)
       const unrelatedType = testElements[1] as ObjectType
       expect(unrelatedType.fields.targetField).toBeDefined()
-      expect(unrelatedType.fields.targetField.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.RESTRICTION,
-      )
+      expect(unrelatedType.fields.targetField.annotations).toHaveProperty(CORE_ANNOTATIONS.RESTRICTION)
     })
 
     it('should remove annotation for related fields', () => {
       const testType = testElements[0] as ObjectType
       expect(testType.fields.targetField).toBeDefined()
-      expect(testType.fields.targetField.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.RESTRICTION,
-      )
+      expect(testType.fields.targetField.annotations).not.toHaveProperty(CORE_ANNOTATIONS.RESTRICTION)
     })
   })
 })

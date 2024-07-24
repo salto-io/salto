@@ -15,19 +15,17 @@
  */
 
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import {
   getChangeData,
-  InstanceElement,
   isAdditionChange,
+  isInstanceChange,
   isModificationChange,
   isRemovalChange,
-  ModificationChange,
   Values,
 } from '@salto-io/adapter-api'
 import { validatePlainObject } from '@salto-io/adapter-utils'
-import { AdditionalAction, ClientOptions } from './types'
+import { AdditionalAction, ClientOptions } from '../types'
 import {
   APPLICATION_TYPE_NAME,
   BRAND_TYPE_NAME,
@@ -42,52 +40,18 @@ import {
   NAME_FIELD,
   ID_FIELD,
   BRAND_THEME_TYPE_NAME,
-} from '../constants'
+} from '../../constants'
 import {
+  APP_POLICIES,
+  createDeployAppPolicyRequests,
   getSubdomainFromElementsSource,
-  isActivationChange,
-  isDeactivationChange,
   isInactiveCustomAppChange,
-} from '../deployment'
-import { isCustomApp } from '../filters/app_deployment'
-
-const { isDefined } = values
+} from './types/application'
+import { isActivationChange, isDeactivationChange } from './utils/status'
+import { isCustomApp } from '../fetch/types/application'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
-
-/**
- * Create a deploy request for setting a policy associated with an `Application`.
- */
-const createDeployAppPolicyRequest = (
-  policyName: string,
-): definitions.deploy.DeployableRequestDefinition<ClientOptions> => ({
-  condition: {
-    custom:
-      () =>
-      ({ change }) =>
-        isDefined(_.get(getChangeData(change).value, policyName)),
-  },
-  request: {
-    endpoint: {
-      path: '/api/v1/apps/{source}/policies/{target}',
-      method: 'put',
-    },
-    transformation: {
-      // Don't send any Application fields in the request body.
-      pick: [],
-    },
-    context: {
-      source: '{id}',
-      target: `{${policyName}}`,
-    },
-  },
-})
-
-const APP_POLICIES = ['accessPolicy', 'profileEnrollment']
-
-const createDeployAppPolicyRequests = (): definitions.deploy.DeployableRequestDefinition<ClientOptions>[] =>
-  APP_POLICIES.map(createDeployAppPolicyRequest)
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
   const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
@@ -210,22 +174,32 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
           modify: [
             {
+              condition: {
+                skipIfIdentical: true,
+                transformForCheck: {
+                  omit: APP_POLICIES,
+                },
+              },
               request: {
                 endpoint: {
                   path: '/api/v1/apps/{id}',
                   method: 'put',
                 },
                 transformation: {
+                  // Override the default omit so we can read omitted field in `adjust`.
+                  omit: [],
                   adjust: async ({ value, context }) => {
                     validatePlainObject(value, APPLICATION_TYPE_NAME)
+                    const name = _.get(value, CUSTOM_NAME_FIELD)
+                    if (!isModificationChange(context.change) || !isInstanceChange(context.change)) {
+                      throw new Error('Change is not a modification change')
+                    }
                     const transformed = getChangeData(
-                      deployment.transformRemovedValuesToNull(context.change as ModificationChange<InstanceElement>, [
-                        'settings',
-                      ]),
+                      deployment.transformRemovedValuesToNull(context.change, ['settings']),
                     ).value
                     return {
                       value: {
-                        [NAME_FIELD]: _.get(value, CUSTOM_NAME_FIELD),
+                        name,
                         ..._.omit(transformed, [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES]),
                       },
                     }
@@ -239,11 +213,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: '/api/v1/apps/{applicationId}',
+                  path: '/api/v1/apps/{id}',
                   method: 'delete',
-                },
-                context: {
-                  applicationId: '{id}',
                 },
               },
             },
@@ -260,14 +231,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
               request: {
                 endpoint: {
-                  path: '/api/v1/apps/{applicationId}/lifecycle/activate',
+                  path: '/api/v1/apps/{id}/lifecycle/activate',
                   method: 'post',
-                },
-                context: {
-                  applicationId: '{id}',
-                },
-                transformation: {
-                  pick: [],
                 },
               },
             },
@@ -278,21 +243,16 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 custom:
                   () =>
                   ({ change }) =>
+                    // Active apps must be deactivated before removal
                     (isRemovalChange(change) && getChangeData(change).value.status !== INACTIVE_STATUS) ||
                     isDeactivationChange(change) ||
-                    // Custom app must be activated before applying any other changes
+                    // Custom apps must be activated before applying any other changes and deactivated before removal
                     isInactiveCustomAppChange(change),
               },
               request: {
                 endpoint: {
-                  path: '/api/v1/apps/{applicationId}/lifecycle/deactivate',
+                  path: '/api/v1/apps/{id}/lifecycle/deactivate',
                   method: 'post',
-                },
-                context: {
-                  applicationId: '{id}',
-                },
-                transformation: {
-                  pick: [],
                 },
               },
             },

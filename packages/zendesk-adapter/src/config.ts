@@ -2746,6 +2746,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     },
     omitTicketStatusTicketField: false,
     useNewInfra: false,
+    useGuideNewInfra: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
@@ -3098,6 +3099,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           omitInactive: { refType: OmitInactiveType },
           omitTicketStatusTicketField: { refType: BuiltinTypes.BOOLEAN },
           useNewInfra: { refType: BuiltinTypes.BOOLEAN },
+          useGuideNewInfra: { refType: BuiltinTypes.BOOLEAN },
         },
         omitElemID: true,
       }),
@@ -3135,6 +3137,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.omitInactive.customizations`,
       `${FETCH_CONFIG}.omitTicketStatusTicketField`,
       `${FETCH_CONFIG}.useNewInfra`,
+      `${FETCH_CONFIG}.useGuideNewInfra`,
       DEPLOY_CONFIG,
       FIX_ELEMENTS_CONFIG,
     ),

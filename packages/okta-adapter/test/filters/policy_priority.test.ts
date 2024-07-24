@@ -35,7 +35,7 @@ import policyPrioritiesFilter, {
   ALL_SUPPORTED_POLICY_NAMES,
   POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE,
 } from '../../src/filters/policy_priority'
-import { OKTA, SIGN_ON_RULE_TYPE_NAME } from '../../src/constants'
+import { MFA_RULE_TYPE_NAME, OKTA, SIGN_ON_RULE_TYPE_NAME } from '../../src/constants'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import { OldOktaDefinitionsConfig } from '../../src/config'
@@ -389,7 +389,7 @@ describe('policyPrioritiesFilter', () => {
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
         expect(connection.put).toHaveBeenCalledTimes(3)
-        if (policyRuleName === SIGN_ON_RULE_TYPE_NAME) {
+        if (policyRuleName === SIGN_ON_RULE_TYPE_NAME || policyRuleName === MFA_RULE_TYPE_NAME) {
           expect(connection.put).toHaveBeenCalledWith(
             '/api/v1/policies/4/rules/1',
             {

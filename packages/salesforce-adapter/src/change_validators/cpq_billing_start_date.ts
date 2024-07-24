@@ -24,11 +24,7 @@ import { apiNameSync, isInstanceOfTypeChangeSync } from '../filters/utils'
 
 const CPQ_BILLING_START_DATE_TIME = 'blng__StartDateTime__c'
 
-const TYPES_WITH_START_DATES = [
-  'blng__InvoiceScheduler__c',
-  'blng__BalanceSnapShotScheduler__c',
-  'blng__Usage__c',
-]
+const TYPES_WITH_START_DATES = ['blng__InvoiceScheduler__c', 'blng__BalanceSnapShotScheduler__c', 'blng__Usage__c']
 
 const isStartDateInPast = (instance: InstanceElement): boolean =>
   // Note: the field value contains a timezone (e.g. '2024-06-13T16:00:00.000+0000'), so the comparison should work
@@ -46,7 +42,7 @@ const createAdditionError = (instance: InstanceElement): ChangeError => ({
     "To deploy this records, manually edit it so that the 'StartDateTime' value is later than the time you intend to deploy it.",
 })
 
-const changeValidator: ChangeValidator = async (changes) =>
+const changeValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceOfTypeChangeSync(...TYPES_WITH_START_DATES))
     .filter(isAdditionOrModificationChange)

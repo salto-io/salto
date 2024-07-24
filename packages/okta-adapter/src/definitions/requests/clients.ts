@@ -36,34 +36,52 @@ export const createClientDefinitions = (
           },
         },
         customizations: {
-          Group: {
+          '/api/v1/groups': {
             get: {
               queryArgs: { limit: '10000' }, // maximum page size allowed
             },
           },
-          Application: {
+          '/api/v1/apps': {
             get: {
               queryArgs: { limit: '200' }, // maximum page size allowed
             },
           },
-          GroupRule: {
+          '/api/v1/groups/rules': {
             get: {
               queryArgs: { limit: '200' }, // maximum page size allowed
             },
           },
-          ApplicationGroupAssignment: {
+          '/api/v1/apps/{appId}/groups': {
             get: {
               queryArgs: { limit: '200' }, // maximum page size allowed
             },
           },
-          ProfileMapping: {
+          '/api/v1/mappings': {
             get: {
               queryArgs: { limit: '200' }, // maximum page size allowed
             },
           },
-          User: {
+          '/api/v1/users': {
             get: {
-              queryArgs: { limit: '200' }, // maximum page size allowed
+              queryArgs: {
+                limit: '200', // maximum page size allowed
+                search: 'id pr', // The search query is needed to fetch deprovisioned users
+              },
+            },
+          },
+          '/api/v1/apps/{id}/lifecycle/activate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/apps/{id}/lifecycle/deactivate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/apps/{source}/policies/{target}': {
+            put: {
+              omitBody: true,
             },
           },
         },

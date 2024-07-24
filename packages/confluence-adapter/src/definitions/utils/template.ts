@@ -20,7 +20,7 @@ import { validateValue } from './generic'
 /**
  * Add space.key to a template request
  */
-export const addSpaceKey: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({
+export const addSpaceKey: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async ({
   value,
   context,
 }) => ({

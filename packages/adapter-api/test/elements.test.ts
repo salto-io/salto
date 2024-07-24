@@ -108,6 +108,22 @@ describe('Test elements.ts', () => {
     expect(primToClone.clone().path).toEqual(['testPath'])
   })
 
+  it('should set all values when assigning a primitive type', () => {
+    const primToReplace = new PrimitiveType<PrimitiveTypes>({
+      elemID: primID,
+      primitive: PrimitiveTypes.NUMBER,
+      annotationRefsOrTypes: {
+        anno: primNum,
+      },
+      annotations: {
+        anno: 3,
+      },
+      path: ['some', 'path'],
+    })
+    primToReplace.assign(primStr)
+    expect(primToReplace).toEqual(primStr)
+  })
+
   describe('when creating an Object Type', () => {
     it('should have the passed element ID', () => {
       expect(ot.elemID).toEqual(otID)
@@ -230,6 +246,20 @@ describe('Test elements.ts', () => {
       expect(newObj.path).toEqual(['a', 'b', 'c', 'd'])
     })
 
+    it('should set all values when assigning', () => {
+      const objToReplace = new ObjectType({
+        elemID: otID,
+        annotationRefsOrTypes: {
+          num_anno: primNum,
+        },
+        annotations: {
+          num_anno: 3,
+        },
+      })
+      objToReplace.assign(ot)
+      expect(objToReplace).toEqual(ot)
+    })
+
     it('should identify equal fields', () => {
       expect(isEqualElements(strField, _.cloneDeep(strField))).toBeTruthy()
     })
@@ -312,6 +342,12 @@ describe('Test elements.ts', () => {
       const otVariable = variable.clone()
       otVariable.value = 8
       expect(isEqualElements(variable, otVariable)).toBeFalsy()
+    })
+
+    it('should set all values when assigning variables', () => {
+      const variableToReplace = new Variable(variable.elemID, 'str val', ['some', 'path'])
+      variableToReplace.assign(variable)
+      expect(variableToReplace).toEqual(variable)
     })
 
     it('should identify undefined elements as equal', () => {
@@ -1169,6 +1205,16 @@ describe('Test elements.ts', () => {
         expect(innerType.elemID).toEqual(primID)
       })
     })
+
+    it('should set all values when assigning', () => {
+      const typeToReplace = new ListType(primNum)
+      typeToReplace.annotations = {
+        anno: 3,
+      }
+      typeToReplace.path = ['some', 'path']
+      typeToReplace.assign(lt)
+      expect(typeToReplace).toEqual(lt)
+    })
   })
 
   describe('MapType', () => {
@@ -1209,6 +1255,16 @@ describe('Test elements.ts', () => {
         expect(innerType.elemID).toEqual(primID)
       })
     })
+
+    it('should set all values when assigning', () => {
+      const typeToReplace = new MapType(primNum)
+      typeToReplace.annotations = {
+        anno: 3,
+      }
+      typeToReplace.path = ['some', 'path']
+      typeToReplace.assign(mt)
+      expect(typeToReplace).toEqual(mt)
+    })
   })
 
   describe('createRefToElmWithValue', () => {
@@ -1238,6 +1294,26 @@ describe('Test elements.ts', () => {
     it('should return placeholder type if type is not ObjectType', async () => {
       instance = new InstanceElement('instance', BuiltinTypes.STRING as unknown as ObjectType)
       expect(await instance.getType()).toBeInstanceOf(PlaceholderObjectType)
+    })
+
+    it('should set all values when assigning', () => {
+      const instanceToReplace = new InstanceElement(
+        instance.elemID.name,
+        instance.refType,
+        { field: 'value' },
+        ['some', 'path'],
+        { anno: 3 },
+      )
+      instanceToReplace.assign(instance)
+      expect(instanceToReplace.isEqual(instance)).toBeTruthy()
+    })
+
+    it('should throw when assigning with a different type', () => {
+      const instanceToReplace = new InstanceElement(
+        instance.elemID.name,
+        new ObjectType({ elemID: new ElemID('test', 'tmpType') }),
+      )
+      expect(() => instanceToReplace.assign(instance)).toThrow()
     })
   })
 })

@@ -6,7 +6,7 @@ orbs:
   aws-s3: circleci/aws-s3@4.0.0
   aws-cli: circleci/aws-cli@4.1.3
   coveralls: coveralls/coveralls@2.2.1
-  macos: circleci/macos@2.5.1
+  macos: circleci/macos@2.5.2
 
 environment:
   TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
@@ -43,9 +43,9 @@ commands:
       - restore_cache:
           name: Restore node modules
           keys:
-            - &node-modules-cache node-modules-v2-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
-            - node-modules-v2-{{ arch }}-{{ .Branch }}
-            - node-modules-v2-{{ arch }}-main
+            - &node-modules-cache node-modules-v2-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - node-modules-v2-{{ .Branch }}
+            - node-modules-v2-main
   
   store_node_modules:
     description: Cache store node_modules
@@ -63,9 +63,9 @@ commands:
       - restore_cache:
           name: Restore yarn cache
           keys:
-            - &yarn-cache yarn-cache-v2-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
-            - yarn-cache-v2-{{ arch }}-{{ .Branch }}
-            - yarn-cache-v2-{{ arch }}-main
+            - &yarn-cache yarn-cache-v2-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - yarn-cache-v2-{{ .Branch }}
+            - yarn-cache-v2-main
 
   store_yarn_cache:
     description: Cache store yarn cache
@@ -76,7 +76,6 @@ commands:
           when: always
           paths:
             - /mnt/ramdisk/project/.yarn/cache
-
 
   restore_turbo_cache:
     description: Load a turbocache
@@ -285,16 +284,30 @@ jobs:
 
     steps:
       - step_setup
+      - restore_turbo_cache:
+          cache_name: jest_ut-<< parameters.package_name >>
+      - restore_turbo_cache:
+          cache_name: build      
+      - run:
+          name: Extract package name
+          command: |
+            PACKAGE_NAME="$(echo "<< parameters.package_name >>" | cut -d':' -f2)"
+            echo "export UT_PACKAGE_NAME=$PACKAGE_NAME" >> $BASH_ENV
+      - run:
+          name: Check dependencies for changes
+          command: |
+            export SALTO_DEPENDENCIES_HASH="$(node ./build_utils/hash_dependencies.js -p $UT_PACKAGE_NAME)"
       - run:
           name: << parameters.package_name >> unit tests
           command: |
-            PACKAGE=$(echo "<< parameters.package_name >>" | cut -d':' -f2)
-            yarn workspace $PACKAGE test -i --reporters=default --reporters=jest-junit --ci --colors --forceExit --detectOpenHandles
+            yarn test --filter="$UT_PACKAGE_NAME" --  --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit --ci --colors
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
 
       - store_test_results:
           path: reports
+      - store_turbo_cache:
+          cache_name: jest_ut-<< parameters.package_name >>
 
       - coveralls/upload:
           parallel: true

@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ChangeValidator,
-  isFieldChange,
-  Field,
-  getChangeData,
-  ChangeError,
-} from '@salto-io/adapter-api'
+import { ChangeValidator, isFieldChange, Field, getChangeData, ChangeError } from '@salto-io/adapter-api'
 import { EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
 import { apiNameSync, isCustomObjectSync } from '../filters/utils'
 
 const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
-  isCustomObjectSync(parent) &&
-  [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
+  isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
 
 const createFieldOfTaskOrEventChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
@@ -34,11 +27,7 @@ const createFieldOfTaskOrEventChangeError = (field: Field): ChangeError => ({
   detailedMessage: `Modifying the field ${field.name} of the ${apiNameSync(field.parent)} object directly is forbidden. Instead, modify the corresponding field in the Activity Object`,
 })
 
-const changeValidator: ChangeValidator = async (changes) =>
-  changes
-    .filter(isFieldChange)
-    .map(getChangeData)
-    .filter(isFieldOfTaskOrEvent)
-    .map(createFieldOfTaskOrEventChangeError)
+const changeValidator: ChangeValidator = async changes =>
+  changes.filter(isFieldChange).map(getChangeData).filter(isFieldOfTaskOrEvent).map(createFieldOfTaskOrEventChangeError)
 
 export default changeValidator

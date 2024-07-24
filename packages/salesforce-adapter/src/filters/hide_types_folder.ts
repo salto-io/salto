@@ -27,8 +27,8 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     config,
     filterName: 'hideTypesFolder',
     warningMessage: 'Error occurred when attempting to hide the Types Folder',
-    fetchFilterFunc: async (elements) => {
-      elements.filter(isElementWithinTypesFolder).forEach((element) => {
+    fetchFilterFunc: async elements => {
+      elements.filter(isElementWithinTypesFolder).forEach(element => {
         element.annotations[CORE_ANNOTATIONS.HIDDEN] = true
       })
     },

@@ -98,7 +98,7 @@ const createTemplateExpression = ({
   matchBrandSubdomain: (url: string) => InstanceElement | undefined
   config: Themes
 }): string | TemplateExpression => {
-  if (config.referenceOptions.enableReferenceLookup === false) {
+  if (config.referenceOptions?.enableReferenceLookup !== true) {
     return content
   }
   try {

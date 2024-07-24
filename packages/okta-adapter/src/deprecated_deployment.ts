@@ -23,7 +23,6 @@ import {
   InstanceElement,
   isAdditionChange,
   isModificationChange,
-  ModificationChange,
   isEqualValues,
   AdditionChange,
   ElemID,
@@ -32,12 +31,8 @@ import {
   SaltoError,
   isRemovalChange,
   isServiceId,
-  getAllChangeData,
-  ReadOnlyElementsSource,
-  isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
-  config as configUtils,
   deployment,
   elements as elementUtils,
   client as clientUtils,
@@ -45,25 +40,15 @@ import {
 } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { values, collections, promises } from '@salto-io/lowerdash'
-import {
-  ACTIVE_STATUS,
-  CUSTOM_NAME_FIELD,
-  INACTIVE_STATUS,
-  NETWORK_ZONE_TYPE_NAME,
-  OKTA,
-  ORG_SETTING_TYPE_NAME,
-} from './constants'
+import { promises } from '@salto-io/lowerdash'
+import { ACTIVE_STATUS, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'
 import { OktaSwaggerApiConfig } from './config'
 import { StatusActionName } from './definitions/types'
+import { isDeactivationChange } from './definitions/deploy/utils/status'
 
 const log = logger(module)
 
 const { createUrl } = fetchUtils.resource
-const { awu } = collections.asynciterable
-const { isDefined } = values
-
-const isStringArray = (value: unknown): value is string[] => _.isArray(value) && value.every(_.isString)
 
 type OktaError = {
   errorSummary: string
@@ -124,45 +109,9 @@ export const isActivation = ({ before, after }: { before: string; after: string 
 export const isDeactivation = ({ before, after }: { before: string; after: string }): boolean =>
   before === ACTIVE_STATUS && after === INACTIVE_STATUS
 
-export const isActivationChange = (change: Change<InstanceElement>): boolean =>
-  isModificationChange(change) &&
-  _.isEqual(
-    getAllChangeData(change).map(data => data.value.status),
-    [INACTIVE_STATUS, ACTIVE_STATUS],
-  )
-
-export const isDeactivationChange = (change: Change<InstanceElement>): boolean =>
-  isModificationChange(change) &&
-  _.isEqual(
-    getAllChangeData(change).map(data => data.value.status),
-    [ACTIVE_STATUS, INACTIVE_STATUS],
-  )
-
 const DEACTIVATE_BEFORE_REMOVAL_TYPES = new Set([NETWORK_ZONE_TYPE_NAME])
 const shouldDeactivateBeforeRemoval = (change: Change<InstanceElement>): boolean =>
   isRemovalChange(change) && DEACTIVATE_BEFORE_REMOVAL_TYPES.has(getChangeData(change).elemID.typeName)
-
-export const isInactiveCustomAppChange = (change: Change<InstanceElement>): boolean =>
-  isModificationChange(change) &&
-  _.isEqual(
-    getAllChangeData(change).map(data => data.value.status),
-    [INACTIVE_STATUS, INACTIVE_STATUS],
-  ) &&
-  // customName field only exist in custom applications
-  getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
-
-export const getSubdomainFromElementsSource = async (
-  elementsSource: ReadOnlyElementsSource,
-): Promise<string | undefined> => {
-  const orgSettingInstance = await elementsSource.get(
-    new ElemID(OKTA, ORG_SETTING_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
-  )
-  if (!isInstanceElement(orgSettingInstance)) {
-    log.error(`Failed to get ${ORG_SETTING_TYPE_NAME} instance, can not find subdomain`)
-    return undefined
-  }
-  return orgSettingInstance.value.subdomain
-}
 
 export const deployStatusChange = async (
   change: Change<InstanceElement>,
@@ -304,81 +253,6 @@ export const defaultDeployWithStatus = async (
   } catch (err) {
     throw getOktaError(getChangeData(change).elemID, err)
   }
-}
-
-const getValuesToAdd = (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  fieldName: string,
-): string[] | undefined => {
-  const fieldValuesAfter = _.get(getChangeData(change).value, fieldName)
-  if (isModificationChange(change)) {
-    const fieldValuesBefore = _.get(change.data.before.value, fieldName)
-    if (fieldValuesBefore !== undefined) {
-      if (isStringArray(fieldValuesAfter) && isStringArray(fieldValuesBefore)) {
-        return fieldValuesAfter.filter(val => !fieldValuesBefore.includes(val))
-      }
-      if (fieldValuesBefore === fieldValuesAfter) {
-        return undefined
-      }
-    }
-  }
-  return _.isString(fieldValuesAfter) ? [fieldValuesAfter] : fieldValuesAfter
-}
-
-const getValuesToRemove = (change: ModificationChange<InstanceElement>, fieldName: string): string[] | undefined => {
-  const fieldValuesBefore = _.get(change.data.before.value, fieldName)
-  const fieldValuesAfter = _.get(change.data.after.value, fieldName)
-  if (isStringArray(fieldValuesBefore)) {
-    if (isStringArray(fieldValuesAfter)) {
-      return fieldValuesBefore.filter(val => !fieldValuesAfter.includes(val))
-    }
-    return fieldValuesBefore
-  }
-  return undefined
-}
-
-export const deployEdges = async (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  deployRequestByField: Record<string, configUtils.DeploymentRequestsByAction>,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-): Promise<void> => {
-  const instance = getChangeData(change)
-  const instanceId = instance.value.id
-
-  const deployEdge = async (
-    paramValues: Record<string, string>,
-    deployRequest: configUtils.DeployRequestConfig,
-    fieldName: string,
-  ): Promise<deployment.ResponseResult> => {
-    const url = fetchUtils.request.replaceArgs(deployRequest.url, paramValues)
-    try {
-      const response = await client[deployRequest.method]({ url, data: {} })
-      return response.data
-    } catch (err) {
-      log.error(`Deploy values of ${fieldName} in instance ${instance.elemID.getFullName()} failed`)
-      throw getOktaError(getChangeData(change).elemID, err)
-    }
-  }
-
-  await awu(Object.keys(deployRequestByField)).forEach(async fieldName => {
-    const fieldValuesToAdd = getValuesToAdd(change, fieldName)
-    const addConfig = deployRequestByField[fieldName].add
-    if (isDefined(fieldValuesToAdd) && isDefined(addConfig)) {
-      await awu(fieldValuesToAdd).forEach(fieldValue =>
-        deployEdge({ source: instanceId, target: fieldValue }, addConfig, fieldName),
-      )
-    }
-
-    if (isModificationChange(change)) {
-      const fieldValuesToRemove = getValuesToRemove(change, fieldName)
-      const removeConfig = deployRequestByField[fieldName].remove
-      if (isDefined(fieldValuesToRemove) && isDefined(removeConfig)) {
-        await awu(fieldValuesToRemove).forEach(fieldValue =>
-          deployEdge({ source: instanceId, target: fieldValue }, removeConfig, fieldName),
-        )
-      }
-    }
-  })
 }
 
 export const deployChanges = async <T extends Change<ChangeDataType>>(

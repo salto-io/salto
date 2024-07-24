@@ -23,9 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { isInstanceOfCustomObjectChangeSync } from '../filters/utils'
 
-const createDataDeploymentChangeInfo = (
-  instanceElemID: ElemID,
-): ChangeError => ({
+const createDataDeploymentChangeInfo = (instanceElemID: ElemID): ChangeError => ({
   elemID: instanceElemID,
   severity: 'Info',
   message: 'Data instances will be changed in deployment.',
@@ -34,44 +32,35 @@ const createDataDeploymentChangeInfo = (
 
 const getMissingFields = (instance: InstanceElement): string[] => {
   const typeFields = new Set(Object.keys(instance.getTypeSync().fields))
-  return Object.keys(instance.value).filter(
-    (fieldName) => !typeFields.has(fieldName),
-  )
+  return Object.keys(instance.value).filter(fieldName => !typeFields.has(fieldName))
 }
 
-const createMissingFieldsValuesChangeError = (
-  instance: InstanceElement,
-  missingFields: string[],
-): ChangeError => ({
+const createMissingFieldsValuesChangeError = (instance: InstanceElement, missingFields: string[]): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Warning',
   message: 'Data instance has values of unknown fields',
   detailedMessage: `Some fields do not exist in the target environment, therefore their values will be omitted from the deployment. Missing fields: [${missingFields.join(', ')}].`,
 })
 
-const createDataChangeValidator: ChangeValidator = async (changes) => {
+const createDataChangeValidator: ChangeValidator = async changes => {
   const changeErrors: ChangeError[] = []
   const dataChanges = changes.filter(isInstanceOfCustomObjectChangeSync)
 
   if (dataChanges.length === 0) {
     return []
   }
-  changeErrors.push(
-    createDataDeploymentChangeInfo(getChangeData(dataChanges[0]).elemID),
-  )
+  changeErrors.push(createDataDeploymentChangeInfo(getChangeData(dataChanges[0]).elemID))
   dataChanges
     // Deletions should work even if some values are missing on the type
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .map((instance) => ({
+    .map(instance => ({
       instance,
       missingFields: getMissingFields(instance),
     }))
     .filter(({ missingFields }) => missingFields.length > 0)
     .forEach(({ instance, missingFields }) =>
-      changeErrors.push(
-        createMissingFieldsValuesChangeError(instance, missingFields),
-      ),
+      changeErrors.push(createMissingFieldsValuesChangeError(instance, missingFields)),
     )
   return changeErrors
 }

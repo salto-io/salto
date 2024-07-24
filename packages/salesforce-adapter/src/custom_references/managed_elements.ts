@@ -25,9 +25,7 @@ import { INSTALLED_PACKAGE_METADATA, SALESFORCE } from '../constants'
 const log = logger(module)
 const { isDefined } = values
 
-const installedPackageReference = (
-  element: Element,
-): ReferenceInfo | undefined => {
+const installedPackageReference = (element: Element): ReferenceInfo | undefined => {
   const namespace = getNamespaceSync(element)
   if (namespace === undefined) {
     return undefined
@@ -35,12 +33,7 @@ const installedPackageReference = (
 
   return {
     source: element.elemID,
-    target: ElemID.fromFullNameParts([
-      SALESFORCE,
-      INSTALLED_PACKAGE_METADATA,
-      'instance',
-      naclCase(namespace),
-    ]),
+    target: ElemID.fromFullNameParts([SALESFORCE, INSTALLED_PACKAGE_METADATA, 'instance', naclCase(namespace)]),
     type: 'strong',
   }
 }
@@ -48,19 +41,15 @@ const installedPackageReference = (
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
-  const topLevelReferences = elements
-    .map((element) => installedPackageReference(element))
-    .filter(isDefined)
+  const topLevelReferences = elements.map(element => installedPackageReference(element)).filter(isDefined)
   const fieldReferences = elements
     .filter(isStandardObjectSync)
-    .flatMap((standardObject) => Object.values(standardObject.fields))
-    .map((field) => installedPackageReference(field))
+    .flatMap(standardObject => Object.values(standardObject.fields))
+    .map(field => installedPackageReference(field))
     .filter(isDefined)
   const references = topLevelReferences.concat(fieldReferences)
 
-  log.debug(
-    `Generated InstalledPackage instance custom references for ${references.length} elements.`,
-  )
+  log.debug(`Generated InstalledPackage instance custom references for ${references.length} elements.`)
 
   return references
 }

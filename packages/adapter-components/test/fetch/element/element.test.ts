@@ -445,11 +445,11 @@ describe('element', () => {
           expect(res.configChanges).toHaveLength(0)
         })
 
-        it('should log "failed to fetch type" error by default', () => {
+        it('should log "unexpectedly failed to fetch type" error by default', () => {
           generator.handleError({ typeName: 'myType', error: fetchError })
           generator.generate()
           expect(logErrorSpy).toHaveBeenCalledWith(
-            'failed to fetch type %s:%s: %s',
+            'unexpectedly failed to fetch type %s:%s: %s',
             expect.any(String),
             expect.any(String),
             fetchError.message,

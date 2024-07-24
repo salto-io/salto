@@ -75,7 +75,7 @@ export const isOrderChange = (change: DetailedChange): boolean =>
   isIndexPathPart(change.id.name) &&
   isIndexPathPart(change.elemIDs?.before?.name ?? '') &&
   isIndexPathPart(change.elemIDs?.after?.name ?? '') &&
-  Number(change.elemIDs?.before?.name) !== Number(change.elemIDs?.after?.name)
+  change.elemIDs?.before?.name !== change.elemIDs?.after?.name
 
 /**
  * Calculate a string to represent an item in a list based on all of its values

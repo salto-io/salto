@@ -111,8 +111,6 @@ import {
   INTERNAL_ID_ANNOTATION,
   SALESFORCE_DATE_PLACEHOLDER,
   CUSTOM_OBJECT_TYPE_NAME,
-  CUSTOM_METADATA,
-  CUSTOM_METADATA_TYPE_NAME,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -286,7 +284,8 @@ const restrictedNumberTypes = _.mapValues(
 
 export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
   [CUSTOM_OBJECT, CUSTOM_OBJECT_TYPE_NAME],
-  [CUSTOM_METADATA, CUSTOM_METADATA_TYPE_NAME],
+  // TODO (SALTO-6264): Uncomment this once hide types is enabled.
+  // [CUSTOM_METADATA, CUSTOM_METADATA_TYPE_NAME],
   ['FlexiPage', 'LightningPage'],
   ['FlexiPageRegion', 'LightningPageRegion'],
   ['FlexiPageTemplateInstance', 'LightningPageTemplateInstance'],

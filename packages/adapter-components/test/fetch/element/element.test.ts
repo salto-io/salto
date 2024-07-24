@@ -307,7 +307,8 @@ describe('element', () => {
             default: {
               resource: {
                 onError: {
-                  custom: () => customErrorHandler,
+                  action: 'customized',
+                  value: () => customErrorHandler,
                 },
               },
             },

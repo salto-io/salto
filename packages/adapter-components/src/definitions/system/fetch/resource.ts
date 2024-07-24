@@ -15,7 +15,7 @@
  */
 import { SaltoError } from '@salto-io/adapter-api'
 import { ContextCombinationDefinition, RecurseIntoDefinition } from './dependencies'
-import { AdjustFunction, ArgsWithCustomizer, GeneratedItem, TransformDefinition } from '../shared'
+import { AdjustFunction, GeneratedItem, TransformDefinition } from '../shared'
 import { ConfigChangeSuggestion } from '../../user'
 
 export type ResourceTransformFunc = AdjustFunction<{ fragments: GeneratedItem[] }>
@@ -39,7 +39,14 @@ type ConfigSuggestion = {
 
 export type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion
 
-type OnErrorHandler = ArgsWithCustomizer<OnErrorHandlerAction, OnErrorHandlerAction, { error: Error; typeName: string }>
+// Defining the custom handling option with the same structure as the predefined options above allows it to
+// be overridden by a predefined option when merging with defaults.
+type CustomErrorHandler = {
+  action: 'customized'
+  value: (args: { error: Error; typeName: string }) => OnErrorHandlerAction
+}
+
+type OnErrorHandler = OnErrorHandlerAction | CustomErrorHandler
 
 export type FetchResourceDefinition = {
   // set to true if the resource should be fetched on its own. set to false for types only fetched via recurseInto

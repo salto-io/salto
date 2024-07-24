@@ -51,6 +51,8 @@ const { awu } = collections.asynciterable
 
 type MappedList = Record<string, { index: number; [key: string]: Value }>
 
+const NO_APPID = ''
+
 const formTypeNames = new Set([ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM])
 
 const isFormInstanceElement = (element: Value): element is InstanceElement =>
@@ -119,7 +121,7 @@ const isUnresolvedNetsuiteReference = (
   const capture = captureServiceIdInfo(value)
   return capture.some(serviceId => {
     const objectServiceId = serviceId.serviceId.split('.')[0]
-    const suiteAppId = serviceId.appid ?? ''
+    const suiteAppId = serviceId.appid ?? NO_APPID
     return (
       !generatedDependencies.has(objectServiceId) &&
       envScriptIdsBySuiteAppId[suiteAppId] !== undefined &&
@@ -264,7 +266,7 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
   ({ elementsSource }): FixElementsFunc =>
   async elements => {
     const envScriptIdsBySuiteAppId = _(await getObjectIdList(elementsSource))
-      .groupBy(objectId => objectId.suiteAppId ?? '')
+      .groupBy(objectId => objectId.suiteAppId ?? NO_APPID)
       .mapValues(objectIds => new Set(objectIds.map(objectId => objectId.instanceId)))
       .value()
 

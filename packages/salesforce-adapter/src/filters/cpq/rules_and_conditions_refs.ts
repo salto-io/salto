@@ -59,7 +59,6 @@ import {
 } from '../utils'
 
 const { toArrayAsync } = collections.asynciterable
-const { makeArray } = collections.array
 const log = logger(module)
 
 type RuleAndConditionDef = {
@@ -125,19 +124,15 @@ const defs: RuleAndConditionDef[] = [
   },
 ]
 
-const ruleTypeNames = defs.map((def) => def.rule.typeApiName)
-const conditionTypeNames = defs.map((def) => def.condition.typeApiName)
+const ruleTypeNames = defs.map(def => def.rule.typeApiName)
+const conditionTypeNames = defs.map(def => def.condition.typeApiName)
 
 const resolveConditionIndexFunc =
   (indexField: string) =>
   (ref: ReferenceExpression): TemplatePart => {
     const refValue = ref.value
     if (!isInstanceElement(refValue)) {
-      log.warn(
-        'Received non instance reference %s. refValue is %s',
-        ref.elemID.getFullName(),
-        inspectValue(refValue),
-      )
+      log.warn('Received non instance reference %s. refValue is %s', ref.elemID.getFullName(), inspectValue(refValue))
       return ref
     }
     const index: unknown = refValue.value[indexField]
@@ -159,10 +154,7 @@ const isConditionOfRuleFunc =
     return isReferenceExpression(ruleRef) && ruleRef.elemID.isEqual(rule.elemID)
   }
 
-const getConditionIndex = (
-  condition: InstanceElement,
-  indexField: string,
-): number | undefined => {
+const getConditionIndex = (condition: InstanceElement, indexField: string): number | undefined => {
   const index = condition.value[indexField]
   return _.isNumber(index) ? index : undefined
 }
@@ -182,20 +174,18 @@ const setCustomConditionReferences = ({
     return 0
   }
   const rawParts = customCondition.match(/(\d+|[^\d]+)/g)
-  if (rawParts == null || rawParts.every((part) => _.isNaN(Number(part)))) {
+  if (rawParts == null || rawParts.every(part => _.isNaN(Number(part)))) {
     return 0
   }
   rule.value[def.rule.customConditionField] = createTemplateExpression({
-    parts: rawParts.map((part) => {
+    parts: rawParts.map(part => {
       const index = Number(part)
       if (index == null) {
         return part
       }
       const condition = conditionsByIndex[index]
       if (condition === undefined) {
-        log.warn(
-          `Could not find condition with index ${index} for rule ${rule.elemID.getFullName()}`,
-        )
+        log.warn(`Could not find condition with index ${index} for rule ${rule.elemID.getFullName()}`)
         return part
       }
       createdReferences += 1
@@ -214,22 +204,17 @@ const createReferencesFromDef = ({
   ruleInstancesByType: Record<string, InstanceElement[]>
   conditionInstancesByType: Record<string, InstanceElement[]>
 }): number => {
-  const rules = makeArray(ruleInstancesByType[def.rule.typeApiName])
-  if (rules.length === 0) {
+  const rules = ruleInstancesByType[def.rule.typeApiName]
+  if (rules === undefined) {
     return 0
   }
   return _.sum(
-    rules.map((rule) => {
-      const isConditionOfCurrentRule = isConditionOfRuleFunc(
-        rule,
-        def.condition.ruleField,
+    rules.map(rule => {
+      const isConditionOfCurrentRule = isConditionOfRuleFunc(rule, def.condition.ruleField)
+      const ruleConditions = (conditionInstancesByType[def.condition.typeApiName] ?? []).filter(
+        isConditionOfCurrentRule,
       )
-      const ruleConditions = makeArray(
-        conditionInstancesByType[def.condition.typeApiName],
-      ).filter(isConditionOfCurrentRule)
-      const conditionsByIndex = ruleConditions.reduce<
-        Record<number, InstanceElement>
-      >((acc, condition) => {
+      const conditionsByIndex = ruleConditions.reduce<Record<number, InstanceElement>>((acc, condition) => {
         const index = getConditionIndex(condition, def.condition.indexField)
         if (index !== undefined) {
           acc[index] = condition
@@ -246,21 +231,16 @@ const isCPQRuleChange = (change: Change): change is Change<InstanceElement> =>
   ruleTypeNames.includes(apiNameSync(getChangeData(change).getTypeSync()) ?? '')
 
 const filterCreator: LocalFilterCreator = ({ config }) => {
-  const templateMappingByRuleType: Partial<
-    Record<string, Record<string, TemplateExpression>>
-  > = {}
+  const templateMappingByRuleType: Partial<Record<string, Record<string, TemplateExpression>>> = {}
   return {
     name: 'cpqRulesAndConditionsFilter',
-    onFetch: async (elements) => {
+    onFetch: async elements => {
       if (!config.fetchProfile.isFeatureEnabled('cpqRulesAndConditionsRefs')) {
         log.debug('feature is disabled. Skipping filter')
         return
       }
       const ruleInstancesByType = _.pick(
-        _.groupBy(
-          elements.filter(isInstanceOfCustomObjectSync),
-          (instance) => apiNameSync(instance.getTypeSync()) ?? '',
-        ),
+        _.groupBy(elements.filter(isInstanceOfCustomObjectSync), instance => apiNameSync(instance.getTypeSync()) ?? ''),
         ruleTypeNames,
       )
       if (Object.keys(ruleInstancesByType).length === 0) {
@@ -269,17 +249,15 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       }
       const conditionInstancesByType = _.pick(
         _.groupBy(
-          (
-            await toArrayAsync(
-              await buildElementsSourceForFetch(elements, config).getAll(),
-            )
-          ).filter(isInstanceOfCustomObjectSync),
-          (instance) => apiNameSync(instance.getTypeSync()) ?? '',
+          (await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll())).filter(
+            isInstanceOfCustomObjectSync,
+          ),
+          instance => apiNameSync(instance.getTypeSync()) ?? '',
         ),
         conditionTypeNames,
       )
       const referencesCreated = _.sum(
-        defs.map((def) =>
+        defs.map(def =>
           createReferencesFromDef({
             def,
             ruleInstancesByType,
@@ -289,24 +267,22 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       )
       log.debug('Created %d references', referencesCreated)
     },
-    preDeploy: async (changes) => {
-      const ruleChanges = changes
-        .filter(isCPQRuleChange)
-        .filter(isAdditionOrModificationChange)
+    preDeploy: async changes => {
+      const ruleChanges = changes.filter(isCPQRuleChange).filter(isAdditionOrModificationChange)
       if (ruleChanges.length === 0) {
         return
       }
       const rulesInstancesByType = _.groupBy(
         ruleChanges.map(getChangeData),
-        (rule) => apiNameSync(rule.getTypeSync()) ?? '',
+        rule => apiNameSync(rule.getTypeSync()) ?? '',
       )
-      defs.forEach((def) => {
-        const rules = makeArray(rulesInstancesByType[def.rule.typeApiName])
+      defs.forEach(def => {
+        const rules = rulesInstancesByType[def.rule.typeApiName] ?? []
         if (rules.length > 0) {
           const templateMapping = {}
           replaceTemplatesWithValues(
             {
-              values: rules.map((rule) => rule.value),
+              values: rules.map(rule => rule.value),
               fieldName: def.rule.customConditionField,
             },
             templateMapping,
@@ -316,28 +292,22 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         }
       })
     },
-    onDeploy: async (changes) => {
-      const ruleChanges = changes
-        .filter(isCPQRuleChange)
-        .filter(isAdditionOrModificationChange)
+    onDeploy: async changes => {
+      const ruleChanges = changes.filter(isCPQRuleChange).filter(isAdditionOrModificationChange)
       if (ruleChanges.length === 0) {
         return
       }
       const rulesInstancesByType = _.groupBy(
         ruleChanges.map(getChangeData),
-        (rule) => apiNameSync(rule.getTypeSync()) ?? '',
+        rule => apiNameSync(rule.getTypeSync()) ?? '',
       )
-      defs.forEach((def) => {
-        const rules = makeArray(rulesInstancesByType[def.rule.typeApiName])
+      defs.forEach(def => {
+        const rules = rulesInstancesByType[def.rule.typeApiName] ?? []
         const templateMapping = templateMappingByRuleType[def.rule.typeApiName]
-        if (
-          templateMapping &&
-          Object.keys(templateMapping).length > 0 &&
-          rules.length > 0
-        ) {
+        if (templateMapping && Object.keys(templateMapping).length > 0 && rules.length > 0) {
           resolveTemplates(
             {
-              values: rules.map((rule) => rule.value),
+              values: rules.map(rule => rule.value),
               fieldName: def.rule.customConditionField,
             },
             templateMapping,

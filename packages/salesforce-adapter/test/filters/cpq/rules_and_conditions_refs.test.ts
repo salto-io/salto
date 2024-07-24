@@ -42,29 +42,17 @@ describe('CPQ Rules and Conditions References', () => {
   let condition1: InstanceElement
 
   beforeEach(() => {
-    ruleInstance = new InstanceElement(
-      'ruleInstance',
-      mockTypes[CPQ_QUOTE_TERM],
-      {
-        [CPQ_ADVANCED_CONDITION_FIELD]: ADVANCED_CONDITION,
-      },
-    )
-    condition0 = new InstanceElement(
-      'condition0',
-      mockTypes[CPQ_TERM_CONDITION],
-      {
-        [CPQ_INDEX_FIELD]: 0,
-        [CPQ_QUOTE_TERM_FIELD]: new ReferenceExpression(ruleInstance.elemID),
-      },
-    )
-    condition1 = new InstanceElement(
-      'condition1',
-      mockTypes[CPQ_TERM_CONDITION],
-      {
-        [CPQ_INDEX_FIELD]: 1,
-        [CPQ_QUOTE_TERM_FIELD]: new ReferenceExpression(ruleInstance.elemID),
-      },
-    )
+    ruleInstance = new InstanceElement('ruleInstance', mockTypes[CPQ_QUOTE_TERM], {
+      [CPQ_ADVANCED_CONDITION_FIELD]: ADVANCED_CONDITION,
+    })
+    condition0 = new InstanceElement('condition0', mockTypes[CPQ_TERM_CONDITION], {
+      [CPQ_INDEX_FIELD]: 0,
+      [CPQ_QUOTE_TERM_FIELD]: new ReferenceExpression(ruleInstance.elemID),
+    })
+    condition1 = new InstanceElement('condition1', mockTypes[CPQ_TERM_CONDITION], {
+      [CPQ_INDEX_FIELD]: 1,
+      [CPQ_QUOTE_TERM_FIELD]: new ReferenceExpression(ruleInstance.elemID),
+    })
   })
   describe('when feature is disabled', () => {
     beforeEach(() => {
@@ -83,19 +71,13 @@ describe('CPQ Rules and Conditions References', () => {
     })
     it('should do nothing', async () => {
       await filter.onFetch([ruleInstance, condition0, condition1])
-      expect(ruleInstance.value[CPQ_ADVANCED_CONDITION_FIELD]).toEqual(
-        ADVANCED_CONDITION,
-      )
+      expect(ruleInstance.value[CPQ_ADVANCED_CONDITION_FIELD]).toEqual(ADVANCED_CONDITION)
       const changes = [toChange({ after: ruleInstance })]
       await filter.preDeploy(changes)
       expect(changes).toHaveLength(1)
-      expect(
-        getChangeData(changes[0]).value[CPQ_ADVANCED_CONDITION_FIELD],
-      ).toEqual(ADVANCED_CONDITION)
+      expect(getChangeData(changes[0]).value[CPQ_ADVANCED_CONDITION_FIELD]).toEqual(ADVANCED_CONDITION)
       await filter.onDeploy(changes)
-      expect(
-        getChangeData(changes[0]).value[CPQ_ADVANCED_CONDITION_FIELD],
-      ).toEqual(ADVANCED_CONDITION)
+      expect(getChangeData(changes[0]).value[CPQ_ADVANCED_CONDITION_FIELD]).toEqual(ADVANCED_CONDITION)
     })
   })
 
@@ -116,13 +98,9 @@ describe('CPQ Rules and Conditions References', () => {
     })
     it('should convert advanced conditions to TemplateExpressions on fetch and deploy as string', async () => {
       await filter.onFetch([ruleInstance, condition0, condition1])
-      const advancedCondition = ruleInstance.value[
-        CPQ_ADVANCED_CONDITION_FIELD
-      ] as TemplateExpression
+      const advancedCondition = ruleInstance.value[CPQ_ADVANCED_CONDITION_FIELD] as TemplateExpression
       const clonedAdvancedConditionParts = [...advancedCondition.parts]
-      expect(ruleInstance.value[CPQ_ADVANCED_CONDITION_FIELD]).toSatisfy(
-        isTemplateExpression,
-      )
+      expect(advancedCondition).toSatisfy(isTemplateExpression)
       expect(advancedCondition.parts).toEqual([
         new ReferenceExpression(condition1.elemID, condition1),
         ' OR (',
@@ -135,17 +113,13 @@ describe('CPQ Rules and Conditions References', () => {
       const changes = [toChange({ after: ruleInstance })]
       await filter.preDeploy(changes)
       expect(changes).toHaveLength(1)
-      expect(
-        getChangeData(changes[0]).value[CPQ_ADVANCED_CONDITION_FIELD],
-      ).toEqual(ADVANCED_CONDITION)
+      expect(getChangeData(changes[0]).value[CPQ_ADVANCED_CONDITION_FIELD]).toEqual(ADVANCED_CONDITION)
       await filter.onDeploy(changes)
       const advancedConditionAfterDeploy = getChangeData(changes[0]).value[
         CPQ_ADVANCED_CONDITION_FIELD
       ] as TemplateExpression
       expect(advancedConditionAfterDeploy).toSatisfy(isTemplateExpression)
-      expect(advancedConditionAfterDeploy.parts).toEqual(
-        clonedAdvancedConditionParts,
-      )
+      expect(advancedConditionAfterDeploy.parts).toEqual(clonedAdvancedConditionParts)
     })
   })
 })

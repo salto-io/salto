@@ -28,6 +28,9 @@ import {
   RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
 } from './constants'
 
+type TaskReturnType<T> = Promise<T>
+type TaskType<T> = () => TaskReturnType<T>
+
 /**
  * Type for specifying options for the RateLimiter.
  */
@@ -231,7 +234,7 @@ export class RateLimiter {
    * @param task The task to be wrapped and delayed.
    * @returns A function that returns a promise resolving to the result of the task.
    */
-  private getDelayedTask<T>(task: () => Promise<T>): () => Promise<T> {
+  private getDelayedTask<T>(task: TaskType<T>): TaskType<T> {
     const delayedTask = async (): Promise<T> => {
       if (this.internalOptions.delayMS > 0) {
         await new Promise(resolve => setTimeout(resolve, this.nextDelay()))
@@ -246,7 +249,7 @@ export class RateLimiter {
    * @param task The task to be wrapped with bookkeeping.
    * @returns A function that returns a promise resolving to the result of the task.
    */
-  private wrapWithBookKeeping<T>(task: () => Promise<T>, isRetry: boolean = false): () => Promise<T> {
+  private wrapWithBookKeeping<T>(task: TaskType<T>, isRetry: boolean = false): TaskType<T> {
     return async (): Promise<T> => {
       this.internalCounters.pending -= 1
       this.internalCounters.running += 1
@@ -274,7 +277,7 @@ export class RateLimiter {
    * @param task The task to be added to the queue.
    * @returns A promise that resolves when the task is completed.
    */
-  async add<T>(task: () => Promise<T>): Promise<T> {
+  async add<T>(task: TaskType<T>): TaskReturnType<T> {
     let res: Promise<T>
     let numAttempts = 0
     while (true) {
@@ -310,7 +313,7 @@ export class RateLimiter {
    * @param tasks The tasks to be added to the queue.
    * @returns A promise that resolves when all tasks are completed.
    */
-  addAll<T>(tasks: Array<() => Promise<T>>): Promise<T>[] {
+  addAll<T>(tasks: Array<TaskType<T>>): TaskReturnType<T>[] {
     return tasks.map(task => this.add(task))
   }
 
@@ -319,7 +322,7 @@ export class RateLimiter {
    * @param fn The asynchronous function to be wrapped.
    * @returns The wrapped function.
    */
-  wrap<T extends unknown[], R>(fn: (...args: T) => Promise<R>): (...args: T) => Promise<R> {
+  wrap<T extends unknown[], R>(fn: (...args: T) => TaskReturnType<R>): (...args: T) => TaskReturnType<R> {
     return (...args: T) => this.add(() => fn(...args))
   }
 
@@ -328,7 +331,7 @@ export class RateLimiter {
    * @param fns The asynchronous functions to be wrapped.
    * @returns The wrapped functions.
    */
-  wrapAll<T extends unknown[], R>(fns: Array<(...args: T) => Promise<R>>): Array<(...args: T) => Promise<R>> {
+  wrapAll<T extends unknown[], R>(fns: Array<(...args: T) => TaskReturnType<R>>): Array<(...args: T) => TaskReturnType<R>> {
     return fns.map(fn => this.wrap(fn))
   }
 

@@ -308,7 +308,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
         error instanceof Error && error.message === errorMessage ? numAttempts * retryDelayMS : 0,
       )
       const startTime = Date.now()
-      const rateLimiter = new RateLimiter({ retryPredicate, calculateRetryDelayMS, useBottleneck: true })
+      const rateLimiter = new RateLimiter({ retryPredicate, calculateRetryDelayMS })
 
       await expect(rateLimiter.add(throwingTask)).rejects.toThrow(errorMessage)
       const timeElapsed = Date.now() - startTime

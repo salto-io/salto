@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import {
   Change,
-  ChangeDataType,
   CompareOptions,
   DetailedChange,
   DetailedChangeWithBaseChange,
@@ -41,7 +40,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getIndependentElemIDs, resolvePath, setPath } from './utils'
-import { applyListChanges, getArrayIndexMapping } from './list_comparison'
+import { applyListChanges, getArrayIndexMapping, getChangeRealId, isOrderChange } from './list_comparison'
 
 const log = logger(module)
 
@@ -208,12 +207,12 @@ const getAnnotationTypeChanges = ({
   afterId,
 }: {
   id: ElemID
-  before: Value
-  after: Value
+  before: Element
+  after: Element
   beforeId: ElemID
   afterId: ElemID
 }): DetailedChange[] => {
-  const hasAnnotationTypes = (elem: ChangeDataType): elem is ObjectType | PrimitiveType =>
+  const hasAnnotationTypes = (elem: Element): elem is ObjectType | PrimitiveType =>
     isObjectType(elem) || isPrimitiveType(elem)
 
   // Return only annotationTypes that exists in val and not exists in otherVal.
@@ -345,15 +344,6 @@ export const getDetailedChanges = (change: Change, compareOptions?: CompareOptio
 }
 
 /**
- * This function returns if a change contains a moving of a item in a list for one index to another
- */
-const isOrderChange = (change: DetailedChange): boolean =>
-  isIndexPathPart(change.id.name) &&
-  isIndexPathPart(change.elemIDs?.before?.name ?? '') &&
-  isIndexPathPart(change.elemIDs?.after?.name ?? '') &&
-  Number(change.elemIDs?.before?.name) !== Number(change.elemIDs?.after?.name)
-
-/**
  * When comparing lists with compareListItem, we might get a change about an item
  * in a list that moved from one index to another, and a change about an inner value
  * in that item that was changed. In that case we would want to ignore the inner change
@@ -377,7 +367,11 @@ export const getIndependentChanges = (changes: DetailedChange[]): DetailedChange
  * So in order to get the expected results, all the detailed changes should be passed to this
  * function in a single call
  */
-export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: DetailedChange[]): void => {
+export const applyDetailedChanges = (
+  element: Element,
+  detailedChanges: DetailedChange[],
+  filterFunc: (change: DetailedChange) => boolean = () => true,
+): void => {
   if (detailedChanges.length === 1) {
     const change = detailedChanges[0]
     if (change.id.isEqual(element.elemID) && isModificationChange(change)) {
@@ -396,21 +390,22 @@ export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: D
   )
 
   const [realListItemGroup, otherGroups] = _.partition(Object.values(potentialListItemGroups), group =>
-    Array.isArray(resolvePath(element, group[0].id.createParentID())),
+    Array.isArray(resolvePath(element, getChangeRealId(group[0]).createParentID())),
   )
 
   _(otherChanges)
     .concat(otherGroups.flat())
+    .filter(filterFunc)
     .forEach(detailedChange => {
-      const id = isRemovalChange(detailedChange)
-        ? detailedChange.elemIDs?.before ?? detailedChange.id
-        : detailedChange.elemIDs?.after ?? detailedChange.id
+      const id = getChangeRealId(detailedChange)
       const data = isRemovalChange(detailedChange) ? undefined : detailedChange.data.after
       setPath(element, id.replaceParentId(element.elemID), data)
     })
 
-  realListItemGroup.forEach(changes => {
-    applyListChanges(element, changes)
+  // we want inner lists to be applied before outer lists, because the indexes may change
+  const orderedListItemGroups = _.orderBy(realListItemGroup, group => group[0].id.nestingLevel, 'desc')
+  orderedListItemGroups.forEach(changes => {
+    applyListChanges(element, changes, filterFunc)
   })
 }
 

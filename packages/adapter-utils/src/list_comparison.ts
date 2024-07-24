@@ -16,12 +16,10 @@
 import _ from 'lodash'
 import objectHash from 'object-hash'
 import {
-  ChangeDataType,
+  Element,
   DetailedChange,
   Value,
   isReferenceExpression,
-  isRemovalOrModificationChange,
-  isAdditionOrModificationChange,
   isPrimitiveValue,
   isStaticFile,
   isIndexPathPart,
@@ -30,6 +28,9 @@ import {
   PrimitiveValue,
   TemplateExpression,
   StaticFile,
+  isModificationChange,
+  ElemID,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import wu from 'wu'
@@ -39,6 +40,42 @@ import { resolvePath, setPath } from './utils'
 const log = logger(module)
 
 type KeyFunction = (value: Value) => string
+
+type LeafValue = PrimitiveValue | ReferenceExpression | TemplateExpression | StaticFile
+
+type IndexMappingItem = {
+  beforeIndex?: number
+  afterIndex?: number
+}
+
+type ListChange<T> =
+  | {
+      action: 'remove'
+      beforeIndex: number
+    }
+  | {
+      action: 'add'
+      afterIndex: number
+      afterValue: T
+    }
+  | {
+      action: 'modify'
+      beforeIndex: number
+      afterIndex: number
+      afterValue: T
+    }
+
+export const getChangeRealId = (change: DetailedChange): ElemID =>
+  (isRemovalChange(change) ? change.elemIDs?.before : change.elemIDs?.after) ?? change.id
+
+/**
+ * Returns whether a change contains a moving of an item in a list for one index to another
+ */
+export const isOrderChange = (change: DetailedChange): boolean =>
+  isIndexPathPart(change.id.name) &&
+  isIndexPathPart(change.elemIDs?.before?.name ?? '') &&
+  isIndexPathPart(change.elemIDs?.after?.name ?? '') &&
+  change.elemIDs?.before?.name !== change.elemIDs?.after?.name
 
 /**
  * Calculate a string to represent an item in a list based on all of its values
@@ -56,15 +93,13 @@ const getListItemExactKey: KeyFunction = value =>
     },
   })
 
-type TopLevelType = PrimitiveValue | ReferenceExpression | TemplateExpression | StaticFile
-
-const isValidTopLevelType = (value: unknown): value is TopLevelType =>
+const isValidLeafValue = (value: unknown): value is LeafValue =>
   isPrimitiveValue(value) || isReferenceExpression(value) || isTemplateExpression(value) || isStaticFile(value)
 
 /**
  * Note: this function ignores the value of compareReferencesByValue and always looks at the reference id
  */
-const getSingleValueKey = (value: TopLevelType): string => {
+const getSingleValueKey = (value: LeafValue): string => {
   if (isReferenceExpression(value)) {
     return value.elemID.getFullName()
   }
@@ -79,25 +114,25 @@ const getSingleValueKey = (value: TopLevelType): string => {
 
 /**
  * Calculate a string to represent an item in the list
- * based only on its top level values
+ * based only on its leaf values (without lists/objects)
  *
- * Based on experiments, we found looking only on the top level values
+ * Based on experiments, we found looking only on the leaf values
  * to be a good heuristic for representing an item in a list
  */
 const getListItemTopLevelKey: KeyFunction = value => {
   if (_.isPlainObject(value) || Array.isArray(value)) {
     return Object.keys(value)
-      .filter(key => isValidTopLevelType(value[key]))
+      .filter(key => isValidLeafValue(value[key]))
       .sort()
       .flatMap(key => [key, ':', getSingleValueKey(value[key])])
       .join('')
   }
 
-  if (isValidTopLevelType(value)) {
+  if (isValidLeafValue(value)) {
     return getSingleValueKey(value)
   }
 
-  // When there aren't any top level keys
+  // When there aren't any leaf values
   return ''
 }
 
@@ -107,11 +142,6 @@ const buildKeyToIndicesMap = (list: Value[], keyFunc: KeyFunction): Record<strin
     _.groupBy(keyToIndex, ({ key }) => key),
     indices => indices.map(({ index }) => index),
   )
-}
-
-type IndexMappingItem = {
-  beforeIndex?: number
-  afterIndex?: number
 }
 
 /**
@@ -274,6 +304,88 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
   return orderedItems
 }
 
+const hasBeforeIndex = <T>(change: ListChange<T>): change is ListChange<T> & { action: 'remove' | 'modify' } =>
+  change.action !== 'add'
+
+const hasAfterIndex = <T>(change: ListChange<T>): change is ListChange<T> & { action: 'add' | 'modify' } =>
+  change.action !== 'remove'
+
+const toListChange = <T>(change: DetailedChange<T>): ListChange<T> => {
+  switch (change.action) {
+    case 'remove': {
+      return { action: change.action, beforeIndex: Number(change.elemIDs?.before?.name) }
+    }
+    case 'add': {
+      return { action: change.action, afterIndex: Number(change.elemIDs?.after?.name), afterValue: change.data.after }
+    }
+    default: {
+      return {
+        action: change.action,
+        beforeIndex: Number(change.elemIDs?.before?.name),
+        afterIndex: Number(change.elemIDs?.after?.name),
+        afterValue: change.data.after,
+      }
+    }
+  }
+}
+
+const updateList = <T>(list: unknown[], changes: ListChange<T>[]): void => {
+  const removalsAndModifications = changes.filter(hasBeforeIndex)
+  removalsAndModifications.forEach(({ beforeIndex }) => {
+    list[beforeIndex] = undefined
+  })
+
+  const sortedAdditionsAndModifications = _.sortBy(changes.filter(hasAfterIndex), change => change.afterIndex)
+  sortedAdditionsAndModifications.forEach(({ afterIndex, afterValue }) => {
+    if (list[afterIndex] === undefined) {
+      list[afterIndex] = afterValue
+    } else {
+      list.splice(afterIndex, 0, afterValue)
+    }
+  })
+}
+
+const updateListWithFilteredChanges = (
+  list: unknown[],
+  changes: DetailedChange[],
+  filterFunc: (change: DetailedChange) => boolean,
+): void => {
+  // cannot apply order changes selectively because it creates an unexpected result
+  const relevantChanges = changes.filter(change => !isOrderChange(change))
+  const [modifications, additionsAndRemovals] = _.partition(relevantChanges, isModificationChange)
+
+  updateList(list, modifications.filter(filterFunc).map(toListChange))
+
+  const [changesToApply, changesToIgnore] = _.partition(additionsAndRemovals, filterFunc)
+
+  const listChangesToApply = changesToApply.map(toListChange)
+  const listChangesToIgnore = changesToIgnore.map(toListChange)
+
+  const [additionsToApply, removalsToApply] = _.partition(listChangesToApply, hasAfterIndex)
+
+  const additionsToApplyWithFixedIndex = additionsToApply.map(change => ({
+    ...change,
+    fixedIndex: change.afterIndex,
+  }))
+
+  listChangesToIgnore.forEach(changeToIgnore => {
+    const indexShiftValue = hasAfterIndex(changeToIgnore) ? -1 : 1
+    const changeToIgnoreIndex = hasAfterIndex(changeToIgnore) ? changeToIgnore.afterIndex : changeToIgnore.beforeIndex
+
+    additionsToApplyWithFixedIndex.forEach(additionToApply => {
+      if (changeToIgnoreIndex < additionToApply.afterIndex) {
+        additionToApply.fixedIndex += indexShiftValue
+      }
+    })
+  })
+
+  additionsToApplyWithFixedIndex.forEach(change => {
+    change.afterIndex = change.fixedIndex
+  })
+
+  updateList(list, [...removalsToApply, ...additionsToApplyWithFixedIndex])
+}
+
 /**
  * This method is for applying list item changes on the element
  * (e.g, removal, addition or reorder of items inside lists).
@@ -297,7 +409,11 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
  *   In such scenario it is not clear whether the results should be ['b', 'a'] or ['a', 'b'].
  *   Here we chose the results for such case to be ['a', 'b'].
  */
-export const applyListChanges = (element: ChangeDataType, changes: DetailedChange[]): void =>
+export const applyListChanges = (
+  element: Element,
+  changes: DetailedChange[],
+  filterFunc: (change: DetailedChange) => boolean = () => true,
+): void =>
   log.timeDebug(() => {
     const ids = changes.map(change => change.id)
     if (
@@ -307,23 +423,19 @@ export const applyListChanges = (element: ChangeDataType, changes: DetailedChang
       throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
     }
 
-    const parentId = changes[0].id.createParentID().replaceParentId(element.elemID)
-    const list = resolvePath(element, parentId)
-    changes.filter(isRemovalOrModificationChange).forEach(change => {
-      list[Number(change.elemIDs?.before?.name)] = undefined
-    })
+    const matchingChanges = changes.filter(filterFunc)
+    if (matchingChanges.length === 0) {
+      return
+    }
 
-    _(changes)
-      .filter(isAdditionOrModificationChange)
-      .sortBy(change => Number(change.elemIDs?.after?.name))
-      .forEach(change => {
-        const index = Number(change.elemIDs?.after?.name)
-        if (list[index] === undefined) {
-          list[index] = change.data.after
-        } else {
-          list.splice(index, 0, change.data.after)
-        }
-      })
+    const parentId = getChangeRealId(changes[0]).createParentID().replaceParentId(element.elemID)
+    const list = resolvePath(element, parentId)
+
+    if (matchingChanges.length === changes.length) {
+      updateList(list, changes.map(toListChange))
+    } else {
+      updateListWithFilteredChanges(list, changes, filterFunc)
+    }
 
     setPath(element, parentId, list.filter(values.isDefined))
   }, `applyListChanges - ${element.elemID.getFullName()}`)

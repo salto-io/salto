@@ -627,8 +627,13 @@ describe('applyDetailedChanges', () => {
         action: 'add',
         data: { after: 3 },
       },
+      {
+        id: inst.elemID.createNestedID('val'),
+        action: 'modify',
+        data: { before: 1, after: 2 },
+      },
     ]
-    applyDetailedChanges(inst, changes)
+    applyDetailedChanges(inst, changes, change => change.id.name !== 'val')
   })
 
   it('should add new values', () => {
@@ -643,37 +648,51 @@ describe('applyDetailedChanges', () => {
     expect(inst.value).not.toHaveProperty('rem')
   })
 
+  it('should not apply filtered out values', () => {
+    expect(inst.value.val).toEqual(1)
+  })
+
   describe('with changes from compareListItems', () => {
     describe('with list removals', () => {
       let beforeInst: InstanceElement
       let afterInst: InstanceElement
       let outputInst: InstanceElement
+      let listChanges: DetailedChange[]
       beforeEach(() => {
         const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
         beforeInst = new InstanceElement('inst', instType, { a: ['c', 'a', 'd', 'e'] })
         afterInst = new InstanceElement('inst', instType, { a: ['a', 'b'] })
-        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
         outputInst = beforeInst.clone()
-        applyDetailedChanges(outputInst, listChanges)
       })
       it('should reproduce the after element', () => {
+        applyDetailedChanges(outputInst, listChanges)
         expect(outputInst).toEqual(afterInst)
+      })
+      it('should apply matching changes only', () => {
+        applyDetailedChanges(outputInst, listChanges, change => change.elemIDs?.before?.name !== '0')
+        expect(outputInst.value).toEqual({ a: ['c', 'a', 'e'] })
       })
     })
     describe('with list additions', () => {
       let beforeInst: InstanceElement
       let afterInst: InstanceElement
       let outputInst: InstanceElement
+      let listChanges: DetailedChange[]
       beforeEach(() => {
         const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
         beforeInst = new InstanceElement('inst', instType, { a: ['e', 'b', 'a'] })
         afterInst = new InstanceElement('inst', instType, { a: ['a', 'f', 'f', 'b', 'c', 'd'] })
-        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
         outputInst = beforeInst.clone()
-        applyDetailedChanges(outputInst, listChanges)
       })
       it('should reproduce the after element', () => {
+        applyDetailedChanges(outputInst, listChanges)
         expect(outputInst).toEqual(afterInst)
+      })
+      it('should apply matching changes only', () => {
+        applyDetailedChanges(outputInst, listChanges, change => ['2', '5'].includes(change.elemIDs?.after?.name ?? ''))
+        expect(outputInst.value).toEqual({ a: ['e', 'b', 'f', 'a', 'd'] })
       })
     })
 
@@ -681,16 +700,21 @@ describe('applyDetailedChanges', () => {
       let beforeInst: InstanceElement
       let afterInst: InstanceElement
       let outputInst: InstanceElement
+      let listChanges: DetailedChange[]
       beforeEach(() => {
         const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
         beforeInst = new InstanceElement('inst', instType, { a: ['a', 'b'] })
         afterInst = new InstanceElement('inst', instType, { a: ['b', 'a'] })
-        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
         outputInst = beforeInst.clone()
-        applyDetailedChanges(outputInst, listChanges)
       })
       it('should reproduce the after element', () => {
+        applyDetailedChanges(outputInst, listChanges)
         expect(outputInst).toEqual(afterInst)
+      })
+      it('should not apply reorder changes when only some of them match', () => {
+        applyDetailedChanges(outputInst, listChanges, change => change.id.name === '0')
+        expect(outputInst).toEqual(beforeInst)
       })
     })
 
@@ -715,6 +739,7 @@ describe('applyDetailedChanges', () => {
       let beforeInst: InstanceElement
       let afterInst: InstanceElement
       let outputInst: InstanceElement
+      let listChanges: DetailedChange[]
       beforeEach(() => {
         const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
         beforeInst = new InstanceElement('inst', instType, {
@@ -732,12 +757,25 @@ describe('applyDetailedChanges', () => {
             { a: 4 },
           ],
         })
-        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
         outputInst = beforeInst.clone()
-        applyDetailedChanges(outputInst, listChanges)
       })
       it('should apply the changes', () => {
+        applyDetailedChanges(outputInst, listChanges)
         expect(outputInst.value.a).toEqual(afterInst.value.a)
+      })
+      it('should apply matching changes only', () => {
+        applyDetailedChanges(
+          outputInst,
+          listChanges,
+          change => !['0', 'b'].includes(change.elemIDs?.before?.name ?? ''),
+        )
+        expect(outputInst.value.a).toEqual([
+          { a: 2 },
+          { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 1) },
+          { a: 2, b: 4 },
+          { a: 4, b: 3 },
+        ])
       })
     })
 
@@ -745,21 +783,51 @@ describe('applyDetailedChanges', () => {
       let beforeInst: InstanceElement
       let afterInst: InstanceElement
       let outputInst: InstanceElement
+      let listChanges: DetailedChange[]
       beforeEach(() => {
         const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
         beforeInst = new InstanceElement('inst', instType, {
-          a: [{ b: [2, 3] }],
+          a: [
+            { name: 'a', list: [1] },
+            { name: 'b', list: [2] },
+            { name: 'c', list: [3] },
+            { name: 'd', list: [4, 5] },
+          ],
         })
 
         afterInst = new InstanceElement('inst', instType, {
-          a: [{ b: [2] }],
+          a: [
+            { name: 'c', list: [3] },
+            { name: 'e', list: [5] },
+            { name: 'b', list: [2] },
+            { name: 'd', list: [4] },
+          ],
         })
-        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
         outputInst = beforeInst.clone()
-        applyDetailedChanges(outputInst, listChanges)
       })
       it('should apply the changes', () => {
+        applyDetailedChanges(outputInst, listChanges)
         expect(outputInst.value.a).toEqual(afterInst.value.a)
+      })
+      it('should apply matching changes only', () => {
+        applyDetailedChanges(outputInst, listChanges, change => change.elemIDs?.before?.name !== '0')
+        expect(outputInst.value.a).toEqual([
+          { name: 'a', list: [1] },
+          { name: 'b', list: [2] },
+          { name: 'e', list: [5] },
+          { name: 'c', list: [3] },
+          { name: 'd', list: [4] },
+        ])
+      })
+      it('should apply matching changes only - nest changes', () => {
+        applyDetailedChanges(outputInst, listChanges, change => change.elemIDs?.before?.nestingLevel === 4)
+        expect(outputInst.value.a).toEqual([
+          { name: 'a', list: [1] },
+          { name: 'b', list: [2] },
+          { name: 'c', list: [3] },
+          { name: 'd', list: [4] },
+        ])
       })
     })
   })
@@ -768,6 +836,7 @@ describe('applyDetailedChanges', () => {
     let beforeInst: InstanceElement
     let afterInst: InstanceElement
     let outputInst: InstanceElement
+    let listChanges: DetailedChange[]
     beforeEach(() => {
       const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
       beforeInst = new InstanceElement('inst', instType, {
@@ -779,14 +848,23 @@ describe('applyDetailedChanges', () => {
           { a: 2, b: 5 },
           { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 2) },
           { a: 2, b: 4 },
+          { a: 3, b: 6 },
         ],
       })
-      const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+      listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
       outputInst = beforeInst.clone()
-      applyDetailedChanges(outputInst, listChanges)
     })
     it('should apply the changes', () => {
+      applyDetailedChanges(outputInst, listChanges)
       expect(outputInst.value.a).toEqual(afterInst.value.a)
+    })
+    it('should apply matching changes only', () => {
+      applyDetailedChanges(outputInst, listChanges, change => change.elemIDs?.after?.name !== '0')
+      expect(outputInst.value.a).toEqual([
+        { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 1) },
+        { a: 2, b: 4 },
+        { a: 3 },
+      ])
     })
   })
 
@@ -794,6 +872,7 @@ describe('applyDetailedChanges', () => {
     let beforeInst: InstanceElement
     let afterInst: InstanceElement
     let outputInst: InstanceElement
+    let listChanges: DetailedChange[]
     beforeEach(() => {
       const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
       beforeInst = new InstanceElement('inst', instType, {
@@ -809,12 +888,16 @@ describe('applyDetailedChanges', () => {
           2: 'a',
         },
       })
-      const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+      listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
       outputInst = beforeInst.clone()
-      applyDetailedChanges(outputInst, listChanges)
     })
     it('should apply the changes', () => {
+      applyDetailedChanges(outputInst, listChanges)
       expect(outputInst.value.a).toEqual(afterInst.value.a)
+    })
+    it('should apply matching changes only and not treat as reordering', () => {
+      applyDetailedChanges(outputInst, listChanges, change => change.elemIDs?.after?.name === '1')
+      expect(outputInst.value.a).toEqual({ 1: 'b', 2: 'b' })
     })
   })
 

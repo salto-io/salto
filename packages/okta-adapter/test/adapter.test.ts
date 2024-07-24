@@ -32,6 +32,7 @@ import {
   BuiltinTypes,
   ReferenceExpression,
   CORE_ANNOTATIONS,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -58,6 +59,7 @@ import {
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   BRAND_THEME_TYPE_NAME,
+  GROUP_MEMBERSHIP_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -401,6 +403,39 @@ describe('adapter', () => {
           technicalContactEmail: 'myMail@salto.nacl',
           technicalContactId: 'myMail@salto.nacl',
           usermailEnabled: false,
+        })
+      })
+      it('should fetch GroupMembership type when includeGroupMemberships flag is enabled', async () => {
+        const config = new InstanceElement('config', adapter.configType as ObjectType, {
+          ...DEFAULT_CONFIG,
+          fetch: {
+            includeGroupMemberships: true,
+            include: [
+              { type: 'Group' }, // limiting to one type to avoid getting a timeout
+              { type: 'GroupMembership' },
+            ],
+          },
+        })
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', accessTokenCredentialsType, {
+              baseUrl: 'https://test.okta.com',
+              token: 't',
+            }),
+            config,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: nullProgressReporter })
+        const groupMembersType = elements
+          .filter(isObjectType)
+          .find(e => e.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
+        expect(groupMembersType).toBeDefined()
+        const groupMembersInstances = elements
+          .filter(isInstanceElement)
+          .filter(inst => inst.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
+        expect(groupMembersInstances).toHaveLength(1)
+        expect(groupMembersInstances[0]?.value).toEqual({
+          members: ['myMail@salto.nacl'],
         })
       })
     })

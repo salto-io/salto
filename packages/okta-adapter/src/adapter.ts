@@ -197,15 +197,18 @@ export default class OktaAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
+
     const definitions = {
       // TODO - SALTO-5746 - only provide adminClient when it is defined
       clients: createClientDefinitions({ main: this.client, private: this.adminClient ?? this.client }),
       pagination: PAGINATION,
-      fetch: createFetchDefinitions(
-        this.userConfig,
-        shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig),
-        getAdminUrl(this.client.baseUrl),
-      ),
+      fetch: createFetchDefinitions({
+        userConfig: this.userConfig,
+        fetchQuery: this.fetchQuery,
+        usePrivateAPI: shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig),
+        baseUrl: getAdminUrl(this.client.baseUrl),
+      }),
       deploy: createDeployDefinitions(),
       sources: { openAPI: [OPEN_API_DEFINITIONS] },
     }
@@ -217,8 +220,6 @@ export default class OktaAdapter implements AdapterOperations {
         fetchConfig: definitions.fetch,
       }),
     }
-
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
 

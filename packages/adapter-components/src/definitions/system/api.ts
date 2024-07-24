@@ -34,7 +34,7 @@ export type ResolveClientOptionsType<Options extends Pick<APIDefinitionsOptions,
   Options['clientOptions'] extends string ? Options['clientOptions'] : 'main'
 
 export type ResolvePaginationOptionsType<Options extends Pick<APIDefinitionsOptions, 'paginationOptions'>> =
-  Options['paginationOptions'] extends string ? Options['paginationOptions'] : 'none'
+  Options['paginationOptions'] extends string ? Options['paginationOptions'] | 'none' : 'none'
 
 export type ResolveCustomNameMappingOptionsType<
   Options extends Pick<APIDefinitionsOptions, 'customNameMappingOptions'>,
@@ -72,7 +72,10 @@ export type ApiDefinitions<Options extends APIDefinitionsOptions = {}> = {
   >
 
   // supported pagination options. when missing, no pagination is used (TODO add warning)
-  pagination: Record<ResolvePaginationOptionsType<Options>, PaginationDefinitions<ResolveClientOptionsType<Options>>>
+  pagination: Record<
+    Exclude<ResolvePaginationOptionsType<Options>, 'none'>,
+    PaginationDefinitions<ResolveClientOptionsType<Options>>
+  >
 
   // rules for reference extraction (during fetch) and serialization (during deploy)
   references?: ReferenceDefinitions<

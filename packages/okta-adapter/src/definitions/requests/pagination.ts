@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
-import { ClientOptions, PaginationOptions } from '../types'
+import { OktaOptions } from '../types'
 
 const { cursorPagination, defaultPathChecker, cursorHeaderPagination } = fetchUtils.request.pagination
 
-export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
+export const PAGINATION: definitions.ApiDefinitions<OktaOptions>['pagination'] = {
   cursorHeader: {
     funcCreator: () => cursorHeaderPagination({ pathChecker: defaultPathChecker }),
   },

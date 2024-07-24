@@ -17,7 +17,7 @@ import { definitions } from '@salto-io/adapter-components'
 
 export type AdditionalAction = never
 export type ClientOptions = 'main' | 'groupSettings' | 'cloudIdentity'
-export type PaginationOptions = 'cursor'
+type PaginationOptions = 'cursor'
 export type ReferenceContextStrategies = never
 export type CustomReferenceSerializationStrategyName = 'roleId' | 'orgUnitId' | 'buildingId' | 'email'
 

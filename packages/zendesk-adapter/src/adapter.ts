@@ -170,6 +170,7 @@ import { createClientDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
 import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
+import ZendeskGuideClient from './client/guide_client'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -365,77 +366,96 @@ const getBrandsFromElementsSourceNoCache = async (elementsSource: ReadOnlyElemen
 const getGuideElements = async ({
   brandsList,
   brandToPaginator,
+  brandFetchDefinitions,
   apiDefinitions,
   fetchQuery,
   getElemIdFunc,
+  useGuideNewInfra,
 }: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
+  brandFetchDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
+  useGuideNewInfra: boolean | undefined
 }): Promise<fetchUtils.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
-
   // Omit standaloneFields from config to avoid creating types from references
   const typesConfigWithNoStandaloneFields = _.mapValues(apiDefinitions.types, config =>
     _.omit(config, ['transformation.standaloneFields']),
   )
-  const fetchResultWithDuplicateTypes = await Promise.all(
-    brandsList.map(async brandInstance => {
-      const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
-      log.debug(`Fetching elements for brand ${brandInstance.elemID.name}`)
-      return getAllElements({
-        adapterName: ZENDESK,
-        types: typesConfigWithNoStandaloneFields,
-        shouldAddRemainingTypes: false,
-        supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
-        fetchQuery,
-        paginator: brandsPaginator,
-        nestedFieldFinder: findDataField,
-        computeGetArgs,
-        typeDefaults: apiDefinitions.typeDefaults,
-        getElemIdFunc,
-        getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandInstance),
-      })
-    }),
-  )
+  if (useGuideNewInfra !== true) {
+    const fetchResultWithDuplicateTypes = await Promise.all(
+      brandsList.map(async brandInstance => {
+        const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
+        log.debug(`Fetching elements for brand ${brandInstance.elemID.name}`)
+        return getAllElements({
+          adapterName: ZENDESK,
+          types: typesConfigWithNoStandaloneFields,
+          shouldAddRemainingTypes: false,
+          supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
+          fetchQuery,
+          paginator: brandsPaginator,
+          nestedFieldFinder: findDataField,
+          computeGetArgs,
+          typeDefaults: apiDefinitions.typeDefaults,
+          getElemIdFunc,
+          getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandInstance),
+        })
+      }),
+    )
 
-  const typeNameToGuideInstances = _.groupBy(
-    fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
-    instance => instance.elemID.typeName,
-  )
-  // Create new types based on the created instances from all brands,
-  // then create new instances with the corresponding type as refType
-  const zendeskGuideElements = Object.entries(typeNameToGuideInstances).flatMap(([typeName, instances]) => {
-    const guideElements = elementUtils.ducktype.getNewElementsFromInstances({
+    const typeNameToGuideInstances = _.groupBy(
+      fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
+      instance => instance.elemID.typeName,
+    )
+
+    // Create new types based on the created instances from all brands,
+    // then create new instances with the corresponding type as refType
+    const zendeskGuideElements = Object.entries(typeNameToGuideInstances).flatMap(([typeName, instances]) => {
+      const guideElements = elementUtils.ducktype.getNewElementsFromInstances({
+        adapterName: ZENDESK,
+        typeName,
+        instances,
+        transformationConfigByType,
+        transformationDefaultConfig,
+      })
+      return _.concat(guideElements.instances as Element[], guideElements.nestedTypes, guideElements.type)
+    })
+
+    // Create instances from standalone fields that were not created in previous steps
+    await elementUtils.ducktype.extractStandaloneFields({
       adapterName: ZENDESK,
-      typeName,
-      instances,
+      elements: zendeskGuideElements,
       transformationConfigByType,
       transformationDefaultConfig,
+      getElemIdFunc,
     })
-    return _.concat(guideElements.instances as Element[], guideElements.nestedTypes, guideElements.type)
-  })
 
-  // Create instances from standalone fields that were not created in previous steps
-  await elementUtils.ducktype.extractStandaloneFields({
+    const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(
+      fetchResult => fetchResult.configChanges ?? [],
+    )
+
+    const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
+    return {
+      elements: zendeskGuideElements,
+      configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
+      errors: guideErrors,
+    }
+  }
+  // to monitor new infra usage, will be removed later
+  log.debug('using new infra for guide')
+  const guideFetchResult = await fetchUtils.getElements({
     adapterName: ZENDESK,
-    elements: zendeskGuideElements,
-    transformationConfigByType,
-    transformationDefaultConfig,
+    fetchQuery,
     getElemIdFunc,
+    definitions: brandFetchDefinitions,
   })
-
-  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(
-    fetchResult => fetchResult.configChanges ?? [],
-  )
-  const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
+  guideFetchResult.elements = guideFetchResult.elements.filter(e => !e.elemID.typeName.startsWith('brand'))
   return {
-    elements: zendeskGuideElements,
-    configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
-    errors: guideErrors,
+    ...guideFetchResult,
   }
 }
 
@@ -452,6 +472,7 @@ export interface ZendeskAdapterParams {
 
 export default class ZendeskAdapter implements AdapterOperations {
   private client: ZendeskClient
+  private guideClient: ZendeskGuideClient | undefined
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
@@ -491,6 +512,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.client = client
     this.elementsSource = elementsSource
     this.brandsList = undefined
+    this.guideClient = undefined
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -509,12 +531,17 @@ export default class ZendeskAdapter implements AdapterOperations {
       })
     }
 
+    const typesToOmit = this.getNonSupportedTypesToOmit()
+
     this.adapterDefinitions = {
-      clients: createClientDefinitions({ main: this.client }),
+      // we can't add guide client at this point
+      clients: createClientDefinitions({ main: this.client, guide: this.client }),
       pagination: PAGINATION,
       fetch: definitions.mergeWithUserElemIDDefinitions({
-        userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
-        fetchConfig: createFetchDefinitions(this.userConfig, this.getNonSupportedTypesToOmit()),
+        userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
+        fetchConfig: createFetchDefinitions(this.userConfig, {
+          typesToOmit,
+        }),
       }),
     }
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
@@ -564,7 +591,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideThemesEnabledInConfig = isGuideThemesEnabled(this.userConfig[FETCH_CONFIG])
     const keysToOmit = isGuideEnabledInConfig
-      ? Object.keys(GUIDE_BRAND_SPECIFIC_TYPES)
+      ? GUIDE_TYPES_TO_HANDLE_BY_BRAND.map(type => type) // we don't want to remove permission_group and user_segment and theme
       : Object.keys(GUIDE_SUPPORTED_TYPES)
     if (!isGuideThemesEnabledInConfig) {
       keysToOmit.push(GUIDE_THEME_TYPE_NAME)
@@ -586,7 +613,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     // Temporarily get fetch method from the config. This is used for testing purposes
     // and should be removed once we are confident the new infra behaves nicely - SALTO-5761
-    const { useNewInfra } = this.userConfig[FETCH_CONFIG]
+    const { useNewInfra, useGuideNewInfra } = this.userConfig[FETCH_CONFIG]
     let defaultSubdomainResult
     if (useNewInfra !== true) {
       // Zendesk Support and (if enabled) global Zendesk Guide types
@@ -658,13 +685,40 @@ export default class ZendeskAdapter implements AdapterOperations {
           }),
         ]),
       )
+      const brandClients = Object.fromEntries(
+        brandsList.map(brandInstance => [
+          brandInstance.value.id,
+          this.createClientBySubdomain(brandInstance.value.subdomain),
+        ]),
+      )
+      const typesToPick = GUIDE_TYPES_TO_HANDLE_BY_BRAND.concat([
+        'guide_settings__help_center',
+        'guide_settings__help_center__settings',
+        'guide_settings__help_center__text_filter',
+        'brand',
+      ])
+      this.guideClient = new ZendeskGuideClient(brandClients)
+      const client = createClientDefinitions({ main: this.client, guide: this.guideClient })
+      const guideFetchDef = definitions.mergeWithUserElemIDDefinitions({
+        userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
+        fetchConfig: createFetchDefinitions(this.userConfig, {
+          typesToPick,
+        }),
+      })
+      const guideDefinitions = {
+        clients: client,
+        pagination: PAGINATION,
+        fetch: guideFetchDef,
+      }
 
       const zendeskGuideElements = await getGuideElements({
         brandsList,
         brandToPaginator,
+        brandFetchDefinitions: guideDefinitions,
         apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchQuery: this.fetchQuery,
         getElemIdFunc: this.getElemIdFunc,
+        useGuideNewInfra,
       })
 
       combinedRes.configChanges = combinedRes.configChanges.concat(zendeskGuideElements.configChanges ?? [])
@@ -914,7 +968,6 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator: createChangeValidator({

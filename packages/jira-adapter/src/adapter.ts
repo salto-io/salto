@@ -140,6 +140,7 @@ import { paginate, filterResponseEntries } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
+import assetsObjectFieldConfigurationFilter from './filters/assets/assets_object_field_configuration'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
@@ -252,6 +253,7 @@ export const DEFAULT_FILTERS = [
   unresolvedParentsFilter,
   localeFilter,
   contextReferencesFilter,
+  assetsObjectFieldConfigurationFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,
   // This must run after fieldDeploymentFilter

@@ -14,21 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  BuiltinTypes,
-  CORE_ANNOTATIONS,
-  createRestriction,
-  ElemID,
-  ListType,
-  ObjectType,
-} from '@salto-io/adapter-api'
-import {
-  SALESFORCE,
-  SUBTYPES_PATH,
-  TYPES_PATH,
-  IS_ATTRIBUTE,
-  METADATA_TYPE,
-} from '../constants'
+import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
+import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, IS_ATTRIBUTE, METADATA_TYPE } from '../constants'
 
 const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
 
@@ -115,7 +102,6 @@ const lightningComponentBundlePropertyType = new ObjectType({
         [IS_ATTRIBUTE]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           values: ['Boolean', 'Integer', 'String', 'Color', 'Date', 'DateTime'],
-          // eslint-disable-next-line camelcase
           enforce_value: false,
         }),
       },
@@ -148,10 +134,7 @@ const lightningComponentBundleSupportedFormFactorType = new ObjectType({
 })
 
 const lightningComponentBundleSupportedFormFactorsType = new ObjectType({
-  elemID: new ElemID(
-    SALESFORCE,
-    'LightningComponentBundleSupportedFormFactors',
-  ),
+  elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactors'),
   fields: {
     supportedFormFactor: {
       refType: new ListType(lightningComponentBundleSupportedFormFactorType),

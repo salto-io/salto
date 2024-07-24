@@ -21,15 +21,11 @@ export type SalesforceBlock = BlockBase & {
   as: string
   provider: 'salesforce' | 'salesforce_secondary'
   dynamicPickListSelection: {
-    // eslint-disable-next-line camelcase
     sobject_name: string
-    // eslint-disable-next-line camelcase
     field_list?: RefListItem[]
-    // eslint-disable-next-line camelcase
     table_list?: RefListItem[]
   }
   input: {
-    // eslint-disable-next-line camelcase
     sobject_name: string
   }
 }

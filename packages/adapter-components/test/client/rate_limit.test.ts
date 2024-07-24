@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Bottleneck from 'bottleneck'
 import { Resolvable, makeResolvablePromise } from '@salto-io/test-utils'
-import { createRateLimitersFromConfig, throttle, BottleneckBuckets } from '../../src/client'
+import { createRateLimitersFromConfig, throttle, RateLimitBuckets, RateLimiter } from '../../src/client'
 
 type MyRateLimitConfig = {
   total: number
@@ -26,7 +25,7 @@ type MyRateLimitConfig = {
 }
 
 class A {
-  readonly rateLimiters: BottleneckBuckets<MyRateLimitConfig>
+  readonly rateLimiters: RateLimitBuckets<MyRateLimitConfig>
   constructor(limits: MyRateLimitConfig) {
     this.rateLimiters = createRateLimitersFromConfig({
       rateLimit: limits,
@@ -34,20 +33,20 @@ class A {
     })
   }
 
-  @throttle<MyRateLimitConfig>({})
   // eslint-disable-next-line class-methods-use-this
+  @throttle<MyRateLimitConfig>({})
   async runSomething(promise: Promise<number>): Promise<void> {
     await promise
   }
 
-  @throttle<MyRateLimitConfig>({ bucketName: 'a' })
   // eslint-disable-next-line class-methods-use-this
+  @throttle<MyRateLimitConfig>({ bucketName: 'a' })
   async runA(promise: Promise<number>): Promise<void> {
     await promise
   }
 
-  @throttle<MyRateLimitConfig>({ bucketName: 'b' })
   // eslint-disable-next-line class-methods-use-this
+  @throttle<MyRateLimitConfig>({ bucketName: 'b' })
   async runB(promise: Promise<number>): Promise<void> {
     await promise
   }
@@ -55,16 +54,8 @@ class A {
 
 const RATE_LIMITER_UPDATE_DELAY = 100
 
-const isCurrentLimitEqual = async (b: Bottleneck, limit: number | undefined): Promise<boolean> => {
-  // all the numbers we use are lower
-  if (limit === undefined) {
-    return b.check(100)
-  }
-  if (limit === 0) {
-    return !(await b.check(1))
-  }
-  return (await b.check(limit)) && !(await b.check(limit + 1))
-}
+const isCurrentLimitEqual = async (rateLimiter: RateLimiter, limit: number | undefined): Promise<boolean> =>
+  rateLimiter.options.maxConcurrentCalls === limit
 
 describe('client_rate_limit', () => {
   let a1: A
@@ -104,98 +95,59 @@ describe('client_rate_limit', () => {
       a1.runB(addPromise(resolvables))
       // wait for the rate limiters to update
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(1)
-      expect(a1.rateLimiters.b.queued()).toEqual(0)
-      expect(await a1.rateLimiters.b.done()).toEqual(0)
-      expect(await a1.rateLimiters.total.running()).toEqual(1)
-      expect(a1.rateLimiters.total.queued()).toEqual(0)
-      expect(await a1.rateLimiters.total.done()).toEqual(0)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 1, pending: 0, running: 1, done: 0 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 1, pending: 0, running: 1, done: 0 })
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runB(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(2)
-      expect(a1.rateLimiters.b.queued()).toEqual(0)
-      expect(await a1.rateLimiters.b.done()).toEqual(0)
-      expect(await a1.rateLimiters.total.running()).toEqual(2)
-      expect(a1.rateLimiters.total.queued()).toEqual(0)
-      expect(await a1.rateLimiters.total.done()).toEqual(0)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 2, pending: 0, running: 2, done: 0 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 2, pending: 0, running: 2, done: 0 })
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runB(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(2)
-      expect(a1.rateLimiters.b.queued()).toEqual(1)
-      expect(await a1.rateLimiters.b.done()).toEqual(0)
-      expect(await a1.rateLimiters.total.running()).toEqual(2)
-      expect(a1.rateLimiters.total.queued()).toEqual(0)
-      expect(await a1.rateLimiters.total.done()).toEqual(0)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 1, running: 2, done: 0 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 2, pending: 0, running: 2, done: 0 })
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runSomething(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(2)
-      expect(a1.rateLimiters.b.queued()).toEqual(1)
-      expect(await a1.rateLimiters.b.done()).toEqual(0)
-      expect(await a1.rateLimiters.total.running()).toEqual(3)
-      expect(a1.rateLimiters.total.queued()).toEqual(0)
-      expect(await a1.rateLimiters.total.done()).toEqual(0)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 1, running: 2, done: 0 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 3, pending: 0, running: 3, done: 0 })
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runSomething(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(2)
-      expect(a1.rateLimiters.b.queued()).toEqual(1)
-      expect(await a1.rateLimiters.b.done()).toEqual(0)
-      expect(await a1.rateLimiters.total.running()).toEqual(3)
-      expect(a1.rateLimiters.total.queued()).toEqual(1)
-      expect(await a1.rateLimiters.total.done()).toEqual(0)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 1, running: 2, done: 0 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 4, pending: 1, running: 3, done: 0 })
 
       resolvables[0].resolve()
       // wait for the rate limiters to update
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(2)
-      expect(a1.rateLimiters.b.queued()).toEqual(0)
-      expect(await a1.rateLimiters.b.done()).toEqual(1)
-      expect(await a1.rateLimiters.total.running()).toEqual(3)
-      expect(a1.rateLimiters.total.queued()).toEqual(1)
-      expect(await a1.rateLimiters.total.done()).toEqual(1)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 2, done: 1 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 1, running: 3, done: 1 })
 
       resolvables[1].resolve()
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(1)
-      expect(a1.rateLimiters.b.queued()).toEqual(0)
-      expect(await a1.rateLimiters.b.done()).toEqual(2)
-      expect(await a1.rateLimiters.total.running()).toEqual(3)
-      expect(a1.rateLimiters.total.queued()).toEqual(0)
-      expect(await a1.rateLimiters.total.done()).toEqual(2)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 1, done: 2 })
+
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 0, running: 3, done: 2 })
 
       resolvables[3].resolve()
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(1)
-      expect(a1.rateLimiters.b.queued()).toEqual(0)
-      expect(await a1.rateLimiters.b.done()).toEqual(2)
-      expect(await a1.rateLimiters.total.running()).toEqual(2)
-      expect(a1.rateLimiters.total.queued()).toEqual(0)
-      expect(await a1.rateLimiters.total.done()).toEqual(3)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 1, done: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 0, running: 2, done: 3 })
 
       resolvables[4].resolve()
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(1)
-      expect(a1.rateLimiters.b.queued()).toEqual(0)
-      expect(await a1.rateLimiters.b.done()).toEqual(2)
-      expect(await a1.rateLimiters.total.running()).toEqual(1)
-      expect(a1.rateLimiters.total.queued()).toEqual(0)
-      expect(await a1.rateLimiters.total.done()).toEqual(4)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 1, done: 2 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 0, running: 1, done: 4 })
 
       resolvables[2].resolve()
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
-      expect(await a1.rateLimiters.b.running()).toEqual(0)
-      expect(a1.rateLimiters.b.queued()).toEqual(0)
-      expect(await a1.rateLimiters.b.done()).toEqual(3)
-      expect(await a1.rateLimiters.total.running()).toEqual(0)
-      expect(a1.rateLimiters.total.queued()).toEqual(0)
-      expect(await a1.rateLimiters.total.done()).toEqual(5)
+      expect(a1.rateLimiters.b.counters).toEqual({ total: 3, pending: 0, running: 0, done: 3 })
+      expect(a1.rateLimiters.total.counters).toEqual({ total: 5, pending: 0, running: 0, done: 5 })
     })
   })
 })

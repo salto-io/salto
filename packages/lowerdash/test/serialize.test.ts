@@ -34,6 +34,7 @@ describe('serialize', () => {
         [[{ a: { b: { c: 'd' } } }, [{ y: 'z' }]], [{}]],
         [[{}], [{}, {}], ['a', 'b', 3, undefined, null]],
         [['a', 'b'], { c: 'd' }, { e: 'f' }],
+        // eslint-disable-next-line no-restricted-syntax
       ]).forEach(async items => expect(await getSerializedStreamRes(items)).toEqual(JSON.stringify(items)))
     })
   })

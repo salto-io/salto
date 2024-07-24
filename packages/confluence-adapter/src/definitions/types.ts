@@ -17,7 +17,7 @@ import { definitions } from '@salto-io/adapter-components'
 
 export type AdditionalAction = never
 export type ClientOptions = 'main' | 'users_client'
-export type PaginationOptions = 'cursor' | 'usersPagination'
+type PaginationOptions = 'cursor' | 'usersPagination'
 
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions

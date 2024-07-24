@@ -100,7 +100,6 @@ const callbackResponseFuncWith403 = (config: AxiosRequestConfig): any => {
 }
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 
@@ -668,7 +667,6 @@ describe('adapter', () => {
               '.zendesk.com',
             ],
           }),
-          // eslint-disable-next-line camelcase
           brand_id: expect.any(ReferenceExpression),
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
@@ -694,6 +692,7 @@ describe('adapter', () => {
                   brands: ['.*'],
                 },
                 useNewInfra: true,
+                useGuideNewInfra: true,
                 omitInactive: {
                   default: false,
                   customizations: {},
@@ -1216,7 +1215,6 @@ describe('adapter', () => {
               '.zendesk.com',
             ],
           }),
-          // eslint-disable-next-line camelcase
           brand_id: expect.any(ReferenceExpression),
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
@@ -1825,7 +1823,6 @@ describe('adapter', () => {
               '.zendesk.com',
             ],
           }),
-          // eslint-disable-next-line camelcase
           brand_id: expect.any(ReferenceExpression),
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
@@ -2371,7 +2368,6 @@ describe('adapter', () => {
               '.zendesk.com',
             ],
           }),
-          // eslint-disable-next-line camelcase
           brand_id: expect.any(ReferenceExpression),
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')

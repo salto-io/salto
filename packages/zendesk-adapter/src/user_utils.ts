@@ -51,7 +51,6 @@ export type User = {
   name: string
   email: string
   role: string
-  // eslint-disable-next-line camelcase
   custom_role_id?: number | null
   locale: string
 }

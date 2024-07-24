@@ -15,13 +15,13 @@
  */
 import { DynamoEnvironment } from './types'
 
+type DynamoEnv = {
+  real?: DynamoEnvironment
+  dynalite: DynamoEnvironment
+}
+
 declare global {
-  module NodeJS {
-    interface Global {
-      dynamoEnv: {
-        real?: DynamoEnvironment
-        dynalite: DynamoEnvironment
-      }
-    }
+  namespace globalThis {
+    var dynamoEnv: DynamoEnv | undefined
   }
 }

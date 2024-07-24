@@ -27,11 +27,8 @@ import { BRAND_TYPE_NAME } from '../constants'
 
 type BrandType = InstanceElement & {
   value: {
-    // eslint-disable-next-line camelcase
     help_center_state: string
-    // eslint-disable-next-line camelcase
     has_help_center: boolean
-    // eslint-disable-next-line camelcase
     brand_url: string
   }
 }

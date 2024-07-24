@@ -508,7 +508,7 @@ describe('Test utils.ts', () => {
         })
 
         it('should omit undefined fields in nested objects', () => {
-          const { magical } = resp?.obj[1]?.innerObj
+          const magical = resp?.obj?.[1]?.innerObj?.magical
           expect(magical).toBeDefined()
           expect(magical).not.toHaveProperty('notExist2')
         })
@@ -1147,7 +1147,7 @@ describe('Test utils.ts', () => {
         })
 
         it('should omit undefined fields in nested objects', () => {
-          const { magical } = resp?.obj[1]?.innerObj
+          const magical = resp?.obj?.[1]?.innerObj?.magical
           expect(magical).toBeDefined()
           expect(magical).not.toHaveProperty('notExist2')
         })
@@ -2147,9 +2147,7 @@ describe('Test utils.ts', () => {
     const ot = new ObjectType({
       elemID: otID,
       fields: {
-        // eslint-disable-next-line camelcase
         num_field: { refType: primNum },
-        // eslint-disable-next-line camelcase
         str_field: { refType: primStr },
       },
       annotationRefsOrTypes: {},

@@ -77,6 +77,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
+  enableAssetsObjectFieldConfiguration?: boolean
   automationPageSize?: number
   splitFieldContextOptions?: boolean
 }
@@ -162,6 +163,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     addAlias: true,
     enableIssueLayouts: true,
     enableNewWorkflowAPI: false,
+    enableAssetsObjectFieldConfiguration: false,
   },
   deploy: {
     forceDelete: false,
@@ -361,6 +363,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
+    enableAssetsObjectFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     automationPageSize: { refType: BuiltinTypes.NUMBER },
     splitFieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
   },
@@ -414,6 +417,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.enableIssueLayouts',
       'fetch.removeDuplicateProjectRoles',
       'fetch.enableNewWorkflowAPI',
+      'fetch.enableAssetsObjectFieldConfiguration',
       'fetch.automationPageSize',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',

@@ -25,37 +25,22 @@ import { mapProfileOrPermissionSetSections } from './profiles'
 const log = logger(module)
 const { makeArray } = collections.array
 
-const referencesFromPermissionSets = (
-  permissionSet: InstanceElement,
-): ReferenceInfo[] =>
-  mapProfileOrPermissionSetSections(
-    permissionSet,
-    (sectionName, sectionEntryKey, target, sourceField) => ({
-      source: permissionSet.elemID.createNestedID(
-        sectionName,
-        sectionEntryKey,
-        ...makeArray(sourceField),
-      ),
-      target,
-      type: 'weak',
-    }),
-  )
+const referencesFromPermissionSets = (permissionSet: InstanceElement): ReferenceInfo[] =>
+  mapProfileOrPermissionSetSections(permissionSet, (sectionName, sectionEntryKey, target, sourceField) => ({
+    source: permissionSet.elemID.createNestedID(sectionName, sectionEntryKey, ...makeArray(sourceField)),
+    target,
+    type: 'weak',
+  }))
 
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
-  const permissionSets = elements.filter(
-    isInstanceOfTypeSync(PERMISSION_SET_METADATA_TYPE),
-  )
+  const permissionSets = elements.filter(isInstanceOfTypeSync(PERMISSION_SET_METADATA_TYPE))
   const refs = log.timeDebug(
     () => permissionSets.flatMap(referencesFromPermissionSets),
     `Generating references from ${permissionSets.length} permission sets.`,
   )
-  log.debug(
-    'Generated %d references for %d elements.',
-    refs.length,
-    elements.length,
-  )
+  log.debug('Generated %d references for %d elements.', refs.length, elements.length)
   return refs
 }
 

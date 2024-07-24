@@ -79,9 +79,11 @@ const getProjectIssueLayoutsScreensName = async (
   ) {
     return []
   }
-  const projectIssueTypesFullName = (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds
-    ?.filter(isReferenceExpression)
-    ?.map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
+  const projectIssueTypesFullName = (
+    (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds ?? []
+  )
+    .filter(isReferenceExpression)
+    .map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
 
   const relevantIssueTypeMappings = (
     (await Promise.all(
@@ -141,7 +143,7 @@ export const issueLayoutsValidator: (client: JiraClient, config: JiraConfig) => 
               !isReferenceExpression(issueLayoutInstance.value.extraDefinerId) ||
               !issueLayoutsScreens.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName()),
           )
-          .map(async issueLayoutInstance => {
+          .forEach(issueLayoutInstance => {
             errors.push({
               elemID: issueLayoutInstance.elemID,
               severity: 'Error',

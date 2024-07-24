@@ -13,12 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  isObjectType,
-  Element,
-  ObjectType,
-  CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { isObjectType, Element, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
@@ -47,16 +42,11 @@ export const makeFilter =
   () => ({
     name: 'removeRestrictionAnnotationsFilter',
     onFetch: async (elements: Element[]) => {
-      const removeRestrictionsFromTypeFields = async (
-        type: ObjectType,
-      ): Promise<void> => {
+      const removeRestrictionsFromTypeFields = async (type: ObjectType): Promise<void> => {
         const relevantFields = typeNameToFieldMapping[await metadataType(type)]
-        relevantFields.forEach((fieldName) => {
+        relevantFields.forEach(fieldName => {
           const field = type.fields[fieldName]
-          if (
-            field !== undefined &&
-            field.annotations[CORE_ANNOTATIONS.RESTRICTION] !== undefined
-          ) {
+          if (field !== undefined && field.annotations[CORE_ANNOTATIONS.RESTRICTION] !== undefined) {
             delete field.annotations[CORE_ANNOTATIONS.RESTRICTION]
           }
         })
@@ -64,10 +54,7 @@ export const makeFilter =
 
       await awu(elements)
         .filter(isObjectType)
-        .filter(
-          async (type) =>
-            typeNameToFieldMapping[await metadataType(type)] !== undefined,
-        )
+        .filter(async type => typeNameToFieldMapping[await metadataType(type)] !== undefined)
         .forEach(removeRestrictionsFromTypeFields)
     },
   })

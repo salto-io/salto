@@ -16,7 +16,6 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'salto-lang-server',
   displayName: 'salto-lang-server',
   rootDir: `${__dirname}`,
   collectCoverageFrom: [

@@ -34,13 +34,11 @@ export const lightningElementsUrlRetriever = (
     log.error(`Received invalid salesforce url: '${baseUrl.origin}'`)
     return undefined
   }
-  const lightningUrl = new URL(
-    `${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`,
-  )
+  const lightningUrl = new URL(`${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`)
 
   const retrieveUrl = async (element: Element): Promise<URL | undefined> =>
     awu(resolvers)
-      .map((resolver) => resolver(element, lightningUrl, elementIDResolver))
+      .map(resolver => resolver(element, lightningUrl, elementIDResolver))
       .find(values.isDefined)
 
   return {

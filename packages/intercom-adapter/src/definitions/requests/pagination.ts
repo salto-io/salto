@@ -15,7 +15,7 @@
  */
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { ClientOptions, PaginationOptions } from '../types'
+import { Options } from '../types'
 
 type PaginationFunction = definitions.PaginationFunction
 const { cursorPagination } = fetchUtils.request.pagination
@@ -46,7 +46,7 @@ export const scrollingPagination = ({
   return nextPageScrollingPages
 }
 
-export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
+export const PAGINATION: definitions.ApiDefinitions<Options>['pagination'] = {
   cursor: {
     funcCreator: () =>
       cursorPagination({

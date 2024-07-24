@@ -1337,6 +1337,23 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: OBJECT_SCHEMA_TYPE },
   },
   {
+    src: { field: 'objectSchemaId', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: OBJECT_SCHEMA_TYPE },
+  },
+  {
+    src: { field: 'attributesIncludedInAutoCompleteSearch', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'name',
+    target: { type: OBJECT_TYPE_ATTRIBUTE_TYPE },
+  },
+  {
+    src: { field: 'attributesDisplayedOnIssue', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'name',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: OBJECT_TYPE_ATTRIBUTE_TYPE },
+  },
+  {
     src: { field: 'requestType', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',

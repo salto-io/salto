@@ -25,18 +25,14 @@ const filter: LocalFilterCreator = ({ config }) => ({
   name: 'hideReadOnlyValuesFilter',
   onFetch: async (elements: Element[]) => {
     if (config.fetchProfile.dataManagement?.showReadOnlyValues === true) {
-      // eslint-disable-next-line no-useless-return
       return
     }
     await awu(elements)
       .filter(isCustomObject)
       .filter(isObjectType)
-      .forEach((type) => {
-        Object.values(type.fields).forEach((field) => {
-          if (
-            !field.annotations[FIELD_ANNOTATIONS.CREATABLE] &&
-            !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
-          ) {
+      .forEach(type => {
+        Object.values(type.fields).forEach(field => {
+          if (!field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]) {
             field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
           }
         })

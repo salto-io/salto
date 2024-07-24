@@ -60,11 +60,11 @@ const timings = (): Timings => {
     object: T,
     method: M,
   ): void => {
-    const original = object[method]
-    const label = `${objectName}.${method}`
+    const original = object[method] as Func<unknown[], unknown>
+    const label = `${objectName}.${String(method)}`
     object[method] = wrap(label, original) as T[M]
     teardowns.push(() => {
-      object[method] = original
+      object[method] = original as T[M]
     })
   }
 

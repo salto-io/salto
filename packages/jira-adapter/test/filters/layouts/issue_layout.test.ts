@@ -858,6 +858,17 @@ describe('issue layout filter', () => {
       expect(deployResult.errors).toHaveLength(0)
       expect(deployResult.appliedChanges).toHaveLength(1)
     })
+    it('should return an error if project was removed and API throws non 404 error', async () => {
+      const change = toChange({ before: issueLayoutInstance })
+      const error = new clientUtils.HTTPError('message', {
+        status: 500,
+        data: { errorMessages: ['project does not exist.'] },
+      })
+      connection.get.mockRejectedValueOnce(error)
+      const { deployResult } = await layoutFilter.deploy([change])
+      expect(deployResult.errors).toHaveLength(1)
+      expect(deployResult.appliedChanges).toHaveLength(0)
+    })
     it('should return error if issue layout as removed but parent project still exits', async () => {
       const change = toChange({ before: issueLayoutInstance })
       connection.get.mockImplementation(async url => {

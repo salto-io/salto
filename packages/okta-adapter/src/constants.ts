@@ -86,6 +86,8 @@ export const POLICY_PRIORITY_TYPE_NAMES = [
   MFA_POLICY_PRIORITY_TYPE_NAME,
   PASSWORD_POLICY_PRIORITY_TYPE_NAME,
 ]
+export const ID_FIELD = 'id'
+export const NAME_FIELD = 'name'
 export const CUSTOM_NAME_FIELD = 'customName'
 export const LINKS_FIELD = '_links'
 export const DEFINITIONS_FIELD = 'definitions'

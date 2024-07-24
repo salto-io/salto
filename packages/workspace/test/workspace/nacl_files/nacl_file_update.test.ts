@@ -575,7 +575,40 @@ describe('updateNaclFileData', () => {
       ]
     })
 
-    it('should add the element to the data', async () => {
+    it('should replace the element in the data', async () => {
+      const result = await updateNaclFileData(mockTypeNacl, changes, {})
+      expect(result).toEqual(mockTypeMetaNacl)
+    })
+  })
+
+  describe('when data contains an element which is completely removed and added', () => {
+    beforeAll(() => {
+      const mockType = createMockType({
+        metaType: new ObjectType({ elemID: new ElemID('salto', 'meta') }),
+      })
+      changes = [
+        {
+          ...toChange({ before: createMockType({}) }),
+          id: mockType.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 1, line: 0, byte: 0 },
+            end: { col: 1, line: 9, byte: mockTypeNacl.length - 1 },
+          },
+        },
+        {
+          ...toChange({ after: mockType }),
+          id: mockType.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 1, line: Infinity, byte: Infinity },
+            end: { col: 1, line: Infinity, byte: Infinity },
+          },
+        },
+      ]
+    })
+
+    it('should replace the element in the data', async () => {
       const result = await updateNaclFileData(mockTypeNacl, changes, {})
       expect(result).toEqual(mockTypeMetaNacl)
     })

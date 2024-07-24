@@ -31,11 +31,7 @@ import {
   MetadataQueryParams,
 } from './types'
 import * as constants from './constants'
-import {
-  SALESFORCE_ERRORS,
-  SalesforceErrorName,
-  SOCKET_TIMEOUT,
-} from './constants'
+import { SALESFORCE_ERRORS, SalesforceErrorName, SOCKET_TIMEOUT } from './constants'
 
 const { isDefined } = values
 const { makeArray } = collections.array
@@ -53,19 +49,11 @@ const {
 } = SALESFORCE_ERRORS
 
 const CONFIG_SUGGESTIONS_GENERAL_MESSAGE =
-  'Salto failed to fetch some items from Salesforce.' +
-  ' Failed items must be excluded from the fetch.'
+  'Salto failed to fetch some items from Salesforce. Failed items must be excluded from the fetch.'
 
-const getConfigChangeMessage = (
-  configChanges: ConfigChangeSuggestion[],
-): string => {
-  const reasons = configChanges
-    .map((configChange) => configChange.reason)
-    .filter(isDefined)
-  return formatConfigSuggestionsReasons([
-    CONFIG_SUGGESTIONS_GENERAL_MESSAGE,
-    ...reasons,
-  ])
+const getConfigChangeMessage = (configChanges: ConfigChangeSuggestion[]): string => {
+  const reasons = configChanges.map(configChange => configChange.reason).filter(isDefined)
+  return formatConfigSuggestionsReasons([CONFIG_SUGGESTIONS_GENERAL_MESSAGE, ...reasons])
 }
 
 export const createManyInstancesExcludeConfigChange = ({
@@ -127,21 +115,13 @@ export const createSkippedListConfigChange = ({
   }
 }
 
-type ConfigSuggestionsCreatorInput = Required<
-  Pick<MetadataQueryParams, 'metadataType' | 'name'>
->
+type ConfigSuggestionsCreatorInput = Required<Pick<MetadataQueryParams, 'metadataType' | 'name'>>
 
-type CreateConfigSuggestionFunc = (
-  input: ConfigSuggestionsCreatorInput,
-) => MetadataConfigSuggestion
+type CreateConfigSuggestionFunc = (input: ConfigSuggestionsCreatorInput) => MetadataConfigSuggestion
 type CreateConfigSuggestionPredicate = (error: Error) => boolean
 
-const isSocketTimeoutError: CreateConfigSuggestionPredicate = (
-  e: Error,
-): boolean => e.message === SOCKET_TIMEOUT
-const isInvalidCrossReferenceKeyError: CreateConfigSuggestionPredicate = (
-  e: Error,
-): boolean => {
+const isSocketTimeoutError: CreateConfigSuggestionPredicate = (e: Error): boolean => e.message === SOCKET_TIMEOUT
+const isInvalidCrossReferenceKeyError: CreateConfigSuggestionPredicate = (e: Error): boolean => {
   const errorCode = _.get(e, 'errorCode')
   return _.isString(errorCode) && errorCode === INVALID_CROSS_REFERENCE_KEY
 }
@@ -155,9 +135,7 @@ export const NON_TRANSIENT_SALESFORCE_ERRORS: SalesforceErrorName[] = [
   INVALID_QUERY_FILTER_OPERATOR,
 ]
 
-const isNonTransientSalesforceError: CreateConfigSuggestionPredicate = (
-  e: Error,
-): boolean =>
+const isNonTransientSalesforceError: CreateConfigSuggestionPredicate = (e: Error): boolean =>
   (NON_TRANSIENT_SALESFORCE_ERRORS as ReadonlyArray<string>).includes(e.name)
 
 type ConfigSuggestionCreator = {
@@ -173,19 +151,21 @@ export const createSocketTimeoutConfigSuggestion: CreateConfigSuggestionFunc = (
   reason: `${input.metadataType} with name ${input.name} exceeded fetch timeout`,
 })
 
-export const createInvalidCrossReferenceKeyConfigSuggestion: CreateConfigSuggestionFunc =
-  (input: ConfigSuggestionsCreatorInput): MetadataConfigSuggestion => ({
-    type: 'metadataExclude',
-    value: input,
-    reason: `${input.metadataType} with name ${input.name} failed due to INVALID_CROSS_REFERENCE_KEY`,
-  })
+export const createInvalidCrossReferenceKeyConfigSuggestion: CreateConfigSuggestionFunc = (
+  input: ConfigSuggestionsCreatorInput,
+): MetadataConfigSuggestion => ({
+  type: 'metadataExclude',
+  value: input,
+  reason: `${input.metadataType} with name ${input.name} failed due to INVALID_CROSS_REFERENCE_KEY`,
+})
 
-export const createNonTransientSalesforceErrorConfigSuggestion: CreateConfigSuggestionFunc =
-  (input: ConfigSuggestionsCreatorInput): MetadataConfigSuggestion => ({
-    type: 'metadataExclude',
-    value: input,
-    reason: `${input.metadataType} with name ${input.name} failed with non transient error`,
-  })
+export const createNonTransientSalesforceErrorConfigSuggestion: CreateConfigSuggestionFunc = (
+  input: ConfigSuggestionsCreatorInput,
+): MetadataConfigSuggestion => ({
+  type: 'metadataExclude',
+  value: input,
+  reason: `${input.metadataType} with name ${input.name} failed with non transient error`,
+})
 
 const NON_TRANSIENT_SALESFORCE_ERROR = 'NON_TRANSIENT_SALESFORCE_ERROR'
 
@@ -195,13 +175,9 @@ const CONFIG_SUGGESTION_CREATOR_NAMES = [
   NON_TRANSIENT_SALESFORCE_ERROR,
 ] as const
 
-type ConfigSuggestionCreatorName =
-  (typeof CONFIG_SUGGESTION_CREATOR_NAMES)[number]
+type ConfigSuggestionCreatorName = (typeof CONFIG_SUGGESTION_CREATOR_NAMES)[number]
 
-const CONFIG_SUGGESTION_CREATORS: Record<
-  ConfigSuggestionCreatorName,
-  ConfigSuggestionCreator
-> = {
+const CONFIG_SUGGESTION_CREATORS: Record<ConfigSuggestionCreatorName, ConfigSuggestionCreator> = {
   [SOCKET_TIMEOUT]: {
     predicate: isSocketTimeoutError,
     create: createSocketTimeoutConfigSuggestion,
@@ -216,9 +192,7 @@ const CONFIG_SUGGESTION_CREATORS: Record<
   },
 }
 
-export const HANDLED_ERROR_PREDICATES = Object.values(
-  CONFIG_SUGGESTION_CREATORS,
-).map((creator) => creator.predicate)
+export const HANDLED_ERROR_PREDICATES = Object.values(CONFIG_SUGGESTION_CREATORS).map(creator => creator.predicate)
 
 export const createSkippedListConfigChangeFromError = ({
   creatorInput,
@@ -228,27 +202,21 @@ export const createSkippedListConfigChangeFromError = ({
   error: Error
 }): ConfigChangeSuggestion =>
   Object.values(CONFIG_SUGGESTION_CREATORS)
-    .find((creator) => creator.predicate(error))
+    .find(creator => creator.predicate(error))
     ?.create(creatorInput) ??
   createSkippedListConfigChange({
     type: creatorInput.metadataType,
     instance: creatorInput.name,
   })
 
-export const createListMetadataObjectsConfigChange = (
-  res: ListMetadataQuery,
-): ConfigChangeSuggestion =>
+export const createListMetadataObjectsConfigChange = (res: ListMetadataQuery): ConfigChangeSuggestion =>
   createSkippedListConfigChange({ type: res.type, instance: res.folder })
 
-export const createRetrieveConfigChange = (
-  result: RetrieveResult,
-): ConfigChangeSuggestion[] => {
+export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChangeSuggestion[] => {
   const configChanges = makeArray(result.messages)
-    .map((msg: Values) =>
-      constants.RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg.problem ?? ''),
-    )
-    .filter((regexRes) => !_.isUndefined(regexRes?.groups))
-    .map((regexRes) =>
+    .map((msg: Values) => constants.RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg.problem ?? ''))
+    .filter(regexRes => !_.isUndefined(regexRes?.groups))
+    .map(regexRes =>
       createSkippedListConfigChange({
         type: regexRes?.groups?.type as string,
         instance: regexRes?.groups?.instance as string,
@@ -268,45 +236,36 @@ export const getConfigFromConfigChanges = (
   configChanges: ConfigChangeSuggestion[],
   currentConfig: Readonly<SalesforceConfig>,
 ): ConfigChange | undefined => {
-  const currentMetadataExclude = makeArray(
-    currentConfig.fetch?.metadata?.exclude,
-  )
+  const currentMetadataExclude = makeArray(currentConfig.fetch?.metadata?.exclude)
 
   const newMetadataExclude = makeArray(configChanges)
     .filter(isMetadataConfigSuggestions)
-    .map((e) => e.value)
-    .filter((e) => !currentMetadataExclude.includes(e))
+    .map(e => e.value)
+    .filter(e => !currentMetadataExclude.includes(e))
 
   const dataObjectsToExclude = makeArray(configChanges)
     .filter(isDataManagementConfigSuggestions)
-    .map((config) => config.value)
+    .map(config => config.value)
 
   const retrieveSize = configChanges
     .filter(isRetrieveSizeConfigSuggestion)
-    .map((config) => config.value)
-    .map((value) =>
-      Math.max(value, constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST),
-    )
+    .map(config => config.value)
+    .map(value => Math.max(value, constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST))
     .sort((a, b) => a - b)[0]
 
-  if (
-    [newMetadataExclude, dataObjectsToExclude].every(_.isEmpty) &&
-    retrieveSize === undefined
-  ) {
+  if ([newMetadataExclude, dataObjectsToExclude].every(_.isEmpty) && retrieveSize === undefined) {
     return undefined
   }
 
   const currentDataManagement = currentConfig.fetch?.data
 
   const dataManagementOverrides = {
-    excludeObjects: makeArray(currentDataManagement?.excludeObjects).concat(
-      dataObjectsToExclude,
-    ),
+    excludeObjects: makeArray(currentDataManagement?.excludeObjects).concat(dataObjectsToExclude),
   }
   if (Array.isArray(currentDataManagement?.allowReferenceTo)) {
     Object.assign(dataManagementOverrides, {
       allowReferenceTo: currentDataManagement?.allowReferenceTo.filter(
-        (objectName) => !dataObjectsToExclude.includes(objectName),
+        objectName => !dataObjectsToExclude.includes(objectName),
       ),
     })
   }
@@ -322,8 +281,7 @@ export const getConfigFromConfigChanges = (
           isDefined,
         ) as DataManagementConfig | undefined)
 
-  const maxItemsInRetrieveRequest =
-    retrieveSize ?? currentConfig.maxItemsInRetrieveRequest
+  const maxItemsInRetrieveRequest = retrieveSize ?? currentConfig.maxItemsInRetrieveRequest
 
   return {
     config: [
@@ -345,10 +303,7 @@ export const getConfigFromConfigChanges = (
                     ? undefined
                     : {
                         ...data,
-                        saltoIDSettings: _.pickBy(
-                          data.saltoIDSettings,
-                          isDefined,
-                        ),
+                        saltoIDSettings: _.pickBy(data.saltoIDSettings, isDefined),
                       },
               },
               isDefined,

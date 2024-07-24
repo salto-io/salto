@@ -57,8 +57,7 @@ const ASSIGNMENT_RULES = Joi.object({
   assignmentRule: Joi.array().items(ASSIGNMENT_RULE).required(),
 }).unknown(true)
 
-const isAssignmentRulesWithTeam =
-  createSchemeGuard<AssignmentRules>(ASSIGNMENT_RULES)
+const isAssignmentRulesWithTeam = createSchemeGuard<AssignmentRules>(ASSIGNMENT_RULES)
 
 const createChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
@@ -72,14 +71,14 @@ const createChangeError = (instance: InstanceElement): ChangeError => ({
 /**
  * SF does not support deploy of case assignment rules with case teams.
  */
-const changeValidator: ChangeValidator = async (changes) =>
+const changeValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceOfType(ASSIGNMENT_RULES_METADATA_TYPE))
-    .filter(async (change) => (await apiName(change)) === CASE)
-    .filter((instance) => isAssignmentRulesWithTeam(instance.value))
+    .filter(async change => (await apiName(change)) === CASE)
+    .filter(instance => isAssignmentRulesWithTeam(instance.value))
     .map(createChangeError)
     .toArray()
 

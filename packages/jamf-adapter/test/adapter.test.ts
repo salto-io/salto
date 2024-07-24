@@ -202,6 +202,7 @@ describe('adapter', () => {
           'jamf.policy__scope__exclusions',
           'jamf.policy__scope__limit_to_users',
           'jamf.policy__scope__limitations',
+          'jamf.policy__scripts',
           'jamf.policy__self_service',
           'jamf.policy__user_interaction',
           'jamf.script',
@@ -253,6 +254,8 @@ describe('adapter', () => {
     let buildingToModify: InstanceElement
     let classToAdd: InstanceElement
     let policyToRemove: InstanceElement
+    let policyToModify: InstanceElement
+    let policyToAdd: InstanceElement
 
     beforeEach(() => {
       buildingType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, BUILDING_TYPE_NAME) })
@@ -275,6 +278,19 @@ describe('adapter', () => {
         site: '-1',
       })
       policyToRemove = new InstanceElement('policyToRemove', policyType, { id: 19 })
+      policyToAdd = new InstanceElement('policyToAdd', policyType, {
+        general: {
+          name: 'policyToAdd',
+        },
+        scripts: [],
+      })
+      policyToModify = new InstanceElement('policyToModify', policyType, {
+        id: 25,
+        general: {
+          name: 'policyToModify',
+        },
+        scripts: [],
+      })
       operations = adapter.operations({
         credentials: new InstanceElement('config', credentialsType, {
           baseUrl: 'baseUrl',
@@ -288,6 +304,8 @@ describe('adapter', () => {
           policyType,
           buildingToModify,
           policyToRemove,
+          policyToAdd,
+          policyToModify,
         ]),
       })
     })
@@ -325,11 +343,33 @@ describe('adapter', () => {
           progressReporter: nullProgressReporter,
         }),
       )
+      const policyToModifyAfter = policyToModify.clone()
+      policyToModifyAfter.value.name = 'This is a new name'
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'policy',
+            changes: [toChange({ before: policyToModify, after: policyToModifyAfter })],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'policy',
+            changes: [toChange({ after: policyToAdd })],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
 
-      expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
-      expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
-      const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
-      expect(getChangeData(addRes).value.id).toEqual('20')
+      expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1, 1, 1])
+      expect(results.map(res => res.errors.length)).toEqual([0, 0, 0, 0, 0])
+      const classAddRes = results[0].appliedChanges[0] as Change<InstanceElement>
+      expect(getChangeData(classAddRes).value.id).toEqual(20)
+      const policyAddRes = results[4].appliedChanges[0] as Change<InstanceElement>
+      expect(getChangeData(policyAddRes).value.id).toEqual(43)
     })
   })
 })

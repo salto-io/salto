@@ -325,5 +325,6 @@ describe('telemetry', () => {
       expect(timesHTTPCalled).toEqual(MAX_CONSECUTIVE_RETRIES)
       expect(testDone).toBeTruthy()
     })
+    nock.abortPendingRequests()
   })
 })

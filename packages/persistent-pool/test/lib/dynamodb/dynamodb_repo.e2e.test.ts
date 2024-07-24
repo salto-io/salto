@@ -25,7 +25,7 @@ const { retryStrategies } = retryUtil
 describe('when there are existing leases', () => {
   const NUM_LEASES = 40
 
-  if (global.dynamoEnv.real) {
+  if (global.dynamoEnv?.real) {
     jest.setTimeout(30000)
   }
 
@@ -58,6 +58,9 @@ describe('when there are existing leases', () => {
 
   describe('without retries', () => {
     beforeAll(async () => {
+      if (global.dynamoEnv === undefined) {
+        throw new Error('no dynamo env defined')
+      }
       ;({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
       repo = await makeRepo(repoOpts())
       pool = await repo.pool(myTypeName)
@@ -91,6 +94,9 @@ describe('when there are existing leases', () => {
 
   describe('retries', () => {
     it('should throw if at limit', async () => {
+      if (global.dynamoEnv === undefined) {
+        throw new Error('no dynamo env defined')
+      }
       ;({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
       const repo2 = await makeRepo({
         ...repoOpts(),
@@ -104,7 +110,7 @@ describe('when there are existing leases', () => {
           await Promise.all(repeat(NUM_LEASES, () => pool2.lease(timeout))),
         ])
       } catch (e) {
-        expect(e.toString()).toContain('ConditionalCheckFailedException')
+        expect((e as Error).toString()).toContain('ConditionalCheckFailedException')
       }
       return expect(pool2.waitForLease(timeout, retryStrategies.none())).resolves.not.toBeNull()
     })

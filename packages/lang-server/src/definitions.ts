@@ -43,7 +43,6 @@ export const provideWorkspaceDefinition = async (
     if (locations.length !== 0) {
       return locations
     }
-    // eslint-disable-next-line no-empty
   } catch (e) {
     // token is not a valid element id
   }

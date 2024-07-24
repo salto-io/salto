@@ -50,19 +50,15 @@ const SOME_STATUSES = 'SOME_STATUSES'
 const log = logger(module)
 
 type Child = {
-  // eslint-disable-next-line camelcase
   required_on_statuses: {
     type: string
     statuses?: string[] // question mark to ba able to delete it later on
-    // eslint-disable-next-line camelcase
     custom_statuses: number[]
   }
 }
 
 type InvalidTicketForm = {
-  // eslint-disable-next-line camelcase
   agent_conditions: {
-    // eslint-disable-next-line camelcase
     child_fields: Child[]
   }[]
 }

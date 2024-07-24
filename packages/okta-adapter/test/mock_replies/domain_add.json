@@ -1,0 +1,57 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/domains",
+    "method": "POST",
+    "status": 201,
+    "response": {
+      "id": "domain-fakeid1",
+      "domain": "subdomain.example.com:443",
+      "certificateSourceType": "MANUAL",
+      "validationStatus": "NOT_STARTED",
+      "brandId": "bndcq8sz82K0tYwgc697",
+      "dnsRecords": [
+        {
+          "recordType": "TXT",
+          "fqdn": "_oktaverification.subdomain.example.com:443",
+          "values": ["7767e4218fe042c9a4c3b988481f3784"]
+        },
+        {
+          "recordType": "CNAME",
+          "fqdn": "subdomain.example.com:443",
+          "values": ["salto.customdomains.okta.com:443"]
+        }
+      ],
+      "_links": {
+        "self": {
+          "href": "https://<sanitized>/api/v1/domains/domain-fakeid1",
+          "hints": {
+            "allow": ["GET", "DELETE", "PUT"]
+          }
+        },
+        "verify": {
+          "href": "https://<sanitized>/api/v1/domains/domain-fakeid1/verify",
+          "hints": {
+            "allow": ["POST"]
+          }
+        },
+        "brand": {
+          "href": "https://<sanitized>/api/v1/brands/bndcq8sz82K0tYwgc697",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        }
+      }
+    },
+    "body": {
+      "domain": "subdomain.example.com",
+      "validationStatus": "NOT_STARTED",
+      "brandId": "brand-fakeid1"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "25",
+      "x-rate-limit-remaining": "24",
+      "x-rate-limit-reset": "1719730879"
+    }
+  }
+]

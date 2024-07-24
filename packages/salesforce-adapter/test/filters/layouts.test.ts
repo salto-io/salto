@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  InstanceElement,
-  CORE_ANNOTATIONS,
-  ReferenceExpression,
-  BuiltinTypes,
-} from '@salto-io/adapter-api'
+import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { mockTypes } from '../mock_elements'
-import {
-  createCustomObjectType,
-  createMetadataTypeElement,
-  defaultFilterContext,
-} from '../utils'
+import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext } from '../utils'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { getObjectDirectoryPath } from '../../src/filters/custom_objects_to_object_type'
@@ -33,10 +24,7 @@ import { FilterWith } from './mocks'
 
 describe('Test layout filter', () => {
   describe('Test layout fetch', () => {
-    const fetch = async (
-      apiName: string,
-      opts = { fixedName: true },
-    ): Promise<void> => {
+    const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
       const testSObj = createCustomObjectType(apiName, {
         fields: {
           foo: {
@@ -53,10 +41,7 @@ describe('Test layout filter', () => {
           },
         },
       })
-      const testSObjPath = [
-        ...(await getObjectDirectoryPath(testSObj)),
-        pathNaclCase(apiName),
-      ]
+      const testSObjPath = [...(await getObjectDirectoryPath(testSObj)), pathNaclCase(apiName)]
       testSObj.path = testSObjPath
 
       const shortName = 'Test Layout'
@@ -105,14 +90,8 @@ describe('Test layout filter', () => {
       await filter.onFetch(elements)
 
       const instance = elements[1] as InstanceElement
-      expect(instance.elemID).toEqual(
-        LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)),
-      )
-      expect(instance.path).toEqual([
-        ...testSObjPath.slice(0, -1),
-        'Layout',
-        pathNaclCase(instance.elemID.name),
-      ])
+      expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)))
+      expect(instance.path).toEqual([...testSObjPath.slice(0, -1), 'Layout', pathNaclCase(instance.elemID.name)])
 
       expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID, testSObj),

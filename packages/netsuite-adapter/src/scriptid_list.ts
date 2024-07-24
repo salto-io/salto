@@ -26,6 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { NETSUITE } from './constants'
 import { ObjectID } from './config/types'
 
@@ -39,12 +40,13 @@ const OBJECT_ID_TYPE_ID = new ElemID(NETSUITE, OBJECT_ID_TYPE_NAME)
 const OBJECT_ID_LIST_TYPE_ID = new ElemID(NETSUITE, OBJECT_ID_LIST_TYPE_NAME)
 const OBJECT_ID_LIST_INSTANCE_ID = new ElemID(NETSUITE, OBJECT_ID_LIST_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
 
-const objectIdType = new ObjectType({
+const objectIdType = createMatchingObjectType<ObjectID>({
   elemID: OBJECT_ID_TYPE_ID,
   isSettings: true,
   fields: {
-    instanceId: { refType: BuiltinTypes.STRING },
-    type: { refType: BuiltinTypes.STRING },
+    instanceId: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+    type: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+    suiteAppId: { refType: BuiltinTypes.STRING },
   },
   annotations: {
     [CORE_ANNOTATIONS.HIDDEN]: true,

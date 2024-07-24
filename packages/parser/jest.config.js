@@ -16,7 +16,6 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'salto-workspace',
   displayName: 'salto-workspace',
   rootDir: `${__dirname}`,
   collectCoverageFrom: [

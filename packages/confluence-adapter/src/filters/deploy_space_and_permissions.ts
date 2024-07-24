@@ -230,7 +230,7 @@ const filter =
         .filter(isInstanceChange)
         .forEach(async spaceChange => {
           const spaceChangeData = getChangeData(spaceChange)
-          const { errors: spaceDeploymentErrors } = await deployment.deployChanges({
+          const { errors: spaceDeploymentErrors } = await deployment.deployChanges<Options>({
             changes: [spaceChange],
             ...deployArgsWithoutChanges,
           })

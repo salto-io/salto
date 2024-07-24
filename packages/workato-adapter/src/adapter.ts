@@ -152,7 +152,6 @@ export default class WorkatoAdapter implements AdapterOperations {
    * Deploy configuration elements to the given account.
    */
   @logDuration('deploying account configuration')
-  // eslint-disable-next-line class-methods-use-this
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     if (changeGroup.groupID !== DEPLOY_USING_RLM_GROUP || this.userConfig[ENABLE_DEPLOY_SUPPORT_FLAG] !== true) {
       throw new Error('Not implemented')
@@ -195,7 +194,6 @@ export default class WorkatoAdapter implements AdapterOperations {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator: changeValidator(this.userConfig),

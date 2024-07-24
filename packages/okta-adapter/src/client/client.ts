@@ -29,8 +29,10 @@ import { OktaClientRateLimitConfig } from '../user_config'
 const { sleep } = promises.timeout
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
   DEFAULT_RETRY_OPTS,
   DEFAULT_TIMEOUT_OPTS,
+  RATE_LIMIT_USE_BOTTLENECK,
   throttle,
   logDecorator,
 } = clientUtils
@@ -157,6 +159,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
     super(OKTA, clientOpts, createConnection, {
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+      delayPerRequestMS: clientOpts.config?.delayPerRequestMS ?? RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+      useBottleneck: clientOpts.config?.useBottleneck ?? RATE_LIMIT_USE_BOTTLENECK,
       maxRequestsPerMinute:
         clientOpts.config?.rateLimit?.rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
           ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default
@@ -164,6 +168,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       retry: DEFAULT_RETRY_OPTS,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
+
     this.rateLimitBuffer = clientOpts.config?.rateLimit?.rateLimitBuffer ?? DEFAULT_RATE_LIMIT_BUFFER
   }
 
@@ -251,7 +256,6 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
   /**
    * Extract the pagination header
    */
-  // eslint-disable-next-line class-methods-use-this
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     return headers !== undefined
       ? {
@@ -261,11 +265,11 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       : undefined
   }
 
+  // eslint-disable-next-line class-methods-use-this
   @throttle<definitions.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
   @logDecorator(['url'])
   // We use this function without client instance because we don't need it
   // but we want to take advantage of the client's capabilities.
-  // eslint-disable-next-line class-methods-use-this
   public async getResource(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
@@ -279,6 +283,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
         url,
         safeJsonStringify({
           url,
+          method: 'GET',
           status,
           responseType,
           response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,

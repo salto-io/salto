@@ -53,7 +53,6 @@ describe('References by id filter', () => {
     elemID: new ElemID(ZENDESK, 'trigger_category'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line camelcase
       api_client_id: { refType: BuiltinTypes.NUMBER },
     },
   })
@@ -61,14 +60,12 @@ describe('References by id filter', () => {
     elemID: new ElemID(ZENDESK, 'ticket_form'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line camelcase
       parent_id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const someTypeWithValue = new ObjectType({
     elemID: new ElemID(ZENDESK, 'typeWithValue'),
     fields: {
-      // eslint-disable-next-line camelcase
       value: { refType: BuiltinTypes.UNKNOWN },
       bla: { refType: BuiltinTypes.STRING },
     },
@@ -76,7 +73,6 @@ describe('References by id filter', () => {
   const someTypeWithNestedValuesAndSubject = new ObjectType({
     elemID: new ElemID(ZENDESK, 'typeWithValueAndSubject'),
     fields: {
-      // eslint-disable-next-line camelcase
       valueList: { refType: new ListType(someTypeWithValue) },
       subject: { refType: BuiltinTypes.STRING },
     },
@@ -84,7 +80,6 @@ describe('References by id filter', () => {
   const someTypeWithNestedValueList = new ObjectType({
     elemID: new ElemID(ZENDESK, 'typeWithValueList'),
     fields: {
-      // eslint-disable-next-line camelcase
       list: { refType: new ListType(someTypeWithValue) },
       type: { refType: BuiltinTypes.STRING },
     },
@@ -176,7 +171,6 @@ describe('References by id filter', () => {
     elemID: new ElemID(ZENDESK, 'trigger'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line camelcase
       category_id: { refType: new ListType(BuiltinTypes.NUMBER) },
       conditions: {
         refType: new ObjectType({

@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "resolutions": {
-    "typescript": "4.1.3"
+    "typescript": "4.8.4"
   },
   "devDependencies": {
     "jsonc-parser": "^2.2.1",
@@ -26,7 +26,7 @@
     "build-ts": "./build_utils/turbo_run.sh build-ts",
     "build-all": "yarn workspaces foreach -vpAi -j 4 run build",
     "clean": "./build_utils/turbo_run.sh clean",
-    "test": "yarn workspaces foreach -vpAi -j 4 run test --forceExit --detectOpenHandles",
+    "test": "./build_utils/turbo_run.sh test",
     "generate-notices-file": "./build_utils/generate_notices.sh",
     "lerna-version": "lerna version --no-git-tag-version --exact",
     "lerna-version-pr": "./build_utils/create_version_pr.sh",

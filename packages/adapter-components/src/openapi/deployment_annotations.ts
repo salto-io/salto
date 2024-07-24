@@ -74,7 +74,6 @@ const getInnerSchemaAndType = async (
   if (isMapType(type)) {
     const innerType = await type.getInnerType()
     if (isObjectType(innerType)) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       return getInnerSchemaAndType(innerType, schema)
     }
   }
@@ -82,7 +81,6 @@ const getInnerSchemaAndType = async (
   if (isListType(type)) {
     const innerType = await type.getInnerType()
     if (isArraySchemaObject(schema) && isObjectType(innerType)) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       return getInnerSchemaAndType(innerType, schema.items)
     }
   }

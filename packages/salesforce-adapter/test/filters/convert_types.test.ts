@@ -102,19 +102,14 @@ describe('convert types filter', () => {
     ],
     numArray: ['12', '13', '14'],
     picklist: '0',
-    refToStr: new ReferenceExpression(
-      new ElemID(constants.SALESFORCE, 'dummy'),
-    ),
+    refToStr: new ReferenceExpression(new ElemID(constants.SALESFORCE, 'dummy')),
     withoutTypeDef: 'withoutTypeDef',
   })
 
   const mockSettings = new InstanceElement(
     'test_settings',
     new ObjectType({
-      elemID: new ElemID(
-        constants.SALESFORCE,
-        constants.SETTINGS_METADATA_TYPE,
-      ),
+      elemID: new ElemID(constants.SALESFORCE, constants.SETTINGS_METADATA_TYPE),
     }),
     {},
   )
@@ -130,11 +125,7 @@ describe('convert types filter', () => {
       let inst: InstanceElement
 
       beforeEach(async () => {
-        testElements = [
-          _.clone(mockType),
-          _.clone(mockInstance),
-          _.clone(mockSettings),
-        ]
+        testElements = [_.clone(mockType), _.clone(mockInstance), _.clone(mockSettings)]
         await filter.onFetch(testElements)
         inst = testElements[1] as InstanceElement
       })
@@ -191,9 +182,7 @@ describe('convert types filter', () => {
       })
 
       it('should not change values that have no type definition', () => {
-        expect(inst.value.withoutTypeDef).toBe(
-          mockInstance.value.withoutTypeDef,
-        )
+        expect(inst.value.withoutTypeDef).toBe(mockInstance.value.withoutTypeDef)
       })
     })
   })

@@ -16,11 +16,11 @@
 import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { ClientOptions, PaginationOptions } from '../types'
+import { Options } from '../types'
 
 const log = logger(module)
 
-export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
+export const PAGINATION: definitions.ApiDefinitions<Options>['pagination'] = {
   increasePageUntilEmpty: {
     funcCreator:
       () =>

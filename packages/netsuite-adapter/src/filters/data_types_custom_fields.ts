@@ -135,7 +135,6 @@ export const getCustomField = ({
   const { fieldType, selectTypeIdAnnotation } = getFieldType(fieldName, customField, nameToType, customRecordTypes)
 
   return new Field(type, fieldName, fieldType, {
-    // eslint-disable-next-line camelcase
     select_type_id: selectTypeIdAnnotation,
   })
 }
@@ -165,7 +164,6 @@ const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) =
                 nameToType,
               })
               field.annotate({
-                // eslint-disable-next-line camelcase
                 field_instance: new ReferenceExpression(fieldInstance.elemID.createNestedID(SCRIPT_ID)),
               })
               type.fields[field.elemID.name] = field
@@ -185,7 +183,6 @@ const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) =
             nameToType,
           })
           field.annotate({
-            // eslint-disable-next-line camelcase
             field_instance: new ReferenceExpression(fieldInstance.elemID.createNestedID(SCRIPT_ID)),
           })
           type.fields[field.elemID.name] = field

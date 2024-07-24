@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
-import { ClientOptions, PaginationOptions } from '../types'
+import { Options } from '../types'
 
 const { offsetAndLimitPagination } = fetchUtils.request.pagination
 
-export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
+export const PAGINATION: definitions.ApiDefinitions<Options>['pagination'] = {
   offset: {
     funcCreator: () => offsetAndLimitPagination(),
   },

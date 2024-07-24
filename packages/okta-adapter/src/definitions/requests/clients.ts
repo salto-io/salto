@@ -69,6 +69,21 @@ export const createClientDefinitions = (
               },
             },
           },
+          '/api/v1/apps/{id}/lifecycle/activate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/apps/{id}/lifecycle/deactivate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/apps/{source}/policies/{target}': {
+            put: {
+              omitBody: true,
+            },
+          },
         },
       },
     },

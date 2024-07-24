@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, elements as elementsUtils, definitions as definitionUtils } from '@salto-io/adapter-components'
-import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
 import { groupPushToApplicationUniquenessValidator } from './group_push_to_application_uniqueness'
@@ -90,7 +89,6 @@ export default ({
       deployDefinitions: definitions.deploy ?? { instances: {} },
       typesWithNoDeploy: typesDeployedWithOldInfra,
     }),
-    application: applicationValidator,
     appGroup: appGroupValidator,
     groupRuleStatus: groupRuleStatusValidator,
     groupRuleActions: groupRuleActionsValidator,

@@ -1,7 +1,7 @@
 [
   {
     "scope": "",
-    "path": "/api/v1/apps",
+    "path": "/api/v1/apps?activate=true",
     "method": "POST",
     "status": 200,
     "response": {

@@ -1077,6 +1077,11 @@ describe('adapter', () => {
     })
     describe('deploy application', () => {
       let appType: ObjectType
+      let profileEnrollmentPolicyType: ObjectType
+      let profileEnrollmentPolicy1: InstanceElement
+      let profileEnrollmentPolicy2: InstanceElement
+      let accessPolicyType: ObjectType
+      let accessPolicy: InstanceElement
 
       beforeEach(() => {
         appType = new ObjectType({
@@ -1086,6 +1091,24 @@ describe('adapter', () => {
               refType: BuiltinTypes.SERVICE_ID,
             },
           },
+        })
+        profileEnrollmentPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
+        })
+        profileEnrollmentPolicy1 = new InstanceElement('profileEnrollmentPolicy1', profileEnrollmentPolicyType, {
+          id: 'enrollmentpolicy-fakeid1',
+          name: 'enrollmentPolicy1',
+        })
+        profileEnrollmentPolicy2 = new InstanceElement('profileEnrollmentPolicy2', profileEnrollmentPolicyType, {
+          id: 'enrollmentpolicy-fakeid2',
+          name: 'enrollmentPolicy2',
+        })
+        accessPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME),
+        })
+        accessPolicy = new InstanceElement('accessPolicy', accessPolicyType, {
+          id: 'accesspolicy-fakeid1',
+          name: 'accessPolicy1',
         })
       })
 
@@ -1111,25 +1134,11 @@ describe('adapter', () => {
 
       it('should successfully add an active regular application with policies', async () => {
         loadMockReplies('application_add_regular_active.json')
-        const profileEnrollmentPolicyType = new ObjectType({
-          elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
-        })
-        const profileEnrollmentPolicy = new InstanceElement('profileEnrollmentPolicy', profileEnrollmentPolicyType, {
-          id: 'enrollmentpolicy-fakeid1',
-          name: 'enrollmentPolicy1',
-        })
-        const accessPolicyType = new ObjectType({
-          elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME),
-        })
-        const accessPolicy = new InstanceElement('accessPolicy', accessPolicyType, {
-          id: 'accesspolicy-fakeid1',
-          name: 'accessPolicy1',
-        })
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
           status: ACTIVE_STATUS,
-          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy.elemID, profileEnrollmentPolicy),
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
           accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
         const result = await operations.deploy({
@@ -1196,16 +1205,22 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully modify an inactive custom application', async () => {
-        loadMockReplies('application_modify_custom_inactive.json')
+      it('should successfully modify an inactive custom application with changed policies', async () => {
+        loadMockReplies('application_modify_custom_inactive_with_changed_policies.json')
         const inactiveCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
           status: INACTIVE_STATUS,
           [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
         const updatedApp = inactiveCustomApp.clone()
         updatedApp.value.label = 'app2'
+        updatedApp.value.profileEnrollment = new ReferenceExpression(
+          profileEnrollmentPolicy2.elemID,
+          profileEnrollmentPolicy2,
+        )
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'app',
@@ -1225,13 +1240,15 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully modify an active custom application', async () => {
-        loadMockReplies('application_modify_custom_active.json')
+      it('should successfully modify an active custom application with unchanged policies', async () => {
+        loadMockReplies('application_modify_custom_active_unchanged_policies.json')
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
           status: ACTIVE_STATUS,
           [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
         const updatedApp = activeCustomApp.clone()
         updatedApp.value.label = 'app2'
@@ -1251,6 +1268,40 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app2')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an active custom application with only changed policies', async () => {
+        loadMockReplies('application_modify_custom_active_only_changed_policies.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.profileEnrollment = new ReferenceExpression(
+          profileEnrollmentPolicy2.elemID,
+          profileEnrollmentPolicy2,
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
@@ -1274,12 +1325,6 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      // Note: currently, this kind of change is blocked by the `application`
-      // Change validator, which prevents the removal of active applications.
-      // The JSON file includes a single "delete" operation, which is what would
-      // be sent to Okta if the CV was ignored. The test is here so that we can
-      // show the diff in behavior once we allow a flow of deleting active
-      // applications as part of the move to the new infra. Stay tuned.
       it('should successfully remove an active custom application', async () => {
         loadMockReplies('application_remove_custom_active.json')
         const inactiveCustomApp = new InstanceElement('app', appType, {

@@ -28,7 +28,21 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { APP_USER_SCHEMA_TYPE_NAME, BASE_FIELD, DEFINITIONS_FIELD } from '../constants'
+import {
+  APP_USER_SCHEMA_TYPE_NAME,
+  BASE_FIELD,
+  DEFINITIONS_FIELD,
+  GROUP_SCHEMA_TYPE_NAME,
+  USER_SCHEMA_TYPE_NAME,
+} from '../constants'
+
+const CUSTOM_PROPERTIES_PATH = ['definitions', 'custom', 'properties']
+
+const SCHEMAS_TO_PATH: Record<string, string[]> = {
+  [GROUP_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
+  [APP_USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
+  [USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
+}
 
 export const BASE_PATH = [DEFINITIONS_FIELD, BASE_FIELD]
 
@@ -37,7 +51,7 @@ export const getErrorWithSeverity = (elemID: ElemID, severity: SeverityLevel): C
   severity,
   message: "Base attributes cannot be deployed via Okta's APIs",
   detailedMessage:
-    'Salto cannot deploy changes to base attributes, as they are determined by the associated application.',
+    'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
 })
 
 const getModificationError = (change: ModificationChange<InstanceElement>): ChangeError | undefined => {
@@ -48,11 +62,10 @@ const getModificationError = (change: ModificationChange<InstanceElement>): Chan
   if (_.isEqual(beforeBase, afterBase)) {
     return undefined
   }
-  const beforeWithoutBase = _.omit(before, ['value', ...BASE_PATH].join('.'))
-  const afterWithoutBase = _.omit(after, ['value', ...BASE_PATH].join('.'))
-
+  const beforeValueWithoutBase = _.omit(before.value, BASE_PATH.join('.'))
+  const afterValueWithoutBase = _.omit(after.value, BASE_PATH.join('.'))
   // If the base field is the only change, we will not deploy it
-  if (_.isEqual(beforeWithoutBase, afterWithoutBase)) {
+  if (_.isEqual(beforeValueWithoutBase, afterValueWithoutBase)) {
     return getErrorWithSeverity(change.data.after.elemID, 'Error')
   }
 
@@ -70,12 +83,13 @@ const getErrorFromChange = (
 }
 
 /**
- * Verifies that AppUserSchema is not modified within the base field.
+ * Verifies that schema instances are not modified within the base field.
  */
-export const appUserSchemaBaseChangesValidator: ChangeValidator = async changes =>
+// TODO: change the file name to schema_base_changes.ts
+export const schemaBaseChangesValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME)
+    .filter(change => Object.keys(SCHEMAS_TO_PATH).includes(getChangeData(change).elemID.typeName))
     .map(getErrorFromChange)
     .filter(values.isDefined)

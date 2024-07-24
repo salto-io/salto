@@ -52,7 +52,6 @@ const changeValidatorNames = [
   'userTypeAndSchema',
   'appIntegrationSetup',
   'assignedAccessPolicies',
-  'groupSchemaModifyBase',
   'enabledAuthenticators',
   'users',
   'appUserSchemaWithInactiveApp',
@@ -67,7 +66,7 @@ const changeValidatorNames = [
   'appUserSchemaRemoval',
   'domainAddition',
   'domainModification',
-  'appUserSchemaBaseChanges',
+  'schemaBaseChanges',
   'userStatusChanges',
 ] as const
 

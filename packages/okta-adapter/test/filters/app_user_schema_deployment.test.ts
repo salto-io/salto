@@ -27,7 +27,7 @@ import {
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
-import appUserSchemaDeployment from '../../src/filters/app_user_schema_deployment'
+import appUserSchemaAdditionAndRemoval from '../../src/filters/app_user_schema_deployment'
 import { APP_USER_SCHEMA_TYPE_NAME, OKTA } from '../../src/constants'
 
 type FilterType = filterUtils.FilterWith<'deploy'>
@@ -122,7 +122,7 @@ describe('appUserSchemaDeployment', () => {
     mockConnection = connection
     client = cli
     const definitions = createDefinitions({ client })
-    filter = appUserSchemaDeployment(getFilterParams({ definitions })) as typeof filter
+    filter = appUserSchemaAdditionAndRemoval(getFilterParams({ definitions })) as typeof filter
     appUserSchemaInstance = appUserSchema.clone()
   })
 
@@ -209,46 +209,6 @@ describe('appUserSchemaDeployment', () => {
       expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/apps/1/default', undefined)
       expect(mockConnection.get).toHaveBeenCalledTimes(2)
       expect(result.deployResult.errors).toHaveLength(0)
-    })
-  })
-  describe('modification deploy', () => {
-    it('should successfully deploy modification changes', async () => {
-      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
-
-      const after = appUserSchemaInstance.clone()
-      after.value.definitions.custom.properties.customProp.title = 'new custom prop'
-      after.value.definitions.base.properties.baseProp.title = 'new base prop'
-
-      const changes = [toChange({ before: appUserSchemaInstance, after: after.clone() })]
-      const result = await filter.deploy(changes)
-      const { appliedChanges } = result.deployResult
-      expect(appliedChanges).toHaveLength(1)
-      const instance = getChangeData(appliedChanges[0])
-      expect(instance).toEqual(after)
-    })
-    it('should handle empty base in the before', async () => {
-      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
-      mockConnection.get.mockResolvedValueOnce(resolvedAppUserSchema)
-
-      const after = appUserSchemaInstance.clone()
-      after.value.definitions.custom.properties.customProp.title = 'new custom prop'
-      after.value.definitions.base.properties.baseProp.title = 'new base prop'
-
-      const before1 = appUserSchemaInstance.clone()
-      delete before1.value.definitions.base
-
-      const before2 = appUserSchemaInstance.clone()
-      delete before2.value.definitions
-
-      const changes = [
-        toChange({ before: before1, after: after.clone() }),
-        toChange({ before: before2, after: after.clone() }),
-      ]
-      const result = await filter.deploy(changes)
-      const { appliedChanges } = result.deployResult
-      expect(appliedChanges).toHaveLength(2)
-      expect(getChangeData(appliedChanges[0])).toEqual(after)
-      expect(getChangeData(appliedChanges[1])).toEqual(after)
     })
   })
   describe('removal deploy', () => {

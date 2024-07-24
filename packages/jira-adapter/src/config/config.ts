@@ -221,7 +221,6 @@ export type ChangeValidatorName =
   | 'permissionType'
   | 'automations'
   | 'activeSchemeDeletion'
-  | 'sameIssueTypeNameChange'
   | 'statusMigrationChange'
   | 'workflowSchemeMigration'
   | 'workflowStatusMappings'
@@ -256,6 +255,7 @@ export type ChangeValidatorName =
   | 'deleteLabelAtttribute'
   | 'jsmPermissions'
   | 'fieldContextOptions'
+  | 'uniqueFields'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -286,7 +286,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     permissionType: { refType: BuiltinTypes.BOOLEAN },
     automations: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeDeletion: { refType: BuiltinTypes.BOOLEAN },
-    sameIssueTypeNameChange: { refType: BuiltinTypes.BOOLEAN },
     statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
     workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
     workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
@@ -320,6 +319,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
     jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
     fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
+    uniqueFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

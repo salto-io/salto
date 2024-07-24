@@ -92,7 +92,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     const { resource: resourceDef } = defQuery.query(typeName) ?? {}
     const onError = resourceDef?.onError
 
-    const onErrorResult = onError?.custom?.(onError)({ error, typeName }) ?? onError
+    const onErrorResult = onError?.action === 'customized' ? onError.value({ error, typeName }) : onError
     switch (onErrorResult?.action) {
       case 'customSaltoError':
         log.warn('failed to fetch type %s:%s, generating custom Salto error', adapterName, typeName)

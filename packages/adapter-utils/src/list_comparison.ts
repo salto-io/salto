@@ -41,7 +41,7 @@ const log = logger(module)
 
 type KeyFunction = (value: Value) => string
 
-type FlatValue = PrimitiveValue | ReferenceExpression | TemplateExpression | StaticFile
+type LeafValue = PrimitiveValue | ReferenceExpression | TemplateExpression | StaticFile
 
 type IndexMappingItem = {
   beforeIndex?: number
@@ -93,7 +93,7 @@ const getListItemExactKey: KeyFunction = value =>
     },
   })
 
-const isValidFlatValue = (value: unknown): value is FlatValue =>
+const isValidLeafValue = (value: unknown): value is LeafValue =>
   isPrimitiveValue(value) || isReferenceExpression(value) || isTemplateExpression(value) || isStaticFile(value)
 
 /**
@@ -114,25 +114,25 @@ const getSingleValueKey = (value: FlatValue): string => {
 
 /**
  * Calculate a string to represent an item in the list
- * based only on its flat values (without lists/objects)
+ * based only on its leaf values (without lists/objects)
  *
- * Based on experiments, we found looking only on the flat values
+ * Based on experiments, we found looking only on the leaf values
  * to be a good heuristic for representing an item in a list
  */
 const getListItemTopLevelKey: KeyFunction = value => {
   if (_.isPlainObject(value) || Array.isArray(value)) {
     return Object.keys(value)
-      .filter(key => isValidFlatValue(value[key]))
+      .filter(key => isValidLeafValue(value[key]))
       .sort()
       .flatMap(key => [key, ':', getSingleValueKey(value[key])])
       .join('')
   }
 
-  if (isValidFlatValue(value)) {
+  if (isValidLeafValue(value)) {
     return getSingleValueKey(value)
   }
 
-  // When there aren't any top level keys
+  // When there aren't any leaf values
   return ''
 }
 

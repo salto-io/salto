@@ -38,13 +38,11 @@ describe(`${adjustConditionalAccessPolicy.name}`, () => {
         },
       },
     }
-    const result = await Promise.resolve(
-      adjustConditionalAccessPolicy({
-        value: conditionalAccessPolicy,
-        typeName: CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
-        context: { ...contextMock, change: modificationChangeMock },
-      }),
-    )
+    const result = await adjustConditionalAccessPolicy({
+      value: conditionalAccessPolicy,
+      typeName: CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+      context: { ...contextMock, change: modificationChangeMock },
+    })
     expect(result.value).toEqual(conditionalAccessPolicy)
   })
 
@@ -54,13 +52,11 @@ describe(`${adjustConditionalAccessPolicy.name}`, () => {
         users: {},
       },
     }
-    const result = await Promise.resolve(
-      adjustConditionalAccessPolicy({
-        value: conditionalAccessPolicy,
-        typeName: CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
-        context: contextMock,
-      }),
-    )
+    const result = await adjustConditionalAccessPolicy({
+      value: conditionalAccessPolicy,
+      typeName: CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+      context: contextMock,
+    })
     expect(result.value.conditions.users.includeUsers).toEqual(['none'])
   })
 
@@ -72,13 +68,11 @@ describe(`${adjustConditionalAccessPolicy.name}`, () => {
         },
       },
     }
-    const result = await Promise.resolve(
-      adjustConditionalAccessPolicy({
-        value: conditionalAccessPolicy,
-        typeName: CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
-        context: contextMock,
-      }),
-    )
+    const result = await adjustConditionalAccessPolicy({
+      value: conditionalAccessPolicy,
+      typeName: CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+      context: contextMock,
+    })
     expect(result.value.conditions.users.includeUsers).toEqual(['something'])
   })
 })

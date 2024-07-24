@@ -18,14 +18,14 @@ import { validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isAdditionChange } from '@salto-io/adapter-api'
 import { CONDITIONAL_ACCESS_POLICY_TYPE_NAME } from '../../../constants'
-import { AdjustFunction } from '../types'
+import { AdjustFunctionSingle } from '../types'
 
 /*
  * Adjust the conditional access policy object to include the includeUsers field.
  * The includeUsers field is only included on specific conditions, but is required on addition.
  * Therefore, we set it to a default of 'none' when it's not specified.
  */
-export const adjustConditionalAccessPolicy: AdjustFunction = async ({ value, context: { change } }) => {
+export const adjustConditionalAccessPolicy: AdjustFunctionSingle = async ({ value, context: { change } }) => {
   validatePlainObject(value, CONDITIONAL_ACCESS_POLICY_TYPE_NAME)
 
   if (!isAdditionChange(change)) {

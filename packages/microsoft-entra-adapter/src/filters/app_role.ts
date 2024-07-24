@@ -21,22 +21,55 @@ import {
   Element,
   InstanceElement,
   ModificationChange,
+  SaltoElementError,
   getChangeData,
-  isAdditionChange,
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { getParent, getParents } from '@salto-io/adapter-utils'
+import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { deployment } from '@salto-io/adapter-components'
 import { APP_ROLE_TYPE_NAME, APP_ROLES_FIELD_NAME, APPLICATION_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../definitions/types'
 import { changeResolver } from '../definitions/references'
+import { customConvertError } from '../error_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { isDefined } = values
+
+const isAppRoleInstanceElement = (elem: Element): elem is InstanceElement =>
+  isInstanceElement(elem) && elem.elemID.typeName === APP_ROLE_TYPE_NAME
+
+const isAppRoleInstanceChange = (change: Change): change is Change<InstanceElement> =>
+  isAppRoleInstanceElement(getChangeData(change))
+
+const extractParentsFromAppRoleChanges = (
+  appRoleChanges: Change<InstanceElement>[],
+): { uniqueParents: InstanceElement[]; errors: SaltoElementError[] } => {
+  const parentsOrErrors = appRoleChanges.map((change): InstanceElement | SaltoElementError => {
+    const parent = getParents(getChangeData(change))[0]?.value
+    if (parent === undefined || !isInstanceElement(parent)) {
+      log.error(
+        'App role %s has no parent or its parent is not an instance element',
+        getChangeData(change).elemID.getFullName(),
+      )
+      return {
+        elemID: getChangeData(change).elemID,
+        message: 'Expected app role to have an application or service principal parent',
+        severity: 'Error',
+      }
+    }
+    return parent
+  })
+  const [parentsMap, errors] = _.partition(parentsOrErrors, isInstanceElement)
+  return {
+    // We use 'fromEntries' as a "trick" to save each parent only once, without actually comparing the objects
+    uniqueParents: Object.values(_.fromPairs(parentsMap.map(parent => [parent.elemID.getFullName(), parent]))),
+    errors,
+  }
+}
 
 /**
  * Handles app role duplications + deployment
@@ -49,10 +82,10 @@ const { isDefined } = values
  */
 export const appRolesFilter: FilterCreator = ({ definitions, elementSource, sharedContext }) => ({
   name: 'appRolesFilter',
-  onFetch: async (elements: Element[]): Promise<void> => {
+  onFetch: async elements => {
     const appRoleInstancesWithIndices = elements
       .map((elem, index) => ({ elem, index }))
-      .filter(({ elem }) => isInstanceElement(elem) && elem.elemID.typeName === APP_ROLE_TYPE_NAME)
+      .filter(({ elem }) => isAppRoleInstanceElement(elem))
 
     const elemIdToAppRoles = _.groupBy(appRoleInstancesWithIndices, ({ elem }) => elem.elemID.getFullName())
     const appRolesToRemove = Object.values(elemIdToAppRoles)
@@ -113,32 +146,22 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
       }
     }
 
-    const [appRoleChanges, otherChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === APP_ROLE_TYPE_NAME,
-    ) as [Change<InstanceElement>[], Change[]]
+    const [appRoleChanges, otherChanges] = _.partition(changes, isAppRoleInstanceChange)
 
-    // We use 'fromEntries' as a "trick" to save each parent only once, without actually comparing the objects
-    const parentsWithAppRoleChanges = Object.fromEntries(
-      appRoleChanges
-        .map((change): [string, InstanceElement] | undefined => {
-          const parent = getParents(getChangeData(change))[0]?.value
-          return parent ? [parent.elemID.getFullName(), parent] : undefined
-        })
-        .filter(isDefined),
+    const { uniqueParents, errors: appRoleWithNoParentErrors } = extractParentsFromAppRoleChanges(appRoleChanges)
+    const parentFullNameToAppRoles = _.fromPairs(
+      await awu(await elementSource.list())
+        .filter(id => id.typeName === APP_ROLE_TYPE_NAME)
+        .map(id => elementSource.get(id))
+        .filter(isInstanceElement)
+        .map(elem => [getParents(elem)[0]?.elemID.getFullName(), elem])
+        .toArray(),
     )
-    const allAppRoleInstancesWithParentName = awu(await elementSource.getAll())
-      .filter((elem): elem is InstanceElement => elem.elemID.typeName === APP_ROLE_TYPE_NAME && isInstanceElement(elem))
-      .map(elem => ({
-        elem,
-        parentName: getParents(elem)[0]?.elemID.getFullName(),
-      }))
     const parentsOriginalChange: Change[] = []
     const parentsChangeWithAppRoles = await Promise.all(
-      Object.entries(parentsWithAppRoleChanges).map(
-        async ([parentFullName, parent]): Promise<
-          AdditionChange<InstanceElement> | ModificationChange<InstanceElement> | undefined
-        > => {
+      uniqueParents.map(
+        async (parent): Promise<AdditionChange<InstanceElement> | ModificationChange<InstanceElement> | undefined> => {
+          const parentFullName = parent.elemID.getFullName()
           const parentExistingChangeIdx = otherChanges.findIndex(
             change => getChangeData(change).elemID.getFullName() === parentFullName,
           )
@@ -166,29 +189,12 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
 
           const applyFunction = async (instance: InstanceElement): Promise<InstanceElement> => {
             const instanceDup = instance.clone()
-            instanceDup.value[APP_ROLES_FIELD_NAME] = await allAppRoleInstancesWithParentName
-              .filter(({ parentName }) => parentName === parentFullName)
-              .map(({ elem }) => elem.value)
-              .toArray()
+            instanceDup.value[APP_ROLES_FIELD_NAME] = parentFullNameToAppRoles[parentFullName]
             return instanceDup
           }
 
-          if (isAdditionChange(parentChange)) {
-            return {
-              ...parentChange,
-              data: {
-                after: await applyFunction(parentChange.data.after),
-              },
-            }
-          }
-
-          return {
-            ...parentChange,
-            data: {
-              ...parentChange.data,
-              after: await applyFunction(parentChange.data.after),
-            },
-          }
+          parentChange.data.after = await applyFunction(parentChange.data.after)
+          return parentChange
         },
       ),
     )
@@ -212,19 +218,19 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
       },
       definitions: { deploy, ...otherDefs },
       elementSource,
-      convertError: deployment.defaultConvertError,
+      convertError: customConvertError,
       changeResolver,
       sharedContext,
     })
     return {
       deployResult: {
-        errors,
+        errors: errors.concat(appRoleWithNoParentErrors),
         appliedChanges: parentsOriginalChange.concat(
           appRoleChanges.filter(change =>
             appliedChanges.some(
               appliedChange =>
                 getChangeData(appliedChange).elemID.getFullName() ===
-                getParent(getChangeData(change)).elemID.getFullName(),
+                getParents(getChangeData(change))[0]?.elemID.getFullName(),
             ),
           ),
         ),

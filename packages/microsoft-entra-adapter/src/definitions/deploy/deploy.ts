@@ -50,7 +50,7 @@ import {
   adjustWrapper,
   adjustConditionalAccessPolicy,
   adjustRoleDefinitionForDeployment,
-  createCustomConditionEmptyFieldsOnAddition,
+  createCustomConditionEmptyFields,
   createCustomizationsWithBasePathForDeploy,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
@@ -58,16 +58,6 @@ import {
   omitReadOnlyFields,
   adjustParentWithAppRoles,
 } from './utils'
-
-// We use filters to handle the deployment of certain types. As a workaround, we define this request,
-// which will fail, to ensure that the CV checking for the deployment definition's existence will pass.
-const FAILURE_REQUEST: DeployableRequestDefinition = {
-  request: {
-    endpoint: {
-      path: '/failure',
-    },
-  },
-}
 
 const AUTHENTICATION_STRENGTH_POLICY_DEPLOYABLE_FIELDS = ['displayName', 'description']
 
@@ -104,7 +94,7 @@ const APPLICATION_SECOND_MODIFICATION_ITERATION_REQUEST: DeployableRequestDefini
       pick: APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION,
     },
   },
-  condition: createCustomConditionEmptyFieldsOnAddition(APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION),
+  condition: createCustomConditionEmptyFields(APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION),
 }
 
 // These fields cannot be specified when creating a group, but can be modified after creation
@@ -255,14 +245,8 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
   },
   [APP_ROLE_TYPE_NAME]: {
     changeGroupId: deployment.grouping.groupWithFirstParent,
-    requestsByAction: {
-      customizations: {
-        // Deploying an application/servicePrincipal with its appRoles is done in a single request using the definition of the application via a filter
-        add: [FAILURE_REQUEST],
-        modify: [FAILURE_REQUEST],
-        remove: [FAILURE_REQUEST],
-      },
-    },
+    // Deploying an application/servicePrincipal with its appRoles is done in a single request using the definition of the application via a filter
+    requestsByAction: {},
   },
   [SERVICE_PRINCIPAL_TYPE_NAME]: {
     requestsByAction: {
@@ -331,11 +315,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 pick: GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION,
               },
             },
-            condition: createCustomConditionEmptyFieldsOnAddition(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
+            condition: createCustomConditionEmptyFields(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
           },
           {
             request: getGroupLifecyclePolicyGroupModificationRequest('add'),
-            condition: createCustomConditionEmptyFieldsOnAddition([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
+            condition: createCustomConditionEmptyFields([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
           },
         ],
         modify: [

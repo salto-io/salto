@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import { validatePlainObject } from '@salto-io/adapter-utils'
+import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { v4 as uuid4 } from 'uuid'
 import _ from 'lodash'
 import { APP_ROLES_FIELD_NAME, PARENT_ID_FIELD_NAME } from '../../../constants'
-import { AdjustFunction } from '../types'
+import { AdjustFunctionSingle } from '../types'
 import { adjustWrapper } from './read_only_fields'
 
 /*
@@ -26,16 +26,21 @@ import { adjustWrapper } from './read_only_fields'
  * 1. Add an id to each appRole that does not have one
  * 2. Remove the parent_id field from each appRole (we manually add this field during fetch and it is not deployable)
  */
-export const adjustParentWithAppRoles: AdjustFunction = adjustWrapper(async ({ value, typeName }) => {
+export const adjustParentWithAppRoles: AdjustFunctionSingle = adjustWrapper(async ({ value, typeName }) => {
   validatePlainObject(value, typeName)
-  const adjustedAppRoles = _.get(value, APP_ROLES_FIELD_NAME, []).map((appRole: Record<string, unknown>) => ({
-    id: uuid4(),
-    ..._.omit(appRole, PARENT_ID_FIELD_NAME),
-  }))
+  const appRoles = _.get(value, APP_ROLES_FIELD_NAME, [])
+  validateArray(appRoles, `${typeName}.${APP_ROLES_FIELD_NAME}`)
+  const adjustedAppRoles = appRoles.map(appRole => {
+    validatePlainObject(appRole, `${typeName}.${APP_ROLES_FIELD_NAME}`)
+    return {
+      id: uuid4(),
+      ..._.omit(appRole, PARENT_ID_FIELD_NAME),
+    }
+  })
   return {
     value: {
       ...value,
-      ...(_.isEmpty(adjustedAppRoles) ? {} : { appRoles: adjustedAppRoles }),
+      ...(_.isEmpty(adjustedAppRoles) ? {} : { [APP_ROLES_FIELD_NAME]: adjustedAppRoles }),
     },
   }
 })

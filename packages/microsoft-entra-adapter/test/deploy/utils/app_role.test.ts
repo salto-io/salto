@@ -34,13 +34,11 @@ describe(`${adjustParentWithAppRoles.name}`, () => {
 
   it('should not add an appRoles field if it is not defined', async () => {
     const appRolesParent = {}
-    const result = await Promise.resolve(
-      adjustParentWithAppRoles({
-        value: appRolesParent,
-        typeName: PARENT_TYPE_NAME,
-        context: contextMock,
-      }),
-    )
+    const result = await adjustParentWithAppRoles({
+      value: appRolesParent,
+      typeName: PARENT_TYPE_NAME,
+      context: contextMock,
+    })
     expect(result.value).toEqual(appRolesParent)
   })
 
@@ -56,13 +54,11 @@ describe(`${adjustParentWithAppRoles.name}`, () => {
         },
       ],
     }
-    const result = await Promise.resolve(
-      adjustParentWithAppRoles({
-        value: appRolesParent,
-        typeName: PARENT_TYPE_NAME,
-        context: contextMock,
-      }),
-    )
+    const result = await adjustParentWithAppRoles({
+      value: appRolesParent,
+      typeName: PARENT_TYPE_NAME,
+      context: contextMock,
+    })
     expect(result.value.appRoles[1].id).toBeDefined()
     expect(result.value.appRoles[0].id).toBe('id1')
   })
@@ -81,13 +77,11 @@ describe(`${adjustParentWithAppRoles.name}`, () => {
         },
       ],
     }
-    const result = await Promise.resolve(
-      adjustParentWithAppRoles({
-        value: appRolesParent,
-        typeName: PARENT_TYPE_NAME,
-        context: contextMock,
-      }),
-    )
+    const result = await adjustParentWithAppRoles({
+      value: appRolesParent,
+      typeName: PARENT_TYPE_NAME,
+      context: contextMock,
+    })
     expect(result.value.appRoles[0][PARENT_ID_FIELD_NAME]).toBeUndefined()
     expect(result.value.appRoles[1][PARENT_ID_FIELD_NAME]).toBeUndefined()
   })

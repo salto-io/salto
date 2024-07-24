@@ -26,6 +26,7 @@ import {
 /*
  * Adjust the conditional access policy object to include the includeUsers field and excludeUsers fields
  * only if they do not include user ids, which we don't handle.
+ * TODO SALTO-6331: once we handle users, we should remove this function
  */
 export const adjustConditionalAccessPolicy: AdjustFunction = async ({ value }) => {
   validatePlainObject(value, CONDITIONAL_ACCESS_POLICY_TYPE_NAME)

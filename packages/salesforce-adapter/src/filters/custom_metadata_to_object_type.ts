@@ -27,29 +27,17 @@ import {
   isObjectTypeChange,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterContext, LocalFilterCreator } from '../filter'
-import {
-  CUSTOM_METADATA,
-  CUSTOM_METADATA_SUFFIX,
-  CUSTOM_METADATA_TYPE_NAME,
-  CUSTOM_OBJECT,
-  SALESFORCE,
-} from '../constants'
+import { CUSTOM_METADATA, CUSTOM_METADATA_SUFFIX, CUSTOM_OBJECT, SALESFORCE } from '../constants'
 import { createCustomObjectChange, createCustomTypeFromCustomObjectInstance } from './custom_objects_to_object_type'
 import { apiName } from '../transformers/transformer'
-import {
-  apiNameSync,
-  buildElementsSourceForFetch,
-  isCustomMetadataRecordType,
-  isInstanceOfTypeChangeSync,
-} from './utils'
+import { buildElementsSourceForFetch, isCustomMetadataRecordType, isInstanceOfTypeChange } from './utils'
 
 const log = logger(module)
 
-const { isDefined } = values
 const { awu, groupByAsync } = collections.asynciterable
 
 const createCustomMetadataRecordType = async (
@@ -89,7 +77,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
     name: 'customMetadataToObjectTypeFilter',
     onFetch: async elements => {
       const customMetadataType: unknown = await buildElementsSourceForFetch(elements, config).get(
-        new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
+        new ElemID(SALESFORCE, CUSTOM_METADATA),
       )
       if (!isObjectType(customMetadataType)) {
         log.warn('Could not find CustomMetadata ObjectType. Skipping filter.')
@@ -121,12 +109,13 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       deployableChanges.forEach(c => changes.push(c))
     },
     onDeploy: async changes => {
-      const relatedAppliedChangesApiNames = changes
-        .filter(isInstanceOfTypeChangeSync(CUSTOM_OBJECT))
+      const relatedAppliedChangesApiNames = await awu(changes)
+        .filter(isInstanceOfTypeChange(CUSTOM_OBJECT))
         .filter(c => getChangeData(c).elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
-      const appliedChangesApiNames = relatedAppliedChangesApiNames
-        .map(c => apiNameSync(getChangeData(c)))
-        .filter(isDefined)
+        .toArray()
+      const appliedChangesApiNames = await awu(relatedAppliedChangesApiNames)
+        .map(c => apiName(getChangeData(c)))
+        .toArray()
 
       const appliedOriginalChanges = appliedChangesApiNames.flatMap(name => groupedOriginalChangesByApiName[name] ?? [])
 

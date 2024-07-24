@@ -22,10 +22,7 @@ export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
 export const UNIX_TIME_ZERO_STRING = '1970-01-01T00:00:00.000Z'
 
-// Adapter name
 export const SALESFORCE = 'salesforce'
-
-// Service constants
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
 export const INSTANCE_FULL_NAME_FIELD = 'fullName'
@@ -38,8 +35,6 @@ export const ADMIN_PROFILE = 'Admin'
 export const NAMESPACE_SEPARATOR = '__'
 export const API_NAME_SEPARATOR = '.'
 export const CUSTOM_OBJECT_ID_FIELD = 'Id'
-
-// Internal constants
 export const INTERNAL_ID_FIELD = 'internalId'
 export const XML_ATTRIBUTE_PREFIX = 'attr_'
 export const DEFAULT_NAMESPACE = 'standard'
@@ -344,10 +339,6 @@ export const DefaultSoqlQueryLimits: SoqlQueryLimits = {
   maxQueryLength: 100000,
   maxWhereClauseLength: 2000,
 }
-
-// Renamed types
-export const CUSTOM_OBJECT_TYPE_NAME = '_CustomObject'
-export const CUSTOM_METADATA_TYPE_NAME = '_CustomMetadata'
 
 // Fields and Values
 export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'

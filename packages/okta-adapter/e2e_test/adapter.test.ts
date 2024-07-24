@@ -108,7 +108,11 @@ const createInstance = ({
     log.warn(`Could not find type ${typeName}, error while creating instance`)
     throw new Error(`Failed to find type ${typeName}`)
   }
-  const fetchDefinitions = createFetchDefinitions({ userConfig: DEFAULT_CONFIG, fetchQuery: createFetchQuery(DEFAULT_CONFIG), usePrivateAPI: true})
+  const fetchDefinitions = createFetchDefinitions({
+    userConfig: DEFAULT_CONFIG,
+    fetchQuery: createFetchQuery(DEFAULT_CONFIG),
+    usePrivateAPI: true,
+  })
   const elemIDDef = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)?.element
     ?.topLevel?.elemID
   if (elemIDDef === undefined) {
@@ -439,7 +443,11 @@ describe('Okta adapter E2E', () => {
       const fetchBeforeCleanupResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
-      fetchDefinitions = createFetchDefinitions({ userConfig: DEFAULT_CONFIG, fetchQuery: createFetchQuery(DEFAULT_CONFIG), usePrivateAPI: true})
+      fetchDefinitions = createFetchDefinitions({
+        userConfig: DEFAULT_CONFIG,
+        fetchQuery: createFetchQuery(DEFAULT_CONFIG),
+        usePrivateAPI: true,
+      })
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
       await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 

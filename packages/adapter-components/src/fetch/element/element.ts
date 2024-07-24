@@ -95,11 +95,19 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     const onErrorResult = onError?.custom?.(onError)({ error, typeName }) ?? onError
     switch (onErrorResult?.action) {
       case 'customSaltoError':
-        log.warn('failed to fetch type %s:%s, generating custom Salto error', adapterName, typeName)
+        if (onErrorResult.ignore) {
+          log.debug('suppressing type failure for %s:%s, generating custom Salto error', adapterName, typeName)
+        } else {
+          log.error('failed to fetch type %s:%s, generating custom Salto error', adapterName, typeName)
+        }
         customSaltoErrors.push(onErrorResult.value)
         break
       case 'configSuggestion':
-        log.warn('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
+        if (onErrorResult.ignore) {
+          log.debug('suppressing type failure for %s:%s, generating config suggestions', adapterName, typeName)
+        } else {
+          log.error('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
+        }
         configSuggestions.push(onErrorResult.value)
         break
       case 'failEntireFetch': {
@@ -110,7 +118,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
       // eslint-disable-next-line no-fallthrough
       case undefined:
       default:
-        log.warn('failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
+        log.error('failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
     }
   }
 

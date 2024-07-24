@@ -30,11 +30,13 @@ type FailEntireFetch = {
 type CustomSaltoError = {
   action: 'customSaltoError'
   value: SaltoError
+  ignore: boolean
 }
 
 type ConfigSuggestion = {
   action: 'configSuggestion'
   value: ConfigChangeSuggestion
+  ignore: boolean
 }
 
 export type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion

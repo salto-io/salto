@@ -30,16 +30,18 @@ type FailEntireFetch = {
 type CustomSaltoError = {
   action: 'customSaltoError'
   value: SaltoError
-  ignore: boolean
 }
 
 type ConfigSuggestion = {
   action: 'configSuggestion'
   value: ConfigChangeSuggestion
-  ignore: boolean
 }
 
-export type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion
+type IgnoreError = {
+  action: 'ignoreError'
+}
+
+export type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion | IgnoreError
 
 type OnErrorHandler = ArgsWithCustomizer<OnErrorHandlerAction, OnErrorHandlerAction, { error: Error; typeName: string }>
 

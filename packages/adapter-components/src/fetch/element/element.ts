@@ -95,21 +95,22 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     const onErrorResult = onError?.custom?.(onError)({ error, typeName }) ?? onError
     switch (onErrorResult?.action) {
       case 'customSaltoError':
-        if (onErrorResult.ignore) {
-          log.debug('suppressing type failure for %s:%s, generating custom Salto error', adapterName, typeName)
-        } else {
-          log.error('failed to fetch type %s:%s, generating custom Salto error', adapterName, typeName)
-        }
+        log.warn('failed to fetch type %s:%s, generating custom Salto error', adapterName, typeName)
         customSaltoErrors.push(onErrorResult.value)
         break
       case 'configSuggestion':
-        if (onErrorResult.ignore) {
-          log.debug('suppressing type failure for %s:%s, generating config suggestions', adapterName, typeName)
-        } else {
-          log.error('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
-        }
+        log.warn('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
         configSuggestions.push(onErrorResult.value)
         break
+      case 'ignoreError': {
+        log.debug(
+          'failed to fetch type %s:%s, suppressing error with no action: %s',
+          adapterName,
+          typeName,
+          error.message,
+        )
+        break
+      }
       case 'failEntireFetch': {
         if (onErrorResult.value) {
           throw new AbortFetchOnFailure({ adapterName, typeName, message: error.message })

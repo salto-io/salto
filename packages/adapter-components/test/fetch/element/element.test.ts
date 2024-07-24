@@ -212,6 +212,7 @@ describe('element', () => {
       const fetchError = new Error('failed to fetch')
       const logging = logger('adapter-components/src/fetch/element/element')
       const logErrorSpy = jest.spyOn(logging, 'error')
+      const logWarnSpy = jest.spyOn(logging, 'warn')
 
       beforeEach(() => {
         jest.clearAllMocks()
@@ -260,7 +261,6 @@ describe('element', () => {
                     onError: {
                       action: 'customSaltoError',
                       value: customSaltoError,
-                      ignore: false,
                     },
                   },
                 },
@@ -273,7 +273,7 @@ describe('element', () => {
           expect(res.errors?.[0]).toEqual(customSaltoError)
         })
 
-        it('should log "failed to fetch type" error when provided with ignore = false', () => {
+        it('should log "failed to fetch type" warning', () => {
           const generator = getElementGenerator({
             adapterName: 'myAdapter',
             defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
@@ -285,7 +285,6 @@ describe('element', () => {
                     onError: {
                       action: 'customSaltoError',
                       value: customSaltoError,
-                      ignore: false,
                     },
                   },
                 },
@@ -294,34 +293,11 @@ describe('element', () => {
           })
           generator.handleError({ typeName: 'myType', error: fetchError })
           generator.generate()
-          expect(logErrorSpy).toHaveBeenCalledWith(
+          expect(logWarnSpy).toHaveBeenCalledWith(
             'failed to fetch type %s:%s, generating custom Salto error',
             expect.any(String),
             expect.any(String),
           )
-        })
-
-        it('should not error when provided with ignore = true', () => {
-          const generator = getElementGenerator({
-            adapterName: 'myAdapter',
-            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
-              customizations: {
-                myType: {
-                  element: { topLevel: { isTopLevel: true } },
-                  resource: {
-                    directFetch: true,
-                    onError: {
-                      action: 'customSaltoError',
-                      value: customSaltoError,
-                      ignore: true,
-                    },
-                  },
-                },
-              },
-            }),
-          })
-          generator.handleError({ typeName: 'myType', error: fetchError })
-          generator.generate()
           expect(logErrorSpy).not.toHaveBeenCalled()
         })
       })
@@ -345,7 +321,6 @@ describe('element', () => {
                     onError: {
                       action: 'configSuggestion',
                       value: configSuggestion,
-                      ignore: false,
                     },
                   },
                 },
@@ -358,7 +333,7 @@ describe('element', () => {
           expect(res.configChanges?.[0]).toEqual(configSuggestion)
         })
 
-        it('should log "failed to fetch type" error when provided with ignore = false', () => {
+        it('should log "failed to fetch type" warning', () => {
           const generator = getElementGenerator({
             adapterName: 'myAdapter',
             defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
@@ -370,7 +345,6 @@ describe('element', () => {
                     onError: {
                       action: 'configSuggestion',
                       value: configSuggestion,
-                      ignore: false,
                     },
                   },
                 },
@@ -379,32 +353,41 @@ describe('element', () => {
           })
           generator.handleError({ typeName: 'myType', error: fetchError })
           generator.generate()
-          expect(logErrorSpy).toHaveBeenCalledWith(
+          expect(logWarnSpy).toHaveBeenCalledWith(
             'failed to fetch type %s:%s, generating config suggestions',
             expect.any(String),
             expect.any(String),
           )
+          expect(logErrorSpy).not.toHaveBeenCalled()
         })
+      })
 
-        it('should not log error when provided with ignore = true', () => {
-          const generator = getElementGenerator({
-            adapterName: 'myAdapter',
-            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
-              customizations: {
-                myType: {
-                  element: { topLevel: { isTopLevel: true } },
-                  resource: {
-                    directFetch: true,
-                    onError: {
-                      action: 'configSuggestion',
-                      value: configSuggestion,
-                      ignore: true,
-                    },
+      describe('when onError defined with ignoreError', () => {
+        const generator = getElementGenerator({
+          adapterName: 'myAdapter',
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+            customizations: {
+              myType: {
+                element: { topLevel: { isTopLevel: true } },
+                resource: {
+                  directFetch: true,
+                  onError: {
+                    action: 'ignoreError',
                   },
                 },
               },
-            }),
-          })
+            },
+          }),
+        })
+        it('should not return any error', () => {
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          const res = generator.generate()
+          expect(res.elements).toHaveLength(0)
+          expect(res.errors).toHaveLength(0)
+          expect(res.configChanges).toHaveLength(0)
+        })
+
+        it('should not log "failed to fetch type" error', () => {
           generator.handleError({ typeName: 'myType', error: fetchError })
           generator.generate()
           expect(logErrorSpy).not.toHaveBeenCalled()

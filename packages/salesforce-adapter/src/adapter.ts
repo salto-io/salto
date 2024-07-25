@@ -570,11 +570,11 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...Types.getAnnotationTypes(),
       ...Object.values(ArtificialTypes),
     ]
-    const metaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
+    const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
     const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
     const metadataTypesPromise = withChangesDetection
       ? getMetadataTypesFromElementsSource(this.elementsSource)
-      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metaType)
+      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metadataMetaType)
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
 
@@ -587,7 +587,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const { elements: metadataInstancesElements, configChanges: metadataInstancesConfigInstances } =
       await metadataInstancesPromise
     const elements = [
-      ...makeArray(metaType),
+      ...makeArray(metadataMetaType),
       ...fieldTypes,
       ...hardCodedTypes,
       ...metadataTypes,

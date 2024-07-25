@@ -266,7 +266,7 @@ const annotationTypesForObject = (
   return typesFromInstance.standardAnnotationTypes
 }
 
-const metaTypeForObject = (metaTypes: MetaTypes, instance: InstanceElement, custom: boolean): ObjectType => {
+const getMetaType = (metaTypes: MetaTypes, instance: InstanceElement, custom: boolean): ObjectType => {
   if (isCustomSettings(instance)) {
     return metaTypes.customSettings
   }
@@ -414,7 +414,7 @@ const createNestedMetadataInstances = (
 ): Promise<InstanceElement[]> =>
   awu(Object.entries(nestedMetadataTypes))
     .flatMap(([name, type]) => {
-      const nestedInstancesValues: Values[] = makeArray(instance.value[name])
+      const nestedInstancesValues = makeArray(instance.value[name])
       if (_.isEmpty(nestedInstancesValues)) {
         return [] as InstanceElement[]
       }
@@ -543,7 +543,7 @@ const createFromInstance = async (
     typesFromInstance,
     metaType:
       metaTypes !== undefined
-        ? metaTypeForObject(metaTypes, instance, hasCustomSuffix(instance.value[INSTANCE_FULL_NAME_FIELD]))
+        ? getMetaType(metaTypes, instance, hasCustomSuffix(instance.value[INSTANCE_FULL_NAME_FIELD]))
         : undefined,
     fieldsToSkip,
     config,

@@ -3967,9 +3967,9 @@ __metadata:
     "@types/wu": ^2.1.40
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
-    axios-retry: ^4.0.0
+    axios-retry: ^4.4.2
     bottleneck: ^2.19.5
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -4184,7 +4184,7 @@ __metadata:
     "@types/lodash": ^4.14.168
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -4267,7 +4267,7 @@ __metadata:
     "@typescript-eslint/parser": ^7.16.0
     async-lock: ^1.2.4
     aws-sdk-client-mock: ^0.5.5
-    axios: ^0.26.1
+    axios: ^1.7.2
     bottleneck: ^2.19.5
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -4490,7 +4490,7 @@ __metadata:
     "@types/uuid": ^10.0.0
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -4535,7 +4535,7 @@ __metadata:
     "@types/lodash": ^4.14.168
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -4579,7 +4579,7 @@ __metadata:
     "@types/xml-js": ^1.0.0
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -4629,7 +4629,7 @@ __metadata:
     "@types/uuid": ^10.0.0
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -4835,7 +4835,7 @@ __metadata:
     "@types/lodash": ^4.14.168
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -4890,9 +4890,9 @@ __metadata:
     "@typescript-eslint/parser": ^7.16.0
     ajv: ^7.1.1
     async-lock: ^1.2.4
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
-    axios-retry: ^4.0.0
+    axios-retry: ^4.4.2
     bottleneck: ^2.19.5
     compare-versions: 4.1.3
     crypto: ^1.0.1
@@ -4958,9 +4958,9 @@ __metadata:
     "@types/uuid": ^10.0.0
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
-    axios-retry: ^4.0.0
+    axios-retry: ^4.4.2
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
     eslint-config-prettier: 9.1.0
@@ -5008,7 +5008,7 @@ __metadata:
     "@types/lodash": ^4.14.168
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -5219,7 +5219,7 @@ __metadata:
     "@types/lodash": ^4.14.168
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -5260,7 +5260,7 @@ __metadata:
     "@types/lodash": ^4.14.168
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -5302,9 +5302,9 @@ __metadata:
     "@types/lodash": ^4.14.168
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
-    axios-retry: ^4.0.0
+    axios-retry: ^4.4.2
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
     eslint-config-prettier: 9.1.0
@@ -5397,7 +5397,7 @@ __metadata:
     "@types/mime-types": ^2.1.0
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -5502,9 +5502,9 @@ __metadata:
     "@typescript-eslint/parser": ^7.16.0
     acorn: ^8.11.3
     acorn-walk: ^8.3.2
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
-    axios-retry: ^4.0.0
+    axios-retry: ^4.4.2
     domhandler: ^4.2.2
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -5554,7 +5554,7 @@ __metadata:
     "@types/lodash": ^4.14.168
     "@typescript-eslint/eslint-plugin": ^7.16.0
     "@typescript-eslint/parser": ^7.16.0
-    axios: ^0.26.1
+    axios: ^1.7.2
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     eslint-config-airbnb: 18.0.1
@@ -7652,14 +7652,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios-retry@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "axios-retry@npm:4.0.0"
+"axios-retry@npm:^4.4.2":
+  version: 4.4.2
+  resolution: "axios-retry@npm:4.4.2"
   dependencies:
     is-retry-allowed: ^2.2.0
   peerDependencies:
     axios: 0.x || 1.x
-  checksum: 132b63132e8087242b8888fdebf3786cfd687e1021970319336a63533b4b584ab23a39d5b5a05e84b96055a640129a25e60b6a6cdb422c4cf10517398238000f
+  checksum: 4f0fe7a5a02bda342852584d681ac6b7041debdf3b79989499bb3ed9ff0d527ea5e0f7619077772152537896b4db6b8842f135f8cd2adc062db805f893bdbcb7
   languageName: node
   linkType: hard
 
@@ -7681,15 +7681,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^0.26.1":
-  version: 0.26.1
-  resolution: "axios@npm:0.26.1"
-  dependencies:
-    follow-redirects: ^1.14.8
-  checksum: d9eb58ff4bc0b36a04783fc9ff760e9245c829a5a1052ee7ca6013410d427036b1d10d04e7380c02f3508c5eaf3485b1ae67bd2adbfec3683704745c8d7a6e1a
-  languageName: node
-  linkType: hard
-
 "axios@npm:^1.0.0":
   version: 1.1.3
   resolution: "axios@npm:1.1.3"
@@ -7698,6 +7689,17 @@ __metadata:
     form-data: ^4.0.0
     proxy-from-env: ^1.1.0
   checksum: cab3b17bf6092c9387f7023d699db093cfa23650b56c4422cd474d124b78b2e3b5a520f932c330664a58ab85b867b1c25a95cace475ef72d236888c852b84e6d
+  languageName: node
+  linkType: hard
+
+"axios@npm:^1.7.2":
+  version: 1.7.2
+  resolution: "axios@npm:1.7.2"
+  dependencies:
+    follow-redirects: ^1.15.6
+    form-data: ^4.0.0
+    proxy-from-env: ^1.1.0
+  checksum: e457e2b0ab748504621f6fa6609074ac08c824bf0881592209dfa15098ece7e88495300e02cd22ba50b3468fd712fe687e629dcb03d6a3f6a51989727405aedf
   languageName: node
   linkType: hard
 
@@ -11291,13 +11293,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.14.8, follow-redirects@npm:^1.15.0":
+"follow-redirects@npm:^1.15.0":
   version: 1.15.2
   resolution: "follow-redirects@npm:1.15.2"
   peerDependenciesMeta:
     debug:
       optional: true
   checksum: faa66059b66358ba65c234c2f2a37fcec029dc22775f35d9ad6abac56003268baf41e55f9ee645957b32c7d9f62baf1f0b906e68267276f54ec4b4c597c2b190
+  languageName: node
+  linkType: hard
+
+"follow-redirects@npm:^1.15.6":
+  version: 1.15.6
+  resolution: "follow-redirects@npm:1.15.6"
+  peerDependenciesMeta:
+    debug:
+      optional: true
+  checksum: a62c378dfc8c00f60b9c80cab158ba54e99ba0239a5dd7c81245e5a5b39d10f0c35e249c3379eae719ff0285fff88c365dd446fab19dee771f1d76252df1bbf5
   languageName: node
   linkType: hard
 

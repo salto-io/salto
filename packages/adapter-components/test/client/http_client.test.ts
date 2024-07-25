@@ -80,10 +80,14 @@ describe('client_http_client', () => {
         accountId: 'ACCOUNT_ID',
       })
       mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      mockAxiosAdapter.onGet('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
+      mockAxiosAdapter.onGet('/ep2', { a: ['AAA', 'BBB'] }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
       const getRes = await client.get({ url: '/ep' })
-      const getRes2 = await client.get({ url: '/ep2', queryParams: { a: 'AAA' } })
+      const getRes2 = await client.get({
+        url: '/ep2',
+        queryParams: { a: ['AAA', 'BBB'] },
+        queryParamsSerializer: { indexes: null },
+      })
       expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
       expect(getRes2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
@@ -100,6 +104,9 @@ describe('client_http_client', () => {
       )
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, new AxiosHeaders({ hh: 'header' }))
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, new AxiosHeaders({ hh: 'header' }))
+      const request = mockAxiosAdapter.history.get[2]
+      expect(request.url).toEqual('/ep2')
+      expect(request.paramsSerializer).toEqual({ indexes: null })
     })
 
     it('should throw Unauthorized on login 401', async () => {

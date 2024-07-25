@@ -71,7 +71,6 @@ import {
   createDefinitionForAppRoleAssignment,
   addParentIdToAppRoles,
   adjustApplication,
-  adjustConditionalAccessPolicy,
 } from './utils'
 
 const APP_ROLES_FIELD_CUSTOMIZATIONS = {
@@ -799,10 +798,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         endpoint: {
           path: '/identity/conditionalAccess/policies',
         },
-        transformation: {
-          ...DEFAULT_TRANSFORMATION,
-          adjust: adjustConditionalAccessPolicy,
-        },
+        transformation: DEFAULT_TRANSFORMATION,
       },
     ],
     resource: {

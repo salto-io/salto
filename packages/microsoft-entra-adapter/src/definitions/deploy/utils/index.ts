@@ -23,4 +23,3 @@ export {
 } from './group_deployment_life_cycle_policy'
 export { createCustomConditionEmptyFields } from './condition_empty_fields'
 export { adjustParentWithAppRoles } from './app_role'
-export { adjustConditionalAccessPolicy } from './conditional_access_policy'

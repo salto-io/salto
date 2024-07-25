@@ -48,7 +48,6 @@ import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { DeployCustomDefinitions, DeployRequestDefinition, DeployableRequestDefinition } from './types'
 import {
   adjustWrapper,
-  adjustConditionalAccessPolicy,
   adjustRoleDefinitionForDeployment,
   createCustomConditionEmptyFields,
   createCustomizationsWithBasePathForDeploy,
@@ -809,9 +808,6 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               endpoint: {
                 path: '/identity/conditionalAccess/policies',
                 method: 'post',
-              },
-              transformation: {
-                adjust: adjustWrapper(adjustConditionalAccessPolicy),
               },
             },
           },

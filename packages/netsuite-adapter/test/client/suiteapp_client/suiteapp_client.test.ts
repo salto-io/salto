@@ -85,7 +85,7 @@ describe('SuiteAppClient', () => {
           'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0',
         )
         expect(JSON.parse(req.data)).toEqual({ q: 'SELECT field FROM table' })
-        expect(req.headers).toEqual({
+        expect({ ...req.headers }).toEqual({
           Authorization: expect.any(String),
           'Content-Type': 'application/json',
           Accept: 'application/json, text/plain, */*',

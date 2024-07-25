@@ -44,3 +44,6 @@ export const getContextAndFieldIds = (change: Change<InstanceElement>): { contex
     fieldId: getParent(parent).value.id,
   }
 }
+
+export const isGlobalContext = (instance: InstanceElement): boolean =>
+  instance.value.projectIds === undefined || instance.value.projectIds.length === 0

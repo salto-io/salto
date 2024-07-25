@@ -151,7 +151,7 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
         typeName,
       )
 
-    const allCallArgs = _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body', 'params'])
+    const allCallArgs = _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body', 'params', 'queryParamsSerializer'])
     const callArgs = mergedEndpointDef.omitBody ? _.omit(mergedEndpointDef, 'body') : allCallArgs
 
     log.trace(

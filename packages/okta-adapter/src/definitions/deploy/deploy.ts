@@ -77,10 +77,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         customizations: {
           add: [
             {
-              // BrandThemes are created automatically by Okta when a Brand is
-              // created, but we're allowing to "add" a theme alongside its
-              // Brand. We first send a GET query to get its ID, and then we
-              // perform a "modify" action.
+              // BrandThemes are created automatically by Okta when a Brand is created,
+              // but we're allowing to "add" a theme alongside its Brand.
+              // We first send a GET query to get its ID, and then we perform a "modify" action.
               request: {
                 endpoint: {
                   path: '/api/v1/brands/{brandId}/themes',

@@ -8,17 +8,20 @@
 import {
   ChangeValidator,
   getChangeData,
-  isInstanceChange,
   SeverityLevel,
   isRemovalChange,
   CORE_ANNOTATIONS,
   isInstanceElement,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../constants'
 import { JiraConfig } from '../config/config'
+
+const log = logger(module)
 
 const { awu } = collections.asynciterable
 
@@ -28,8 +31,20 @@ const { awu } = collections.asynciterable
 export const deleteLastQueueValidator: (config: JiraConfig) => ChangeValidator =
   config => async (changes, elementsSource) => {
     if (elementsSource === undefined || !config.fetch.enableJSM) {
+      log.info('Skipping deleteLastQueueValidator due to missing elements source or JSM disabled')
       return []
     }
+
+    const queueChangesData = changes
+      .filter(isRemovalChange)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+
+    if (_.isEmpty(queueChangesData)) {
+      return []
+    }
+
     const projects = await awu(await elementsSource.list())
       .filter(id => id.typeName === PROJECT_TYPE)
       .map(id => elementsSource.get(id))
@@ -43,13 +58,9 @@ export const deleteLastQueueValidator: (config: JiraConfig) => ChangeValidator =
       .filter(queue => isReferenceExpression(queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0]))
       .groupBy(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.getFullName())
 
-    return awu(changes)
-      .filter(isInstanceChange)
-      .filter(isRemovalChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+    return queueChangesData
       .filter(queue => hasValidParent(queue))
-      .filter(async instance => {
+      .filter(instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
         return relatedQueues === undefined && projects.includes(getParent(instance).elemID.getFullName())
       })
@@ -59,5 +70,4 @@ export const deleteLastQueueValidator: (config: JiraConfig) => ChangeValidator =
         message: 'Cannot delete a project’s only queue',
         detailedMessage: `Cannot delete this queue, as its the last remaining queue in project ${getParent(instance).elemID.name}.`,
       }))
-      .toArray()
   }

@@ -7,10 +7,18 @@
  */
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { toChange, InstanceElement, ReferenceExpression, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import {
+  toChange,
+  InstanceElement,
+  ReferenceExpression,
+  ReadOnlyElementsSource,
+  ObjectType,
+  ElemID,
+} from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { referencedWorkflowDeletionChangeValidator } from '../../../src/change_validators/workflowsV2/referenced_workflow_deletion'
-import { ISSUE_TYPE_NAME, WORKFLOW_SCHEME_TYPE_NAME } from '../../../src/constants'
+import { ISSUE_TYPE_NAME, JIRA, WORKFLOW_SCHEME_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType, createSkeletonWorkflowV2Instance } from '../../utils'
 
 describe('referencedWorkflowDeletionChangeValidator', () => {
@@ -116,5 +124,27 @@ describe('referencedWorkflowDeletionChangeValidator', () => {
           'Workflow is referenced by the following workflow schemes: defaultSchemeInstance, referencingSchemeInstance.',
       },
     ])
+  })
+  it('should not return an error if element source is not passed', async () => {
+    const logging = logger('jira-adapter/src/change_validators/workflowsV2/referenced_workflow_deletion')
+    const logSpy = jest.spyOn(logging, 'warn')
+    logSpy.mockClear()
+    const result = await referencedWorkflowDeletionChangeValidator(config)(
+      [toChange({ before: referencedWorkflowInstance })],
+      undefined,
+    )
+    expect(result).toBeEmpty()
+    expect(logSpy).toHaveBeenCalledWith(
+      'Skipping referencedWorkflowDeletionChangeValidator due to missing elements source',
+    )
+  })
+  it('should not return an error if there are no workflow changes', async () => {
+    const otherInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'someType') }), {})
+    expect(
+      await referencedWorkflowDeletionChangeValidator(config)(
+        [toChange({ after: otherInstance })],
+        buildElementsSourceFromElements([otherInstance]),
+      ),
+    ).toBeEmpty()
   })
 })

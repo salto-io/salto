@@ -8,12 +8,13 @@
 import {
   ChangeValidator,
   getChangeData,
-  isInstanceChange,
   SeverityLevel,
   CORE_ANNOTATIONS,
   isAdditionChange,
   isReferenceExpression,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { QUEUE_TYPE } from '../constants'
@@ -30,19 +31,25 @@ export const defaultAdditionQueueValidator: (config: JiraConfig) => ChangeValida
       return []
     }
 
+    const queueChangesData = changes
+      .filter(isAdditionChange)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+
+    if (_.isEmpty(queueChangesData)) {
+      return []
+    }
+
     const projectToQueues = await awu(await elementsSource.list())
       .filter(id => id.typeName === QUEUE_TYPE && id.idType === 'instance')
       .map(id => elementsSource.get(id))
       .filter(queue => isReferenceExpression(queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0]))
       .groupBy(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.getFullName())
 
-    return awu(changes)
-      .filter(isInstanceChange)
-      .filter(isAdditionChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+    return queueChangesData
       .filter(queue => hasValidParent(queue))
-      .filter(async instance => {
+      .filter(instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
         return relatedQueues.filter(relatedQueue => relatedQueue.value.name === instance.value.name).length > 1
       })
@@ -52,5 +59,4 @@ export const defaultAdditionQueueValidator: (config: JiraConfig) => ChangeValida
         message: 'Cannot deploy queue, because queues names must be unique',
         detailedMessage: `Cannot deploy this queue, as it has the same name as another queue in project ${getParent(instance).elemID.name}.`,
       }))
-      .toArray()
   }

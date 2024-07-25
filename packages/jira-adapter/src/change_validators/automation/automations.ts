@@ -12,6 +12,7 @@ import {
   isInstanceChange,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE } from '../../constants'
@@ -22,7 +23,17 @@ const log = logger(module)
 
 export const automationsValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
-    log.warn('Elements source was not passed to automationsValidator. Skipping validator')
+    log.info('Skipping automationsValidator due to missing elements source')
+    return []
+  }
+
+  const automationChangesData = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+
+  if (_.isEmpty(automationChangesData)) {
     return []
   }
 
@@ -31,11 +42,7 @@ export const automationsValidator: ChangeValidator = async (changes, elementsSou
     .map(id => elementsSource.get(id))
     .groupBy(instance => instance.value.name)
 
-  return changes
-    .filter(isInstanceChange)
-    .filter(isAdditionChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+  return automationChangesData
     .filter(instance => nameToAutomations[instance.value.name].length > 1)
     .map(instance => ({
       elemID: instance.elemID,

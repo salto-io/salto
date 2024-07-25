@@ -87,11 +87,6 @@ export const createClientDefinitions = (
               omitBody: true,
             },
           },
-          '/api/v1/brands/{brandId}/themes': {
-            get: {
-              omitBody: true,
-            },
-          },
         },
       },
     },

@@ -17,9 +17,14 @@ import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapte
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { createMetadataTypeElements, apiName } from '../transformers/transformer'
+import {
+  createMetadataTypeElements,
+  apiName,
+  createMetaType,
+  metadataAnnotationTypes,
+} from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { SETTINGS_METADATA_TYPE } from '../constants'
+import { SETTINGS_METADATA_TYPE, STANDARD_SETTINGS_META_TYPE } from '../constants'
 import { fetchMetadataInstances } from '../fetch'
 import { listMetadataObjects } from './utils'
 
@@ -32,6 +37,7 @@ const createSettingsType = async (
   client: SalesforceClient,
   settingsTypesName: string,
   knownTypes: Map<string, TypeElement>,
+  metaType?: ObjectType,
 ): Promise<ObjectType[]> => {
   const typeFields = await client.describeMetadataType(settingsTypesName)
   const baseTypeNames = new Set([settingsTypesName])
@@ -48,6 +54,7 @@ const createSettingsType = async (
         suffix: 'settings',
         dirName: 'settings',
       },
+      metaType,
     })
   } catch (e) {
     log.error('failed to fetch settings type %s reason: %o', settingsTypesName, e)
@@ -85,11 +92,14 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const objectTypes = elements.filter(isObjectType)
     await awu(objectTypes).forEach(async e => knownTypes.set(await apiName(e), e))
 
+    const metaType = config.fetchProfile.isFeatureEnabled('metaTypes')
+      ? createMetaType(STANDARD_SETTINGS_META_TYPE, metadataAnnotationTypes, 'Standard Settings')
+      : undefined
     const settingsTypes = (
       await Promise.all(
         settingsTypeInfos
           .map(info => getSettingsTypeName(info.fullName))
-          .map(typeName => createSettingsType(client, typeName, knownTypes)),
+          .map(typeName => createSettingsType(client, typeName, knownTypes, metaType)),
       )
     ).flat()
     elements.push(...settingsTypes)

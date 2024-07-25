@@ -33,9 +33,8 @@ import {
   Element,
   ProgressReporter,
   isInstanceElement,
-  ServiceIds,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
@@ -50,6 +49,7 @@ import {
   MetadataObjectType,
   createInstanceElement,
   isCustom,
+  MetadataMetaType,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -115,7 +115,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
 import generatedDependenciesFilter from './filters/generated_dependencies'
-import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, FETCH_CONFIG, MetadataQuery, SalesforceConfig } from './types'
+import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import { getConfigFromConfigChanges } from './config_change'
 import {
@@ -172,6 +172,7 @@ import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_
 import { fixElementsFunc } from './custom_references/handlers'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 const { partition } = promises.array
 const { concatObjects } = objects
 const { isDefined } = values
@@ -505,18 +506,8 @@ export default class SalesforceAdapter implements AdapterOperations {
         filterCreators,
         concatObjects,
       )
-    // TODO (SALTO-6264): Revert this once hide types is enabled.
-    const getElemIdFuncWithRename = config[FETCH_CONFIG]?.optionalFeatures?.metaTypes
-      ? (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
-          const updatedName = name === constants.CUSTOM_METADATA ? constants.CUSTOM_METADATA_TYPE_NAME : name
-          return (
-            getElemIdFunc?.(adapterName, serviceIds, updatedName) ??
-            new ElemID(constants.SALESFORCE, naclCase(updatedName))
-          )
-        }
-      : getElemIdFunc
-    if (getElemIdFuncWithRename) {
-      Types.setElemIdGetter(getElemIdFuncWithRename)
+    if (getElemIdFunc) {
+      Types.setElemIdGetter(getElemIdFunc)
     }
     this.fixElementsFunc = fixElementsFunc({ elementsSource, config })
   }
@@ -579,10 +570,11 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...Types.getAnnotationTypes(),
       ...Object.values(ArtificialTypes),
     ]
+    const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
     const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
     const metadataTypesPromise = withChangesDetection
       ? getMetadataTypesFromElementsSource(this.elementsSource)
-      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes)
+      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metadataMetaType)
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
 
@@ -594,7 +586,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { elements: metadataInstancesElements, configChanges: metadataInstancesConfigInstances } =
       await metadataInstancesPromise
-    const elements = [...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements]
+    const elements = [
+      ...makeArray(metadataMetaType),
+      ...fieldTypes,
+      ...hardCodedTypes,
+      ...metadataTypes,
+      ...metadataInstancesElements,
+    ]
     progressReporter.reportProgress({
       message: 'Running filters for additional information',
     })
@@ -749,6 +747,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
     knownMetadataTypes: TypeElement[],
+    metaType?: ObjectType,
   ): Promise<TypeElement[]> {
     const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(
@@ -760,7 +759,9 @@ export default class SalesforceAdapter implements AdapterOperations {
     const childTypeNames = new Set(typeInfos.flatMap(type => type.childXmlNames).filter(values.isDefined))
     return (
       await Promise.all(
-        typeInfos.map(typeInfo => fetchMetadataType(this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames)),
+        typeInfos.map(typeInfo =>
+          fetchMetadataType(this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames, metaType),
+        ),
       )
     ).flat()
   }

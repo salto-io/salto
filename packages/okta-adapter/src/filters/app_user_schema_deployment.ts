@@ -143,7 +143,7 @@ const deployAdditionChange = async (
 ): Promise<void> => {
   const fieldsToOmit = fetchUtils.element.getFieldsToOmit(definitions, APP_USER_SCHEMA_TYPE_NAME)
   const modifiedChange = await makeModificationFromAddition(change, client, fieldsToOmit)
-  makeSchemaDeployable(modifiedChange, {}, {})
+  makeSchemaDeployable(modifiedChange, {})
   await defaultDeployWithStatus(modifiedChange, client, apiDefinitions)
 }
 

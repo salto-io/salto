@@ -28,21 +28,7 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import {
-  APP_USER_SCHEMA_TYPE_NAME,
-  BASE_FIELD,
-  DEFINITIONS_FIELD,
-  GROUP_SCHEMA_TYPE_NAME,
-  USER_SCHEMA_TYPE_NAME,
-} from '../constants'
-
-const CUSTOM_PROPERTIES_PATH = ['definitions', 'custom', 'properties']
-
-const SCHEMAS_TO_PATH: Record<string, string[]> = {
-  [GROUP_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
-  [APP_USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
-  [USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
-}
+import { APP_USER_SCHEMA_TYPE_NAME, BASE_FIELD, DEFINITIONS_FIELD, SCHEMA_TYPES } from '../constants'
 
 export const BASE_PATH = [DEFINITIONS_FIELD, BASE_FIELD]
 
@@ -50,8 +36,7 @@ export const getErrorWithSeverity = (elemID: ElemID, severity: SeverityLevel): C
   elemID,
   severity,
   message: "Base attributes cannot be deployed via Okta's APIs",
-  detailedMessage:
-    'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
+  detailedMessage: `Salto cannot deploy changes to base attributes, as they are automatically determined by the associated ${elemID.typeName === APP_USER_SCHEMA_TYPE_NAME ? 'application' : 'schema'}.`,
 })
 
 const getModificationError = (change: ModificationChange<InstanceElement>): ChangeError | undefined => {
@@ -90,6 +75,6 @@ export const schemaBaseChangesValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-    .filter(change => Object.keys(SCHEMAS_TO_PATH).includes(getChangeData(change).elemID.typeName))
+    .filter(change => SCHEMA_TYPES.includes(getChangeData(change).elemID.typeName))
     .map(getErrorFromChange)
     .filter(values.isDefined)

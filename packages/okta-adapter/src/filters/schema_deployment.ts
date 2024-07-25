@@ -22,66 +22,40 @@ import {
   isInstanceChange,
   isModificationChange,
   ElemID,
-  Values,
   isAdditionOrModificationChange,
   AdditionChange,
-  isAdditionChange,
 } from '@salto-io/adapter-api'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { APP_USER_SCHEMA_TYPE_NAME, GROUP_SCHEMA_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
+import { SCHEMA_TYPES } from '../constants'
 import { BASE_PATH } from '../change_validators/app_user_schema_base_properties'
 
 const log = logger(module)
 
 const CUSTOM_PROPERTIES_PATH = ['definitions', 'custom', 'properties']
 
-export const SCHEMAS_TO_PATH: Record<string, string[]> = {
-  [GROUP_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
-  [APP_USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
-  [USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
-}
-
 const getBaseElemID = (appUserSchemaInstance: InstanceElement): ElemID =>
   appUserSchemaInstance.elemID.createNestedID(...BASE_PATH)
 
-const setBaseField = (
-  change: ModificationChange<InstanceElement>,
-  elemIdToAfterBaseFields: Record<string, Values>,
-): void => {
+const setBaseField = (change: ModificationChange<InstanceElement>): void => {
   const { before, after } = change.data
   const baseElemId = getBaseElemID(after)
-  elemIdToAfterBaseFields[after.elemID.getFullName()] = resolvePath(after, baseElemId)
   setPath(after, baseElemId, resolvePath(before, baseElemId))
 }
 
-const makeCustomPropertiesDeployable = (
-  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
-  elemIdToAfterCustomProperties: Record<string, Values>,
-): void => {
-  const { after } = change.data
-  const customPropertiesElemID = after.elemID.createNestedID(...SCHEMAS_TO_PATH[after.elemID.typeName])
-  const afterCustomProperties = resolvePath(after, customPropertiesElemID)
-  elemIdToAfterCustomProperties[after.elemID.getFullName()] = _.cloneDeep(afterCustomProperties)
-  if (!values.isPlainRecord(afterCustomProperties)) {
-    if (afterCustomProperties !== undefined) {
-      log.error('Custom properties should be a record. Instance: %s', after.elemID.getFullName())
-    }
-    setPath(after, customPropertiesElemID, {})
-  }
-  const updatedAfterCustomProperties = resolvePath(after, customPropertiesElemID)
-  if (isAdditionChange(change)) {
-    return
-  }
-  const { before } = change.data
+const addNullToRemovedProperties = (change: ModificationChange<InstanceElement>): void => {
+  const { before, after } = change.data
+
+  const customPropertiesElemID = after.elemID.createNestedID(...CUSTOM_PROPERTIES_PATH)
+
   const beforeCustomProperties = resolvePath(before, customPropertiesElemID)
   if (!values.isPlainRecord(beforeCustomProperties)) {
     return
   }
 
+  const updatedAfterCustomProperties = resolvePath(after, customPropertiesElemID)
   const afterCustomPropertiesKeys = new Set(Object.keys(updatedAfterCustomProperties))
   const propertiesToRemove = Object.keys(beforeCustomProperties).filter(key => !afterCustomPropertiesKeys.has(key))
 
@@ -90,65 +64,88 @@ const makeCustomPropertiesDeployable = (
   })
 }
 
-const returnCustomPropertiesToOriginal = (
-  instance: InstanceElement,
-  elemIdToAfterCustomProperties: Record<string, Values>,
+const ensureCustomPropertiesExists = (instance: InstanceElement): void => {
+  const customPropertiesElemID = instance.elemID.createNestedID(...CUSTOM_PROPERTIES_PATH)
+  const afterCustomProperties = resolvePath(instance, customPropertiesElemID)
+  if (!values.isPlainRecord(afterCustomProperties)) {
+    if (afterCustomProperties !== undefined) {
+      log.error('Custom properties should be a record. Instance: %s', instance.elemID.getFullName())
+    }
+    setPath(instance, customPropertiesElemID, {})
+  }
+}
+const makeCustomPropertiesDeployable = (
+  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
 ): void => {
-  const customPropertiesElemID = instance.elemID.createNestedID(...SCHEMAS_TO_PATH[instance.elemID.typeName])
-  const originalCustomProperties = elemIdToAfterCustomProperties[instance.elemID.getFullName()]
+  ensureCustomPropertiesExists(getChangeData(change))
+  if (isModificationChange(change)) {
+    addNullToRemovedProperties(change)
+  }
+}
+
+const returnCustomPropertiesToOriginal = (instance: InstanceElement, originalInstance: InstanceElement): void => {
+  const customPropertiesElemID = instance.elemID.createNestedID(...CUSTOM_PROPERTIES_PATH)
+  const originalCustomProperties = resolvePath(originalInstance, customPropertiesElemID)
   setPath(instance, customPropertiesElemID, originalCustomProperties)
 }
 
-const returnBaseToOriginal = (instance: InstanceElement, elemIdToAfterBaseFields: Record<string, Values>): void => {
+const returnBaseToOriginal = (instance: InstanceElement, originalInstance: InstanceElement): void => {
   const baseElemId = getBaseElemID(instance)
-  const originalBase = elemIdToAfterBaseFields[instance.elemID.getFullName()]
+  const originalBase = resolvePath(originalInstance, baseElemId)
   setPath(instance, baseElemId, originalBase)
 }
 
 export const makeSchemaDeployable = (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
-  elemIdToAfterBaseFields: Record<string, Values>,
-  elemIdToAfterCustomProperties: Record<string, Values>,
+  elemIdToOriginalAfter: Record<string, InstanceElement>,
 ): void => {
-  makeCustomPropertiesDeployable(change, elemIdToAfterCustomProperties)
+  const { after } = change.data
+  elemIdToOriginalAfter[after.elemID.getFullName()] = after.clone()
+  makeCustomPropertiesDeployable(change)
   if (isModificationChange(change)) {
-    setBaseField(change, elemIdToAfterBaseFields)
+    setBaseField(change)
   }
 }
 
 const returnToOriginalForm = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  elemIdToAfterBaseFields: Record<string, Values>,
-  elemIdToAfterCustomProperties: Record<string, Values>,
+  elemIdToOriginalAfter: Record<string, InstanceElement>,
 ): void => {
-  returnCustomPropertiesToOriginal(getChangeData(change), elemIdToAfterCustomProperties)
+  const { after } = change.data
+  const originalAfter = elemIdToOriginalAfter[getChangeData(change).elemID.getFullName()]
+  returnCustomPropertiesToOriginal(after, originalAfter)
   if (isModificationChange(change)) {
-    returnBaseToOriginal(getChangeData(change), elemIdToAfterBaseFields)
+    returnBaseToOriginal(after, originalAfter)
   }
 }
-// TODO change the documentation
+
 /**
- * When a user wants to delete a custom property from a schema, the custom property is set to null.
- * This is in order for Okta to delete the property from the schema.
- * This filter removes the custom properties that are set to null in the onDeploy.
+ * This filter is used to make schema instances deployable, it effects the custom properties and the base fields.
+ *
+ * Custom Properties
+ * When deploying a schema, the schema must contain custom properties field.
+ * In addition, to delete a custom property from a schema, the custom property is set to null.
+ *
+ * Base
+ * Okta's API does not allow to deploy changes to base attributes.
+ * we deploy the base from the before and change it back in the onDeploy.
  */
 const filterCreator: FilterCreator = () => {
-  const elemIdToAfterBaseFields: Record<string, Values> = {}
-  const elemIdToAfterCustomProperties: Record<string, Values> = {}
+  const elemIdToOriginalAfter: Record<string, InstanceElement> = {}
   return {
     name: 'schemaDeploymentFilter',
     preDeploy: async (changes: Change<InstanceElement>[]) =>
       changes
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => Object.keys(SCHEMAS_TO_PATH).includes(getChangeData(change).elemID.typeName))
-        .forEach(change => makeSchemaDeployable(change, elemIdToAfterBaseFields, elemIdToAfterCustomProperties)),
+        .filter(change => SCHEMA_TYPES.includes(getChangeData(change).elemID.typeName))
+        .forEach(change => makeSchemaDeployable(change, elemIdToOriginalAfter)),
     onDeploy: async (changes: Change<InstanceElement>[]) =>
       changes
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => Object.keys(SCHEMAS_TO_PATH).includes(getChangeData(change).elemID.typeName))
-        .forEach(change => returnToOriginalForm(change, elemIdToAfterBaseFields, elemIdToAfterCustomProperties)),
+        .filter(change => SCHEMA_TYPES.includes(getChangeData(change).elemID.typeName))
+        .forEach(change => returnToOriginalForm(change, elemIdToOriginalAfter)),
   }
 }
 

@@ -127,7 +127,7 @@ describe('schemaBaseChangesValidator', () => {
         severity: 'Info',
         message: "Base attributes cannot be deployed via Okta's APIs",
         detailedMessage:
-          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
+          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated application.',
       })
       expect(changeErrors[1]).toEqual({
         elemID: userSchemaInstance.elemID,
@@ -168,7 +168,7 @@ describe('schemaBaseChangesValidator', () => {
         severity: 'Error',
         message: "Base attributes cannot be deployed via Okta's APIs",
         detailedMessage:
-          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
+          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated application.',
       })
       expect(changeErrors[1]).toEqual({
         elemID: userSchemaInstance.elemID,
@@ -207,7 +207,7 @@ describe('schemaBaseChangesValidator', () => {
         severity: 'Error',
         message: "Base attributes cannot be deployed via Okta's APIs",
         detailedMessage:
-          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
+          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated application.',
       })
       expect(changeErrors[1]).toEqual({
         elemID: userSchemaInstance.elemID,
@@ -246,7 +246,7 @@ describe('schemaBaseChangesValidator', () => {
         severity: 'Error',
         message: "Base attributes cannot be deployed via Okta's APIs",
         detailedMessage:
-          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
+          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated application.',
       })
       expect(changeErrors[1]).toEqual({
         elemID: userSchemaInstance.elemID,
@@ -290,7 +290,7 @@ describe('schemaBaseChangesValidator', () => {
         severity: 'Warning',
         message: "Base attributes cannot be deployed via Okta's APIs",
         detailedMessage:
-          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
+          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated application.',
       })
       expect(changeErrors[1]).toEqual({
         elemID: userSchemaInstance.elemID,
@@ -336,7 +336,7 @@ describe('schemaBaseChangesValidator', () => {
         severity: 'Warning',
         message: "Base attributes cannot be deployed via Okta's APIs",
         detailedMessage:
-          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
+          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated application.',
       })
     })
     it('should handle undefined after base field', async () => {
@@ -350,7 +350,7 @@ describe('schemaBaseChangesValidator', () => {
         severity: 'Warning',
         message: "Base attributes cannot be deployed via Okta's APIs",
         detailedMessage:
-          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated schema.',
+          'Salto cannot deploy changes to base attributes, as they are automatically determined by the associated application.',
       })
     })
   })

@@ -87,14 +87,14 @@ export async function createRestoreChanges(
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges',
 ): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
   if (resultType === 'changes') {
-    const changes = await createDiffChanges(
-      workspaceElements,
-      state,
+    const changes = await createDiffChanges({
+      toElementsSrc: workspaceElements,
+      fromElementsSrc: state,
       referenceSourcesIndex,
       elementSelectors,
-      [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
-      'changes',
-    )
+      topLevelFilters: [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
+      resultType: 'changes',
+    })
     return awu(changes)
       .map(async change => {
         const detailedChangesByPath = (
@@ -107,14 +107,14 @@ export async function createRestoreChanges(
       .toArray()
   }
 
-  const detailedChanges = await createDiffChanges(
-    workspaceElements,
-    state,
+  const detailedChanges = await createDiffChanges({
+    toElementsSrc: workspaceElements,
+    fromElementsSrc: state,
     referenceSourcesIndex,
     elementSelectors,
-    [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
-    'detailedChanges',
-  )
+    topLevelFilters: [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
+    resultType: 'detailedChanges',
+  })
   return awu(detailedChanges)
     .flatMap(change => splitDetailedChangeByPath(change, index))
     .toArray()

@@ -109,18 +109,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             },
           ],
           remove: [
-            {
-              request: {
-                endpoint: {
-                  // BrandThemes are removed automatically by Okta when the Brand is removed.
-                  // We use an empty URL here to mark this action as supported in case a user removed the theme
-                  // alongside its Brand.
-                  // A separate Change Validator ensures that mappings aren't removed by themselves.
-                  path: '/',
-                  method: 'get',
-                },
-              },
-            },
+            // BrandThemes are removed automatically by Okta when the Brand is removed.
+            // We use an empty request list here to mark this action as supported in case a user removed the theme
+            // alongside its Brand.
+            // A separate Change Validator ensures that themes aren't removed by themselves.
           ],
         },
       },

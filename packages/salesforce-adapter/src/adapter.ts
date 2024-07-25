@@ -85,6 +85,7 @@ import customObjectInstanceReferencesFilter from './filters/custom_object_instan
 import foreignKeyReferencesFilter from './filters/foreign_key_references'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
+import cpqRulesAndConditionsRefsFilter from './filters/cpq/rules_and_conditions_refs'
 import cpqReferencableFieldReferencesFilter from './filters/cpq/referencable_field_references'
 import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
 import extraDependenciesFilter from './filters/extra_dependencies'
@@ -216,6 +217,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: cpqReferencableFieldReferencesFilter },
   { creator: cpqCustomScriptFilter },
   { creator: cpqLookupFieldsFilter },
+  // cpqRulesAndConditionsFilter depends on cpqReferencableFieldReferencesFilter
+  { creator: cpqRulesAndConditionsRefsFilter },
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },

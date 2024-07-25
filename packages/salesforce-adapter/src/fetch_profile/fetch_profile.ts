@@ -46,6 +46,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   omitStandardFieldsNonDeployableValues: true,
   latestSupportedApiVersion: false,
   metaTypes: false,
+  cpqRulesAndConditionsRefs: false,
 }
 
 type BuildFetchProfileParams = {

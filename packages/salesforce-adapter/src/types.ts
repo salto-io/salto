@@ -125,6 +125,7 @@ export type OptionalFeatures = {
   omitStandardFieldsNonDeployableValues?: boolean
   latestSupportedApiVersion?: boolean
   metaTypes?: boolean
+  cpqRulesAndConditionsRefs?: boolean
 }
 
 export type ChangeValidatorName =
@@ -818,6 +819,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
     latestSupportedApiVersion: { refType: BuiltinTypes.BOOLEAN },
     metaTypes: { refType: BuiltinTypes.BOOLEAN },
+    cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

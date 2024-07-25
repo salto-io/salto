@@ -29,7 +29,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { getParent, safeJsonStringify } from '@salto-io/adapter-utils'
 import { defaultDeployChange } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
 import JiraClient from '../../client/client'
@@ -37,7 +37,7 @@ import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from './default_values'
 import { setContextField } from './issues_and_projects'
 import { setFieldDeploymentAnnotations } from '../../utils'
-import { getAssetsContextId } from '../assets/assets_object_field_configuration'
+import { getAssetsContextIdsFromHTML } from '../assets/assets_object_field_configuration'
 import { JiraConfig } from '../../config/config'
 
 const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext', 'AssetsObjectFieldConfiguration']
@@ -56,6 +56,19 @@ export const getContextType = async (fieldType: ObjectType): Promise<ObjectType>
   }
 
   return contextType
+}
+
+const getFieldConfigId = async (client: JiraClient, change: Change<InstanceElement>): Promise<string | undefined> => {
+  const instance = getChangeData(change)
+  if (!isAdditionChange(change)) {
+    return instance.value.assetsObjectFieldConfiguration.id
+  }
+  const contextIdToConfigId = await getAssetsContextIdsFromHTML(client, getParent(instance))
+  const configId = contextIdToConfigId[instance.value.id]
+  if (configId === undefined) {
+    throw new Error(`Failed to find field context with id ${instance.value.id}`)
+  }
+  return configId
 }
 
 const deployAssetObjectContext = async (
@@ -79,11 +92,11 @@ const deployAssetObjectContext = async (
     )
   }
 
-  const assetContextId = getAssetsContextId(instance)
   const resolvedInstance = await resolveValues(instance, getLookUpName)
   try {
+    const configId = await getFieldConfigId(client, change)
     await client.putPrivate({
-      url: `rest/servicedesk/cmdb/latest/fieldconfig/${assetContextId}`,
+      url: `rest/servicedesk/cmdb/latest/fieldconfig/${configId}`,
       data: resolvedInstance.value.assetsObjectFieldConfiguration,
     })
   } catch (e) {

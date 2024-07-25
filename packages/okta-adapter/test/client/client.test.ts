@@ -47,7 +47,7 @@ describe('client', () => {
       result = await client.get({ url: '/myPath' })
     })
     it('should return the response', () => {
-      expect(result).toEqual({ status: 200, data: { response: 'asd' } })
+      expect(result).toEqual({ status: 200, data: { response: 'asd' }, headers: {} })
     })
     it('should request the correct path with auth headers', () => {
       const request = mockAxios.history.get[1]

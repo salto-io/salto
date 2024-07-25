@@ -57,7 +57,11 @@ describe('client', () => {
   })
 
   describe('get', () => {
-    const validHeaders = { 'X-RateLimit-Reset': '2024-05-05T18:02Z', 'X-RateLimit-NearLimit': true, 'Retry-After': '5' }
+    const validHeaders = {
+      'X-RateLimit-Reset': '2024-05-05T18:02Z',
+      'X-RateLimit-NearLimit': 'true',
+      'Retry-After': '5',
+    }
     const filteredHeaders = { 'Do-Not-Extract': 'true' }
     beforeEach(async () => {
       extractHeadersFunc.mockClear()

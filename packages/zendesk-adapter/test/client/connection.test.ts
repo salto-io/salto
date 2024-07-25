@@ -46,8 +46,8 @@ describe('client connection', () => {
       expect(mockAxiosAdapter.history.get.length).toBe(2)
       expect(mockAxiosAdapter.history.get[0].headers).toMatchObject({
         'X-Zendesk-Marketplace-Name': 'Salto',
-        'X-Zendesk-Marketplace-Organization-Id': 5110,
-        'X-Zendesk-Marketplace-App-Id': 608042,
+        'X-Zendesk-Marketplace-Organization-Id': '5110',
+        'X-Zendesk-Marketplace-App-Id': '608042',
       })
     })
 

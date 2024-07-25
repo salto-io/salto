@@ -202,7 +202,7 @@ describe('client', () => {
       await client.get({ url: 'organizations/autocomplete' })
 
       const responseText1 =
-        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]}}'
+        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]},"headers":{}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(1, [
         'Full HTTP response for %s on %s (size %d): %s',
@@ -213,7 +213,7 @@ describe('client', () => {
       ])
 
       const responseText2 =
-        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]}}'
+        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]},"headers":{}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(2, [
         'Full HTTP response for %s on %s (size %d): %s',
@@ -224,7 +224,7 @@ describe('client', () => {
       ])
 
       const responseText3 =
-        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}'
+        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"headers":{}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(3, [
         'Full HTTP response for %s on %s (size %d): %s',
@@ -235,7 +235,7 @@ describe('client', () => {
       ])
 
       const responseText4 =
-        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}'
+        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"headers":{}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(4, [
         'Full HTTP response for %s on %s (size %d): %s',

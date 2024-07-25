@@ -21,6 +21,7 @@ import {
   ReferenceExpression,
   toChange,
   getChangeData,
+  ModificationChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, definitions, fetch } from '@salto-io/adapter-components'
@@ -241,6 +242,9 @@ describe('app roles filter', () => {
       const appRoleInstanceB = new InstanceElement('appRoleB', appRoleType, { id: 'appRoleB' }, undefined, {
         [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
       })
+      const appRoleObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, APP_ROLE_TYPE_NAME) })
+      // Used to check that we handle properly non instance changes
+      const appRoleObjectTypeChange = toChange({ after: appRoleObjectType })
 
       beforeEach(() => {
         mockDeployChanges.mockResolvedValueOnce({
@@ -249,7 +253,12 @@ describe('app roles filter', () => {
         })
         filter = appRolesFilter({
           definitions: mockDefinitions,
-          elementSource: buildElementsSourceFromElements([applicationInstance, appRoleInstanceA, appRoleInstanceB]),
+          elementSource: buildElementsSourceFromElements([
+            applicationInstance,
+            appRoleInstanceA,
+            appRoleInstanceB,
+            appRoleObjectType,
+          ]),
           config: mockConfig,
           fetchQuery: fetch.query.createElementQuery({
             include: [{ type: 'something' }],
@@ -259,10 +268,29 @@ describe('app roles filter', () => {
         }) as FilterType
       })
 
+      it('Should return SaltoElementError if one of the instance changes does not have a parent', async () => {
+        const appRoleInstanceWithNoParent = new InstanceElement('appRole', appRoleType, { id: 'appRole' })
+        const appRoleChange = toChange({ after: appRoleInstanceWithNoParent })
+        const changes = [appRoleObjectTypeChange, appRoleChange]
+
+        const result = await filter.deploy(changes, { changes, groupID: 'a' })
+
+        expect(result.deployResult.errors).toHaveLength(1)
+        expect(result.deployResult.errors[0].message).toEqual(
+          'Expected app role to have an application or service principal parent',
+        )
+        expect(result.deployResult.errors[0].severity).toEqual('Error')
+        expect(result.deployResult.appliedChanges).toHaveLength(0)
+        expect(result.leftoverChanges).toHaveLength(1)
+        expect(result.leftoverChanges[0]).toEqual(appRoleObjectTypeChange)
+      })
+
       describe('when there are no changes in the parent', () => {
         it('should create and deploy a parent modification change with all its app roles', async () => {
           const appRoleChange = toChange({ after: appRoleInstanceA })
-          const result = await filter.deploy([appRoleChange], { changes: [appRoleChange], groupID: 'a' })
+          const changes = [appRoleObjectTypeChange, appRoleChange]
+
+          const result = await filter.deploy(changes, { changes, groupID: 'a' })
 
           const changesParam = mockDeployChanges.mock.calls[0][0].changes
           expect(changesParam).toHaveLength(1)
@@ -270,10 +298,17 @@ describe('app roles filter', () => {
           expect(_.get(getChangeData(changesParam[0]), `value.${APP_ROLES_FIELD_NAME}`)).toEqual(
             expect.arrayContaining([appRoleInstanceA.value, appRoleInstanceB.value]),
           )
+          expect(
+            _.get(
+              (changesParam[0] as ModificationChange<InstanceElement>).data.before,
+              `value.${APP_ROLES_FIELD_NAME}`,
+            ),
+          ).toBeUndefined()
 
           expect(result.deployResult.appliedChanges).toEqual([appRoleChange])
           expect(result.deployResult.errors).toHaveLength(0)
-          expect(result.leftoverChanges).toHaveLength(0)
+          expect(result.leftoverChanges).toHaveLength(1)
+          expect(result.leftoverChanges[0]).toEqual(appRoleObjectTypeChange)
         })
       })
 
@@ -281,11 +316,9 @@ describe('app roles filter', () => {
         it('should update the original parent change to include the updated app roles', async () => {
           const applicationChange = toChange({ after: applicationInstance })
           const appRoleChange = toChange({ after: appRoleInstanceA })
+          const changes = [appRoleObjectTypeChange, appRoleChange, applicationChange]
 
-          const result = await filter.deploy([appRoleChange, applicationChange], {
-            changes: [appRoleChange, applicationChange],
-            groupID: 'a',
-          })
+          const result = await filter.deploy(changes, { changes, groupID: 'a' })
 
           const changesParam = mockDeployChanges.mock.calls[0][0].changes
           expect(changesParam).toHaveLength(1)
@@ -294,25 +327,26 @@ describe('app roles filter', () => {
             expect.arrayContaining([appRoleInstanceA.value, appRoleInstanceB.value]),
           )
 
-          expect(result.leftoverChanges).toHaveLength(0)
           expect(result.deployResult.appliedChanges).toEqual([applicationChange, appRoleChange])
           expect(result.deployResult.errors).toHaveLength(0)
+          expect(result.leftoverChanges).toHaveLength(1)
+          expect(result.leftoverChanges[0]).toEqual(appRoleObjectTypeChange)
         })
 
-        it('should not deploy the changes as part of the filter if the parent change is deletion', async () => {
+        it('should deploy the original parent change as part of the filter if it is deletion', async () => {
           const applicationChange = toChange({ before: applicationInstance })
           const appRoleChange = toChange({ after: appRoleInstanceA })
+          const changes = [appRoleObjectTypeChange, appRoleChange, applicationChange]
 
-          const result = await filter.deploy([appRoleChange, applicationChange], {
-            changes: [appRoleChange, applicationChange],
-            groupID: 'a',
-          })
+          const result = await filter.deploy(changes, { changes, groupID: 'a' })
 
-          expect(mockDeployChanges).not.toHaveBeenCalled()
-          expect(result.deployResult.appliedChanges).toHaveLength(0)
-          expect(result.leftoverChanges).toHaveLength(2)
-          expect(result.leftoverChanges[0]).toEqual(appRoleChange)
-          expect(result.leftoverChanges[1]).toEqual(applicationChange)
+          const changesParam = mockDeployChanges.mock.calls[0][0].changes
+          expect(changesParam).toHaveLength(1)
+          expect(changesParam[0].action).toEqual('remove')
+          expect(_.get(getChangeData(changesParam[0]), `value.${APP_ROLES_FIELD_NAME}`)).toBeUndefined()
+          expect(result.deployResult.appliedChanges).toEqual(expect.arrayContaining([applicationChange, appRoleChange]))
+          expect(result.deployResult.errors).toHaveLength(0)
+          expect(result.leftoverChanges).toEqual([appRoleObjectTypeChange])
         })
 
         it('should not deploy the changes as part of the filter if the parent change is not an instance change', async () => {
@@ -321,17 +355,17 @@ describe('app roles filter', () => {
             [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationType.elemID, applicationType),
           })
           const appRoleChange = toChange({ after: appRoleInstance })
+          const changes = [appRoleObjectTypeChange, appRoleChange, applicationChange]
 
-          const result = await filter.deploy([appRoleChange, applicationChange], {
-            changes: [appRoleChange, applicationChange],
-            groupID: 'a',
-          })
+          const result = await filter.deploy(changes, { changes, groupID: 'a' })
 
           expect(mockDeployChanges).not.toHaveBeenCalled()
           expect(result.deployResult.appliedChanges).toHaveLength(0)
-          expect(result.leftoverChanges).toHaveLength(2)
-          expect(result.leftoverChanges[0]).toEqual(appRoleChange)
-          expect(result.leftoverChanges[1]).toEqual(applicationChange)
+          expect(result.deployResult.errors).toHaveLength(1)
+          expect(result.deployResult.errors[0].message).toEqual(
+            'Expected app role to have an application or service principal parent',
+          )
+          expect(result.leftoverChanges).toEqual(expect.arrayContaining([appRoleObjectTypeChange, applicationChange]))
         })
       })
     })

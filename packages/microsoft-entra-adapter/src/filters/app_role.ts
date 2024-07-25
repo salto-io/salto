@@ -18,14 +18,19 @@ import { collections, values } from '@salto-io/lowerdash'
 import {
   AdditionChange,
   Change,
+  ChangeGroup,
+  DeployResult,
   Element,
   InstanceElement,
   ModificationChange,
+  ReadOnlyElementsSource,
   SaltoElementError,
+  Values,
   getChangeData,
-  isAdditionOrModificationChange,
+  isAdditionChange,
   isInstanceChange,
   isInstanceElement,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -39,13 +44,54 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
+type CustomDeployChangesFunc = (params: {
+  changes: Change<InstanceElement>[]
+  changeGroup: ChangeGroup
+}) => Promise<DeployResult>
+
+type DeployResultWithLeftoverChanges = { deployResult: DeployResult; leftoverChanges: Change[] }
+
+type AdditionOrModificationInstanceChange = AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+
 const isAppRoleInstanceElement = (elem: Element): elem is InstanceElement =>
   isInstanceElement(elem) && elem.elemID.typeName === APP_ROLE_TYPE_NAME
 
 const isAppRoleInstanceChange = (change: Change): change is Change<InstanceElement> =>
   isAppRoleInstanceElement(getChangeData(change))
 
-const extractParentsFromAppRoleChanges = (
+const removeDuplicatedAppRoles = async (elements: Element[]): Promise<void> => {
+  const appRoleInstancesWithIndices = elements
+    .map((elem, index) => ({ elem, index }))
+    .filter(({ elem }) => isAppRoleInstanceElement(elem))
+
+  const elemIdToAppRoles = _.groupBy(appRoleInstancesWithIndices, ({ elem }) => elem.elemID.getFullName())
+  const appRolesToRemove = Object.values(elemIdToAppRoles)
+    .filter(appRoles => appRoles.length > 1)
+    .flatMap(appRoles => {
+      // We prefer to keep the app role with the application parent, if it exists,
+      // since attempting to deploy it as part of the SP will fail due to inconsistencies with the application.
+      const appRoleWithApplicationParentIdx = appRoles.findIndex(
+        ({ elem }) => getParents(elem)[0]?.elemID.typeName === APPLICATION_TYPE_NAME,
+      )
+      if (appRoleWithApplicationParentIdx === -1) {
+        // This shouldn't happen, as we expect to find at most 2 similar app roles, when one of them has an application parent
+        log.warn('Found multiple app roles with the same elemID, but none of them have an application parent')
+        // Arbitrarily remove all but the first
+        return appRoles.slice(1)
+      }
+      return appRoles.filter((_appRole, index) => index !== appRoleWithApplicationParentIdx)
+    })
+
+  log.trace(
+    'Removing the following app roles: %s',
+    appRolesToRemove.map(({ elem }) => elem.elemID.getFullName()).join(', '),
+  )
+  // We remove the app roles in reverse order to avoid changing the indices of the elements we still need to remove
+  const indicesToRemove = appRolesToRemove.map(({ index }) => index).sort((a, b) => b - a)
+  indicesToRemove.forEach(index => elements.splice(index, 1))
+}
+
+const extractUniqueParentsFromAppRoleChanges = (
   appRoleChanges: Change<InstanceElement>[],
 ): { uniqueParents: InstanceElement[]; errors: SaltoElementError[] } => {
   const parentsOrErrors = appRoleChanges.map((change): InstanceElement | SaltoElementError => {
@@ -63,12 +109,159 @@ const extractParentsFromAppRoleChanges = (
     }
     return parent
   })
-  const [parentsMap, errors] = _.partition(parentsOrErrors, isInstanceElement)
+  const [parents, errors] = _.partition(parentsOrErrors, isInstanceElement)
   return {
     // We use 'fromEntries' as a "trick" to save each parent only once, without actually comparing the objects
-    uniqueParents: Object.values(_.fromPairs(parentsMap.map(parent => [parent.elemID.getFullName(), parent]))),
+    uniqueParents: Object.values(Object.fromEntries(parents.map(parent => [parent.elemID.getFullName(), parent]))),
     errors,
   }
+}
+
+const groupAppRolesByParent = async (
+  elementSource: ReadOnlyElementsSource,
+): Promise<Record<string, InstanceElement[]>> =>
+  _.groupBy(
+    await awu(await elementSource.list())
+      .filter(id => id.typeName === APP_ROLE_TYPE_NAME)
+      .map(id => elementSource.get(id))
+      .filter(isInstanceElement)
+      .toArray(),
+    // If no parent is found & the app role is not part of the received changes, we will just skip it
+    elem => getParents(elem)[0]?.elemID.getFullName(),
+  )
+
+const applyFunctionToChangeDataAfter = (
+  change: AdditionOrModificationInstanceChange,
+  func: (elem: InstanceElement) => InstanceElement,
+): AdditionOrModificationInstanceChange => {
+  const adjustedData = func(getChangeData(change))
+  return isAdditionChange(change)
+    ? { ...change, data: { after: adjustedData } }
+    : { ...change, data: { ...change.data, after: adjustedData } }
+}
+
+const setOrCreateParentChangeWithAppRoles = async ({
+  parent,
+  otherChanges,
+  getAppRolesByFullName,
+}: {
+  parent: InstanceElement
+  otherChanges: Change[]
+  getAppRolesByFullName: (name: string) => Values[]
+}): Promise<
+  | {
+      adjustedParentChange: Change<InstanceElement>
+      existingParentChange: Change<InstanceElement> | undefined
+    }
+  | undefined
+> => {
+  const parentFullName = parent.elemID.getFullName()
+  const existingParentChangeIdx = otherChanges.findIndex(
+    change => getChangeData(change).elemID.getFullName() === parentFullName,
+  )
+  const existingParentChange = existingParentChangeIdx !== -1 ? otherChanges[existingParentChangeIdx] : undefined
+  if (existingParentChange !== undefined) {
+    // We shouldn't really reach this point, as we validate the parent in 'extractUniqueParentsFromAppRoleChanges', but just for TS to be happy
+    if (!isInstanceChange(existingParentChange)) {
+      log.error('Parent %s is not an instance change, skipping its app roles deployment', parentFullName)
+      return undefined
+    }
+
+    otherChanges.splice(existingParentChangeIdx, 1)
+
+    if (isRemovalChange(existingParentChange)) {
+      // We deploy removal changes through the filter as well, so we will know whether the app role changes should be marked as applied or not
+      return { adjustedParentChange: existingParentChange, existingParentChange }
+    }
+  }
+
+  const parentChange = existingParentChange ?? {
+    action: 'modify',
+    data: {
+      before: parent,
+      after: parent.clone(),
+    },
+  }
+
+  const applyFunction = (instance: InstanceElement): InstanceElement => {
+    const dupInstance = instance.clone()
+    dupInstance.value[APP_ROLES_FIELD_NAME] = getAppRolesByFullName(parentFullName)
+    return dupInstance
+  }
+
+  return {
+    adjustedParentChange: applyFunctionToChangeDataAfter(parentChange, applyFunction),
+    existingParentChange,
+  }
+}
+
+const deployAppRoleChangesViaParent = async ({
+  changes,
+  changeGroup,
+  elementSource,
+  deployChangesFunc,
+}: {
+  changes: Change[]
+  changeGroup: ChangeGroup
+  elementSource: ReadOnlyElementsSource
+  deployChangesFunc: CustomDeployChangesFunc
+}): Promise<DeployResultWithLeftoverChanges> => {
+  const [appRoleInstanceChanges, otherChanges] = _.partition(changes, isAppRoleInstanceChange)
+  const { uniqueParents, errors: appRoleWithNoParentErrors } =
+    extractUniqueParentsFromAppRoleChanges(appRoleInstanceChanges)
+
+  const parentToAppRolesMap = await groupAppRolesByParent(elementSource)
+  const getAppRolesByFullName = (parentFullName: string): Values[] =>
+    parentToAppRolesMap[parentFullName].map(appRole => appRole.value)
+
+  const parentChanges = (
+    await Promise.all(
+      uniqueParents.map(parent =>
+        setOrCreateParentChangeWithAppRoles({
+          parent,
+          getAppRolesByFullName,
+          otherChanges,
+        }),
+      ),
+    )
+  ).filter(isDefined)
+
+  const changesToDeploy = parentChanges.map(({ adjustedParentChange }) => adjustedParentChange)
+  const existingParentChanges = parentChanges.map(({ existingParentChange }) => existingParentChange).filter(isDefined)
+
+  const calculateResult = async ({
+    errors,
+    appliedChanges: appliedParentChanges,
+  }: DeployResult): Promise<DeployResultWithLeftoverChanges> => {
+    const appliedParentChangesFullNames = appliedParentChanges.map(change => getChangeData(change).elemID.getFullName())
+    const appliedExistingParentChanges = existingParentChanges.filter(change =>
+      appliedParentChangesFullNames.includes(getChangeData(change).elemID.getFullName()),
+    )
+    const appliedAppRoleChanges = appRoleInstanceChanges.filter(change =>
+      appliedParentChangesFullNames.includes(getParents(getChangeData(change))[0]?.elemID.getFullName()),
+    )
+    return {
+      deployResult: {
+        errors: errors.concat(appRoleWithNoParentErrors),
+        appliedChanges: appliedExistingParentChanges.concat(appliedAppRoleChanges),
+      },
+      leftoverChanges: otherChanges,
+    }
+  }
+
+  if (_.isEmpty(changesToDeploy)) {
+    return calculateResult({ errors: [], appliedChanges: [] })
+  }
+
+  const deployResult = await deployChangesFunc({
+    changes: changesToDeploy,
+    changeGroup: {
+      ...changeGroup,
+      changes: changesToDeploy,
+    },
+  })
+
+  return calculateResult(deployResult)
 }
 
 /**
@@ -82,37 +275,7 @@ const extractParentsFromAppRoleChanges = (
  */
 export const appRolesFilter: FilterCreator = ({ definitions, elementSource, sharedContext }) => ({
   name: 'appRolesFilter',
-  onFetch: async elements => {
-    const appRoleInstancesWithIndices = elements
-      .map((elem, index) => ({ elem, index }))
-      .filter(({ elem }) => isAppRoleInstanceElement(elem))
-
-    const elemIdToAppRoles = _.groupBy(appRoleInstancesWithIndices, ({ elem }) => elem.elemID.getFullName())
-    const appRolesToRemove = Object.values(elemIdToAppRoles)
-      .filter(appRoles => appRoles.length > 1)
-      .flatMap(appRoles => {
-        // We prefer to keep the app role with the application parent, if it exists,
-        // since attempting to deploy it as part of the SP will fail due to inconsistencies with the application.
-        const appRoleWithApplicationParentIdx = appRoles.findIndex(
-          ({ elem }) => getParents(elem)[0]?.elemID.typeName === APPLICATION_TYPE_NAME,
-        )
-        if (appRoleWithApplicationParentIdx === -1) {
-          // This shouldn't happen, as we expect to find at most 2 similar app roles, when one of them has an application parent
-          log.warn('Found multiple app roles with the same elemID, but none of them have an application parent')
-          // Arbitrarily remove all but the first
-          return appRoles.slice(1)
-        }
-        return appRoles.filter((_appRole, index) => index !== appRoleWithApplicationParentIdx)
-      })
-
-    log.trace(
-      'Removing the following app roles: %s',
-      appRolesToRemove.map(({ elem }) => elem.elemID.getFullName()).join(', '),
-    )
-    // We remove the app roles in reverse order to avoid changing the indices of the elements we still need to remove
-    const indicesToRemove = appRolesToRemove.map(({ index }) => index).sort((a, b) => b - a)
-    indicesToRemove.forEach(index => elements.splice(index, 1))
-  },
+  onFetch: removeDuplicatedAppRoles,
   deploy: async (changes, changeGroup) => {
     const { deploy, ...otherDefs } = definitions
     if (deploy === undefined) {
@@ -146,96 +309,25 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
       }
     }
 
-    const [appRoleChanges, otherChanges] = _.partition(changes, isAppRoleInstanceChange)
+    const deployChangesFunc: CustomDeployChangesFunc = ({
+      changes: adjustedChanges,
+      changeGroup: adjustedChangeGroup,
+    }) =>
+      deployment.deployChanges({
+        changes: adjustedChanges,
+        changeGroup: adjustedChangeGroup,
+        definitions: { deploy, ...otherDefs },
+        elementSource,
+        convertError: customConvertError,
+        changeResolver,
+        sharedContext,
+      })
 
-    const { uniqueParents, errors: appRoleWithNoParentErrors } = extractParentsFromAppRoleChanges(appRoleChanges)
-    const parentFullNameToAppRoles = _.fromPairs(
-      await awu(await elementSource.list())
-        .filter(id => id.typeName === APP_ROLE_TYPE_NAME)
-        .map(id => elementSource.get(id))
-        .filter(isInstanceElement)
-        .map(elem => [getParents(elem)[0]?.elemID.getFullName(), elem])
-        .toArray(),
-    )
-    const parentsOriginalChange: Change[] = []
-    const parentsChangeWithAppRoles = await Promise.all(
-      uniqueParents.map(
-        async (parent): Promise<AdditionChange<InstanceElement> | ModificationChange<InstanceElement> | undefined> => {
-          const parentFullName = parent.elemID.getFullName()
-          const parentExistingChangeIdx = otherChanges.findIndex(
-            change => getChangeData(change).elemID.getFullName() === parentFullName,
-          )
-          const parentExistingChange =
-            parentExistingChangeIdx !== -1 ? otherChanges[parentExistingChangeIdx] : undefined
-          if (parentExistingChange !== undefined) {
-            parentsOriginalChange.push(parentExistingChange)
-            otherChanges.splice(parentExistingChangeIdx, 1)
-          }
-          if (parentExistingChange && !isInstanceChange(parentExistingChange)) {
-            log.error('Parent %s is not an instance change, skipping its app roles deployment', parentFullName)
-            return undefined
-          }
-          const parentChange = parentExistingChange ?? {
-            action: 'modify',
-            data: {
-              before: parent,
-              after: parent,
-            },
-          }
-          if (!isAdditionOrModificationChange(parentChange)) {
-            log.debug('Parent %s is a deletion change, skipping app roles deployment', parentFullName)
-            return undefined
-          }
-
-          const applyFunction = async (instance: InstanceElement): Promise<InstanceElement> => {
-            const instanceDup = instance.clone()
-            instanceDup.value[APP_ROLES_FIELD_NAME] = parentFullNameToAppRoles[parentFullName]
-            return instanceDup
-          }
-
-          parentChange.data.after = await applyFunction(parentChange.data.after)
-          return parentChange
-        },
-      ),
-    )
-
-    const changesToDeploy = parentsChangeWithAppRoles.filter(isDefined)
-    if (_.isEmpty(changesToDeploy)) {
-      return {
-        deployResult: {
-          errors: [],
-          appliedChanges: [],
-        },
-        leftoverChanges: changes,
-      }
-    }
-
-    const { errors, appliedChanges } = await deployment.deployChanges({
-      changes: changesToDeploy,
-      changeGroup: {
-        ...changeGroup,
-        changes: changesToDeploy,
-      },
-      definitions: { deploy, ...otherDefs },
+    return deployAppRoleChangesViaParent({
+      changes,
+      changeGroup,
       elementSource,
-      convertError: customConvertError,
-      changeResolver,
-      sharedContext,
+      deployChangesFunc,
     })
-    return {
-      deployResult: {
-        errors: errors.concat(appRoleWithNoParentErrors),
-        appliedChanges: parentsOriginalChange.concat(
-          appRoleChanges.filter(change =>
-            appliedChanges.some(
-              appliedChange =>
-                getChangeData(appliedChange).elemID.getFullName() ===
-                getParents(getChangeData(change))[0]?.elemID.getFullName(),
-            ),
-          ),
-        ),
-      },
-      leftoverChanges: otherChanges,
-    }
   },
 })

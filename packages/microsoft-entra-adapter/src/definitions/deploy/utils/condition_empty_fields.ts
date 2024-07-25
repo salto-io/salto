@@ -33,6 +33,6 @@ export const createCustomConditionEmptyFields = (fieldNames: string[]): definiti
       if (isModificationChange(change)) {
         return !isEqualValues(_.pick(change.data.before.value, fieldNames), _.pick(change.data.after.value, fieldNames))
       }
-      return true
+      return false
     },
 })

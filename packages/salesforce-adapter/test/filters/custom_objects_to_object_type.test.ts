@@ -163,7 +163,7 @@ describe('Custom Objects to Object Type filter', () => {
         config: {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { skipAliases: false } },
+            fetchParams: { optionalFeatures: { metaTypes: true } },
           }),
           unsupportedSystemFields: ['UnsupportedField'],
           systemFields: ['SystemField', 'NameSystemField'],
@@ -376,8 +376,10 @@ describe('Custom Objects to Object Type filter', () => {
       it('should fetch sobject with correct annotations', async () => {
         await filter.onFetch(result)
         const caseObj = findElements(result, 'Case').pop() as ObjectType
-        expect(isServiceId((await caseObj.getAnnotationTypes())[API_NAME])).toEqual(true)
-        expect(isServiceId((await caseObj.getAnnotationTypes())[METADATA_TYPE])).toEqual(true)
+        const metaType = (await caseObj.getMetaType()) as ObjectType
+        expect(metaType).toBeDefined()
+        expect(isServiceId((await metaType.getAnnotationTypes())[API_NAME])).toEqual(true)
+        expect(isServiceId((await metaType.getAnnotationTypes())[METADATA_TYPE])).toEqual(true)
         expect(caseObj.annotations[API_NAME]).toEqual('Case')
         expect(caseObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
         expect(caseObj.annotations).toEqual(
@@ -559,9 +561,11 @@ describe('Custom Objects to Object Type filter', () => {
             result.push(customObjectInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect((await lead.getAnnotationTypes()).enableFeeds).toBeDefined()
+            const metaType = (await lead.getMetaType()) as ObjectType
+            expect(metaType).toBeDefined()
+            expect((await metaType.getAnnotationTypes()).enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect((await lead.getAnnotationTypes()).enableReports).toBeUndefined()
+            expect((await metaType.getAnnotationTypes()).enableReports).toBeUndefined()
             expect(lead.annotations.enableReports).toBeUndefined()
           })
 
@@ -571,9 +575,11 @@ describe('Custom Objects to Object Type filter', () => {
             result.push(customSettingsInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect((await lead.getAnnotationTypes()).enableFeeds).toBeDefined()
+            const metaType = (await lead.getMetaType()) as ObjectType
+            expect(metaType).toBeDefined()
+            expect((await metaType.getAnnotationTypes()).enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect((await lead.getAnnotationTypes()).pluralLabel).toBeUndefined()
+            expect((await metaType.getAnnotationTypes()).pluralLabel).toBeUndefined()
             expect(lead.annotations.customSettingsType).toBeDefined()
             expect(lead.annotations.customSettingsType).toEqual('Hierarchical')
           })
@@ -587,9 +593,11 @@ describe('Custom Objects to Object Type filter', () => {
             result.push(customAccount)
             await filter.onFetch(result)
             const account = findElements(result, 'Account__c').pop() as ObjectType
-            expect((await account.getAnnotationTypes()).enableFeeds).toBeDefined()
+            const metaType = (await account.getMetaType()) as ObjectType
+            expect(metaType).toBeDefined()
+            expect((await metaType.getAnnotationTypes()).enableFeeds).toBeDefined()
             expect(account.annotations.enableFeeds).toBeTruthy()
-            expect((await account.getAnnotationTypes()).pluralLabel).toBeDefined()
+            expect((await metaType.getAnnotationTypes()).pluralLabel).toBeDefined()
             expect(account.annotations.pluralLabel).toEqual('Accounts')
           })
 

@@ -15,13 +15,16 @@
  */
 
 import {
+  AdditionChange,
   CORE_ANNOTATIONS,
   Change,
   ChangeGroup,
   ElemID,
   InstanceElement,
+  ModificationChange,
   ObjectType,
   ReferenceExpression,
+  RemovalChange,
   toChange,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
@@ -48,18 +51,27 @@ export const instanceElementWithParentMock = new InstanceElement(
   },
 )
 
-export const additionChangeMock: Change<InstanceElement> = toChange({
-  after: instanceElementMock,
-})
+export const additionChangeMock: AdditionChange<InstanceElement> = {
+  action: 'add',
+  data: {
+    after: instanceElementMock,
+  },
+}
 
-export const modificationChangeMock: Change<InstanceElement> = toChange({
-  before: instanceElementMock,
-  after: instanceElementMock,
-})
+export const modificationChangeMock: ModificationChange<InstanceElement> = {
+  action: 'modify',
+  data: {
+    before: instanceElementMock,
+    after: instanceElementWithParentMock,
+  },
+}
 
-export const removalChangeMock: Change<InstanceElement> = toChange({
-  before: instanceElementMock,
-})
+export const removalChangeMock: RemovalChange<InstanceElement> = {
+  action: 'remove',
+  data: {
+    before: instanceElementMock,
+  },
+}
 
 export const objectTypeElementMock = new ObjectType({
   elemID: new ElemID(ADAPTER_NAME, 'testType'),

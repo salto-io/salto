@@ -19,11 +19,14 @@ import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 
 /*
- * Creates a custom condition that returns true if at least one of the specified fields is not empty
- * For addition changes this custom condition must be used instead of transformForCheck field
- * since transformForCheck is irrelevant for addition changes.
+ * Creates a custom condition that checks if the specified fields have changed in the change
+ * For addition changes this means that the fields are not empty
+ * For modification changes this means that the fields have different values
+ * Make sure to use this custom condition for addition changes, since transformForCheck field is irrelevant for them.
  */
-export const createCustomConditionEmptyFields = (fieldNames: string[]): definitions.deploy.DeployRequestCondition => ({
+export const createCustomConditionCheckChangesInFields = (
+  fieldNames: string[],
+): definitions.deploy.DeployRequestCondition => ({
   custom:
     () =>
     ({ change }) => {

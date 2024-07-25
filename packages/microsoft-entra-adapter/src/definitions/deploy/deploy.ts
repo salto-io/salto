@@ -49,7 +49,7 @@ import { DeployCustomDefinitions, DeployRequestDefinition, DeployableRequestDefi
 import {
   adjustWrapper,
   adjustRoleDefinitionForDeployment,
-  createCustomConditionEmptyFields,
+  createCustomConditionCheckChangesInFields,
   createCustomizationsWithBasePathForDeploy,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
@@ -93,7 +93,7 @@ const APPLICATION_SECOND_MODIFICATION_ITERATION_REQUEST: DeployableRequestDefini
       pick: APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION,
     },
   },
-  condition: createCustomConditionEmptyFields(APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION),
+  condition: createCustomConditionCheckChangesInFields(APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION),
 }
 
 // These fields cannot be specified when creating a group, but can be modified after creation
@@ -314,11 +314,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 pick: GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION,
               },
             },
-            condition: createCustomConditionEmptyFields(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
+            condition: createCustomConditionCheckChangesInFields(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
           },
           {
             request: getGroupLifecyclePolicyGroupModificationRequest('add'),
-            condition: createCustomConditionEmptyFields([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
+            condition: createCustomConditionCheckChangesInFields([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
           },
         ],
         modify: [

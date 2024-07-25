@@ -80,6 +80,12 @@ export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType,
           metadataType: 'PermissionSet',
         },
         {
+          metadataType: 'MutingPermissionSet',
+        },
+        {
+          metadataType: 'PermissionSetGroup',
+        },
+        {
           metadataType: 'SiteDotCom',
         },
         {

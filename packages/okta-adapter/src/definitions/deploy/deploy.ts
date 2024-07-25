@@ -113,6 +113,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             // We use an empty request list here to mark this action as supported in case a user removed the theme
             // alongside its Brand.
             // A separate Change Validator ensures that themes aren't removed by themselves.
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
           ],
         },
       },

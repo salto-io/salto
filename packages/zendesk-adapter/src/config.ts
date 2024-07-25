@@ -2688,6 +2688,7 @@ export const SUPPORTED_TYPES = {
   custom_status: ['custom_statuses'],
   dynamic_content_item: ['dynamic_content_item'],
   group: ['groups'],
+  layout: ['layouts'],
   locale: ['locales'],
   macro_categories: ['macro_categories'],
   macro: ['macros'],

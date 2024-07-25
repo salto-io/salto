@@ -1200,6 +1200,7 @@ describe('Zendesk adapter E2E', () => {
         'custom_role',
         'dynamic_content_item',
         'group',
+        'layout',
         'locale',
         'macro_categories',
         'macro',

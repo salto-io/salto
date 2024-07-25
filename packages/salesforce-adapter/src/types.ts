@@ -928,6 +928,8 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'DocumentFolder' },
               { metadataType: 'Profile' },
               { metadataType: 'PermissionSet' },
+              { metadataType: 'MutingPermissionSet' },
+              { metadataType: 'PermissionSetGroup' },
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',

@@ -419,36 +419,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  BrandTheme: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}',
-        method: 'put',
-        urlParamsToFields: {
-          brandId: '_parent.0.id',
-          themeId: 'id',
-        },
-        fieldsToIgnore: ['id'],
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}',
-        method: 'put',
-        urlParamsToFields: {
-          brandId: '_parent.0.id',
-          themeId: 'id',
-        },
-        fieldsToIgnore: ['id', 'logo', 'favicon', '_links'],
-      },
-      remove: {
-        // BrandThemes are removed automatically by Okta when the Brand is removed.
-        // We use an empty URL here to mark this action as supported in case a user removed the theme
-        // alongside its Brand.
-        // A separate Change Validator ensures that mappings aren't removed by themselves.
-        url: '',
-        method: 'delete', // This is just for typing, we intercept it in a filter and use `get`.
-      },
-    },
-  },
   BrandLogo: {
     deployRequests: {
       add: {

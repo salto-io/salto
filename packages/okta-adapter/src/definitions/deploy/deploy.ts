@@ -39,6 +39,7 @@ import {
   USERTYPE_TYPE_NAME,
   NAME_FIELD,
   ID_FIELD,
+  BRAND_THEME_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -64,6 +65,69 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    [BRAND_THEME_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              omit: [ID_FIELD, LINKS_FIELD],
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              // BrandThemes are created automatically by Okta when a Brand is created,
+              // but we're allowing to "add" a theme alongside its Brand.
+              // We first send a GET query to get its ID, and then we perform a "modify" action.
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/themes',
+                  method: 'get',
+                },
+                context: {
+                  brandId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/themes/{id}',
+                  method: 'put',
+                },
+                context: {
+                  brandId: '{_parent.0.id}',
+                },
+                transformation: {
+                  omit: [ID_FIELD, LINKS_FIELD, 'logo', 'favicon'],
+                },
+              },
+            },
+          ],
+          remove: [
+            // BrandThemes are removed automatically by Okta when the Brand is removed.
+            // We use an empty request list here to mark this action as supported in case a user removed the theme
+            // alongside its Brand.
+            // A separate Change Validator ensures that themes aren't removed by themselves.
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      actionDependencies: [
+        {
+          first: 'add',
+          second: 'modify',
+        },
+      ],
+    },
     [APPLICATION_TYPE_NAME]: {
       requestsByAction: {
         default: {

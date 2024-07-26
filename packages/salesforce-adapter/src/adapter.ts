@@ -108,6 +108,7 @@ import installedPackageGeneratedDependencies from './filters/installed_package_g
 import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
 import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases'
 import formulaDepsFilter from './filters/formula_deps'
+import formulaRefFieldsFilter from './filters/formula_ref_fields'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_settings'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
@@ -239,6 +240,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: xmlAttributesFilter },
   { creator: minifyDeployFilter },
   { creator: formulaDepsFilter },
+  { creator: formulaRefFieldsFilter },
   // centralizeTrackingInfoFilter depends on customObjectsToObjectTypeFilter and must run before customTypeSplit
   { creator: centralizeTrackingInfoFilter },
   // The following filters should remain last in order to make sure they fix all elements

@@ -22,14 +22,8 @@ import Connection from '../src/client/jsforce'
 import mockClient from './client'
 import { mockFileProperties } from './connection'
 import { getLastChangeDateOfTypesWithNestedInstances } from '../src/last_change_date_of_types_with_nested_instances'
-import {
-  buildFilePropsMetadataQuery,
-  buildMetadataQuery,
-} from '../src/fetch_profile/metadata_query'
-import {
-  LastChangeDateOfTypesWithNestedInstances,
-  MetadataQuery,
-} from '../src/types'
+import { buildFilePropsMetadataQuery, buildMetadataQuery } from '../src/fetch_profile/metadata_query'
+import { LastChangeDateOfTypesWithNestedInstances, MetadataQuery } from '../src/types'
 
 const { makeArray } = collections.array
 
@@ -153,7 +147,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         }),
       ],
     }
-    connection.metadata.list.mockImplementation(async (queries) =>
+    connection.metadata.list.mockImplementation(async queries =>
       makeArray(queries).flatMap(({ type }) => {
         listedTypes.push(type)
         return filePropByRelatedType[type] ?? []
@@ -174,7 +168,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
                   namespace: '',
                 },
               ],
-              exclude: excludedRelatedTypes.map((type) => ({
+              exclude: excludedRelatedTypes.map(type => ({
                 metadataType: type,
               })),
             },
@@ -183,11 +177,10 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
       )
     })
     it('should return correct values', async () => {
-      const lastChangeDateOfTypesWithNestedInstances =
-        await getLastChangeDateOfTypesWithNestedInstances({
-          client,
-          metadataQuery,
-        })
+      const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+        client,
+        metadataQuery,
+      })
       const expected: LastChangeDateOfTypesWithNestedInstances = {
         AssignmentRules: {},
         AutoResponseRules: {},

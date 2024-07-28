@@ -1,8 +1,8 @@
 {
   "folders": [
     {
-      "name": "playground",
-      "path": "playground",
+      "name": "root",
+      "path": ".",
     },
     {
       "name": "adapter-api",
@@ -55,6 +55,10 @@
     {
       "name": "intercom-adapter",
       "path": "packages/intercom-adapter",
+    },
+    {
+      "name": "jamf-adapter",
+      "path": "packages/jamf-adapter",
     },
     {
       "name": "jira-adapter",
@@ -137,16 +141,18 @@
       "path": "packages/zuora-billing-adapter",
     },
     {
-      "name": "jamf-adapter",
-      "path": "packages/jamf-adapter",
+      "name": "playground",
+      "path": "playground",
     },
   ],
   "settings": {
     "files.exclude": {
+      "packages": true,
       "**/dist": true,
       "**/node_modules": true,
+      "**/.turbo": true,
     },
-    "typescript.tsdk": "vscode/node_modules/typescript/lib",
+    "typescript.tsdk": "root/node_modules/typescript/lib",
     "cSpell.words": [
       "activateable",
       "aggregatable",
@@ -200,6 +206,7 @@
       "petstore",
       "PICKLIST",
       "picklists",
+      "pietile",
       "plaintextarea",
       "prefilterable",
       "pricebook",
@@ -241,6 +248,7 @@
       "undeployed",
       "unfethced",
       "unfiled",
+      "unmergeable",
       "unpackaged",
       "updateable",
       "upsert",

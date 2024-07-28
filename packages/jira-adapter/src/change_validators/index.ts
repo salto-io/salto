@@ -56,7 +56,6 @@ import { activeSchemeChangeValidator } from './active_scheme_change'
 import { activeSchemeDeletionValidator } from './active_scheme_deletion'
 import { brokenReferenceValidator } from './broken_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
-import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './projects/project_category'
@@ -73,12 +72,21 @@ import { addJsmProjectValidator } from './adding_jsm_project'
 import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
+import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
+import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE } from '../constants'
 
-const { deployTypesNotSupportedValidator, createChangeValidator } = deployment.changeValidators
+const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator } =
+  deployment.changeValidators
+
+const TYPE_TO_UNIQUE_FIELD = {
+  [ISSUE_TYPE_NAME]: 'name',
+  [PORTAL_GROUP_TYPE]: 'name',
+}
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...deployment.changeValidators.getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']),
+    uniqueFields: uniqueFieldsChangeValidatorCreator(TYPE_TO_UNIQUE_FIELD),
     unresolvedReference: unresolvedReferenceValidator,
     brokenReferences: brokenReferenceValidator,
     deployTypesNotSupported: deployTypesNotSupportedValidator,
@@ -101,7 +109,6 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     permissionType: permissionTypeValidator,
     automations: automationsValidator,
     activeSchemeDeletion: activeSchemeDeletionValidator,
-    sameIssueTypeNameChange: sameIssueTypeNameChangeValidator,
     referencedWorkflowDeletion: referencedWorkflowDeletionChangeValidator(config),
     statusMigrationChange: statusMigrationChangeValidator,
     missingExtensionsTransitionRules: missingExtensionsTransitionRulesChangeValidator(client),
@@ -137,6 +144,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
+    fieldContextOptions: fieldContextOptionsValidator,
   }
 
   return createChangeValidator({

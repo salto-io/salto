@@ -2,13 +2,135 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@2.2.0
-  aws-s3: circleci/aws-s3@1.0.15
-  aws-cli: circleci/aws-cli@2.0.3
-  coveralls: coveralls/coveralls@1.0.6
-  macos: circleci/macos@2.4.1
+  win: circleci/windows@5.0.0
+  aws-s3: circleci/aws-s3@4.0.0
+  aws-cli: circleci/aws-cli@4.1.3
+  coveralls: coveralls/coveralls@2.2.1
+  macos: circleci/macos@2.5.2
+
+environment:
+  TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
 
 commands:
+  
+  restore_intermediate:
+    description: Restore intermediate artifacts between steps
+    steps:
+      - attach_workspace:
+          at: .workspace
+      - run:
+          name: Restore intermediate artifacts between steps
+          command: |
+            tar -xzf .workspace/workspace.tar.gz
+            rm .workspace/workspace.tar.gz
+
+  store_intermediate:
+    description: Store intermediate artifacts between steps
+    steps:
+      - run:
+          name: Store intermediate artifacts between steps
+          command: |
+            mkdir -p .workspace
+            tar --exclude='./.workspace' --exclude='coverage' --exclude='./node_modules' --exclude="./.yarn/cache" --exclude="./.turbo" -czf .workspace/workspace.tar.gz .
+      - persist_to_workspace:
+          root: .workspace
+          paths:
+            - workspace.tar.gz
+
+  restore_node_modules:
+    description: Restore node modules
+    steps:
+      - restore_cache:
+          name: Restore node modules
+          keys:
+            - &node-modules-cache node-modules-v2-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - node-modules-v2-{{ .Branch }}
+            - node-modules-v2-main
+  
+  store_node_modules:
+    description: Cache store node_modules
+    steps:
+      - save_cache:
+          name: Cache store node_modules
+          key: *node-modules-cache
+          when: always
+          paths:
+            - /mnt/ramdisk/project/node_modules
+
+  restore_yarn_cache:
+    description: Restore yarn cache
+    steps:
+      - restore_cache:
+          name: Restore yarn cache
+          keys:
+            - &yarn-cache yarn-cache-v2-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - yarn-cache-v2-{{ .Branch }}
+            - yarn-cache-v2-main
+
+  store_yarn_cache:
+    description: Cache store yarn cache
+    steps:
+      - save_cache:
+          name: Cache store yarn cache
+          key: *yarn-cache
+          when: always
+          paths:
+            - /mnt/ramdisk/project/.yarn/cache
+
+  restore_turbo_cache:
+    description: Load a turbocache
+    parameters:
+      cache_name:
+        type: string
+    steps:
+      - restore_cache:
+          name: Load turbocache for << parameters.cache_name >>
+          keys:
+            - &turbo-cache turbo-cache-v1-<< parameters.cache_name >>-{{ .Branch }}-{{ epoch }}
+            - turbo-cache-v1-<< parameters.cache_name >>-{{ .Branch }}
+            - turbo-cache-v1-<< parameters.cache_name >>-main
+
+  store_turbo_cache:
+    description: Cache store turbo cache
+    parameters:
+      cache_name:
+        type: string
+    steps:
+      - save_cache:
+          name: Store turbocache for << parameters.cache_name >>
+          key: *turbo-cache
+          when: always
+          paths:
+            - /mnt/ramdisk/project/.turbo
+
+  setup_yarn:
+    description: Set up yarn berry
+    parameters:
+      install:
+        type: boolean
+        default: false
+    steps:
+      - restore_yarn_cache
+      - run:
+          name: Set up yarn berry
+          command: |
+            sudo corepack enable
+          env:
+            YARN_CACHE_FOLDER: /mnt/ramdisk/project/.yarn/cache
+      - when:
+          condition: << parameters.install >>
+          steps:
+            - run:
+                name: link node_modules
+                command: yarn --immutable
+            - store_yarn_cache
+
+  step_setup:
+    steps:
+      - restore_intermediate
+      - restore_node_modules
+      - setup_yarn
+
   run_e2e_tests:
     parameters:
       should_install_java:
@@ -64,12 +186,9 @@ commands:
         type: string
 
     steps:
-      - aws-cli/install:
-          version: 2.2.2
-      - aws-cli/setup:
-          aws-region: AWS_DEFAULT_REGION
+      - aws-cli/install
+      - aws-cli/setup
       - set_s3_pkg_urls
-
       - store_artifacts:
           path: packages/<< parameters.workspace_dir >>/pkg
           destination: pkg/<< parameters.out_filename >>
@@ -78,128 +197,157 @@ commands:
           from: packages/<< parameters.workspace_dir >>/pkg
           to: ${S3_PKG_HASH_PREFIX}/<< parameters.out_filename >>
 
+  test_cli:
+    parameters:
+        arch:
+            description: Linux, mac, win
+            type: string
+        exe_name:
+            description: Name of executable (e.g. salto, salto.exe)
+            type: string
+    steps:
+      - aws-cli/install
+      - aws-cli/setup
+      - set_s3_pkg_urls
+      - aws-s3/copy:
+          from: ${S3_PKG_HASH_PREFIX}/cli/<< parameters.arch >>/<< parameters.exe_name >>
+          to: .
+      - run: echo << parameters.arch >>
+      - when:
+          condition:
+            not: 
+              equal: [ win, << parameters.arch >> ]
+          steps:
+            - run: chmod +x ./<< parameters.exe_name >>
+      - run:
+          name: Run CLI --help
+          command: ./<< parameters.exe_name >> --help
+
+      - run:
+          name: Test CLI init
+          command: |
+            mkdir workspace
+            pushd workspace
+            ../<< parameters.exe_name >> init -e env1
+
 jobs:
+  install:
+    docker:
+      - image: cimg/node:18.9
+
+    resource_class: large
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - checkout
+      - setup_yarn:
+          install: true
+      - store_node_modules
+
   build:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
 
     steps:
-      - restore_cache:
-          keys:
-            - v1-project-{{ .Branch }}
-            - v1-project-main
-
       - checkout
-
+      - restore_node_modules
+      - restore_turbo_cache:
+          cache_name: build
+      - setup_yarn
       - run:
-          name: remove empty directories from the packages dir
-          command: |
-            find ./packages -mindepth 1 -maxdepth 1 -type d '!' -exec test -e "{}/package.json" ';' -print \
-              | xargs --no-run-if-empty rm -r
-
-      - run:
-          # eslint will verify that the license header exists on the linted source files, this step is
-          # to verify that other non-linted files also contains the license header (and therefore this is
-          # in the 'build' job)
-          name: verify that the license header is prepended to the non eslint'd source files
-          command: build_utils/verify_license_header.sh
-
-      - run: yarn config set ignore-engines true
-
-      - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
-
-        # Yarn has some random race-condition failures, trying multiple times seems to help
-        # when the source of the problem is yarn itself and not the packages
-      - run: yarn || yarn || yarn
-
-      - run:
-          # As a workaround to the --frozen-lockfile flag not working with workspaces
-          # (see: https://github.com/yarnpkg/yarn/issues/4098)
-          # we use a regular `yarn` and add an explicit test that the yarn.lock file is unchanged
-          name: ensure yarn.lock file is up to date
-          command: '! git diff --name-only | grep yarn.lock'
-
-      - run:
-          name: fix eslint cache
-          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
-
-      - run: yarn build
-
-      - persist_to_workspace:
-          root: .
-          paths:
-            - '*'
-
-  save_project_cache:
-    docker:
-      - image: cimg/base:2020.01
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - save_cache:
-          paths:
-            - .
-          key: v1-project-{{ .Branch }}-{{ epoch }}
+          name: Build and lint
+          command: yarn build
+      - store_turbo_cache:
+          cache_name: build
+      - store_intermediate
 
   unit_test:
-    docker:
-      - image: cimg/node:14.15
+    parameters:
+      package_name: 
+        type: string
+      parallelism:
+        type: integer
+      resource_class:
+        type: string
+        default: xlarge
 
-    resource_class: xlarge
+    parallelism: << parameters.parallelism >>
+
+    docker:
+      - image: cimg/node:18.9
+
+    resource_class: << parameters.resource_class >>
     working_directory: /mnt/ramdisk/project
 
     steps:
-      - attach_workspace:
-          at: .
-
+      - step_setup
+      - restore_turbo_cache:
+          cache_name: jest_ut-<< parameters.package_name >>
+      - restore_turbo_cache:
+          cache_name: build      
       - run:
-          name: Run unit tests
-          command: yarn test -w 4 --reporters=default --reporters=jest-junit
+          name: Extract package name
+          command: |
+            PACKAGE_NAME="$(echo "<< parameters.package_name >>" | cut -d':' -f2)"
+            echo "export UT_PACKAGE_NAME=$PACKAGE_NAME" >> $BASH_ENV
+      - run:
+          name: Check dependencies for changes
+          command: |
+            export SALTO_DEPENDENCIES_HASH="$(node ./build_utils/hash_dependencies.js -p $UT_PACKAGE_NAME)"
+      - run:
+          name: << parameters.package_name >> unit tests
+          command: |
+            yarn test --filter="$UT_PACKAGE_NAME" --  --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit --ci --colors
           environment:
             JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
-            # https://github.com/pinojs/koa-pino-logger/issues/16
-            FORCE_COLOR: 1
 
       - store_test_results:
           path: reports
+      - store_turbo_cache:
+          cache_name: jest_ut-<< parameters.package_name >>
 
-      - coveralls/upload
+      - coveralls/upload:
+          parallel: true
+          flag_name: << parameters.package_name >>  
+
+  finish_coveralls:
+    docker:
+      - image: cimg/node:18.9
+    steps:
+      - coveralls/upload:
+          parallel_finished: true
 
   prettier:
+    working_directory: /mnt/ramdisk/project
+
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
-      - attach_workspace:
-          at: .
-
+      - step_setup
       - run:
-          name: Run prettier
-          command: yarn check-format --concurrency 2
+          name: Check format with prettier
+          command: yarn check-format
 
   publish_on_version_change:
+    working_directory: /mnt/ramdisk/project
+
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
-      - attach_workspace:
-          at: .
-
+      - step_setup
       - add_ssh_keys:
           fingerprints:
             - '49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17'
 
       - set_s3_pkg_urls
 
-      - aws-cli/install:
-          version: 2.2.2
-      - aws-cli/setup:
-          aws-region: AWS_DEFAULT_REGION
+      - aws-cli/install
+      - aws-cli/setup
 
       - run:
           name: Release version
@@ -212,24 +360,22 @@ jobs:
       should_install_java:
         type: boolean
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
     resource_class: large
     working_directory: /mnt/ramdisk/project
     steps:
-      - attach_workspace:
-          at: .
+      - step_setup
       - run_e2e_tests:
           package_name: <<parameters.package_name>>
           should_install_java: <<parameters.should_install_java>>     
 
   package_cli:
+    working_directory: /mnt/ramdisk/project
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
-      - attach_workspace:
-          at: .
-
+      - step_setup
       - run:
           environment:
             PYTHON: '/usr/bin/python3'
@@ -246,52 +392,19 @@ jobs:
     resource_class: macos.m1.medium.gen1
 
     steps:
-      - set_s3_pkg_urls
-
-      - aws-s3/copy:
-          from: ${S3_PKG_HASH_PREFIX}/cli/mac/salto
-          to: .
-
       - macos/install-rosetta
-
-      - run:
-          command: chmod +x ./salto
-
-      - run:
-          name: run CLI --help
-          command: ./salto --help
-
-      - run:
-          name: Test CLI init
-          command: mkdir workspace && cd workspace && ../salto init -e env1
+      - test_cli:
+          arch: mac
+          exe_name: salto
 
   test_cli_linux:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
-      - set_s3_pkg_urls
-
-      - aws-cli/install:
-          version: 2.2.2
-
-      - aws-cli/setup:
-          aws-region: AWS_DEFAULT_REGION
-
-      - aws-s3/copy:
-          from: ${S3_PKG_HASH_PREFIX}/cli/linux/salto
-          to: .
-
-      - run:
-          command: chmod +x ./salto
-
-      - run:
-          name: run CLI --help
-          command: ./salto --help
-
-      - run:
-          name: Test CLI init
-          command: mkdir workspace && cd workspace && ../salto init -e env1
+      - test_cli:
+          arch: linux
+          exe_name: salto
 
   test_cli_win:
     executor:
@@ -299,28 +412,17 @@ jobs:
       shell: bash.exe
 
     steps:
-      - set_s3_pkg_urls
-
-      - aws-s3/copy:
-          from: ${S3_PKG_HASH_PREFIX}/cli/win/salto.exe
-          to: .
-
-      - run:
-          name: run CLI --help
-          command: ./salto.exe --help
-
-      - run:
-          name: Test CLI init
-          command: mkdir workspace && cd workspace && ../salto.exe init -e env1
+      - test_cli:
+          arch: win
+          exe_name: salto.exe
 
   package_vscode_extension:
+    working_directory: /mnt/ramdisk/project
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
-      - attach_workspace:
-          at: .
-
+      - step_setup
       - run:
           name: Create a VSIX file
           command: yarn workspace salto-vscode package
@@ -334,12 +436,14 @@ jobs:
       - image: cimg/python:3.10
 
     steps:
+      - aws-cli/install
+      - aws-cli/setup
       - set_s3_pkg_urls
-
       - aws-s3/sync:
           from: ${S3_PKG_HASH_PREFIX}/
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
           arguments: '--delete --acl public-read'
+          profile_name: ''
 
       - run:
           name: Create a marker file with the git hash
@@ -351,13 +455,12 @@ jobs:
           arguments: '--acl public-read'
 
   publish_canary:
+    working_directory: /mnt/ramdisk/project
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.9
 
     steps:
-      - attach_workspace:
-          at: .
-
+      - step_setup
       - run:
           name: Set NPM token
           command: |
@@ -380,16 +483,17 @@ jobs:
 workflows:
   commit:
     jobs:
-      - build
+      - install
+      - build:
+          requires:
+            - install
+      # <TEST_MATRIX_UT>
       # <TEST_MATRIX_E2E>
       # <TEST_MATRIX_E2E_JAVA>
-      - save_project_cache:
-          requires:
-            - build
 
-      - unit_test:
+      - finish_coveralls:
           requires:
-            - build
+            - unit_test
 
       - prettier:
           requires:

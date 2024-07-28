@@ -13,16 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ObjectType,
-  isInstanceElement,
-  InstanceElement,
-} from '@salto-io/adapter-api'
+import { ObjectType, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { makeArray } from '@salto-io/lowerdash/src/collections/array'
-import {
-  INSTALLED_PACKAGE_METADATA,
-  INSTANCE_FULL_NAME_FIELD,
-} from '../src/constants'
+import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 import mockClient from './client'
 import { fetchMetadataInstances } from '../src/fetch'
 import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
@@ -43,7 +36,7 @@ describe('Test fetching installed package metadata', () => {
   }: MockFetchArgs): Promise<InstanceElement | undefined> => {
     const { client, connection } = mockClient()
     connection.metadata.read.mockImplementation(async (_type, fullNames) =>
-      makeArray(fullNames).map((fullName) => ({ fullName })),
+      makeArray(fullNames).map(fullName => ({ fullName })),
     )
 
     const metadataQuery = buildMetadataQuery({

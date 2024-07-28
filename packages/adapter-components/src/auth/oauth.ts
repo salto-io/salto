@@ -49,7 +49,7 @@ export const oauthClientCredentialsBearerToken = async ({
   retryOptions: RetryOptions
   additionalHeaders?: Record<string, string>
   additionalData?: Record<string, string>
-}): Promise<{ headers?: AxiosRequestHeaders }> => {
+}): Promise<{ headers?: Partial<AxiosRequestHeaders> }> => {
   const httpClient = axios.create({
     baseURL,
     headers: {
@@ -62,11 +62,8 @@ export const oauthClientCredentialsBearerToken = async ({
   const res = await httpClient.post(
     endpoint,
     qs.stringify({
-      // eslint-disable-next-line camelcase
       client_id: clientId,
-      // eslint-disable-next-line camelcase
       client_secret: clientSecret,
-      // eslint-disable-next-line camelcase
       grant_type: 'client_credentials',
       ...additionalData,
     }),
@@ -100,7 +97,7 @@ export const oauthAccessTokenRefresh = async ({
   clientSecret: string
   refreshToken: string
   retryOptions: RetryOptions
-}): Promise<{ headers?: AxiosRequestHeaders }> => {
+}): Promise<{ headers?: Partial<AxiosRequestHeaders> }> => {
   const httpClient = axios.create({
     baseURL,
     headers: {
@@ -113,9 +110,7 @@ export const oauthAccessTokenRefresh = async ({
   const res = await httpClient.post(
     endpoint,
     qs.stringify({
-      // eslint-disable-next-line camelcase
       refresh_token: refreshToken,
-      // eslint-disable-next-line camelcase
       grant_type: 'refresh_token',
     }),
   )

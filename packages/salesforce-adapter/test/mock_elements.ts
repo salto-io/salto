@@ -58,11 +58,7 @@ import {
   WORKFLOW_METADATA_TYPE,
   WORKFLOW_TASK_METADATA_TYPE,
 } from '../src/constants'
-import {
-  createInstanceElement,
-  createMetadataObjectType,
-  Types,
-} from '../src/transformers/transformer'
+import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
@@ -108,6 +104,28 @@ const CPQ_PRICE_RULE_TYPE = createCustomObjectType(CPQ_PRICE_RULE, {
 const CPQ_PRODUCT_RULE_TYPE = createCustomObjectType(CPQ_PRODUCT_RULE, {
   fields: {
     [CPQ_CONDITIONS_MET]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      },
+    },
+    [OWNER_ID]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+        [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [constants.API_NAME]: OWNER_ID,
+      },
+    },
+  },
+})
+
+const CPQ_QUOTE_TERM_TYPE = createCustomObjectType(constants.CPQ_QUOTE_TERM, {
+  fields: {
+    [constants.CPQ_ADVANCED_CONDITION_FIELD]: {
       refType: BuiltinTypes.STRING,
       annotations: {
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
@@ -232,9 +250,7 @@ export const mockTypes = {
     },
     fields: {
       targetConfigs: {
-        refType: allMissingSubTypes.find(
-          (t) => t.elemID.typeName === 'TargetConfigs',
-        ) as TypeElement,
+        refType: allMissingSubTypes.find(t => t.elemID.typeName === 'TargetConfigs') as TypeElement,
       },
       lwcResources: {
         refType: createMetadataObjectType({
@@ -297,10 +313,8 @@ export const mockTypes = {
       dirName: 'workflows',
       suffix: 'workflow',
     },
-    fields: _.mapValues(WORKFLOW_FIELD_TO_TYPE, (typeName) => ({
-      refType: new ListType(
-        createMetadataObjectType({ annotations: { metadataType: typeName } }),
-      ),
+    fields: _.mapValues(WORKFLOW_FIELD_TO_TYPE, typeName => ({
+      refType: new ListType(createMetadataObjectType({ annotations: { metadataType: typeName } })),
     })),
   }),
   WorkflowTask: createMetadataObjectType({
@@ -340,11 +354,17 @@ export const mockTypes = {
       dirName: 'territory2Models',
     },
   }),
-  CustomMetadata: createMetadataObjectType({
+  CustomMetadata: new ObjectType({
+    elemID: new ElemID(SALESFORCE, constants.CUSTOM_METADATA_TYPE_NAME),
     annotations: {
       metadataType: 'CustomMetadata',
       dirName: 'customMetadata',
       suffix: 'md',
+    },
+    fields: {
+      [INSTANCE_FULL_NAME_FIELD]: {
+        refType: BuiltinTypes.SERVICE_ID,
+      },
     },
   }),
   EmailTemplate: createMetadataObjectType({
@@ -675,6 +695,7 @@ export const mockTypes = {
     },
   }),
   TestCustomObject__c: createCustomObjectType('TestCustomObject__c', {}),
+  TestCustomEvent__e: createCustomObjectType('TestCustomEvent__e', {}),
   BusinessProcess: createMetadataObjectType({
     annotations: {
       metadataType: 'BusinessProcess',
@@ -710,6 +731,27 @@ export const mockTypes = {
           [FIELD_ANNOTATIONS.QUERYABLE]: true,
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        },
+      },
+    },
+  }),
+  [constants.CPQ_QUOTE_TERM]: CPQ_QUOTE_TERM_TYPE,
+  [constants.CPQ_TERM_CONDITION]: createCustomObjectType(constants.CPQ_TERM_CONDITION, {
+    fields: {
+      [constants.CPQ_QUOTE_TERM]: {
+        refType: Types.primitiveDataTypes.Lookup,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        },
+        [constants.CPQ_INDEX_FIELD]: {
+          refType: BuiltinTypes.NUMBER,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
         },
       },
     },
@@ -758,13 +800,11 @@ export const mockDefaultValues = {
       lwcResource: [
         {
           source: lwcJsResourceContent,
-          filePath:
-            'lwc/testLightningComponentBundle/testLightningComponentBundle.js',
+          filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.js',
         },
         {
           source: lwcHtmlResourceContent,
-          filePath:
-            'lwc/testLightningComponentBundle/testLightningComponentBundle.html',
+          filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.html',
         },
       ],
     },
@@ -791,11 +831,7 @@ export const mockDefaultValues = {
       ],
     },
     targets: {
-      target: [
-        'lightning__AppPage',
-        'lightning__RecordPage',
-        'lightning__HomePage',
-      ],
+      target: ['lightning__AppPage', 'lightning__RecordPage', 'lightning__HomePage'],
     },
   },
   Profile: {
@@ -839,7 +875,6 @@ export const mockDefaultValues = {
       },
     },
     applicationVisibilities: {
-      // eslint-disable-next-line camelcase
       standard__ServiceConsole: {
         application: 'standard__ServiceConsole',
         default: false,
@@ -913,15 +948,9 @@ export const mockDefaultValues = {
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const mockInstances = () => ({
   ..._.mapValues(mockDefaultValues, (values, typeName) =>
-    createInstanceElement(
-      values,
-      mockTypes[typeName as keyof typeof mockDefaultValues],
-    ),
+    createInstanceElement(values, mockTypes[typeName as keyof typeof mockDefaultValues]),
   ),
-  [CHANGED_AT_SINGLETON]: new InstanceElement(
-    ElemID.CONFIG_NAME,
-    ArtificialTypes.ChangedAtSingleton,
-  ),
+  [CHANGED_AT_SINGLETON]: new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.ChangedAtSingleton),
 })
 
 export const createFlowChange = ({

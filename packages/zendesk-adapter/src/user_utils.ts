@@ -51,7 +51,6 @@ export type User = {
   name: string
   email: string
   role: string
-  // eslint-disable-next-line camelcase
   custom_role_id?: number | null
   locale: string
 }
@@ -273,11 +272,17 @@ export const getUsers = getUsersFunc()
  * Get user fallback value that will replace missing users values
  * based on the user's deploy config
  */
-export const getUserFallbackValue = async (
-  defaultMissingUserFallback: string,
-  existingUsers: Set<string>,
-  client: ZendeskClient,
-): Promise<string | undefined> => {
+export const getUserFallbackValue = async ({
+  defaultMissingUserFallback,
+  existingUsers,
+  client,
+  shouldResolveUserIDs,
+}: {
+  defaultMissingUserFallback: string
+  existingUsers: Set<string>
+  client: ZendeskClient
+  shouldResolveUserIDs?: boolean
+}): Promise<string | number | undefined> => {
   if (defaultMissingUserFallback === definitions.DEPLOYER_FALLBACK_VALUE) {
     try {
       const response = (
@@ -286,7 +291,7 @@ export const getUserFallbackValue = async (
         })
       ).data
       if (isCurrentUserResponse(response)) {
-        return response.user.email
+        return shouldResolveUserIDs === false ? response.user.id : response.user.email
       }
       log.error("Received invalid response from endpoint '/api/v2/users/me'")
     } catch (e) {

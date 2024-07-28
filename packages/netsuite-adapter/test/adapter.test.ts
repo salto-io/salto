@@ -142,7 +142,6 @@ const secondDummyFilter: LocalFilterCreator = () => ({
 })
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 

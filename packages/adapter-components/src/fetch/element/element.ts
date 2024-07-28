@@ -102,6 +102,15 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
         log.warn('failed to fetch type %s:%s, generating config suggestions', adapterName, typeName)
         configSuggestions.push(onErrorResult.value)
         break
+      case 'ignoreError': {
+        log.debug(
+          'failed to fetch type %s:%s, suppressing error with no action: %s',
+          adapterName,
+          typeName,
+          error.message,
+        )
+        break
+      }
       case 'failEntireFetch': {
         if (onErrorResult.value) {
           throw new AbortFetchOnFailure({ adapterName, typeName, message: error.message })
@@ -110,7 +119,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
       // eslint-disable-next-line no-fallthrough
       case undefined:
       default:
-        log.warn('failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
+        log.error('unexpectedly failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
     }
   }
 

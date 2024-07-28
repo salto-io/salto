@@ -76,6 +76,7 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import { OktaOptions } from '../src/definitions/types'
+import { createFetchQuery } from '../test/utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -107,7 +108,11 @@ const createInstance = ({
     log.warn(`Could not find type ${typeName}, error while creating instance`)
     throw new Error(`Failed to find type ${typeName}`)
   }
-  const fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG, true)
+  const fetchDefinitions = createFetchDefinitions({
+    userConfig: DEFAULT_CONFIG,
+    fetchQuery: createFetchQuery(DEFAULT_CONFIG),
+    usePrivateAPI: true,
+  })
   const elemIDDef = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)?.element
     ?.topLevel?.elemID
   if (elemIDDef === undefined) {
@@ -289,7 +294,6 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
 }
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 
@@ -439,7 +443,11 @@ describe('Okta adapter E2E', () => {
       const fetchBeforeCleanupResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
-      fetchDefinitions = createFetchDefinitions(DEFAULT_CONFIG, true)
+      fetchDefinitions = createFetchDefinitions({
+        userConfig: DEFAULT_CONFIG,
+        fetchQuery: createFetchQuery(DEFAULT_CONFIG),
+        usePrivateAPI: true,
+      })
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
       await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 

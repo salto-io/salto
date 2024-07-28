@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
+import { getParent } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME } from '../filters/fields/constants'
 
 const log = logger(module)
 export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: string[]): boolean => {
@@ -25,4 +27,20 @@ export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: stri
     return true
   }
   return false
+}
+
+export const getContextParent = (instance: InstanceElement): InstanceElement => {
+  let parent = getParent(instance)
+  if (parent.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME) {
+    parent = getParent(parent)
+  }
+  return parent
+}
+
+export const getContextAndFieldIds = (change: Change<InstanceElement>): { contextId: string; fieldId: string } => {
+  const parent = getContextParent(getChangeData(change))
+  return {
+    contextId: parent.value.id,
+    fieldId: getParent(parent).value.id,
+  }
 }

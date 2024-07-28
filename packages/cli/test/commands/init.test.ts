@@ -79,10 +79,9 @@ describe('init command', () => {
         },
       })
       expect(output.stdout.content.includes('Initiated')).toBeTruthy()
-      expect(telemetry.getEvents()).toHaveLength(2)
-      expect(telemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
-      expect(telemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
-      expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+      expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.start, 1, expect.objectContaining({}))
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.success, 1, expect.objectContaining({}))
     })
     it('should print errors', async () => {
       await action({
@@ -92,10 +91,9 @@ describe('init command', () => {
         },
       })
       expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
-      expect(telemetry.getEvents()).toHaveLength(2)
-      expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
-      expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
-      expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+      expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.start, 1, expect.objectContaining({}))
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.failure, 1, expect.objectContaining({}))
     })
   })
   describe('without interactive env input ', () => {
@@ -108,10 +106,9 @@ describe('init command', () => {
         },
       })
       expect(output.stdout.content.includes('Initiated')).toBeTruthy()
-      expect(telemetry.getEvents()).toHaveLength(2)
-      expect(telemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
-      expect(telemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
-      expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+      expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.start, 1, expect.objectContaining({}))
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.success, 1, expect.objectContaining({}))
       expect(mockInitLocalWorkspace).toHaveBeenCalledWith(expect.anything(), 'test', 'userEnvInput')
     })
     it('should print errors', async () => {
@@ -123,10 +120,9 @@ describe('init command', () => {
         },
       })
       expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
-      expect(telemetry.getEvents()).toHaveLength(2)
-      expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
-      expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
-      expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+      expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.start, 1, expect.objectContaining({}))
+      expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.failure, 1, expect.objectContaining({}))
     })
   })
 

@@ -30,7 +30,6 @@ describe('oauth', () => {
 
     it('should make the right request and return a header on success', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-        // eslint-disable-next-line camelcase
         access_token: 'token123',
         expires_in: 3599,
         token_type: 'bearer',
@@ -50,7 +49,7 @@ describe('oauth', () => {
       expect(req.url).toEqual('/oauth/token')
       expect(req.auth).toBeUndefined()
       expect(req.data).toEqual('client_id=client%20id&client_secret=secret&grant_type=client_credentials')
-      expect(req.headers).toEqual({
+      expect({ ...req.headers }).toEqual({
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: expect.stringContaining('application/json'),
       })
@@ -69,7 +68,6 @@ describe('oauth', () => {
     })
     it('should throw error on unexpected token type', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-        // eslint-disable-next-line camelcase
         access_token: 'token123',
         expires_in: 3599,
         token_type: 'mac',
@@ -87,7 +85,6 @@ describe('oauth', () => {
     })
     it('should retry on transient errors', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(503).onPost('/oauth/token').reply(200, {
-        // eslint-disable-next-line camelcase
         access_token: 'token123',
         expires_in: 3599,
         token_type: 'bearer',
@@ -105,7 +102,6 @@ describe('oauth', () => {
     })
     it('should support customizations', async () => {
       mockAxiosAdapter.onPost('/custom_oauth_endpoint').reply(200, {
-        // eslint-disable-next-line camelcase
         access_token: 'token123',
         expires_in: 3599,
         token_type: 'bearer',
@@ -130,7 +126,7 @@ describe('oauth', () => {
       expect(req.url).toEqual('/custom_oauth_endpoint')
       expect(req.auth).toBeUndefined()
       expect(req.data).toEqual('client_id=client%20id&client_secret=secret&grant_type=client_credentials')
-      expect(req.headers).toEqual({
+      expect({ ...req.headers }).toEqual({
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: expect.stringContaining('application/json'),
         aaa: 'bbb',
@@ -150,7 +146,6 @@ describe('oauth', () => {
 
     it('should make the right request and return a header on success', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-        // eslint-disable-next-line camelcase
         access_token: 'token123',
         expires_in: 3599,
         token_type: 'Bearer',
@@ -172,7 +167,7 @@ describe('oauth', () => {
       expect(req.url).toEqual('/oauth/token')
       expect(req.auth).toBeUndefined()
       expect(req.data).toEqual('refresh_token=refresh&grant_type=refresh_token')
-      expect(req.headers).toEqual({
+      expect({ ...req.headers }).toEqual({
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: expect.stringContaining('application/json'),
         Authorization: expect.stringContaining('Basic'),
@@ -194,7 +189,6 @@ describe('oauth', () => {
     })
     it('should throw error on unexpected token type', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-        // eslint-disable-next-line camelcase
         access_token: 'token123',
         expires_in: 3599,
         token_type: 'mac',
@@ -214,7 +208,6 @@ describe('oauth', () => {
     })
     it('should retry on transient errors', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(503).onPost('/oauth/token').reply(200, {
-        // eslint-disable-next-line camelcase
         access_token: 'token123',
         expires_in: 3599,
         token_type: 'bearer',

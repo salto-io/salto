@@ -63,7 +63,7 @@ describe('fetch utils', () => {
           root: 'a',
           nestUnderField: 'b',
           pick: ['x', 'z'],
-          adjust: ({ value }) => ({
+          adjust: async ({ value }) => ({
             value: lowerdashValues.isPlainObject(value) ? _.mapKeys(value, (_v, key) => key.toUpperCase()) : 'unknown',
           }),
         })
@@ -110,6 +110,46 @@ describe('fetch utils', () => {
           },
         ])
       })
+      it('should support returning multiple values from adjust', async () => {
+        const func = createValueTransformer({
+          adjust: async () => [{ value: { a: 1 } }, { value: { b: 2 } }, { value: { c: 3 } }],
+        })
+        expect(await func(item)).toEqual([
+          {
+            context: {},
+            typeName: 't',
+            value: { a: 1 },
+          },
+          {
+            context: {},
+            typeName: 't',
+            value: { b: 2 },
+          },
+          {
+            context: {},
+            typeName: 't',
+            value: { c: 3 },
+          },
+        ])
+      })
+      it('should support returning multiple items from adjust', async () => {
+        const func = createValueTransformer({
+          adjust: async () => [{ value: { a: 1 }, typeName: 'custom' }, { value: { b: 2 } }],
+        })
+        expect(await func(item)).toEqual([
+          {
+            context: {},
+            typeName: 'custom',
+            value: { a: 1 },
+          },
+          {
+            context: {},
+            typeName: 't',
+            value: { b: 2 },
+          },
+        ])
+      })
+
       it('should return a single item if single=true and item has single value', async () => {
         const func = createValueTransformer({ root: 'a', omit: ['z'], single: true })
         expect(await func(item)).toEqual({

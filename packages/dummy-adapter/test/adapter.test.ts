@@ -47,7 +47,6 @@ const myInst1Change = toChange({ before: new InstanceElement('myIns1', objType) 
 const myInst2Change = toChange({ before: new InstanceElement('myIns2', objType) })
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 

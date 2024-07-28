@@ -15,6 +15,7 @@
  */
 import _ from 'lodash'
 import { Value, Values } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { RequiredDefinitions } from './types'
 import { APIDefinitionsOptions } from './api'
@@ -31,9 +32,9 @@ const getParsedDefinitionsOverrides = (): Values => {
     }
   } catch (e) {
     if (e instanceof SyntaxError) {
-      log.error('There was a syntax error in the JSON while parsing the overrides:', e.message)
+      log.error('There was a syntax error in the JSON while parsing the overrides: %s, stack: %s', e, e.stack)
     } else {
-      log.error('An unknown error occurred while parsing the overrides:', e)
+      log.error('An unknown error occurred while parsing the overrides: %s, stack: %s', e, e.stack)
     }
   }
   return {}
@@ -61,7 +62,7 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
   if (_.isEmpty(overrides)) {
     return definitions
   }
-  log.debug('Definitions overrides:', overrides)
+  log.debug('Definitions overrides: %s', safeJsonStringify(overrides))
   const cloneDefinitions = _.cloneDeep(definitions)
   const merged = _.mergeWith(cloneDefinitions, overrides, customMerge)
   const removeNullObjects = (obj: Value): Value => {
@@ -75,6 +76,6 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     return obj
   }
   const afterRemoveNullObjects = removeNullObjects(merged)
-  log.debug('Merged definitions with overrides:', afterRemoveNullObjects)
+  log.debug('Merged definitions with overrides: %s', safeJsonStringify(afterRemoveNullObjects))
   return afterRemoveNullObjects
 }

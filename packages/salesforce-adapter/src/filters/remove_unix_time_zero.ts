@@ -27,16 +27,12 @@ const log = logger(module)
 const removeUnixTimeZero = async (elements: Element[]): Promise<void> => {
   await awu(elements)
     .filter(isElement)
-    .forEach(async (e) => {
-      if (
-        e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === UNIX_TIME_ZERO_STRING
-      ) {
+    .forEach(async e => {
+      if (e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === UNIX_TIME_ZERO_STRING) {
         delete e.annotations[CORE_ANNOTATIONS.CHANGED_AT]
         log.trace('Removed unix time 0 last modified of %s', await apiName(e))
       }
-      if (
-        e.annotations[CORE_ANNOTATIONS.CREATED_AT] === UNIX_TIME_ZERO_STRING
-      ) {
+      if (e.annotations[CORE_ANNOTATIONS.CREATED_AT] === UNIX_TIME_ZERO_STRING) {
         delete e.annotations[CORE_ANNOTATIONS.CREATED_AT]
         log.trace('Removed unix time 0 create time of %s', await apiName(e))
       }

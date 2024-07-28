@@ -140,6 +140,7 @@ import { paginate, filterResponseEntries } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
+import assetsObjectFieldConfigurationFilter from './filters/assets/assets_object_field_configuration'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
@@ -203,6 +204,10 @@ import { hasSoftwareProject } from './utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 import { createFixElementFunctions } from './fix_elements'
+import fieldContextOptionsSplitFilter from './filters/fields/field_context_option_split'
+import fieldContextOptionsDeploymentFilter from './filters/fields/context_options_deployment_filter'
+import fieldContextOptionsDeploymentOrderFilter from './filters/fields/context_options_order_deployment_filter'
+import contextDefaultValueDeploymentFilter from './filters/fields/context_default_value_deployment_filter'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -248,9 +253,12 @@ export const DEFAULT_FILTERS = [
   unresolvedParentsFilter,
   localeFilter,
   contextReferencesFilter,
+  assetsObjectFieldConfigurationFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,
+  // This must run after fieldDeploymentFilter
   contextDeploymentFilter,
+  // This must run after contextDeploymentFilter
   avatarsFilter,
   iconUrlFilter,
   triggersFilter,
@@ -340,6 +348,7 @@ export const DEFAULT_FILTERS = [
   contextsProjectsFilter,
   // must run after contextsProjectsFilter
   projectFieldContextOrder,
+  fieldContextOptionsSplitFilter,
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,
@@ -379,6 +388,10 @@ export const DEFAULT_FILTERS = [
   queueDeploymentFilter,
   portalGroupsFilter,
   requestTypeFilter,
+  fieldContextOptionsDeploymentFilter,
+  fieldContextOptionsDeploymentOrderFilter,
+  // Must be ran after fieldContextOptionsDeploymentFilter
+  contextDefaultValueDeploymentFilter,
   // Must run before asstesDeployFilter
   assetsInstancesDeploymentFilter,
   // Must be done after JsmTypesFilter

@@ -17,10 +17,7 @@ import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import Connection from '../../../src/client/jsforce'
 import { mockTypes } from '../../mock_elements'
-import {
-  CUSTOM_LABEL_METADATA_TYPE,
-  INSTANCE_FULL_NAME_FIELD,
-} from '../../../src/constants'
+import { CUSTOM_LABEL_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../../../src/constants'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'
 import filterCreator from '../../../src/filters/author_information/nested_instances'
@@ -39,21 +36,13 @@ describe('nestedInstancesAuthorInformationFilter', () => {
   let connection: MockInterface<Connection>
   describe('onFetch', () => {
     beforeEach(() => {
-      customLabelInstance = new InstanceElement(
-        'TestCustomLabel',
-        mockTypes.CustomLabel,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'TestCustomLabel',
-        },
-      )
+      customLabelInstance = new InstanceElement('TestCustomLabel', mockTypes.CustomLabel, {
+        [INSTANCE_FULL_NAME_FIELD]: 'TestCustomLabel',
+      })
       // Make sure we don't attempt to add missing internal ids to non nested instances
-      nonNestedInstance = new InstanceElement(
-        'TestNonNestedInstance',
-        mockTypes.ApexClass,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'TestNonNestedInstance',
-        },
-      )
+      nonNestedInstance = new InstanceElement('TestNonNestedInstance', mockTypes.ApexClass, {
+        [INSTANCE_FULL_NAME_FIELD]: 'TestNonNestedInstance',
+      })
       const fileProperties = mockFileProperties({
         fullName: 'TestCustomLabel',
         type: CUSTOM_LABEL_METADATA_TYPE,
@@ -80,9 +69,7 @@ describe('nestedInstancesAuthorInformationFilter', () => {
         [CORE_ANNOTATIONS.CHANGED_AT]: LAST_MODIFIED_DATE,
       })
       expect(connection.metadata.list).toHaveBeenCalledOnce()
-      expect(connection.metadata.list).toHaveBeenCalledWith([
-        { type: CUSTOM_LABEL_METADATA_TYPE },
-      ])
+      expect(connection.metadata.list).toHaveBeenCalledWith([{ type: CUSTOM_LABEL_METADATA_TYPE }])
     })
   })
 })

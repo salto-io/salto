@@ -17,6 +17,7 @@ import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, toChange }
 import { NETSUITE, SELECT_OPTION } from '../../src/constants'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from '../../src/types'
 import suiteAppConfigElementsValidator from '../../src/change_validators/suiteapp_config_elements'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('config elements change validator', () => {
   const selectOptionType = new ObjectType({
@@ -52,7 +53,7 @@ describe('config elements change validator', () => {
       selectField: { value: '2', text: 'Two' },
       multiselectField: [{ value: '2', text: 'Two' }],
     }
-    const result = await suiteAppConfigElementsValidator([toChange({ before, after })])
+    const result = await suiteAppConfigElementsValidator([toChange({ before, after })], mockChangeValidatorParams())
     expect(result.length).toBe(2)
     expect(result[0]).toEqual({
       elemID: after.elemID.createNestedID('selectField'),

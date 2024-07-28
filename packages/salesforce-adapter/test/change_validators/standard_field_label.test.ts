@@ -13,13 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ChangeError,
-  ElemID,
-  Field,
-  ObjectType,
-  toChange,
-} from '@salto-io/adapter-api'
+import { ChangeError, ElemID, Field, ObjectType, toChange } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import standardFieldLabelValidator from '../../src/change_validators/standard_field_label'
 import { CUSTOM_OBJECT, LABEL } from '../../src/constants'
@@ -35,21 +29,13 @@ describe('standard field label modification change validator', () => {
         elemID: new ElemID('salesforce', 'obj'),
         annotations: { metadataType: CUSTOM_OBJECT, apiName: 'obj__c' },
       })
-      beforeField = createField(
-        customObj,
-        Types.primitiveDataTypes.Text,
-        'Something',
-        { [LABEL]: 'testLabel' },
-      )
+      beforeField = createField(customObj, Types.primitiveDataTypes.Text, 'Something', { [LABEL]: 'testLabel' })
     })
     beforeEach(() => {
       afterField = beforeField.clone()
     })
 
-    const runChangeValidator = (
-      before: Field | undefined,
-      after: Field,
-    ): Promise<ReadonlyArray<ChangeError>> =>
+    const runChangeValidator = (before: Field | undefined, after: Field): Promise<ReadonlyArray<ChangeError>> =>
       standardFieldLabelValidator([toChange({ before, after })])
 
     it('should have Error for standard field label modification', async () => {

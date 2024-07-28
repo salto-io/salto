@@ -41,21 +41,23 @@ export type GeneratedItem<TContext = ContextParams, TVal = unknown> = {
   readonly context: ContextParams & TContext
 }
 
-export type TransformFunction<TContext = ContextParams, TSourceVal = Values, TTargetVal extends unknown = Values> = (
+export type TransformFunction<TContext = ContextParams, TSourceVal = Values, TTargetVal = Values> = (
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,
 ) => Promise<GeneratedItem<TContext, TTargetVal>[]>
 
-export type SingleValueTransformationFunction<
-  TContext = ContextParams,
-  TSourceVal = Values,
-  TTargetVal extends unknown = Values,
-> = (
+export type SingleValueTransformationFunction<TContext = ContextParams, TSourceVal = Values, TTargetVal = Values> = (
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,
 ) => Promise<GeneratedItem<TContext, TTargetVal> | undefined>
 
-export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTargetVal extends unknown = Values> = (
+export type AdjustFunctionSingle<TContext = ContextParams, TSourceVal = unknown, TTargetVal = Values> = (
   item: GeneratedItem<ContextParams & TContext, TSourceVal>,
 ) => Promise<types.PickyRequired<Partial<GeneratedItem<TContext, TTargetVal>>, 'value'>>
+export type AdjustFunctionMulti<TContext = ContextParams, TSourceVal = unknown, TTargetVal = Values> = (
+  item: GeneratedItem<ContextParams & TContext, TSourceVal>,
+) => Promise<types.PickyRequired<Partial<GeneratedItem<TContext, TTargetVal>>, 'value'>[]>
+export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTargetVal = Values> =
+  | AdjustFunctionSingle<TContext, TSourceVal, TTargetVal>
+  | AdjustFunctionMulti<TContext, TSourceVal, TTargetVal>
 
 /**
  * transformation steps:

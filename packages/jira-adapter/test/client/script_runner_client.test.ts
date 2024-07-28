@@ -204,7 +204,7 @@ describe('scriptRunnerClient', () => {
       expect(request?.headers?.Authorization).toEqual('JWT validSR')
     })
     it('should return the response', () => {
-      expect(result).toEqual({ status: 200, data: { response: 'asd' } })
+      expect(result).toEqual({ status: 200, data: { response: 'asd' }, headers: {} })
     })
     it('should not call the login endpoint again', async () => {
       await scriptRunnerClient.get({ url: '/myPath2' })

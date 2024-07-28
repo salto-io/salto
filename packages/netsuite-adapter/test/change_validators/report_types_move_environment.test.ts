@@ -25,6 +25,7 @@ import {
   simpleReportDefinitionResult,
   simpleReportDefinition,
 } from '../type_parsers/report_definitions_consts'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('move environment report types change validator', () => {
   const savedsearch = savedsearchType().type
@@ -53,7 +54,10 @@ describe('move environment report types change validator', () => {
   })
   describe('onAdd', () => {
     it('should have warning change error when moving a savedsearch instance with correct definition', async () => {
-      const changeErrors = await reportTypesMoveEnvironment([toChange({ after: savedSearchInstance })])
+      const changeErrors = await reportTypesMoveEnvironment(
+        [toChange({ after: savedSearchInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].message).toEqual(
@@ -63,7 +67,10 @@ describe('move environment report types change validator', () => {
     })
 
     it('should have warning change error when moving a reportdefinition instance with correct definition', async () => {
-      const changeErrors = await reportTypesMoveEnvironment([toChange({ after: reportDefinitionInstance })])
+      const changeErrors = await reportTypesMoveEnvironment(
+        [toChange({ after: reportDefinitionInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].message).toEqual(
@@ -73,7 +80,10 @@ describe('move environment report types change validator', () => {
     })
 
     it('should have warning change error when moving a financiallayout instance with correct definition', async () => {
-      const changeErrors = await reportTypesMoveEnvironment([toChange({ after: financialLayoutInstance })])
+      const changeErrors = await reportTypesMoveEnvironment(
+        [toChange({ after: financialLayoutInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].message).toEqual(
@@ -83,7 +93,10 @@ describe('move environment report types change validator', () => {
     })
     it('should have change error when moving an savedsearch instance with incorrect definition', async () => {
       savedSearchInstance.value.definition = listedDefinition
-      const changeErrors = await reportTypesMoveEnvironment([toChange({ after: savedSearchInstance })])
+      const changeErrors = await reportTypesMoveEnvironment(
+        [toChange({ after: savedSearchInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(savedSearchInstance.elemID)
@@ -91,7 +104,10 @@ describe('move environment report types change validator', () => {
 
     it('should have change error when moving an reportdefinition instance with incorrect definition', async () => {
       reportDefinitionInstance.value.definition = fullReportDefinition
-      const changeErrors = await reportTypesMoveEnvironment([toChange({ after: reportDefinitionInstance })])
+      const changeErrors = await reportTypesMoveEnvironment(
+        [toChange({ after: reportDefinitionInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(reportDefinitionInstance.elemID)
@@ -99,7 +115,10 @@ describe('move environment report types change validator', () => {
 
     it('should have change error when moving an financiallayout instance with incorrect definition', async () => {
       financialLayoutInstance.value.layout = wrongFinancialLayout
-      const changeErrors = await reportTypesMoveEnvironment([toChange({ after: financialLayoutInstance })])
+      const changeErrors = await reportTypesMoveEnvironment(
+        [toChange({ after: financialLayoutInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(financialLayoutInstance.elemID)
@@ -108,9 +127,10 @@ describe('move environment report types change validator', () => {
   describe('onModify', () => {
     it('should have warning change error when moving an instance with correct definition', async () => {
       savedSearchInstance.value.definition = emptyDefinition
-      const changeErrors = await reportTypesMoveEnvironment([
-        toChange({ before: savedSearchInstance, after: savedSearchInstance }),
-      ])
+      const changeErrors = await reportTypesMoveEnvironment(
+        [toChange({ before: savedSearchInstance, after: savedSearchInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(savedSearchInstance.elemID)
@@ -118,9 +138,10 @@ describe('move environment report types change validator', () => {
     it('should have change error when moving an instance with incorrect definition', async () => {
       const wrongLayoutInstance = financialLayoutInstance.clone()
       wrongLayoutInstance.value.layout = wrongFinancialLayout
-      const changeErrors = await reportTypesMoveEnvironment([
-        toChange({ before: financialLayoutInstance, after: wrongLayoutInstance }),
-      ])
+      const changeErrors = await reportTypesMoveEnvironment(
+        [toChange({ before: financialLayoutInstance, after: wrongLayoutInstance })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(financialLayoutInstance.elemID)

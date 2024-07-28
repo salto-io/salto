@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+import { ActionName } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { EndpointPath } from '@salto-io/adapter-components/src/definitions'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import xmljs from 'xml-js'
@@ -28,7 +28,9 @@ import { AdditionalAction, ClientOptions } from '../types'
 export const createClassicApiDefinitionsForType = (
   typeName: string,
   plural: string,
-  shouldConvertIdToNumber?: boolean,
+  adjustFunctions?: Partial<
+    Record<AdditionalAction | ActionName, definitions.AdjustFunction<definitions.deploy.ChangeAndContext>>
+  >,
 ): Partial<definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>> => ({
   requestsByAction: {
     customizations: {
@@ -43,21 +45,23 @@ export const createClassicApiDefinitionsForType = (
                 }
                 const parsedXML = xmljs.xml2js(value, { compact: true })
                 const id = _.get(parsedXML, `${typeName}.id._text`)
-                return { value: { id: shouldConvertIdToNumber ? Number(id) : id } }
+                return { value: { id: Number(id) } }
               },
             },
           },
           request: {
             endpoint: {
               // In classic api id is mandatory on addition as well, we should provide -1 to let the service generate a new id
-              path: `/JSSResource/${plural}/id/-1` as EndpointPath,
+              path: `/JSSResource/${plural}/id/-1` as definitions.EndpointPath,
               method: 'post',
               headers: {
                 'Content-Type': 'application/xml',
               },
             },
             transformation: {
-              adjust: async ({ value }) => {
+              adjust: async item => {
+                await adjustFunctions?.add?.(item)
+                const { value } = item
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
                 }
@@ -72,14 +76,16 @@ export const createClassicApiDefinitionsForType = (
         {
           request: {
             endpoint: {
-              path: `/JSSResource/${plural}/id/{id}` as EndpointPath,
+              path: `/JSSResource/${plural}/id/{id}` as definitions.EndpointPath,
               method: 'put',
               headers: {
                 'Content-Type': 'application/xml',
               },
             },
             transformation: {
-              adjust: async ({ value }) => {
+              adjust: async item => {
+                await adjustFunctions?.modify?.(item)
+                const { value } = item
                 if (!values.isPlainRecord(value)) {
                   throw new Error('Expected value to be a record')
                 }
@@ -94,8 +100,14 @@ export const createClassicApiDefinitionsForType = (
         {
           request: {
             endpoint: {
-              path: `/JSSResource/${plural}/id/{id}` as EndpointPath,
+              path: `/JSSResource/${plural}/id/{id}` as definitions.EndpointPath,
               method: 'delete',
+            },
+            transformation: {
+              adjust: async item => {
+                await adjustFunctions?.remove?.(item)
+                return item
+              },
             },
           },
         },

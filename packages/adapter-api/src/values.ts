@@ -20,7 +20,6 @@ import { hash as hashUtils } from '@salto-io/lowerdash'
 // import { ElementsSource } from '@salto-io/workspace'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
-// eslint-disable-next-line import/no-cycle
 import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement, isVariable } from './elements'
 
 export type PrimitiveValue = string | boolean | number
@@ -34,6 +33,8 @@ export interface Values {
 
 export type CompareOptions = {
   compareByValue?: boolean
+  createFieldChanges?: boolean
+  compareListItems?: boolean
 }
 
 export const calculateStaticFileHash = (content: Buffer): string => hashUtils.toMD5(content)

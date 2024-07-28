@@ -24,7 +24,6 @@ const GUIDE_SETTINGS_TYPE = 'guide_settings'
 
 type GuideSettingsType = InstanceElement & {
   value: {
-    // eslint-disable-next-line camelcase
     help_center: {
       settings: {
         preferences: object

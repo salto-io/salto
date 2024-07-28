@@ -45,10 +45,10 @@ export const adjustCategoryObjectToCategoryId = (value: Record<string, unknown>)
 /*
  * Convert scripts object array to scripts ids to make reference
  */
-export const adjustScriptsObjectArrayToScriptsIds = (value: Record<string, unknown>): void => {
+export const removeIdsForScriptsObjectArray = (value: Record<string, unknown>): void => {
   const { scripts } = value
   if (Array.isArray(scripts) && scripts.every(isWithIdType)) {
-    value.scripts = scripts.map(({ id }) => id)
+    value.scripts = scripts.map(script => _.omit(script, 'id'))
   }
 }
 
@@ -63,4 +63,14 @@ export const adjustServiceIdToTopLevel = (value: Record<string, unknown>): void 
   const id = _.get(general, 'id')
   _.set(general, 'id', undefined)
   value.id = id
+}
+
+/*
+ * Remove self_service_icon from self_service object
+ */
+export const removeSelfServiceIcon = (value: Record<string, unknown>): void => {
+  const { self_service: selfService } = value
+  if (values.isPlainRecord(selfService)) {
+    delete selfService.self_service_icon
+  }
 }

@@ -16,7 +16,9 @@
     "composite": true,
     "noEmitOnError": true,
     "experimentalDecorators": true,
-    "resolveJsonModule": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "useUnknownInCatchVariables": false
   },
   "files": [],
   "include": []

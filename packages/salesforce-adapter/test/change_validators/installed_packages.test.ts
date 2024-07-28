@@ -28,8 +28,8 @@ describe('installedPackages Change Validator', () => {
       toChange({ before: instance }),
       toChange({ after: instance }),
     ])
-      .map((change) => changeValidator([change]))
-      .forEach((changeErrors) => {
+      .map(change => changeValidator([change]))
+      .forEach(changeErrors => {
         expect(changeErrors).toEqual([
           expect.objectContaining({
             elemID: instance.elemID,

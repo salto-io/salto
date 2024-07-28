@@ -16,14 +16,13 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'lowerdash',
   displayName: 'lowerdash',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
   coverageThreshold: {
     global: {
       branches: 99,
-      functions: 100,
+      functions: 98,
       lines: 100,
       statements: 100,
     },

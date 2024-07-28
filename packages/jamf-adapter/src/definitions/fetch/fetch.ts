@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { UserFetchConfig } from '../../config'
 import { Options } from '../types'
@@ -30,20 +29,14 @@ import {
   RESULTS,
   OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
   MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
+  MAC_APPLICATION_TYPE_NAME,
 } from '../../constants'
 import * as transforms from './transforms'
-
-const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {}
-const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {}
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
 
-const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = _.merge(
-  {},
-  DEFAULT_FIELDS_TO_HIDE,
-  DEFAULT_FIELDS_TO_OMIT,
-)
+const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFieldCustomization> = {}
 
 const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
   [BUILDING_TYPE_NAME]: {
@@ -383,7 +376,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'os_x_configuration_profile',
-          omit: ['general.uuid', 'general.payloads'],
+          omit: ['general.uuid'],
           adjust: transforms.adjustConfigurationProfile,
         },
       },
@@ -438,7 +431,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'configuration_profile',
-          omit: ['general.uuid', 'general.payloads'],
+          omit: ['general.uuid'],
           adjust: transforms.adjustConfigurationProfile,
         },
       },
@@ -449,6 +442,61 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         dependsOn: {
           id: {
             parentTypeName: `${MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME}_minimal`,
+            transformation: {
+              root: 'id',
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'general.name' }] },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+      },
+    },
+  },
+  [`${MAC_APPLICATION_TYPE_NAME}_minimal`]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/macapplications',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: 'mac_applications',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+  },
+  [MAC_APPLICATION_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/JSSResource/macapplications/id/{id}',
+          client: 'classicApi',
+        },
+        transformation: {
+          root: MAC_APPLICATION_TYPE_NAME,
+          omit: ['scope.computer_groups', 'vpp.vpp_admin_account_id'],
+          adjust: transforms.adjustMacApplication,
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      context: {
+        dependsOn: {
+          id: {
+            parentTypeName: `${MAC_APPLICATION_TYPE_NAME}_minimal`,
             transformation: {
               root: 'id',
             },

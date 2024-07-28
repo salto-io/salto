@@ -41,12 +41,8 @@ import {
 import {
   Plan,
   PlanItem,
-  EVENT_TYPES,
   DeployResult,
-  telemetrySender,
   Telemetry,
-  Tags,
-  TelemetryEvent,
   CommandConfig,
   deploy as coreDeploy,
   ItemStatus,
@@ -116,32 +112,20 @@ export interface MockCliReturn {
   exitCode: number
 }
 
-export type MockTelemetry = {
-  getEvents(): TelemetryEvent[]
-  getEventsMap(): { [name: string]: TelemetryEvent[] }
-} & Telemetry
+export type MockTelemetry = jest.Mocked<Telemetry>
 
 export const getMockTelemetry = (): MockTelemetry => {
-  const commonTags = { installationID: '1234', app: 'test' }
-  const telemetry = telemetrySender({ url: '', enabled: false, token: '' }, commonTags)
-  const events: TelemetryEvent[] = []
-  telemetry.sendCountEvent = async (name: string, value: number, tags: Tags = {}): Promise<void> => {
-    events.push({
-      name,
-      value,
-      tags: { ...tags, ...commonTags },
-      type: EVENT_TYPES.COUNTER,
-      timestamp: '',
-    })
+  let stopped = false
+  return {
+    enabled: true,
+    isStopped: mockFunction<Telemetry['isStopped']>().mockReturnValue(stopped),
+    sendCountEvent: mockFunction<Telemetry['sendCountEvent']>(),
+    sendStackEvent: mockFunction<Telemetry['sendStackEvent']>(),
+    stop: mockFunction<Telemetry['stop']>().mockImplementation(async () => {
+      stopped = true
+    }),
+    flush: mockFunction<Telemetry['flush']>(),
   }
-
-  return Object.assign(telemetry, {
-    getEvents: (): TelemetryEvent[] => events,
-    getEventsMap: (): { [name: string]: TelemetryEvent[] } =>
-      _(events)
-        .groupBy(e => e.name)
-        .value(),
-  })
 }
 
 const getMockCommandConfig = (): CommandConfig => ({
@@ -448,7 +432,12 @@ export const mockCredentialsType = (adapterName: string): AdapterAuthentication 
             refType: BuiltinTypes.STRING,
             annotations: {},
           },
-          sandbox: { refType: BuiltinTypes.BOOLEAN },
+          sandbox: {
+            refType: BuiltinTypes.BOOLEAN,
+            annotations: {
+              _required: true,
+            },
+          },
         },
       }),
     },

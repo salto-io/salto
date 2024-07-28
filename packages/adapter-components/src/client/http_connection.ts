@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
+import axios, {
+  AxiosError,
+  AxiosBasicCredentials,
+  AxiosRequestConfig,
+  AxiosRequestHeaders,
+  AxiosResponseHeaders,
+} from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -29,12 +35,11 @@ export type ResponseValue = {
   [key: string]: unknown
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Response<T> = {
   data: T
   status: number
   statusText?: string
-  headers?: Record<string, string>
+  headers?: Partial<AxiosResponseHeaders>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,7 +68,7 @@ export interface Connection<TCredentials> {
 
 export type ConnectionCreator<TCredentials> = (retryOptions: RetryOptions, timeout?: number) => Connection<TCredentials>
 
-const getRetryDelayFromHeaders = (headers: Record<string, string>): number | undefined => {
+const getRetryDelayFromHeaders = (headers: Partial<AxiosResponseHeaders>): number | undefined => {
   // Although the standard is 'Retry-After' is seems that some servers
   // returns 'retry-after' so just in case we lowercase the headers
   const lowercaseHeaders = _.mapKeys(headers, (_val, key) => key.toLowerCase())
@@ -122,7 +127,7 @@ export const createRetryOptions = (
 
     log.warn(
       'Failed to run client call to %s for reason: %s (%s). Retrying in %ds (attempt %d).',
-      err.config.url,
+      err.config?.url,
       err.code,
       err.message,
       retryDelay / 1000,
@@ -177,7 +182,7 @@ export const validateCredentials = async <TCredentials>(
 
 export type AuthParams = {
   auth?: AxiosBasicCredentials
-  headers?: AxiosRequestHeaders
+  headers?: Partial<AxiosRequestHeaders>
 }
 
 type AxiosConnectionParams<TCredentials> = {

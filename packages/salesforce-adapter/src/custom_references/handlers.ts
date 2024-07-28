@@ -15,19 +15,13 @@
  */
 
 import _ from 'lodash'
-import {
-  FixElementsFunc,
-  InstanceElement,
-  ReadOnlyElementsSource,
-} from '@salto-io/adapter-api'
-import {
-  combineCustomReferenceGetters,
-  combineElementFixers,
-} from '@salto-io/adapter-components'
+import { FixElementsFunc, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { combineCustomReferenceGetters, combineElementFixers } from '@salto-io/adapter-components'
 import {
   CustomReferencesHandlers,
   CustomReferencesSettings,
   CUSTOM_REFS_CONFIG,
+  FixElementsSettings,
   FIX_ELEMENTS_CONFIG,
   SalesforceConfig,
   WeakReferencesHandler,
@@ -42,28 +36,29 @@ const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   permisisonSets: permissionSetsHandler,
 }
 
-const defaultHandlersConfiguration: Record<CustomReferencesHandlers, boolean> =
-  {
-    profiles: true,
-    managedElements: true,
-    permisisonSets: true,
-  }
+const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> = {
+  profiles: true,
+  managedElements: true,
+  permisisonSets: true,
+}
+
+const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
+  profiles: false,
+  managedElements: true,
+  permisisonSets: true,
+}
 
 export const customReferencesConfiguration = (
   customReferencesConfig: CustomReferencesSettings | undefined,
-): Record<string, boolean> =>
-  _.defaults(customReferencesConfig, defaultHandlersConfiguration)
+): Required<CustomReferencesSettings> => _.defaults(customReferencesConfig, defaultCustomReferencesConfiguration)
 
 export const getCustomReferences = combineCustomReferenceGetters(
-  _.mapValues(handlers, (handler) => handler.findWeakReferences),
-  (adapterConfig: InstanceElement) =>
-    customReferencesConfiguration(adapterConfig.value[CUSTOM_REFS_CONFIG]),
+  _.mapValues(handlers, handler => handler.findWeakReferences),
+  (adapterConfig: InstanceElement) => customReferencesConfiguration(adapterConfig.value[CUSTOM_REFS_CONFIG]),
 )
 
-const fixElementsConfiguration = (
-  config: SalesforceConfig,
-): Record<string, boolean> =>
-  _.defaults(config[FIX_ELEMENTS_CONFIG], defaultHandlersConfiguration)
+const fixElementsConfiguration = (config: SalesforceConfig): Required<FixElementsSettings> =>
+  _.defaults(config[FIX_ELEMENTS_CONFIG], defaultFixElementsConfiguration)
 
 export const fixElementsFunc = ({
   elementsSource,
@@ -73,8 +68,6 @@ export const fixElementsFunc = ({
   config: SalesforceConfig
 }): FixElementsFunc =>
   combineElementFixers(
-    _.mapValues(handlers, (handler) =>
-      handler.removeWeakReferences({ elementsSource }),
-    ),
+    _.mapValues(handlers, handler => handler.removeWeakReferences({ elementsSource })),
     fixElementsConfiguration(config),
   )

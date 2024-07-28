@@ -59,7 +59,6 @@ describe('Field references', () => {
     elemID: new ElemID(ADAPTER_NAME, 'api_collection'),
     fields: {
       id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-      // eslint-disable-next-line camelcase
       api_client_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
@@ -67,23 +66,19 @@ describe('Field references', () => {
     elemID: new ElemID(ADAPTER_NAME, 'folder'),
     fields: {
       id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-      // eslint-disable-next-line camelcase
       parent_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
   const apiAccessProfileType = new ObjectType({
     elemID: new ElemID(ADAPTER_NAME, 'api_access_profile'),
     fields: {
-      // eslint-disable-next-line camelcase
       api_client_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-      // eslint-disable-next-line camelcase
       api_collection_ids: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)) },
     },
   })
   const apiEndpointType = new ObjectType({
     elemID: new ElemID(ADAPTER_NAME, 'api_endpoint'),
     fields: {
-      // eslint-disable-next-line camelcase
       flow_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
@@ -111,7 +106,6 @@ describe('Field references', () => {
   const someTypeWithValue = new ObjectType({
     elemID: new ElemID(ADAPTER_NAME, 'typeWithValue'),
     fields: {
-      // eslint-disable-next-line camelcase
       value: { refType: BuiltinTypes.UNKNOWN },
       bla: { refType: BuiltinTypes.STRING },
     },
@@ -119,7 +113,6 @@ describe('Field references', () => {
   const someTypeWithNestedValuesAndSubject = new ObjectType({
     elemID: new ElemID(ADAPTER_NAME, 'typeWithValueAndSubject'),
     fields: {
-      // eslint-disable-next-line camelcase
       valueList: { refType: new ListType(someTypeWithValue) },
       subject: { refType: BuiltinTypes.STRING },
     },
@@ -127,7 +120,6 @@ describe('Field references', () => {
   const someTypeWithNestedValueList = new ObjectType({
     elemID: new ElemID(ADAPTER_NAME, 'typeWithValueList'),
     fields: {
-      // eslint-disable-next-line camelcase
       list: { refType: new ListType(someTypeWithValue) },
       type: { refType: BuiltinTypes.STRING },
     },
@@ -178,18 +170,13 @@ describe('Field references', () => {
     new InstanceElement('cli123', apiClientType, { id: 123 }),
     apiCollectionType,
     new InstanceElement('collection123', apiCollectionType, { id: 123 }),
-    // eslint-disable-next-line camelcase
     new InstanceElement('collection456', apiCollectionType, { id: 456, api_client_id: 123 }),
     folderType,
-    // eslint-disable-next-line camelcase
     new InstanceElement('folder11', folderType, { id: 11, parent_id: 'invalid' }),
-    // eslint-disable-next-line camelcase
     new InstanceElement('folder222', folderType, { id: 222, parent_id: 11 }),
     apiAccessProfileType,
-    // eslint-disable-next-line camelcase
     new InstanceElement('prof1', apiAccessProfileType, { api_client_id: 123, api_collection_ids: [456] }),
     apiEndpointType,
-    // eslint-disable-next-line camelcase
     new InstanceElement('ep1', apiEndpointType, { flow_id: 123 }),
     productType,
     brandType,

@@ -24,9 +24,7 @@ import {
   isPlaceholderObjectType,
 } from '@salto-io/adapter-api'
 
-const createInstanceWithoutTypeError = (
-  change: Change<InstanceElement>,
-): ChangeError => {
+const createInstanceWithoutTypeError = (change: Change<InstanceElement>): ChangeError => {
   const instance = getChangeData(change)
   return {
     elemID: instance.elemID,
@@ -36,13 +34,11 @@ const createInstanceWithoutTypeError = (
   }
 }
 
-const changeValidator: ChangeValidator = async (changes) =>
+const changeValidator: ChangeValidator = async changes =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .filter((change) =>
-      isPlaceholderObjectType(getChangeData(change).getTypeSync()),
-    )
+    .filter(change => isPlaceholderObjectType(getChangeData(change).getTypeSync()))
     .map(createInstanceWithoutTypeError)
 
 export default changeValidator

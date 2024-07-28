@@ -82,17 +82,9 @@ import {
 } from '../test/utils'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
-import {
-  fromRetrieveResult,
-  createDeployPackage,
-} from '../src/transformers/xml_transformer'
+import { fromRetrieveResult, createDeployPackage } from '../src/transformers/xml_transformer'
 import { addDefaults } from '../src/filters/utils'
-import {
-  mockTypes,
-  lwcJsResourceContent,
-  lwcHtmlResourceContent,
-  mockDefaultValues,
-} from '../test/mock_elements'
+import { mockTypes, lwcJsResourceContent, lwcHtmlResourceContent, mockDefaultValues } from '../test/mock_elements'
 import {
   objectExists,
   getMetadata,
@@ -150,12 +142,10 @@ describe('Salesforce adapter E2E with real account', () => {
   jest.setTimeout(1000000)
 
   let result: Element[]
-  const apiNameAnno = (object: string, field: string): string =>
-    [object, field].join(constants.API_NAME_SEPARATOR)
+  const apiNameAnno = (object: string, field: string): string => [object, field].join(constants.API_NAME_SEPARATOR)
 
   beforeAll(async () => {
-    const mockReportProgress =
-      mockFunction<ProgressReporter['reportProgress']>()
+    const mockReportProgress = mockFunction<ProgressReporter['reportProgress']>()
     const mockFetchOpts: MockInterface<FetchOptions> = {
       progressReporter: { reportProgress: mockReportProgress },
     }
@@ -177,67 +167,30 @@ describe('Salesforce adapter E2E with real account', () => {
         // Check few field types on lead object
         const lead = findStandardFieldsObject(result, 'Lead')
         // Test few possible types
-        expect(lead.fields.Address.refType.elemID).toEqual(
-          Types.compoundDataTypes.Address.elemID,
-        )
-        expect(lead.fields.Description.refType.elemID).toEqual(
-          Types.primitiveDataTypes.LongTextArea.elemID,
-        )
-        expect(lead.fields.Name.refType.elemID).toEqual(
-          Types.compoundDataTypes.Name.elemID,
-        )
-        expect(lead.fields.OwnerId.refType.elemID).toEqual(
-          Types.primitiveDataTypes.Lookup.elemID,
-        )
-        expect(lead.fields.HasOptedOutOfEmail.refType.elemID).toEqual(
-          Types.primitiveDataTypes.Unknown.elemID,
-        )
+        expect(lead.fields.Address.refType.elemID).toEqual(Types.compoundDataTypes.Address.elemID)
+        expect(lead.fields.Description.refType.elemID).toEqual(Types.primitiveDataTypes.LongTextArea.elemID)
+        expect(lead.fields.Name.refType.elemID).toEqual(Types.compoundDataTypes.Name.elemID)
+        expect(lead.fields.OwnerId.refType.elemID).toEqual(Types.primitiveDataTypes.Lookup.elemID)
+        expect(lead.fields.HasOptedOutOfEmail.refType.elemID).toEqual(Types.primitiveDataTypes.Unknown.elemID)
 
         // Test label
         expect(lead.fields.Name.annotations[constants.LABEL]).toBe('Full Name')
 
         // Test true and false required
-        expect(
-          lead.fields.Description.annotations[CORE_ANNOTATIONS.REQUIRED],
-        ).toBeFalsy()
-        expect(lead.fields.Company.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(
-          true,
-        )
+        expect(lead.fields.Description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
+        expect(lead.fields.Company.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
 
         // Test picklist restriction.enforce_value prop
-        expect(
-          lead.fields.Industry.annotations[
-            constants.FIELD_ANNOTATIONS.RESTRICTED
-          ],
-        ).toBe(false)
-        expect(
-          lead.fields.CleanStatus.annotations[
-            constants.FIELD_ANNOTATIONS.RESTRICTED
-          ],
-        ).toBe(true)
+        expect(lead.fields.Industry.annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(false)
+        expect(lead.fields.CleanStatus.annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
 
         // Test standard picklist values from a standard value set
-        expect(
-          lead.fields.LeadSource.annotations[
-            constants.VALUE_SET_FIELDS.VALUE_SET_NAME
-          ],
-        ).toEqual(
-          new ReferenceExpression(
-            new ElemID(
-              constants.SALESFORCE,
-              STANDARD_VALUE_SET,
-              'instance',
-              'LeadSource',
-            ),
-          ),
+        expect(lead.fields.LeadSource.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
+          new ReferenceExpression(new ElemID(constants.SALESFORCE, STANDARD_VALUE_SET, 'instance', 'LeadSource')),
         )
 
         // Test default value for checkbox
-        expect(
-          lead.fields.IsConverted.annotations[
-            constants.FIELD_ANNOTATIONS.DEFAULT_VALUE
-          ],
-        ).toBe(false)
+        expect(lead.fields.IsConverted.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(false)
       })
 
       describe('should fetch sobject annotations from the custom object instance', () => {
@@ -246,21 +199,15 @@ describe('Salesforce adapter E2E with real account', () => {
           expect(await lead.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(lead.annotations.enableFeeds).toBeDefined()
 
-          expect(await lead.getAnnotationTypes()).not.toHaveProperty(
-            'deploymentStatus',
-          )
+          expect(await lead.getAnnotationTypes()).not.toHaveProperty('deploymentStatus')
           expect(lead.annotations.deploymentStatus).toBeUndefined()
         })
 
         it('should fetch relevant simple annotations for custom object', async () => {
           const customObj = findAnnotationsObject(result, 'TestFields__c')
-          expect(await customObj.getAnnotationTypes()).toHaveProperty(
-            'enableFeeds',
-          )
+          expect(await customObj.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(customObj.annotations.enableFeeds).toBeDefined()
-          expect(await customObj.getAnnotationTypes()).toHaveProperty(
-            'deploymentStatus',
-          )
+          expect(await customObj.getAnnotationTypes()).toHaveProperty('deploymentStatus')
           expect(customObj.annotations.deploymentStatus).toBeDefined()
         })
       })
@@ -271,17 +218,11 @@ describe('Salesforce adapter E2E with real account', () => {
           expectedName: string,
           expectedValues: Values,
         ): void => {
-          const innerMetadataInstance = findElements(
-            result,
-            typeName,
-            expectedName,
-          )[0] as InstanceElement
+          const innerMetadataInstance = findElements(result, typeName, expectedName)[0] as InstanceElement
           expect(innerMetadataInstance).toBeDefined()
           Object.entries(expectedValues).forEach(([key, val]) => {
             if (isReferenceExpression(val)) {
-              expect(val.elemID.getFullName()).toEqual(
-                innerMetadataInstance.value[key].elemID?.getFullName(),
-              )
+              expect(val.elemID.getFullName()).toEqual(innerMetadataInstance.value[key].elemID?.getFullName())
             } else {
               expect(innerMetadataInstance.value[key]).toEqual(val)
             }
@@ -289,115 +230,77 @@ describe('Salesforce adapter E2E with real account', () => {
         }
 
         it('should fetch validation rules', async () => {
-          verifyInnerMetadataInstanceFetch(
-            NESTED_INSTANCE_TYPE_NAME.VALIDATION_RULE,
-            'Lead_TestValidationRule',
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestValidationRule',
-              active: true,
-            },
-          )
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.VALIDATION_RULE, 'Lead_TestValidationRule', {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestValidationRule',
+            active: true,
+          })
         })
 
         it('should fetch business processes', async () => {
-          verifyInnerMetadataInstanceFetch(
-            NESTED_INSTANCE_TYPE_NAME.BUSINESS_PROCESS,
-            'Lead_TestBusinessProcess',
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestBusinessProcess',
-              isActive: true,
-            },
-          )
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.BUSINESS_PROCESS, 'Lead_TestBusinessProcess', {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestBusinessProcess',
+            isActive: true,
+          })
         })
 
         it('should fetch record types', async () => {
-          verifyInnerMetadataInstanceFetch(
-            NESTED_INSTANCE_TYPE_NAME.RECORD_TYPE,
-            'Lead_TestRecordType',
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestRecordType',
-              active: true,
-              businessProcess: new ReferenceExpression(
-                new ElemID(
-                  constants.SALESFORCE,
-                  constants.BUSINESS_PROCESS_METADATA_TYPE,
-                  'instance',
-                  'Lead_TestBusinessProcess',
-                ),
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.RECORD_TYPE, 'Lead_TestRecordType', {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestRecordType',
+            active: true,
+            businessProcess: new ReferenceExpression(
+              new ElemID(
+                constants.SALESFORCE,
+                constants.BUSINESS_PROCESS_METADATA_TYPE,
+                'instance',
+                'Lead_TestBusinessProcess',
               ),
-            },
-          )
+            ),
+          })
         })
 
         it('should fetch web links', async () => {
-          verifyInnerMetadataInstanceFetch(
-            NESTED_INSTANCE_TYPE_NAME.WEB_LINK,
-            'Lead_TestWebLink',
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestWebLink',
-              availability: 'online',
-            },
-          )
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.WEB_LINK, 'Lead_TestWebLink', {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestWebLink',
+            availability: 'online',
+          })
         })
 
         it('should fetch list views', async () => {
-          verifyInnerMetadataInstanceFetch(
-            NESTED_INSTANCE_TYPE_NAME.LIST_VIEW,
-            'Lead_TestListView',
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestListView',
-              label: 'E2E Fetch ListView',
-            },
-          )
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.LIST_VIEW, 'Lead_TestListView', {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestListView',
+            label: 'E2E Fetch ListView',
+          })
         })
 
         it('should fetch field sets', async () => {
-          verifyInnerMetadataInstanceFetch(
-            NESTED_INSTANCE_TYPE_NAME.FIELD_SET,
-            'Lead_TestFieldSet',
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestFieldSet',
-              label: 'E2E Fetch FieldSet',
-            },
-          )
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.FIELD_SET, 'Lead_TestFieldSet', {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestFieldSet',
+            label: 'E2E Fetch FieldSet',
+          })
         })
 
         it('should fetch compact layouts', async () => {
-          verifyInnerMetadataInstanceFetch(
-            NESTED_INSTANCE_TYPE_NAME.COMPACT_LAYOUT,
-            'Lead_TestCompactLayout',
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestCompactLayout',
-              label: 'E2E Fetch CompactLayout',
-            },
-          )
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.COMPACT_LAYOUT, 'Lead_TestCompactLayout', {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestCompactLayout',
+            label: 'E2E Fetch CompactLayout',
+          })
         })
       })
     })
 
     it('should fetch metadata type', async () => {
       const flow = findElements(result, 'Flow')[0] as ObjectType
-      expect(await flow.fields.description.getType()).toEqual(
-        BuiltinTypes.STRING,
-      )
-      expect(await flow.fields.isTemplate.getType()).toEqual(
-        BuiltinTypes.BOOLEAN,
-      )
-      expect(await flow.fields.actionCalls.getType()).toEqual(
-        findElements(result, 'FlowActionCall')[0],
-      )
-      expect(getRestriction(flow.fields.processType).enforce_value).toEqual(
-        false,
-      )
+      expect(await flow.fields.description.getType()).toEqual(BuiltinTypes.STRING)
+      expect(await flow.fields.isTemplate.getType()).toEqual(BuiltinTypes.BOOLEAN)
+      expect(await flow.fields.actionCalls.getType()).toEqual(findElements(result, 'FlowActionCall')[0])
+      expect(getRestriction(flow.fields.processType).enforce_value).toEqual(false)
     })
 
     it('should fetch settings instance', () => {
       // As we fetch now only instances from the STANDALONE list,
       // settings is the only one with instance by default.
       // once we support adding instances test can be improved
-      const quoteSettings = findElements(result, 'SettingsQuote')
-        .filter(isInstanceElement)
-        .pop() as InstanceElement
+      const quoteSettings = findElements(result, 'SettingsQuote').filter(isInstanceElement).pop() as InstanceElement
 
       expect(quoteSettings).toBeUndefined()
     })
@@ -425,80 +328,44 @@ describe('Salesforce adapter E2E with real account', () => {
         'EmailTemplate',
         'TestEmailFolder_TestEmailTemplate@d',
       )[0] as InstanceElement
-      expect(emailTemplate.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'TestEmailFolder/TestEmailTemplate',
-      )
+      expect(emailTemplate.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestEmailFolder/TestEmailTemplate')
       expect(emailTemplate.value.name).toEqual('Test Email Template Name')
       expect(emailTemplate.value.type).toEqual('text')
     })
 
     it('should retrieve EmailFolder instance', () => {
-      const emailFolder = findElements(
-        result,
-        'EmailFolder',
-        'TestEmailFolder',
-      )[0] as InstanceElement
-      expect(emailFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'TestEmailFolder',
-      )
+      const emailFolder = findElements(result, 'EmailFolder', 'TestEmailFolder')[0] as InstanceElement
+      expect(emailFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestEmailFolder')
       expect(emailFolder.value.name).toEqual('Test Email Folder Name')
       expect(emailFolder.value.accessType).toEqual('Public')
     })
 
     it('should retrieve Report instance', () => {
-      const report = findElements(
-        result,
-        'Report',
-        'TestReportFolder_TestReport@d',
-      )[0] as InstanceElement
-      expect(report.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'TestReportFolder/TestReport',
-      )
+      const report = findElements(result, 'Report', 'TestReportFolder_TestReport@d')[0] as InstanceElement
+      expect(report.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestReportFolder/TestReport')
       expect(report.value.name).toEqual('Test Report Name')
     })
 
     it('should retrieve ReportFolder instance', () => {
-      const reportFolder = findElements(
-        result,
-        'ReportFolder',
-        'TestReportFolder',
-      )[0] as InstanceElement
-      expect(reportFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'TestReportFolder',
-      )
+      const reportFolder = findElements(result, 'ReportFolder', 'TestReportFolder')[0] as InstanceElement
+      expect(reportFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestReportFolder')
       expect(reportFolder.value.name).toEqual('Test Report Folder Name')
     })
 
     it('should retrieve Dashboard instance', () => {
-      const dashboard = findElements(
-        result,
-        'Dashboard',
-        'TestDashboardFolder_TestDashboard@d',
-      )[0] as InstanceElement
-      expect(dashboard.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'TestDashboardFolder/TestDashboard',
-      )
+      const dashboard = findElements(result, 'Dashboard', 'TestDashboardFolder_TestDashboard@d')[0] as InstanceElement
+      expect(dashboard.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestDashboardFolder/TestDashboard')
       expect(dashboard.value.title).toEqual('Test Dashboard Title')
     })
 
     it('should retrieve DashboardFolder instance', () => {
-      const dashboardFolder = findElements(
-        result,
-        'DashboardFolder',
-        'TestDashboardFolder',
-      )[0] as InstanceElement
-      expect(dashboardFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'TestDashboardFolder',
-      )
+      const dashboardFolder = findElements(result, 'DashboardFolder', 'TestDashboardFolder')[0] as InstanceElement
+      expect(dashboardFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestDashboardFolder')
       expect(dashboardFolder.value.name).toEqual('Test Dashboard Folder Name')
     })
 
     it('should fetch Flow instance', () => {
-      const flow = findElements(
-        result,
-        'Flow',
-        'TestFlow',
-      )[0] as InstanceElement
+      const flow = findElements(result, 'Flow', 'TestFlow')[0] as InstanceElement
       expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestFlow')
       expect(flow.value.status).toEqual('Draft')
       expect(flow.value.variables[0].dataType).toEqual('SObject')
@@ -506,19 +373,11 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should retrieve AuraDefinitionBundle instance', async () => {
-      const aura = findElements(
-        result,
-        'AuraDefinitionBundle',
-        'TestAuraDefinitionBundle',
-      )[0] as InstanceElement
-      expect(aura.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'TestAuraDefinitionBundle',
-      )
+      const aura = findElements(result, 'AuraDefinitionBundle', 'TestAuraDefinitionBundle')[0] as InstanceElement
+      expect(aura.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestAuraDefinitionBundle')
       expect(isStaticFile(aura.value.styleContent)).toBe(true)
       const styleContentStaticFile = aura.value.styleContent as StaticFile
-      expect(await styleContentStaticFile.getContent()).toEqual(
-        Buffer.from('.THIS{\n}'),
-      )
+      expect(await styleContentStaticFile.getContent()).toEqual(Buffer.from('.THIS{\n}'))
       expect(styleContentStaticFile.filepath).toEqual(
         'salesforce/Records/AuraDefinitionBundle/TestAuraDefinitionBundle/TestAuraDefinitionBundle.css',
       )
@@ -530,40 +389,25 @@ describe('Salesforce adapter E2E with real account', () => {
         constants.LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
         'testLightningComponentBundle',
       )[0] as InstanceElement
-      expect(lwc.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'testLightningComponentBundle',
-      )
-      const lwcResource =
-        lwc.value.lwcResources?.lwcResource['testLightningComponentBundle_js@v']
+      expect(lwc.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('testLightningComponentBundle')
+      const lwcResource = lwc.value.lwcResources?.lwcResource['testLightningComponentBundle_js@v']
       expect(lwcResource).toBeDefined()
       expect(isStaticFile(lwcResource.source)).toBe(true)
       const lwcResourceStaticFile = lwcResource.source as StaticFile
-      expect(await lwcResourceStaticFile.getContent()).toEqual(
-        Buffer.from(lwcJsResourceContent),
-      )
+      expect(await lwcResourceStaticFile.getContent()).toEqual(Buffer.from(lwcJsResourceContent))
       expect(lwcResourceStaticFile.filepath).toEqual(
         'salesforce/Records/LightningComponentBundle/testLightningComponentBundle/testLightningComponentBundle.js',
       )
     })
 
     it('should retrieve StaticResource instance', async () => {
-      const staticResource = findElements(
-        result,
-        'StaticResource',
-        'TestStaticResource',
-      )[0] as InstanceElement
-      expect(staticResource.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-        'TestStaticResource',
-      )
+      const staticResource = findElements(result, 'StaticResource', 'TestStaticResource')[0] as InstanceElement
+      expect(staticResource.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestStaticResource')
       expect(staticResource.value.contentType).toBe('text/xml')
       expect(isStaticFile(staticResource.value.content)).toBe(true)
       const contentStaticFile = staticResource.value.content as StaticFile
-      expect(await contentStaticFile.getContent()).toEqual(
-        Buffer.from('<xml/>'),
-      )
-      expect(contentStaticFile.filepath).toEqual(
-        'salesforce/Records/StaticResource/TestStaticResource.xml',
-      )
+      expect(await contentStaticFile.getContent()).toEqual(Buffer.from('<xml/>'))
+      expect(contentStaticFile.filepath).toEqual('salesforce/Records/StaticResource/TestStaticResource.xml')
     })
   })
 
@@ -574,51 +418,30 @@ describe('Salesforce adapter E2E with real account', () => {
       typeof variable === 'string' ? JSON.parse(variable) : variable
 
     const getProfileInfo = async (profile: string): Promise<ProfileInfo> =>
-      getMetadata(
-        client,
-        PROFILE_METADATA_TYPE,
-        profile,
-      ) as Promise<ProfileInfo>
+      getMetadata(client, PROFILE_METADATA_TYPE, profile) as Promise<ProfileInfo>
 
-    const fieldPermissionExists = async (
-      profile: string,
-      fields: string[],
-    ): Promise<boolean[]> => {
+    const fieldPermissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
       const profileInfo = await getProfileInfo(profile)
       const fieldPermissionsMap = new Map<string, FieldPermissions>()
-      profileInfo.fieldPermissions.map((f) =>
-        fieldPermissionsMap.set(f.field, f),
-      )
-      return fields.map((field) => {
+      profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
+      return fields.map(field => {
         if (!fieldPermissionsMap.has(field)) {
           return false
         }
-        const fieldObject: FieldPermissions = fieldPermissionsMap.get(
-          field,
-        ) as FieldPermissions
-        return (
-          verifyBoolean(fieldObject.editable) ||
-          verifyBoolean(fieldObject.readable)
-        )
+        const fieldObject: FieldPermissions = fieldPermissionsMap.get(field) as FieldPermissions
+        return verifyBoolean(fieldObject.editable) || verifyBoolean(fieldObject.readable)
       })
     }
 
-    const objectPermissionExists = async (
-      profile: string,
-      objects: string[],
-    ): Promise<boolean[]> => {
+    const objectPermissionExists = async (profile: string, objects: string[]): Promise<boolean[]> => {
       const profileInfo = await getProfileInfo(profile)
       const objectPermissionsMap = new Map<string, ObjectPermissions>()
-      profileInfo.objectPermissions.map((f) =>
-        objectPermissionsMap.set(f.object, f),
-      )
-      return objects.map((object) => {
+      profileInfo.objectPermissions.map(f => objectPermissionsMap.set(f.object, f))
+      return objects.map(object => {
         if (!objectPermissionsMap.has(object)) {
           return false
         }
-        const objectPermission: ObjectPermissions = objectPermissionsMap.get(
-          object,
-        ) as ObjectPermissions
+        const objectPermission: ObjectPermissions = objectPermissionsMap.get(object) as ObjectPermissions
         return (
           verifyBoolean(objectPermission.allowCreate) ||
           verifyBoolean(objectPermission.allowDelete) ||
@@ -635,11 +458,7 @@ describe('Salesforce adapter E2E with real account', () => {
     it('should add new profile instance from scratch', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
 
-      const instance = new InstanceElement(
-        instanceElementName,
-        mockTypes.Profile,
-        mockDefaultValues.Profile,
-      )
+      const instance = new InstanceElement(instanceElementName, mockTypes.Profile, mockDefaultValues.Profile)
 
       await removeElementIfAlreadyExists(client, instance)
       await createElementAndVerify(adapter, client, instance)
@@ -704,12 +523,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test
       expect(post).toBeInstanceOf(ObjectType)
-      expect(post.fields.description.annotations[constants.API_NAME]).toBe(
-        'TestAddCustom__c.description__c',
-      )
-      expect(post.fields.formula.annotations[constants.API_NAME]).toBe(
-        'TestAddCustom__c.formula__c',
-      )
+      expect(post.fields.description.annotations[constants.API_NAME]).toBe('TestAddCustom__c.description__c')
+      expect(post.fields.formula.annotations[constants.API_NAME]).toBe('TestAddCustom__c.formula__c')
 
       expect(
         await objectExists(
@@ -730,20 +545,10 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         ),
       ).toBe(true)
-      expect(
-        (
-          await fieldPermissionExists(constants.ADMIN_PROFILE, [
-            `${customObjectName}.description__c`,
-          ])
-        )[0],
-      ).toBe(true)
-      expect(
-        (
-          await objectPermissionExists(constants.ADMIN_PROFILE, [
-            `${customObjectName}`,
-          ])
-        )[0],
-      ).toBe(true)
+      expect((await fieldPermissionExists(constants.ADMIN_PROFILE, [`${customObjectName}.description__c`]))[0]).toBe(
+        true,
+      )
+      expect((await objectPermissionExists(constants.ADMIN_PROFILE, [`${customObjectName}`]))[0]).toBe(true)
 
       // Clean-up
       await removeElement(adapter, post)
@@ -774,10 +579,7 @@ describe('Salesforce adapter E2E with real account', () => {
           description: {
             refType: stringType,
             annotations: {
-              [constants.API_NAME]: apiNameAnno(
-                customObjectName,
-                'description__c',
-              ),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'description__c'),
               [constants.LABEL]: 'test label',
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
             },
@@ -833,12 +635,9 @@ describe('Salesforce adapter E2E with real account', () => {
       const addResult = await createElement(adapter, oldElement)
       // Verify setup was performed properly
       expect(addResult).toBeInstanceOf(ObjectType)
-      expect(
-        await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, [
-          'Address__c',
-          'Banana__c',
-        ]),
-      ).toBe(true)
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, ['Address__c', 'Banana__c'])).toBe(
+        true,
+      )
 
       const newElement = new ObjectType({
         elemID: mockElemID,
@@ -900,13 +699,9 @@ describe('Salesforce adapter E2E with real account', () => {
           ['Address__c'],
         ),
       ).toBe(true)
-      expect(
-        (
-          await fieldPermissionExists(constants.ADMIN_PROFILE, [
-            `${customObjectName}.description__c`,
-          ])
-        )[0],
-      ).toBe(true)
+      expect((await fieldPermissionExists(constants.ADMIN_PROFILE, [`${customObjectName}.description__c`]))[0]).toBe(
+        true,
+      )
     })
 
     it('should modify an instance', async () => {
@@ -997,9 +792,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // Test
       expect(updateResult.errors).toHaveLength(0)
       expect(updateResult.appliedChanges).toHaveLength(1)
-      expect(getChangeData(updateResult.appliedChanges[0])).toStrictEqual(
-        newInstance,
-      )
+      expect(getChangeData(updateResult.appliedChanges[0])).toStrictEqual(newInstance)
 
       // Checking that the saved instance identical to newInstance
       type Profile = ProfileInfo & {
@@ -1018,10 +811,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const valuesFromInstance = newInstance.value as Profile
 
-      const compareProfileField = (
-        fieldName: keyof Profile,
-        nestingLevel: 0 | 1 | 2 = 1,
-      ): void => {
+      const compareProfileField = (fieldName: keyof Profile, nestingLevel: 0 | 1 | 2 = 1): void => {
         const deStructureIfNeeded =
           (level: number) =>
           (value: Value): Value =>
@@ -1032,10 +822,8 @@ describe('Salesforce adapter E2E with real account', () => {
         const expectedStrings = makeArray(valuesFromInstance[fieldName])
           .flatMap(deStructureIfNeeded(1))
           .flatMap(deStructureIfNeeded(2))
-          .map((val) => _.mapValues(val, String))
-        expect(makeArray(valuesFromService[fieldName])).toEqual(
-          expect.arrayContaining(expectedStrings),
-        )
+          .map(val => _.mapValues(val, String))
+        expect(makeArray(valuesFromService[fieldName])).toEqual(expect.arrayContaining(expectedStrings))
       }
 
       compareProfileField('fieldPermissions', 2)
@@ -1054,8 +842,8 @@ describe('Salesforce adapter E2E with real account', () => {
     it('should not fetch tabVisibilities from profile', async () => {
       const [adminProfile] = (await awu(result)
         .filter(isInstanceElement)
-        .filter(async (e) => (await metadataType(e)) === PROFILE_METADATA_TYPE)
-        .filter(async (e) => (await apiName(e)) === constants.ADMIN_PROFILE)
+        .filter(async e => (await metadataType(e)) === PROFILE_METADATA_TYPE)
+        .filter(async e => (await apiName(e)) === constants.ADMIN_PROFILE)
         .toArray()) as InstanceElement[]
       expect(adminProfile.value.tabVisibilities).toBeUndefined()
     })
@@ -1115,11 +903,7 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       await removeElementIfAlreadyExists(client, testElement)
-      const oldElement = await createElementAndVerify(
-        adapter,
-        client,
-        testElement,
-      )
+      const oldElement = await createElementAndVerify(adapter, client, testElement)
 
       const newElement = oldElement.clone()
       // Change field annotations
@@ -1163,31 +947,18 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(modificationResult.errors).toHaveLength(0)
       expect(modificationResult.appliedChanges).toEqual(changes)
       expect(
-        await objectExists(
-          client,
-          constants.CUSTOM_OBJECT,
-          customObjectName,
-          undefined,
-          undefined,
-          {
-            [constants.LABEL]: 'test label 2',
-            deploymentStatus: 'Deployed',
-            nameField: {
-              [constants.LABEL]: customObjectName,
-              type: 'Text',
-            },
+        await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, undefined, undefined, {
+          [constants.LABEL]: 'test label 2',
+          deploymentStatus: 'Deployed',
+          nameField: {
+            [constants.LABEL]: customObjectName,
+            type: 'Text',
           },
-        ),
+        }),
       ).toBe(true)
-      const readResult = (await getMetadata(
-        client,
-        constants.CUSTOM_OBJECT,
-        customObjectName,
-      )) as CustomObject
+      const readResult = (await getMetadata(client, constants.CUSTOM_OBJECT, customObjectName)) as CustomObject
 
-      const field = makeArray(readResult.fields).filter(
-        (f) => f.fullName === 'Banana__c',
-      )[0]
+      const field = makeArray(readResult.fields).filter(f => f.fullName === 'Banana__c')[0]
       expect(field).toBeDefined()
       expect(field.label).toBe('Banana Split')
       expect(field.securityClassification).toBe('Restricted')
@@ -1197,10 +968,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should modify field and object annotation', async () => {
       const customObjectName = 'TestModifyFieldAndAnnotation__c'
-      const mockElemID = new ElemID(
-        constants.SALESFORCE,
-        'test modify field and annotation',
-      )
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test modify field and annotation')
       const testElement = new ObjectType({
         elemID: mockElemID,
         fields: {
@@ -1232,11 +1000,7 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       await removeElementIfAlreadyExists(client, testElement)
-      const oldElement = await createElementAndVerify(
-        adapter,
-        client,
-        testElement,
-      )
+      const oldElement = await createElementAndVerify(adapter, client, testElement)
 
       const newElement = oldElement.clone()
       newElement.annotations.label = 'Object Updated Label'
@@ -1263,14 +1027,9 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(modificationResult.errors).toHaveLength(0)
       expect(modificationResult.appliedChanges).toEqual(changes)
       expect(
-        await objectExists(
-          client,
-          constants.CUSTOM_OBJECT,
-          customObjectName,
-          undefined,
-          undefined,
-          { [constants.LABEL]: 'Object Updated Label' },
-        ),
+        await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, undefined, undefined, {
+          [constants.LABEL]: 'Object Updated Label',
+        }),
       ).toBeTruthy()
       const addressFieldInfo = (await getMetadata(
         client,
@@ -1293,14 +1052,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testAutoNumber = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Autonumber label')
-        expect(annotations[constants.DESCRIPTION]).toBe(
-          'Autonumber description',
-        )
+        expect(annotations[constants.DESCRIPTION]).toBe('Autonumber description')
         expect(annotations[constants.HELP_TEXT]).toBe('Autonumber help')
         expect(annotations[constants.FIELD_ANNOTATIONS.EXTERNAL_ID]).toBe(true)
-        expect(annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe(
-          'ZZZ-{0000}',
-        )
+        expect(annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('ZZZ-{0000}')
       }
 
       const testDate = (annotations: Values): void => {
@@ -1308,9 +1063,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.DESCRIPTION]).toBe('Date description')
         expect(annotations[constants.HELP_TEXT]).toBe('Date help')
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
-        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual(
-          'Today() + 7',
-        )
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual('Today() + 7')
       }
 
       const testTime = (annotations: Values): void => {
@@ -1318,9 +1071,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.DESCRIPTION]).toBe('Time description')
         expect(annotations[constants.HELP_TEXT]).toBe('Time help')
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
-        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe(
-          'TIMENOW() + 5',
-        )
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('TIMENOW() + 5')
       }
 
       const testDatetime = (annotations: Values): void => {
@@ -1341,9 +1092,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const testLocation = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Location label')
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
-        expect(
-          annotations[constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL],
-        ).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(2)
       }
 
@@ -1373,10 +1122,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
-      const testMultiSelectPicklist = (
-        annotations: Values,
-        sorted = false,
-      ): void => {
+      const testMultiSelectPicklist = (annotations: Values, sorted = false): void => {
         expect(annotations[constants.LABEL]).toBe('Multipicklist label')
         expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(false)
         expect(annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(4)
@@ -1393,23 +1139,15 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         ]
         expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual(
-          sorted
-            ? _.sortBy(expectedValueSet, constants.CUSTOM_VALUE.FULL_NAME)
-            : expectedValueSet,
+          sorted ? _.sortBy(expectedValueSet, constants.CUSTOM_VALUE.FULL_NAME) : expectedValueSet,
         )
-        const fieldDependency =
-          annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-        expect(
-          fieldDependency[constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
-        ).toEqual(CUSTOM_FIELD_NAMES.PICKLIST)
-        expect(
-          fieldDependency[constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
-        ).toEqual([
+        const fieldDependency = annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
+        expect(fieldDependency[constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]).toEqual(
+          CUSTOM_FIELD_NAMES.PICKLIST,
+        )
+        expect(fieldDependency[constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]).toEqual([
           {
-            [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
-              'NEW',
-              'OLD',
-            ],
+            [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['NEW', 'OLD'],
             [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'DO',
           },
           {
@@ -1442,9 +1180,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testRichTextArea = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('RichTextArea label')
-        expect(annotations[constants.DESCRIPTION]).toBe(
-          'RichTextArea description',
-        )
+        expect(annotations[constants.DESCRIPTION]).toBe('RichTextArea description')
         expect(annotations[constants.HELP_TEXT]).toBe('RichTextArea help')
         expect(annotations[constants.FIELD_ANNOTATIONS.LENGTH]).toBe(32600)
         expect(annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(32)
@@ -1460,12 +1196,8 @@ describe('Salesforce adapter E2E with real account', () => {
       const testEncryptedText = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('EncryptedText label')
         expect(annotations[constants.FIELD_ANNOTATIONS.LENGTH]).toBe(35)
-        expect(annotations[constants.FIELD_ANNOTATIONS.MASK_CHAR]).toBe(
-          'asterisk',
-        )
-        expect(annotations[constants.FIELD_ANNOTATIONS.MASK_TYPE]).toBe(
-          'creditCard',
-        )
+        expect(annotations[constants.FIELD_ANNOTATIONS.MASK_CHAR]).toBe('asterisk')
+        expect(annotations[constants.FIELD_ANNOTATIONS.MASK_TYPE]).toBe('creditCard')
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
@@ -1487,18 +1219,14 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.LABEL]).toBe('Text label')
         expect(annotations[constants.FIELD_ANNOTATIONS.LENGTH]).toBe(100)
         expect(annotations[constants.FIELD_ANNOTATIONS.EXTERNAL_ID]).toBe(true)
-        expect(annotations[constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]).toBe(
-          true,
-        )
+        expect(annotations[constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
       const testCheckbox = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Checkbox label')
-        expect(annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(
-          true,
-        )
+        expect(annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(true)
       }
 
       const testGlobalPicklist = (annotations: Values): void => {
@@ -1510,24 +1238,14 @@ describe('Salesforce adapter E2E with real account', () => {
       const testLookup = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Lookup label')
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
-        const lookupFilter =
-          annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
+        const lookupFilter = annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
         expect(lookupFilter).toBeDefined()
         expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
-        expect(
-          lookupFilter[constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER],
-        ).toBe('1 OR 2')
-        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toBe(
-          'This is the Error message',
-        )
-        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toBe(
-          'This is the Info message',
-        )
-        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(
-          false,
-        )
-        const filterItems =
-          lookupFilter[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]).toBe('1 OR 2')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toBe('This is the Error message')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toBe('This is the Info message')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(false)
+        const filterItems = lookupFilter[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]
         expect(filterItems).toBeDefined()
         expect(filterItems).toEqual([
           {
@@ -1545,60 +1263,36 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testMasterDetail = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('MasterDetail label')
-        expect(
-          annotations[constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL],
-        ).toBe(true)
-        expect(
-          annotations[constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ],
-        ).toBe(true)
-        expect(
-          annotations[constants.FIELD_ANNOTATIONS.RELATIONSHIP_ORDER],
-        ).toBe(0)
+        expect(annotations[constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]).toBe(0)
       }
 
       const testSummary = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toEqual('Summary label')
-        expect(
-          annotations[constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD],
-        ).toEqual('Opportunity.Amount')
-        expect(
-          annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY],
-        ).toEqual('Opportunity.AccountId')
-        expect(
-          annotations[constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION],
-        ).toEqual('sum')
-        const filterItems =
-          annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]).toEqual('Opportunity.Amount')
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]).toEqual('Opportunity.AccountId')
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]).toEqual('sum')
+        const filterItems = annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
         expect(filterItems).toHaveLength(1)
-        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.FIELD]).toEqual(
-          'Opportunity.Amount',
-        )
-        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.OPERATION]).toEqual(
-          'greaterThan',
-        )
+        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.FIELD]).toEqual('Opportunity.Amount')
+        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.OPERATION]).toEqual('greaterThan')
         expect(filterItems[0][constants.FILTER_ITEM_FIELDS.VALUE]).toEqual('1')
       }
 
       const testFormula = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Formula Checkbox label')
         expect(annotations[constants.FORMULA]).toBe('5 > 4')
-        expect(
-          annotations[constants.FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS],
-        ).toBe('BlankAsZero')
+        expect(annotations[constants.FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]).toBe('BlankAsZero')
         expect(annotations[constants.BUSINESS_STATUS]).toBe('Hidden')
-        expect(annotations[constants.SECURITY_CLASSIFICATION]).toBe(
-          'Restricted',
-        )
+        expect(annotations[constants.SECURITY_CLASSIFICATION]).toBe('Restricted')
       }
 
       describe('fetch', () => {
         let customFieldsObject: ObjectType
 
         beforeAll(() => {
-          customFieldsObject = findCustomFieldsObject(
-            result,
-            customObjectWithFieldsName,
-          )
+          customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
         })
 
         describe('fetch fields', () => {
@@ -1618,11 +1312,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('currency', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.CURRENCY],
-              testCurrency,
-              Types.primitiveDataTypes.Currency,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.CURRENCY], testCurrency, Types.primitiveDataTypes.Currency)
           })
 
           it('autonumber', () => {
@@ -1634,70 +1324,35 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('date', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.DATE],
-              testDate,
-              Types.primitiveDataTypes.Date,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.DATE], testDate, Types.primitiveDataTypes.Date)
           })
 
           it('time', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.TIME],
-              testTime,
-              Types.primitiveDataTypes.Time,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.TIME], testTime, Types.primitiveDataTypes.Time)
           })
 
           it('datetime', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.DATE_TIME],
-              testDatetime,
-              Types.primitiveDataTypes.DateTime,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.DATE_TIME], testDatetime, Types.primitiveDataTypes.DateTime)
           })
 
           it('email', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.EMAIL],
-              testEmail,
-              Types.primitiveDataTypes.Email,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.EMAIL], testEmail, Types.primitiveDataTypes.Email)
           })
 
           it('location', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.LOCATION],
-              testLocation,
-              Types.compoundDataTypes.Location,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.LOCATION], testLocation, Types.compoundDataTypes.Location)
           })
 
           it('picklist', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.PICKLIST],
-              testPicklist,
-              Types.primitiveDataTypes.Picklist,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.PICKLIST], testPicklist, Types.primitiveDataTypes.Picklist)
           })
 
           it('global picklist', () => {
             const field = fields[CUSTOM_FIELD_NAMES.GLOBAL_PICKLIST]
-            verifyFieldFetch(
-              field,
-              testGlobalPicklist,
-              Types.primitiveDataTypes.Picklist,
-            )
-            expect(
-              field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME],
-            ).toEqual(
+            verifyFieldFetch(field, testGlobalPicklist, Types.primitiveDataTypes.Picklist)
+            expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
               new ReferenceExpression(
-                new ElemID(
-                  constants.SALESFORCE,
-                  naclCase(GLOBAL_VALUE_SET),
-                  'instance',
-                  naclCase(gvsName),
-                ),
+                new ElemID(constants.SALESFORCE, naclCase(GLOBAL_VALUE_SET), 'instance', naclCase(gvsName)),
               ),
             )
           })
@@ -1711,19 +1366,11 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('percent', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.PERCENT],
-              testPercent,
-              Types.primitiveDataTypes.Percent,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.PERCENT], testPercent, Types.primitiveDataTypes.Percent)
           })
 
           it('phone', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.PHONE],
-              testPhone,
-              Types.primitiveDataTypes.Phone,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.PHONE], testPhone, Types.primitiveDataTypes.Phone)
           })
 
           it('long text area', () => {
@@ -1735,19 +1382,11 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('rich text area', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.RICH_TEXT_AREA],
-              testRichTextArea,
-              Types.primitiveDataTypes.Html,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.RICH_TEXT_AREA], testRichTextArea, Types.primitiveDataTypes.Html)
           })
 
           it('text area', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.TEXT_AREA],
-              testTextArea,
-              Types.primitiveDataTypes.TextArea,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.TEXT_AREA], testTextArea, Types.primitiveDataTypes.TextArea)
           })
 
           it('encrypted text', () => {
@@ -1759,35 +1398,19 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('url', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.URL],
-              testUrl,
-              Types.primitiveDataTypes.Url,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.URL], testUrl, Types.primitiveDataTypes.Url)
           })
 
           it('number', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.NUMBER],
-              testNumber,
-              Types.primitiveDataTypes.Number,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.NUMBER], testNumber, Types.primitiveDataTypes.Number)
           })
 
           it('text', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.TEXT],
-              testText,
-              Types.primitiveDataTypes.Text,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.TEXT], testText, Types.primitiveDataTypes.Text)
           })
 
           it('checkbox', () => {
-            verifyFieldFetch(
-              fields[CUSTOM_FIELD_NAMES.CHECKBOX],
-              testCheckbox,
-              Types.primitiveDataTypes.Checkbox,
-            )
+            verifyFieldFetch(fields[CUSTOM_FIELD_NAMES.CHECKBOX], testCheckbox, Types.primitiveDataTypes.Checkbox)
           })
 
           it('lookup', () => {
@@ -1806,20 +1429,14 @@ describe('Salesforce adapter E2E with real account', () => {
           it('rollup summary', () => {
             const account = findCustomFieldsObject(result, 'Account')
             const field = account?.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]
-            verifyFieldFetch(
-              field,
-              testSummary,
-              Types.primitiveDataTypes.Summary,
-            )
+            verifyFieldFetch(field, testSummary, Types.primitiveDataTypes.Summary)
           })
 
           it('formula', () => {
             verifyFieldFetch(
               fields[CUSTOM_FIELD_NAMES.FORMULA],
               testFormula,
-              Types.formulaDataTypes[
-                formulaTypeName(constants.FIELD_TYPE_NAMES.CHECKBOX)
-              ],
+              Types.formulaDataTypes[formulaTypeName(constants.FIELD_TYPE_NAMES.CHECKBOX)],
             )
           })
         })
@@ -1827,46 +1444,32 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('add', () => {
         const testAddFieldPrefix = 'TestAdd'
-        const mockElemID = new ElemID(
-          constants.SALESFORCE,
-          'test add object with field types',
-        )
+        const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with field types')
         let customFieldsObject: ObjectType
         let post: ObjectType
         let objectInfo: CustomObject
 
         beforeAll(async () => {
-          customFieldsObject = findCustomFieldsObject(
-            result,
-            customObjectWithFieldsName,
-          )
+          customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
           const newCustomObject = new ObjectType({
             elemID: mockElemID,
             fields: _(customFieldsObject.fields)
               .mapKeys((_field, name) =>
-                [
-                  CUSTOM_FIELD_NAMES.MASTER_DETAIL,
-                  CUSTOM_FIELD_NAMES.LOOKUP,
-                ].includes(name)
+                [CUSTOM_FIELD_NAMES.MASTER_DETAIL, CUSTOM_FIELD_NAMES.LOOKUP].includes(name)
                   ? `${testAddFieldPrefix}${name}`
                   : name,
               )
               .mapValues((field, name) => {
                 const annotations = _.cloneDeep(field.annotations)
-                annotations[constants.API_NAME] =
-                  `${customObjectAddFieldsName}.${name}`
+                annotations[constants.API_NAME] = `${customObjectAddFieldsName}.${name}`
 
-                if (
-                  constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME in
-                  field.annotations
-                ) {
+                if (constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME in field.annotations) {
                   annotations[constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME] =
                     `${testAddFieldPrefix}${annotations[constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]}`
                 }
 
                 if (name === CUSTOM_FIELD_NAMES.MULTI_PICKLIST) {
-                  annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] =
-                    true
+                  annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
                 }
                 return { refType: field.refType, annotations }
               })
@@ -1909,31 +1512,19 @@ describe('Salesforce adapter E2E with real account', () => {
             constants.VALUE_SET_FIELDS.VALUE_SET_NAME,
             constants.FIELD_ANNOTATIONS.REFERENCE_TO,
           ]
-          potentialReferenceAnnotations.forEach((annotationName) => {
+          potentialReferenceAnnotations.forEach(annotationName => {
             Object.values(newCustomObject.fields)
-              .filter((f) =>
-                makeArray(f.annotations[annotationName]).some(
-                  isReferenceExpression,
-                ),
-              )
-              .forEach((f) => {
-                f.annotations[annotationName] = Array.isArray(
-                  f.annotations[annotationName],
-                )
-                  ? f.annotations[annotationName]
-                      .map(normalizeReference)
-                      .filter(isDefined)
+              .filter(f => makeArray(f.annotations[annotationName]).some(isReferenceExpression))
+              .forEach(f => {
+                f.annotations[annotationName] = Array.isArray(f.annotations[annotationName])
+                  ? f.annotations[annotationName].map(normalizeReference).filter(isDefined)
                   : normalizeReference(f.annotations[annotationName])
               })
           })
 
           await removeElementIfAlreadyExists(client, customFieldsObject)
           post = await createElement(adapter, newCustomObject)
-          objectInfo = (await getMetadata(
-            client,
-            constants.CUSTOM_OBJECT,
-            customObjectAddFieldsName,
-          )) as CustomObject
+          objectInfo = (await getMetadata(client, constants.CUSTOM_OBJECT, customObjectAddFieldsName)) as CustomObject
         })
 
         it('custom object', async () => {
@@ -1946,17 +1537,12 @@ describe('Salesforce adapter E2E with real account', () => {
           beforeAll(async () => {
             const entries = (await Promise.all(
               makeArray(objectInfo.fields)
-                .filter((f) => f[INSTANCE_TYPE_FIELD])
-                .map(async (f) => [
+                .filter(f => f[INSTANCE_TYPE_FIELD])
+                .map(async f => [
                   f.fullName,
-                  Object.assign(
-                    await transformFieldAnnotations(
-                      f,
-                      Types.get(f.type, true),
-                      objectInfo.fullName,
-                    ),
-                    { [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD] },
-                  ),
+                  Object.assign(await transformFieldAnnotations(f, Types.get(f.type, true), objectInfo.fullName), {
+                    [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
+                  }),
                 ]),
             )) as [string, Values][]
             fields = Object.fromEntries(entries)
@@ -1973,11 +1559,7 @@ describe('Salesforce adapter E2E with real account', () => {
           }
 
           it('currency', async () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.CURRENCY],
-              testCurrency,
-              constants.FIELD_TYPE_NAMES.CURRENCY,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.CURRENCY], testCurrency, constants.FIELD_TYPE_NAMES.CURRENCY)
           })
 
           it('autonumber', async () => {
@@ -1989,35 +1571,19 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('date', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.DATE],
-              testDate,
-              constants.FIELD_TYPE_NAMES.DATE,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.DATE], testDate, constants.FIELD_TYPE_NAMES.DATE)
           })
 
           it('time', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.TIME],
-              testTime,
-              constants.FIELD_TYPE_NAMES.TIME,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.TIME], testTime, constants.FIELD_TYPE_NAMES.TIME)
           })
 
           it('datetime', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.DATE_TIME],
-              testDatetime,
-              constants.FIELD_TYPE_NAMES.DATETIME,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.DATE_TIME], testDatetime, constants.FIELD_TYPE_NAMES.DATETIME)
           })
 
           it('email', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.EMAIL],
-              testEmail,
-              constants.FIELD_TYPE_NAMES.EMAIL,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.EMAIL], testEmail, constants.FIELD_TYPE_NAMES.EMAIL)
           })
 
           it('location', () => {
@@ -2029,16 +1595,11 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('picklist', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.PICKLIST],
-              testPicklist,
-              constants.FIELD_TYPE_NAMES.PICKLIST,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.PICKLIST], testPicklist, constants.FIELD_TYPE_NAMES.PICKLIST)
           })
 
           it('multipicklist', () => {
-            const testMultiSelectPicklistAdd = (annotations: Values): void =>
-              testMultiSelectPicklist(annotations, true)
+            const testMultiSelectPicklistAdd = (annotations: Values): void => testMultiSelectPicklist(annotations, true)
             verifyFieldAddition(
               fields[CUSTOM_FIELD_NAMES.MULTI_PICKLIST],
               testMultiSelectPicklistAdd,
@@ -2048,30 +1609,16 @@ describe('Salesforce adapter E2E with real account', () => {
 
           it('global picklist', () => {
             const field = fields[CUSTOM_FIELD_NAMES.GLOBAL_PICKLIST]
-            verifyFieldAddition(
-              field,
-              testGlobalPicklist,
-              constants.FIELD_TYPE_NAMES.PICKLIST,
-            )
-            expect(field[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-              gvsName,
-            )
+            verifyFieldAddition(field, testGlobalPicklist, constants.FIELD_TYPE_NAMES.PICKLIST)
+            expect(field[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(gvsName)
           })
 
           it('percent', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.PERCENT],
-              testPercent,
-              constants.FIELD_TYPE_NAMES.PERCENT,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.PERCENT], testPercent, constants.FIELD_TYPE_NAMES.PERCENT)
           })
 
           it('phone', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.PHONE],
-              testPhone,
-              constants.FIELD_TYPE_NAMES.PHONE,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.PHONE], testPhone, constants.FIELD_TYPE_NAMES.PHONE)
           })
 
           it('long text area', () => {
@@ -2091,11 +1638,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('text area', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.TEXT_AREA],
-              testTextArea,
-              constants.FIELD_TYPE_NAMES.TEXTAREA,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.TEXT_AREA], testTextArea, constants.FIELD_TYPE_NAMES.TEXTAREA)
           })
 
           it('encrypted text', () => {
@@ -2107,57 +1650,31 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('url', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.URL],
-              testUrl,
-              constants.FIELD_TYPE_NAMES.URL,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.URL], testUrl, constants.FIELD_TYPE_NAMES.URL)
           })
 
           it('number', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.NUMBER],
-              testNumber,
-              constants.FIELD_TYPE_NAMES.NUMBER,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.NUMBER], testNumber, constants.FIELD_TYPE_NAMES.NUMBER)
           })
 
           it('text', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.TEXT],
-              testText,
-              constants.FIELD_TYPE_NAMES.TEXT,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.TEXT], testText, constants.FIELD_TYPE_NAMES.TEXT)
           })
 
           it('checkbox', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.CHECKBOX],
-              testCheckbox,
-              constants.FIELD_TYPE_NAMES.CHECKBOX,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.CHECKBOX], testCheckbox, constants.FIELD_TYPE_NAMES.CHECKBOX)
           })
 
           it('lookup', () => {
             const fieldName = `${testAddFieldPrefix}${CUSTOM_FIELD_NAMES.LOOKUP}`
-            verifyFieldAddition(
-              fields[fieldName],
-              testLookup,
-              constants.FIELD_TYPE_NAMES.LOOKUP,
+            verifyFieldAddition(fields[fieldName], testLookup, constants.FIELD_TYPE_NAMES.LOOKUP)
+            expect(makeArray(objectInfo?.fields).find(f => f.fullName === fieldName)?.deleteConstraint).toEqual(
+              'Restrict',
             )
-            expect(
-              makeArray(objectInfo?.fields).find(
-                (f) => f.fullName === fieldName,
-              )?.deleteConstraint,
-            ).toEqual('Restrict')
           })
 
           it('master-detail', () => {
-            verifyFieldAddition(
-              fields[masterDetailApiName],
-              testMasterDetail,
-              constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
-            )
+            verifyFieldAddition(fields[masterDetailApiName], testMasterDetail, constants.FIELD_TYPE_NAMES.MASTER_DETAIL)
           })
 
           it('rollup summary', async () => {
@@ -2198,10 +1715,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 Types.primitiveDataTypes.Summary,
                 {
                   [constants.LABEL]: 'Summary label',
-                  [constants.API_NAME]: apiNameAnno(
-                    'Case',
-                    rollupSummaryFieldName,
-                  ),
+                  [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldName),
                   [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]:
                     `${customObjectAddFieldsName}.${CUSTOM_FIELD_NAMES.CURRENCY}`,
                   [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]:
@@ -2225,8 +1739,7 @@ describe('Salesforce adapter E2E with real account', () => {
                     {
                       action: 'add',
                       data: {
-                        after:
-                          caseAfterFieldAddition.fields[rollupSummaryFieldName],
+                        after: caseAfterFieldAddition.fields[rollupSummaryFieldName],
                       },
                     },
                   ],
@@ -2247,33 +1760,21 @@ describe('Salesforce adapter E2E with real account', () => {
               expect(_.get(fetchedRollupSummary, 'summaryForeignKey')).toEqual(
                 `${customObjectAddFieldsName}.${masterDetailApiName}`,
               )
-              expect(_.get(fetchedRollupSummary, 'summaryOperation')).toEqual(
-                'max',
-              )
+              expect(_.get(fetchedRollupSummary, 'summaryOperation')).toEqual('max')
               expect(fetchedRollupSummary.summaryFilterItems).toBeDefined()
-              const filterItems =
-                fetchedRollupSummary.summaryFilterItems as FilterItem
-              expect(filterItems.field).toEqual(
-                `${customObjectAddFieldsName}.${CUSTOM_FIELD_NAMES.CURRENCY}`,
-              )
+              const filterItems = fetchedRollupSummary.summaryFilterItems as FilterItem
+              expect(filterItems.field).toEqual(`${customObjectAddFieldsName}.${CUSTOM_FIELD_NAMES.CURRENCY}`)
               expect(filterItems.operation).toEqual('greaterThan')
               expect(filterItems.value).toEqual('1')
             }
 
             const caseAfterFieldAddition = await addRollupSummaryField()
             await verifyRollupSummaryField()
-            await removeRollupSummaryFieldFromCase(
-              caseAfterFieldAddition,
-              rollupSummaryFieldName,
-            )
+            await removeRollupSummaryFieldFromCase(caseAfterFieldAddition, rollupSummaryFieldName)
           })
 
           it('formula', () => {
-            verifyFieldAddition(
-              fields[CUSTOM_FIELD_NAMES.FORMULA],
-              testFormula,
-              constants.FIELD_TYPE_NAMES.CHECKBOX,
-            )
+            verifyFieldAddition(fields[CUSTOM_FIELD_NAMES.FORMULA], testFormula, constants.FIELD_TYPE_NAMES.CHECKBOX)
           })
         })
       })
@@ -2488,17 +1989,14 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.HELP_TEXT]: 'Lookup help updated',
             [constants.FIELD_ANNOTATIONS.DELETE_CONSTRAINT]: 'SetNull',
             [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Opportunity'],
-            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]:
-              CUSTOM_FIELD_NAMES.LOOKUP.split(
-                constants.SALESFORCE_CUSTOM_SUFFIX,
-              )[0],
+            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: CUSTOM_FIELD_NAMES.LOOKUP.split(
+              constants.SALESFORCE_CUSTOM_SUFFIX,
+            )[0],
             [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
               [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: false,
               [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: '1',
-              [constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]:
-                'Updated error message',
-              [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]:
-                'Updated info message',
+              [constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'Updated error message',
+              [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Updated info message',
               [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: false,
               [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [
                 {
@@ -2516,10 +2014,9 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.DESCRIPTION]: 'MasterDetail description Updated',
             [constants.HELP_TEXT]: 'MasterDetail help updated',
             [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
-            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]:
-              CUSTOM_FIELD_NAMES.MASTER_DETAIL.split(
-                constants.SALESFORCE_CUSTOM_SUFFIX,
-              )[0],
+            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: CUSTOM_FIELD_NAMES.MASTER_DETAIL.split(
+              constants.SALESFORCE_CUSTOM_SUFFIX,
+            )[0],
             [constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: false,
             [constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
@@ -2545,27 +2042,19 @@ describe('Salesforce adapter E2E with real account', () => {
         ): void => {
           Object.entries(annotations).forEach(([name, value]) => {
             targetObject.fields[name].annotations = Object.assign(value, {
-              [constants.API_NAME]:
-                srcObject.fields[name].annotations[constants.API_NAME],
+              [constants.API_NAME]: srcObject.fields[name].annotations[constants.API_NAME],
             })
           })
         }
 
         beforeAll(async () => {
-          const customFieldsObject = findFullCustomObject(
-            result,
-            customObjectWithFieldsName,
-          )
+          const customFieldsObject = findFullCustomObject(result, customObjectWithFieldsName)
           const newCustomObject = customFieldsObject.clone()
-          updateAnnotations(
-            newCustomObject,
-            customFieldsObject,
-            fieldNamesToAnnotations,
-          )
+          updateAnnotations(newCustomObject, customFieldsObject, fieldNamesToAnnotations)
           await adapter.deploy({
             changeGroup: {
               groupID: customFieldsObject.elemID.getFullName(),
-              changes: Object.keys(fieldNamesToAnnotations).map((f) => ({
+              changes: Object.keys(fieldNamesToAnnotations).map(f => ({
                 action: 'modify',
                 data: {
                   before: customFieldsObject.fields[f],
@@ -2575,11 +2064,7 @@ describe('Salesforce adapter E2E with real account', () => {
             },
             progressReporter: nullProgressReporter,
           })
-          objectInfo = (await getMetadata(
-            client,
-            constants.CUSTOM_OBJECT,
-            customObjectWithFieldsName,
-          )) as CustomObject
+          objectInfo = (await getMetadata(client, constants.CUSTOM_OBJECT, customObjectWithFieldsName)) as CustomObject
         })
 
         describe('fields', () => {
@@ -2587,83 +2072,51 @@ describe('Salesforce adapter E2E with real account', () => {
           beforeAll(async () => {
             const entries = (await Promise.all(
               makeArray(objectInfo.fields)
-                .filter((f) => f[INSTANCE_TYPE_FIELD])
-                .map(async (f) => [
+                .filter(f => f[INSTANCE_TYPE_FIELD])
+                .map(async f => [
                   f.fullName,
-                  Object.assign(
-                    await transformFieldAnnotations(
-                      f,
-                      Types.get(f.type, true),
-                      objectInfo.fullName,
-                    ),
-                    { [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD] },
-                  ),
+                  Object.assign(await transformFieldAnnotations(f, Types.get(f.type, true), objectInfo.fullName), {
+                    [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
+                  }),
                 ]),
             )) as [string, Values][]
             fields = Object.fromEntries(entries)
           })
 
-          const verifyFieldUpdate = (
-            name: string,
-            expectedType: string,
-            expectedAnnotations?: Values,
-          ): void => {
+          const verifyFieldUpdate = (name: string, expectedType: string, expectedAnnotations?: Values): void => {
             const field = fields[name]
             expect(field[INSTANCE_TYPE_FIELD]).toEqual(expectedType)
-            expect(field).toEqual(
-              expectedAnnotations ?? fieldNamesToAnnotations[name],
-            )
+            expect(field).toEqual(expectedAnnotations ?? fieldNamesToAnnotations[name])
           }
 
           it('currency', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.CURRENCY,
-              constants.FIELD_TYPE_NAMES.CURRENCY,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.CURRENCY, constants.FIELD_TYPE_NAMES.CURRENCY)
           })
 
           it('autonumber', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.AUTO_NUMBER,
-              constants.FIELD_TYPE_NAMES.AUTONUMBER,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.AUTO_NUMBER, constants.FIELD_TYPE_NAMES.AUTONUMBER)
           })
 
           it('date', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.DATE,
-              constants.FIELD_TYPE_NAMES.DATE,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.DATE, constants.FIELD_TYPE_NAMES.DATE)
           })
 
           it('time', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.TIME,
-              constants.FIELD_TYPE_NAMES.TIME,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.TIME, constants.FIELD_TYPE_NAMES.TIME)
           })
 
           it('dateTime', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.DATE_TIME,
-              constants.FIELD_TYPE_NAMES.DATETIME,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.DATE_TIME, constants.FIELD_TYPE_NAMES.DATETIME)
           })
 
           it('picklist', async () => {
-            const annotations =
-              fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.PICKLIST]
+            const annotations = fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.PICKLIST]
             annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = false
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.PICKLIST,
-              constants.FIELD_TYPE_NAMES.PICKLIST,
-              annotations,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.PICKLIST, constants.FIELD_TYPE_NAMES.PICKLIST, annotations)
           })
 
           it('multipicklist', async () => {
-            const annotations =
-              fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.MULTI_PICKLIST]
+            const annotations = fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.MULTI_PICKLIST]
             annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = false
             annotations[constants.FIELD_ANNOTATIONS.VALUE_SET] = [
               annotations[constants.FIELD_ANNOTATIONS.VALUE_SET][1],
@@ -2681,134 +2134,76 @@ describe('Salesforce adapter E2E with real account', () => {
                 label: 'RE',
               },
             ]
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.MULTI_PICKLIST,
-              constants.FIELD_TYPE_NAMES.MULTIPICKLIST,
-              annotations,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.MULTI_PICKLIST, constants.FIELD_TYPE_NAMES.MULTIPICKLIST, annotations)
           })
 
           it('global picklist', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.GLOBAL_PICKLIST,
-              constants.FIELD_TYPE_NAMES.PICKLIST,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.GLOBAL_PICKLIST, constants.FIELD_TYPE_NAMES.PICKLIST)
           })
 
           it('email', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.EMAIL,
-              constants.FIELD_TYPE_NAMES.EMAIL,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.EMAIL, constants.FIELD_TYPE_NAMES.EMAIL)
           })
 
           it('location', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.LOCATION,
-              constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.LOCATION, constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION)
           })
 
           it('percent', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.PERCENT,
-              constants.FIELD_TYPE_NAMES.PERCENT,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.PERCENT, constants.FIELD_TYPE_NAMES.PERCENT)
           })
 
           it('phone', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.PHONE,
-              constants.FIELD_TYPE_NAMES.PHONE,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.PHONE, constants.FIELD_TYPE_NAMES.PHONE)
           })
 
           it('long text area', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.LONG_TEXT_AREA,
-              constants.FIELD_TYPE_NAMES.LONGTEXTAREA,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.LONG_TEXT_AREA, constants.FIELD_TYPE_NAMES.LONGTEXTAREA)
           })
 
           it('rich text area', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.RICH_TEXT_AREA,
-              constants.FIELD_TYPE_NAMES.RICHTEXTAREA,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.RICH_TEXT_AREA, constants.FIELD_TYPE_NAMES.RICHTEXTAREA)
           })
 
           it('text area', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.TEXT_AREA,
-              constants.FIELD_TYPE_NAMES.TEXTAREA,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.TEXT_AREA, constants.FIELD_TYPE_NAMES.TEXTAREA)
           })
 
           it('encrypted text', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.ENCRYPTED_TEXT,
-              constants.FIELD_TYPE_NAMES.ENCRYPTEDTEXT,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.ENCRYPTED_TEXT, constants.FIELD_TYPE_NAMES.ENCRYPTEDTEXT)
           })
 
           it('url', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.URL,
-              constants.FIELD_TYPE_NAMES.URL,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.URL, constants.FIELD_TYPE_NAMES.URL)
           })
 
           it('number', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.NUMBER,
-              constants.FIELD_TYPE_NAMES.NUMBER,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.NUMBER, constants.FIELD_TYPE_NAMES.NUMBER)
           })
 
           it('text', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.TEXT,
-              constants.FIELD_TYPE_NAMES.TEXT,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.TEXT, constants.FIELD_TYPE_NAMES.TEXT)
           })
 
           it('checkbox', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.CHECKBOX,
-              constants.FIELD_TYPE_NAMES.CHECKBOX,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.CHECKBOX, constants.FIELD_TYPE_NAMES.CHECKBOX)
           })
 
           it('formula', async () => {
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.FORMULA,
-              constants.FIELD_TYPE_NAMES.CHECKBOX,
-            )
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.FORMULA, constants.FIELD_TYPE_NAMES.CHECKBOX)
           })
 
           it('lookup', async () => {
-            const annotations =
-              fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.LOOKUP]
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.LOOKUP,
-              constants.FIELD_TYPE_NAMES.LOOKUP,
-              annotations,
-            )
+            const annotations = fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.LOOKUP]
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.LOOKUP, constants.FIELD_TYPE_NAMES.LOOKUP, annotations)
             expect(
-              makeArray(objectInfo?.fields).find(
-                (f) => f.fullName === CUSTOM_FIELD_NAMES.LOOKUP,
-              )?.deleteConstraint,
+              makeArray(objectInfo?.fields).find(f => f.fullName === CUSTOM_FIELD_NAMES.LOOKUP)?.deleteConstraint,
             ).toEqual('SetNull')
           })
 
           it('master-detail', async () => {
-            const annotations =
-              fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.MASTER_DETAIL]
-            verifyFieldUpdate(
-              CUSTOM_FIELD_NAMES.MASTER_DETAIL,
-              constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
-              annotations,
-            )
+            const annotations = fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.MASTER_DETAIL]
+            verifyFieldUpdate(CUSTOM_FIELD_NAMES.MASTER_DETAIL, constants.FIELD_TYPE_NAMES.MASTER_DETAIL, annotations)
           })
 
           it('rollup summary', async () => {
@@ -2816,18 +2211,15 @@ describe('Salesforce adapter E2E with real account', () => {
             const annotations = {
               [constants.API_NAME]: fullName,
               [constants.LABEL]: 'Summary label Updated',
-              [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]:
-                'Opportunity.TotalOpportunityQuantity',
+              [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.TotalOpportunityQuantity',
               [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
                 {
-                  [constants.FILTER_ITEM_FIELDS.FIELD]:
-                    'Opportunity.TotalOpportunityQuantity',
+                  [constants.FILTER_ITEM_FIELDS.FIELD]: 'Opportunity.TotalOpportunityQuantity',
                   [constants.FILTER_ITEM_FIELDS.OPERATION]: 'lessThan',
                   [constants.FILTER_ITEM_FIELDS.VALUE]: '10',
                 },
               ],
-              [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]:
-                'Opportunity.AccountId',
+              [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
               [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'min',
               [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,
             }
@@ -2835,8 +2227,7 @@ describe('Salesforce adapter E2E with real account', () => {
             expect(account).toBeDefined()
             const updatedAccount = account.clone()
             const field = account.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]
-            const updatedField =
-              updatedAccount.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]
+            const updatedField = updatedAccount.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]
             updatedField.annotations = annotations
             await adapter.deploy({
               changeGroup: {
@@ -2850,28 +2241,16 @@ describe('Salesforce adapter E2E with real account', () => {
               },
               progressReporter: nullProgressReporter,
             })
-            const fieldInfo = (await getMetadata(
-              client,
-              constants.CUSTOM_FIELD,
-              fullName,
-            )) as CustomField
+            const fieldInfo = (await getMetadata(client, constants.CUSTOM_FIELD, fullName)) as CustomField
             expect(fieldInfo[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
               `${accountApiName}.${CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY}`,
             )
-            const fieldWithoutName = _.omit(
-              fieldInfo,
-              constants.INSTANCE_FULL_NAME_FIELD,
-            )
+            const fieldWithoutName = _.omit(fieldInfo, constants.INSTANCE_FULL_NAME_FIELD)
             expect(
               Object.assign(
-                await transformFieldAnnotations(
-                  fieldWithoutName,
-                  Types.get(fieldInfo.type),
-                  accountApiName,
-                ),
+                await transformFieldAnnotations(fieldWithoutName, Types.get(fieldInfo.type), accountApiName),
                 {
-                  [INSTANCE_TYPE_FIELD]:
-                    constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,
+                  [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,
                 },
               ),
             ).toEqual(_.omit(annotations, constants.API_NAME))
@@ -2882,16 +2261,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should add lookupFilter to an existing lookup field', async () => {
       const customObjectName = 'TestAddLookupFilter__c'
-      const mockElemID = new ElemID(
-        constants.SALESFORCE,
-        'test add lookupFilter',
-      )
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add lookupFilter')
       const fieldName = `lookup${String(Date.now()).substring(6)}`
       const lookupFieldApiName = `${_.camelCase(fieldName)}__c`
-      const lookupFieldApiFullName = [
-        customObjectName,
-        lookupFieldApiName,
-      ].join(constants.API_NAME_SEPARATOR)
+      const lookupFieldApiFullName = [customObjectName, lookupFieldApiName].join(constants.API_NAME_SEPARATOR)
       const oldElement = new ObjectType({
         elemID: mockElemID,
         fields: {
@@ -2928,16 +2301,10 @@ describe('Salesforce adapter E2E with real account', () => {
       const addResult = await createElement(adapter, oldElement)
       // Verify setup was performed properly
       expect(addResult).toBeInstanceOf(ObjectType)
-      expect(
-        await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, [
-          lookupFieldApiName,
-        ]),
-      ).toBe(true)
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, [lookupFieldApiName])).toBe(true)
 
       const newElement = oldElement.clone()
-      newElement.fields[fieldName].annotations[
-        constants.FIELD_ANNOTATIONS.LOOKUP_FILTER
-      ] = {
+      newElement.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER] = {
         [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
         [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Info message',
         [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: true,
@@ -2972,13 +2339,9 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(modificationResult.appliedChanges[0]).toMatchObject(changes[0])
 
       // Verify the lookup filter was created
-      const { result: customObject } = await client.describeSObjects([
-        customObjectName,
-      ])
+      const { result: customObject } = await client.describeSObjects([customObjectName])
       expect(customObject[0]).toBeDefined()
-      const lookupField = customObject[0].fields.filter(
-        (field) => field.name === lookupFieldApiName,
-      )[0]
+      const lookupField = customObject[0].fields.filter(field => field.name === lookupFieldApiName)[0]
       expect(lookupField).toBeDefined()
       expect(lookupField.filteredLookupInfo).toBeDefined()
 
@@ -2988,10 +2351,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should add default TopicsForObjects values', async () => {
       const customObjectName = 'TestAddDefaultTopicsForObjects__c'
-      const mockElemID = new ElemID(
-        constants.SALESFORCE,
-        'test add default topic for objects',
-      )
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add default topic for objects')
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
@@ -3027,10 +2387,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should add element TopicsForObjects value', async () => {
       const customObjectName = 'TestAddElementTopicsForObjects__c'
-      const mockElemID = new ElemID(
-        constants.SALESFORCE,
-        'test add element topic for objects',
-      )
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add element topic for objects')
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
@@ -3067,22 +2424,15 @@ describe('Salesforce adapter E2E with real account', () => {
       ).toBe(true)
 
       // Checks if the new topic' object exists
-      const results = (
-        await client.readMetadata(
-          constants.TOPICS_FOR_OBJECTS_METADATA_TYPE,
-          await apiName(addResult),
-        )
-      ).result as TopicsForObjectsInfo[]
+      const results = (await client.readMetadata(constants.TOPICS_FOR_OBJECTS_METADATA_TYPE, await apiName(addResult)))
+        .result as TopicsForObjectsInfo[]
       expect(results).toHaveLength(1)
       expect(results[0].enableTopics).toBe('true')
     })
 
     it('should update TopicsForObjects field', async () => {
       const customObjectName = 'TestUpdateTopicsForObjects__c'
-      const mockElemID = new ElemID(
-        constants.SALESFORCE,
-        'test add topic for objects',
-      )
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add topic for objects')
       const oldElement = new ObjectType({
         elemID: mockElemID,
         annotations: {
@@ -3109,9 +2459,7 @@ describe('Salesforce adapter E2E with real account', () => {
       await removeElementIfAlreadyExists(client, oldElement)
       const addResult = await createElement(adapter, oldElement)
       // Verify setup was performed properly
-      expect(
-        await objectExists(client, constants.CUSTOM_OBJECT, customObjectName),
-      ).toBe(true)
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
       expect(addResult).toBeInstanceOf(ObjectType)
       expect(
         addResult.annotations[constants.TOPICS_FOR_OBJECTS_ANNOTATION][
@@ -3166,39 +2514,24 @@ describe('Salesforce adapter E2E with real account', () => {
         // Make sure our test rule does not exist before we start
         const assignmentRulesType = (await awu(result)
           .filter(isObjectType)
-          .find(
-            async (e) => (await metadataType(e)) === assignmentRulesTypeName,
-          )) as ObjectType
+          .find(async e => (await metadataType(e)) === assignmentRulesTypeName)) as ObjectType
 
         const leadAssignmentRule = (await awu(result)
-          .filter(
-            async (e) => (await metadataType(e)) === assignmentRulesTypeName,
-          )
+          .filter(async e => (await metadataType(e)) === assignmentRulesTypeName)
           .filter(isInstanceElement)
-          .find(
-            (e) => e.value[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead',
-          )) as InstanceElement
+          .find(e => e.value[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead')) as InstanceElement
 
         if (
           makeArray(leadAssignmentRule.value.assignmentRule).find(
-            (rule) =>
-              rule[constants.INSTANCE_FULL_NAME_FIELD] === 'NonStandard',
+            rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'NonStandard',
           )
         ) {
-          await client
-            .delete('AssignmentRule', 'Lead.NonStandard')
-            .catch(() => undefined)
+          await client.delete('AssignmentRule', 'Lead.NonStandard').catch(() => undefined)
         }
 
-        before = new InstanceElement(
-          'LeadAssignmentRules',
-          assignmentRulesType,
-          await getRulesFromClient(),
-        )
+        before = new InstanceElement('LeadAssignmentRules', assignmentRulesType, await getRulesFromClient())
         validAssignment = _.omit(
-          _.flatten([
-            _.flatten([before.value.assignmentRule])[0].ruleEntry,
-          ]).pop(),
+          _.flatten([_.flatten([before.value.assignmentRule])[0].ruleEntry]).pop(),
           'criteriaItems',
         )
       })
@@ -3233,24 +2566,18 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const updatedRules = await getRulesFromClient()
         // Since assignment rules order is not relevant so we have to compare sets
-        expect(new Set(updatedRules.assignmentRule)).toEqual(
-          new Set(after.value.assignmentRule),
-        )
+        expect(new Set(updatedRules.assignmentRule)).toEqual(new Set(after.value.assignmentRule))
 
         // Remove the new rule
         await adapter.deploy({
           changeGroup: {
             groupID: before.elemID.getFullName(),
-            changes: [
-              { action: 'modify', data: { before: after, after: before } },
-            ],
+            changes: [{ action: 'modify', data: { before: after, after: before } }],
           },
           progressReporter: nullProgressReporter,
         })
         const rules = await getRulesFromClient()
-        expect(new Set(makeArray(rules.assignmentRule))).toEqual(
-          new Set(makeArray(before.value.assignmentRule)),
-        )
+        expect(new Set(makeArray(rules.assignmentRule))).toEqual(new Set(makeArray(before.value.assignmentRule)))
       })
 
       it('should update existing', async () => {
@@ -3289,9 +2616,7 @@ describe('Salesforce adapter E2E with real account', () => {
         await adapter.deploy({
           changeGroup: {
             groupID: before.elemID.getFullName(),
-            changes: [
-              { action: 'modify', data: { before: after, after: before } },
-            ],
+            changes: [{ action: 'modify', data: { before: after, after: before } }],
           },
           progressReporter: nullProgressReporter,
         })
@@ -3301,10 +2626,7 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('deploy retrieve manipulations', () => {
       describe('types that support only retrieve & deploy', () => {
         const packageName = 'unpackaged'
-        const retrieve = async (
-          type: string,
-          member: string,
-        ): Promise<RetrieveResult> => {
+        const retrieve = async (type: string, member: string): Promise<RetrieveResult> => {
           const retrieveRequest = {
             apiVersion: API_VERSION,
             singlePackage: false,
@@ -3316,79 +2638,55 @@ describe('Salesforce adapter E2E with real account', () => {
           return client.retrieve(retrieveRequest)
         }
 
-        const findInstance = async (
-          instance: MetadataInstanceElement,
-        ): Promise<MetadataInfo | undefined> => {
+        const findInstance = async (instance: MetadataInstanceElement): Promise<MetadataInfo | undefined> => {
           const type = await metadataType(instance)
           const retrieveResult = await retrieve(type, await apiName(instance))
           // In the real code we pass in the fileProps from the request because there is an issue
           // where sometimes fileProps from the response have an empty fullName
           // this means that here we need to remove the package name from the file path to simulate
           // how we would have gotten the file props from listMetadataObjects
-          const fileProps = makeArray(retrieveResult.fileProperties).map(
-            (props) => ({
-              ...props,
-              fileName: props.fileName.slice(packageName.length + 1),
-            }),
-          )
+          const fileProps = makeArray(retrieveResult.fileProperties).map(props => ({
+            ...props,
+            fileName: props.fileName.slice(packageName.length + 1),
+          }))
           const instances = await fromRetrieveResult(
             retrieveResult,
             fileProps,
-            new Set(
-              (await instance.getType()).annotations.hasMetaFile ? [type] : [],
-            ),
-            new Set(
-              constants.METADATA_CONTENT_FIELD in instance.value ? [type] : [],
-            ),
+            new Set((await instance.getType()).annotations.hasMetaFile ? [type] : []),
+            new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
             false,
           )
           return awu(instances)
-            .filter(
-              async ({ file }) => file.fullName === (await apiName(instance)),
-            )
+            .filter(async ({ file }) => file.fullName === (await apiName(instance)))
             .map(({ values }) => values)
             .peek()
         }
 
-        const removeIfAlreadyExists = async (
-          instance: MetadataInstanceElement,
-        ): Promise<void> => {
+        const removeIfAlreadyExists = async (instance: MetadataInstanceElement): Promise<void> => {
           if (await findInstance(instance)) {
             const pkg = createDeployPackage()
-            pkg.delete(
-              assertMetadataObjectType(await instance.getType()),
-              await apiName(instance),
-            )
+            pkg.delete(assertMetadataObjectType(await instance.getType()), await apiName(instance))
             await client.deploy(await pkg.getZip())
           }
         }
 
-        const getContentFromStaticFileOrString = async (
-          content: string | StaticFile,
-        ): Promise<string> =>
-          isStaticFile(content)
-            ? ((await content.getContent()) as Buffer).toString()
-            : content
+        const getContentFromStaticFileOrString = async (content: string | StaticFile): Promise<string> =>
+          isStaticFile(content) ? ((await content.getContent()) as Buffer).toString() : content
 
-        const verifyCreateInstance = async (
-          instance: MetadataInstanceElement,
-        ): Promise<void> => {
+        const verifyCreateInstance = async (instance: MetadataInstanceElement): Promise<void> => {
           await createElement(adapter, instance)
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
-          const content = await getContentFromStaticFileOrString(
-            _.get(instanceInfo, 'content'),
-          )
+          const content = await getContentFromStaticFileOrString(_.get(instanceInfo, 'content'))
           expect(content.includes('Created')).toBeTruthy()
         }
 
-        const verifyUpdateInstance = async (
-          instance: MetadataInstanceElement,
-        ): Promise<void> => {
+        const verifyUpdateInstance = async (instance: MetadataInstanceElement): Promise<void> => {
           const after = instance.clone()
-          const contentString = (
-            await getContentFromStaticFileOrString(after.value.content)
-          ).replace('Created', 'Updated')
+          const contentString = (await getContentFromStaticFileOrString(after.value.content)).replace(
+            'Created',
+            'Updated',
+          )
           after.value.content = isStaticFile(after.value.content)
             ? new StaticFile({
                 filepath: after.value.content.filepath,
@@ -3398,26 +2696,18 @@ describe('Salesforce adapter E2E with real account', () => {
           await adapter.deploy({
             changeGroup: {
               groupID: instance.elemID.getFullName(),
-              changes: [
-                { action: 'modify', data: { before: instance, after } },
-              ],
+              changes: [{ action: 'modify', data: { before: instance, after } }],
             },
             progressReporter: nullProgressReporter,
           })
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
           expect(
-            (
-              await getContentFromStaticFileOrString(
-                _.get(instanceInfo, 'content'),
-              )
-            ).includes('Updated'),
+            (await getContentFromStaticFileOrString(_.get(instanceInfo, 'content'))).includes('Updated'),
           ).toBeTruthy()
         }
 
-        const verifyRemoveInstance = async (
-          instance: MetadataInstanceElement,
-        ): Promise<void> => {
+        const verifyRemoveInstance = async (instance: MetadataInstanceElement): Promise<void> => {
           await removeElement(adapter, instance)
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeUndefined()
@@ -3427,11 +2717,7 @@ describe('Salesforce adapter E2E with real account', () => {
           type: MetadataObjectType,
           fullName: string,
           content: Value,
-        ): MetadataInstanceElement =>
-          createInstanceElement(
-            { fullName, apiVersion: API_VERSION, content },
-            type,
-          )
+        ): MetadataInstanceElement => createInstanceElement({ fullName, apiVersion: API_VERSION, content }, type)
 
         describe('apex class manipulation', () => {
           const apexClassInstance = createApexInstance(
@@ -3508,9 +2794,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'MyApexPage',
             new StaticFile({
               filepath: 'ApexPage.page',
-              content: Buffer.from(
-                '<apex:page>Created by e2e test!</apex:page>',
-              ),
+              content: Buffer.from('<apex:page>Created by e2e test!</apex:page>'),
             }),
           )
           apexPageInstance.value.label = 'MyApexPage'
@@ -3544,9 +2828,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'MyApexComponent',
             new StaticFile({
               filepath: 'MyApexComponent.component',
-              content: Buffer.from(
-                '<apex:component >Created by e2e test!</apex:component>',
-              ),
+              content: Buffer.from('<apex:component >Created by e2e test!</apex:component>'),
             }),
           )
           apexComponentInstance.value.label = 'MyApexComponent'
@@ -3586,9 +2868,7 @@ describe('Salesforce adapter E2E with real account', () => {
           const deployResult = await adapter.deploy({
             changeGroup: {
               groupID: instance.elemID.getFullName(),
-              changes: [
-                { action: 'modify', data: { before: instance, after } },
-              ],
+              changes: [{ action: 'modify', data: { before: instance, after } }],
             },
             progressReporter: nullProgressReporter,
           })
@@ -3598,9 +2878,7 @@ describe('Salesforce adapter E2E with real account', () => {
               `Failed updating instance ${instance.elemID.getFullName()} with errors: ${deployResult.errors}`,
             )
           }
-          return getChangeData(
-            deployResult.appliedChanges[0],
-          ) as InstanceElement
+          return getChangeData(deployResult.appliedChanges[0]) as InstanceElement
         }
 
         const verifyUpdateInstance = async (
@@ -3612,9 +2890,7 @@ describe('Salesforce adapter E2E with real account', () => {
           await updateInstance(instance, updatedFieldPath, updatedValue)
           const instanceInfo = await getMetadataFromElement(client, instance)
           expect(instanceInfo).toBeDefined()
-          expect(_.get(instanceInfo, updatedFieldPath)).toEqual(
-            expectedUpdatedValue ?? updatedValue,
-          )
+          expect(_.get(instanceInfo, updatedFieldPath)).toEqual(expectedUpdatedValue ?? updatedValue)
         }
 
         describe('email folder manipulation', () => {
@@ -3637,11 +2913,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update email folder instance', async () => {
-            await verifyUpdateInstance(
-              emailFolderInstance,
-              ['name'],
-              'My Updated Email Folder Name',
-            )
+            await verifyUpdateInstance(emailFolderInstance, ['name'], 'My Updated Email Folder Name')
           })
 
           it('should remove email folder instance', async () => {
@@ -3655,8 +2927,7 @@ describe('Salesforce adapter E2E with real account', () => {
           beforeAll(async () => {
             emailTemplateInstance = createInstance({
               value: {
-                [constants.INSTANCE_FULL_NAME_FIELD]:
-                  'TestEmailFolder/MyEmailTemplate',
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'TestEmailFolder/MyEmailTemplate',
                 name: 'My Email Template Name',
                 available: true,
                 style: 'none',
@@ -3681,11 +2952,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update email template instance', async () => {
-            await verifyUpdateInstance(
-              emailTemplateInstance,
-              ['name'],
-              'My Updated Email Template Name',
-            )
+            await verifyUpdateInstance(emailTemplateInstance, ['name'], 'My Updated Email Template Name')
           })
 
           it('should remove email template instance', async () => {
@@ -3722,11 +2989,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update report type instance', async () => {
-            await verifyUpdateInstance(
-              reportTypeInstance,
-              ['label'],
-              'My Updated Report Type Label',
-            )
+            await verifyUpdateInstance(reportTypeInstance, ['label'], 'My Updated Report Type Label')
           })
 
           it('should remove report type instance', async () => {
@@ -3754,11 +3017,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update report folder instance', async () => {
-            await verifyUpdateInstance(
-              reportFolderInstance,
-              ['name'],
-              'My Updated Report Folder Name',
-            )
+            await verifyUpdateInstance(reportFolderInstance, ['name'], 'My Updated Report Folder Name')
           })
 
           it('should remove report folder instance', async () => {
@@ -3772,8 +3031,7 @@ describe('Salesforce adapter E2E with real account', () => {
           beforeAll(async () => {
             reportInstance = createInstance({
               value: {
-                [constants.INSTANCE_FULL_NAME_FIELD]:
-                  'TestReportFolder/MyReport',
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'TestReportFolder/MyReport',
                 name: 'My Report Name',
                 format: 'Summary',
                 reportType: 'Opportunity',
@@ -3789,11 +3047,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update report instance', async () => {
-            await verifyUpdateInstance(
-              reportInstance,
-              ['name'],
-              'My Updated Report Name',
-            )
+            await verifyUpdateInstance(reportInstance, ['name'], 'My Updated Report Name')
           })
 
           it('should remove report instance', async () => {
@@ -3817,27 +3071,15 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should create dashboard folder instance', async () => {
-            await createElementAndVerify(
-              adapter,
-              client,
-              dashboardFolderInstance,
-            )
+            await createElementAndVerify(adapter, client, dashboardFolderInstance)
           })
 
           it('should update dashboard folder instance', async () => {
-            await verifyUpdateInstance(
-              dashboardFolderInstance,
-              ['name'],
-              'My Updated Dashboard Folder Name',
-            )
+            await verifyUpdateInstance(dashboardFolderInstance, ['name'], 'My Updated Dashboard Folder Name')
           })
 
           it('should remove dashboard folder instance', async () => {
-            await removeElementAndVerify(
-              adapter,
-              client,
-              dashboardFolderInstance,
-            )
+            await removeElementAndVerify(adapter, client, dashboardFolderInstance)
           })
         })
 
@@ -3847,8 +3089,7 @@ describe('Salesforce adapter E2E with real account', () => {
           beforeAll(async () => {
             dashboardInstance = createInstance({
               value: {
-                [constants.INSTANCE_FULL_NAME_FIELD]:
-                  'TestDashboardFolder/MyDashboard',
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'TestDashboardFolder/MyDashboard',
                 backgroundEndColor: '#FFFFFF',
                 backgroundFadeDirection: 'Diagonal',
                 backgroundStartColor: '#FFFFFF',
@@ -3876,11 +3117,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update dashboard instance', async () => {
-            await verifyUpdateInstance(
-              dashboardInstance,
-              ['title'],
-              'My Updated Dashboard Title',
-            )
+            await verifyUpdateInstance(dashboardInstance, ['title'], 'My Updated Dashboard Title')
           })
 
           it('should remove dashboard instance', async () => {
@@ -3908,8 +3145,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update AuraDefinitionBundle instance', async () => {
-            const updatedValue =
-              '({ helperMethod : function() {\n // Some Comment\n } })'
+            const updatedValue = '({ helperMethod : function() {\n // Some Comment\n } })'
             await verifyUpdateInstance(
               auraInstance,
               ['helperContent'],
@@ -3930,19 +3166,16 @@ describe('Salesforce adapter E2E with real account', () => {
             lwcInstance = createInstance({
               value: {
                 ...mockDefaultValues.LightningComponentBundle,
-                [constants.INSTANCE_FULL_NAME_FIELD]:
-                  'myLightningComponentBundle',
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
                 lwcResources: {
                   lwcResource: [
                     {
                       source: lwcJsResourceContent,
-                      filePath:
-                        'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
+                      filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
                     },
                     {
                       source: lwcHtmlResourceContent,
-                      filePath:
-                        'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
+                      filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
                     },
                   ],
                 },
@@ -3954,15 +3187,9 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should create LightningComponentBundle instance', async () => {
-            const createdInstance = await createElementAndVerify(
-              adapter,
-              client,
-              lwcInstance,
-            )
+            const createdInstance = await createElementAndVerify(adapter, client, lwcInstance)
             // verify the xml attribute fields have no XML_ATTRIBUTE_PREFIX in the NaCL result
-            expect(
-              createdInstance.value.targetConfigs.targetConfig[0].targets,
-            ).toEqual('lightning__RecordPage')
+            expect(createdInstance.value.targetConfigs.targetConfig[0].targets).toEqual('lightning__RecordPage')
           })
 
           it('should update LightningComponentBundle instance', async () => {
@@ -3972,28 +3199,16 @@ describe('Salesforce adapter E2E with real account', () => {
               ['lwcResources', 'lwcResource', '0', 'source'],
               updatedValue,
             )
-            const instanceInfo = await getMetadataFromElement(
-              client,
-              lwcInstance,
-            )
+            const instanceInfo = await getMetadataFromElement(client, lwcInstance)
             expect(instanceInfo).toBeDefined()
-            const lwcResources = _.get(instanceInfo, [
-              'lwcResources',
-              'lwcResource',
-            ])
+            const lwcResources = _.get(instanceInfo, ['lwcResources', 'lwcResource'])
             const updatedResource = makeArray(lwcResources).find(
-              (lwcResource) =>
-                lwcResource.filePath ===
-                'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
+              lwcResource => lwcResource.filePath === 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
             )
-            expect(updatedResource.source).toEqual(
-              Buffer.from(updatedValue).toString('base64'),
-            )
+            expect(updatedResource.source).toEqual(Buffer.from(updatedValue).toString('base64'))
 
             // verify the xml attribute fields have no XML_ATTRIBUTE_PREFIX in the NaCL result
-            expect(
-              updatedInstance.value.targetConfigs.targetConfig[0].targets,
-            ).toEqual('lightning__RecordPage')
+            expect(updatedInstance.value.targetConfigs.targetConfig[0].targets).toEqual('lightning__RecordPage')
           })
 
           it('should remove LightningComponentBundle instance', async () => {
@@ -4017,11 +3232,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should create static resource instance', async () => {
-            await createElementAndVerify(
-              adapter,
-              client,
-              staticResourceInstance,
-            )
+            await createElementAndVerify(adapter, client, staticResourceInstance)
           })
 
           it('should update static resource instance', async () => {
@@ -4033,11 +3244,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should remove static resource instance', async () => {
-            await removeElementAndVerify(
-              adapter,
-              client,
-              staticResourceInstance,
-            )
+            await removeElementAndVerify(adapter, client, staticResourceInstance)
           })
         })
       })
@@ -4252,9 +3459,7 @@ describe('Salesforce adapter E2E with real account', () => {
         const deployResult = await adapter.deploy({
           changeGroup: {
             groupID: flow.elemID.getFullName(),
-            changes: [
-              { action: 'modify', data: { before: flow, after: newFlow } },
-            ],
+            changes: [{ action: 'modify', data: { before: flow, after: newFlow } }],
           },
           progressReporter: nullProgressReporter,
         })
@@ -4262,9 +3467,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const flowInfo = await getMetadataFromElement(client, flow)
         expect(flowInfo).toBeDefined()
-        expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual(
-          'NotEqualTo',
-        )
+        expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual('NotEqualTo')
       })
 
       afterAll(async () => {
@@ -4438,15 +3641,11 @@ describe('Salesforce adapter E2E with real account', () => {
         const deployResult = await adapter.deploy({
           changeGroup: {
             groupID: layout.elemID.getFullName(),
-            changes: [
-              { action: 'modify', data: { before: layout, after: newLayout } },
-            ],
+            changes: [{ action: 'modify', data: { before: layout, after: newLayout } }],
           },
           progressReporter: nullProgressReporter,
         })
-        layout = getChangeData(
-          deployResult.appliedChanges[0],
-        ) as InstanceElement
+        layout = getChangeData(deployResult.appliedChanges[0]) as InstanceElement
 
         const layoutInfo = await getMetadataFromElement(client, layout)
         expect(layoutInfo).toBeDefined()
@@ -4475,19 +3674,11 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         ])
         expect(layoutSections[1].label).toEqual('Updated Label')
-        const quickActionItems = _.get(
-          layoutInfo,
-          'quickActionList',
-        ).quickActionListItems
+        const quickActionItems = _.get(layoutInfo, 'quickActionList').quickActionListItems
         expect(quickActionItems[0].quickActionName).toEqual('FeedItem.PollPost')
-        expect(quickActionItems[1].quickActionName).toEqual(
-          'FeedItem.ContentPost',
-        )
+        expect(quickActionItems[1].quickActionName).toEqual('FeedItem.ContentPost')
         const relatedLists = _.get(layoutInfo, 'relatedLists')
-        expect(relatedLists.fields).toEqual([
-          'TASK.LAST_UPDATE',
-          'TASK.DUE_DATE',
-        ])
+        expect(relatedLists.fields).toEqual(['TASK.LAST_UPDATE', 'TASK.DUE_DATE'])
       })
 
       it('should delete layout', async () => {
@@ -4495,11 +3686,7 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       it('should point parentRole to a Role instance', () => {
-        const childRole = findElements(
-          result,
-          'Role',
-          'TestChildRole',
-        )[0] as InstanceElement
+        const childRole = findElements(result, 'Role', 'TestChildRole')[0] as InstanceElement
         expect(childRole.value.parentRole).toBeInstanceOf(ReferenceExpression)
         expect(childRole.value.parentRole.elemID.typeName).toEqual('Role')
       })
@@ -4508,18 +3695,14 @@ describe('Salesforce adapter E2E with real account', () => {
       let oldElement: InstanceElement
       beforeAll(async () => {
         oldElement = (await awu(result).find(
-          async (e) =>
-            (await metadataType(e)) ===
-              constants.BUSINESS_HOURS_METADATA_TYPE && isInstanceElement(e),
+          async e => (await metadataType(e)) === constants.BUSINESS_HOURS_METADATA_TYPE && isInstanceElement(e),
         )) as InstanceElement
       })
       it('should modify BusinessHoursSettings', async () => {
         const newElement = oldElement.clone()
         const timeZone = newElement.value.businessHours.Default.timeZoneId
         newElement.value.businessHours.Default.timeZoneId =
-          timeZone === 'America/Los_Angeles'
-            ? 'America/Tijuana'
-            : 'America/Los_Angeles'
+          timeZone === 'America/Los_Angeles' ? 'America/Tijuana' : 'America/Los_Angeles'
         const changes: Change[] = [
           {
             action: 'modify',
@@ -4536,13 +3719,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         expect(modificationResult.errors).toHaveLength(0)
         expect(modificationResult.appliedChanges).toEqual(changes)
-        expect(
-          await objectExists(
-            client,
-            constants.BUSINESS_HOURS_METADATA_TYPE,
-            'BusinessHours',
-          ),
-        ).toBe(true)
+        expect(await objectExists(client, constants.BUSINESS_HOURS_METADATA_TYPE, 'BusinessHours')).toBe(true)
       })
     })
     describe('Deploy QuickAction', () => {
@@ -4559,9 +3736,7 @@ describe('Salesforce adapter E2E with real account', () => {
               layoutSectionStyle: 'TwoColumnsLeftToRight',
               quickActionLayoutColumns: [
                 {
-                  quickActionLayoutItems: [
-                    { field: 'Subject', uiBehavior: 'Edit' },
-                  ],
+                  quickActionLayoutItems: [{ field: 'Subject', uiBehavior: 'Edit' }],
                 },
                 {},
               ],

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { FetchResourceDefinition } from './resource'
-// eslint-disable-next-line import/no-cycle
 import { ElementFetchDefinition, ElementFetchDefinitionOptions } from './element'
 import { DefaultWithCustomizations } from '../shared/types'
 import { FetchRequestDefinition } from './request'

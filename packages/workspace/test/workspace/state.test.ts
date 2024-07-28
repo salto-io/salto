@@ -22,6 +22,7 @@ import {
   Field,
   InstanceElement,
   Element,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -193,38 +194,45 @@ describe('state', () => {
 
     describe('updateStateFromChanges', () => {
       describe('elements state', () => {
-        const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove', 'type') })
-        const toAdd = new ObjectType({ elemID: new ElemID(adapter, 'add', 'type') })
-        const toModify = new ObjectType({
-          elemID: new ElemID(adapter, 'modify', 'type'),
+        const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove') })
+        const toAdd = new ObjectType({ elemID: new ElemID(adapter, 'add') })
+        const toModify = new ObjectType({ elemID: new ElemID(adapter, 'modify') })
+        const toModifyAfter = new ObjectType({
+          elemID: new ElemID(adapter, 'modify'),
+          metaType: new TypeReference(new ElemID(adapter, 'meta')),
+        })
+        const toModifyField = new ObjectType({
+          elemID: new ElemID(adapter, 'modifyField'),
           fields: { removeMe: { refType: BuiltinTypes.STRING }, modifyMe: { refType: BuiltinTypes.STRING } },
         })
 
-        const fieldToAdd = new Field(toModify, 'addMe', BuiltinTypes.STRING)
-        const fieldToModify = new Field(toModify, 'modifyMe', BuiltinTypes.NUMBER)
-        const fieldToRemove = new Field(toModify, 'removeMe', BuiltinTypes.STRING)
-        const fieldToAddElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'addMe')
-        const fieldToModifyElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'modifyMe')
-        const fieldToRemoveElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'removeMe')
+        const fieldToAdd = new Field(toModifyField, 'addMe', BuiltinTypes.STRING)
+        const fieldToModify = new Field(toModifyField, 'modifyMe', BuiltinTypes.NUMBER)
+        const fieldToModifyAfter = new Field(toModifyField, 'modifyMe', BuiltinTypes.BOOLEAN)
+        const fieldToRemove = new Field(toModifyField, 'removeMe', BuiltinTypes.STRING)
+        const fieldToAddElemID = new ElemID(adapter, toModifyField.elemID.name, 'field', 'addMe')
+        const fieldToModifyElemID = new ElemID(adapter, toModifyField.elemID.name, 'field', 'modifyMe')
+        const fieldToRemoveElemID = new ElemID(adapter, toModifyField.elemID.name, 'field', 'removeMe')
 
         let allElements: Element[]
         beforeAll(async () => {
           await state.clear()
-          await state.setAll([toRemove, toModify, newElem])
+          await state.setAll([toRemove, toModify, toModifyField, newElem])
 
           await state.updateStateFromChanges({
             changes: [
               { action: 'add', data: { after: toAdd }, id: toAdd.elemID }, // Element to be added
               { action: 'remove', data: { before: toRemove }, id: toRemove.elemID }, // Element to be removed
+              { action: 'modify', data: { before: toModify, after: toModifyAfter }, id: toModify.elemID }, // Element to be modified
 
               { action: 'add', data: { after: fieldToAdd }, id: fieldToAddElemID }, // Field to be added
               { action: 'remove', data: { before: fieldToRemove }, id: fieldToRemoveElemID }, // Field to be removed
-              { action: 'modify', data: { before: fieldToModify, after: fieldToModify }, id: fieldToModifyElemID }, // Field to be modified
+              { action: 'modify', data: { before: fieldToModify, after: fieldToModifyAfter }, id: fieldToModifyElemID }, // Field to be modified
             ],
           })
 
           allElements = await awu(await state.getAll()).toArray()
-          expect(allElements).toHaveLength(3)
+          expect(allElements).toHaveLength(4)
         })
 
         it('should not remove existing elements', () => {
@@ -237,14 +245,17 @@ describe('state', () => {
           expect(allElements.some(e => e.isEqual(toAdd))).toBeTruthy()
         })
         it('should modify elements that were modified', () => {
+          expect(allElements[2].isEqual(toModifyAfter)).toBeTrue()
+        })
+        it('should modify element fields that were modified', () => {
           expect(
-            allElements[2].isEqual(
+            allElements[3].isEqual(
               new ObjectType({
-                elemID: new ElemID(adapter, 'modify', 'type'),
-                fields: { modifyMe: { refType: BuiltinTypes.NUMBER }, addMe: { refType: BuiltinTypes.STRING } },
+                elemID: toModifyField.elemID,
+                fields: { modifyMe: { refType: BuiltinTypes.BOOLEAN }, addMe: { refType: BuiltinTypes.STRING } },
               }),
             ),
-          ).toBeTruthy()
+          ).toBeTrue()
         })
       })
       describe('pathIndex', () => {

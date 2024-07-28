@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
+import { AdapterAuthentication, ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import {
   addAdapter,
   installAdapter,
@@ -24,7 +24,14 @@ import {
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getPrivateAdaptersNames } from '../../src/formatter'
-import { accountAddDef, addAction, listAction, loginAction, accountLoginDef } from '../../src/commands/account'
+import {
+  accountAddDef,
+  addAction,
+  listAction,
+  loginAction,
+  accountLoginDef,
+  createConfigFromLoginParameters,
+} from '../../src/commands/account'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
@@ -208,8 +215,11 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'success']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('add', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': true })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(
+              eventName,
+              1,
+              expect.objectContaining({ 'adapter-newAdapter': true }),
+            )
           })
         })
       })
@@ -227,12 +237,7 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('add', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
-              app: 'test',
-              installationID: '1234',
-              workspaceID: 'test',
-            })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, { workspaceID: 'test' })
           })
         })
       })
@@ -251,12 +256,7 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('add', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
-              app: 'test',
-              installationID: '1234',
-              workspaceID: 'test',
-            })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, { workspaceID: 'test' })
           })
         })
       })
@@ -602,6 +602,45 @@ describe('account command group', () => {
     })
   })
 
+  describe('createConfigFromLoginParameters() helper', () => {
+    describe('when login parameters are marked required', () => {
+      const credentialsType = new ObjectType({
+        elemID: new ElemID('MockAdapterName'),
+        fields: {
+          username: {
+            refType: BuiltinTypes.STRING,
+            annotations: {},
+          },
+          token: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              _required: true,
+            },
+          },
+        },
+      })
+
+      it('should work when the required param is present', async () => {
+        const loginParameters = ['token=token456']
+        const getLoginInput = createConfigFromLoginParameters(loginParameters)
+        const newConfig = await getLoginInput(credentialsType)
+        expect(newConfig.value.token).toEqual('token456')
+      })
+
+      it('should throw when the required param is missing - with other matches', async () => {
+        const loginParameters = ['username=user123']
+        const getLoginInput = createConfigFromLoginParameters(loginParameters)
+        await expect(getLoginInput(credentialsType)).rejects.toThrow()
+      })
+
+      it('should throw when the required param is missing - with no other matches', async () => {
+        const loginParameters = ['password=password789']
+        const getLoginInput = createConfigFromLoginParameters(loginParameters)
+        await expect(getLoginInput(credentialsType)).rejects.toThrow()
+      })
+    })
+  })
+
   describe('login command', () => {
     let cliCommandArgs: mocks.MockCommandArgs
     beforeEach(() => {
@@ -644,12 +683,9 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'success']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({
-              'adapter-salesforce': true,
-              installationID: '1234',
-              app: 'test',
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, {
               workspaceID: 'test',
+              'adapter-salesforce': true,
             })
           })
         })
@@ -668,12 +704,7 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
-              app: 'test',
-              installationID: '1234',
-              workspaceID: 'test',
-            })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, { workspaceID: 'test' })
           })
         })
       })
@@ -690,12 +721,7 @@ describe('account command group', () => {
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
-            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
-              app: 'test',
-              installationID: '1234',
-              workspaceID: 'test',
-            })
+            expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventName, 1, { workspaceID: 'test' })
           })
         })
       })

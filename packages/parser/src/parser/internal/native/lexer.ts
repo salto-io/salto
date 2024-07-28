@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import * as moo from 'moo'
+import type { SourcePos } from '../types'
 
 export const WILDCARD = '****dynamic****'
 
@@ -50,18 +51,7 @@ export const TOKEN_TYPES = {
 
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
 const NEWLINE_CHARS = '\r\n\u2028\u2029'
-// In multiline strings, we want to match content till a reference expression, so next token matches the reference.
-// to do this we use a lookahead that finds the '${', but matches the string without it. the next token should catch the full ${<reference>} expression.
-// But, if the origin string contains something like ${<some text> {<reference>}}, the $ will be escaped by us, and we get \${<some text> {<reference>}}
-// So, we need to distinguish between '${' and '\${'.
-// The first alternative in the regex actually checks for a '${' preceded by at least one char that isn't \
-// The second alternative checks for strings containing '\${', and stops right after, to avoid including real references that comes after
-// The third alternative matches any other string, until a new line.
-const MULTILINE_CONTENT = new RegExp(`.*?[^\\\\](?=\\$\\{)|.*\\\\\\$\\{|.*[${NEWLINE_CHARS}]`)
-// Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
-// We accept unicode newline characters because the string dump code does not treat them as newlines so they can appear
-// in a single line string
-const SINGLELINE_CONTENT = /[^\r\n\\]+?(?=\$\{|["\r\n\\])/
+const MULTILINE_CONTENT = new RegExp(`.*[${NEWLINE_CHARS}]`)
 export const REFERENCE_PART = `\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`
 const REFERENCE = new RegExp(REFERENCE_PART)
 
@@ -97,18 +87,16 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.ERROR]: moo.error,
   },
   string: {
-    [TOKEN_TYPES.REFERENCE]: { match: REFERENCE, value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', pop: 1 },
-    // This handles regular escapes, unicode escapes and escaped template markers ('\${')
-    [TOKEN_TYPES.ESCAPE]: { match: /\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?/ },
-    [TOKEN_TYPES.CONTENT]: { match: SINGLELINE_CONTENT, lineBreaks: false },
+    // This handles regular escapes, and unicode characters
+    [TOKEN_TYPES.ESCAPE]: { match: /\\[^u]|\\u[0-9a-fA-F]{4}/ },
+    [TOKEN_TYPES.CONTENT]: { match: /[^"\\\r\n]+/, lineBreaks: false },
     // In this context we do not treat unicode newlines as new lines because the dump code
     // can put them in a single line string
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true, pop: 1 },
     [TOKEN_TYPES.ERROR]: moo.error,
   },
   multilineString: {
-    [TOKEN_TYPES.REFERENCE]: { match: REFERENCE, value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.MULTILINE_END]: { match: /^[ \t]*'''/, pop: 1 },
     [TOKEN_TYPES.CONTENT]: { match: MULTILINE_CONTENT, lineBreaks: true },
     [TOKEN_TYPES.ERROR]: moo.error,
@@ -120,6 +108,19 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.ERROR]: moo.error,
   },
 }
+
+const stringWithReferencesRules = moo.compile({
+  // This handles regular escapes, unicode escapes and escaped template markers ('\${')
+  [TOKEN_TYPES.ESCAPE]: { match: /\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?/ },
+  [TOKEN_TYPES.REFERENCE]: { match: REFERENCE, value: s => s.slice(2, -1).trim() },
+  // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
+  [TOKEN_TYPES.CONTENT]: {
+    match: new RegExp(`[^\\${NEWLINE_CHARS}]+?(?=\\$\\{|[${NEWLINE_CHARS}\\\\]|$)`),
+    lineBreaks: false,
+  },
+  [TOKEN_TYPES.NEWLINE]: { match: new RegExp(`[${NEWLINE_CHARS}]+`), lineBreaks: true },
+  [TOKEN_TYPES.ERROR]: moo.error,
+})
 
 export type LexerToken = Required<moo.Token>
 
@@ -166,6 +167,19 @@ const validateToken = (token?: moo.Token): token is LexerToken => {
   }
   return true
 }
+
+export const stringLexerFromString = (src: string): LexerToken[] => {
+  stringWithReferencesRules.reset(src)
+  return Array.from(stringWithReferencesRules).filter(validateToken)
+}
+
+export const stringLexer = (stringTokens: LexerToken[], start: SourcePos): LexerToken[] =>
+  stringLexerFromString(stringTokens.map(t => t.text).join('')).map(token => ({
+    ...token,
+    col: start.col + token.col,
+    line: start.line + token.line - 1,
+    offset: start.byte + token.offset + 1,
+  }))
 
 class PeekableLexer {
   private lexer: moo.Lexer

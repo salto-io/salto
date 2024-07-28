@@ -16,10 +16,10 @@
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { sortListsFilterCreator } from '../../src/filters'
 import { FilterWith } from '../../src/filter_utils'
-import { ApiDefinitions } from '../../src/definitions'
+import { ApiDefinitions, APIDefinitionsOptions } from '../../src/definitions'
 import { ElementFieldCustomization } from '../../src/definitions/system/fetch'
 
-const makeDefinitions = <TOptions>(
+const makeDefinitions = <TOptions extends APIDefinitionsOptions>(
   fieldCustomizations: Record<string, ElementFieldCustomization>,
 ): { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> } => ({
   definitions: {

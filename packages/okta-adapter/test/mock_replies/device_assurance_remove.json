@@ -1,0 +1,14 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/device-assurances/deviceassurance-fakeid1",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "47",
+      "x-rate-limit-reset": "1719733591"
+    }
+  }
+]

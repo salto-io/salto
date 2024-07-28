@@ -20,13 +20,10 @@ import { BlockBase, isListItem, RefListItem } from '../recipe_block_types'
 export type NetsuiteBlock = BlockBase & {
   provider: 'netsuite' | 'netsuite_secondary'
   dynamicPickListSelection: {
-    // eslint-disable-next-line camelcase
     netsuite_object: string
-    // eslint-disable-next-line camelcase
     custom_list?: RefListItem[]
   }
   input?: {
-    // eslint-disable-next-line camelcase
     netsuite_object: string
   }
 }

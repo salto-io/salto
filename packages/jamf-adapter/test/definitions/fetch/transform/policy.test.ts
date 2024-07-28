@@ -51,19 +51,22 @@ describe('adjust policy', () => {
       })
     })
   })
-  describe('adjustScriptsObjectArrayToScriptsIds', () => {
+  describe('removeIdsForScriptsObjectArray', () => {
     it('should convert scripts object array to scripts ids', async () => {
       const value = {
         a: 'a',
         general: {},
-        scripts: [{ id: 'script-id' }, { id: 'script-id2' }],
+        scripts: [
+          { id: 'script-id', anotherField: 'yay' },
+          { id: 'script-id2', anotherField: 'hopa' },
+        ],
         b: 'b',
       }
       await expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).resolves.toEqual({
         value: {
           a: 'a',
           general: {},
-          scripts: ['script-id', 'script-id2'],
+          scripts: [{ anotherField: 'yay' }, { anotherField: 'hopa' }],
           b: 'b',
         },
       })
@@ -82,6 +85,22 @@ describe('adjust policy', () => {
           id: 'service-id',
           general: { anotherField: 'bla' },
           b: 'b',
+        },
+      })
+    })
+  })
+  describe('removeSelfServiceIcon', () => {
+    it('should delete self service icon object under self_service field', async () => {
+      const value = {
+        general: {},
+        self_service_icon: "don't delete me",
+        self_service: { self_service_icon: { someField: 'this whole object will be deleted' } },
+      }
+      await expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).resolves.toEqual({
+        value: {
+          general: {},
+          self_service_icon: "don't delete me",
+          self_service: {},
         },
       })
     })

@@ -13,13 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ChangeValidator,
-  getChangeData,
-  ChangeError,
-  InstanceElement,
-  ElemID,
-} from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, ChangeError, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getNamespace } from '../filters/utils'
 import { hasNamespace } from './package'
@@ -58,16 +52,13 @@ const getCpqError = (elemID: ElemID): ChangeError => ({
 })
 
 // this changeValidator will return none or a single changeError
-const changeValidator: ChangeValidator = async (changes) => {
+const changeValidator: ChangeValidator = async changes => {
   const cpqInstance = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
-    .map((change) => getChangeData(change) as InstanceElement) // already checked that this is an instance element
-    .find(async (instance) => {
+    .map(change => getChangeData(change) as InstanceElement) // already checked that this is an instance element
+    .find(async instance => {
       const type = await instance.getType()
-      return (
-        (await hasNamespace(type)) &&
-        (await getNamespace(type)) === CPQ_NAMESPACE
-      )
+      return (await hasNamespace(type)) && (await getNamespace(type)) === CPQ_NAMESPACE
     })
 
   return cpqInstance !== undefined ? [getCpqError(cpqInstance.elemID)] : []

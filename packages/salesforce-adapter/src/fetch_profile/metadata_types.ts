@@ -16,12 +16,7 @@
 
 import _ from 'lodash'
 
-export const FOLDER_METADATA_TYPES = [
-  'ReportFolder',
-  'DashboardFolder',
-  'DocumentFolder',
-  'EmailFolder',
-] as const
+export const FOLDER_METADATA_TYPES = ['ReportFolder', 'DashboardFolder', 'DocumentFolder', 'EmailFolder'] as const
 
 export const CUSTOM_OBJECT_FIELDS = [
   'WebLink',
@@ -583,11 +578,7 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'WorkspaceMapping',
 ] as const
 
-export const METADATA_TYPES_WITH_DEPENDENCIES = [
-  'CustomMetadata',
-  ...CUSTOM_OBJECT_FIELDS,
-  ...WORKFLOW_FIELDS,
-] as const
+export const METADATA_TYPES_WITH_DEPENDENCIES = ['CustomMetadata', ...CUSTOM_OBJECT_FIELDS, ...WORKFLOW_FIELDS] as const
 
 export const EXCLUDED_METADATA_TYPES = [
   'AssignmentRule', // Fetched through parent type
@@ -606,15 +597,10 @@ export const SUPPORTED_METADATA_TYPES = [
   ...METADATA_TYPES_WITH_DEPENDENCIES,
 ] as const
 
-export const SALESFORCE_METADATA_TYPES = [
-  ...SUPPORTED_METADATA_TYPES,
-  ...EXCLUDED_METADATA_TYPES,
-] as const
+export const SALESFORCE_METADATA_TYPES = [...SUPPORTED_METADATA_TYPES, ...EXCLUDED_METADATA_TYPES] as const
 
-export type MetadataTypeWithoutDependencies =
-  (typeof METADATA_TYPES_WITHOUT_DEPENDENCIES)[number]
-export type MetadataTypeWithDependencies =
-  (typeof METADATA_TYPES_WITH_DEPENDENCIES)[number]
+export type MetadataTypeWithoutDependencies = (typeof METADATA_TYPES_WITHOUT_DEPENDENCIES)[number]
+export type MetadataTypeWithDependencies = (typeof METADATA_TYPES_WITH_DEPENDENCIES)[number]
 export type ExcludedMetadataType = (typeof EXCLUDED_METADATA_TYPES)[number]
 export type SupportedMetadataType = (typeof SUPPORTED_METADATA_TYPES)[number]
 export type SalesforceMetadataType = (typeof SALESFORCE_METADATA_TYPES)[number]
@@ -622,10 +608,7 @@ export type SalesforceMetadataType = (typeof SALESFORCE_METADATA_TYPES)[number]
 export type CustomObjectField = (typeof CUSTOM_OBJECT_FIELDS)[number]
 export type WorkflowField = (typeof WORKFLOW_FIELDS)[number]
 
-export const METADATA_TYPE_TO_DEPENDENCIES: Record<
-  MetadataTypeWithDependencies,
-  SalesforceMetadataType[]
-> = {
+export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies, SalesforceMetadataType[]> = {
   CustomMetadata: ['CustomMetadata', 'CustomObject'],
   BusinessProcess: ['CustomObject'],
   CompactLayout: ['CustomObject'],
@@ -648,40 +631,25 @@ export const METADATA_TYPE_TO_DEPENDENCIES: Record<
 export const isMetadataTypeWithoutDependencies = (
   metadataType: SalesforceMetadataType,
 ): metadataType is MetadataTypeWithoutDependencies =>
-  (METADATA_TYPES_WITHOUT_DEPENDENCIES as ReadonlyArray<string>).includes(
-    metadataType,
-  )
+  (METADATA_TYPES_WITHOUT_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
 
-export const isMetadataTypeWithDependency = (
-  metadataType: SalesforceMetadataType,
-): metadataType is MetadataTypeWithDependencies =>
-  (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(
-    metadataType,
-  )
+export const isMetadataTypeWithDependency = (metadataType: string): metadataType is MetadataTypeWithDependencies =>
+  (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
 
-export const getFetchTargets = (
-  target: SupportedMetadataType[],
-): SalesforceMetadataType[] => {
-  const allTypes: SalesforceMetadataType[] = [
-    ...target.filter(isMetadataTypeWithoutDependencies),
-  ]
+export const getFetchTargetsWithDependencies = (targets: string[]): string[] => {
+  const result = [...targets]
   const handledTypesWithDependencies: MetadataTypeWithDependencies[] = []
-  let typesWithDependencies = target.filter(isMetadataTypeWithDependency)
+  let typesWithDependencies = targets.filter(isMetadataTypeWithDependency)
   while (!_.isEmpty(typesWithDependencies)) {
     _(METADATA_TYPE_TO_DEPENDENCIES)
       .pick(typesWithDependencies)
       .values()
       .flatten()
-      .forEach((metadataType) => allTypes.push(metadataType))
-    typesWithDependencies.forEach((metadataType) =>
-      handledTypesWithDependencies.push(metadataType),
-    )
-    typesWithDependencies = allTypes
+      .forEach(metadataType => result.push(metadataType))
+    typesWithDependencies.forEach(metadataType => handledTypesWithDependencies.push(metadataType))
+    typesWithDependencies = result
       .filter(isMetadataTypeWithDependency)
-      .filter(
-        (typeWithDependency) =>
-          !handledTypesWithDependencies.includes(typeWithDependency),
-      )
+      .filter(typeWithDependency => !handledTypesWithDependencies.includes(typeWithDependency))
   }
-  return _(allTypes).uniq().value()
+  return _(result).uniq().value()
 }

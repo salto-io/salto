@@ -28,6 +28,7 @@ import {
   ZENDESK,
 } from './constants'
 import {
+  fixerNames,
   Guide,
   IdLocator,
   OmitInactiveConfig,
@@ -36,6 +37,7 @@ import {
   ZendeskClientConfig,
   ZendeskDeployConfig,
   ZendeskFetchConfig,
+  ZendeskFixElementsConfig,
 } from './user_config'
 
 const { defaultMissingUserFallbackField } = configUtils
@@ -67,6 +69,7 @@ export const CURSOR_BASED_PAGINATION_FIELD = 'links.next'
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
+export const FIX_ELEMENTS_CONFIG = 'fixElements'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
@@ -84,6 +87,7 @@ export type ZendeskConfig = {
   [FETCH_CONFIG]: ZendeskFetchConfig
   [DEPLOY_CONFIG]?: ZendeskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
+  [FIX_ELEMENTS_CONFIG]?: ZendeskFixElementsConfig
 }
 
 export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
@@ -1296,7 +1300,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'groups',
     },
   },
-  // eslint-disable-next-line camelcase
   custom_roles: {
     request: {
       url: '/api/v2/custom_roles',
@@ -1371,13 +1374,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'automations',
     },
   },
-  // eslint-disable-next-line camelcase
   sla_policies: {
     request: {
       url: '/api/v2/slas/policies',
     },
   },
-  // eslint-disable-next-line camelcase
   sla_policies_definitions: {
     request: {
       url: '/api/v2/slas/policies/definitions',
@@ -1404,7 +1405,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'macros',
     },
   },
-  // eslint-disable-next-line camelcase
   macros_actions: {
     request: {
       url: '/api/v2/macros/actions',
@@ -1416,7 +1416,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
-  // eslint-disable-next-line camelcase
   macro_categories: {
     request: {
       url: '/api/v2/macros/categories',
@@ -1426,7 +1425,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
-  // eslint-disable-next-line camelcase
   macros_definitions: {
     // has some overlaps with macro_actions
     request: {
@@ -1451,7 +1449,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'brands',
     },
   },
-  // eslint-disable-next-line camelcase
   dynamic_content_item: {
     request: {
       url: '/api/v2/dynamic_content/items',
@@ -1540,7 +1537,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'locales',
     },
   },
-  // eslint-disable-next-line camelcase
   business_hours_schedule_holiday: {
     request: {
       url: '/api/v2/business_hours/schedules/{scheduleId}/holidays',
@@ -1588,13 +1584,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
     },
   },
-  // eslint-disable-next-line camelcase
   sharing_agreements: {
     request: {
       url: '/api/v2/sharing_agreements',
     },
   },
-  // eslint-disable-next-line camelcase
   support_addresses: {
     request: {
       url: '/api/v2/recipient_addresses',
@@ -1606,7 +1600,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'recipient_addresses',
     },
   },
-  // eslint-disable-next-line camelcase
   ticket_forms: {
     // not always available
     request: {
@@ -1624,7 +1617,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  // eslint-disable-next-line camelcase
   ticket_fields: {
     request: {
       url: '/api/v2/ticket_fields',
@@ -1637,7 +1629,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
-  // eslint-disable-next-line camelcase
   user_fields: {
     request: {
       url: '/api/v2/user_fields',
@@ -1648,7 +1639,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'user_fields',
     },
   },
-  // eslint-disable-next-line camelcase
   organization_fields: {
     request: {
       url: '/api/v2/organization_fields',
@@ -1699,7 +1689,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       serviceUrl: '/admin/objects-rules/rules/routing',
     },
   },
-  // eslint-disable-next-line camelcase
   routing_attributes: {
     request: {
       url: '/api/v2/routing/attributes',
@@ -1712,7 +1701,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
     },
   },
-  // eslint-disable-next-line camelcase
   routing_attribute_definitions: {
     request: {
       url: '/api/v2/routing/attributes/definitions',
@@ -1727,7 +1715,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/api/v2/workspaces',
     },
   },
-  // eslint-disable-next-line camelcase
   app_installations: {
     request: {
       url: '/api/v2/apps/installations',
@@ -1735,7 +1722,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
   },
-  // eslint-disable-next-line camelcase
   apps_owned: {
     request: {
       url: '/api/v2/apps/owned',
@@ -1743,7 +1729,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
   },
-  // eslint-disable-next-line camelcase
   oauth_clients: {
     request: {
       url: '/api/v2/oauth/clients',
@@ -1754,7 +1739,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'clients',
     },
   },
-  // eslint-disable-next-line camelcase
   oauth_global_clients: {
     request: {
       url: '/api/v2/oauth/global_clients',
@@ -1765,7 +1749,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'global_clients',
     },
   },
-  // eslint-disable-next-line camelcase
   account_settings: {
     request: {
       url: '/api/v2/account/settings',
@@ -1774,14 +1757,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'settings',
     },
   },
-  // eslint-disable-next-line camelcase
   resource_collections: {
     request: {
       url: '/api/v2/resource_collections',
       paginationField: 'next_page',
     },
   },
-  // eslint-disable-next-line camelcase
   monitored_twitter_handles: {
     request: {
       url: '/api/v2/channels/twitter/monitored_twitter_handles',
@@ -2765,9 +2746,16 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     },
     omitTicketStatusTicketField: false,
     useNewInfra: false,
+    useGuideNewInfra: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
+  },
+  [FIX_ELEMENTS_CONFIG]: {
+    mergeLists: false,
+    fallbackUsers: true,
+    removeDupUsers: true,
+    orderElements: true,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -3074,6 +3062,19 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   },
 })
 
+const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfig>>({
+  elemID: new ElemID(ZENDESK, 'fixElementsConfig'),
+  fields: {
+    mergeLists: { refType: BuiltinTypes.BOOLEAN },
+    fallbackUsers: { refType: BuiltinTypes.BOOLEAN },
+    removeDupUsers: { refType: BuiltinTypes.BOOLEAN },
+    orderElements: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -3098,6 +3099,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           omitInactive: { refType: OmitInactiveType },
           omitTicketStatusTicketField: { refType: BuiltinTypes.BOOLEAN },
           useNewInfra: { refType: BuiltinTypes.BOOLEAN },
+          useGuideNewInfra: { refType: BuiltinTypes.BOOLEAN },
         },
         omitElemID: true,
       }),
@@ -3107,6 +3109,9 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         ...defaultMissingUserFallbackField,
         createMissingOrganizations: { refType: BuiltinTypes.BOOLEAN },
       }),
+    },
+    [FIX_ELEMENTS_CONFIG]: {
+      refType: fixerConfigType,
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({
@@ -3132,7 +3137,9 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.omitInactive.customizations`,
       `${FETCH_CONFIG}.omitTicketStatusTicketField`,
       `${FETCH_CONFIG}.useNewInfra`,
+      `${FETCH_CONFIG}.useGuideNewInfra`,
       DEPLOY_CONFIG,
+      FIX_ELEMENTS_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
@@ -3194,5 +3201,12 @@ export const validateOmitInactiveConfig = (
         },
       }),
     )
+  }
+}
+export const validateFixElementsConfig = (FixElementsConfig: ZendeskFixElementsConfig | undefined): void => {
+  if (FixElementsConfig !== undefined) {
+    if (!Object.keys(FixElementsConfig).every(fixerName => (fixerNames as unknown as string[]).includes(fixerName))) {
+      throw Error('Invalid Zendesk fixElements config. One of the keys is invalid')
+    }
   }
 }

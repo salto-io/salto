@@ -116,7 +116,6 @@ export const getSalesforceClient = (credentials: UsernamePasswordCredentials): S
   })
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 

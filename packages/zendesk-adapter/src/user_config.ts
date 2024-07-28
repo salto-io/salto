@@ -64,6 +64,7 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
   omitInactive?: OmitInactiveConfig
   omitTicketStatusTicketField?: boolean
   useNewInfra?: boolean
+  useGuideNewInfra?: boolean
 }
 
 export type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }
@@ -76,6 +77,12 @@ export type ZendeskDeployConfig = definitions.UserDeployConfig &
   definitions.DefaultMissingUserFallbackConfig & {
     createMissingOrganizations?: boolean
   }
+
+export const fixerNames = ['mergeLists', 'fallbackUsers', 'removeDupUsers', 'orderElements'] as const
+
+type FixerNames = (typeof fixerNames)[number]
+
+export type ZendeskFixElementsConfig = Record<FixerNames, boolean>
 
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig,

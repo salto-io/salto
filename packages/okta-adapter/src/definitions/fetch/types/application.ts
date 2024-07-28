@@ -17,11 +17,13 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
-import { Value } from '@salto-io/adapter-api'
+import { Value, Values } from '@salto-io/adapter-api'
 import { extractIdFromUrl } from '../../../utils'
-import { LINKS_FIELD } from '../../../constants'
+import { LINKS_FIELD, SAML_2_0_APP } from '../../../constants'
 
 const log = logger(module)
+
+const AUTO_LOGIN_APP = 'AUTO_LOGIN'
 
 type linkProperty = {
   href: string
@@ -62,3 +64,9 @@ export const assignPolicyIdsToApplication = (value: unknown): Value => {
     accessPolicy: extractIdsFromUrls(value, 'accessPolicy'),
   }
 }
+
+export const isCustomApp = (value: Values, subdomain: string): boolean =>
+  [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) &&
+  value.name !== undefined &&
+  // custom app names starts with subdomain and '_'
+  _.startsWith(value.name, `${subdomain}_`)

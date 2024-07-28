@@ -15,7 +15,7 @@
  */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { ValueGeneratedItem } from '@salto-io/adapter-components/src/fetch'
+import { fetch } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../src/config'
 import { ZENDESK } from '../src/constants'
 import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from '../src/inactive'
@@ -143,7 +143,7 @@ describe('omit inactive', () => {
 
   describe('onFetch', () => {
     let instanceFilter: (instances: InstanceElement[]) => InstanceElement[]
-    let itemFilter: (item: ValueGeneratedItem) => boolean
+    let itemFilter: (item: fetch.ValueGeneratedItem) => boolean
     beforeEach(async () => {
       jest.clearAllMocks()
     })

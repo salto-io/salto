@@ -30,8 +30,12 @@ describe('telemetry event names', () => {
     cliTelemetry = getCliTelemetry(mockTelemetry, command)
     cliTelemetry.success()
 
-    expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'success')])
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledTimes(1)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledWith(
+      buildEventName(command, 'success'),
+      1,
+      expect.objectContaining({}),
+    )
   })
 
   it('should send success events with tags', () => {
@@ -41,11 +45,12 @@ describe('telemetry event names', () => {
     cliTelemetry.setTags(tags)
     cliTelemetry.success()
 
-    expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'success')])
-    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')]).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')][0].tags).toHaveProperty('someTag')
-    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')][0].tags.someTag).toEqual(tags.someTag)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledTimes(1)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledWith(
+      buildEventName(command, 'success'),
+      1,
+      expect.objectContaining(tags),
+    )
   })
 
   it('should send mergeErrors events with some value > 1', () => {
@@ -54,9 +59,12 @@ describe('telemetry event names', () => {
     cliTelemetry = getCliTelemetry(mockTelemetry, command)
     cliTelemetry.mergeErrors(42)
 
-    expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'mergeErrors')])
-    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'mergeErrors')][0].value).toEqual(value)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledTimes(1)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledWith(
+      buildEventName(command, 'mergeErrors'),
+      value,
+      expect.objectContaining({}),
+    )
   })
 
   it('should build event name for a some command', () => {

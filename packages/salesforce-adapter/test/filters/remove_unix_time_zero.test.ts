@@ -13,12 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  Element,
-  ElemID,
-  ObjectType,
-  CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SALESFORCE } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_unix_time_zero'
 import { defaultFilterContext } from '../utils'
@@ -82,42 +77,26 @@ describe('removeUnixTimeZero', () => {
   describe('on fetch', () => {
     it('should remove invalid unix time 0 annotations', () => {
       const testValueBothInvalidFields = testElements[0] as ObjectType
-      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.CHANGED_AT,
-      )
-      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.CREATED_AT,
-      )
+      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
+      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
 
       const testValueInvalidCreatedAt = testElements[1] as ObjectType
-      expect(testValueInvalidCreatedAt.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.CREATED_AT,
-      )
+      expect(testValueInvalidCreatedAt.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
 
       const testValueInvalidChangedAt = testElements[2] as ObjectType
-      expect(testValueInvalidChangedAt.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.CHANGED_AT,
-      )
+      expect(testValueInvalidChangedAt.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
     })
 
     it('should not remove annotations with valid time', () => {
       const testValueBothValidFields = testElements[3] as ObjectType
-      expect(testValueBothValidFields.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.CREATED_AT,
-      )
-      expect(testValueBothValidFields.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.CHANGED_AT,
-      )
+      expect(testValueBothValidFields.annotations).toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
+      expect(testValueBothValidFields.annotations).toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
 
       const testValueInvalidCreatedAt = testElements[1] as ObjectType
-      expect(testValueInvalidCreatedAt.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.CHANGED_AT,
-      )
+      expect(testValueInvalidCreatedAt.annotations).toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
 
       const testValueInvalidChangedAt = testElements[2] as ObjectType
-      expect(testValueInvalidChangedAt.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.CREATED_AT,
-      )
+      expect(testValueInvalidChangedAt.annotations).toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
     })
   })
 })

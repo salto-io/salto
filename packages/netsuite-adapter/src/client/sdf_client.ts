@@ -136,6 +136,15 @@ const RESPONSE_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
   plugintypeimpl: 'pluginimplementation',
 }
 
+const logDecorator = decorators.wrapMethodWith(async ({ call }: decorators.OriginalCall): Promise<unknown> => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/return-await
+    return await call()
+  } catch (e) {
+    throw toError(e)
+  }
+})
+
 export type SdfClientOpts = {
   credentials: SdfCredentials
   config?: ClientConfig
@@ -226,7 +235,7 @@ export default class SdfClient {
     this.instanceLimiter = instanceLimiter
   }
 
-  @SdfClient.logDecorator
+  @logDecorator
   static async validateCredentials(credentials: SdfCredentials): Promise<AccountInfo> {
     const netsuiteClient = new SdfClient({
       credentials,
@@ -251,17 +260,6 @@ export default class SdfClient {
       log: NodeConsoleLogger,
     })
   }
-
-  private static logDecorator = decorators.wrapMethodWith(
-    async ({ call }: decorators.OriginalCall): Promise<unknown> => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/return-await
-        return await call()
-      } catch (e) {
-        throw toError(e)
-      }
-    },
-  )
 
   private async createProject(projectName: string, suiteAppId: string | undefined): Promise<void> {
     const projectPath = osPath.join(baseExecutionPath, projectName)
@@ -412,7 +410,7 @@ export default class SdfClient {
     await Promise.all([SdfClient.deleteProject(projectPath), this.deleteAuthId(authId)])
   }
 
-  @SdfClient.logDecorator
+  @logDecorator
   async getCustomObjects(typeNames: string[], queries: NetsuiteFetchQueries): Promise<GetCustomObjectsResult> {
     // in case of partial fetch we'd need to proceed in order to calculate deleted elements
     if (typeNames.concat(CONFIG_FEATURES).every(type => !queries.originFetchQuery.isTypeMatch(type))) {
@@ -751,9 +749,11 @@ export default class SdfClient {
       },
       executor,
     )
-    return results.data.map(({ type, scriptId }: { type: string; scriptId: string }) => ({
+    const instancesIds = results.data as Array<{ type: string; scriptId: string }>
+    return instancesIds.map(({ type, scriptId }) => ({
       type: SdfClient.fixTypeName(type),
       instanceId: scriptId,
+      suiteAppId,
     }))
   }
 
@@ -802,7 +802,7 @@ export default class SdfClient {
     }
   }
 
-  @SdfClient.logDecorator
+  @logDecorator
   async importFileCabinetContent(
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
@@ -851,7 +851,7 @@ export default class SdfClient {
     }
   }
 
-  @SdfClient.logDecorator
+  @logDecorator
   async deploy(
     suiteAppId: string | undefined,
     { manifestDependencies, validateOnly = false }: SdfDeployParams,

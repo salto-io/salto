@@ -77,7 +77,9 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
+  enableAssetsObjectFieldConfiguration?: boolean
   automationPageSize?: number
+  splitFieldContextOptions?: boolean
 }
 
 export type MaskingConfig = {
@@ -161,6 +163,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     addAlias: true,
     enableIssueLayouts: true,
     enableNewWorkflowAPI: false,
+    enableAssetsObjectFieldConfiguration: false,
   },
   deploy: {
     forceDelete: false,
@@ -218,7 +221,6 @@ export type ChangeValidatorName =
   | 'permissionType'
   | 'automations'
   | 'activeSchemeDeletion'
-  | 'sameIssueTypeNameChange'
   | 'statusMigrationChange'
   | 'workflowSchemeMigration'
   | 'workflowStatusMappings'
@@ -252,6 +254,8 @@ export type ChangeValidatorName =
   | 'addJsmProject'
   | 'deleteLabelAtttribute'
   | 'jsmPermissions'
+  | 'fieldContextOptions'
+  | 'uniqueFields'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -282,7 +286,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     permissionType: { refType: BuiltinTypes.BOOLEAN },
     automations: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeDeletion: { refType: BuiltinTypes.BOOLEAN },
-    sameIssueTypeNameChange: { refType: BuiltinTypes.BOOLEAN },
     statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
     workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
     workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
@@ -315,6 +318,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     addJsmProject: { refType: BuiltinTypes.BOOLEAN },
     deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
     jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
+    fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
+    uniqueFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -358,7 +363,9 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
+    enableAssetsObjectFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     automationPageSize: { refType: BuiltinTypes.NUMBER },
+    splitFieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,
@@ -410,6 +417,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.enableIssueLayouts',
       'fetch.removeDuplicateProjectRoles',
       'fetch.enableNewWorkflowAPI',
+      'fetch.enableAssetsObjectFieldConfiguration',
       'fetch.automationPageSize',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',

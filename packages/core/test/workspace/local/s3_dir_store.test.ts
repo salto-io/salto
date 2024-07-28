@@ -127,7 +127,6 @@ describe('buildS3DirectoryStore', () => {
     })
 
     it('should return undefined the file does not exist', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       getObjectMock.mockRejectedValue({ name: 'NoSuchKey' })
       expect(await directoryStore.get('a/b')).toBeUndefined()
       expect(getObjectMock).toHaveBeenCalledWith({

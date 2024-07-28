@@ -36,6 +36,8 @@ export {
   OptionsWithDefault,
   TransformFunction,
   AdjustFunction,
+  AdjustFunctionSingle,
+  AdjustFunctionMulti,
   ContextParams,
   GeneratedItem,
 } from './shared'

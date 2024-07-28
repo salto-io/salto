@@ -13,13 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  InstanceElement,
-  ReferenceInfo,
-  Values,
-  ElemID,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ReferenceInfo, Values, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
@@ -71,15 +65,10 @@ describe('permission sets custom references', () => {
       })
       it('should create references', async () => {
         const expectedSource = ['fieldPermissions', 'Account', 'testField__c']
-        const expectedTarget = mockTypes.Account.elemID.createNestedID(
-          'field',
-          'testField__c',
-        )
+        const expectedTarget = mockTypes.Account.elemID.createNestedID('field', 'testField__c')
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              ...expectedSource,
-            ),
+            source: permissionSetInstance.elemID.createNestedID(...expectedSource),
             target: expectedTarget,
             type: 'weak',
           },
@@ -88,11 +77,9 @@ describe('permission sets custom references', () => {
     })
   })
   describe('custom apps', () => {
-    const customApp = new InstanceElement(
-      'SomeApplication',
-      createMetadataTypeElement('CustomApplication', {}),
-      { [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication' },
-    )
+    const customApp = new InstanceElement('SomeApplication', createMetadataTypeElement('CustomApplication', {}), {
+      [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication',
+    })
 
     describe('if neither default or visible', () => {
       beforeEach(async () => {
@@ -132,10 +119,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'applicationVisibilities',
-              'SomeApplication',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
             target: customApp.elemID,
             type: 'weak',
           },
@@ -161,10 +145,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toIncludeAllPartialMembers([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'applicationVisibilities',
-              'SomeApplication',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
             target: customApp.elemID,
             type: 'weak',
           },
@@ -177,12 +158,7 @@ describe('permission sets custom references', () => {
           applicationVisibilities: {
             SomeApplication: {
               application: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  CUSTOM_APPLICATION_METADATA_TYPE,
-                  'instance',
-                  'SomeApplication',
-                ),
+                new ElemID(SALESFORCE, CUSTOM_APPLICATION_METADATA_TYPE, 'instance', 'SomeApplication'),
               ),
               default: false,
               visible: true,
@@ -197,11 +173,9 @@ describe('permission sets custom references', () => {
     })
   })
   describe('apex classes', () => {
-    const apexClass = new InstanceElement(
-      'SomeApexClass',
-      mockTypes.ApexClass,
-      { [INSTANCE_FULL_NAME_FIELD]: 'SomeApexClass' },
-    )
+    const apexClass = new InstanceElement('SomeApexClass', mockTypes.ApexClass, {
+      [INSTANCE_FULL_NAME_FIELD]: 'SomeApexClass',
+    })
 
     describe('when disabled', () => {
       beforeEach(async () => {
@@ -237,10 +211,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'classAccesses',
-              'SomeApexClass',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'),
             target: apexClass.elemID,
             type: 'weak',
           },
@@ -253,12 +224,7 @@ describe('permission sets custom references', () => {
           classAccesses: {
             SomeApexClass: {
               apexClass: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  APEX_CLASS_METADATA_TYPE,
-                  'instance',
-                  'SomeApexClass',
-                ),
+                new ElemID(SALESFORCE, APEX_CLASS_METADATA_TYPE, 'instance', 'SomeApexClass'),
               ),
               enabled: true,
             },
@@ -307,10 +273,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'flowAccesses',
-              'SomeFlow',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'),
             target: flow.elemID,
             type: 'weak',
           },
@@ -323,14 +286,7 @@ describe('permission sets custom references', () => {
           flowAccesses: {
             SomeFlow: {
               enabled: true,
-              flow: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  FLOW_METADATA_TYPE,
-                  'instance',
-                  'SomeFlow',
-                ),
-              ),
+              flow: new ReferenceExpression(new ElemID(SALESFORCE, FLOW_METADATA_TYPE, 'instance', 'SomeFlow')),
             },
           },
         })
@@ -342,11 +298,9 @@ describe('permission sets custom references', () => {
     })
   })
   describe('layouts', () => {
-    const layout = new InstanceElement(
-      'Account_Account_Layout@bs',
-      mockTypes.Layout,
-      { [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout' },
-    )
+    const layout = new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {
+      [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout',
+    })
 
     describe('when there is a reference to a layout', () => {
       beforeEach(async () => {
@@ -364,10 +318,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: layout.elemID,
             type: 'weak',
           },
@@ -403,26 +354,17 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: layout.elemID,
             type: 'weak',
           },
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: recordTypes[0].elemID,
             type: 'weak',
           },
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: recordTypes[1].elemID,
             type: 'weak',
           },
@@ -435,12 +377,7 @@ describe('permission sets custom references', () => {
               'Account_Account_Layout@bs': [
                 {
                   layout: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      LAYOUT_TYPE_ID_METADATA_TYPE,
-                      'instance',
-                      'Account-Account Layout',
-                    ),
+                    new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, 'instance', 'Account-Account Layout'),
                   ),
                 },
               ],
@@ -460,23 +397,13 @@ describe('permission sets custom references', () => {
                 {
                   layout: 'Account-Account Layout',
                   recordType: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      RECORD_TYPE_METADATA_TYPE,
-                      'instance',
-                      'SomeRecordType',
-                    ),
+                    new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'SomeRecordType'),
                   ),
                 },
                 {
                   layout: 'Account-Account Layout',
                   recordType: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      RECORD_TYPE_METADATA_TYPE,
-                      'instance',
-                      'SomeOtherRecordType',
-                    ),
+                    new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'SomeOtherRecordType'),
                   ),
                 },
               ],
@@ -487,10 +414,7 @@ describe('permission sets custom references', () => {
         it('should only create references to layout', () => {
           expect(refs).toEqual([
             {
-              source: permissionSetInstance.elemID.createNestedID(
-                'layoutAssignments',
-                'Account_Account_Layout@bs',
-              ),
+              source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
               target: layout.elemID,
               type: 'weak',
             },
@@ -548,10 +472,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'objectPermissions',
-              'Account',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('objectPermissions', 'Account'),
             target: customObject.elemID,
             type: 'weak',
           },
@@ -568,9 +489,7 @@ describe('permission sets custom references', () => {
               allowEdit: true,
               allowRead: true,
               modifyAllRecords: false,
-              object: new ReferenceExpression(
-                new ElemID(SALESFORCE, 'Account'),
-              ),
+              object: new ReferenceExpression(new ElemID(SALESFORCE, 'Account')),
               viewAllRecords: false,
             },
           },
@@ -622,10 +541,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'pageAccesses',
-              'SomeApexPage',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'),
             target: apexPage.elemID,
             type: 'weak',
           },
@@ -638,12 +554,7 @@ describe('permission sets custom references', () => {
           pageAccesses: {
             SomeApexPage: {
               apexPage: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  APEX_PAGE_METADATA_TYPE,
-                  'instance',
-                  'SomeApexPage',
-                ),
+                new ElemID(SALESFORCE, APEX_PAGE_METADATA_TYPE, 'instance', 'SomeApexPage'),
               ),
               enabled: true,
             },
@@ -658,11 +569,9 @@ describe('permission sets custom references', () => {
     })
   })
   describe('record types', () => {
-    const recordType = new InstanceElement(
-      'Case_SomeCaseRecordType',
-      mockTypes.RecordType,
-      { [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType' },
-    )
+    const recordType = new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {
+      [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType',
+    })
     describe('when neither default nor visible', () => {
       beforeEach(async () => {
         permissionSetInstance = createTestInstances({
@@ -700,11 +609,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'recordTypeVisibilities',
-              'Case',
-              'SomeCaseRecordType',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'),
             target: recordType.elemID,
             type: 'weak',
           },
@@ -729,11 +634,7 @@ describe('permission sets custom references', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: permissionSetInstance.elemID.createNestedID(
-              'recordTypeVisibilities',
-              'Case',
-              'SomeCaseRecordType',
-            ),
+            source: permissionSetInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'),
             target: recordType.elemID,
             type: 'weak',
           },
@@ -748,12 +649,7 @@ describe('permission sets custom references', () => {
               SomeCaseRecordType: {
                 default: false,
                 recordType: new ReferenceExpression(
-                  new ElemID(
-                    SALESFORCE,
-                    RECORD_TYPE_METADATA_TYPE,
-                    'instance',
-                    'Case.SomeCaseRecordType',
-                  ),
+                  new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'Case.SomeCaseRecordType'),
                 ),
                 visible: true,
               },

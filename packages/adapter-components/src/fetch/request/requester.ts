@@ -28,6 +28,7 @@ import { computeArgCombinations } from '../resource/request_parameters'
 import {
   APIDefinitionsOptions,
   HTTPEndpointDetails,
+  PaginationDefinitions,
   ResolveClientOptionsType,
   ResolvePaginationOptionsType,
 } from '../../definitions/system'
@@ -126,11 +127,16 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
     // * add promises for in-flight requests, to avoid making the same request multiple times in parallel
     const { merged: mergedRequestDef, clientName } = getMergedRequestDefinition(requestDef)
 
-    const paginationOption = mergedRequestDef.endpoint.pagination
-    const paginationDef =
-      paginationOption !== undefined
-        ? pagination[paginationOption]
-        : { funcCreator: noPagination, clientArgs: undefined }
+    const paginationOption = mergedRequestDef.endpoint.pagination ?? 'none'
+    const nonePaginationDef: PaginationDefinitions<ResolveClientOptionsType<Options>> = {
+      funcCreator: noPagination,
+      clientArgs: undefined,
+    }
+    const paginationWithNone = {
+      ...pagination,
+      none: nonePaginationDef,
+    } as Record<ResolvePaginationOptionsType<Options>, PaginationDefinitions<ResolveClientOptionsType<Options>>>
+    const paginationDef = paginationWithNone[paginationOption]
 
     const { clientArgs } = paginationDef
     // order of precedence in case of overlaps: pagination defaults < endpoint < resource-specific request
@@ -145,9 +151,8 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
         typeName,
       )
 
-    const callArgs = mergedEndpointDef.omitBody
-      ? _.pick(mergedEndpointDef, ['queryArgs', 'headers'])
-      : _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body'])
+    const allCallArgs = _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body', 'params', 'queryParamsSerializer'])
+    const callArgs = mergedEndpointDef.omitBody ? _.omit(allCallArgs, 'body') : allCallArgs
 
     log.trace(
       'traversing pages for adapter %s client %s endpoint %s.%s',
@@ -205,7 +210,11 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
             mergedDef.context?.custom !== undefined
               ? mergedDef.context.custom(mergedDef.context)
               : (v: ContextParams) => v
-          const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots).map(contextFunc)
+          const contexts = computeArgCombinations(
+            contextPossibleArgs,
+            relevantArgRoots?.length === 0 ? undefined : relevantArgRoots,
+          ).map(contextFunc)
+
           return request({
             contexts,
             requestDef,

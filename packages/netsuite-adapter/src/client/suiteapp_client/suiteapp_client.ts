@@ -127,7 +127,7 @@ type VersionFeatures = {
 }
 
 const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
-  const errorDetails = error.response?.data?.['o:errorDetails']
+  const errorDetails = _.get(error.response?.data ?? {}, 'o:errorDetails')
   if (!_.isArray(errorDetails)) {
     return undefined
   }
@@ -176,7 +176,9 @@ export default class SuiteAppClient {
       retryCondition: err =>
         retryOptions.retryCondition?.(err) ||
         String(err.response?.status).startsWith(HTTP_SERVER_ERROR_INITIAL) ||
-        RETRYABLE_ERROR_CODES.some(code => code === err.response?.data?.error?.code?.toUpperCase()),
+        RETRYABLE_ERROR_CODES.some(
+          code => code === String(_.get(err.response?.data ?? {}, 'error.code'))?.toUpperCase(),
+        ),
     })
 
     this.versionFeatures = undefined
@@ -699,7 +701,6 @@ export default class SuiteAppClient {
         secret: CONSUMER_SECRET,
       },
       realm: this.credentials.accountId,
-      // eslint-disable-next-line camelcase
       signature_method: 'HMAC-SHA256',
       // eslint-disable-next-line camelcase
       hash_function(base_string, key) {

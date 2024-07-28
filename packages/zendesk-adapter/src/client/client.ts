@@ -25,8 +25,15 @@ import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
 import { PAGE_SIZE, DEFAULT_TIMEOUT_OPTS } from '../config'
 
-const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, throttle, logDecorator, requiresLogin } =
-  clientUtils
+const {
+  DEFAULT_RETRY_OPTS,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+  RATE_LIMIT_USE_BOTTLENECK,
+  throttle,
+  logDecorator,
+  requiresLogin,
+} = clientUtils
 const log = logger(module)
 
 const ORG_ENDPOINT_TO_FILTER = 'organizations/'
@@ -43,13 +50,11 @@ export type HolidayRes = {
 }
 export type SupportAddressRes = {
   data: {
-    // eslint-disable-next-line camelcase
     recipient_addresses: Values[]
   }
 }
 export type AttachmentRes = {
   data: {
-    // eslint-disable-next-line camelcase
     article_attachments: Values[]
   }
 }
@@ -140,6 +145,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
+      useBottleneck: RATE_LIMIT_USE_BOTTLENECK,
       // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
       retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
       timeout: DEFAULT_TIMEOUT_OPTS,

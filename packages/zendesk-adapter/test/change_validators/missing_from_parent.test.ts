@@ -24,10 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
 import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
-import {
-  createParentReferencesError,
-  missingFromParentValidatorCreator,
-} from '../../src/change_validators/child_parent/missing_from_parent'
+import { missingFromParentValidatorCreator } from '../../src/change_validators/child_parent/missing_from_parent'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 
 describe('missingFromParentValidatorCreator', () => {
@@ -58,15 +55,28 @@ describe('missingFromParentValidatorCreator', () => {
       [toChange({ after: option2 }), addOption3, toChange({ before: ticketField, after: clonedTicketField })],
       elementSource.createInMemoryElementSource([clonedTicketField, ticketFieldType]),
     )
-    expect(errors).toEqual([createParentReferencesError(addOption3, ticketField.elemID.getFullName())])
+    expect(errors).toEqual([
+      {
+        elemID: option3.elemID,
+        severity: 'Error',
+        message: 'Element needs to be referred from its parent',
+        detailedMessage: `To add this ${option3.elemID.typeName}, please make sure ${option3.elemID.getFullName()} is included in ‘${ticketField.elemID.getFullName()}’. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582618-element-needs-to-be-referred-from-its-parent`,
+      },
+    ])
   })
   it('should return an error when we add an option instance but it does not exist in the parent - parent is not modified', async () => {
-    const addOption2 = toChange({ after: option2 }) as AdditionChange<InstanceElement>
     const errors = await missingFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])(
       [toChange({ after: option2 })],
       elementSource.createInMemoryElementSource([ticketField, ticketFieldType]),
     )
-    expect(errors).toEqual([createParentReferencesError(addOption2, ticketField.elemID.getFullName())])
+    expect(errors).toEqual([
+      {
+        elemID: option2.elemID,
+        severity: 'Error',
+        message: 'Element needs to be referred from its parent',
+        detailedMessage: `To add this ${option2.elemID.typeName}, please make sure ${option2.elemID.getFullName()} is included in ‘${ticketField.elemID.getFullName()}’. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582618-element-needs-to-be-referred-from-its-parent`,
+      },
+    ])
   })
   it('should not return an error when we add an option and add it to the parent as well', async () => {
     const clonedTicketField = ticketField.clone()

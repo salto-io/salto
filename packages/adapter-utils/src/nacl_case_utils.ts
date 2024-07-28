@@ -49,8 +49,6 @@ export const normalizeFilePathPart = (name: string): string => {
   const suffix = `_${nameHash}${extension}`
   return truncate(name, MAX_PATH_LENGTH - suffix.length).concat(suffix)
 }
-
-/* eslint-disable quote-props */
 // Current values in this mapping should not be changed
 // Values in the map should be unique
 // Adding more values should be with a leading z as an indication the value has more than one letter
@@ -167,7 +165,6 @@ const prettifyWord = (str: string): string[] => {
     result = str.replace(camelCaseRegex, ([lower, upper]) => [lower, upper].join(' '))
   }
   if (allCapsCamelCaseRegex.test(result)) {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     result = result.replace(allCapsCamelCaseRegex, (match, subMatch) => `${match[0]} ${subMatch}`)
   }
 

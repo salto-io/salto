@@ -41,9 +41,7 @@ const log = logger(module)
 
 type ChildField = { id: ReferenceExpression }
 type Condition = {
-  // eslint-disable-next-line camelcase
   parent_field_id: ReferenceExpression
-  // eslint-disable-next-line camelcase
   child_fields: ChildField[]
   value: ReferenceExpression | string
 }
@@ -215,7 +213,6 @@ const isValidChildFields = (
 const sortChildFields = (formInstances: InstanceElement[], ticketFieldById: Record<string, InstanceElement>): void => {
   formInstances.forEach(form => {
     const conditions = (form.value.agent_conditions ?? []).concat(form.value.end_user_conditions ?? [])
-    // eslint-disable-next-line camelcase
     conditions.forEach((condition: Condition) => {
       if (isValidChildFields(condition, ticketFieldById)) {
         condition.child_fields = _.sortBy(

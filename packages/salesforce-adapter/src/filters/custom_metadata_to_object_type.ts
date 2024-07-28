@@ -16,50 +16,45 @@
 import {
   Change,
   Element,
-  ElemID,
   Field,
   getChangeData,
   InstanceElement,
   isField,
   isFieldChange,
   isInstanceElement,
-  isObjectType,
   isObjectTypeChange,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterContext, LocalFilterCreator } from '../filter'
+import { CUSTOM_METADATA, CUSTOM_METADATA_META_TYPE, CUSTOM_METADATA_SUFFIX, CUSTOM_OBJECT } from '../constants'
+import { createCustomObjectChange, createCustomTypeFromCustomObjectInstance } from './custom_objects_to_object_type'
+import { apiName, createMetaType, isMetadataObjectType } from '../transformers/transformer'
 import {
-  CUSTOM_METADATA,
-  CUSTOM_METADATA_SUFFIX,
-  CUSTOM_OBJECT,
-  SALESFORCE,
-} from '../constants'
-import {
-  createCustomObjectChange,
-  createCustomTypeFromCustomObjectInstance,
-} from './custom_objects_to_object_type'
-import { apiName } from '../transformers/transformer'
-import {
+  apiNameSync,
   buildElementsSourceForFetch,
   isCustomMetadataRecordType,
-  isInstanceOfTypeChange,
+  isInstanceOfTypeChangeSync,
+  metadataTypeSync,
 } from './utils'
 
 const log = logger(module)
 
+const { isDefined } = values
 const { awu, groupByAsync } = collections.asynciterable
 
 const createCustomMetadataRecordType = async (
   instance: InstanceElement,
   customMetadataType: ObjectType,
   config: FilterContext,
+  metaType?: ObjectType,
 ): Promise<ObjectType> => {
   const objectType = await createCustomTypeFromCustomObjectInstance({
     instance,
     metadataType: CUSTOM_METADATA,
+    metaType,
     config,
   })
   objectType.fields = {
@@ -70,24 +65,15 @@ const createCustomMetadataRecordType = async (
   return objectType
 }
 
-const isCustomMetadataRecordTypeField = async (
-  element: Element,
-): Promise<boolean> =>
+const isCustomMetadataRecordTypeField = async (element: Element): Promise<boolean> =>
   isField(element) && isCustomMetadataRecordType(element.parent)
 
-const isCustomMetadataRelatedChange = async (
-  change: Change,
-): Promise<boolean> => {
+const isCustomMetadataRelatedChange = async (change: Change): Promise<boolean> => {
   const element = getChangeData(change)
-  return (
-    (await isCustomMetadataRecordType(element)) ||
-    isCustomMetadataRecordTypeField(element)
-  )
+  return (await isCustomMetadataRecordType(element)) || isCustomMetadataRecordTypeField(element)
 }
 
-const getApiNameOfRelatedChange = async (
-  change: Change<ObjectType | Field>,
-): Promise<string> => {
+const getApiNameOfRelatedChange = async (change: Change<ObjectType | Field>): Promise<string> => {
   const element = getChangeData(change)
   return isField(element) ? apiName(element.parent) : apiName(element)
 }
@@ -96,64 +82,54 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
   let groupedOriginalChangesByApiName: Record<string, Change[]>
   return {
     name: 'customMetadataToObjectTypeFilter',
-    onFetch: async (elements) => {
-      const customMetadataType: unknown = await buildElementsSourceForFetch(
-        elements,
-        config,
-      ).get(new ElemID(SALESFORCE, CUSTOM_METADATA))
-      if (!isObjectType(customMetadataType)) {
+    onFetch: async elements => {
+      const customMetadataType = await awu(await buildElementsSourceForFetch(elements, config).getAll())
+        .filter(isMetadataObjectType)
+        .find(elem => metadataTypeSync(elem) === CUSTOM_METADATA)
+      if (customMetadataType === undefined) {
         log.warn('Could not find CustomMetadata ObjectType. Skipping filter.')
         return
       }
-      // The CustomObject instances that will  be converted to ObjectTypes.
+      // The CustomObject instances that will be converted to ObjectTypes.
       const customMetadataInstances = elements
         .filter(isInstanceElement)
-        .filter((e) => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
+        .filter(e => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
 
+      const customMetadataMetaType = config.fetchProfile.isFeatureEnabled('metaTypes')
+        ? createMetaType(CUSTOM_METADATA_META_TYPE, undefined, 'Custom Metadata')
+        : undefined
       const customMetadataRecordTypes = await awu(customMetadataInstances)
-        .map((instance) =>
-          createCustomMetadataRecordType(instance, customMetadataType, config),
-        )
+        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, config, customMetadataMetaType))
         .toArray()
       _.pullAll(elements, customMetadataInstances)
-      customMetadataRecordTypes.forEach((e) => elements.push(e))
+      customMetadataRecordTypes.forEach(e => elements.push(e))
     },
-    preDeploy: async (changes) => {
+    preDeploy: async changes => {
       const customMetadataRelatedChanges = (await awu(changes)
-        .filter((c) => isObjectTypeChange(c) || isFieldChange(c))
+        .filter(c => isObjectTypeChange(c) || isFieldChange(c))
         .filter(isCustomMetadataRelatedChange)
         .toArray()) as Change<ObjectType | Field>[]
 
-      groupedOriginalChangesByApiName = await groupByAsync(
-        customMetadataRelatedChanges,
-        getApiNameOfRelatedChange,
-      )
+      groupedOriginalChangesByApiName = await groupByAsync(customMetadataRelatedChanges, getApiNameOfRelatedChange)
 
-      const deployableChanges = await awu(
-        Object.entries(groupedOriginalChangesByApiName),
-      )
-        .map((entry) => createCustomObjectChange(config.systemFields, ...entry))
+      const deployableChanges = await awu(Object.entries(groupedOriginalChangesByApiName))
+        .map(entry => createCustomObjectChange(config.systemFields, ...entry))
         .toArray()
       _.pullAll(changes, customMetadataRelatedChanges)
-      deployableChanges.forEach((c) => changes.push(c))
+      deployableChanges.forEach(c => changes.push(c))
     },
-    onDeploy: async (changes) => {
-      const relatedAppliedChangesApiNames = await awu(changes)
-        .filter(isInstanceOfTypeChange(CUSTOM_OBJECT))
-        .filter((c) =>
-          getChangeData(c).elemID.name.endsWith(CUSTOM_METADATA_SUFFIX),
-        )
-        .toArray()
-      const appliedChangesApiNames = await awu(relatedAppliedChangesApiNames)
-        .map((c) => apiName(getChangeData(c)))
-        .toArray()
+    onDeploy: async changes => {
+      const relatedAppliedChangesApiNames = changes
+        .filter(isInstanceOfTypeChangeSync(CUSTOM_OBJECT))
+        .filter(c => getChangeData(c).elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
+      const appliedChangesApiNames = relatedAppliedChangesApiNames
+        .map(c => apiNameSync(getChangeData(c)))
+        .filter(isDefined)
 
-      const appliedOriginalChanges = appliedChangesApiNames.flatMap(
-        (name) => groupedOriginalChangesByApiName[name] ?? [],
-      )
+      const appliedOriginalChanges = appliedChangesApiNames.flatMap(name => groupedOriginalChangesByApiName[name] ?? [])
 
       _.pullAll(changes, relatedAppliedChangesApiNames)
-      appliedOriginalChanges.forEach((c) => changes.push(c))
+      appliedOriginalChanges.forEach(c => changes.push(c))
     },
   }
 }

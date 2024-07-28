@@ -27,17 +27,20 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { config, client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { defaultDeployChange } from '../../deployment/standard_deployment'
+import { getLookUpName } from '../../reference_mapping'
 import JiraClient from '../../client/client'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context_options'
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from './default_values'
 import { setContextField } from './issues_and_projects'
 import { setFieldDeploymentAnnotations } from '../../utils'
+import { getAssetsContextId } from '../assets/assets_object_field_configuration'
+import { JiraConfig } from '../../config/config'
 
-const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext']
+const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext', 'AssetsObjectFieldConfiguration']
 
 const log = logger(module)
 
@@ -55,13 +58,55 @@ export const getContextType = async (fieldType: ObjectType): Promise<ObjectType>
   return contextType
 }
 
-export const deployContextChange = async (
+const deployAssetObjectContext = async (
   change: Change<InstanceElement>,
   client: JiraClient,
-  apiDefinitions: config.AdapterApiConfig,
-  paginator?: clientUtils.Paginator,
-  elementsSource?: ReadOnlyElementsSource,
+  config: JiraConfig,
 ): Promise<void> => {
+  if (!config.fetch.enableAssetsObjectFieldConfiguration) {
+    return
+  }
+  const instance = getChangeData(change)
+  if (isRemovalChange(change) || instance.value.assetsObjectFieldConfiguration === undefined) {
+    return
+  }
+  const { workspaceId } = instance.value.assetsObjectFieldConfiguration
+  // we insert the workspaceId to the instance in assetsObjectFieldConfigurationFilter
+  if (workspaceId === undefined) {
+    log.error('Skip deployment of assetsObjectFieldConfiguration because workspaceId is undefined')
+    throw new Error(
+      `assetsObjectFieldConfiguration won't be deployed for instance ${instance.elemID.getFullName()}, due to error with the workspaceId. The context might be deployed partially.`,
+    )
+  }
+
+  const assetContextId = getAssetsContextId(instance)
+  const resolvedInstance = await resolveValues(instance, getLookUpName)
+  try {
+    await client.putPrivate({
+      url: `rest/servicedesk/cmdb/latest/fieldconfig/${assetContextId}`,
+      data: resolvedInstance.value.assetsObjectFieldConfiguration,
+    })
+  } catch (e) {
+    log.error(`Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()}: ${e}`)
+    throw new Error(
+      `Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()}. The context might be deployed partially.`,
+    )
+  }
+}
+
+export const deployContextChange = async ({
+  change,
+  client,
+  config,
+  paginator,
+  elementsSource,
+}: {
+  change: Change<InstanceElement>
+  client: JiraClient
+  config: JiraConfig
+  paginator?: clientUtils.Paginator
+  elementsSource?: ReadOnlyElementsSource
+}): Promise<void> => {
   const fieldsToIgnore = isAdditionChange(change)
     ? FIELDS_TO_IGNORE
     : [...FIELDS_TO_IGNORE, 'issueTypeIds', 'projectIds']
@@ -70,7 +115,7 @@ export const deployContextChange = async (
     await defaultDeployChange({
       change,
       client,
-      apiDefinitions,
+      apiDefinitions: config.apiDefinitions,
       // 'issueTypeIds' can be deployed in the same endpoint as create
       // but for modify there are different endpoints for them
       fieldsToIgnore,
@@ -91,8 +136,11 @@ export const deployContextChange = async (
     elementsSource,
   })
   await setContextField({ contextChange: change, fieldName: 'projectIds', endpoint: 'project', client, elementsSource })
-  await setContextOptions(change, client, elementsSource, paginator)
-  await updateDefaultValues(change, client, elementsSource)
+  if (!config.fetch.splitFieldContextOptions) {
+    await setContextOptions(change, client, elementsSource, paginator)
+    await updateDefaultValues(change, client, config, elementsSource)
+  }
+  await deployAssetObjectContext(change, client, config)
 }
 
 export const getContexts = async (

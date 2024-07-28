@@ -356,7 +356,12 @@ export const updateNaclFileData = async (
       [{ start: 0, end: 0, newData: '' }],
     )
 
-  return allBufferParts.map(part => part.newData).join('')
+  // Some changes can end in extra newlines at the beginning and end of the file, so just dropping them
+  return allBufferParts
+    .map(part => part.newData)
+    .join('')
+    .trim()
+    .concat('\n')
 }
 
 const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition => {
@@ -417,6 +422,7 @@ const parentElementExistsInPath = (dc: DetailedChange, sourceMap: parser.SourceM
   const { parent } = dc.id.createTopLevelParentID()
   return _.some(sourceMap.get(parent.getFullName())?.map(range => range.filename === createFileNameFromPath(dc.path)))
 }
+
 export const getChangesToUpdate = (changes: DetailedChange[], sourceMap: parser.SourceMap): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean =>
     (dc.path || false) &&

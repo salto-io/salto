@@ -227,8 +227,8 @@ export default class ZuoraAdapter implements AdapterOperations {
   /**
    * Deploy configuration elements to the given account.
    */
-  @logDuration('deploying account configuration')
   // eslint-disable-next-line class-methods-use-this
+  @logDuration('deploying account configuration')
   async deploy(): Promise<DeployResult> {
     throw new Error('Not implemented.')
   }

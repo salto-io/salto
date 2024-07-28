@@ -37,7 +37,11 @@ type ConfigSuggestion = {
   value: ConfigChangeSuggestion
 }
 
-export type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion
+type IgnoreError = {
+  action: 'ignoreError'
+}
+
+export type OnErrorHandlerAction = FailEntireFetch | CustomSaltoError | ConfigSuggestion | IgnoreError
 
 type OnErrorHandler = ArgsWithCustomizer<OnErrorHandlerAction, OnErrorHandlerAction, { error: Error; typeName: string }>
 

@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 import { definitions } from '@salto-io/adapter-components'
-import { ClientOptions, PaginationOptions } from '../types'
+import { Options } from '../types'
 
 export const createClientDefinitions = (
-  clients: Record<ClientOptions, definitions.RESTApiClientDefinition<PaginationOptions>['httpClient']>,
-): definitions.ApiDefinitions<{ clientOptions: ClientOptions; paginationOptions: PaginationOptions }>['clients'] => ({
+  clients: Record<
+    definitions.ResolveClientOptionsType<Options>,
+    definitions.RESTApiClientDefinition<definitions.ResolvePaginationOptionsType<Options>>['httpClient']
+  >,
+): definitions.ApiDefinitions<Options>['clients'] => ({
   default: 'main',
   options: {
     main: {
@@ -59,6 +62,29 @@ export const createClientDefinitions = (
           '/api/v2/custom_objects/{custom_object_key}/fields': { get: { pagination: 'links' } },
           '/api/v2/guide/permission_groups': { get: { pagination: 'basic_cursor_with_args' } },
           '/api/v2/help_center/user_segments': { get: { pagination: 'links' } },
+        },
+      },
+    },
+    guide: {
+      httpClient: clients.guide,
+      endpoints: {
+        default: {
+          get: {
+            pagination: 'basic_cursor',
+            // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
+            readonly: true,
+          },
+          delete: {
+            omitBody: true,
+          },
+        },
+        customizations: {
+          '/hc/api/internal/general_settings': { get: { pagination: 'links' } },
+          '/hc/api/internal/help_center_translations': { get: { pagination: 'links' } },
+          '/api/v2/help_center/categories': { get: { pagination: 'links' } },
+          '/api/v2/help_center/sections': { get: { pagination: 'links' } },
+          '/api/v2/help_center/articles/{article.id}/attachments': { get: { pagination: 'links' } },
+          '/api/v2/help_center/categories/{parent.id}/articles': { get: { pagination: 'links' } },
         },
       },
     },

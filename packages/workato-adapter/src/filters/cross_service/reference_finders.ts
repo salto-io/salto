@@ -98,7 +98,7 @@ export const addReferencesForService = async <T extends SupportedRecipeBlock>(
 
 export type Matcher<T> = (value: string) => T[]
 export const createMatcher =
-  <T>(matchers: RegExp[], typeGuard: types.TypeGuard<Values, T>): Matcher<T> =>
+  <T extends Values>(matchers: RegExp[], typeGuard: types.TypeGuard<Values, T>): Matcher<T> =>
   value => {
     const matchGroups = matchers
       .flatMap(m => [...matchAll(value, m)])

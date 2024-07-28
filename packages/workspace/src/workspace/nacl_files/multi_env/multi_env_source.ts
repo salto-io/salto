@@ -129,6 +129,7 @@ export type MultiEnvSource = {
     encoding: BufferEncoding
     env: string
     isTemplate?: boolean
+    hash?: string
   }) => Promise<StaticFile | undefined>
   getAll: (env: string) => Promise<AsyncIterable<Element>>
   promote: (env: string, idsToMove: ElemID[], idsToRemove?: Record<string, ElemID[]>) => Promise<EnvsChanges>
@@ -172,43 +173,29 @@ const buildMultiEnvSource = (
 
   const getActiveSources = (env: string): Record<string, NaclFilesSource> => _.pick(sources, [commonSourceName, env])
 
-  const getStaticFile = async (
-    args: string | { filePath: string; encoding: BufferEncoding; env: string; isTemplate?: boolean },
-    encoding?: BufferEncoding,
-    envName?: string,
-  ): Promise<StaticFile> => {
-    let filePath: string
-    let fileEncoding: BufferEncoding
-    let environmentName: string
-
-    // Check if args is a string or an object and assign values accordingly
-    if (_.isString(args)) {
-      if (encoding === undefined || envName === undefined) {
-        throw new Error("When 'args' is a string, 'encoding' and 'envName' must be provided")
-      }
-      filePath = args
-      fileEncoding = encoding
-      environmentName = envName
-    } else {
-      filePath = args.filePath
-      fileEncoding = args.encoding
-      environmentName = args.env
-    }
+  const getStaticFile = async (args: {
+    filePath: string
+    encoding: BufferEncoding
+    env: string
+    isTemplate?: boolean
+    hash?: string
+  }): Promise<StaticFile> => {
     const sourcesFiles = (
       await Promise.all(
-        Object.values(getActiveSources(environmentName)).map(src =>
+        Object.values(getActiveSources(args.env)).map(src =>
           src.getStaticFile({
-            filePath,
-            encoding: fileEncoding,
+            filePath: args.filePath,
+            encoding: args.encoding,
             isTemplate: _.isObject(args) ? args.isTemplate : undefined,
+            hash: args.hash,
           }),
         ),
       )
     ).filter(values.isDefined)
     if (sourcesFiles.length > 1 && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
-      log.warn(`Found different hashes for static file ${filePath}`)
+      log.warn(`Found different hashes for static file ${args.filePath}`)
     }
-    return sourcesFiles[0] ?? new MissingStaticFile(filePath)
+    return sourcesFiles[0] ?? new MissingStaticFile(args.filePath)
   }
 
   const buildStateForSingleEnv = async (envName: string): Promise<SingleState> => {
@@ -225,6 +212,7 @@ const buildMultiEnvSource = (
                 encoding: staticFile.encoding,
                 env: envName,
                 isTemplate: staticFile.isTemplate,
+                hash: staticFile.hash,
               })) ?? staticFile,
           ),
         persistent,

@@ -448,6 +448,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+  /*
   FavIcon: {
     deployRequests: {
       add: {
@@ -477,6 +478,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+
+   */
   Authenticator: {
     deployRequests: {
       add: {

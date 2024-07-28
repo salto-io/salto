@@ -2075,16 +2075,9 @@ describe('Salesforce adapter E2E with real account', () => {
                 .filter(f => f[INSTANCE_TYPE_FIELD])
                 .map(async f => [
                   f.fullName,
-                  Object.assign(
-                    await transformFieldAnnotations(
-                      f,
-                      Types.get({ name: f.type, customObject: true }),
-                      objectInfo.fullName,
-                    ),
-                    {
-                      [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
-                    },
-                  ),
+                  Object.assign(await transformFieldAnnotations(f, Types.get({ name: f.type }), objectInfo.fullName), {
+                    [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
+                  }),
                 ]),
             )) as [string, Values][]
             fields = Object.fromEntries(entries)

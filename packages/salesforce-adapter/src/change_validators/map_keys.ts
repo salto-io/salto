@@ -30,14 +30,23 @@ import { resolveValues } from '@salto-io/adapter-components'
 
 import { collections } from '@salto-io/lowerdash'
 import { defaultMapper, metadataTypeToFieldToMapDef } from '../filters/convert_maps'
-import { API_NAME_SEPARATOR, PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE } from '../constants'
+import {
+  API_NAME_SEPARATOR,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+} from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
 import { isInstanceOfTypeChange } from '../filters/utils'
 import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
-const metadataTypesToValidate = [PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE]
+const metadataTypesToValidate = [
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+]
 
 const isNum = (str: string | undefined): boolean => !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
 

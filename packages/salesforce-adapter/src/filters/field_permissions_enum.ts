@@ -49,13 +49,18 @@ import {
   TYPES_PATH,
   SUBTYPES_PATH,
   PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
 import { buildElementsSourceForFetch, isInstanceOfType, isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const metadataTypesWithFieldPermissions = [PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE]
+const metadataTypesWithFieldPermissions = [
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+]
 
 const FIELD_PERMISSIONS = 'fieldPermissions'
 

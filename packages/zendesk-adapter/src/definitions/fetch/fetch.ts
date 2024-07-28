@@ -406,6 +406,15 @@ const createCustomizations = (): Record<
         name: { hide: true },
         id: { fieldType: 'number', hide: true },
         display_name: { omit: true },
+        restricted_brand_ids: {
+          sort: { properties: [{ path: 'name' }] },
+        },
+        end_user_conditions: {
+          sort: { properties: [{ path: 'parent_field_id.name' }] },
+        },
+        agent_conditions: {
+          sort: { properties: [{ path: 'parent_field_id.name' }] },
+        },
       },
     },
   },

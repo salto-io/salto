@@ -179,17 +179,20 @@ describe('client validation', () => {
     mockValidate.mockResolvedValue([
       {
         elemID: getChangeData(changes[0]).elemID,
-        message: 'Details: To install this SuiteCloud project, the ADVANCEDREVENUERECOGNITION(Advanced Revenue Management (Essentials)) feature must be enabled in the account.',
+        message:
+          'Details: To install this SuiteCloud project, the ADVANCEDREVENUERECOGNITION(Advanced Revenue Management (Essentials)) feature must be enabled in the account.',
         severity: 'Error',
       },
       {
         elemID: getChangeData(changes[0]).elemID,
-        message: 'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
+        message:
+          'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
         severity: 'Error',
       },
       {
         elemID: getChangeData(changes[1]).elemID,
-        message: 'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
+        message:
+          'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
         severity: 'Error',
       },
     ])

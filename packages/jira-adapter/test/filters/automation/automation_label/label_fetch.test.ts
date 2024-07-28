@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-
 import _ from 'lodash'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { DEFAULT_CLOUD_ID, getFilterParams, mockClient } from '../../../utils'
+import { FAULTY_CLOUD_ID_RESPONSE, MOCKED_CLOUD_ID, getFilterParams, mockClient } from '../../../utils'
 import automationLabelFetchFilter from '../../../../src/filters/automation/automation_label/label_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
 import { JIRA } from '../../../../src/constants'
@@ -34,7 +34,7 @@ describe('automationLabelFetchFilter', () => {
   let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
 
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient(false, DEFAULT_CLOUD_ID)
+    const { client: cli, paginator, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
     client = cli
     connection = conn
 
@@ -176,6 +176,13 @@ describe('automationLabelFetchFilter', () => {
 
       const automation = elements[0]
       expect(automation.elemID.getFullName()).toEqual('jira.AutomationLabel.instance.someName')
+    })
+
+    it('should throw if tenantId not in response', async () => {
+      connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
+
+      const elements = [] as Element[]
+      await expect(filter.onFetch(elements)).rejects.toThrow()
     })
 
     it('should throw if automation label response is not valid', async () => {

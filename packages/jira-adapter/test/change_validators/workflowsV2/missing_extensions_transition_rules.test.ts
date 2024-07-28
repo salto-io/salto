@@ -16,7 +16,7 @@
 import { toChange, InstanceElement } from '@salto-io/adapter-api'
 import { missingExtensionsTransitionRulesChangeValidator } from '../../../src/change_validators/workflowsV2/missing_extensions_transition_rules'
 import {
-  DEFAULT_CLOUD_ID,
+  MOCKED_CLOUD_ID,
   createSkeletonWorkflowV2Instance,
   createSkeletonWorkflowV2TransitionConditionGroup,
   mockClient,
@@ -57,7 +57,7 @@ describe('missingAppsTransitionRulesReferencedWorkflowDeletionChangeValidator', 
 
   beforeEach(() => {
     workflowInstance = createSkeletonWorkflowV2Instance('workflowInstance')
-    const { connection, client: tempClient } = mockClient(false, DEFAULT_CLOUD_ID)
+    const { connection, client: tempClient } = mockClient(false, MOCKED_CLOUD_ID)
     client = tempClient
     client.gqlPost = async () => ({
       status: 200,

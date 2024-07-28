@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { removeMissingExtensionsTransitionRulesHandler } from '../../src/fix_elements/remove_missing_extension_transition_rules'
 import { JiraConfig, getDefaultConfig } from '../../src/config/config'
 import {
-  DEFAULT_CLOUD_ID,
+  MOCKED_CLOUD_ID,
   createConnectTransitionRule,
   createForgeTransitionRule,
   createSkeletonWorkflowV2Instance,
@@ -64,7 +64,7 @@ describe('removeMissingExtensionsTransitionRulesHandler', () => {
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.deploy.ignoreMissingExtensions = true
     config.fetch.enableNewWorkflowAPI = true
-    const { connection, client: tempClient } = mockClient(false, DEFAULT_CLOUD_ID)
+    const { connection, client: tempClient } = mockClient(false, MOCKED_CLOUD_ID)
     client = tempClient
     client.gqlPost = async () => ({
       status: 200,

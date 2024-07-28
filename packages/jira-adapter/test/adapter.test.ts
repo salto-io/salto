@@ -37,7 +37,7 @@ import JiraClient, { GET_CLOUD_ID_URL } from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { getDefaultConfig } from '../src/config/config'
 import { OBJECT_TYPE_ATTRIBUTE_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
-import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType, DEFAULT_CLOUD_ID } from './utils'
+import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType, MOCKED_CLOUD_ID } from './utils'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from '../src/jsm_utils'
 
 const { getAllElements, getEntriesResponseValues, addRemainingTypes } = elements.ducktype
@@ -508,7 +508,7 @@ describe('adapter', () => {
           })
         // mock as we call getCloudId in the forms filter.
         mockAxiosAdapter.onGet(GET_CLOUD_ID_URL).replyOnce(200, {
-          cloudId: DEFAULT_CLOUD_ID,
+          cloudId: MOCKED_CLOUD_ID,
         })
         result = await srAdapter.fetch({ progressReporter })
       })
@@ -616,7 +616,7 @@ describe('adapter', () => {
           })
         // mock as we call getCloudId in the forms filter.
         mockAxiosAdapter.onGet(GET_CLOUD_ID_URL).replyOnce(200, {
-          cloudId: DEFAULT_CLOUD_ID,
+          cloudId: MOCKED_CLOUD_ID,
         })
         result = await srAdapter.fetch({ progressReporter })
       })
@@ -826,7 +826,7 @@ describe('adapter', () => {
           })
         // mock as we call getCloudId in the forms filter.
         mockAxiosAdapter.onGet(GET_CLOUD_ID_URL).replyOnce(200, {
-          cloudId: DEFAULT_CLOUD_ID,
+          cloudId: MOCKED_CLOUD_ID,
         })
         result = await srAdapter.fetch({ progressReporter })
       })
@@ -941,7 +941,7 @@ describe('adapter', () => {
           })
         // mock as we call getCloudId in the forms filter.
         mockAxiosAdapter.onGet(GET_CLOUD_ID_URL).replyOnce(200, {
-          cloudId: DEFAULT_CLOUD_ID,
+          cloudId: MOCKED_CLOUD_ID,
         })
         result = await srAdapter.fetch({ progressReporter })
       })

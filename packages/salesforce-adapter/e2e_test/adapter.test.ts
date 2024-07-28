@@ -2212,13 +2212,11 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.API_NAME]: fullName,
               [constants.LABEL]: 'Summary label Updated',
               [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.TotalOpportunityQuantity',
-              [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
-                {
-                  [constants.FILTER_ITEM_FIELDS.FIELD]: 'Opportunity.TotalOpportunityQuantity',
-                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'lessThan',
-                  [constants.FILTER_ITEM_FIELDS.VALUE]: '10',
-                },
-              ],
+              [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: {
+                [constants.FILTER_ITEM_FIELDS.FIELD]: 'Opportunity.TotalOpportunityQuantity',
+                [constants.FILTER_ITEM_FIELDS.OPERATION]: 'lessThan',
+                [constants.FILTER_ITEM_FIELDS.VALUE]: '10',
+              },
               [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
               [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'min',
               [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,

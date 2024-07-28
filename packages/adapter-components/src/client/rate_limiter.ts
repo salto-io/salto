@@ -134,7 +134,7 @@ export class RateLimiter {
   private internalOptions: RateLimiterOptions
   private internalCounters: RateLimiterCounters
   private prevInvocationTime: number
-  private resumeTime: number
+  private resumeTimer: NodeJS.Timeout | undefined
 
   /**
    * Constructs a RateLimiter instance.
@@ -203,7 +203,7 @@ export class RateLimiter {
       retries: 0,
     }
     this.prevInvocationTime = Date.now()
-    this.resumeTime = Date.now()
+    this.resumeTimer = undefined
   }
 
   /**
@@ -271,6 +271,50 @@ export class RateLimiter {
     }
   }
 
+  private wrapWithPauseOnFail<T>(task: TaskType<T>, numAttempts: number): TaskType<T> {
+    return async () => {
+      try {
+        return await task()
+      } catch (e) {
+        if (this.internalOptions.retryPredicate(numAttempts, e)) {
+          const delay = this.internalOptions.calculateRetryDelayMS(numAttempts, e)
+          if (delay > 0) {
+            this.pause(delay)
+          }
+        }
+        throw e
+      }
+    }
+  }
+
+  private async recursiveAdd<T>(task: TaskType<T>, numAttempts: number): TaskReturnType<T> {
+    let res: TaskReturnType<T>
+    this.internalCounters.total += 1
+    this.internalCounters.pending += 1
+    const bookKeepingWrap = this.wrapWithBookKeeping(this.getDelayedTask(task), numAttempts > 1)
+    const wrappedTask = this.internalOptions.pauseDuringRetryDelay
+      ? this.wrapWithPauseOnFail(bookKeepingWrap, numAttempts)
+      : bookKeepingWrap
+    try {
+      res = this.internalOptions.useBottleneck
+        ? (this.queue as Bottleneck).schedule(wrappedTask)
+        : (this.queue as PQueue).add(wrappedTask)
+      return await res
+    } catch (e) {
+      if (!this.internalOptions.retryPredicate(numAttempts, e)) {
+        throw e
+      }
+
+      if (!this.internalOptions.pauseDuringRetryDelay) {
+        const delay = this.internalOptions.calculateRetryDelayMS(numAttempts, e)
+        if (delay > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
+      return this.recursiveAdd(task, numAttempts + 1)
+    }
+  }
+
   /**
    * Adds a task to the queue. If a delay is configured in the options,
    * the task will be delayed by the specified amount of milliseconds.
@@ -278,34 +322,7 @@ export class RateLimiter {
    * @returns A promise that resolves when the task is completed.
    */
   async add<T>(task: TaskType<T>): TaskReturnType<T> {
-    let res: Promise<T>
-    let numAttempts = 0
-    while (true) {
-      this.internalCounters.total += 1
-      this.internalCounters.pending += 1
-      numAttempts += 1
-      const wrappedTask = this.wrapWithBookKeeping(this.getDelayedTask(task), numAttempts > 1)
-      try {
-        res = this.internalOptions.useBottleneck
-          ? (this.queue as Bottleneck).schedule(wrappedTask)
-          : (this.queue as PQueue).add(wrappedTask)
-        // eslint-disable-next-line no-await-in-loop
-        return await res
-      } catch (e) {
-        if (!this.internalOptions.retryPredicate(numAttempts, e)) {
-          throw e
-        }
-        const delay = this.internalOptions.calculateRetryDelayMS(numAttempts, e)
-        if (delay > 0) {
-          if (this.internalOptions.pauseDuringRetryDelay) {
-            this.pause(delay)
-          } else {
-            // eslint-disable-next-line no-await-in-loop
-            await new Promise(resolve => setTimeout(resolve, delay))
-          }
-        }
-      }
-    }
+    return this.recursiveAdd(task, 1)
   }
 
   /**
@@ -331,7 +348,9 @@ export class RateLimiter {
    * @param fns The asynchronous functions to be wrapped.
    * @returns The wrapped functions.
    */
-  wrapAll<T extends unknown[], R>(fns: Array<(...args: T) => TaskReturnType<R>>): Array<(...args: T) => TaskReturnType<R>> {
+  wrapAll<T extends unknown[], R>(
+    fns: Array<(...args: T) => TaskReturnType<R>>,
+  ): Array<(...args: T) => TaskReturnType<R>> {
     return fns.map(fn => this.wrap(fn))
   }
 
@@ -354,12 +373,8 @@ export class RateLimiter {
     }
     this.queue.pause()
     if (time !== undefined) {
-      this.resumeTime = Date.now() + time
-      setTimeout(() => {
-        if (Date.now() >= this.resumeTime) {
-          this.resume()
-        }
-      }, time)
+      clearTimeout(this.resumeTimer)
+      this.resumeTimer = setTimeout(() => this.resume(), time)
     }
   }
 

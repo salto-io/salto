@@ -351,9 +351,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
         maxConcurrentCalls: 1,
         delayMS: 0,
       })
-      const timingTask = jest.fn(async () => {
-        return Date.now() - startTime
-      })
+      const timingTask = jest.fn(async () => Date.now() - startTime)
       const thrownRes = rateLimiter.add(throwingTask)
       const timingRes = await rateLimiter.add(timingTask)
       await expect(thrownRes).rejects.toThrow(errorMessage)
@@ -362,6 +360,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
 
       const timeElapsed = Date.now() - startTime
 
+      expect(timingTask).toHaveBeenCalledTimes(1)
       expect(throwingTask).toHaveBeenCalledTimes(maxAttempts)
       expect(retryPredicate).toHaveBeenCalledTimes(maxAttempts)
       expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxAttempts - 1)
@@ -381,23 +380,80 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
   })
 })
 
-describe.only('RateLimiter (useBottleneck: false) performance', () => {
-  const ratePerSecond = 100000
+describe('RateLimiter PQueue only', () => {
+  describe('performance', () => {
+    const ratePerSecond = 100000
 
-  it.each([1, 10, 100, 1000, 10000, 100000, 1000000])(
-    'should be performant and not add a big overhead between invocations (numTasks: %s).',
-    async numTasks => {
+    it.each([1, 10, 100, 1000, 10000, 100000, 1000000])(
+      'should be performant and not add a big overhead between invocations (numTasks: %s).',
+      async numTasks => {
+        const startTime = Date.now()
+        const mockTask = jest.fn(async () => true)
+        const rateLimiter = new RateLimiter({ delayMS: 0, useBottleneck: false })
+        const tasks = Array.from({ length: numTasks }, () => mockTask)
+        await Promise.all(rateLimiter.addAll(tasks))
+        const timeElapsed = Date.now() - startTime
+        const expectedTimeElapsedMS = Math.max((numTasks / ratePerSecond) * 1000, 1)
+        const toleranceThresholdMS = expectedTimeElapsedMS * 0.33
+        expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsedMS + toleranceThresholdMS)
+        // This test will fail a lot of times because of different hardware. We want to at least be certain of a lower threshold of speed.
+        // expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsedMS - toleranceThresholdMS)
+      },
+    )
+  })
+  describe('PQueue only features', () => {
+    it('should pause entire queue on retry if configured to do so', async () => {
+      const toleranceMS = 5
+      const errorMessage = 'Some error'
+      const retryDelayMS = 50
+      const maxAttempts = 3
+
+      const retryPredicate = jest.fn(
+        (numAttempts: number, error: Error): boolean =>
+          error instanceof Error && error.message === errorMessage && numAttempts < maxAttempts,
+      )
+      const calculateRetryDelayMS = jest.fn((numAttempts: number, error: Error): number =>
+        error instanceof Error && error.message === errorMessage ? numAttempts * retryDelayMS : 0,
+      )
       const startTime = Date.now()
-      const mockTask = jest.fn(async () => true)
-      const rateLimiter = new RateLimiter({ delayMS: 0, useBottleneck: false })
-      const tasks = Array.from({ length: numTasks }, () => mockTask)
-      await Promise.all(rateLimiter.addAll(tasks))
+      const rateLimiter = new RateLimiter({
+        retryPredicate,
+        calculateRetryDelayMS,
+        pauseDuringRetryDelay: true,
+        useBottleneck: false,
+        maxConcurrentCalls: 1,
+        delayMS: 0,
+        startPaused: true,
+      })
+      const timingTask = jest.fn(async () => Date.now() - startTime)
+      const throwingTask = jest.fn(async () => {
+        throw new Error(errorMessage)
+      })
+      const thrownRes = rateLimiter.add(throwingTask)
+      const timingRes = rateLimiter.add(timingTask)
+      rateLimiter.resume()
+
+      await expect(thrownRes).rejects.toThrow(errorMessage)
+      expect(await timingRes).toBeGreaterThanOrEqual(retryDelayMS)
+
       const timeElapsed = Date.now() - startTime
-      const expectedTimeElapsedMS = Math.max((numTasks / ratePerSecond) * 1000, 1)
-      const toleranceThresholdMS = expectedTimeElapsedMS * 0.33
-      expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsedMS + toleranceThresholdMS)
-      // This test will fail a lot of times because of different hardware. We want to at least be certain of a lower threshold of speed.
-      // expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsedMS - toleranceThresholdMS)
-    },
-  )
+
+      expect(timingTask).toHaveBeenCalledTimes(1)
+      expect(throwingTask).toHaveBeenCalledTimes(maxAttempts)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxAttempts * 2)
+      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxAttempts - 1)
+
+      let expectedTimeElapsed = 0
+      for (let index = 1; index < maxAttempts; index += 1) {
+        expectedTimeElapsed += index * retryDelayMS
+      }
+      expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed)
+      expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
+      expect(rateLimiter.counters.retries).toEqual(maxAttempts - 1)
+      expect(rateLimiter.counters.failed).toEqual(maxAttempts)
+      expect(rateLimiter.counters.total).toEqual(maxAttempts + 1)
+      expect(rateLimiter.counters.done).toEqual(maxAttempts + 1)
+      expect(rateLimiter.counters.succeeded).toEqual(1)
+    })
+  })
 })

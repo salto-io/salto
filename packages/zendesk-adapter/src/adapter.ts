@@ -71,6 +71,7 @@ import {
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
+  LAYOUT_TYPE_NAME,
   LOCALE_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
@@ -621,8 +622,8 @@ export default class ZendeskAdapter implements AdapterOperations {
         adapterName: ZENDESK,
         types: this.userConfig.apiDefinitions.types,
         shouldAddRemainingTypes: !isGuideInFetch,
-        // tags are "fetched" in a filter
-        supportedTypes: _.omit(supportedTypes, 'tag'),
+        // tags are "fetched" in a filter, layout is not supported on old infra
+        supportedTypes: _.omit(supportedTypes, 'tag', LAYOUT_TYPE_NAME),
         fetchQuery: this.fetchQuery,
         paginator: this.paginator,
         nestedFieldFinder: findDataField,

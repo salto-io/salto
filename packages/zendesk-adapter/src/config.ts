@@ -1153,6 +1153,29 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  layout: {
+    deployRequests: {
+      add: {
+        url: '/api/v2/layouts',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v2/layouts/{layoutId}',
+        method: 'put',
+        urlParamsToFields: {
+          layoutId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v2/layouts/{layoutId}',
+        method: 'delete',
+        urlParamsToFields: {
+          layoutId: 'id',
+        },
+        omitRequestBody: true,
+      },
+    },
+  },
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',
@@ -2665,6 +2688,7 @@ export const SUPPORTED_TYPES = {
   custom_status: ['custom_statuses'],
   dynamic_content_item: ['dynamic_content_item'],
   group: ['groups'],
+  layout: ['layouts'],
   locale: ['locales'],
   macro_categories: ['macro_categories'],
   macro: ['macros'],

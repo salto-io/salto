@@ -549,6 +549,22 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
       })
 
+      // Adding explicitly the `name` here as layout isn't in the old infra, so the transformation isn't in the config.
+      const layoutInstance = createInstanceElement({
+        type: 'layout',
+        valuesOverride: { title: createName('layout') },
+        name: createName('layout'),
+      })
+
+      const workspaceInstance = createInstanceElement({
+        type: 'workspace',
+        valuesOverride: {
+          title: createName('workspace'),
+          // This doesn't currently work in the test suite, revisit after the new infra is in place
+          // layout_uuid: new ReferenceExpression(layoutInstance.elemID, layoutInstance),
+        },
+      })
+
       const customObjName = createName('custom_object')
       const customObjectInstance = createInstanceElement({
         type: CUSTOM_OBJECT_TYPE_NAME,
@@ -1149,6 +1165,8 @@ describe('Zendesk adapter E2E', () => {
         viewInstance,
         brandInstanceToAdd,
         userSegmentInstance,
+        layoutInstance,
+        workspaceInstance,
         ...customObjectInstances,
         // guide elements
         ...guideInstances,
@@ -1200,6 +1218,7 @@ describe('Zendesk adapter E2E', () => {
         'custom_role',
         'dynamic_content_item',
         'group',
+        'layout',
         'locale',
         'macro_categories',
         'macro',

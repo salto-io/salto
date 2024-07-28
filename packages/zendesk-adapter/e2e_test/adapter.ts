@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import ZendeskClient from '../src/client/client'
 import ZendeskAdapter, { ZendeskAdapterParams } from '../src/adapter'
-import { DEFAULT_CONFIG } from '../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../src/config'
 import { Credentials } from '../src/auth'
 import { credsSpec } from './jest_environment'
 
@@ -36,6 +36,7 @@ export type Opts = {
 }
 
 export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts, config = DEFAULT_CONFIG): Reals => {
+  config[FETCH_CONFIG].useNewInfra = true
   const client = (adapterParams && adapterParams.client) || new ZendeskClient({ credentials, config: config.client })
   const adapter = new ZendeskAdapter({ client, credentials, config, elementsSource })
   return { client, adapter }

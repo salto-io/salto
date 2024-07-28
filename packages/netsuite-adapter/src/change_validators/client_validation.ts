@@ -28,7 +28,7 @@ import { AdditionalDependencies } from '../config/types'
 import { getGroupItemFromRegex } from '../client/utils'
 import NetsuiteClient from '../client/client'
 import { getChangeGroupIdsFunc } from '../group_changes'
-import { multiLanguageErrorDetectors, OBJECT_ID } from '../client/language_utils'
+import { FEATURE_NAME, multiLanguageErrorDetectors, OBJECT_ID } from '../client/language_utils'
 import { Filter } from '../filter'
 import { cloneChange } from './utils'
 
@@ -39,7 +39,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
   const missingDependenciesRegexes = Object.values(multiLanguageErrorDetectors).map(
     regexes => regexes.manifestErrorDetailsRegex,
   )
-  const [missingDependenciesErrors, otherErrors] = _.partition(errors, error =>
+  const [missingDependenciesErrors, nonMissingDependenciesErrors] = _.partition(errors, error =>
     missingDependenciesRegexes.some(regex => getGroupItemFromRegex(error.message, regex, OBJECT_ID).length > 0),
   )
 
@@ -64,7 +64,33 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
     }
   })
 
-  return otherErrors
+  const missingFeatureInAccountRegexes = Object.values(multiLanguageErrorDetectors).map(
+    regexes => regexes.missingFeatureInAccountErrorRegex,
+  )
+  const [missingFeatureErrors, unclassifiedErrors] = _.partition(nonMissingDependenciesErrors, error =>
+    missingFeatureInAccountRegexes.some(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME).length > 0),
+  )
+
+  const missingFeatureChangeErrors = Object.values(
+    _.groupBy(missingFeatureErrors, error => error.elemID.getFullName()),
+  ).map(elementErrors => {
+    const missingFeatures = _.uniq(
+      elementErrors.flatMap(error =>
+        missingFeatureInAccountRegexes.flatMap(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME)),
+      ),
+    )
+
+    return {
+      elemID: elementErrors[0].elemID,
+      severity: 'Error' as const,
+      message: 'This element requires features that are not enabled in the account',
+      detailedMessage:
+        `Cannot deploy element because of required features that are not enabled in the target account: ${missingFeatures.join(', ')}.` +
+        ' Please refer to https://help.salto.io/en/articles/9221278-sdf-validation-fails-on-missing-feature for more information.',
+    }
+  })
+
+  return unclassifiedErrors
     .map(error => ({
       elemID: error.elemID,
       severity: error.severity,
@@ -72,6 +98,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
       detailedMessage: error.message,
     }))
     .concat(missingDependenciesChangeErrors)
+    .concat(missingFeatureChangeErrors)
 }
 
 export type ClientChangeValidator = (

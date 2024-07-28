@@ -175,6 +175,55 @@ describe('client validation', () => {
       ]),
     )
   })
+  it('should return missing features errors', async () => {
+    mockValidate.mockResolvedValue([
+      {
+        elemID: getChangeData(changes[0]).elemID,
+        message:
+          'Details: To install this SuiteCloud project, the ADVANCEDREVENUERECOGNITION(Advanced Revenue Management (Essentials)) feature must be enabled in the account.',
+        severity: 'Error',
+      },
+      {
+        elemID: getChangeData(changes[0]).elemID,
+        message:
+          'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
+        severity: 'Error',
+      },
+      {
+        elemID: getChangeData(changes[1]).elemID,
+        message:
+          'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
+        severity: 'Error',
+      },
+    ])
+    const changeErrors = await clientValidation(
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+    )
+    expect(changeErrors).toHaveLength(2)
+    expect(changeErrors).toEqual(
+      expect.arrayContaining([
+        {
+          elemID: getChangeData(changes[0]).elemID,
+          severity: 'Error',
+          message: 'This element requires features that are not enabled in the account',
+          detailedMessage: expect.stringContaining(
+            'Cannot deploy element because of required features that are not enabled in the target account: ADVANCEDREVENUERECOGNITION(Advanced Revenue Management (Essentials)), MULTIBOOK(Adjustment Only Books).',
+          ),
+        },
+        {
+          elemID: getChangeData(changes[1]).elemID,
+          severity: 'Error',
+          message: 'This element requires features that are not enabled in the account',
+          detailedMessage: expect.stringContaining(
+            'Cannot deploy element because of required features that are not enabled in the target account: MULTIBOOK(Adjustment Only Books).',
+          ),
+        },
+      ]),
+    )
+  })
   describe('validate file cabinet instances', () => {
     let fileChange: Change<InstanceElement>
     beforeEach(() => {

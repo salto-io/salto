@@ -21,6 +21,7 @@ import { client as clientUtils, config } from '@salto-io/adapter-components'
 import { HTMLElement, parse } from 'node-html-parser'
 import JiraClient from './client'
 import { ScriptRunnerCredentials } from '../auth'
+import { isHTMLResponse } from '../utils'
 
 const log = logger(module)
 const { AdapterFetchError } = config
@@ -38,19 +39,6 @@ const TOKEN_ADDRESS_RESPONSE_SCHEME = Joi.object({
 const isTokenAddressResponse = createSchemeGuard<TokenAddressResponse>(
   TOKEN_ADDRESS_RESPONSE_SCHEME,
   'Failed to get scriptRunner token from jira service',
-)
-
-type TokenResponse = {
-  data: string
-}
-
-const TOKEN_RESPONSE_SCHEME = Joi.object({
-  data: Joi.string().required(),
-}).unknown(true)
-
-const isTokenResponse = createSchemeGuard<TokenResponse>(
-  TOKEN_RESPONSE_SCHEME,
-  'Failed to get scriptRunner token from scriptRunner service',
 )
 
 const isSurveyScreen = (root: HTMLElement): boolean => root.querySelector('title')?.text === SURVEY_TITLE
@@ -124,7 +112,7 @@ const getJwtFromService = async (getUrl: Promise<string>, jiraUrl: string): Prom
   })
   try {
     const srResponse = await httpClient.get(url.replace(baseURL, ''))
-    if (!isTokenResponse(srResponse)) {
+    if (!isHTMLResponse(srResponse)) {
       log.error('Failed to get scriptRunner token from scriptRunner service', srResponse)
       throw getLoginError()
     }

@@ -255,3 +255,13 @@ export const acquireLockRetry = async <T>({
     throw error
   }
 }
+
+export type HTMLResponse = {
+  data: string
+}
+
+const HTML_RESPONSE_SCHEME = Joi.object({
+  data: Joi.string().required(),
+}).unknown(true)
+
+export const isHTMLResponse = createSchemeGuard<HTMLResponse>(HTML_RESPONSE_SCHEME, 'Failed to get HTML response')

@@ -37,7 +37,7 @@ import { createSchemeGuard, getParents, resolvePath, setPath } from '@salto-io/a
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployWithStatus } from '../deployment'
+import { deployChanges, defaultDeployWithStatus } from '../deprecated_deployment'
 import { BASE_PATH } from '../change_validators/app_user_schema_base_properties'
 
 const log = logger(module)

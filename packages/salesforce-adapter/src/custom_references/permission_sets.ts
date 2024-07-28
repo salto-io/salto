@@ -17,13 +17,15 @@
 import { ReferenceInfo, Element, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { PERMISSION_SET_METADATA_TYPE } from '../constants'
+import { MUTING_PERMISSION_SET_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE } from '../constants'
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { WeakReferencesHandler } from '../types'
 import { mapProfileOrPermissionSetSections } from './profiles'
 
 const log = logger(module)
 const { makeArray } = collections.array
+
+const isPermissionSet = isInstanceOfTypeSync(PERMISSION_SET_METADATA_TYPE, MUTING_PERMISSION_SET_METADATA_TYPE)
 
 const referencesFromPermissionSets = (permissionSet: InstanceElement): ReferenceInfo[] =>
   mapProfileOrPermissionSetSections(permissionSet, (sectionName, sectionEntryKey, target, sourceField) => ({
@@ -35,7 +37,7 @@ const referencesFromPermissionSets = (permissionSet: InstanceElement): Reference
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
-  const permissionSets = elements.filter(isInstanceOfTypeSync(PERMISSION_SET_METADATA_TYPE))
+  const permissionSets = elements.filter(isPermissionSet)
   const refs = log.timeDebug(
     () => permissionSets.flatMap(referencesFromPermissionSets),
     `Generating references from ${permissionSets.length} permission sets.`,

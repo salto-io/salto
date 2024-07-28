@@ -42,9 +42,11 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extraDependenciesV2: true,
   extendedCustomFieldInformation: false,
   importantValues: true,
-  hideTypesFolder: false,
+  hideTypesFolder: true,
   omitStandardFieldsNonDeployableValues: true,
   latestSupportedApiVersion: false,
+  metaTypes: false,
+  cpqRulesAndConditionsRefs: true,
 }
 
 type BuildFetchProfileParams = {

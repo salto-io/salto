@@ -49,6 +49,7 @@ import {
   MetadataObjectType,
   createInstanceElement,
   isCustom,
+  MetadataMetaType,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -84,6 +85,7 @@ import customObjectInstanceReferencesFilter from './filters/custom_object_instan
 import foreignKeyReferencesFilter from './filters/foreign_key_references'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
+import cpqRulesAndConditionsRefsFilter from './filters/cpq/rules_and_conditions_refs'
 import cpqReferencableFieldReferencesFilter from './filters/cpq/referencable_field_references'
 import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
 import extraDependenciesFilter from './filters/extra_dependencies'
@@ -171,6 +173,7 @@ import { fixElementsFunc } from './custom_references/handlers'
 import { createListApexClassesDef } from './client/custom_list_funcs'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 const { partition } = promises.array
 const { concatObjects } = objects
 const { isDefined } = values
@@ -216,6 +219,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: cpqReferencableFieldReferencesFilter },
   { creator: cpqCustomScriptFilter },
   { creator: cpqLookupFieldsFilter },
+  // cpqRulesAndConditionsFilter depends on cpqReferencableFieldReferencesFilter
+  { creator: cpqRulesAndConditionsRefsFilter },
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },
@@ -555,10 +560,11 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...Types.getAnnotationTypes(),
       ...Object.values(ArtificialTypes),
     ]
+    const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
     const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
     const metadataTypesPromise = withChangesDetection
       ? getMetadataTypesFromElementsSource(this.elementsSource)
-      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes)
+      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metadataMetaType)
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
 
@@ -570,7 +576,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { elements: metadataInstancesElements, configChanges: metadataInstancesConfigInstances } =
       await metadataInstancesPromise
-    const elements = [...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements]
+    const elements = [
+      ...makeArray(metadataMetaType),
+      ...fieldTypes,
+      ...hardCodedTypes,
+      ...metadataTypes,
+      ...metadataInstancesElements,
+    ]
     progressReporter.reportProgress({
       message: 'Running filters for additional information',
     })
@@ -726,6 +738,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
     knownMetadataTypes: TypeElement[],
+    metaType?: ObjectType,
   ): Promise<TypeElement[]> {
     const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(
@@ -737,7 +750,9 @@ export default class SalesforceAdapter implements AdapterOperations {
     const childTypeNames = new Set(typeInfos.flatMap(type => type.childXmlNames).filter(values.isDefined))
     return (
       await Promise.all(
-        typeInfos.map(typeInfo => fetchMetadataType(this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames)),
+        typeInfos.map(typeInfo =>
+          fetchMetadataType(this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames, metaType),
+        ),
       )
     ).flat()
   }

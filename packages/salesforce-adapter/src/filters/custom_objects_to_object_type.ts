@@ -85,6 +85,9 @@ import {
   KEY_PREFIX,
   PLURAL_LABEL,
   CUSTOM_OBJECT_TYPE_NAME,
+  STANDARD_OBJECT_META_TYPE,
+  CUSTOM_OBJECT_META_TYPE,
+  CUSTOM_SETTINGS_META_TYPE,
 } from '../constants'
 import { FilterContext, LocalFilterCreator } from '../filter'
 import {
@@ -105,6 +108,7 @@ import {
   createInstanceServiceIds,
   MetadataInstanceElement,
   isMetadataObjectType,
+  createMetaType,
 } from '../transformers/transformer'
 import {
   addApiName,
@@ -190,6 +194,12 @@ type TypesFromInstance = {
   nestedMetadataTypes: Record<string, ObjectType>
 }
 
+type MetaTypes = {
+  standardObject: ObjectType
+  customObject: ObjectType
+  customSettings: ObjectType
+}
+
 export const CUSTOM_OBJECT_TYPE_ID = new ElemID(SALESFORCE, CUSTOM_OBJECT_TYPE_NAME)
 
 const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = [
@@ -247,13 +257,23 @@ const annotationTypesForObject = (
   instance: InstanceElement,
   custom: boolean,
 ): Record<string, TypeElement> => {
-  let annotationTypes = typesFromInstance.standardAnnotationTypes
   if (isCustomSettings(instance)) {
-    annotationTypes = typesFromInstance.customSettingsAnnotationTypes
-  } else if (custom) {
-    annotationTypes = typesFromInstance.customAnnotationTypes
+    return typesFromInstance.customSettingsAnnotationTypes
   }
-  return annotationTypes
+  if (custom) {
+    return typesFromInstance.customAnnotationTypes
+  }
+  return typesFromInstance.standardAnnotationTypes
+}
+
+const getMetaType = (metaTypes: MetaTypes, instance: InstanceElement, custom: boolean): ObjectType => {
+  if (isCustomSettings(instance)) {
+    return metaTypes.customSettings
+  }
+  if (custom) {
+    return metaTypes.customObject
+  }
+  return metaTypes.standardObject
 }
 
 export const getObjectDirectoryPath = async (obj: ObjectType): Promise<string[]> => {
@@ -369,16 +389,18 @@ const transformObjectAnnotationValues = (
   })
 }
 
+const setObjectAnnotationTypes = (customObject: ObjectType, annotationTypesFromInstance: TypeMap): void => {
+  customObject.annotationRefTypes = {
+    ...customObject.annotationRefTypes,
+    ..._.mapValues(annotationTypesFromInstance, t => createRefToElmWithValue(t)),
+  }
+}
+
 const transformObjectAnnotations = async (
   customObject: ObjectType,
   annotationTypesFromInstance: TypeMap,
   instance: InstanceElement,
 ): Promise<void> => {
-  customObject.annotationRefTypes = {
-    ...customObject.annotationRefTypes,
-    ..._.mapValues(annotationTypesFromInstance, t => createRefToElmWithValue(t)),
-  }
-
   customObject.annotations = {
     ...customObject.annotations,
     ...(await transformObjectAnnotationValues(instance, annotationTypesFromInstance)),
@@ -459,12 +481,14 @@ const DEFAULT_TYPES_FROM_INSTANCE: TypesFromInstance = {
 export const createCustomTypeFromCustomObjectInstance = async ({
   instance,
   typesFromInstance = DEFAULT_TYPES_FROM_INSTANCE,
+  metaType,
   fieldsToSkip = [],
   metadataType: objectMetadataType,
   config,
 }: {
   instance: InstanceElement
   typesFromInstance?: TypesFromInstance
+  metaType?: ObjectType
   fieldsToSkip?: string[]
   metadataType?: string
   config: FilterContext
@@ -477,7 +501,7 @@ export const createCustomTypeFromCustomObjectInstance = async ({
     [API_NAME]: name,
     [METADATA_TYPE]: CUSTOM_OBJECT,
   }
-  const object = Types.createObjectType(name, true, false, serviceIds)
+  const object = Types.createObjectType(name, true, false, serviceIds, metaType)
   addApiName(object, name)
   addMetadataType(object, objectMetadataType)
   addLabel(object, label)
@@ -487,6 +511,9 @@ export const createCustomTypeFromCustomObjectInstance = async ({
   addKeyPrefix(object, keyPrefix === null ? undefined : keyPrefix)
   object.path = [...(await getObjectDirectoryPath(object)), pathNaclCase(object.elemID.name)]
   const annotationTypes = annotationTypesForObject(typesFromInstance, instance, hasCustomSuffix(name))
+  if (metaType === undefined) {
+    setObjectAnnotationTypes(object, annotationTypes)
+  }
   await transformObjectAnnotations(object, annotationTypes, instance)
   const instanceFields = makeArray(instance.value.fields)
   await awu(instanceFields).forEach(async fieldValues => {
@@ -508,11 +535,16 @@ const createFromInstance = async (
   instance: InstanceElement,
   typesFromInstance: TypesFromInstance,
   config: FilterContext,
+  metaTypes?: MetaTypes,
   fieldsToSkip?: string[],
 ): Promise<Element[]> => {
   const object = await createCustomTypeFromCustomObjectInstance({
     instance,
     typesFromInstance,
+    metaType:
+      metaTypes !== undefined
+        ? getMetaType(metaTypes, instance, hasCustomSuffix(instance.value[INSTANCE_FULL_NAME_FIELD]))
+        : undefined,
     fieldsToSkip,
     config,
   })
@@ -864,6 +896,12 @@ const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromI
   }
 }
 
+const metaTypesFromTypes = (types: TypesFromInstance): MetaTypes => ({
+  standardObject: createMetaType(STANDARD_OBJECT_META_TYPE, types.standardAnnotationTypes, 'Standard object'),
+  customObject: createMetaType(CUSTOM_OBJECT_META_TYPE, types.customAnnotationTypes, 'Custom object'),
+  customSettings: createMetaType(CUSTOM_SETTINGS_META_TYPE, types.customSettingsAnnotationTypes, 'Custom settings'),
+})
+
 const removeDuplicateElements = <T extends Element>(elements: T[]): T[] => {
   const ids = new Set<string>()
   return elements.filter(elem => {
@@ -887,6 +925,12 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
     onFetch: async (elements: Element[]): Promise<void> => {
       log.debug('Replacing custom object instances with object types')
       const typesFromInstance = await typesToMergeFromInstance(elements)
+      const metaTypes = config.fetchProfile.isFeatureEnabled('metaTypes')
+        ? metaTypesFromTypes(typesFromInstance)
+        : undefined
+      if (metaTypes !== undefined) {
+        elements.push(...Object.values(metaTypes))
+      }
       const existingElementIDs = new Set(elements.map(elem => elem.elemID.getFullName()))
       const fieldsToSkip = config.unsupportedSystemFields
 
@@ -895,7 +939,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       )
 
       await awu(customObjectInstances)
-        .flatMap(instance => createFromInstance(instance, typesFromInstance, config, fieldsToSkip))
+        .flatMap(instance => createFromInstance(instance, typesFromInstance, config, metaTypes, fieldsToSkip))
         // Make sure we do not override existing metadata types with custom objects
         // this can happen with standard objects having the same name as a metadata type
         .filter(elem => !existingElementIDs.has(elem.elemID.getFullName()))

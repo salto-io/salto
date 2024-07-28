@@ -16,17 +16,39 @@
 
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import { getChangeData, isAdditionChange, isModificationChange } from '@salto-io/adapter-api'
-import { AdditionalAction, ClientOptions } from './types'
 import {
+  getChangeData,
+  isAdditionChange,
+  isInstanceChange,
+  isModificationChange,
+  isRemovalChange,
+  Values,
+} from '@salto-io/adapter-api'
+import { validatePlainObject } from '@salto-io/adapter-utils'
+import { AdditionalAction, ClientOptions } from '../types'
+import {
+  APPLICATION_TYPE_NAME,
   BRAND_TYPE_NAME,
+  CUSTOM_NAME_FIELD,
   DEVICE_ASSURANCE_TYPE_NAME,
   DOMAIN_TYPE_NAME,
   GROUP_TYPE_NAME,
+  INACTIVE_STATUS,
   LINKS_FIELD,
   SMS_TEMPLATE_TYPE_NAME,
   USERTYPE_TYPE_NAME,
-} from '../constants'
+  NAME_FIELD,
+  ID_FIELD,
+  BRAND_THEME_TYPE_NAME,
+} from '../../constants'
+import {
+  APP_POLICIES,
+  createDeployAppPolicyRequests,
+  getSubdomainFromElementsSource,
+  isInactiveCustomAppChange,
+} from './types/application'
+import { isActivationChange, isDeactivationChange } from './utils/status'
+import { isCustomApp } from '../fetch/types/application'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -43,6 +65,231 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    [BRAND_THEME_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              omit: [ID_FIELD, LINKS_FIELD],
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              // BrandThemes are created automatically by Okta when a Brand is created,
+              // but we're allowing to "add" a theme alongside its Brand.
+              // We first send a GET query to get its ID, and then we perform a "modify" action.
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/themes',
+                  method: 'get',
+                },
+                context: {
+                  brandId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/themes/{id}',
+                  method: 'put',
+                },
+                context: {
+                  brandId: '{_parent.0.id}',
+                },
+                transformation: {
+                  omit: [ID_FIELD, LINKS_FIELD, 'logo', 'favicon'],
+                },
+              },
+            },
+          ],
+          remove: [
+            // BrandThemes are removed automatically by Okta when the Brand is removed.
+            // We use an empty request list here to mark this action as supported in case a user removed the theme
+            // alongside its Brand.
+            // A separate Change Validator ensures that themes aren't removed by themselves.
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      actionDependencies: [
+        {
+          first: 'add',
+          second: 'modify',
+        },
+      ],
+    },
+    [APPLICATION_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              omit: [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD],
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps',
+                  method: 'post',
+                  queryArgs: {
+                    // Whether to activate the app upon creation, default is true if omitted.
+                    activate: '{activate}',
+                  },
+                },
+                context: {
+                  custom:
+                    () =>
+                    ({ change }) => ({
+                      activate: getChangeData(change).value.status === INACTIVE_STATUS ? 'false' : 'true',
+                    }),
+                },
+                transformation: {
+                  omit: [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES],
+                },
+              },
+              copyFromResponse: {
+                additional: {
+                  adjust: async ({ value, context }) => {
+                    const subdomain = await getSubdomainFromElementsSource(context.elementSource)
+                    if (subdomain !== undefined && isCustomApp(value as Values, subdomain)) {
+                      const createdAppName = _.get(value, NAME_FIELD)
+                      return {
+                        value: {
+                          [CUSTOM_NAME_FIELD]: createdAppName,
+                        },
+                      }
+                    }
+                    return { value: {} }
+                  },
+                },
+              },
+            },
+            ...createDeployAppPolicyRequests(),
+          ],
+          modify: [
+            {
+              condition: {
+                skipIfIdentical: true,
+                transformForCheck: {
+                  omit: APP_POLICIES,
+                },
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  // Override the default omit so we can read omitted field in `adjust`.
+                  omit: [],
+                  adjust: async ({ value, context }) => {
+                    validatePlainObject(value, APPLICATION_TYPE_NAME)
+                    const name = _.get(value, CUSTOM_NAME_FIELD)
+                    if (!isModificationChange(context.change) || !isInstanceChange(context.change)) {
+                      throw new Error('Change is not a modification change')
+                    }
+                    const transformed = getChangeData(
+                      deployment.transformRemovedValuesToNull(context.change, ['settings']),
+                    ).value
+                    return {
+                      value: {
+                        name,
+                        ..._.omit(transformed, [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES]),
+                      },
+                    }
+                  },
+                },
+              },
+            },
+            ...createDeployAppPolicyRequests(),
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          activate: [
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isActivationChange(change) ||
+                    // Custom app must be activated before applying any other changes
+                    isInactiveCustomAppChange(change),
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{id}/lifecycle/activate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          deactivate: [
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    // Active apps must be deactivated before removal
+                    (isRemovalChange(change) && getChangeData(change).value.status !== INACTIVE_STATUS) ||
+                    isDeactivationChange(change) ||
+                    // Custom apps must be activated before applying any other changes and deactivated before removal
+                    isInactiveCustomAppChange(change),
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{id}/lifecycle/deactivate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => {
+        if (isRemovalChange(change)) {
+          return ['deactivate', 'remove']
+        }
+        if (isModificationChange(change)) {
+          return ['activate', 'modify', 'deactivate']
+        }
+        return [change.action]
+      },
+      actionDependencies: [
+        {
+          first: 'deactivate',
+          second: 'remove',
+        },
+        {
+          first: 'activate',
+          second: 'modify',
+        },
+        {
+          first: 'modify',
+          second: 'deactivate',
+        },
+      ],
+    },
     [BRAND_TYPE_NAME]: {
       requestsByAction: {
         customizations: {

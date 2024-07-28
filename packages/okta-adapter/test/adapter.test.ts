@@ -31,6 +31,8 @@ import {
   ProgressReporter,
   BuiltinTypes,
   ReferenceExpression,
+  CORE_ANNOTATIONS,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -56,6 +58,8 @@ import {
   ORG_SETTING_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
+  BRAND_THEME_TYPE_NAME,
+  GROUP_MEMBERSHIP_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -399,6 +403,39 @@ describe('adapter', () => {
           technicalContactEmail: 'myMail@salto.nacl',
           technicalContactId: 'myMail@salto.nacl',
           usermailEnabled: false,
+        })
+      })
+      it('should fetch GroupMembership type when includeGroupMemberships flag is enabled', async () => {
+        const config = new InstanceElement('config', adapter.configType as ObjectType, {
+          ...DEFAULT_CONFIG,
+          fetch: {
+            includeGroupMemberships: true,
+            include: [
+              { type: 'Group' }, // limiting to one type to avoid getting a timeout
+              { type: 'GroupMembership' },
+            ],
+          },
+        })
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', accessTokenCredentialsType, {
+              baseUrl: 'https://test.okta.com',
+              token: 't',
+            }),
+            config,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: nullProgressReporter })
+        const groupMembersType = elements
+          .filter(isObjectType)
+          .find(e => e.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
+        expect(groupMembersType).toBeDefined()
+        const groupMembersInstances = elements
+          .filter(isInstanceElement)
+          .filter(inst => inst.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
+        expect(groupMembersInstances).toHaveLength(1)
+        expect(groupMembersInstances[0]?.value).toEqual({
+          members: ['myMail@salto.nacl'],
         })
       })
     })
@@ -1077,6 +1114,11 @@ describe('adapter', () => {
     })
     describe('deploy application', () => {
       let appType: ObjectType
+      let profileEnrollmentPolicyType: ObjectType
+      let profileEnrollmentPolicy1: InstanceElement
+      let profileEnrollmentPolicy2: InstanceElement
+      let accessPolicyType: ObjectType
+      let accessPolicy: InstanceElement
 
       beforeEach(() => {
         appType = new ObjectType({
@@ -1086,6 +1128,24 @@ describe('adapter', () => {
               refType: BuiltinTypes.SERVICE_ID,
             },
           },
+        })
+        profileEnrollmentPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
+        })
+        profileEnrollmentPolicy1 = new InstanceElement('profileEnrollmentPolicy1', profileEnrollmentPolicyType, {
+          id: 'enrollmentpolicy-fakeid1',
+          name: 'enrollmentPolicy1',
+        })
+        profileEnrollmentPolicy2 = new InstanceElement('profileEnrollmentPolicy2', profileEnrollmentPolicyType, {
+          id: 'enrollmentpolicy-fakeid2',
+          name: 'enrollmentPolicy2',
+        })
+        accessPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME),
+        })
+        accessPolicy = new InstanceElement('accessPolicy', accessPolicyType, {
+          id: 'accesspolicy-fakeid1',
+          name: 'accessPolicy1',
         })
       })
 
@@ -1111,25 +1171,11 @@ describe('adapter', () => {
 
       it('should successfully add an active regular application with policies', async () => {
         loadMockReplies('application_add_regular_active.json')
-        const profileEnrollmentPolicyType = new ObjectType({
-          elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
-        })
-        const profileEnrollmentPolicy = new InstanceElement('profileEnrollmentPolicy', profileEnrollmentPolicyType, {
-          id: 'enrollmentpolicy-fakeid1',
-          name: 'enrollmentPolicy1',
-        })
-        const accessPolicyType = new ObjectType({
-          elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME),
-        })
-        const accessPolicy = new InstanceElement('accessPolicy', accessPolicyType, {
-          id: 'accesspolicy-fakeid1',
-          name: 'accessPolicy1',
-        })
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
           status: ACTIVE_STATUS,
-          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy.elemID, profileEnrollmentPolicy),
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
           accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
         const result = await operations.deploy({
@@ -1196,16 +1242,22 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully modify an inactive custom application', async () => {
-        loadMockReplies('application_modify_custom_inactive.json')
+      it('should successfully modify an inactive custom application with changed policies', async () => {
+        loadMockReplies('application_modify_custom_inactive_with_changed_policies.json')
         const inactiveCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
           status: INACTIVE_STATUS,
           [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
         const updatedApp = inactiveCustomApp.clone()
         updatedApp.value.label = 'app2'
+        updatedApp.value.profileEnrollment = new ReferenceExpression(
+          profileEnrollmentPolicy2.elemID,
+          profileEnrollmentPolicy2,
+        )
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'app',
@@ -1225,13 +1277,15 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully modify an active custom application', async () => {
-        loadMockReplies('application_modify_custom_active.json')
+      it('should successfully modify an active custom application with unchanged policies', async () => {
+        loadMockReplies('application_modify_custom_active_unchanged_policies.json')
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
           status: ACTIVE_STATUS,
           [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
         const updatedApp = activeCustomApp.clone()
         updatedApp.value.label = 'app2'
@@ -1251,6 +1305,40 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app2')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an active custom application with only changed policies', async () => {
+        loadMockReplies('application_modify_custom_active_only_changed_policies.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          status: ACTIVE_STATUS,
+          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
+          accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.profileEnrollment = new ReferenceExpression(
+          profileEnrollmentPolicy2.elemID,
+          profileEnrollmentPolicy2,
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
@@ -1274,12 +1362,6 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      // Note: currently, this kind of change is blocked by the `application`
-      // Change validator, which prevents the removal of active applications.
-      // The JSON file includes a single "delete" operation, which is what would
-      // be sent to Okta if the CV was ignored. The test is here so that we can
-      // show the diff in behavior once we allow a flow of deleting active
-      // applications as part of the move to the new infra. Stay tuned.
       it('should successfully remove an active custom application', async () => {
         loadMockReplies('application_remove_custom_active.json')
         const inactiveCustomApp = new InstanceElement('app', appType, {
@@ -1297,6 +1379,135 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy brand theme', () => {
+      let brandThemeType: ObjectType
+
+      beforeEach(() => {
+        brandThemeType = new ObjectType({
+          elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add a brand theme', async () => {
+        loadMockReplies('brand_theme_add.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ after: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'brandtheme-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify a brand theme', async () => {
+        loadMockReplies('brand_theme_modify.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const updatedBrandTheme = brandTheme.clone()
+        updatedBrandTheme.value.primaryColorHex = '#ff0000'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme, after: updatedBrandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.primaryColorHex).toEqual(
+          '#ff0000',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove a brand theme', async () => {
+        loadMockReplies('brand_theme_remove.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        // In production, a BrandTheme can only be removed alongside its parent Brand (this is enforced by a change
+        // validator). CVs don't run in this test though, so we only run the change group for the BrandTheme removal
+        // and the mock HTTP response will behave as if the Brand was removed as well.
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should fail to remove a brand theme if it still exists', async () => {
+        loadMockReplies('brand_theme_remove_failure.json')
+        const brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: brandTheme })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0].message).toEqual('Expected BrandTheme to be deleted')
+        expect(result.appliedChanges).toHaveLength(0)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

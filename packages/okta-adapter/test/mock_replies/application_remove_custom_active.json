@@ -10,5 +10,18 @@
       "x-rate-limit-remaining": "249",
       "x-rate-limit-reset": "1720355168"
     }
+  },
+  {
+    "scope": "",
+    "path": "/api/v1/apps/app-fakeid1/lifecycle/deactivate",
+    "method": "POST",
+    "status": 200,
+    "response": {},
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "48",
+      "x-rate-limit-reset": "1720355094"
+    }
   }
 ]

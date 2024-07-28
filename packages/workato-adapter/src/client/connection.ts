@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { AxiosRequestHeaders } from 'axios'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
@@ -45,9 +44,9 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (ret
     authParamsFunc: async ({ username, token }: Credentials) => ({
       headers:
         username === undefined || _.isEmpty(username)
-          ? ({
+          ? {
               Authorization: `Bearer ${token}`,
-            } as AxiosRequestHeaders)
+            }
           : {
               'x-user-email': username,
               'x-user-token': token,

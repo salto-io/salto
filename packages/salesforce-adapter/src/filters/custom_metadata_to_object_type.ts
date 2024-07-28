@@ -16,14 +16,12 @@
 import {
   Change,
   Element,
-  ElemID,
   Field,
   getChangeData,
   InstanceElement,
   isField,
   isFieldChange,
   isInstanceElement,
-  isObjectType,
   isObjectTypeChange,
   ObjectType,
 } from '@salto-io/adapter-api'
@@ -31,20 +29,15 @@ import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterContext, LocalFilterCreator } from '../filter'
-import {
-  CUSTOM_METADATA,
-  CUSTOM_METADATA_SUFFIX,
-  CUSTOM_METADATA_TYPE_NAME,
-  CUSTOM_OBJECT,
-  SALESFORCE,
-} from '../constants'
+import { CUSTOM_METADATA, CUSTOM_METADATA_META_TYPE, CUSTOM_METADATA_SUFFIX, CUSTOM_OBJECT } from '../constants'
 import { createCustomObjectChange, createCustomTypeFromCustomObjectInstance } from './custom_objects_to_object_type'
-import { apiName } from '../transformers/transformer'
+import { apiName, createMetaType, isMetadataObjectType } from '../transformers/transformer'
 import {
   apiNameSync,
   buildElementsSourceForFetch,
   isCustomMetadataRecordType,
   isInstanceOfTypeChangeSync,
+  metadataTypeSync,
 } from './utils'
 
 const log = logger(module)
@@ -56,10 +49,12 @@ const createCustomMetadataRecordType = async (
   instance: InstanceElement,
   customMetadataType: ObjectType,
   config: FilterContext,
+  metaType?: ObjectType,
 ): Promise<ObjectType> => {
   const objectType = await createCustomTypeFromCustomObjectInstance({
     instance,
     metadataType: CUSTOM_METADATA,
+    metaType,
     config,
   })
   objectType.fields = {
@@ -88,20 +83,23 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
   return {
     name: 'customMetadataToObjectTypeFilter',
     onFetch: async elements => {
-      const customMetadataType: unknown = await buildElementsSourceForFetch(elements, config).get(
-        new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
-      )
-      if (!isObjectType(customMetadataType)) {
+      const customMetadataType = await awu(await buildElementsSourceForFetch(elements, config).getAll())
+        .filter(isMetadataObjectType)
+        .find(elem => metadataTypeSync(elem) === CUSTOM_METADATA)
+      if (customMetadataType === undefined) {
         log.warn('Could not find CustomMetadata ObjectType. Skipping filter.')
         return
       }
-      // The CustomObject instances that will  be converted to ObjectTypes.
+      // The CustomObject instances that will be converted to ObjectTypes.
       const customMetadataInstances = elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
 
+      const customMetadataMetaType = config.fetchProfile.isFeatureEnabled('metaTypes')
+        ? createMetaType(CUSTOM_METADATA_META_TYPE, undefined, 'Custom Metadata')
+        : undefined
       const customMetadataRecordTypes = await awu(customMetadataInstances)
-        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, config))
+        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, config, customMetadataMetaType))
         .toArray()
       _.pullAll(elements, customMetadataInstances)
       customMetadataRecordTypes.forEach(e => elements.push(e))

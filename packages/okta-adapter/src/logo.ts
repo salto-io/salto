@@ -33,7 +33,7 @@ import FormData from 'form-data'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, getParents, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
 import OktaClient from './client/client'
-import { getOktaError } from './deployment'
+import { getOktaError } from './deprecated_deployment'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { extractIdFromUrl } from './utils'
 

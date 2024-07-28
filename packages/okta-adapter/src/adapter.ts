@@ -55,7 +55,7 @@ import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
 import defaultDeployFilter from './filters/default_deploy'
 import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
-import appDeploymentFilter from './filters/app_deployment'
+import appDeploymentFilter from './filters/app_fetch'
 import standardRolesFilter from './filters/standard_roles'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
@@ -69,7 +69,6 @@ import userFilter from './filters/user'
 import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
-import brandThemeAdditionFilter from './filters/brand_theme_addition'
 import brandThemeRemovalFilter from './filters/brand_theme_removal'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
@@ -94,7 +93,7 @@ import { User, getUsers, getUsersFromInstances, shouldConvertUserIds } from './u
 import { isClassicEngineOrg, logUsersCount } from './utils'
 import { createFixElementFunctions } from './fix_elements'
 import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch'
-import { createDeployDefinitions } from './definitions/deploy'
+import { createDeployDefinitions } from './definitions/deploy/deploy'
 import { PAGINATION } from './definitions/requests/pagination'
 import { createClientDefinitions, shouldAccessPrivateAPIs } from './definitions/requests/clients'
 import { OktaOptions } from './definitions/types'
@@ -122,7 +121,6 @@ const DEFAULT_FILTERS = [
   appUserSchemaDeploymentFilter,
   schemaFieldsRemovalFilter,
   appLogoFilter,
-  brandThemeAdditionFilter,
   brandThemeRemovalFilter,
   brandThemeFilesFilter,
   fieldReferencesFilter,
@@ -197,15 +195,18 @@ export default class OktaAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
+
     const definitions = {
       // TODO - SALTO-5746 - only provide adminClient when it is defined
       clients: createClientDefinitions({ main: this.client, private: this.adminClient ?? this.client }),
       pagination: PAGINATION,
-      fetch: createFetchDefinitions(
-        this.userConfig,
-        shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig),
-        getAdminUrl(this.client.baseUrl),
-      ),
+      fetch: createFetchDefinitions({
+        userConfig: this.userConfig,
+        fetchQuery: this.fetchQuery,
+        usePrivateAPI: shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig),
+        baseUrl: getAdminUrl(this.client.baseUrl),
+      }),
       deploy: createDeployDefinitions(),
       sources: { openAPI: [OPEN_API_DEFINITIONS] },
     }
@@ -217,8 +218,6 @@ export default class OktaAdapter implements AdapterOperations {
         fetchConfig: definitions.fetch,
       }),
     }
-
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
 

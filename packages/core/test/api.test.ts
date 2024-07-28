@@ -111,14 +111,14 @@ jest.mock('../src/core/restore', () => ({
 }))
 
 jest.mock('../src/core/diff', () => ({
-  createDiffChanges: jest.fn((...args) => {
+  createDiffChanges: jest.fn(args => {
     const detailedChanges = [
       {
         action: 'add',
         data: { after: 'value' },
       },
     ]
-    return args[5] === 'changes'
+    return args.resultType === 'changes'
       ? [
           {
             action: 'add',

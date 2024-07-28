@@ -16,7 +16,7 @@
 import { filters as filterUtils } from '@salto-io/adapter-components'
 import { FilterAdditionalParams, FilterCreator, FilterResult } from '../filter'
 import { OktaOptions } from '../definitions/types'
-import { getOktaError } from '../deployment'
+import { getOktaError } from '../deprecated_deployment'
 import { getLookUpNameCreator, OktaFieldReferenceResolver } from '../reference_mapping'
 import { USER_TYPE_NAME } from '../constants'
 import { OktaUserConfig } from '../user_config'

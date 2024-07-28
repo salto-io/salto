@@ -124,6 +124,8 @@ export type OptionalFeatures = {
   hideTypesFolder?: boolean
   omitStandardFieldsNonDeployableValues?: boolean
   latestSupportedApiVersion?: boolean
+  metaTypes?: boolean
+  cpqRulesAndConditionsRefs?: boolean
 }
 
 export type ChangeValidatorName =
@@ -816,6 +818,8 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
     omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
     latestSupportedApiVersion: { refType: BuiltinTypes.BOOLEAN },
+    metaTypes: { refType: BuiltinTypes.BOOLEAN },
+    cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -924,6 +928,8 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'DocumentFolder' },
               { metadataType: 'Profile' },
               { metadataType: 'PermissionSet' },
+              { metadataType: 'MutingPermissionSet' },
+              { metadataType: 'PermissionSetGroup' },
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',

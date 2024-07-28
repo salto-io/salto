@@ -24,14 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { apiNameSync, metadataTypeSync } from '../filters/utils'
-import {
-  API_NAME,
-  CUSTOM_METADATA,
-  CUSTOM_METADATA_TYPE_NAME,
-  CUSTOM_OBJECT,
-  CUSTOM_OBJECT_TYPE_NAME,
-  METADATA_TYPE,
-} from '../constants'
+import { API_NAME, CUSTOM_METADATA, CUSTOM_OBJECT, CUSTOM_OBJECT_TYPE_NAME, METADATA_TYPE } from '../constants'
 
 const { isDefined } = values
 
@@ -65,11 +58,12 @@ const isMetadataType = (objectType: ObjectType): boolean => {
   // CustomMetadata Metadata Type
   if (metadataTypeSync(objectType) === CUSTOM_METADATA) {
     return (
-      objectType.elemID.typeName === CUSTOM_METADATA_TYPE_NAME && objectType.annotations[API_NAME] === undefined // this would be the 'CustomObject' metadata type
+      objectType.annotations[API_NAME] === undefined // this would be the 'CustomObject' metadata type
     )
   }
   return true
 }
+
 const changeValidator: ChangeValidator = async changes =>
   changes
     .map(change => getAffectedType(change))

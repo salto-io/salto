@@ -110,6 +110,8 @@ import {
   LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME,
   INTERNAL_ID_ANNOTATION,
   SALESFORCE_DATE_PLACEHOLDER,
+  METADATA_META_TYPE,
+  META_TYPES_PATH,
   CUSTOM_OBJECT_TYPE_NAME,
   CUSTOM_METADATA,
   CUSTOM_METADATA_TYPE_NAME,
@@ -286,7 +288,8 @@ const restrictedNumberTypes = _.mapValues(
 
 export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
   [CUSTOM_OBJECT, CUSTOM_OBJECT_TYPE_NAME],
-  [CUSTOM_METADATA, CUSTOM_METADATA_TYPE_NAME],
+  // TODO (SALTO-6264): Uncomment this once hide types is enabled.
+  // [CUSTOM_METADATA, CUSTOM_METADATA_TYPE_NAME],
   ['FlexiPage', 'LightningPage'],
   ['FlexiPageRegion', 'LightningPageRegion'],
   ['FlexiPageTemplateInstance', 'LightningPageTemplateInstance'],
@@ -945,19 +948,44 @@ export class Types {
       : this.metadataPrimitiveTypes[name.toLowerCase()]
   }
 
-  static get(name: string, customObject = true, isSettings = false, serviceIds?: ServiceIds): TypeElement {
+  static get({
+    name,
+    customObject = true,
+    isSettings = false,
+    serviceIds,
+    metaType,
+  }: {
+    name: string
+    customObject?: boolean
+    isSettings?: boolean
+    serviceIds?: ServiceIds
+    metaType?: ObjectType
+  }): TypeElement {
     const type = Types.getKnownType(name, customObject)
     if (type === undefined) {
-      return this.createObjectType(name, customObject, isSettings, serviceIds)
+      return this.createObjectType(name, customObject, isSettings, serviceIds, metaType)
     }
     return type
   }
 
-  static createObjectType(name: string, customObject = true, isSettings = false, serviceIds?: ServiceIds): ObjectType {
-    const elemId = this.getElemId(name, customObject, serviceIds)
+  static createObjectType(
+    name: string,
+    customObject = true,
+    isSettings = false,
+    serviceIds?: ServiceIds,
+    metaType?: ObjectType,
+  ): ObjectType {
+    // TODO (SALTO-6264): Revert this once hide types is enabled.
+    // THe meta type not being undefined means that the meta types feature is enabled
+    // and this is not the meta type definition.
+    const elemID =
+      name === CUSTOM_METADATA && metaType !== undefined
+        ? new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME)
+        : this.getElemId(name, customObject, serviceIds)
     return new ObjectType({
-      elemID: elemId,
+      elemID,
       isSettings,
+      metaType,
     })
   }
 
@@ -1116,7 +1144,7 @@ export const getValueTypeFieldElement = (
   const naclFieldType =
     field.name === INSTANCE_FULL_NAME_FIELD
       ? BuiltinTypes.SERVICE_ID
-      : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
+      : knownTypes.get(field.soapType) || Types.get({ name: field.soapType, customObject: false })
   const annotations: Values = {
     ...(additionalAnnotations || {}),
   }
@@ -1249,7 +1277,7 @@ export const getSObjectFieldElement = (
     [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
   }
 
-  const getFieldType = (typeName: string): TypeElement => Types.get(typeName, true, false, serviceIds)
+  const getFieldType = (typeName: string): TypeElement => Types.get({ name: typeName, serviceIds })
   let naclFieldType = getFieldType(FIELD_SOAP_TYPE_NAMES[field.type])
   const annotations: Values = {
     [API_NAME]: fieldApiName,
@@ -1450,6 +1478,23 @@ export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, Type
   dirName: createRefToElmWithValue(BuiltinTypes.STRING),
 }
 
+export const createMetaType = (
+  name: string,
+  annotationTypes: ConstructorParameters<typeof ObjectType>[0]['annotationRefsOrTypes'],
+  alias: string,
+): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, name),
+    annotationRefsOrTypes: annotationTypes,
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+      [CORE_ANNOTATIONS.ALIAS]: alias,
+    },
+    path: [SALESFORCE, META_TYPES_PATH, name],
+  })
+
+export const MetadataMetaType = createMetaType(METADATA_META_TYPE, metadataAnnotationTypes, 'Metadata type')
+
 export type MetadataObjectType = ObjectType & {
   annotations: ObjectType['annotations'] & MetadataTypeAnnotations
 }
@@ -1565,6 +1610,7 @@ type CreateMetadataTypeParams = {
   isSettings?: boolean
   annotations?: Partial<MetadataTypeAnnotations>
   missingFields?: Record<string, ValueTypeField[]>
+  metaType?: ObjectType
 }
 export const createMetadataTypeElements = async ({
   name,
@@ -1576,16 +1622,24 @@ export const createMetadataTypeElements = async ({
   isSettings = false,
   annotations = {},
   missingFields = defaultMissingFields(),
+  metaType,
 }: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
     return []
   }
 
-  const element = Types.get(name, false, isSettings) as MetadataObjectType
+  const element = Types.get({
+    name,
+    customObject: false,
+    isSettings,
+    metaType,
+  }) as MetadataObjectType
   knownTypes.set(name, element)
   const isTopLevelType = baseTypeNames.has(name) || annotations.folderContentType !== undefined
-  element.annotationRefTypes = _.clone(metadataAnnotationTypes)
+  if (metaType === undefined) {
+    element.annotationRefTypes = _.clone(metadataAnnotationTypes)
+  }
   element.annotate({
     ..._.pickBy(annotations, isDefined),
     [METADATA_TYPE]: name,
@@ -1611,7 +1665,7 @@ export const createMetadataTypeElements = async ({
     const isKnownType = (): boolean =>
       knownTypes.has(field.soapType) ||
       baseTypeNames.has(field.soapType) ||
-      isPrimitiveType(Types.get(field.soapType, false))
+      isPrimitiveType(Types.get({ name: field.soapType, customObject: false }))
 
     const startsWithUppercase = (): boolean =>
       // covers types like base64Binary, anyType etc.
@@ -1646,6 +1700,7 @@ export const createMetadataTypeElements = async ({
           childTypeNames,
           client,
           missingFields,
+          metaType,
         }),
       ),
   )
@@ -1657,7 +1712,7 @@ export const createMetadataTypeElements = async ({
   // Sometimes, we get known types without fields for some reason, in this case it is not an enum
   enrichedFields
     .filter(field => _.isEmpty(field.fields))
-    .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
+    .filter(field => !isPrimitiveType(Types.get({ name: field.soapType, customObject: false })))
     .filter(field => !knownTypes.has(field.soapType))
     .filter(field => field.soapType !== name)
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))

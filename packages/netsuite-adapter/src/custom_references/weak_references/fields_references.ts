@@ -51,6 +51,8 @@ const { awu } = collections.asynciterable
 
 type MappedList = Record<string, { index: number; [key: string]: Value }>
 
+const NO_APPID = ''
+
 const formTypeNames = new Set([ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM])
 
 const isFormInstanceElement = (element: Value): element is InstanceElement =>
@@ -114,19 +116,25 @@ const isUnresolvedReferenceExpression = async (
 const isUnresolvedNetsuiteReference = (
   value: string,
   generatedDependencies: Set<string>,
-  envScriptIds: Set<string>,
+  envScriptIdsBySuiteAppId: Record<string, Set<string>>,
 ): boolean => {
   const capture = captureServiceIdInfo(value)
-  return capture
-    .map(serviceIdInfo => serviceIdInfo.serviceId.split('.')[0])
-    .some(serviceId => !generatedDependencies.has(serviceId) && !envScriptIds.has(serviceId))
+  return capture.some(serviceId => {
+    const objectServiceId = serviceId.serviceId.split('.')[0]
+    const suiteAppId = serviceId.appid ?? NO_APPID
+    return (
+      !generatedDependencies.has(objectServiceId) &&
+      envScriptIdsBySuiteAppId[suiteAppId] !== undefined &&
+      !envScriptIdsBySuiteAppId[suiteAppId].has(objectServiceId)
+    )
+  })
 }
 
 const getPathsToRemove = async (
   form: InstanceElement,
   generatedDependencies: Set<string>,
   elementsSource: ReadOnlyElementsSource,
-  envScriptIds: Set<string>,
+  envScriptIdsBySuiteAppId: Record<string, Set<string>>,
 ): Promise<ElemID[]> => {
   const pathsToRemove: ElemID[] = []
 
@@ -141,7 +149,7 @@ const getPathsToRemove = async (
     if (isReferenceExpression(id) && (await isUnresolvedReferenceExpression(id, elementsSource))) {
       pathsToRemove.push(path)
     }
-    if (_.isString(id) && isUnresolvedNetsuiteReference(id, generatedDependencies, envScriptIds)) {
+    if (_.isString(id) && isUnresolvedNetsuiteReference(id, generatedDependencies, envScriptIdsBySuiteAppId)) {
       pathsToRemove.push(path)
     }
     return value
@@ -227,13 +235,13 @@ const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
 const getFixedElementAndPaths = async (
   form: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
-  envScriptIds: Set<string>,
+  envScriptIdsBySuiteAppId: Record<string, Set<string>>,
 ): Promise<{ instance: InstanceElement; relatedPaths: ElemID[] } | undefined> => {
   const fixedForm = form.clone()
 
   const { generatedDependencies, scriptIds } = await getResolvedGeneratedDependencies(fixedForm, elementsSource)
 
-  const pathsToRemove = await getPathsToRemove(fixedForm, scriptIds, elementsSource, envScriptIds)
+  const pathsToRemove = await getPathsToRemove(fixedForm, scriptIds, elementsSource, envScriptIdsBySuiteAppId)
 
   if (pathsToRemove.length === 0) {
     return undefined
@@ -243,7 +251,11 @@ const getFixedElementAndPaths = async (
 
   fixIndexes(fixedForm, pathsToRemove)
 
-  fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = generatedDependencies
+  if (generatedDependencies.length > 0) {
+    fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = generatedDependencies
+  } else {
+    delete fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+  }
 
   return { instance: fixedForm, relatedPaths: pathsToRemove }
 }
@@ -253,10 +265,14 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
 }>['removeWeakReferences'] =
   ({ elementsSource }): FixElementsFunc =>
   async elements => {
-    const envScriptIds = new Set<string>((await getObjectIdList(elementsSource)).map(objectid => objectid.instanceId))
+    const envScriptIdsBySuiteAppId = _(await getObjectIdList(elementsSource))
+      .groupBy(objectId => objectId.suiteAppId ?? NO_APPID)
+      .mapValues(objectIds => new Set(objectIds.map(objectId => objectId.instanceId)))
+      .value()
+
     const fixedFormsWithPaths = await awu(elements)
       .filter(isFormInstanceElement)
-      .map(form => getFixedElementAndPaths(form, elementsSource, envScriptIds))
+      .map(form => getFixedElementAndPaths(form, elementsSource, envScriptIdsBySuiteAppId))
       .filter(values.isDefined)
       .toArray()
 

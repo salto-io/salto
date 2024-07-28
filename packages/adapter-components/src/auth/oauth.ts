@@ -49,7 +49,7 @@ export const oauthClientCredentialsBearerToken = async ({
   retryOptions: RetryOptions
   additionalHeaders?: Record<string, string>
   additionalData?: Record<string, string>
-}): Promise<{ headers?: AxiosRequestHeaders }> => {
+}): Promise<{ headers?: Partial<AxiosRequestHeaders> }> => {
   const httpClient = axios.create({
     baseURL,
     headers: {
@@ -97,7 +97,7 @@ export const oauthAccessTokenRefresh = async ({
   clientSecret: string
   refreshToken: string
   retryOptions: RetryOptions
-}): Promise<{ headers?: AxiosRequestHeaders }> => {
+}): Promise<{ headers?: Partial<AxiosRequestHeaders> }> => {
   const httpClient = axios.create({
     baseURL,
     headers: {

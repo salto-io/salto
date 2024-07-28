@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 import { DefaultWithCustomizations } from '../shared'
-import { HTTPEndpointDetails, HTTPMethod } from './types'
+import { EndpointPath, HTTPEndpointDetails, HTTPMethod } from './types'
 
 export type ClientEndpoints<PaginationOptions extends string> = Partial<
   Record<HTTPMethod, HTTPEndpointDetails<PaginationOptions>>
 >
 
 export type EndpointByPathAndMethod<PaginationOptions extends string> = DefaultWithCustomizations<
-  ClientEndpoints<PaginationOptions>
+  ClientEndpoints<PaginationOptions>,
+  EndpointPath
 >

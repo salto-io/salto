@@ -18,15 +18,13 @@ import {
   ObjectType,
   ElemID,
   InstanceElement,
-  isInstanceElement,
-  isObjectType,
   CORE_ANNOTATIONS,
   ReferenceExpression,
   toChange,
   getChangeData,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { MockInterface, mockFunction } from '@salto-io/test-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import { FETCH_CONFIG } from '../../src/config'
 import { GROUP_MEMBERSHIP_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
 import groupMembersFilter from '../../src/filters/group_members'
@@ -51,119 +49,6 @@ describe('groupMembersFilter', () => {
     jest.clearAllMocks()
   })
 
-  describe('onFetch', () => {
-    it('should do nothing when includeGroupMemberships config flag is disabled', async () => {
-      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
-        yield [{ id: '111', profile: { login: 'a@a.com' } }]
-      })
-      const elements = [groupType, groupInstance]
-      filter = groupMembersFilter(getFilterParams({ paginator: mockPaginator })) as FilterType
-      expect(elements.length).toEqual(2)
-      expect(elements.filter(e => e.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME).length).toEqual(0)
-      expect(mockPaginator).toHaveBeenCalledTimes(0)
-    })
-    it('should create GroupMemberships type when flag is enabled', async () => {
-      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
-        yield [{ id: '111', profile: { login: 'a@a.com' } }]
-      })
-      const elements = [groupType, groupInstance]
-      filter = groupMembersFilter(getFilterParams({ paginator: mockPaginator, config })) as FilterType
-      await filter.onFetch(elements)
-      const groupMembersType = elements
-        .filter(isObjectType)
-        .find(type => type.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
-      expect(groupMembersType?.elemID.getFullName()).toEqual('okta.GroupMembership')
-    })
-    it('should create GroupMemberships instances when flag is enabled', async () => {
-      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
-        yield [
-          { id: '111', profile: { login: 'a@a.com' } },
-          { id: '222', profile: { login: 'b@a.com' } },
-          { id: '333', profile: { login: 'c@a.com' } },
-          { id: '555', profile: { login: 'd@a.com' } },
-        ]
-      })
-      const elements = [groupType, groupInstance]
-      filter = groupMembersFilter(getFilterParams({ paginator: mockPaginator, config })) as FilterType
-      await filter.onFetch(elements)
-      const groupMembersInstance = elements
-        .filter(isInstanceElement)
-        .find(inst => inst.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
-      expect(groupMembersInstance?.value).toEqual({
-        members: ['a@a.com', 'b@a.com', 'c@a.com', 'd@a.com'],
-      })
-      expect(groupMembersInstance?.annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
-        new ReferenceExpression(groupInstance.elemID, groupInstance),
-      ])
-      expect(mockPaginator).toHaveBeenNthCalledWith(
-        1,
-        {
-          url: '/api/v1/groups/123/users',
-          paginationField: 'after',
-        },
-        expect.anything(),
-      )
-    })
-    it('should not create GroupMemberships instance when there are no members', async () => {
-      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
-        yield []
-      })
-      const elements = [groupType, groupInstance]
-      filter = groupMembersFilter(getFilterParams({ paginator: mockPaginator, config })) as FilterType
-      await filter.onFetch(elements)
-      const groupMembersInstances = elements
-        .filter(isInstanceElement)
-        .find(inst => inst.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
-      // group members instance was not created because groupInstance has no members
-      expect(groupMembersInstances).toEqual(undefined)
-      expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenNthCalledWith(
-        1,
-        {
-          url: '/api/v1/groups/123/users',
-          paginationField: 'after',
-        },
-        expect.anything(),
-      )
-    })
-
-    describe('when User type is included', () => {
-      it('should create GroupMembership instances with member list as ids and not emails', async () => {
-        const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
-          yield [
-            { id: '111', profile: { login: 'a@a.com' } },
-            { id: '222', profile: { login: 'b@a.com' } },
-            { id: '333', profile: { login: 'c@a.com' } },
-            { id: '555', profile: { login: 'd@a.com' } },
-          ]
-        })
-        const elements = [groupType, groupInstance]
-        const updatedConfig = {
-          ...config,
-          fetch: { ...config.fetch, exclude: [] },
-        }
-        filter = groupMembersFilter(getFilterParams({ paginator: mockPaginator, config: updatedConfig })) as FilterType
-        await filter.onFetch(elements)
-        const groupMembersInstance = elements
-          .filter(isInstanceElement)
-          .find(inst => inst.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
-        expect(groupMembersInstance?.value).toEqual({
-          members: ['111', '222', '333', '555'],
-        })
-        expect(groupMembersInstance?.annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
-          new ReferenceExpression(groupInstance.elemID, groupInstance),
-        ])
-        expect(mockPaginator).toHaveBeenNthCalledWith(
-          1,
-          {
-            url: '/api/v1/groups/123/users',
-            paginationField: 'after',
-          },
-          expect.anything(),
-        )
-      })
-    })
-  })
   describe('deploy', () => {
     let mockConnection: MockInterface<clientUtils.APIConnection>
     let client: OktaClient

@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1",
+    "scope": "",
+    "method": "GET",
+    "status": 404,
+    "url": "https://test.okta.com/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1",
+    "headers": {
+      "accept": "application/json, text/plain, */*",
+      "authorization": "SSWS t",
+      "user-agent": "axios/0.26.1"
+    }
+  }
+]

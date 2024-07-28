@@ -604,24 +604,24 @@ export async function diff(
   const toElements = useState ? workspace.state(toEnv) : await workspace.elements(includeHidden, toEnv)
 
   if (resultType === 'changes') {
-    return createDiffChanges(
-      toElements,
-      fromElements,
-      await workspace.getReferenceSourcesIndex(),
+    return createDiffChanges({
+      toElementsSrc: toElements,
+      fromElementsSrc: fromElements,
+      referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
       elementSelectors,
-      accountIDFilter,
-      'changes',
-    )
+      topLevelFilters: accountIDFilter,
+      resultType: 'changes',
+    })
   }
 
-  const diffChanges = await createDiffChanges(
-    toElements,
-    fromElements,
-    await workspace.getReferenceSourcesIndex(),
+  const diffChanges = await createDiffChanges({
+    toElementsSrc: toElements,
+    fromElementsSrc: fromElements,
+    referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
     elementSelectors,
-    accountIDFilter,
-    'detailedChanges',
-  )
+    topLevelFilters: accountIDFilter,
+    resultType: 'detailedChanges',
+  })
   return diffChanges.map(change => ({ change, serviceChanges: [change] }))
 }
 

@@ -76,10 +76,15 @@ export const mockClient = (): ClientWithMockConnection => {
   return { client, paginator, connection }
 }
 
+export const createFetchQuery = (config?: OktaUserConfig): elementUtils.query.ElementQuery =>
+  elementUtils.query.createElementQuery(config?.fetch ?? DEFAULT_CONFIG?.fetch, fetchCriteria)
+
 export const createDefinitions = ({
+  fetchQuery = createFetchQuery(),
   client,
   usePrivateAPI = true,
 }: {
+  fetchQuery?: elementUtils.query.ElementQuery
   client?: OktaClient
   usePrivateAPI?: boolean
 }): definitionsUtils.RequiredDefinitions<OktaOptions> => {
@@ -87,16 +92,20 @@ export const createDefinitions = ({
   return {
     clients: createClientDefinitions({ main: cli, private: cli }),
     pagination: PAGINATION,
-    fetch: createFetchDefinitions(DEFAULT_CONFIG, usePrivateAPI, getAdminUrl(cli.baseUrl)),
+    fetch: createFetchDefinitions({
+      userConfig: DEFAULT_CONFIG,
+      fetchQuery,
+      usePrivateAPI,
+      baseUrl: getAdminUrl(cli.baseUrl),
+    }),
   }
 }
 
-export const createFetchQuery = (config?: OktaUserConfig): elementUtils.query.ElementQuery =>
-  elementUtils.query.createElementQuery(config?.fetch ?? DEFAULT_CONFIG?.fetch, fetchCriteria)
-
 export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>): Parameters<FilterCreator>[0] => ({
   paginator: mockClient().paginator,
-  definitions: createDefinitions({}),
+  definitions: createDefinitions({
+    fetchQuery: createFetchQuery(params?.config),
+  }),
   config: DEFAULT_CONFIG,
   elementSource: buildElementsSourceFromElements([]),
   fetchQuery: createFetchQuery(params?.config),

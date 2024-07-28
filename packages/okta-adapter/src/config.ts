@@ -213,43 +213,6 @@ const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] =
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
-  Application: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/apps/{applicationId}',
-        method: 'put',
-        urlParamsToFields: {
-          applicationId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/apps/{applicationId}',
-        method: 'delete',
-        urlParamsToFields: {
-          applicationId: 'id',
-        },
-        omitRequestBody: true,
-      },
-      activate: {
-        url: '/api/v1/apps/{applicationId}/lifecycle/activate',
-        method: 'post',
-        urlParamsToFields: {
-          applicationId: 'id',
-        },
-      },
-      deactivate: {
-        url: '/api/v1/apps/{applicationId}/lifecycle/deactivate',
-        method: 'post',
-        urlParamsToFields: {
-          applicationId: 'id',
-        },
-      },
-    },
-  },
   ApplicationGroupAssignment: {
     deployRequests: {
       add: {
@@ -453,36 +416,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         url: '/api/v1/org',
         method: 'put',
         fieldsToIgnore: ['contactTypes'],
-      },
-    },
-  },
-  BrandTheme: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}',
-        method: 'put',
-        urlParamsToFields: {
-          brandId: '_parent.0.id',
-          themeId: 'id',
-        },
-        fieldsToIgnore: ['id'],
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}',
-        method: 'put',
-        urlParamsToFields: {
-          brandId: '_parent.0.id',
-          themeId: 'id',
-        },
-        fieldsToIgnore: ['id', 'logo', 'favicon', '_links'],
-      },
-      remove: {
-        // BrandThemes are removed automatically by Okta when the Brand is removed.
-        // We use an empty URL here to mark this action as supported in case a user removed the theme
-        // alongside its Brand.
-        // A separate Change Validator ensures that mappings aren't removed by themselves.
-        url: '',
-        method: 'delete', // This is just for typing, we intercept it in a filter and use `get`.
       },
     },
   },

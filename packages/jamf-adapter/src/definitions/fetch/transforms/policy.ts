@@ -17,7 +17,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import {
   adjustCategoryObjectToCategoryId,
-  adjustScriptsObjectArrayToScriptsIds,
+  removeIdsForScriptsObjectArray,
   adjustServiceIdToTopLevel,
   adjustSiteObjectToSiteId,
   removeSelfServiceIcon,
@@ -33,7 +33,7 @@ export const adjust: definitions.AdjustFunctionSingle = async ({ value }) => {
   ;[
     adjustCategoryObjectToCategoryId,
     adjustSiteObjectToSiteId,
-    adjustScriptsObjectArrayToScriptsIds,
+    removeIdsForScriptsObjectArray,
     adjustServiceIdToTopLevel,
     removeSelfServiceIcon,
   ].forEach(fn => fn(value))

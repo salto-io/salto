@@ -452,6 +452,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'field', parentTypes: ['FieldOverride'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
     src: { field: 'targetField', parentTypes: ['AnalyticSnapshot'] },
     target: { type: CUSTOM_FIELD },
   },

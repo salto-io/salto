@@ -131,6 +131,37 @@ commands:
       - restore_node_modules
       - setup_yarn
 
+  install_jdk:
+    parameters:
+      version:
+        type: string
+        default: "17"
+    steps:
+
+      - restore_cache:
+          name: jdk-17
+          keys: 
+            - jdk-17
+
+      - run:
+          name: Install and Verify JDK
+          command: |
+            if ! java --version 1>&2 2> /dev/null
+            then
+              curl -L -o openjdk-17.tar.gz https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
+              mkdir -p /mnt/ramdisk/jdk-17
+              tar -xzf openjdk-17.tar.gz -C /mnt/ramdisk/jdk-17 --strip-components=1
+            fi
+            echo "export JAVA_HOME=/mnt/ramdisk/jdk-17" >> $BASH_ENV
+            echo "export PATH=/mnt/ramdisk/jdk-17/bin:$PATH" >> $BASH_ENV
+            /mnt/ramdisk/jdk-17/bin/java --version
+
+      - save_cache:
+          name: jdk-17
+          key: jdk-17
+          paths:
+            - /mnt/ramdisk/jdk-17
+
   set_s3_pkg_urls:
     steps:
       - run:
@@ -332,6 +363,11 @@ jobs:
     resource_class: large
     working_directory: /mnt/ramdisk/project
     steps:
+    steps:
+      - when:
+          condition: << parameters.should_install_java >>
+          steps:
+            - install_jdk
       - step_setup
       - restore_turbo_cache:
           cache_name: jest_e2e-<< parameters.package_name >>

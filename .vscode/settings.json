@@ -10,4 +10,5 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.preferences.importModuleSpecifier": "relative",
   "eslint.useFlatConfig": true,
+  "editor.tabSize": 2,
 }

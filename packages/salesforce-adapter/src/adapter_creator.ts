@@ -51,6 +51,7 @@ import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
+import { dumpElementsToFolder } from './sfdx_parser/sfdx_dump'
 import { getAdditionalReferences } from './additional_references'
 import { getCustomReferences } from './custom_references/handlers'
 import { dependencyChanger } from './dependency_changer'
@@ -313,6 +314,7 @@ export const adapter: Adapter = {
   configType,
   configCreator,
   loadElementsFromFolder,
+  dumpElementsToFolder,
   getAdditionalReferences,
   getCustomReferences,
 }

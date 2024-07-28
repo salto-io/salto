@@ -60,6 +60,8 @@ module.exports = {
       SALTO_TELEMETRY_TOKEN: 'dev',
       SALTO_TELEMETRY_DISABLE: '0',
       SALTO_TELEMETRY_URL: 'https://telemetry.salto.io',
+      // DISABLE SFDX logging because their implementation uses relative paths and thus cannot work when packed
+      SF_DISABLE_LOG_FILE: 'true',
     }),
     // // This plugin fixes __dirname and __filename references from sibling
     // // projects in the monorepo. However it conflicts with nexe packaging so

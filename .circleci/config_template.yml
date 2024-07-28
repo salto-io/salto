@@ -363,7 +363,6 @@ jobs:
     resource_class: large
     working_directory: /mnt/ramdisk/project
     steps:
-    steps:
       - when:
           condition: << parameters.should_install_java >>
           steps:

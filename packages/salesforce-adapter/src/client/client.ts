@@ -38,7 +38,7 @@ import {
   UpsertResult,
 } from '@salto-io/jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { flatValues } from '@salto-io/adapter-utils'
+import { flatValues, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
@@ -64,6 +64,7 @@ import {
 import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
+import { getFullName } from '../filters/utils'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -556,7 +557,36 @@ export const validateCredentials = async (
 
 type DeployProgressCallback = (inProgressResult: DeployResult) => void
 
-export default class SalesforceClient {
+interface ISalesforceClient {
+  ensureLoggedIn(): Promise<void>
+  isSandbox(): boolean
+  countInstances(typeName: string): Promise<number>
+  listMetadataTypes(): Promise<MetadataObject[]>
+  describeMetadataType(type: string): Promise<DescribeValueTypeResult>
+  listMetadataObjects(queries: ListMetadataQuery[]): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
+  getUrl(): Promise<URL | undefined>
+  readMetadata(type: string, fullNames: string[]): Promise<SendChunkedResult<string, MetadataInfo>>
+  listSObjects(): Promise<DescribeGlobalSObjectResult[]>
+  describeSObjects(objectNames: string[]): Promise<SendChunkedResult<string, DescribeSObjectResult>>
+  upsert(type: string, metadata: MetadataInfo | MetadataInfo[]): Promise<UpsertResult[]>
+  delete(type: string, fullNames: string[]): Promise<SaveResult[]>
+  retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult>
+  deploy(zip: Buffer, deployOptions: DeployOptions, progressCallback?: DeployProgressCallback): Promise<DeployResult>
+  quickDeploy(validationId: string): Promise<DeployResult>
+  queryAll(queryString: string): Promise<AsyncIterable<SalesforceRecord[]>>
+  bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>
+  request(url: string): Promise<unknown>
+}
+
+type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
+export type CustomListFunc = (client: ISalesforceClient) => ListMetadataObjectsResult
+
+export type CustomListFuncDef = {
+  func: CustomListFunc
+  isPartial: boolean
+}
+
+export default class SalesforceClient implements ISalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
   private isLoggedIn = false
@@ -569,13 +599,14 @@ export default class SalesforceClient {
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
-  private readonly filePropsByType: Record<string, FileProperties[]>
-  private readonly listMetadataObjectsOfTypePromises: Record<
-    string,
-    Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
-  >
+  readonly listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
+  private readonly listMetadataObjectsOfTypePromises: Record<string, ListMetadataObjectsResult>
+
+  private readonly fullListPromisesByType: Record<string, ListMetadataObjectsResult>
+  private customListFuncDefByType: Record<string, CustomListFuncDef>
 
   constructor({ credentials, connection, config }: SalesforceClientOpts) {
+    this.customListFuncDefByType = {}
     this.credentials = credentials
     this.config = config
     this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
@@ -599,8 +630,20 @@ export default class SalesforceClient {
     this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS
     this.clientName = 'SFDC'
     this.readMetadataChunkSize = _.merge({}, DEFAULT_READ_METADATA_CHUNK_SIZE, config?.readMetadataChunkSize)
-    this.filePropsByType = {}
     this.listMetadataObjectsOfTypePromises = {}
+    this.fullListPromisesByType = {}
+    this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
+  }
+
+  public setCustomListFuncDefByType(customListFuncDefByType: typeof this.customListFuncDefByType): void {
+    this.customListFuncDefByType = _.mapValues(customListFuncDefByType, def => ({
+      func: def.isPartial
+        ? def.func
+        : // Populate the listedInstancesByType for non-partial custom list functions
+          async (client: ISalesforceClient) =>
+            def.func(client).then(result => this.populateListedInstancesByType(result)),
+      isPartial: def.isPartial,
+    }))
   }
 
   private retryOnBadResponse = <T extends object>(request: () => Promise<T>): Promise<T> => {
@@ -656,38 +699,51 @@ export default class SalesforceClient {
     return flatValues(describeResult)
   }
 
-  private async sendChunkedList(
-    input: ListMetadataQuery[],
-    isUnhandledError: ErrorFilter,
-  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
+  private populateListedInstancesByType(
+    listResult: SendChunkedResult<ListMetadataQuery, FileProperties>,
+  ): SendChunkedResult<ListMetadataQuery, FileProperties> {
+    if (listResult.errors.length === 0) {
+      listResult.result.forEach(fileProps => {
+        this.listedInstancesByType.get(fileProps.type).add(getFullName(fileProps))
+      })
+    }
+    return listResult
+  }
+
+  private async sendChunkedList(input: ListMetadataQuery[], isUnhandledError: ErrorFilter): ListMetadataObjectsResult {
     return sendChunked({
       operationInfo: 'listMetadataObjects',
       input,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
-    })
+    }).then(result => this.populateListedInstancesByType(result))
   }
 
   private async listMetadataObjectsOfType(
     type: string,
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
-    const cached = this.filePropsByType[type]
-    if (cached !== undefined) {
-      return { result: cached, errors: [] }
+  ): ListMetadataObjectsResult {
+    const existingRequest = this.listMetadataObjectsOfTypePromises[type]
+    if (existingRequest !== undefined) {
+      return existingRequest
     }
-    const ongoingRequest = this.listMetadataObjectsOfTypePromises[type]
-    if (ongoingRequest !== undefined) {
-      return ongoingRequest
+    const customListFuncDef: CustomListFuncDef | undefined = this.customListFuncDefByType[type]
+    // For partial custom list functions we run an additional full list request
+    if (customListFuncDef?.isPartial) {
+      this.fullListPromisesByType[type] = this.sendChunkedList([{ type }], isUnhandledError)
     }
-    const request = this.sendChunkedList([{ type }], isUnhandledError)
+    const request =
+      customListFuncDef?.func(this).catch(e => {
+        log.error(
+          'Failed to run custom list function for type %s. Falling back to full list. Error: %s',
+          type,
+          inspectValue(e),
+        )
+        return this.fullListPromisesByType[type] ?? this.sendChunkedList([{ type }], isUnhandledError)
+      }) ?? this.sendChunkedList([{ type }], isUnhandledError)
     this.listMetadataObjectsOfTypePromises[type] = request
-    const sendChunkedListResult = await request
-    if (sendChunkedListResult.errors.length === 0) {
-      this.filePropsByType[type] = sendChunkedListResult.result
-    }
-    return sendChunkedListResult
+    return request
   }
 
   @mapToUserFriendlyErrorMessages
@@ -700,7 +756,7 @@ export default class SalesforceClient {
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
+  ): ListMetadataObjectsResult {
     const queries = makeArray(listMetadataQuery)
     if (queries.some(query => query.folder !== undefined)) {
       // We can't cache folder queries, so we just send them all at once
@@ -1027,5 +1083,10 @@ export default class SalesforceClient {
   @requiresLogin()
   public async request(url: string): Promise<unknown> {
     return this.conn.request(url)
+  }
+
+  @logDecorator()
+  public async awaitCompletionOfAllListRequests(): Promise<void> {
+    await Promise.all(Object.values(this.fullListPromisesByType))
   }
 }

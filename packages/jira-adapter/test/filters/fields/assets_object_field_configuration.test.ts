@@ -37,14 +37,14 @@ import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/f
 import { JIRA } from '../../../src/constants'
 
 const VALID_HTML = `<!DOCTYPE html><html><head>
-  <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration?atl_token=8eb22ca6112dc5e22cc970307c4a1a26a25ff6ef_lin&amp;fieldConfigSchemeId=11111&amp;fieldConfigId=55555&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
-  <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration?atl_token=8eb22ca6112dc5e22cc970307c4a1a26a25ff6ef_lin&amp;fieldConfigSchemeId=22222&amp;fieldConfigId=66666&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
+  <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration;fieldConfigSchemeId=11111&amp;fieldConfigId=55555&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
+  <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration;fieldConfigSchemeId=22222&amp;fieldConfigId=66666&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
   </head></html>`
 const HTML_WITH_UNEXPECTED_CONTEXT_ID = `<!DOCTYPE html><html><head>
-  <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration?atl_token=8eb22ca6112dc5e22cc970307c4a1a26a25ff6ef_lin&amp;fieldConfigSchemeId=000000&amp;fieldConfigId=55555&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
+  <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration;fieldConfigSchemeId=000000&amp;fieldConfigId=55555&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
   </head></html>`
 const HTML_WITH_INVALID_CONFIG_ID = `<!DOCTYPE html><html><head>
-  <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration?atl_token=8eb22ca6112dc5e22cc970307c4a1a26a25ff6ef_lin&amp;fieldConfigSchemeId=11111&amp;fieldConfigIdInvalid=55555&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
+  <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration;fieldConfigSchemeId=11111&amp;fieldConfigIdInvalid=55555&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
   </head></html>`
 const HTML_WITHOUT_HREF = `<!DOCTYPE html><html><head>
   <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" >Edit Assets object/s field configuration</a>

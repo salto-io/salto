@@ -1249,6 +1249,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
         serviceUrl: { path: 'admin/workspaces/agent-workspace/layouts' },
       },
       fieldCustomizations: {

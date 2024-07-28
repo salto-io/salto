@@ -364,11 +364,6 @@ jobs:
           path: reports
       - store_turbo_cache:
           cache_name: jest_e2e-<< parameters.package_name >>
-
-      - coveralls/upload:
-          parallel: true
-          flag_name: e2e-<< parameters.package_name >>
-          fail_on_error: false
           
   package_cli:
     working_directory: /mnt/ramdisk/project

@@ -850,7 +850,8 @@ describe('SalesforceAdapter fetch', () => {
       expect(getRestriction(flow.fields.enum).values).toEqual(['no', 'yes'])
       expect(flow.path).toEqual([constants.SALESFORCE, constants.TYPES_PATH, 'Flow'])
       expect(isServiceId(await flow.fields[constants.INSTANCE_FULL_NAME_FIELD].getType())).toEqual(true)
-      expect(isServiceId((await flow.getAnnotationTypes())[constants.METADATA_TYPE])).toEqual(true)
+      const metaTypeAnnotations = (await (await flow.getMetaType())?.getAnnotationTypes()) ?? {}
+      expect(isServiceId(metaTypeAnnotations[constants.METADATA_TYPE])).toEqual(true)
       expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
     })
 
@@ -941,6 +942,7 @@ describe('SalesforceAdapter fetch', () => {
           1 /* value set */ +
           2 /* field dependency & value settings */ +
           7 /* range restrictions */ +
+          4 /* meta types */ +
           2 /* ChangedAtSingleton type & instance */,
       )
 

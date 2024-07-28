@@ -15,10 +15,9 @@
  */
 
 import _ from 'lodash'
-import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
-import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
+import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { elements as elementUtils, config as configUtils, resolveValues } from '@salto-io/adapter-components'
 import { parse } from 'node-html-parser'
-import Joi from 'joi'
 import {
   BuiltinTypes,
   ElemID,
@@ -32,37 +31,28 @@ import {
   InstanceElement,
   Change,
   ReferenceExpression,
+  isRemovalChange,
+  isAdditionChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../fields/constants'
-import { addAnnotationRecursively, findObject } from '../../utils'
+import { addAnnotationRecursively, findObject, HTMLResponse, isHTMLResponse } from '../../utils'
 import { ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE, JIRA } from '../../constants'
 import { getWorkspaceId } from '../../workspace_id'
 import JiraClient from '../../client/client'
+import { JiraConfig } from '../../config/config'
+import { getLookUpName } from '../../reference_mapping'
+import { removeCustomFieldPrefix } from '../jql/template_expression_generator'
 
 const { toBasicInstance } = elementUtils
 const { getTransformationConfigByType } = configUtils
 const log = logger(module)
 
 const CMDB_OBJECT_FIELD_CONFIGURATION = 'com.atlassian.jira.plugins.cmdb:cmdb-object-cftype'
-const CUSTOM_FIELD_ID_REGEX = /customfield_(\d+)/
 const FIELD_CONFIG_ID_REGEX = /fieldConfigId=(\d+)/
 const FIELD_CONTEXT_ID_REGEX = /fieldConfigSchemeId=(\d+)/
-
-type HTMLResponse = {
-  data: string
-}
-
-const HTML_RESPONSE_SCHEME = Joi.object({
-  data: Joi.string().required(),
-}).unknown(true)
-
-const isHTMLResponse = createSchemeGuard<HTMLResponse>(
-  HTML_RESPONSE_SCHEME,
-  'Failed to get HTML response for assets context config id',
-)
 
 const extractFirstMatch = (input: string, pattern: RegExp): string => {
   const match = input.match(pattern)
@@ -89,12 +79,8 @@ const extractIdsFromHTML = (html: HTMLResponse): Record<string, string> => {
   return contextIdToConfigId
 }
 
-export const getAssetsContextIdsFromHTML = async (
-  client: JiraClient,
-  instance: InstanceElement,
-): Promise<Record<string, string>> => {
-  const fieldId = instance.value.id
-  const numericCustomFieldId = extractFirstMatch(fieldId, CUSTOM_FIELD_ID_REGEX)
+const getAssetsContextIdsFromHTML = async (client: JiraClient, fieldId: string): Promise<Record<string, string>> => {
+  const numericCustomFieldId = removeCustomFieldPrefix(fieldId)
   const html = await client.getPrivate({
     url: 'secure/admin/ConfigureCustomField!default.jspa',
     queryParams: {
@@ -108,6 +94,55 @@ export const getAssetsContextIdsFromHTML = async (
   return extractIdsFromHTML(html)
 }
 
+const getFieldConfigId = async (client: JiraClient, change: Change<InstanceElement>): Promise<string | undefined> => {
+  const instance = getChangeData(change)
+  if (!isAdditionChange(change)) {
+    return instance.value.assetsObjectFieldConfiguration.id
+  }
+  const contextIdToConfigId = await getAssetsContextIdsFromHTML(client, getParent(instance).value.id)
+  const configId = contextIdToConfigId[instance.value.id]
+  if (configId === undefined) {
+    throw new Error(`Failed to find field context with id ${instance.value.id}`)
+  }
+  return configId
+}
+
+export const deployAssetObjectContext = async (
+  change: Change<InstanceElement>,
+  client: JiraClient,
+  config: JiraConfig,
+): Promise<void> => {
+  if (!config.fetch.enableAssetsObjectFieldConfiguration) {
+    return
+  }
+  const instance = getChangeData(change)
+  if (isRemovalChange(change) || instance.value.assetsObjectFieldConfiguration === undefined) {
+    return
+  }
+  const { workspaceId } = instance.value.assetsObjectFieldConfiguration
+  // we insert the workspaceId to the instance in assetsObjectFieldConfigurationFilter
+  if (workspaceId === undefined) {
+    log.error('Skip deployment of assetsObjectFieldConfiguration because workspaceId is undefined')
+    throw new Error(
+      `assetsObjectFieldConfiguration won't be deployed for instance ${instance.elemID.getFullName()}, due to error with the workspaceId. The context might be deployed partially.`,
+    )
+  }
+
+  const resolvedInstance = await resolveValues(instance, getLookUpName)
+  try {
+    const configId = await getFieldConfigId(client, change)
+    await client.putPrivate({
+      url: `rest/servicedesk/cmdb/latest/fieldconfig/${configId}`,
+      data: _.omit(resolvedInstance.value.assetsObjectFieldConfiguration, 'id'),
+    })
+  } catch (e) {
+    log.error(`Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()}: ${e}`)
+    throw new Error(
+      `Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()}. The context might be deployed partially.`,
+    )
+  }
+}
+
 const getRelevantAssetsObjectFieldConfiguration = (changes: Change[]): InstanceElement[] =>
   changes
     .filter(isAdditionOrModificationChange)
@@ -119,9 +154,6 @@ const getRelevantAssetsObjectFieldConfiguration = (changes: Change[]): InstanceE
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'assetsObjectFieldConfigurationFilter',
   onFetch: async elements => {
-    if (!config.fetch.enableAssetsObjectFieldConfiguration) {
-      return
-    }
     const assetsObjectFieldConfigurationType = new ObjectType({
       elemID: new ElemID(JIRA, ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE),
       fields: {
@@ -143,8 +175,15 @@ const filter: FilterCreator = ({ config, client }) => ({
     await addAnnotationRecursively(assetsObjectFieldConfigurationType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(assetsObjectFieldConfigurationType, CORE_ANNOTATIONS.UPDATABLE)
     await addAnnotationRecursively(assetsObjectFieldConfigurationType, CORE_ANNOTATIONS.DELETABLE)
+    assetsObjectFieldConfigurationType.fields.id.annotations = {
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    }
 
     elements.push(assetsObjectFieldConfigurationType)
+
+    if (!config.fetch.enableAssetsObjectFieldConfiguration) {
+      return
+    }
 
     const fieldContextType = findObject(elements, FIELD_CONTEXT_TYPE_NAME)
     if (fieldContextType === undefined) {
@@ -172,29 +211,31 @@ const filter: FilterCreator = ({ config, client }) => ({
     await Promise.all(
       fields.map(async instance => {
         try {
-          const contextIdToConfigId = await getAssetsContextIdsFromHTML(client, instance)
-          Object.entries(contextIdToConfigId).forEach(async ([contextId, configId]) => {
-            const result = await client.getPrivate({
-              url: `/rest/servicedesk/cmdb/latest/fieldconfig/${configId}`,
-            })
-            const assetObject = await toBasicInstance({
-              entry: {
-                id: configId,
-                ...result.data,
-              },
-              type: assetsObjectFieldConfigurationType,
-              transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
-              transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
-              defaultName: 'AssetsObjectFieldConfiguration',
-            })
-            const fieldContext = instance.value.contexts
-              .filter(isResolvedReferenceExpression)
-              .find((context: ReferenceExpression) => context.value.value.id === contextId)
-            if (fieldContext === undefined) {
-              throw new Error(`Failed to find field context with id ${contextId}`)
-            }
-            fieldContext.value.value.assetsObjectFieldConfiguration = assetObject.value
-          })
+          const contextIdToConfigId = await getAssetsContextIdsFromHTML(client, instance.value.id)
+          await Promise.all(
+            Object.entries(contextIdToConfigId).map(async ([contextId, configId]) => {
+              const result = await client.getPrivate({
+                url: `/rest/servicedesk/cmdb/latest/fieldconfig/${configId}`,
+              })
+              const assetObject = await toBasicInstance({
+                entry: {
+                  id: configId,
+                  ...result.data,
+                },
+                type: assetsObjectFieldConfigurationType,
+                transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
+                transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
+                defaultName: 'AssetsObjectFieldConfiguration',
+              })
+              const fieldContext = instance.value.contexts
+                .filter(isResolvedReferenceExpression)
+                .find((context: ReferenceExpression) => context.value.value.id === contextId)
+              if (fieldContext === undefined) {
+                throw new Error(`Failed to find field context with id ${contextId}`)
+              }
+              fieldContext.value.value.assetsObjectFieldConfiguration = assetObject.value
+            }),
+          )
         } catch (e) {
           log.error(`Failed to fetch asset object context for field context ${instance.elemID.getFullName()}: ${e}`)
         }

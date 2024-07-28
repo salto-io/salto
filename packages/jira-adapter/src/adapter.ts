@@ -253,6 +253,7 @@ export const DEFAULT_FILTERS = [
   unresolvedParentsFilter,
   localeFilter,
   contextReferencesFilter,
+  // must run after contextReferencesFilter
   assetsObjectFieldConfigurationFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,

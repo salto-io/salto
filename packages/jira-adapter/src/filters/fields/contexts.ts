@@ -27,17 +27,16 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { getParent, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { defaultDeployChange } from '../../deployment/standard_deployment'
-import { getLookUpName } from '../../reference_mapping'
 import JiraClient from '../../client/client'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context_options'
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from './default_values'
 import { setContextField } from './issues_and_projects'
 import { setFieldDeploymentAnnotations } from '../../utils'
-import { getAssetsContextIdsFromHTML } from '../assets/assets_object_field_configuration'
+import { deployAssetObjectContext } from '../assets/assets_object_field_configuration'
 import { JiraConfig } from '../../config/config'
 
 const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext', 'AssetsObjectFieldConfiguration']
@@ -56,55 +55,6 @@ export const getContextType = async (fieldType: ObjectType): Promise<ObjectType>
   }
 
   return contextType
-}
-
-const getFieldConfigId = async (client: JiraClient, change: Change<InstanceElement>): Promise<string | undefined> => {
-  const instance = getChangeData(change)
-  if (!isAdditionChange(change)) {
-    return instance.value.assetsObjectFieldConfiguration.id
-  }
-  const contextIdToConfigId = await getAssetsContextIdsFromHTML(client, getParent(instance))
-  const configId = contextIdToConfigId[instance.value.id]
-  if (configId === undefined) {
-    throw new Error(`Failed to find field context with id ${instance.value.id}`)
-  }
-  return configId
-}
-
-const deployAssetObjectContext = async (
-  change: Change<InstanceElement>,
-  client: JiraClient,
-  config: JiraConfig,
-): Promise<void> => {
-  if (!config.fetch.enableAssetsObjectFieldConfiguration) {
-    return
-  }
-  const instance = getChangeData(change)
-  if (isRemovalChange(change) || instance.value.assetsObjectFieldConfiguration === undefined) {
-    return
-  }
-  const { workspaceId } = instance.value.assetsObjectFieldConfiguration
-  // we insert the workspaceId to the instance in assetsObjectFieldConfigurationFilter
-  if (workspaceId === undefined) {
-    log.error('Skip deployment of assetsObjectFieldConfiguration because workspaceId is undefined')
-    throw new Error(
-      `assetsObjectFieldConfiguration won't be deployed for instance ${instance.elemID.getFullName()}, due to error with the workspaceId. The context might be deployed partially.`,
-    )
-  }
-
-  const resolvedInstance = await resolveValues(instance, getLookUpName)
-  try {
-    const configId = await getFieldConfigId(client, change)
-    await client.putPrivate({
-      url: `rest/servicedesk/cmdb/latest/fieldconfig/${configId}`,
-      data: resolvedInstance.value.assetsObjectFieldConfiguration,
-    })
-  } catch (e) {
-    log.error(`Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()}: ${e}`)
-    throw new Error(
-      `Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()}. The context might be deployed partially.`,
-    )
-  }
 }
 
 export const deployContextChange = async ({

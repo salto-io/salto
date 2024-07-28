@@ -227,4 +227,87 @@ export const mockDefaultValues: Record<string, Values> = {
     active: true,
     system: false,
   },
+  workspace: {
+    description: '',
+    activated: true,
+    conditions: {
+      all: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: 'open',
+        },
+      ],
+    },
+  },
+  layout: {
+    state: 'draft',
+    type: 'ticket',
+    is_default: false,
+    sections: [
+      {
+        name: 'ticket-workspace',
+        columns: [
+          {
+            width: 0.6,
+            components: [
+              {
+                type: 'TicketFieldsPane',
+                height: 1,
+              },
+            ],
+            isCollapsed: false,
+            isSplitterHidden: false,
+          },
+          {
+            width: 1.8,
+            components: [
+              {
+                type: 'MainConversationPane',
+                height: 1,
+              },
+            ],
+            isCollapsed: false,
+            isSplitterHidden: false,
+          },
+          {
+            width: 0.6,
+            components: [
+              {
+                type: 'ContextPanel',
+                config: {
+                  open: {
+                    type: 'CustomerContextPane',
+                  },
+                  components: [
+                    {
+                      type: 'CustomerContextPane',
+                    },
+                    {
+                      type: 'RelatedObjectsPane',
+                    },
+                    {
+                      type: 'KnowledgePane',
+                    },
+                    {
+                      type: 'IntelligencePane',
+                    },
+                    {
+                      type: 'SideConversationsPane',
+                    },
+                    {
+                      type: 'AppsPane',
+                    },
+                  ],
+                },
+                height: 1,
+              },
+            ],
+            isCollapsed: false,
+            isSplitterHidden: false,
+          },
+        ],
+      },
+    ],
+  },
 }

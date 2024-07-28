@@ -70,7 +70,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const hold = defaultCustomStatuses.find(inst => inst.value.status_category === HOLD_CATEGORY)
 
     if (pending === undefined || solved === undefined || open === undefined || hold === undefined) {
-      log.error('could not find default status for one or more of the status categories')
+      log.warn('could not find default status for one or more of the status categories')
       return
     }
 

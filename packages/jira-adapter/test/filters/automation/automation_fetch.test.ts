@@ -22,7 +22,7 @@ import {
   config as configDeprecated,
 } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { FAULTY_CLOUD_ID_RESPONSE, MOCKED_CLOUD_ID, getFilterParams, mockClient } from '../../utils'
+import { FAULTY_CLOUD_ID_RESPONSE, DEFAULT_CLOUD_ID, getFilterParams, mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, OBJECT_TYPE_TYPE, PROJECT_TYPE } from '../../../src/constants'
@@ -34,7 +34,7 @@ jest.mock('../../../src/constants', () => ({
   AUTOMATION_RETRY_PERIODS: [1, 2, 3, 4],
 }))
 
-const DEFAULT_URL = `/gateway/api/automation/internal-api/jira/${MOCKED_CLOUD_ID}/pro/rest/GLOBAL/rules`
+const DEFAULT_URL = `/gateway/api/automation/internal-api/jira/${DEFAULT_CLOUD_ID}/pro/rest/GLOBAL/rules`
 describe('automationFetchFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let projectType: ObjectType
@@ -81,7 +81,7 @@ describe('automationFetchFilter', () => {
   }
 
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+    const { client: cli, paginator, connection: conn } = mockClient(false)
     client = cli
     connection = conn
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -266,7 +266,7 @@ describe('automationFetchFilter', () => {
     })
 
     it('should throw if resources response is invalid', async () => {
-      const { client: cli, paginator, connection: conn } = mockClient()
+      const { client: cli, paginator, connection: conn } = mockClient(false, false)
       client = cli
       connection = conn
       connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
@@ -310,7 +310,7 @@ describe('automationFetchFilter', () => {
     })
 
     it('should throw if cloud resource is not an object', async () => {
-      const { client: cli, paginator, connection: conn } = mockClient()
+      const { client: cli, paginator, connection: conn } = mockClient(false, false)
       client = cli
       connection = conn
       connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
@@ -354,7 +354,7 @@ describe('automationFetchFilter', () => {
     })
 
     it('should throw if tenantId not in response', async () => {
-      const { client: cli, paginator, connection: conn } = mockClient()
+      const { client: cli, paginator, connection: conn } = mockClient(false, false)
       client = cli
       connection = conn
       connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
@@ -538,7 +538,7 @@ describe('automationFetchFilter', () => {
     expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName')
   })
   it('should retry if response is 504', async () => {
-    const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(false)
     client = cli
     connection = conn
 
@@ -559,7 +559,7 @@ describe('automationFetchFilter', () => {
     expect(elements[1].elemID.getFullName()).toEqual('jira.Automation.instance.automationName_projectName')
   })
   it('should retry if response is 502', async () => {
-    const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(false)
     client = cli
     connection = conn
 
@@ -580,7 +580,7 @@ describe('automationFetchFilter', () => {
     expect(elements[1].elemID.getFullName()).toEqual('jira.Automation.instance.automationName_projectName')
   })
   it('should fail if retry response is 504 and passed retries count', async () => {
-    const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(false)
     client = cli
     connection = conn
     conn.post.mockClear()
@@ -601,7 +601,7 @@ describe('automationFetchFilter', () => {
     expect(conn.post.mock.calls.length).toEqual(5) // 5 times for automation as we have 4 retries
   })
   it('should fail without retries if error is not http', async () => {
-    const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+    const { client: cli, connection: conn } = mockClient(false)
     client = cli
     connection = conn
     conn.post.mockClear()
@@ -719,7 +719,7 @@ describe('automationFetchFilter', () => {
       name: 'objectTypeName',
     })
     beforeEach(() => {
-      const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))

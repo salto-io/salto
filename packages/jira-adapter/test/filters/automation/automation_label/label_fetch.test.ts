@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-
 import _ from 'lodash'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { FAULTY_CLOUD_ID_RESPONSE, MOCKED_CLOUD_ID, getFilterParams, mockClient } from '../../../utils'
+import { FAULTY_CLOUD_ID_RESPONSE, getFilterParams, mockClient } from '../../../utils'
 import automationLabelFetchFilter from '../../../../src/filters/automation/automation_label/label_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
 import { JIRA } from '../../../../src/constants'
@@ -34,7 +34,7 @@ describe('automationLabelFetchFilter', () => {
   let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
 
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+    const { client: cli, paginator, connection: conn } = mockClient(false)
     client = cli
     connection = conn
 

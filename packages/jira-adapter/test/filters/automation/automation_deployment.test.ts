@@ -27,7 +27,7 @@ import {
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { MOCKED_CLOUD_ID, getFilterParams, mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA, OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
@@ -100,7 +100,7 @@ describe('automationDeploymentFilter', () => {
     serviceDeskId: '55',
   })
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+    const { client: cli, paginator, connection: conn } = mockClient(false)
     client = cli
     connection = conn
 
@@ -294,7 +294,7 @@ describe('automationDeploymentFilter', () => {
     })
     describe('retries', () => {
       beforeEach(() => {
-        const { client: cli, paginator, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+        const { client: cli, paginator, connection: conn } = mockClient(false)
         client = cli
         connection = conn
         config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))

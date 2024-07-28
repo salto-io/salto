@@ -39,7 +39,7 @@ export const createCredentialsInstance = (credentials: Credentials): InstanceEle
 export const createConfigInstance = (config: JiraConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)
 
-export const MOCKED_CLOUD_ID = 'cloudId'
+export const DEFAULT_CLOUD_ID = 'cloudId'
 export const DEFAULT_RESPONSE = { status: 200, data: '' }
 const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
   get: mockFunction<clientUtils.APIConnection['get']>().mockResolvedValue(DEFAULT_RESPONSE),
@@ -58,7 +58,11 @@ type ClientWithMockConnection = {
   getUserMapFunc: GetUserMapFunc
   scriptRunnerClient: ScriptRunnerClient
 }
-export const mockClient = (isDataCenter = false, mockedCloudID?: string): ClientWithMockConnection => {
+export const mockClient = (
+  isDataCenter = false,
+  mockGetCloudId: boolean = true,
+  mockedCloudId: string = DEFAULT_CLOUD_ID,
+): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new JiraClient({
     credentials: {
@@ -76,8 +80,8 @@ export const mockClient = (isDataCenter = false, mockedCloudID?: string): Client
     },
     isDataCenter,
   })
-  if (mockedCloudID !== undefined) {
-    client.getCloudId = async () => mockedCloudID
+  if (mockGetCloudId) {
+    client.getCloudId = async () => mockedCloudId
   }
 
   const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client })
@@ -181,4 +185,3 @@ export const FAULTY_CLOUD_ID_RESPONSE = (url: string): Value => {
 
   throw new Error(`Unexpected url ${url}`)
 }
-

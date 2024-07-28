@@ -30,7 +30,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { FilterResult } from '../../../src/filter'
 import { getDefaultConfig } from '../../../src/config/config'
 import formsFilter from '../../../src/filters/forms/forms'
-import { MOCKED_CLOUD_ID, createEmptyType, getFilterParams, mockClient } from '../../utils'
+import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { FORM_TYPE, JIRA, PROJECT_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 
@@ -49,7 +49,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -373,7 +373,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -570,7 +570,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -838,7 +838,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -950,7 +950,7 @@ describe('forms filter', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      const { client: cli, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+      const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter

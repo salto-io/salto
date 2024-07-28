@@ -17,7 +17,7 @@ import { getChangeData, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange 
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { MOCKED_CLOUD_ID, getFilterParams, mockClient } from '../../../utils'
+import { getFilterParams, mockClient } from '../../../utils'
 import automationLabelDeploymentFilter from '../../../../src/filters/automation/automation_label/label_deployment'
 import { createAutomationLabelType } from '../../../../src/filters/automation/automation_label/types'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
@@ -33,7 +33,7 @@ describe('automationLabelDeploymentFilter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
 
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient(false, MOCKED_CLOUD_ID)
+    const { client: cli, paginator, connection: conn } = mockClient(false)
     client = cli
     connection = conn
 

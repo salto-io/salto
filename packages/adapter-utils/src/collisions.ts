@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { ElemID, InstanceElement, SaltoError } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from './utils'
@@ -24,6 +24,11 @@ const log = logger(module)
 
 const MAX_BREAKDOWN_ELEMENTS = 10
 const MAX_BREAKDOWN_DETAILS_ELEMENTS = 3
+
+type InstanceDetail = {
+  name: string
+  serviceUrl?: string | undefined
+}
 
 export const groupInstancesByTypeAndElemID = async (
   instances: InstanceElement[],
@@ -35,22 +40,27 @@ export const groupInstancesByTypeAndElemID = async (
 
 export const createWarningFromMsg = (message: string): SaltoError => ({ message, severity: 'Warning' })
 
+const getInstanceDescWithServiceUrl = (instanceDetail: InstanceDetail, baseUrl?: string): string =>
+  baseUrl
+    ? `${baseUrl}/${instanceDetail.name}`
+    : `Instance with Id - ${instanceDetail.name}${instanceDetail.serviceUrl ? `. View in the service - ${instanceDetail.serviceUrl}` : ''}`
+
 export const getInstanceDesc = (instanceId: string, baseUrl?: string): string =>
-  baseUrl ? `${baseUrl}/${instanceId}` : `Instance with Id - ${instanceId}`
+  getInstanceDescWithServiceUrl({ name: instanceId }, baseUrl)
 
 const getCollisionBreakdownTitle = (collidingInstanceName: string): string =>
   collidingInstanceName === ElemID.CONFIG_NAME
     ? 'Instances with empty name (Due to no values in any of the provided ID fields)'
     : collidingInstanceName
 
-export const getInstancesDetailsMsg = (
-  instanceIds: string[],
+const getInstancesDetailsMsg = (
+  instanceDetails: InstanceDetail[],
   baseUrl?: string,
   maxBreakdownDetailsElements = MAX_BREAKDOWN_DETAILS_ELEMENTS,
 ): string => {
-  const instancesToPrint = instanceIds.slice(0, maxBreakdownDetailsElements)
-  const instancesMsgs = instancesToPrint.map(instanceId => getInstanceDesc(instanceId, baseUrl))
-  const overFlowSize = instanceIds.length - maxBreakdownDetailsElements
+  const instancesToPrint = instanceDetails.slice(0, maxBreakdownDetailsElements)
+  const instancesMsgs = instancesToPrint.map(instanceDetail => getInstanceDescWithServiceUrl(instanceDetail, baseUrl))
+  const overFlowSize = instanceDetails.length - maxBreakdownDetailsElements
   const overFlowMsg = overFlowSize > 0 ? [`${overFlowSize} more instances`] : []
   return [...instancesMsgs, ...overFlowMsg].map(msg => `\t* ${msg}`).join('\n')
 }
@@ -73,6 +83,38 @@ const logInstancesWithCollidingElemID = async (
   ${relevantInstanceValuesStr}`)
     })
   })
+}
+
+const getCollisionMessages = async ({
+  elemIDtoInstances,
+  getInstanceName,
+  baseUrl,
+  maxBreakdownElements,
+  maxBreakdownDetailsElements,
+}: {
+  elemIDtoInstances: Record<string, InstanceElement[]>
+  getInstanceName: (instance: InstanceElement) => Promise<string>
+  baseUrl?: string
+  maxBreakdownElements: number
+  maxBreakdownDetailsElements: number
+}): Promise<string[]> => {
+  const collisionsToDisplay = Object.entries(elemIDtoInstances).slice(0, maxBreakdownElements)
+  const collisionMessages = await Promise.all(
+    collisionsToDisplay.map(async ([elemID, collisionInstances]) => {
+      const instanceDetails = await Promise.all(
+        collisionInstances.map(async instance => ({
+          name: await getInstanceName(instance),
+          serviceUrl:
+            typeof instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] === 'string'
+              ? instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+              : undefined,
+        })),
+      )
+      return `- ${getCollisionBreakdownTitle(elemID)}:
+${getInstancesDetailsMsg(instanceDetails, baseUrl, maxBreakdownDetailsElements)}`
+    }),
+  )
+  return collisionMessages
 }
 
 export const getAndLogCollisionWarnings = async ({
@@ -112,13 +154,13 @@ export const getAndLogCollisionWarnings = async ({
 Current Salto ID configuration for ${type} is defined as [${getIdFieldsByType(type).join(', ')}].`
 
       const collisionsHeader = 'Breakdown per colliding Salto ID:'
-      const collisionsToDisplay = Object.entries(elemIDtoInstances).slice(0, maxBreakdownElements)
-      const collisionMsgs = await Promise.all(
-        collisionsToDisplay.map(
-          async ([elemID, collisionInstances]) => `- ${getCollisionBreakdownTitle(elemID)}:
-${getInstancesDetailsMsg(await Promise.all(collisionInstances.map(getInstanceName)), baseUrl, maxBreakdownDetailsElements)}`,
-        ),
-      )
+      const collisionMessages = await getCollisionMessages({
+        elemIDtoInstances,
+        getInstanceName,
+        baseUrl,
+        maxBreakdownElements,
+        maxBreakdownDetailsElements,
+      })
       const epilogue = `To resolve these collisions please take one of the following actions and fetch again:
 \t1. Change ${type}'s ${idFieldsName} to include all fields that uniquely identify the type's instances.
 \t2. Delete duplicate instances from your ${adapterName} account.
@@ -131,7 +173,7 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
           : []
       const linkToDocsMsg = docsUrl ? ['', `Learn more at: ${docsUrl}`] : []
       return createWarningFromMsg(
-        [header, '', collisionsHeader, ...collisionMsgs, ...overflowMsg, '', epilogue, ...linkToDocsMsg].join('\n'),
+        [header, '', collisionsHeader, ...collisionMessages, ...overflowMsg, '', epilogue, ...linkToDocsMsg].join('\n'),
       )
     }),
   )

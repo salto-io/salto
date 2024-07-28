@@ -41,7 +41,6 @@ import { logger } from '@salto-io/logging'
 import { resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
-import { getCloudId } from '../automation/cloud_id'
 import { createFormType, isCreateFormResponse, isDetailedFormsResponse, isFormsResponse } from './forms_types'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
@@ -57,7 +56,7 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
   if (form.value.design?.settings?.name === undefined) {
     throw new Error('Form name is missing')
   }
-  const cloudId = await getCloudId(client)
+  const cloudId = await client.getCloudId()
   if (isAdditionOrModificationChange(change)) {
     if (isAdditionChange(change)) {
       const resp = await client.post({
@@ -101,7 +100,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
       return { errors: [] }
     }
-    const cloudId = await getCloudId(client)
+    const cloudId = await client.getCloudId()
     const { formType, subTypes } = createFormType()
     setTypeDeploymentAnnotations(formType)
     await addAnnotationRecursively(formType, CORE_ANNOTATIONS.CREATABLE)

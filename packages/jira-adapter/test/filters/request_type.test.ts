@@ -22,7 +22,7 @@ import { getDefaultConfig } from '../../src/config/config'
 import requestTypeFilter from '../../src/filters/request_type'
 import { createEmptyType, getFilterParams, mockClient } from '../utils'
 import { PROJECT_TYPE, REQUEST_TYPE_NAME } from '../../src/constants'
-import JiraClient from '../../src/client/client'
+import JiraClient, { GQL_BASE_URL_GIRA } from '../../src/client/client'
 
 describe('requestType filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
@@ -113,7 +113,7 @@ describe('requestType filter', () => {
       )
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             data: {
               issueLayoutConfiguration: {

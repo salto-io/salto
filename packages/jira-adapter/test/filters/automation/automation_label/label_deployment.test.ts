@@ -15,15 +15,13 @@
  */
 import { getChangeData, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { getFilterParams, mockClient } from '../../../utils'
+import { DEFAULT_CLOUD_ID, getFilterParams, mockClient } from '../../../utils'
 import automationLabelDeploymentFilter from '../../../../src/filters/automation/automation_label/label_deployment'
 import { createAutomationLabelType } from '../../../../src/filters/automation/automation_label/types'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
 import JiraClient from '../../../../src/client/client'
-import { CLOUD_RESOURCE_FIELD } from '../../../../src/filters/automation/cloud_id'
 
 describe('automationLabelDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -35,7 +33,7 @@ describe('automationLabelDeploymentFilter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
 
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient()
+    const { client: cli, paginator, connection: conn } = mockClient(false, DEFAULT_CLOUD_ID)
     client = cli
     connection = conn
 
@@ -99,18 +97,6 @@ describe('automationLabelDeploymentFilter', () => {
   describe('deploy', () => {
     beforeEach(() => {
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
           return {
             status: 200,
@@ -125,17 +111,7 @@ describe('automationLabelDeploymentFilter', () => {
       await filter.deploy([toChange({ after: automationLabelInstance })])
 
       expect(automationLabelInstance.value.id).toBe(555)
-      expect(connection.post).toHaveBeenCalledTimes(2)
-      expect(connection.post).toHaveBeenCalledWith(
-        '/rest/webResources/1.0/resources',
-        {
-          r: [],
-          c: ['jira.webresources:jira-global'],
-          xc: [],
-          xr: [],
-        },
-        undefined,
-      )
+      expect(connection.post).toHaveBeenCalledTimes(1)
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',
         { name: automationLabelInstance.value.name, color: automationLabelInstance.value.color },
@@ -181,19 +157,6 @@ describe('automationLabelDeploymentFilter', () => {
 
     it('should throw if received invalid automation label response', async () => {
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
-
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
           return {
             status: 200,

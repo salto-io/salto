@@ -25,16 +25,14 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { getFilterParams, mockClient } from '../../utils'
+import { DEFAULT_CLOUD_ID, getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA, OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import JiraClient from '../../../src/client/client'
-import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
 describe('automationDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
@@ -102,7 +100,7 @@ describe('automationDeploymentFilter', () => {
     serviceDeskId: '55',
   })
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient()
+    const { client: cli, paginator, connection: conn } = mockClient(false, DEFAULT_CLOUD_ID)
     client = cli
     connection = conn
 
@@ -172,18 +170,6 @@ describe('automationDeploymentFilter', () => {
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const createPostMockResponse = (projects: Value) =>
       jest.fn((url: string): Value => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
           return {
             status: 200,
@@ -219,13 +205,6 @@ describe('automationDeploymentFilter', () => {
         created: 2,
         projects: [],
       }
-
-      connection.get.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          taskState: 'SUCCESS',
-        },
-      })
 
       connection.post.mockImplementation(async url => createPostMockResponse([{ projectId: '1' }])(url))
     })
@@ -315,7 +294,7 @@ describe('automationDeploymentFilter', () => {
     })
     describe('retries', () => {
       beforeEach(() => {
-        const { client: cli, paginator, connection: conn } = mockClient()
+        const { client: cli, paginator, connection: conn } = mockClient(false, DEFAULT_CLOUD_ID)
         client = cli
         connection = conn
         config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -395,7 +374,7 @@ describe('automationDeploymentFilter', () => {
     })
 
     it('should create automation in jira DC', async () => {
-      const { client: cli, connection: conn } = mockClient(true)
+      const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
       client = cli
       connection = conn
 
@@ -580,19 +559,6 @@ describe('automationDeploymentFilter', () => {
 
     it('should throw if received invalid response from import', async () => {
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
-
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
           return {
             status: 200,
@@ -607,19 +573,6 @@ describe('automationDeploymentFilter', () => {
 
     it('should throw if received more than one identical automation in response', async () => {
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
-
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
           return {
             status: 200,
@@ -670,7 +623,7 @@ describe('automationDeploymentFilter', () => {
     })
 
     it('should delete automation in jira DC', async () => {
-      const { client: cli, connection: conn } = mockClient(true)
+      const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
       client = cli
       connection = conn
 
@@ -749,7 +702,7 @@ describe('automationDeploymentFilter', () => {
       })
 
       it('should add a label to automation in jira DC', async () => {
-        const { client: cli, connection: conn } = mockClient(true)
+        const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
         client = cli
         connection = conn
 
@@ -785,7 +738,7 @@ describe('automationDeploymentFilter', () => {
       })
 
       it('should delete an automation label in jira DC', async () => {
-        const { client: cli, connection: conn } = mockClient(true)
+        const { client: cli, connection: conn } = mockClient(true, DEFAULT_CLOUD_ID)
         client = cli
         connection = conn
 

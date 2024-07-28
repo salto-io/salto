@@ -31,8 +31,6 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salesforce/core": "^8.1.1",
-    "@salesforce/source-deploy-retrieve": "^12.1.4",
     "@salto-io/adapter-api": "0.3.60",
     "@salto-io/adapter-components": "0.3.60",
     "@salto-io/adapter-utils": "0.3.60",

@@ -13,17 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ObjectType, ElemID, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  ReferenceExpression,
+  SaltoError,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '../src/collisions'
 
 describe('collisions', () => {
   const instType = new ObjectType({
     elemID: new ElemID('salto', 'obj'),
   })
-  const instance = new InstanceElement('test', instType, {
-    title: 'test',
-    ref: new ReferenceExpression(new ElemID('salto', 'something'), 'some value'),
-  })
+  const instance = new InstanceElement(
+    'test',
+    instType,
+    {
+      title: 'test',
+      ref: new ReferenceExpression(new ElemID('salto', 'something'), 'some value'),
+    },
+    undefined,
+    {
+      [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+    },
+  )
   const collidedInstance = new InstanceElement('test', instType, { title: 'test', val: 'val' })
   const differentInstance = new InstanceElement('test1', instType, { title: 'test1' })
   describe('getInstancesWithCollidingElemID', () => {
@@ -43,8 +58,8 @@ Current Salto ID configuration for obj is defined as [title].
 
 Breakdown per colliding Salto ID:
 - test:
-\t* Instance with Id - test
-\t* Instance with Id - test
+\t* Instance with Id - test. View in the service - someUrl
+\t* Instance with Id - test. View in the service - someUrl
 
 To resolve these collisions please take one of the following actions and fetch again:
 \t1. Change obj's unique fields to include all fields that uniquely identify the type's instances.

@@ -40,9 +40,6 @@
         "SALTO_TELEMETRY_DISABLE",
         "SALTO_TELEMETRY_URL",
         "JEST_JUNIT_OUTPUT_DIR"
-      ],
-      "outputs": [
-        "coverage/**"
       ]
     },
     "clean": {

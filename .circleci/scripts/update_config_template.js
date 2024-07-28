@@ -26,8 +26,8 @@ const generateE2eMatrix = (templateName, outputName) => {
     .split('\n')
     .filter(Boolean)
   console.log('e2ePackagesToTest:', e2ePackagesToTest)
-  const e2ePackages = e2ePackagesToTest.filter(pkg => !adaptersWithJava.includes(pkg))
-  const e2ePackagesWithJava = e2ePackagesToTest.filter(pkg => adaptersWithJava.includes(pkg))
+  const e2ePackages = e2ePackagesToTest.filter(pkg => !adaptersWithJava.includes(pkg)).map((pkg) => { return `${pkg.split('/').pop()}:${pkg}` })
+  const e2ePackagesWithJava = e2ePackagesToTest.filter(pkg => adaptersWithJava.includes(pkg)).map((pkg) => { return `${pkg.split('/').pop()}:${pkg}` })
 
   const e2eTestMatrix = `
       - e2e_tests:

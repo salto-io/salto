@@ -131,38 +131,6 @@ commands:
       - restore_node_modules
       - setup_yarn
 
-  run_e2e_tests:
-    parameters:
-      should_install_java:
-        type: boolean
-        default: false
-      package_name:
-        type: string
-    steps:
-      - when:
-          condition: << parameters.should_install_java >>
-          steps:
-            run:
-              name: Install Java
-              command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
-      - run:
-          name: Run E2E tests for package << parameters.package_name >>
-          command: |
-            pushd packages/<< parameters.package_name >>
-            yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
-          no_output_timeout: 20m
-          environment:
-            SALTO_LOG_LEVEL: 'info'
-            # enable telemetry for end2end so we can count more events
-            # webpack configuration is irrelevant in this case and therefore
-            # we explicitly configure it in here
-            SALTO_TELEMETRY_DISABLE: '0'
-            SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
-            JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
-
-      - store_test_results:
-          path: reports
-
   set_s3_pkg_urls:
     steps:
       - run:

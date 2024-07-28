@@ -37,7 +37,7 @@ const generateE2eMatrix = (templateName, outputName) => {
             alias: e2e_tests_without_java
             parameters:
               package_name: 
-                - ${e2ePackages.join('\n                - ')}
+                - "${e2ePackages.join('"\n                - "')}"
               should_install_java: 
                 - false
 `
@@ -49,7 +49,7 @@ const generateE2eMatrix = (templateName, outputName) => {
             alias: e2e_tests_with_java
             parameters:
               package_name: 
-                - ${e2ePackagesWithJava.join('\n                - ')}
+                - "${e2ePackagesWithJava.join('"\n                - "')}"
               should_install_java: 
                 - true
 `

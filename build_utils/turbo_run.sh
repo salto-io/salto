@@ -65,34 +65,6 @@ else
   export SALTO_DEPENDENCIES_HASH="$_dependency_hash"
 fi
 
-ARGS_rundir=("$@") 
-
-run_dir=""
-for arg in "${ARGS_rundir[@]}"; do
-  if [[ $arg == --cwd=* ]]; then
-    run_dir="${arg#--cwd=}"
-    break
-  elif [[ $arg == --cwd ]]; then
-    shift
-    run_dir="$1"
-    break
-  else
-    shift
-  fi
-done
-
-if [ -n "$run_dir" ]
-then
-  echo "pushd $run_dir"
-  pushd "$run_dir"
-fi
-
 yarn turbo run  \
   --no-update-notifier --concurrency="$TURBO_CONCURRENCY" \
   "${ARGS[@]}"
-
-if [ -n "$run_dir" ]
-then
-  echo "popd"
-  popd
-fi

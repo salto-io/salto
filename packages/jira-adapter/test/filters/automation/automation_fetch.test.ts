@@ -266,7 +266,7 @@ describe('automationFetchFilter', () => {
     })
 
     it('should throw if resources response is invalid', async () => {
-      const { client: cli, paginator, connection: conn } = mockClient(false, false)
+      const { client: cli, paginator, connection: conn } = mockClient(false, null)
       client = cli
       connection = conn
       connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
@@ -310,7 +310,7 @@ describe('automationFetchFilter', () => {
     })
 
     it('should throw if cloud resource is not an object', async () => {
-      const { client: cli, paginator, connection: conn } = mockClient(false, false)
+      const { client: cli, paginator, connection: conn } = mockClient(false, null)
       client = cli
       connection = conn
       connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
@@ -354,7 +354,7 @@ describe('automationFetchFilter', () => {
     })
 
     it('should throw if tenantId not in response', async () => {
-      const { client: cli, paginator, connection: conn } = mockClient(false, false)
+      const { client: cli, paginator, connection: conn } = mockClient(false, null)
       client = cli
       connection = conn
       connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)

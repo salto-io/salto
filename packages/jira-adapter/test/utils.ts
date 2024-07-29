@@ -60,8 +60,7 @@ type ClientWithMockConnection = {
 }
 export const mockClient = (
   isDataCenter = false,
-  mockGetCloudId: boolean = true,
-  mockedCloudId: string = DEFAULT_CLOUD_ID,
+  mockedCloudId: string | null = DEFAULT_CLOUD_ID,
 ): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new JiraClient({
@@ -80,7 +79,7 @@ export const mockClient = (
     },
     isDataCenter,
   })
-  if (mockGetCloudId) {
+  if (mockedCloudId !== null) {
     client.getCloudId = async () => mockedCloudId
   }
 

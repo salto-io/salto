@@ -19,7 +19,7 @@
     "status": 200,
     "response": {
       "id": "app-fakeid1",
-      "name": "salto_testtest3_1",
+      "name": "subdomain_app1_1",
       "label": "test test4",
       "status": "ACTIVE",
       "lastUpdated": "2024-07-07T12:23:56.000Z",
@@ -37,7 +37,7 @@
           "web": false
         },
         "appLinks": {
-          "salto_testtest3_1_link": true
+          "subdomain_app1_1_link": true
         }
       },
       "features": [],
@@ -113,8 +113,8 @@
         },
         "appLinks": [
           {
-            "name": "salto_testtest3_1_link",
-            "href": "https://<sanitized>/home/salto_testtest3_1/app-fakeid1/alnginpawzL1kLm3j697",
+            "name": "subdomain_app1_1_link",
+            "href": "https://<sanitized>/home/subdomain_app1_1/app-fakeid1/alnginpawzL1kLm3j697",
             "type": "text/html"
           }
         ],
@@ -151,7 +151,7 @@
     "body": {
       "label": "app2",
       "status": "INACTIVE",
-      "name": "subdomain.example.com",
+      "name": "subdomain_app1_1",
       "settings": null
     },
     "reqHeaders": {

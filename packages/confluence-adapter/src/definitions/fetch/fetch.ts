@@ -19,6 +19,7 @@ import { adjustLabelsToIdsFunc, adjustRestriction, createAdjustUserReferences } 
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
+  GROUP_TYPE_NAME,
   LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
   PERMISSION_TYPE_NAME,
@@ -205,7 +206,7 @@ const createCustomizations = (
         },
         permissions: {
           sort: {
-            properties: [{ path: 'principalId' }, { path: 'type' }, { path: 'key' }, { path: 'targetType' }],
+            properties: [{ path: 'type' }, { path: 'key' }, { path: 'targetType' }],
           },
         },
       },
@@ -449,6 +450,35 @@ const createCustomizations = (
       },
       fieldCustomizations: {
         templateId: {
+          hide: true,
+        },
+      },
+    },
+  },
+  [GROUP_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/group',
+        },
+        transformation: {
+          root: 'results',
+          omit: ['type'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
+        },
+      },
+      fieldCustomizations: {
+        id: {
           hide: true,
         },
       },

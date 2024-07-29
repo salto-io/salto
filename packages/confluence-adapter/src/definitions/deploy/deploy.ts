@@ -29,6 +29,7 @@ import {
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
+  GROUP_TYPE_NAME,
   LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
   PERMISSION_TYPE_NAME,
@@ -417,6 +418,35 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/wiki/rest/api/space/{spaceKey}/permission/{id}',
                   method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [GROUP_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/group',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/group/by-id',
+                  method: 'delete',
+                  queryArgs: {
+                    id: '{id}',
+                  },
                 },
               },
             },

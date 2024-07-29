@@ -226,7 +226,6 @@ export type NetsuiteConfig = {
   fetch: FetchParams
   fetchTarget?: NetsuiteQueryParameters
   skipList?: NetsuiteQueryParameters
-  useChangesDetection?: boolean // TODO remove this from config SALTO-3676
   withPartialDeletion?: boolean
   deployReferencedElements?: boolean
 }
@@ -247,7 +246,6 @@ export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
   fetch: 'fetch',
   fetchTarget: 'fetchTarget',
   skipList: 'skipList',
-  useChangesDetection: 'useChangesDetection',
   withPartialDeletion: 'withPartialDeletion',
   deployReferencedElements: 'deployReferencedElements',
 }
@@ -770,9 +768,6 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
     },
     fetchTarget: {
       refType: queryConfigType,
-    },
-    useChangesDetection: {
-      refType: BuiltinTypes.BOOLEAN,
     },
     withPartialDeletion: {
       refType: BuiltinTypes.BOOLEAN,

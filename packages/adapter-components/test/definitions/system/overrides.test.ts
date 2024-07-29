@@ -141,7 +141,7 @@ describe('overrides', () => {
       }`
       setupEnvVar(overridesEnvVar, jsonString)
       it('should add a type to the fetch config', () => {
-        const merged = mergeDefinitionsWithOverrides(mockedDefinitions,'account')
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions, 'account')
         expect(merged.fetch.instances.customizations?.group).toBeDefined()
         expect(merged.fetch.instances.customizations?.team).toBeDefined()
       })
@@ -178,7 +178,7 @@ describe('overrides', () => {
         expect(
           mockedDefinitions.fetch.instances.customizations?.team?.requests?.[0].transformation?.adjust,
         ).toBeDefined()
-        const merged = mergeDefinitionsWithOverrides(mockedDefinitions,'account')
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions, 'account')
         expect(merged.fetch.instances.customizations?.team?.element).toEqual(
           mockedDefinitions.fetch.instances.customizations?.team?.element,
         )
@@ -259,7 +259,7 @@ describe('overrides', () => {
       }`
       setupEnvVar(overridesEnvVar, jsonString)
       it('should remove a type from the fetch config', () => {
-        const merged = mergeDefinitionsWithOverrides(mockedDefinitions,'account')
+        const merged = mergeDefinitionsWithOverrides(mockedDefinitions, 'account')
         expect(merged.fetch.instances.customizations?.team).toBeUndefined()
       })
     })

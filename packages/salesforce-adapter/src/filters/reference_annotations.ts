@@ -43,7 +43,10 @@ const convertAnnotationsToReferences = async (
   const resolveTypeReference = (ref: string | ReferenceExpression): string | ReferenceExpression => {
     if (_.isString(ref)) {
       // Try finding a metadata type and fallback to finding a custom object
-      const referenceElement = nameToElement.get(ref, ref) ?? nameToElement.get(CUSTOM_OBJECT_TYPE_NAME, ref)
+      const referenceElement =
+        nameToElement.get(ref, ref) ??
+        nameToElement.get(CUSTOM_OBJECT, ref) ??
+        nameToElement.get(CUSTOM_OBJECT_TYPE_NAME, ref)
       // SALTO-5064
       if (referenceElement !== undefined && apiNameSync(referenceElement) !== CUSTOM_OBJECT) {
         return new ReferenceExpression(referenceElement.elemID, referenceElement)

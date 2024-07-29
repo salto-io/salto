@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 import { FatalError } from '@salto-io/dag'
-import { definitions, client as clientUtils } from '../..'
+import { HTTPError } from '../client'
+import { fetch } from '../definitions'
 
 export class AbortFetchOnFailure extends FatalError {
   constructor({ adapterName, typeName, message }: { adapterName: string; typeName: string; message: string }) {
@@ -22,11 +23,11 @@ export class AbortFetchOnFailure extends FatalError {
   }
 }
 
-export const getInsufficientPermissionsError: definitions.fetch.FetchResourceDefinition['onError'] = {
+export const getInsufficientPermissionsError: fetch.FetchResourceDefinition['onError'] = {
   custom:
     () =>
     ({ error, typeName }) => {
-      if (error instanceof clientUtils.HTTPError && error.response.status === 403) {
+      if (error instanceof HTTPError && error.response.status === 403) {
         return {
           action: 'customSaltoError',
           value: {

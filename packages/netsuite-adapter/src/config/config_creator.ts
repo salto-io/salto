@@ -94,8 +94,8 @@ const updatedFetchTarget = (config: NetsuiteConfig): NetsuiteQueryParameters | u
   return {
     types: {
       ...types,
-      [CUSTOM_RECORD_TYPE]: customRecordTypesQuery,
-      [CUSTOM_SEGMENT]: customSegmentsQuery,
+      ...(customRecordTypesQuery.length > 0 ? { [CUSTOM_RECORD_TYPE]: customRecordTypesQuery } : {}),
+      ...(customSegmentsQuery.length > 0 ? { [CUSTOM_SEGMENT]: customSegmentsQuery } : {}),
     },
     filePaths: updatedFilePaths,
     customRecords,

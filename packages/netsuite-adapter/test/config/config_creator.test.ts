@@ -52,7 +52,6 @@ describe('netsuite config creator', () => {
         types: {
           addressForm: ['aaa.*', 'bbb.*'],
           customrecordtype: ['customrecord2', 'customrecord1'],
-          customsegment: [],
         },
         filePaths: [],
         customRecords: {
@@ -69,7 +68,6 @@ describe('netsuite config creator', () => {
       expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
         types: {
           customrecordtype: ['customrecord1'],
-          customsegment: [],
         },
         filePaths: [],
         customRecords: {
@@ -99,10 +97,7 @@ describe('netsuite config creator', () => {
         filePaths: ['/SuiteScripts/file.txt'],
       }
       expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
-        types: {
-          customrecordtype: [],
-          customsegment: [],
-        },
+        types: {},
         filePaths: ['/SuiteScripts/file.txt', '/SuiteScripts/'],
         customRecords: {},
       })
@@ -112,10 +107,7 @@ describe('netsuite config creator', () => {
         filePaths: ['.*\\.js'],
       }
       expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
-        types: {
-          customrecordtype: [],
-          customsegment: [],
-        },
+        types: {},
         filePaths: ['.*\\.js', '.*/'],
         customRecords: {},
       })
@@ -126,10 +118,7 @@ describe('netsuite config creator', () => {
         filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html'],
       }
       expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
-        types: {
-          customrecordtype: [],
-          customsegment: [],
-        },
+        types: {},
         filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html', '/SuiteScripts/'],
         customRecords: {},
       })

@@ -63,7 +63,7 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
   }
   log.debug('starting to merge definitions with overrides')
   const overrides = getParsedDefinitionsOverrides(account)
-  if (_.isEmpty(overrides)) {account
+  if (_.isEmpty(overrides)) {
     return definitions
   }
   log.debug('Definitions overrides: %s', safeJsonStringify(overrides))

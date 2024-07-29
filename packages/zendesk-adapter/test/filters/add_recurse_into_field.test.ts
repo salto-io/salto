@@ -25,7 +25,7 @@ describe('add empty recurseInto fields in new infra', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   let client: ZendeskClient
-  let newInfraConfig: ZendeskConfig
+  let oldInfraConfig: ZendeskConfig
 
   const businessHoursScheduleTypeName = 'business_hours_schedule'
   const routingAttributeTypeName = 'routing_attribute'
@@ -39,18 +39,18 @@ describe('add empty recurseInto fields in new infra', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    newInfraConfig = {
+    oldInfraConfig = {
       ...DEFAULT_CONFIG,
       fetch: {
         ...DEFAULT_CONFIG[FETCH_CONFIG],
-        useNewInfra: true,
+        useNewInfra: false,
       },
     }
   })
 
   describe('onFetch', () => {
     it('should add fields when using new infra correctly', async () => {
-      filter = filterCreator(createFilterCreatorParams({ client, config: newInfraConfig })) as FilterType
+      filter = filterCreator(createFilterCreatorParams({ client, config: DEFAULT_CONFIG })) as FilterType
 
       const businessHoursScheduleInstance = new InstanceElement('instance1', businessHoursScheduleType, {
         name: 'business hours schedule',
@@ -65,7 +65,7 @@ describe('add empty recurseInto fields in new infra', () => {
       expect(routingAttributeInstance.value.values).toEqual([])
     })
     it('should not add fields when using the old infra', async () => {
-      filter = filterCreator(createFilterCreatorParams({ client, config: DEFAULT_CONFIG })) as FilterType
+      filter = filterCreator(createFilterCreatorParams({ client, config: oldInfraConfig })) as FilterType
 
       const businessHoursScheduleInstance = new InstanceElement('instance1', businessHoursScheduleType, {
         name: 'business hours schedule',
@@ -82,7 +82,7 @@ describe('add empty recurseInto fields in new infra', () => {
       expect(routingAttributeInstance).toEqual(clonedRoutingAttributeInstance)
     })
     it('should not add new fields when object types do not align', async () => {
-      filter = filterCreator(createFilterCreatorParams({ client, config: newInfraConfig })) as FilterType
+      filter = filterCreator(createFilterCreatorParams({ client, config: DEFAULT_CONFIG })) as FilterType
       const groupInstance = new InstanceElement('instance3', groupType, {
         name: 'business hours schedule',
       })

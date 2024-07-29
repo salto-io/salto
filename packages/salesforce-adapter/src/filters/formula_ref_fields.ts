@@ -13,49 +13,76 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element, InstanceElement, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, Field, ReadOnlyElementsSource, ReferenceExpression, Value } from '@salto-io/adapter-api'
 import { parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
 import { collections } from '@salto-io/lowerdash'
-import { buildElementsSourceForFetch, ensureSafeFilterFetch, isInstanceOfTypeSync } from './utils'
+import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { apiNameSync, buildElementsSourceForFetch, ensureSafeFilterFetch, isInstanceOfTypeSync } from './utils'
 import { LocalFilterCreator } from '../filter'
 import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } from './formula_utils'
 
-const { groupByAsync } = collections.asynciterable
+const { awu, groupByAsync } = collections.asynciterable
+
+const typesWithFieldsWithFormulaReferences = ['Flow']
 
 const referenceFieldsWithFormulaIdentifiers: Record<string, string> = {
   FlowCondition: 'leftValueReference',
   FlowTestCondition: 'leftValueReference',
   FlowTestParameter: 'leftValueReference',
+  FlowAssignmentItem: 'assignToReference',
+}
+
+const referenceExpressionFromFieldValue = async (
+  topLevelTypeName: string,
+  field: Field,
+  value: Value,
+  allElements: ReadOnlyElementsSource,
+): Promise<ReferenceExpression | Value> => {
+  const topLevelParentInstanceElemId = field.elemID.createTopLevelParentID().parent
+  const identifierInfo = parseFormulaIdentifier(value, topLevelParentInstanceElemId.typeName)
+  const referenceElemIds = await referencesFromIdentifiers(identifierInfo)
+  const referencesWithValidity = await groupByAsync(referenceElemIds, refElemId =>
+    referenceValidity(refElemId, topLevelParentInstanceElemId, allElements),
+  )
+
+  logInvalidReferences(topLevelParentInstanceElemId, referencesWithValidity.invalid ?? [], value, [identifierInfo])
+
+  if (referencesWithValidity.valid === undefined) {
+    return value
+  }
+
+  const referencesToOtherTypes = referencesWithValidity.valid.filter(ref => ref.typeName !== topLevelTypeName)
+
+  return referencesToOtherTypes.length > 0 ? new ReferenceExpression(referencesToOtherTypes[0]) : value
 }
 
 const transformFieldsToReferences = async (
   fetchedElements: Element[],
   allElements: ReadOnlyElementsSource,
 ): Promise<void> => {
-  const transformInstanceFieldToReference = async (instance: InstanceElement): Promise<void> => {
-    const fieldName = referenceFieldsWithFormulaIdentifiers[instance.elemID.typeName]
-    const identifierInfo = parseFormulaIdentifier(instance.value[fieldName], instance.elemID.getFullName())
-    const referenceElemIds = await referencesFromIdentifiers(identifierInfo)
-
-    const referencesWithValidity = await groupByAsync(referenceElemIds, refElemId =>
-      referenceValidity(refElemId, instance.elemID, allElements),
-    )
-
-    logInvalidReferences(instance.elemID, referencesWithValidity.invalid ?? [], instance.value[fieldName], [
-      identifierInfo,
-    ])
-
-    if (!referencesWithValidity.valid) {
-      return
+  const transformInstanceFieldsToReference =
+    (topLevelTypeName: string): TransformFunc =>
+    async ({ value, field }) => {
+      if (!field) {
+        return value
+      }
+      const typeName = apiNameSync(field.parent) ?? ''
+      const expectedFieldName = referenceFieldsWithFormulaIdentifiers[typeName]
+      if (field.name !== expectedFieldName) {
+        return value
+      }
+      return referenceExpressionFromFieldValue(topLevelTypeName, field, value, allElements)
     }
 
-    instance.value[fieldName] = new ReferenceExpression(referencesWithValidity.valid[0])
-  }
-
-  const fetchedInstances = fetchedElements.filter(
-    isInstanceOfTypeSync(...Object.keys(referenceFieldsWithFormulaIdentifiers)),
-  )
-  fetchedInstances.forEach(transformInstanceFieldToReference)
+  const fetchedInstances = fetchedElements.filter(isInstanceOfTypeSync(...typesWithFieldsWithFormulaReferences))
+  await awu(fetchedInstances).forEach(async instance => {
+    instance.value =
+      (await transformValues({
+        values: instance.value,
+        type: instance.getTypeSync(),
+        transformFunc: transformInstanceFieldsToReference(apiNameSync(instance.getTypeSync()) ?? ''),
+      })) ?? {}
+  })
 }
 
 const FILTER_NAME = 'formulaRefFields'

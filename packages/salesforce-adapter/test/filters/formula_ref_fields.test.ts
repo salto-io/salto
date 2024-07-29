@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { METADATA_TYPE, SALESFORCE } from '../src/constants'
-import { mockTypes } from './mock_elements'
-import { FilterWith } from './filters/mocks'
-import { defaultFilterContext } from './utils'
-import filterCreator from '../src/filters/formula_ref_fields'
+import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import { mockTypes } from '../mock_elements'
+import { FilterWith } from './mocks'
+import { defaultFilterContext } from '../utils'
+import filterCreator from '../../src/filters/formula_ref_fields'
 
 describe('Formula reference fields', () => {
   let filter: FilterWith<'onFetch'>
@@ -28,7 +28,7 @@ describe('Formula reference fields', () => {
     filter = filterCreator({ config }) as FilterWith<'onFetch'>
   })
 
-  const objectType = new ObjectType({
+  const flowConditionObjectType = new ObjectType({
     elemID: new ElemID(SALESFORCE, 'FlowCondition'),
     annotations: { [METADATA_TYPE]: 'FlowCondition' },
     fields: {
@@ -37,13 +37,46 @@ describe('Formula reference fields', () => {
       },
     },
   })
-  const referringInstance = new InstanceElement('SomeFlowCondition', objectType, {
-    leftValueReference: '$Label.SomeLabel',
+
+  const flowRuleObjectType = new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'FlowRule'),
+    annotations: { [METADATA_TYPE]: 'FlowRule' },
+    fields: { conditions: { refType: new ListType(flowConditionObjectType) } },
+  })
+
+  const flowDecisionObjectType = new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'FlowDecision'),
+    annotations: { [METADATA_TYPE]: 'FlowDecision' },
+    fields: { rules: { refType: new ListType(flowRuleObjectType) } },
+  })
+
+  const flowType = new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'Flow'),
+    annotations: { [METADATA_TYPE]: 'Flow' },
+    fields: {
+      decisions: { refType: flowDecisionObjectType },
+    },
+  })
+
+  const referringInstance = new InstanceElement('SomeFlow', flowType, {
+    decisions: [
+      {
+        rules: [
+          {
+            conditions: [
+              {
+                leftValueReference: '$Label.SomeLabel',
+              },
+            ],
+          },
+        ],
+      },
+    ],
   })
 
   describe('when there is a valid reference', () => {
     const referredInstance = new InstanceElement('SomeLabel', mockTypes.CustomLabel, { fullName: 'SomeLabel' })
-    const elements = [objectType, referringInstance, referredInstance].map(element => element.clone())
+    const elements = [flowConditionObjectType, referringInstance, referredInstance].map(element => element.clone())
 
     beforeEach(async () => {
       await filter.onFetch(elements)
@@ -53,13 +86,13 @@ describe('Formula reference fields', () => {
       const referringInstanceAfterTest = elements.find(elem =>
         elem.elemID.isEqual(referringInstance.elemID),
       ) as InstanceElement
-      expect(referringInstanceAfterTest.value.leftValueReference).toEqual(
+      expect(referringInstanceAfterTest.value.decisions?.[0].rules?.[0].conditions?.[0].leftValueReference).toEqual(
         new ReferenceExpression(referredInstance.elemID),
       )
     })
   })
   describe('when the reference is not valid', () => {
-    const elements = [objectType, referringInstance].map(element => element.clone())
+    const elements = [flowConditionObjectType, referringInstance].map(element => element.clone())
 
     beforeEach(async () => {
       await filter.onFetch(elements)

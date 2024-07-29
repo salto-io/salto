@@ -15,6 +15,8 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { definitions } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import {
   createAdjustUserReferences,
   createPermissionUniqueKey,
@@ -27,9 +29,7 @@ import {
 } from '../../../src/definitions/utils'
 import { ADAPTER_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
 import { UserConfig } from '../../../src/config'
-import { definitions } from '@salto-io/adapter-components'
-import { Options } from 'src/definitions/types'
-import _ from 'lodash'
+import { Options } from '../../../src/definitions/types'
 
 describe('space definitions utils', () => {
   const spaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SPACE_TYPE_NAME) })

@@ -164,6 +164,7 @@ type AdapterBaseContext = {
 
 export type AdapterOperationsContext = {
   credentials: InstanceElement
+  accountName?: string
 } & AdapterBaseContext
 
 export type AdapterSuccessInstallResult = { success: true; installedVersion: string }

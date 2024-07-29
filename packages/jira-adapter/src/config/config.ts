@@ -162,7 +162,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     removeDuplicateProjectRoles: true,
     addAlias: true,
     enableIssueLayouts: true,
-    enableNewWorkflowAPI: false,
+    enableNewWorkflowAPI: true,
     enableAssetsObjectFieldConfiguration: false,
   },
   deploy: {

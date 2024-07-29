@@ -213,35 +213,6 @@ const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] =
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
-  ApplicationGroupAssignment: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'put',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-      },
-      modify: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'put',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'delete',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
   AppUserSchema: {
     deployRequests: {
       // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and removals

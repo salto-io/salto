@@ -40,6 +40,7 @@ import {
   NAME_FIELD,
   ID_FIELD,
   BRAND_THEME_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -289,6 +290,60 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           second: 'deactivate',
         },
       ],
+    },
+    [APP_GROUP_ASSIGNMENT_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              // These are synthetic fields that are not part of the API
+              // We use them to store service IDs in non-reference fields.
+              omit: ['groupId', 'appId'],
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{appId}/groups/{id}',
+                  method: 'put',
+                },
+                context: {
+                  appId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{appId}/groups/{id}',
+                  method: 'put',
+                },
+                context: {
+                  appId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{appId}/groups/{id}',
+                  method: 'delete',
+                },
+                context: {
+                  appId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+        },
+      },
     },
     [BRAND_TYPE_NAME]: {
       requestsByAction: {

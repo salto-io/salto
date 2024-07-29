@@ -487,7 +487,7 @@ const createCustomizations = ({
                     ...value,
                     // assign app id from context to value to be used as service id
                     appId: context.appId,
-                    // duplicate id to additonal field to be used as service id, because currently references can't be used as service id
+                    // duplicate id to additional field to be used as service id, because currently references can't be used as service id
                     groupId: _.get(value, 'id'),
                   }
                 : {}),

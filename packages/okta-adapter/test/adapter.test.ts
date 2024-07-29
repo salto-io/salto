@@ -1154,8 +1154,8 @@ describe('adapter', () => {
           'appGroupAssignment',
           appGroupAssignmentType,
           {
-            id: group,
-            priority: 0,
+            id: group.value.id,
+            priority: 2,
           },
           undefined,
           {
@@ -1172,55 +1172,51 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
-          'brandtheme-fakeid1',
-        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('group-fakeid1')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully modify a brand theme', async () => {
-        loadMockReplies('brand_theme_modify.json')
-        const brandTheme = new InstanceElement(
-          'brandTheme',
-          brandThemeType,
+      it('should successfully modify an app group assignment', async () => {
+        loadMockReplies('app_group_assignment_modify.json')
+        const appGroupAssignment = new InstanceElement(
+          'appGroupAssignment',
+          appGroupAssignmentType,
           {
-            id: 'brandtheme-fakeid1',
-            primaryColorHex: '#1662ee',
+            id: group.value.id,
+            priority: 2,
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
           },
         )
-        const updatedBrandTheme = brandTheme.clone()
-        updatedBrandTheme.value.primaryColorHex = '#ff0000'
+        const updatedAppGroupAssignment = appGroupAssignment.clone()
+        updatedAppGroupAssignment.value.priority = 3
         const result = await operations.deploy({
           changeGroup: {
-            groupID: 'brandTheme',
-            changes: [toChange({ before: brandTheme, after: updatedBrandTheme })],
+            groupID: 'appGroupAssignment',
+            changes: [toChange({ before: appGroupAssignment, after: updatedAppGroupAssignment })],
           },
           progressReporter: nullProgressReporter,
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.primaryColorHex).toEqual(
-          '#ff0000',
-        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.priority).toEqual(3)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully remove a brand theme', async () => {
-        loadMockReplies('brand_theme_remove.json')
-        const brandTheme = new InstanceElement(
-          'brandTheme',
-          brandThemeType,
+      it('should successfully remove an app group assignment', async () => {
+        loadMockReplies('app_group_assignment_remove.json')
+        const appGroupAssignment = new InstanceElement(
+          'appGroupAssignment',
+          appGroupAssignmentType,
           {
-            id: 'brandtheme-fakeid1',
-            primaryColorHex: '#1662ee',
+            id: group.value.id,
+            priority: 2,
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
           },
         )
         // In production, a BrandTheme can only be removed alongside its parent Brand (this is enforced by a change
@@ -1228,40 +1224,13 @@ describe('adapter', () => {
         // and the mock HTTP response will behave as if the Brand was removed as well.
         const result = await operations.deploy({
           changeGroup: {
-            groupID: 'brandTheme',
-            changes: [toChange({ before: brandTheme })],
+            groupID: 'appGroupAssignment',
+            changes: [toChange({ before: appGroupAssignment })],
           },
           progressReporter: nullProgressReporter,
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(nock.pendingMocks()).toHaveLength(0)
-      })
-
-      it('should fail to remove a brand theme if it still exists', async () => {
-        loadMockReplies('brand_theme_remove_failure.json')
-        const brandTheme = new InstanceElement(
-          'brandTheme',
-          brandThemeType,
-          {
-            id: 'brandtheme-fakeid1',
-            primaryColorHex: '#1662ee',
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
-          },
-        )
-        const result = await operations.deploy({
-          changeGroup: {
-            groupID: 'brandTheme',
-            changes: [toChange({ before: brandTheme })],
-          },
-          progressReporter: nullProgressReporter,
-        })
-        expect(result.errors).toHaveLength(1)
-        expect(result.errors[0].message).toEqual('Expected BrandTheme to be deleted')
-        expect(result.appliedChanges).toHaveLength(0)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

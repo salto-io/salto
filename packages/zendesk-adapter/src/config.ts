@@ -2769,7 +2769,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
       default: OMIT_INACTIVE_DEFAULT,
     },
     omitTicketStatusTicketField: false,
-    useNewInfra: false,
+    useNewInfra: true,
     useGuideNewInfra: false,
   },
   [DEPLOY_CONFIG]: {

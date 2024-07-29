@@ -13,8 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, ElemID, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import {
+  InstanceElement,
+  ElemID,
+  ObjectType,
+  ReadOnlyElementsSource,
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
+import {
+  buildElementsSourceFromElements,
+  createDefaultInstanceFromType,
+  WALK_NEXT_STEP,
+  walkOnValue,
+} from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { adapter } from '../src/adapter_creator'
@@ -170,3 +181,20 @@ export const createForgeTransitionRule = (extensionId: string): WorkflowV2Transi
   parameters: { key: `${EXTENSION_ID_ARI_PREFIX}${extensionId}/some-suffix` },
 })
 export const createSystemTransitionRule = (): WorkflowV2TransitionRule => ({ ruleKey: 'system:some-rule' })
+
+export const createMockElementsSource = (elements: InstanceElement[]): ReadOnlyElementsSource => {
+  const mockedElements = elements.map(instance => instance.clone())
+  mockedElements.forEach(instance => {
+    walkOnValue({
+      value: instance.value,
+      elemId: instance.elemID,
+      func: ({ value }) => {
+        if (isReferenceExpression(value)) {
+          value.value = undefined
+        }
+        return WALK_NEXT_STEP.RECURSE
+      },
+    })
+  })
+  return buildElementsSourceFromElements(mockedElements)
+}

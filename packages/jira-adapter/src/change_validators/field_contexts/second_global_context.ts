@@ -25,7 +25,7 @@ import {
   isInstanceChange,
   SeverityLevel,
 } from '@salto-io/adapter-api'
-import { getInstancesFromElementSource, getParent } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, getParentElemID } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
@@ -57,15 +57,19 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
   }
   const fieldToGlobalContextCount = _.countBy(
     (await getInstancesFromElementSource(elementSource, [FIELD_CONTEXT_TYPE_NAME])).filter(isGlobalContext),
-    instance => getParent(instance).elemID.getFullName(),
+    instance => getParentElemID(instance).getFullName(),
   )
 
   const addedGlobalContext = (change: InstanceAddModifyChange): boolean =>
     isGlobalContext(change.data.after) && (isAdditionChange(change) || !isGlobalContext(change.data.before))
 
-  return contextChanges
-    .filter(addedGlobalContext)
-    .map(getChangeData)
-    .filter(instance => fieldToGlobalContextCount[getParent(instance).elemID.getFullName()] > 1)
-    .map(instance => createFieldContextErrorMessage(instance.elemID, getParent(instance)))
+  return Promise.all(
+    contextChanges
+      .filter(addedGlobalContext)
+      .map(getChangeData)
+      .filter(instance => fieldToGlobalContextCount[getParentElemID(instance).getFullName()] > 1)
+      .map(async instance =>
+        createFieldContextErrorMessage(instance.elemID, await elementSource.get(getParentElemID(instance))),
+      ),
+  )
 }

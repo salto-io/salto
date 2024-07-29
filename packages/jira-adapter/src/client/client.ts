@@ -210,7 +210,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     }
     throw new Error('Failed to get GQL response')
   }
-  
+
   public async atlassianApiGet(
     args: clientUtils.ClientDataParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {

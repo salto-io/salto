@@ -396,7 +396,7 @@ describe('forms filter', () => {
       jest.clearAllMocks()
     })
     it("should return single saltoError when failed to fetch form because it doesn't have a title", async () => {
-      mockAtlassianApiGet.mockImplementation(async (params) => {
+      mockAtlassianApiGet.mockImplementation(async params => {
         if (params.url === 'project/11111/form') {
           return {
             status: 200,
@@ -440,7 +440,7 @@ describe('forms filter', () => {
       )
     })
     it('should return single saltoError when failed to fetch form because data is empty', async () => {
-      mockAtlassianApiGet.mockImplementation(async (params) => {
+      mockAtlassianApiGet.mockImplementation(async params => {
         if (params.url === 'project/11111/form') {
           throw new clientUtils.HTTPError('insufficient permissions', {
             status: 403,
@@ -462,7 +462,7 @@ describe('forms filter', () => {
       )
     })
     it('should add form1 to the elements and add saltoError when failed to fetch form2 data for projectTwo', async () => {
-      mockAtlassianApiGet.mockImplementation(async (params) => {
+      mockAtlassianApiGet.mockImplementation(async params => {
         if (params.url === 'project/11111/form') {
           return {
             status: 200,
@@ -660,7 +660,7 @@ describe('forms filter', () => {
         },
       )
       mockAtlassianApiPost = jest.spyOn(client, 'atlassianApiPost')
-      mockAtlassianApiPost.mockImplementation(async (params) => {
+      mockAtlassianApiPost.mockImplementation(async params => {
         if (params.url === 'project/11111/form') {
           return {
             status: 200,
@@ -720,7 +720,7 @@ describe('forms filter', () => {
       expect(mockAtlassianApiPost).toHaveBeenCalledTimes(0)
     })
     it('should throw error if bad response in form creation from jira', async () => {
-      mockAtlassianApiPost.mockImplementation(async (params) => {
+      mockAtlassianApiPost.mockImplementation(async params => {
         if (params.url === 'project/11111/form') {
           return {
             status: 200,

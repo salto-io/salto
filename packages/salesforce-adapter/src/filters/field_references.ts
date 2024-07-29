@@ -47,6 +47,7 @@ import {
   FLOW_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
   PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName, isInstanceOfTypeSync } from './utils'
 
@@ -211,7 +212,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
       typesToIgnore.push(PROFILE_METADATA_TYPE)
     }
     if (config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets')) {
-      typesToIgnore.push(PERMISSION_SET_METADATA_TYPE)
+      typesToIgnore.push(PERMISSION_SET_METADATA_TYPE, MUTING_PERMISSION_SET_METADATA_TYPE)
     }
     await addReferences(
       elements,

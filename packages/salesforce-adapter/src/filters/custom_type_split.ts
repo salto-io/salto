@@ -40,6 +40,7 @@ const splitFields = async (customObject: ObjectType, splitAllFields: string[]): 
         new ObjectType({
           elemID: customObject.elemID,
           fields: { [fieldName]: field },
+          metaType: customObject.metaType,
           path: [...pathPrefix, OBJECT_FIELDS_PATH, perFieldFileName(fieldName)],
         }),
     )
@@ -48,12 +49,14 @@ const splitFields = async (customObject: ObjectType, splitAllFields: string[]): 
   const standardFieldsObject = new ObjectType({
     elemID: customObject.elemID,
     fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
+    metaType: customObject.metaType,
     path: [...pathPrefix, standardFieldsFileName(customObject.elemID.name)],
   })
 
   const customFieldsObject = new ObjectType({
     elemID: customObject.elemID,
     fields: _.pickBy(customObject.fields, f => isCustom(f.elemID.getFullName())),
+    metaType: customObject.metaType,
     path: [...pathPrefix, customFieldsFileName(customObject.elemID.name)],
   })
   return [customFieldsObject, standardFieldsObject]
@@ -69,6 +72,7 @@ const customObjectToSplitElements = async (
     elemID: customObject.elemID,
     annotationRefsOrTypes: customObject.annotationRefTypes,
     annotations: customObject.annotations,
+    metaType: customObject.metaType,
     path: [...pathPrefix, annotationsFileName(customObject.elemID.name)],
   })
 

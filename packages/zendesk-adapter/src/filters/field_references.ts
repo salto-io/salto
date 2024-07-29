@@ -894,6 +894,16 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     target: { type: 'app_installation' },
   },
+  {
+    src: { field: 'installation_id', parentTypes: ['layout__sections__columns__components__config'] },
+    serializationStrategy: 'id',
+    target: { type: 'app_installation' },
+  },
+  {
+    src: { field: 'layout_uuid', parentTypes: ['workspace'] },
+    serializationStrategy: 'id',
+    target: { type: 'layout' },
+  },
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [

@@ -30,8 +30,15 @@ export type HTTPEndpointIdentifier<ClientOptions extends string> = {
 
 export type RequestArgs = {
   headers?: Record<string, string>
-  queryArgs?: Record<string, string>
+  queryArgs?: Record<string, string | string[]>
   params?: Record<string, Values>
+  queryParamsSerializer?: {
+    // when multiple query args are provided:
+    // false (default): &arg[]=val1&arg[]=val2
+    // true: &arg[0]=val1&arg[1]=val2
+    // null: &arg=val1&arg=val2
+    indexes?: boolean | null
+  }
   // TODO support x-www-form-urlencoded + URLSearchParams
   body?: unknown
 }

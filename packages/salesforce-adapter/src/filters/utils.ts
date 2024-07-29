@@ -257,15 +257,20 @@ export const getInstancesOfMetadataType = async (
     .filter(async element => (await metadataType(element)) === metadataTypeName)
     .toArray()
 
+const setAnnotationTypeDefault = (elem: Element, key: string, type: TypeElement): void => {
+  const annotationsType = isObjectType(elem) && elem.metaType?.type !== undefined ? elem.metaType.type : elem
+  if (annotationsType.annotationRefTypes[key] === undefined) {
+    log.trace('adding annotation type %s on %s', key, elem.elemID.getFullName())
+    annotationsType.annotationRefTypes[key] = createRefToElmWithValue(type)
+  }
+}
+
 const setAnnotationDefault = (elem: Element, key: string, defaultValue: Value, type: TypeElement): void => {
   if (elem.annotations[key] === undefined) {
     log.trace('setting default value on %s: %s=%s', elem.elemID.getFullName(), key, defaultValue)
     elem.annotations[key] = defaultValue
   }
-  if (elem.annotationRefTypes[key] === undefined) {
-    log.trace('adding annotation type %s on %s', key, elem.elemID.getFullName())
-    elem.annotationRefTypes[key] = createRefToElmWithValue(type)
-  }
+  setAnnotationTypeDefault(elem, key, type)
 }
 
 export const addLabel = (elem: TypeElement | Field, label?: string): void => {
@@ -288,8 +293,8 @@ export const addApiName = (elem: TypeElement | Field, name?: string, parentName?
     elem.annotations[API_NAME] = fullApiName
     log.trace(`added API_NAME=${fullApiName} to ${elem.elemID.name}`)
   }
-  if (!isField(elem) && !elem.annotationRefTypes[API_NAME]) {
-    elem.annotationRefTypes[API_NAME] = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
+  if (!isField(elem)) {
+    setAnnotationTypeDefault(elem, API_NAME, BuiltinTypes.SERVICE_ID)
   }
 }
 

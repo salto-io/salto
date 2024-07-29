@@ -33,9 +33,8 @@ import {
   Element,
   ProgressReporter,
   isInstanceElement,
-  ServiceIds,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
@@ -50,6 +49,7 @@ import {
   MetadataObjectType,
   createInstanceElement,
   isCustom,
+  MetadataMetaType,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -115,7 +115,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
 import generatedDependenciesFilter from './filters/generated_dependencies'
-import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, FETCH_CONFIG, MetadataQuery, SalesforceConfig } from './types'
+import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import { getConfigFromConfigChanges } from './config_change'
 import {
@@ -132,7 +132,6 @@ import {
   apiNameSync,
   buildDataRecordsSoqlQueries,
   getFLSProfiles,
-  getFullName,
   instanceInternalId,
   isCustomObjectSync,
   isCustomType,
@@ -154,6 +153,7 @@ import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
+  APEX_CLASS_METADATA_TYPE,
   ArtificialTypes,
   CUSTOM_FIELD,
   CUSTOM_OBJECT,
@@ -170,8 +170,10 @@ import {
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
+import { createListApexClassesDef } from './client/custom_list_funcs'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 const { partition } = promises.array
 const { concatObjects } = objects
 const { isDefined } = values
@@ -359,41 +361,6 @@ const METADATA_TO_RETRIEVE = [
   'Workflow',
 ]
 
-export const NESTED_METADATA_TYPES = {
-  CustomLabels: {
-    nestedInstanceFields: ['labels'],
-    isNestedApiNameRelative: false,
-  },
-  AssignmentRules: {
-    nestedInstanceFields: ['assignmentRule'],
-    isNestedApiNameRelative: true,
-  },
-  AutoResponseRules: {
-    nestedInstanceFields: ['autoresponseRule'],
-    isNestedApiNameRelative: true,
-  },
-  EscalationRules: {
-    nestedInstanceFields: ['escalationRule'],
-    isNestedApiNameRelative: true,
-  },
-  MatchingRules: {
-    nestedInstanceFields: ['matchingRules'],
-    isNestedApiNameRelative: true,
-  },
-  SharingRules: {
-    nestedInstanceFields: ['sharingCriteriaRules', 'sharingGuestRules', 'sharingOwnerRules', 'sharingTerritoryRules'],
-    isNestedApiNameRelative: true,
-  },
-  Workflow: {
-    nestedInstanceFields: Object.keys(WORKFLOW_FIELD_TO_TYPE),
-    isNestedApiNameRelative: true,
-  },
-  CustomObject: {
-    nestedInstanceFields: [...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), 'fields'],
-    isNestedApiNameRelative: true,
-  },
-}
-
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
 export const SYSTEM_FIELDS = [
   'ConnectionReceivedId',
@@ -444,14 +411,51 @@ export default class SalesforceAdapter implements AdapterOperations {
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private elementsSource: ReadOnlyElementsSource
-  private listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
   private fixElementsFunc: FixElementsFunc
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
-    nestedMetadataTypes = NESTED_METADATA_TYPES,
+    nestedMetadataTypes = {
+      CustomLabels: {
+        nestedInstanceFields: ['labels'],
+        isNestedApiNameRelative: false,
+      },
+      AssignmentRules: {
+        nestedInstanceFields: ['assignmentRule'],
+        isNestedApiNameRelative: true,
+      },
+      AutoResponseRules: {
+        nestedInstanceFields: ['autoresponseRule'],
+        isNestedApiNameRelative: true,
+      },
+      EscalationRules: {
+        nestedInstanceFields: ['escalationRule'],
+        isNestedApiNameRelative: true,
+      },
+      MatchingRules: {
+        nestedInstanceFields: ['matchingRules'],
+        isNestedApiNameRelative: true,
+      },
+      SharingRules: {
+        nestedInstanceFields: [
+          'sharingCriteriaRules',
+          'sharingGuestRules',
+          'sharingOwnerRules',
+          'sharingTerritoryRules',
+        ],
+        isNestedApiNameRelative: true,
+      },
+      Workflow: {
+        nestedInstanceFields: Object.keys(WORKFLOW_FIELD_TO_TYPE),
+        isNestedApiNameRelative: true,
+      },
+      CustomObject: {
+        nestedInstanceFields: [...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), 'fields'],
+        isNestedApiNameRelative: true,
+      },
+    },
     filterCreators = defaultFilters,
     client,
     getElemIdFunc,
@@ -465,27 +469,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.userConfig = config
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
-    this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
-    this.client = new Proxy(client, {
-      get: (target, propertyKey) => {
-        if (propertyKey === 'listMetadataObjects') {
-          // This proxy populates the listedInstancesByType
-          // which is later used to detect deleted elements in partial fetch
-          const proxyListMetadataObjects: SalesforceClient['listMetadataObjects'] = (...args) =>
-            target.listMetadataObjects(...args).then(listMetadataObjectsResult => {
-              _(listMetadataObjectsResult.result)
-                .groupBy(({ type }) => type)
-                .forEach((props, typeName) => {
-                  const listedInstances = this.listedInstancesByType.get(typeName)
-                  props.forEach(prop => listedInstances.add(getFullName(prop)))
-                })
-              return listMetadataObjectsResult
-            })
-          return proxyListMetadataObjects
-        }
-        return target[propertyKey as keyof SalesforceClient]
-      },
-    })
+    this.client = client
     this.elementsSource = elementsSource
     this.createFiltersRunner = ({ fetchProfile, contextOverrides = {} }: CreateFiltersRunnerParams) =>
       filter.filtersRunner(
@@ -505,25 +489,15 @@ export default class SalesforceAdapter implements AdapterOperations {
         filterCreators,
         concatObjects,
       )
-    // TODO (SALTO-6264): Revert this once hide types is enabled.
-    const getElemIdFuncWithRename = config[FETCH_CONFIG]?.optionalFeatures?.metaTypes
-      ? (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
-          const updatedName = name === constants.CUSTOM_METADATA ? constants.CUSTOM_METADATA_TYPE_NAME : name
-          return (
-            getElemIdFunc?.(adapterName, serviceIds, updatedName) ??
-            new ElemID(constants.SALESFORCE, naclCase(updatedName))
-          )
-        }
-      : getElemIdFunc
-    if (getElemIdFuncWithRename) {
-      Types.setElemIdGetter(getElemIdFuncWithRename)
+    if (getElemIdFunc) {
+      Types.setElemIdGetter(getElemIdFunc)
     }
     this.fixElementsFunc = fixElementsFunc({ elementsSource, config })
   }
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
     await listMetadataObjects(this.client, CUSTOM_FIELD)
-    const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
+    const listedFields = this.client.listedInstancesByType.get(constants.CUSTOM_FIELD)
     const fieldsFromElementsSource = await awu(await this.elementsSource.getAll())
       .filter(isCustomObjectSync)
       .flatMap(obj => Object.values(obj.fields))
@@ -543,6 +517,13 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
+    this.client.setCustomListFuncDefByType(
+      withChangesDetection
+        ? {
+            [APEX_CLASS_METADATA_TYPE]: createListApexClassesDef(this.elementsSource),
+          }
+        : {},
+    )
     const fetchParams = this.userConfig.fetch ?? {}
     const baseQuery = buildMetadataQuery({ fetchParams })
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
@@ -579,10 +560,11 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...Types.getAnnotationTypes(),
       ...Object.values(ArtificialTypes),
     ]
+    const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
     const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
     const metadataTypesPromise = withChangesDetection
       ? getMetadataTypesFromElementsSource(this.elementsSource)
-      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes)
+      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metadataMetaType)
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
 
@@ -594,7 +576,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { elements: metadataInstancesElements, configChanges: metadataInstancesConfigInstances } =
       await metadataInstancesPromise
-    const elements = [...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements]
+    const elements = [
+      ...makeArray(metadataMetaType),
+      ...fieldTypes,
+      ...hardCodedTypes,
+      ...metadataTypes,
+      ...metadataInstancesElements,
+    ]
     progressReporter.reportProgress({
       message: 'Running filters for additional information',
     })
@@ -635,6 +623,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       )
     }
     metadataQuery.logData()
+    await this.client.awaitCompletionOfAllListRequests()
     return {
       elements,
       errors: onFetchFilterResult.errors ?? [],
@@ -749,6 +738,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
     knownMetadataTypes: TypeElement[],
+    metaType?: ObjectType,
   ): Promise<TypeElement[]> {
     const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(
@@ -760,7 +750,9 @@ export default class SalesforceAdapter implements AdapterOperations {
     const childTypeNames = new Set(typeInfos.flatMap(type => type.childXmlNames).filter(values.isDefined))
     return (
       await Promise.all(
-        typeInfos.map(typeInfo => fetchMetadataType(this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames)),
+        typeInfos.map(typeInfo =>
+          fetchMetadataType(this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames, metaType),
+        ),
       )
     ).flat()
   }
@@ -871,7 +863,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           log.warn('Skipping deletion detections for type %s since the metadata ObjectType was not found', typeName)
           return
         }
-        const listedInstancesFullNames = this.listedInstancesByType.getOrUndefined(typeName)
+        const listedInstancesFullNames = this.client.listedInstancesByType.getOrUndefined(typeName)
         if (listedInstancesFullNames === undefined) {
           log.warn('Skipping deletion detections for type %s since the type was not listed', typeName)
           return

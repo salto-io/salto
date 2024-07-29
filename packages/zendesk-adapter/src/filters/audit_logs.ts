@@ -43,6 +43,7 @@ import {
   CUSTOM_ROLE_TYPE_NAME,
   CUSTOM_STATUS_TYPE_NAME,
   GROUP_TYPE_NAME,
+  LAYOUT_TYPE_NAME,
   LOCALE_TYPE_NAME,
   MACRO_TYPE_NAME,
   ORG_FIELD_TYPE_NAME,
@@ -292,7 +293,7 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
     .forEach(elem => addChangedBy(elem, 'updated_by_id'))
 
   instances
-    .filter(elem => elem.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME)
+    .filter(elem => [CUSTOM_OBJECT_TYPE_NAME, LAYOUT_TYPE_NAME].includes(elem.elemID.typeName))
     .forEach(elem => addChangedBy(elem, 'updated_by_user_id'))
 }
 

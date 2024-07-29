@@ -54,6 +54,13 @@ export type ClientBaseParams = {
   headers?: Record<string, string>
   responseType?: ResponseType
   params?: Record<string, Values>
+  // when multiple query args are provided:
+  queryParamsSerializer?: {
+    // false (default): &arg[]=val1&arg[]=val2
+    // true: &arg[0]=val1&arg[1]=val2
+    // null: &arg=val1&arg=val2
+    indexes?: boolean | null
+  }
 }
 
 export type ClientDataParams = ClientBaseParams & {
@@ -238,7 +245,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
-    const { url, queryParams, headers, responseType } = params
+    const { url, queryParams, headers, responseType, queryParamsSerializer: paramsSerializer } = params
     const data = isMethodWithData(params) ? params.data : undefined
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -277,11 +284,12 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     }
 
     try {
-      const requestConfig = [queryParams, headers, responseType].some(values.isDefined)
+      const requestConfig = [queryParams, headers, responseType, paramsSerializer].some(values.isDefined)
         ? {
             params: queryParams,
             headers,
             responseType,
+            paramsSerializer,
           }
         : undefined
 

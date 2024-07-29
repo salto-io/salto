@@ -913,7 +913,7 @@ export default class SdfClient {
       settingsValidationErrorRegex,
       manifestErrorDetailsRegex,
       objectValidationErrorRegexes,
-      missingFeatureErrorRegexes,
+      missingFeatureInManifestErrorRegexes,
       deployedObjectRegex,
       errorObjectRegex,
       otherErrorRegexes,
@@ -924,7 +924,7 @@ export default class SdfClient {
       return new ManifestValidationError(error.message, manifestErrorScriptids)
     }
 
-    const missingFeatureNames = missingFeatureErrorRegexes.flatMap(regex =>
+    const missingFeatureNames = missingFeatureInManifestErrorRegexes.flatMap(regex =>
       getGroupItemFromRegex(error.message, regex, FEATURE_NAME),
     )
     if (missingFeatureNames.length > 0) {

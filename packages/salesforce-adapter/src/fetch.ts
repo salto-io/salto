@@ -68,6 +68,7 @@ export const fetchMetadataType = async (
   knownTypes: Map<string, TypeElement>,
   baseTypeNames: Set<string>,
   childTypeNames: Set<string>,
+  metaType?: ObjectType,
 ): Promise<TypeElement[]> => {
   const typeDesc = await client.describeMetadataType(typeInfo.xmlName)
   const folderType = typeInfo.inFolder ? typeDesc.parentField?.foreignKeyDomain : undefined
@@ -84,6 +85,7 @@ export const fetchMetadataType = async (
       suffix: typeInfo.suffix,
       dirName: typeInfo.directoryName,
     },
+    metaType,
   })
   const folderTypes =
     folderType === undefined
@@ -100,6 +102,7 @@ export const fetchMetadataType = async (
             folderContentType: typeInfo.xmlName,
             dirName: typeInfo.directoryName,
           },
+          metaType,
         })
   return [...mainTypes, ...folderTypes]
 }

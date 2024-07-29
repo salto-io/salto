@@ -1540,7 +1540,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 .filter(f => f[INSTANCE_TYPE_FIELD])
                 .map(async f => [
                   f.fullName,
-                  Object.assign(await transformFieldAnnotations(f, Types.get(f.type, true), objectInfo.fullName), {
+                  Object.assign(await transformFieldAnnotations(f, Types.get({ name: f.type }), objectInfo.fullName), {
                     [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
                   }),
                 ]),
@@ -1721,7 +1721,6 @@ describe('Salesforce adapter E2E with real account', () => {
                   [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]:
                     `${customObjectAddFieldsName}.${masterDetailApiName}`,
                   [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
-                  [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
                   [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
                   [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
                     {
@@ -1791,7 +1790,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [constants.FIELD_ANNOTATIONS.SCALE]: 4,
             [constants.FIELD_ANNOTATIONS.PRECISION]: 17,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [constants.DEFAULT_VALUE_FORMULA]: '24',
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.CURRENCY,
@@ -1808,13 +1806,11 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.LABEL]: 'Date label Updated',
             [constants.DESCRIPTION]: 'Date description Updated',
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.DATE,
           },
           [CUSTOM_FIELD_NAMES.TIME]: {
             [constants.LABEL]: 'Time label Updated',
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.TIME,
           },
@@ -1825,7 +1821,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.BUSINESS_STATUS]: 'Hidden',
             [constants.SECURITY_CLASSIFICATION]: 'Restricted',
             [constants.COMPLIANCE_GROUP]: 'GDPR',
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.DATETIME,
           },
@@ -1835,7 +1830,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.HELP_TEXT]: 'Picklist help updated',
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [constants.FIELD_ANNOTATIONS.RESTRICTED]: false,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
               {
@@ -1860,7 +1854,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 6,
             [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
             [constants.VALUE_SET_DEFINITION_FIELDS.SORTED]: true,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
               {
@@ -1891,7 +1884,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.FIELD_ANNOTATIONS.SCALE]: 10,
             [constants.BUSINESS_STATUS]: 'Active',
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
           },
@@ -1901,13 +1893,11 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.HELP_TEXT]: 'Percent help updated',
             [constants.FIELD_ANNOTATIONS.SCALE]: 7,
             [constants.FIELD_ANNOTATIONS.PRECISION]: 8,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.PERCENT,
           },
           [CUSTOM_FIELD_NAMES.PHONE]: {
             [constants.LABEL]: 'Phone label Updated',
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.PHONE,
           },
@@ -1916,7 +1906,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.DESCRIPTION]: 'LongTextArea description Updated',
             [constants.FIELD_ANNOTATIONS.LENGTH]: 32000,
             [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.LONGTEXTAREA,
           },
@@ -1925,7 +1914,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.HELP_TEXT]: 'RichTextArea help updated',
             [constants.FIELD_ANNOTATIONS.LENGTH]: 32000,
             [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 10,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.RICHTEXTAREA,
           },
@@ -1934,7 +1922,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.DESCRIPTION]: 'TextArea description Updated',
             [constants.HELP_TEXT]: 'TextArea help updated',
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.TEXTAREA,
           },
@@ -1945,7 +1932,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [constants.FIELD_ANNOTATIONS.LENGTH]: 100,
             [constants.FIELD_ANNOTATIONS.MASK_CHAR]: 'X',
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'ssn',
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ENCRYPTEDTEXT,
@@ -1955,7 +1941,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.DESCRIPTION]: 'Url description Updated',
             [constants.HELP_TEXT]: 'Url help updated',
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.URL,
           },
@@ -1985,7 +1970,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.DESCRIPTION]: 'Checkbox description Updated',
             [constants.HELP_TEXT]: 'Checkbox help updated',
             [constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]: false,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.CHECKBOX,
           },
@@ -1995,7 +1979,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.HELP_TEXT]: 'GlobalPicklist help updated',
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: gvsName,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.PICKLIST,
@@ -2023,7 +2006,6 @@ describe('Salesforce adapter E2E with real account', () => {
                 },
               ],
             },
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.LOOKUP,
           },
@@ -2037,7 +2019,6 @@ describe('Salesforce adapter E2E with real account', () => {
             )[0],
             [constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: false,
             [constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: false,
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [constants.FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]: 0,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
@@ -2046,7 +2027,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.LABEL]: 'Formula label Updated',
             [constants.DESCRIPTION]: 'Formula description Updated',
             [constants.HELP_TEXT]: 'Formula help updated',
-            [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [constants.FORMULA]: '3 > 9',
             [constants.BUSINESS_STATUS]: 'Active',
@@ -2095,7 +2075,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 .filter(f => f[INSTANCE_TYPE_FIELD])
                 .map(async f => [
                   f.fullName,
-                  Object.assign(await transformFieldAnnotations(f, Types.get(f.type, true), objectInfo.fullName), {
+                  Object.assign(await transformFieldAnnotations(f, Types.get({ name: f.type }), objectInfo.fullName), {
                     [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
                   }),
                 ]),
@@ -2231,7 +2211,6 @@ describe('Salesforce adapter E2E with real account', () => {
             const annotations = {
               [constants.API_NAME]: fullName,
               [constants.LABEL]: 'Summary label Updated',
-              [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
               [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.TotalOpportunityQuantity',
               [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
                 {
@@ -2269,7 +2248,7 @@ describe('Salesforce adapter E2E with real account', () => {
             const fieldWithoutName = _.omit(fieldInfo, constants.INSTANCE_FULL_NAME_FIELD)
             expect(
               Object.assign(
-                await transformFieldAnnotations(fieldWithoutName, Types.get(fieldInfo.type), accountApiName),
+                await transformFieldAnnotations(fieldWithoutName, Types.get({ name: fieldInfo.type }), accountApiName),
                 {
                   [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,
                 },

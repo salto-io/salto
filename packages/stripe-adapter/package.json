@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/stripe-adapter",
-  "version": "0.3.60",
+  "version": "0.3.61",
   "license": "Apache-2.0",
   "description": "Salto stripe adapter",
   "repository": {
@@ -29,13 +29,13 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.60",
-    "@salto-io/adapter-components": "0.3.60",
-    "@salto-io/adapter-utils": "0.3.60",
-    "@salto-io/logging": "0.3.60",
-    "@salto-io/lowerdash": "0.3.60",
-    "axios": "^0.26.1",
-    "axios-retry": "^4.0.0",
+    "@salto-io/adapter-api": "0.3.61",
+    "@salto-io/adapter-components": "0.3.61",
+    "@salto-io/adapter-utils": "0.3.61",
+    "@salto-io/logging": "0.3.61",
+    "@salto-io/lowerdash": "0.3.61",
+    "axios": "^1.7.2",
+    "axios-retry": "^4.4.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
@@ -47,7 +47,7 @@
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
-    "axios": "^0.26.1",
+    "axios": "^1.7.2",
     "axios-mock-adapter": "^1.19.0",
     "eslint": "^9.6.0",
     "eslint-config-airbnb": "18.0.1",

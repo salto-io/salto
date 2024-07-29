@@ -190,17 +190,6 @@ export type LoadElementsFromFolderArgs = {
   baseDir: string
 } & AdapterBaseContext
 
-export type DumpElementsToFolderArgs = {
-  baseDir: string
-  changes: Change[]
-  elementsSource: ReadOnlyElementsSource
-}
-
-export type DumpElementsResult = {
-  unappliedChanges: Change[]
-  errors: ReadonlyArray<SaltoError | SaltoElementError>
-}
-
 export type ReferenceMapping = {
   source: ElemID
   target: ElemID
@@ -243,7 +232,6 @@ export type Adapter = {
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>
   loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
-  dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
   getAdditionalReferences?: GetAdditionalReferencesFunc
   getCustomReferences?: GetCustomReferencesFunc
 }

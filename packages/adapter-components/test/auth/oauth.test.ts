@@ -49,7 +49,7 @@ describe('oauth', () => {
       expect(req.url).toEqual('/oauth/token')
       expect(req.auth).toBeUndefined()
       expect(req.data).toEqual('client_id=client%20id&client_secret=secret&grant_type=client_credentials')
-      expect(req.headers).toEqual({
+      expect({ ...req.headers }).toEqual({
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: expect.stringContaining('application/json'),
       })
@@ -126,7 +126,7 @@ describe('oauth', () => {
       expect(req.url).toEqual('/custom_oauth_endpoint')
       expect(req.auth).toBeUndefined()
       expect(req.data).toEqual('client_id=client%20id&client_secret=secret&grant_type=client_credentials')
-      expect(req.headers).toEqual({
+      expect({ ...req.headers }).toEqual({
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: expect.stringContaining('application/json'),
         aaa: 'bbb',
@@ -167,7 +167,7 @@ describe('oauth', () => {
       expect(req.url).toEqual('/oauth/token')
       expect(req.auth).toBeUndefined()
       expect(req.data).toEqual('refresh_token=refresh&grant_type=refresh_token')
-      expect(req.headers).toEqual({
+      expect({ ...req.headers }).toEqual({
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: expect.stringContaining('application/json'),
         Authorization: expect.stringContaining('Basic'),

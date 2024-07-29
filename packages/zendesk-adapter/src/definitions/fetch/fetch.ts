@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { definitions } from '@salto-io/adapter-components'
+import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { EVERYONE_USER_TYPE } from '../../constants'
@@ -1842,7 +1842,10 @@ export const createFetchDefinitions = (
   return {
     instances: {
       default: {
-        resource: { serviceIDFields: ['id'] },
+        resource: {
+          serviceIDFields: ['id'],
+          onError: fetchUtils.errors.getInsufficientPermissionsError,
+        },
         element: {
           topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },
           fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,

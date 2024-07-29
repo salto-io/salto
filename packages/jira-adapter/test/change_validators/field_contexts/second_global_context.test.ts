@@ -51,21 +51,12 @@ describe('Field second global contexts', () => {
   let fieldInstance3: InstanceElement
 
   const createGlobalContext = (name: string, parent: InstanceElement): InstanceElement =>
-    new InstanceElement(
-      name,
-      contextType,
-      {
-        isGlobalContext: true,
-      },
-      undefined,
-      { _parent: [new ReferenceExpression(parent.elemID, parent)] },
-    )
+    new InstanceElement(name, contextType, {}, undefined, { _parent: [new ReferenceExpression(parent.elemID, parent)] })
   const createProjectContext = (name: string, parent: InstanceElement): InstanceElement =>
     new InstanceElement(
       name,
       contextType,
       {
-        isGlobalContext: false,
         projectIds: ['projAA', 'projBB'],
       },
       undefined,

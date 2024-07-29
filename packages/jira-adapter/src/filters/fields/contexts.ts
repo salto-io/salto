@@ -40,7 +40,7 @@ import { setFieldDeploymentAnnotations } from '../../utils'
 import { getAssetsContextId } from '../assets/assets_object_field_configuration'
 import { JiraConfig } from '../../config/config'
 
-const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext', 'AssetsObjectFieldConfiguration']
+const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'AssetsObjectFieldConfiguration']
 
 const log = logger(module)
 
@@ -168,7 +168,6 @@ export const getContexts = async (
 
 export const setContextDeploymentAnnotations = async (contextType: ObjectType): Promise<void> => {
   setFieldDeploymentAnnotations(contextType, 'projectIds')
-  setFieldDeploymentAnnotations(contextType, 'isGlobalContext')
   await setDefaultValueTypeDeploymentAnnotations(contextType)
   setFieldDeploymentAnnotations(contextType, 'issueTypeIds')
   await setOptionTypeDeploymentAnnotations(contextType)

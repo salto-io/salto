@@ -296,7 +296,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         default: {
           request: {
             transformation: {
-              // These are synthetic fields that are not part of the API
+              // These are synthetic fields that are not part of the API.
               // We use them to store service IDs in non-reference fields.
               omit: ['groupId', 'appId'],
             },

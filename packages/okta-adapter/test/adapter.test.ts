@@ -1219,9 +1219,6 @@ describe('adapter', () => {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
           },
         )
-        // In production, a BrandTheme can only be removed alongside its parent Brand (this is enforced by a change
-        // validator). CVs don't run in this test though, so we only run the change group for the BrandTheme removal
-        // and the mock HTTP response will behave as if the Brand was removed as well.
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'appGroupAssignment',

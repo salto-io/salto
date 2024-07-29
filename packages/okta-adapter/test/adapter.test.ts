@@ -520,7 +520,7 @@ describe('adapter', () => {
       const orgSettingType = new ObjectType({
         elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME),
       })
-      const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain.example.com' })
+      const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain' })
 
       operations = adapter.operations({
         credentials: new InstanceElement('config', accessTokenCredentialsType, {
@@ -1211,7 +1211,7 @@ describe('adapter', () => {
         const instance = getChangeData(result.appliedChanges[0] as Change<InstanceElement>)
         expect(instance.value.id).toEqual('app-fakeid1')
         // This is based on the orgSettings subdomain and the service returned "name" field value
-        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain_app1_1')
         expect(instance.value.name).toBeUndefined()
         expect(nock.pendingMocks()).toHaveLength(0)
       })
@@ -1235,9 +1235,9 @@ describe('adapter', () => {
         expect(result.appliedChanges).toHaveLength(1)
         const instance = getChangeData(result.appliedChanges[0] as Change<InstanceElement>)
         expect(instance.value.id).toEqual('app-fakeid1')
-        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain_app1_1')
         // This is based on the orgSettings subdomain and the service returned "name" field value
-        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain.example.com_app1')
+        expect(_.get(instance.value, CUSTOM_NAME_FIELD)).toEqual('subdomain_app1_1')
         expect(instance.value.name).toBeUndefined()
         expect(nock.pendingMocks()).toHaveLength(0)
       })
@@ -1248,7 +1248,7 @@ describe('adapter', () => {
           id: 'app-fakeid1',
           label: 'app1',
           status: INACTIVE_STATUS,
-          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          [CUSTOM_NAME_FIELD]: 'subdomain_app1_1',
           profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
           accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
@@ -1283,7 +1283,7 @@ describe('adapter', () => {
           id: 'app-fakeid1',
           label: 'app1',
           status: ACTIVE_STATUS,
-          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          [CUSTOM_NAME_FIELD]: 'subdomain_app1_1',
           profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
           accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
@@ -1314,7 +1314,7 @@ describe('adapter', () => {
           id: 'app-fakeid1',
           label: 'app1',
           status: ACTIVE_STATUS,
-          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          [CUSTOM_NAME_FIELD]: 'subdomain_app1_1',
           profileEnrollment: new ReferenceExpression(profileEnrollmentPolicy1.elemID, profileEnrollmentPolicy1),
           accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
         })
@@ -1348,7 +1348,7 @@ describe('adapter', () => {
           id: 'app-fakeid1',
           label: 'app1',
           status: INACTIVE_STATUS,
-          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          [CUSTOM_NAME_FIELD]: 'subdomain_app1_1',
         })
         const result = await operations.deploy({
           changeGroup: {
@@ -1368,7 +1368,7 @@ describe('adapter', () => {
           id: 'app-fakeid1',
           label: 'app1',
           status: ACTIVE_STATUS,
-          [CUSTOM_NAME_FIELD]: 'subdomain.example.com',
+          [CUSTOM_NAME_FIELD]: 'subdomain_app1_1',
         })
         const result = await operations.deploy({
           changeGroup: {

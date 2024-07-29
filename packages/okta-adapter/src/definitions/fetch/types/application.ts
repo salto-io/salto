@@ -65,8 +65,34 @@ export const assignPolicyIdsToApplication = (value: unknown): Value => {
   }
 }
 
-export const isCustomApp = (value: Values, subdomain: string): boolean =>
-  [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) &&
-  value.name !== undefined &&
-  // custom app names starts with subdomain and '_'
-  _.startsWith(value.name, `${subdomain}_`)
+const endsWithNumberRegex = new RegExp(/_\d+$/)
+
+export const isCustomApp = (value: Values, subdomain: string): boolean => {
+  const subdomainMatch =
+    value.name !== undefined &&
+    // custom app names starts with subdomain and '_'
+    _.startsWith(value.name, `${subdomain}_`)
+
+  const endsWithNumberMatch =
+    value.name !== undefined &&
+    // custom app names ends with a number
+    endsWithNumberRegex.test(value.name)
+
+  if (subdomainMatch !== endsWithNumberMatch) {
+    log.warn(
+      'isCustomApp matching methods disagree for %s: subdomainMatch=%s, endsWithNumberMatch=%s',
+      value.name,
+      subdomainMatch,
+      endsWithNumberMatch,
+    )
+  } else {
+    log.info(
+      'isCustomApp matching methods agree for %s: subdomainMatch=%s, endsWithNumberMatch=%s',
+      value.name,
+      subdomainMatch,
+      endsWithNumberMatch,
+    )
+  }
+
+  return [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) && subdomainMatch
+}

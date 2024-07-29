@@ -6,7 +6,7 @@
     "status": 200,
     "response": {
       "id": "app-fakeid1",
-      "name": "salto_testtest3_2",
+      "name": "subdomain_app1_1",
       "label": "app1",
       "status": "INACTIVE",
       "lastUpdated": "2024-07-08T06:59:58.000Z",

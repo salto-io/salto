@@ -419,67 +419,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  BrandLogo: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'delete',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
-  /*
-  FavIcon: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'delete',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
-
-   */
   Authenticator: {
     deployRequests: {
       add: {

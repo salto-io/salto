@@ -22,11 +22,10 @@ import { values } from '@salto-io/lowerdash'
 import { validateValue } from './generic'
 import { UserConfig } from '../../config'
 import { SPACE_TYPE_NAME } from '../../constants'
-import { FetchCriteria } from '../types'
+import { FetchCriteria, Options } from '../types'
 
 const log = logger(module)
 
-const SPACE_URL_WITHOUT_PARAMS = '/wiki/api/v2/spaces'
 const ALL_SPACE_TYPES = ['global', 'collaboration', 'knowledge_base', 'personal']
 const ALL_SPACE_STATUSES = ['current', 'archived']
 
@@ -117,15 +116,6 @@ export const spaceChangeGroupWithItsHomepage: deployment.grouping.ChangeIdFuncti
   return changeData.elemID.getFullName()
 }
 
-const addParamsToSpaceUrl = (paramsDict: Record<string, string[]>): `/${string}` => {
-  const paramEntries = Object.entries(paramsDict)
-  const paramsAsStrings = paramEntries.map(([key, params]) => {
-    const valueStr = params.join(`&${key}=`)
-    return `${key}=${valueStr}`
-  })
-  return `${SPACE_URL_WITHOUT_PARAMS}?`.concat(paramsAsStrings.join('&')) as `/${string}`
-}
-
 const isSpaceTypeMatch = (typeRegex: string): boolean => fetchUtils.query.isTypeMatch(SPACE_TYPE_NAME, typeRegex)
 
 type FetchEntry = definitions.FetchEntry<FetchCriteria>
@@ -151,18 +141,28 @@ const getTypesOrStatusesToFetch = ({
 }
 
 /*
- * Fetch spaces endpoint with the relevant params according to the user config.
- * We fetch all space types and statuses by default, unless specified otherwise in the user config.
+ * Get space requester and multiply it to several requests if needed to fetch specific space types and statuses.
+ * In a single request we can fetch only one type or status, to fetch multiple we need to multiply the request.
+ * Not specifying a type or status in the request will fetch all types or statuses.
+ * By default we fetch all space types and statuses, unless specified otherwise in the user config.
  */
-export const getFetchSpacesEndpointWithParams = (userConfig: UserConfig): `/${string}` => {
+export const getSpaceRequests = (
+  userConfig: UserConfig,
+  spaceRequest: definitions.fetch.FetchRequestDefinition<definitions.ResolveClientOptionsType<Options>>,
+): definitions.fetch.FetchRequestDefinition<definitions.ResolveClientOptionsType<Options>>[] => {
   const excludeSpaceDefs = userConfig.fetch.exclude.filter(exclude => isSpaceTypeMatch(exclude.type))
   const includeSpaceDefs = userConfig.fetch.include.filter(include => isSpaceTypeMatch(include.type))
-
   const spaceTypesToFetch = getTypesOrStatusesToFetch({ excludeSpaceDefs, includeSpaceDefs, query: 'type' })
   const spaceStatusesToFetch = getTypesOrStatusesToFetch({ excludeSpaceDefs, includeSpaceDefs, query: 'status' })
-  if (spaceTypesToFetch.length === 0 || spaceStatusesToFetch.length === 0) {
-    log.warn('No space types or statuses to fetch, returning space url without params')
-    return SPACE_URL_WITHOUT_PARAMS
+  const requestQueryArgs = spaceRequest.endpoint?.queryArgs
+  if (spaceTypesToFetch.length === 0 && spaceStatusesToFetch.length === 0) {
+    return []
   }
-  return addParamsToSpaceUrl({ type: spaceTypesToFetch, status: spaceStatusesToFetch })
+  if (spaceStatusesToFetch.length === 1 && requestQueryArgs !== undefined) {
+    ;[requestQueryArgs.status] = spaceStatusesToFetch
+  }
+  if (spaceTypesToFetch.length === ALL_SPACE_TYPES.length) {
+    return [spaceRequest]
+  }
+  return spaceTypesToFetch.map(type => _.merge({}, spaceRequest, { endpoint: { queryArgs: { type } } }))
 }

@@ -14,15 +14,6 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import {
-  ComponentSet,
-  ZipTreeContainer,
-  MetadataConverter,
-  TreeContainer,
-  ManifestResolver,
-  SourceComponent,
-} from '@salesforce/source-deploy-retrieve'
-import { SfProject } from '@salesforce/core'
 import { isSubDirectory, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import { Adapter } from '@salto-io/adapter-api'
@@ -37,6 +28,15 @@ import SalesforceClient from '../client/client'
 import { createDeployPackage, DeployPackage, PACKAGE } from '../transformers/xml_transformer'
 import { addChangeToPackage, validateChanges } from '../metadata_deploy'
 import { isInstanceOfCustomObjectChangeSync } from '../filters/utils'
+import {
+  ComponentSet,
+  ZipTreeContainer,
+  MetadataConverter,
+  TreeContainer,
+  ManifestResolver,
+  SourceComponent,
+  SfProject,
+} from './salesforce_imports'
 import { SyncZipTreeContainer } from './tree_container'
 
 const log = logger(module)

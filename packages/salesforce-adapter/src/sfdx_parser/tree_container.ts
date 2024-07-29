@@ -15,8 +15,8 @@
  */
 
 import path from 'path'
-import { SourcePath, TreeContainer, ZipTreeContainer } from '@salesforce/source-deploy-retrieve'
 import { Readable } from 'stream'
+import { SourcePath, TreeContainer, ZipTreeContainer } from './salesforce_imports'
 
 // The following implementation is needed to support reading "non-decomposed" component types.
 // A bit of background - "decomposed" types are types whose instances are part of their parent XML in metadata format

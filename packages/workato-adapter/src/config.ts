@@ -299,6 +299,7 @@ export const configType = new ObjectType({
 export type FilterContext = {
   [FETCH_CONFIG]: WorkatoFetchConfig
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
+  [ENABLE_DEPLOY_SUPPORT_FLAG]: WorkatoConfig[typeof ENABLE_DEPLOY_SUPPORT_FLAG]
 }
 
 export const validateFetchConfig = (

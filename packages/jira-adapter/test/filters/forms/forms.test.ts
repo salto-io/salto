@@ -27,14 +27,12 @@ import {
   BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { FilterResult } from '../../../src/filter'
 import { getDefaultConfig } from '../../../src/config/config'
 import formsFilter from '../../../src/filters/forms/forms'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { FORM_TYPE, JIRA, PROJECT_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
-import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
 describe('forms filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy', FilterResult>
@@ -66,16 +64,6 @@ describe('forms filter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
-      connection.post.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          unparsedData: {
-            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-              tenantId: 'cloudId',
-            }),
-          },
-        },
-      })
 
       connection.get.mockResolvedValueOnce({
         status: 200,
@@ -411,16 +399,7 @@ describe('forms filter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
-      connection.post.mockResolvedValue({
-        status: 200,
-        data: {
-          unparsedData: {
-            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-              tenantId: 'cloudId',
-            }),
-          },
-        },
-      })
+
       elements = [projectInstance, projectInstanceTwo, projectType]
     })
     afterEach(() => {
@@ -702,18 +681,6 @@ describe('forms filter', () => {
             },
           }
         }
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
         throw new Error('Unexpected url')
       })
 
@@ -724,7 +691,7 @@ describe('forms filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(connection.post).toHaveBeenCalledTimes(2)
+      expect(connection.post).toHaveBeenCalledTimes(1)
       expect(connection.put).toHaveBeenCalledTimes(1)
       expect(connection.put).toHaveBeenCalledWith(
         '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms/1',
@@ -819,7 +786,6 @@ describe('forms filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.put).toHaveBeenCalledTimes(1)
-      expect(connection.post).toHaveBeenCalledTimes(1)
     })
     it('should delete form', async () => {
       const res = await filter.deploy([{ action: 'remove', data: { before: formInstance } }])
@@ -827,7 +793,6 @@ describe('forms filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.delete).toHaveBeenCalledTimes(1)
-      expect(connection.post).toHaveBeenCalledTimes(1)
     })
     it('should not deploy if form name is missing', async () => {
       const formInstanceAfter = formInstance.clone()
@@ -856,18 +821,6 @@ describe('forms filter', () => {
             status: 200,
             data: {
               name: 'wrong response',
-            },
-          }
-        }
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
             },
           }
         }

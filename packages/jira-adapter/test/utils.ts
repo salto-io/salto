@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, ElemID, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { adapter } from '../src/adapter_creator'
 import { Credentials } from '../src/auth'
 import { JiraConfig, configType, getDefaultConfig } from '../src/config/config'
-import JiraClient from '../src/client/client'
+import JiraClient, { GET_CLOUD_ID_URL } from '../src/client/client'
 import { EXTENSION_ID_ARI_PREFIX } from '../src/common/extensions'
 import { FilterCreator } from '../src/filter'
 import { paginate } from '../src/client/pagination'
@@ -58,7 +58,10 @@ type ClientWithMockConnection = {
   getUserMapFunc: GetUserMapFunc
   scriptRunnerClient: ScriptRunnerClient
 }
-export const mockClient = (isDataCenter = false, cloudId?: string): ClientWithMockConnection => {
+export const mockClient = (
+  isDataCenter = false,
+  mockedCloudId: string | null = DEFAULT_CLOUD_ID,
+): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new JiraClient({
     credentials: {
@@ -76,8 +79,8 @@ export const mockClient = (isDataCenter = false, cloudId?: string): ClientWithMo
     },
     isDataCenter,
   })
-  if (cloudId !== undefined) {
-    client.getCloudId = async () => cloudId
+  if (mockedCloudId !== null) {
+    client.getCloudId = async () => mockedCloudId
   }
 
   const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client })
@@ -170,3 +173,14 @@ export const createForgeTransitionRule = (extensionId: string): WorkflowV2Transi
   parameters: { key: `${EXTENSION_ID_ARI_PREFIX}${extensionId}/some-suffix` },
 })
 export const createSystemTransitionRule = (): WorkflowV2TransitionRule => ({ ruleKey: 'system:some-rule' })
+
+export const FAULTY_CLOUD_ID_RESPONSE = (url: string): Value => {
+  if (url === GET_CLOUD_ID_URL) {
+    return {
+      status: 200,
+      data: { some_field: '' },
+    }
+  }
+
+  throw new Error(`Unexpected url ${url}`)
+}

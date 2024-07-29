@@ -33,7 +33,6 @@ import { FilterCreator } from '../../../filter'
 import { deployChanges } from '../../../deployment/standard_deployment'
 import JiraClient from '../../../client/client'
 import { getLookUpName } from '../../../reference_mapping'
-import { getCloudId } from '../cloud_id'
 
 const log = logger(module)
 
@@ -63,7 +62,7 @@ const updateAutomationLabel = async (instance: InstanceElement, client: JiraClie
 
   const url = client.isDataCenter
     ? `/rest/cb-automation/latest/rule-label/${instance.value.id}`
-    : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels/${instance.value.id}`
+    : `/gateway/api/automation/internal-api/jira/${await client.getCloudId()}/pro/rest/GLOBAL/rule-labels/${instance.value.id}`
 
   await client.put({ url, data })
 }
@@ -77,7 +76,7 @@ const createAutomationLabel = async (instance: InstanceElement, client: JiraClie
 
   const url = client.isDataCenter
     ? '/rest/cb-automation/latest/rule-label'
-    : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
+    : `/gateway/api/automation/internal-api/jira/${await client.getCloudId()}/pro/rest/GLOBAL/rule-labels`
 
   const response = await client.post({ url, data })
   if (!isLabelsPostResponse(response.data)) {

@@ -149,7 +149,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     resource: {
       directFetch: false,
       onError: {
-        action: 'ignoreError'
+        action: 'ignoreError',
       },
       recurseInto: {
         groupSettings: {
@@ -236,9 +236,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   },
   label: {
     resource: {
-    directFetch: false,
-    onError: {
-      action: 'ignoreError'
+      directFetch: false,
+      onError: {
+        action: 'ignoreError',
       },
     },
     requests: [
@@ -269,7 +269,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       // the id field in groupMember is not unique, as it the member id.
       serviceIDFields: [],
       onError: {
-        action: 'ignoreError'
+        action: 'ignoreError',
       },
     },
     element: {
@@ -306,7 +306,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       directFetch: false,
       serviceIDFields: ['roleAssignmentId'],
       onError: {
-        action: 'ignoreError'
+        action: 'ignoreError',
       },
     },
     element: {
@@ -339,7 +339,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     resource: {
       directFetch: false,
       onError: {
-        action: 'ignoreError'
+        action: 'ignoreError',
       },
     },
     requests: [

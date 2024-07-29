@@ -25,7 +25,6 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
-import { PROJECT_CONTEXTS_FIELD } from '../../../src/filters/fields/contexts_projects_filter'
 import { fieldContextValidator } from '../../../src/change_validators/field_contexts/field_contexts'
 import { JIRA, PROJECT_TYPE } from '../../../src/constants'
 

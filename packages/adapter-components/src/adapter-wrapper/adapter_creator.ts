@@ -127,7 +127,7 @@ export const createAdapter = <
         }),
       )
       const adapterDefinitions = definitionsCreator({ clients, userConfig: config, credentials })
-      const definitions = mergeDefinitionsWithOverrides(adapterDefinitions)
+      const definitions = mergeDefinitionsWithOverrides(adapterDefinitions, context.accountName)
       const resolverCreator = getResolverCreator(definitions)
       const fixElements = customizeFixElements
         ? combineElementFixers(customizeFixElements({ config, elementsSource: context.elementsSource }))

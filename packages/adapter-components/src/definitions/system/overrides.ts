@@ -23,12 +23,12 @@ import { APIDefinitionsOptions } from './api'
 const log = logger(module)
 export const DEFINITIONS_OVERRIDES = 'SALTO_DEFINITIONS_OVERRIDES'
 
-const getParsedDefinitionsOverrides = (): Values => {
+const getParsedDefinitionsOverrides = (account: string): Values => {
   const overrides = process.env[DEFINITIONS_OVERRIDES]
   try {
     const parsedOverrides = overrides === undefined ? undefined : JSON.parse(overrides)
     if (parsedOverrides !== undefined && typeof parsedOverrides === 'object') {
-      return parsedOverrides as Values
+      return parsedOverrides[account] as Values
     }
   } catch (e) {
     if (e instanceof SyntaxError) {
@@ -50,6 +50,7 @@ const getParsedDefinitionsOverrides = (): Values => {
  */
 export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOptions>(
   definitions: RequiredDefinitions<Options>,
+  account?: string
 ): RequiredDefinitions<Options> => {
   const customMerge = (objValue: Value, srcValue: Value): Value => {
     if (_.isArray(objValue)) {
@@ -57,9 +58,12 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     }
     return undefined
   }
+  if (account === undefined) {
+    return definitions
+  }
   log.debug('starting to merge definitions with overrides')
-  const overrides = getParsedDefinitionsOverrides()
-  if (_.isEmpty(overrides)) {
+  const overrides = getParsedDefinitionsOverrides(account)
+  if (_.isEmpty(overrides)) {account
     return definitions
   }
   log.debug('Definitions overrides: %s', safeJsonStringify(overrides))

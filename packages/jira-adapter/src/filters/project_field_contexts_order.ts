@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import {
   Element,
   ReferenceExpression,
@@ -22,21 +21,23 @@ import {
   isInstanceChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { PROJECT_TYPE } from '../constants'
+import { PROJECT_IDS } from '../constants'
+import { FIELD_CONTEXT_TYPE_NAME } from './fields/constants'
 
 /**
  * sorting project field contexts to avoid unnecessary noise
  */
 const filter: FilterCreator = () => ({
-  name: 'projectFieldContexts',
+  name: 'ProjectsIdContextOrder',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
-      .filter(instance => instance.value.fieldContexts !== undefined)
+      .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(instance => Array.isArray(instance.value[PROJECT_IDS]))
       .forEach(instance => {
-        instance.value.fieldContexts = _.sortBy(instance.value.fieldContexts, (ref: ReferenceExpression) =>
+        instance.value[PROJECT_IDS] = _.sortBy(instance.value[PROJECT_IDS], (ref: ReferenceExpression) =>
           ref.elemID.getFullName(),
         )
       })
@@ -46,10 +47,10 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
-      .filter(element => element.elemID.typeName === PROJECT_TYPE)
-      .filter(element => element.value.fieldContexts !== undefined)
-      .forEach(element => {
-        element.value.fieldContexts = _.sortBy(element.value.fieldContexts, (ref: ReferenceExpression) =>
+      .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(instance => Array.isArray(instance.value[PROJECT_IDS]))
+      .forEach(instance => {
+        instance.value[PROJECT_IDS] = _.sortBy(instance.value[PROJECT_IDS], (ref: ReferenceExpression) =>
           ref.elemID.getFullName(),
         )
       })

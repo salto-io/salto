@@ -66,7 +66,7 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
       )
     }
     if (isAdditionChange(change)) {
-      const resp = await client.atlassianApiSendRequest('post', {
+      const resp = await client.atlassianApiPost({
         url: `project/${project.value.id}/form`,
         data,
       })
@@ -75,13 +75,13 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
       }
       form.value.id = resp.data.id
     } else {
-      await client.atlassianApiSendRequest('put', {
+      await client.atlassianApiPut({
         url: `project/${project.value.id}/form/${form.value.id}`,
         data,
       })
     }
   } else {
-    await client.atlassianApiSendRequest('delete', {
+    await client.atlassianApiDelete({
       url: `project/${project.value.id}/form/${form.value.id}`,
     })
   }
@@ -119,7 +119,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       await Promise.all(
         jsmProjects.flatMap(async project => {
           try {
-            const res = await client.atlassianApiSendRequest('get', {
+            const res = await client.atlassianApiGet({
               url: `project/${project.value.id}/form`,
             })
             if (!isFormsResponse(res)) {
@@ -130,7 +130,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
             }
             return await Promise.all(
               res.data.map(async formResponse => {
-                const detailedRes = await client.atlassianApiSendRequest('get', {
+                const detailedRes = await client.atlassianApiGet({
                   url: `project/${project.value.id}/form/${formResponse.id}`,
                 })
                 if (!isDetailedFormsResponse(detailedRes.data)) {

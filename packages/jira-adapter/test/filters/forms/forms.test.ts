@@ -36,7 +36,8 @@ import JiraClient from '../../../src/client/client'
 describe('forms filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy', FilterResult>
   let filter: FilterType
-  let mockSendRequest: jest.SpyInstance
+  let mockAtlassianApiGet: jest.SpyInstance
+  let mockAtlassianApiPost: jest.SpyInstance
   let client: JiraClient
   const projectType = createEmptyType(PROJECT_TYPE)
   let projectInstance: InstanceElement
@@ -62,8 +63,8 @@ describe('forms filter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
-      mockSendRequest = jest.spyOn(client, 'atlassianApiSendRequest')
-      mockSendRequest.mockResolvedValueOnce({
+      mockAtlassianApiGet = jest.spyOn(client, 'atlassianApiGet')
+      mockAtlassianApiGet.mockResolvedValueOnce({
         status: 200,
         data: [
           {
@@ -73,7 +74,7 @@ describe('forms filter', () => {
         ],
       })
 
-      mockSendRequest.mockResolvedValueOnce({
+      mockAtlassianApiGet.mockResolvedValueOnce({
         status: 200,
         data: {
           updated: '2023-09-28T08:20:31.552322Z',
@@ -365,7 +366,7 @@ describe('forms filter', () => {
       config.fetch.enableJSM = true
       const { client: cli } = mockClient(false)
       client = cli
-      mockSendRequest = jest.spyOn(client, 'atlassianApiSendRequest')
+      mockAtlassianApiGet = jest.spyOn(client, 'atlassianApiGet')
       filter = formsFilter(getFilterParams({ config, client })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
@@ -395,7 +396,7 @@ describe('forms filter', () => {
       jest.clearAllMocks()
     })
     it("should return single saltoError when failed to fetch form because it doesn't have a title", async () => {
-      mockSendRequest.mockImplementation(async (_method, params) => {
+      mockAtlassianApiGet.mockImplementation(async (params) => {
         if (params.url === 'project/11111/form') {
           return {
             status: 200,
@@ -439,7 +440,7 @@ describe('forms filter', () => {
       )
     })
     it('should return single saltoError when failed to fetch form because data is empty', async () => {
-      mockSendRequest.mockImplementation(async (_method, params) => {
+      mockAtlassianApiGet.mockImplementation(async (params) => {
         if (params.url === 'project/11111/form') {
           throw new clientUtils.HTTPError('insufficient permissions', {
             status: 403,
@@ -461,7 +462,7 @@ describe('forms filter', () => {
       )
     })
     it('should add form1 to the elements and add saltoError when failed to fetch form2 data for projectTwo', async () => {
-      mockSendRequest.mockImplementation(async (_method, params) => {
+      mockAtlassianApiGet.mockImplementation(async (params) => {
         if (params.url === 'project/11111/form') {
           return {
             status: 200,
@@ -498,7 +499,7 @@ describe('forms filter', () => {
       expect(formInstances[0]?.elemID.name).toEqual('project1Key_form1')
     })
     it('should not add forms to elements and not add an error for a bad unexpected response', async () => {
-      mockSendRequest.mockResolvedValue({
+      mockAtlassianApiGet.mockResolvedValue({
         status: 404,
         data: {
           message: 'not found',
@@ -511,7 +512,7 @@ describe('forms filter', () => {
       expect(formInstance).toBeUndefined()
     })
     it('should add saltoError response when 403 error is thrown from jira client', async () => {
-      mockSendRequest.mockRejectedValue({
+      mockAtlassianApiGet.mockRejectedValue({
         response: {
           status: 403,
           data: 'insufficient permissions',
@@ -658,25 +659,18 @@ describe('forms filter', () => {
           [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
         },
       )
-      mockSendRequest = jest.spyOn(client, 'atlassianApiSendRequest')
-      mockSendRequest.mockImplementation(async (method, params) => {
-        if (method === 'post') {
-          if (params.url === 'project/11111/form') {
-            return {
-              status: 200,
-              data: {
-                id: 'uuid-1',
-                name: 'form1',
-              },
-            }
-          }
-          throw new Error('Unexpected url')
-        } else {
+      mockAtlassianApiPost = jest.spyOn(client, 'atlassianApiPost')
+      mockAtlassianApiPost.mockImplementation(async (params) => {
+        if (params.url === 'project/11111/form') {
           return {
             status: 200,
-            data: {},
+            data: {
+              id: 'uuid-1',
+              name: 'form1',
+            },
           }
         }
+        throw new Error('Unexpected url')
       })
       elements = [projectInstance, projectType, formPortalType, formPublishType, formType, requestTypeType]
     })
@@ -685,28 +679,35 @@ describe('forms filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(mockAtlassianApiPost).toHaveBeenCalledTimes(1)
     })
     it('should modify form', async () => {
+      const mockAtlassianApiPut = jest.spyOn(client, 'atlassianApiPut')
       const formInstanceAfter = formInstance.clone()
       formInstanceAfter.value.design.settings.name = 'newName'
       const res = await filter.deploy([{ action: 'modify', data: { before: formInstance, after: formInstanceAfter } }])
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(mockAtlassianApiPut).toHaveBeenCalledTimes(1)
     })
     it('should delete form', async () => {
+      const mockAtlassianApiDelete = jest.spyOn(client, 'atlassianApiDelete')
       const res = await filter.deploy([{ action: 'remove', data: { before: formInstance } }])
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(mockAtlassianApiDelete).toHaveBeenCalledTimes(1)
     })
     it('should not deploy if form name is missing', async () => {
+      const mockAtlassianApiPut = jest.spyOn(client, 'atlassianApiPut')
       const formInstanceAfter = formInstance.clone()
       delete formInstanceAfter.value.design.settings.name
       const res = await filter.deploy([{ action: 'modify', data: { before: formInstance, after: formInstanceAfter } }])
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(mockAtlassianApiPut).toHaveBeenCalledTimes(0)
     })
     it('should not deploy if enableJSM is false', async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -716,25 +717,19 @@ describe('forms filter', () => {
       expect(res.leftoverChanges).toHaveLength(1)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(mockAtlassianApiPost).toHaveBeenCalledTimes(0)
     })
     it('should throw error if bad response in form creation from jira', async () => {
-      mockSendRequest.mockImplementation(async (method, params) => {
-        if (method === 'post') {
-          if (params.url === 'project/11111/form') {
-            return {
-              status: 200,
-              data: {
-                name: 'wrong response',
-              },
-            }
-          }
-          throw new Error('Unexpected url')
-        } else {
+      mockAtlassianApiPost.mockImplementation(async (params) => {
+        if (params.url === 'project/11111/form') {
           return {
             status: 200,
-            data: {},
+            data: {
+              name: 'wrong response',
+            },
           }
         }
+        throw new Error('Unexpected url')
       })
       const res = await filter.deploy([{ action: 'add', data: { after: formInstance } }])
       expect(res.leftoverChanges).toHaveLength(0)

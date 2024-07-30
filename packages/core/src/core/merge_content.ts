@@ -204,13 +204,18 @@ export const mergeStaticFiles = async (
     : undefined
 }
 
-const toHashedListItems = (list: Value[]): { hashedList: string[]; hashToItemMap: Record<string, Value> } => {
-  const hashedList = list.map(getListItemExactKey)
-  return {
-    hashedList,
-    hashToItemMap: Object.fromEntries(list.map((item, index) => [hashedList[index], item])),
-  }
-}
+const toHashedListItems = (list: Value[]): { hashedList: string[]; hashToItemMap: Record<string, Value> } =>
+  log.timeDebug(
+    () => {
+      const hashedList = list.map(getListItemExactKey)
+      return {
+        hashedList,
+        hashToItemMap: Object.fromEntries(list.map((item, index) => [hashedList[index], item])),
+      }
+    },
+    'hashing list with %d items',
+    list.length,
+  )
 
 export const mergeLists = (
   changeId: string,

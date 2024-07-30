@@ -45,7 +45,7 @@ type KeyFunction = (value: Value) => string
  *
  * Note: this function ignores the value of compareReferencesByValue and always looks at the reference id
  */
-const getListItemExactKey: KeyFunction = value =>
+export const getListItemExactKey: KeyFunction = value =>
   objectHash(value, {
     replacer: val => {
       if (isReferenceExpression(val)) {

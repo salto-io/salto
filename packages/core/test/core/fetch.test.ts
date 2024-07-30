@@ -953,7 +953,7 @@ describe('fetch', () => {
         })
       })
 
-      describe.each(['static files', 'multiline strings'] as const)(
+      describe.each(['static files', 'multiline strings', 'lists'] as const)(
         'when the working copy has some mergeable changes in %s',
         type => {
           const instanceName = 'name'
@@ -966,18 +966,38 @@ describe('fetch', () => {
             mergedModifiedValue: 'Hello World!\nmy name is:\nNaCls the great!',
             mergedAddedValue: 'Hello World!\nmy name is:\nNaCls\nthe great!',
             tooLongValue: 'hello world!\nmy name is:\nNaCls the great!'.padEnd(10 * 1024 * 1024 + 1, '!'),
+            mismatchValue: 1234,
           }
 
-          const allValues =
-            type === 'static files'
-              ? {
-                  ..._.mapValues(
-                    strings,
-                    content => new StaticFile({ filepath: 'abc', content: Buffer.from(content) }),
-                  ),
-                  mismatchValue: new StaticFile({ filepath: 'def', content: Buffer.from(strings.mergeableValue) }),
+          const getValues = (): Record<keyof typeof strings, unknown> => {
+            switch (type) {
+              case 'lists':
+                return {
+                  stateValue: [1, 2, 3],
+                  serviceValue: [1, 2, 3, 4],
+                  mergeableValue: [0, 2, 1, 3],
+                  unmergeableValue: [1, 2, 3, 5],
+                  addedValue: [0, 1, 2, 5, 3],
+                  mergedModifiedValue: [0, 2, 1, 3, 4],
+                  mergedAddedValue: [0, 1, 2, 5, 3, 4],
+                  tooLongValue: _.range(10_001),
+                  mismatchValue: { name: 'abc' },
                 }
-              : { ...strings, mismatchValue: 1234 }
+              case 'static files': {
+                return {
+                  ..._.mapValues(strings, content =>
+                    typeof content === 'string'
+                      ? new StaticFile({ filepath: 'abc', content: Buffer.from(content) })
+                      : new StaticFile({ filepath: 'def', content: Buffer.from(strings.mergeableValue) }),
+                  ),
+                }
+              }
+              default:
+                return strings
+            }
+          }
+
+          const allValues = getValues()
 
           const stateInstance = new InstanceElement(instanceName, typeWithField, {
             mergeableContent: allValues.stateValue,

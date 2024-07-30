@@ -180,22 +180,23 @@ const buildMultiEnvSource = (
     isTemplate?: boolean
     hash?: string
   }): Promise<StaticFile> => {
+    const { env, filePath, encoding, isTemplate, hash } = args
     const sourcesFiles = (
       await Promise.all(
-        Object.values(getActiveSources(args.env)).map(src =>
+        Object.values(getActiveSources(env)).map(src =>
           src.getStaticFile({
-            filePath: args.filePath,
-            encoding: args.encoding,
-            isTemplate: _.isObject(args) ? args.isTemplate : undefined,
-            hash: args.hash,
+            filePath,
+            encoding,
+            isTemplate,
+            hash,
           }),
         ),
       )
     ).filter(values.isDefined)
     if (sourcesFiles.length > 1 && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
-      log.warn(`Found different hashes for static file ${args.filePath}`)
+      log.warn(`Found different hashes for static file ${filePath}`)
     }
-    return sourcesFiles[0] ?? new MissingStaticFile(args.filePath)
+    return sourcesFiles[0] ?? new MissingStaticFile(filePath)
   }
 
   const buildStateForSingleEnv = async (envName: string): Promise<SingleState> => {

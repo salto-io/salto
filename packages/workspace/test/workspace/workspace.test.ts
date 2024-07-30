@@ -58,8 +58,6 @@ import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
-import { buildStaticFilesCache } from '../../src/workspace/static_files/static_files_cache'
-import * as remoteMap from '../../src/workspace/remote_map'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import {
   Workspace,
@@ -85,7 +83,7 @@ import {
   UnknownAccountError,
   InvalidAccountNameError,
 } from '../../src/workspace/errors'
-import { buildStaticFilesSource, MissingStaticFile } from '../../src/workspace/static_files'
+import { MissingStaticFile } from '../../src/workspace/static_files'
 import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
@@ -115,7 +113,6 @@ const changedNaclFile = {
   buffer: `type salesforce.lead {
     salesforce.text new_base {}
   }`,
-  timestamp: expect.anything(),
 }
 const changedConfFile = {
   filename: 'salto.config/adapters/salesforce.nacl',
@@ -130,7 +127,6 @@ const emptyNaclFile = {
 const newNaclFile = {
   filename: 'new.nacl',
   buffer: 'type salesforce.new {}',
-  timestamp: expect.anything(),
 }
 const services = ['salesforce']
 
@@ -708,7 +704,7 @@ describe('workspace', () => {
   })
 
   describe('setNaclFiles', () => {
-    const naclFileStore = mockDirStore<string>()
+    const naclFileStore = mockDirStore()
     let workspace: Workspace
     let elemMap: Record<string, Element>
     let changes: Record<string, ChangeSet<Change<Element>>>
@@ -880,102 +876,6 @@ describe('workspace', () => {
         ])
 
         expect((await ws.errors()).merge).toHaveLength(0)
-      })
-    })
-  })
-
-  describe('updateNaclFiles with static files', () => {
-    let workspace: Workspace
-    const staticFileInstanceType = new ObjectType({
-      elemID: new ElemID('salesforce', 'staticFile'),
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN]: true,
-      },
-      path: ['salesforce', 'Types', 'staticFile'],
-      isSettings: false,
-    })
-
-    staticFileInstanceType.fields.staticFile = new Field(staticFileInstanceType, 'staticFile', BuiltinTypes.STRING)
-
-    const beforeStaticFile = new StaticFile({
-      content: Buffer.from('I am a little static file'),
-      filepath: 'static1.nacl',
-    })
-
-    const afterStaticFile = new StaticFile({
-      content: Buffer.from('I am a little static file2'),
-      filepath: 'static1.nacl',
-    })
-
-    const staticFileInstanceBefore = new InstanceElement(
-      'staticFileInstance',
-      staticFileInstanceType,
-      {
-        staticFile: beforeStaticFile,
-      },
-      ['Records', 'staticFile', 'staticFileInstance'],
-    )
-    const setUp = async (): Promise<void> => {
-      const maps = new Map<string, remoteMap.RemoteMap<unknown>>()
-      const inMemRemoteMapCreator =
-        (): remoteMap.RemoteMapCreator =>
-        async <T, K extends string = string>(opts: remoteMap.CreateRemoteMapParams<T>) => {
-          const map = maps.get(opts.namespace) ?? new remoteMap.InMemoryRemoteMap<T, K>()
-          if (!maps.has(opts.namespace)) {
-            maps.set(opts.namespace, map)
-          }
-          return map as remoteMap.RemoteMap<T, K>
-        }
-      const staticFilesCache = buildStaticFilesCache('test', inMemRemoteMapCreator(), true)
-      const defaultFilePath = 'static1.nacl'
-      const otherStaticFiles = { [defaultFilePath]: Buffer.from('I am a little static file') }
-      const mockStaticFileDirStore = mockDirStore(undefined, undefined, otherStaticFiles)
-      const staticFilesSource = buildStaticFilesSource(mockStaticFileDirStore, staticFilesCache)
-      const otherNaclFiles = {
-        'staticFile.nacl': `
-        
-type salesforce.staticFile {
-  string staticFile {
-  }
-}
-
-salesforce.staticFile staticFileInstance {
-  staticFile = file("static1.nacl")
-}
-        `,
-      }
-
-      const otherDirStore = mockDirStore(undefined, undefined, otherNaclFiles)
-      const state = createState([...Object.values(BuiltinTypes), staticFileInstanceType, staticFileInstanceBefore])
-
-      workspace = await createWorkspace(
-        otherDirStore,
-        state,
-        undefined,
-        undefined,
-        undefined,
-        staticFilesSource,
-        undefined,
-        inMemRemoteMapCreator(),
-      )
-    }
-    it('should have right number of results when there is only a change in 1 static file', async () => {
-      await setUp()
-      const changes: DetailedChange[] = [
-        // modify static file
-        {
-          id: new ElemID('salesforce', 'staticFile', 'instance', 'staticFileInstance', 'staticFile'),
-          action: 'modify',
-          data: {
-            before: beforeStaticFile,
-            after: afterStaticFile,
-          },
-        },
-      ]
-      const otherUpdateNaclFileResults = await workspace.updateNaclFiles(changes)
-      expect(otherUpdateNaclFileResults).toEqual({
-        naclFilesChangesCount: 1,
-        stateOnlyChangesCount: 0,
       })
     })
   })
@@ -1684,7 +1584,7 @@ salesforce.staticFile staticFileInstance {
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
     let updateNaclFileResults: UpdateNaclFilesResult
-    const dirStore = mockDirStore<string>()
+    const dirStore = mockDirStore()
 
     beforeAll(async () => {
       const helperWorkspace = await createWorkspace(dirStore, createState([]))
@@ -2562,7 +2462,7 @@ salesforce.staticFile staticFileInstance {
     const naclFileStore = mockDirStore(undefined, undefined, {
       'firstFile.nacl': firstFile,
     })
-    const emptyFileStore = mockDirStore<string>(undefined, undefined, {})
+    const emptyFileStore = mockDirStore(undefined, undefined, {})
     describe('empty index', () => {
       beforeEach(async () => {
         workspace = await createWorkspace(emptyFileStore, undefined, undefined, undefined, undefined, undefined, {
@@ -5172,7 +5072,7 @@ describe('isValidEnvName', () => {
 describe('update nacl files with invalid state cache', () => {
   let workspace: Workspace
   beforeAll(async () => {
-    const dirStore = mockDirStore<string>()
+    const dirStore = mockDirStore()
     const changes: DetailedChange[] = [
       {
         action: 'remove',

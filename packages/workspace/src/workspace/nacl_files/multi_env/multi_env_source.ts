@@ -129,7 +129,6 @@ export type MultiEnvSource = {
     encoding: BufferEncoding
     env: string
     isTemplate?: boolean
-    hash?: string
   }) => Promise<StaticFile | undefined>
   getAll: (env: string) => Promise<AsyncIterable<Element>>
   promote: (env: string, idsToMove: ElemID[], idsToRemove?: Record<string, ElemID[]>) => Promise<EnvsChanges>
@@ -173,22 +172,35 @@ const buildMultiEnvSource = (
 
   const getActiveSources = (env: string): Record<string, NaclFilesSource> => _.pick(sources, [commonSourceName, env])
 
-  const getStaticFile = async (args: {
-    filePath: string
-    encoding: BufferEncoding
-    env: string
-    isTemplate?: boolean
-    hash?: string
-  }): Promise<StaticFile> => {
-    const { env, filePath, encoding, isTemplate, hash } = args
+  const getStaticFile = async (
+    args: string | { filePath: string; encoding: BufferEncoding; env: string; isTemplate?: boolean },
+    encoding?: BufferEncoding,
+    envName?: string,
+  ): Promise<StaticFile> => {
+    let filePath: string
+    let fileEncoding: BufferEncoding
+    let environmentName: string
+
+    // Check if args is a string or an object and assign values accordingly
+    if (_.isString(args)) {
+      if (encoding === undefined || envName === undefined) {
+        throw new Error("When 'args' is a string, 'encoding' and 'envName' must be provided")
+      }
+      filePath = args
+      fileEncoding = encoding
+      environmentName = envName
+    } else {
+      filePath = args.filePath
+      fileEncoding = args.encoding
+      environmentName = args.env
+    }
     const sourcesFiles = (
       await Promise.all(
-        Object.values(getActiveSources(env)).map(src =>
+        Object.values(getActiveSources(environmentName)).map(src =>
           src.getStaticFile({
             filePath,
-            encoding,
-            isTemplate,
-            hash,
+            encoding: fileEncoding,
+            isTemplate: _.isObject(args) ? args.isTemplate : undefined,
           }),
         ),
       )
@@ -213,7 +225,6 @@ const buildMultiEnvSource = (
                 encoding: staticFile.encoding,
                 env: envName,
                 isTemplate: staticFile.isTemplate,
-                hash: staticFile.hash,
               })) ?? staticFile,
           ),
         persistent,

@@ -26,6 +26,7 @@ import {
   GUIDE_SETTINGS_TYPE_NAME,
   BRAND_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME,
 } from '../constants'
 
 const PARAM_MATCH = /\{([\w_.]+)}/g
@@ -43,6 +44,7 @@ const SERVICE_URL_FOR_GUIDE: Record<string, string> = {
   [CATEGORY_TRANSLATION_TYPE_NAME]: '/hc/admin/categories/{_parent.0.value.value.id}/edit?translation_locale={locale}',
   [GUIDE_SETTINGS_TYPE_NAME]: '/hc/admin/general_settings',
   [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: '/hc/admin/language_settings',
+  [GUIDE_THEME_TYPE_NAME]: '/theming/theme/{id}',
 }
 
 const replaceUrlParamsBrand = (url: string, instance: InstanceElement): string =>

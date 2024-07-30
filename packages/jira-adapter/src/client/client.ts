@@ -211,6 +211,46 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     throw new Error('Failed to get GQL response')
   }
 
+  public async atlassianApiGet(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.get({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiPost(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.post({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiPut(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.put({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiDelete(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.delete({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
   public async getPrivate(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {

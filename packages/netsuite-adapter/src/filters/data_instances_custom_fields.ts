@@ -34,6 +34,8 @@ import { CUSTOM_FIELD, CUSTOM_FIELD_LIST, SOAP_SCRIPT_ID } from '../constants'
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
+const VALUE_ATTRIBUTE = 'value'
+
 const toCustomFieldItem = (fieldScriptId: string, fieldValue: Value): Value => ({
   attributes: {
     [SOAP_SCRIPT_ID]: fieldScriptId,
@@ -53,7 +55,7 @@ const transformNestedCustomFieldLists = (instance: InstanceElement): void => {
     ) {
       return {
         [PLATFORM_CORE_CUSTOM_FIELD]: value[CUSTOM_FIELD].map(item =>
-          toCustomFieldItem(item[SOAP_SCRIPT_ID], item.value),
+          toCustomFieldItem(item[SOAP_SCRIPT_ID], item[VALUE_ATTRIBUTE]),
         ),
       }
     }
@@ -81,7 +83,7 @@ const filterCreator: LocalFilterCreator = () => ({
             .map(async value => {
               const fieldName = toCustomFieldName(value[SOAP_SCRIPT_ID])
               const field = type.fields[fieldName]
-              return [fieldName, await castFieldValue(value.value, field)]
+              return [fieldName, await castFieldValue(value[VALUE_ATTRIBUTE], field)]
             })
             .toArray(),
         )

@@ -33,6 +33,8 @@ import {
   isAdditionChange,
   ListType,
   ReadOnlyElementsSource,
+  Field,
+  isField,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -283,6 +285,48 @@ describe('mergeWithHidden', () => {
 })
 
 describe('handleHiddenChanges', () => {
+  describe('modification/addition of Field', () => {
+    it('should return correct hidden and visible parts', async () => {
+      const fieldType = new ObjectType({
+        elemID: new ElemID('test', 'fieldType'),
+        annotationRefsOrTypes: {
+          stringValue: BuiltinTypes.STRING,
+          hiddenStringValue: BuiltinTypes.HIDDEN_STRING,
+        },
+      })
+      const objectType = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            refType: fieldType,
+            annotations: {
+              stringValue: 'visible',
+              hiddenStringValue: 'hidden',
+            },
+          },
+        },
+      })
+      const { field } = objectType.fields
+      const change: DetailedChange = {
+        id: field.elemID,
+        action: 'add',
+        data: { after: field },
+      }
+      const { hidden, visible } = await handleHiddenChanges(
+        [change],
+        mockState([objectType]),
+        createInMemoryElementSource(),
+      )
+      expect(hidden).toHaveLength(1)
+      const fieldHiddenPart = getChangeData(hidden[0]) as Field
+      expect(fieldHiddenPart).toSatisfy(isField)
+      expect(fieldHiddenPart.annotations).toEqual({ hiddenStringValue: 'hidden' })
+      expect(visible).toHaveLength(1)
+      const fieldVisiblePart = getChangeData(visible[0]) as Field
+      expect(fieldVisiblePart).toSatisfy(isField)
+      expect(fieldVisiblePart.annotations).toEqual({ stringValue: 'visible' })
+    })
+  })
   describe('hidden_string in instance annotations', () => {
     let instance: InstanceElement
     let instanceType: ObjectType

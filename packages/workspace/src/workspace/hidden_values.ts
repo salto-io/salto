@@ -206,7 +206,7 @@ export const removeHiddenFromElement = <T extends Element>(
 ): Promise<T> =>
   transformElement({
     element,
-    transformFunc: isInstanceElement(element) ? removeHiddenValue() : removeHidden(elementsSource),
+    transformFunc: isInstanceElement(element) || isField(element) ? removeHiddenValue() : removeHidden(elementsSource),
     strict: false,
     elementsSource,
     allowEmptyArrays: true,

@@ -285,7 +285,7 @@ describe('mergeWithHidden', () => {
 })
 
 describe('handleHiddenChanges', () => {
-  describe('modification/addition of Field', () => {
+  describe('added Field change with hidden annotation refType', () => {
     it('should return correct hidden and visible parts', async () => {
       const fieldType = new ObjectType({
         elemID: new ElemID('test', 'fieldType'),

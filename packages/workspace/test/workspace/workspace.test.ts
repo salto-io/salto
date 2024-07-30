@@ -915,7 +915,7 @@ describe('workspace', () => {
       },
       ['Records', 'staticFile', 'staticFileInstance'],
     )
-    it('should have right number of results when there is only a change in 1 static file', async () => {
+    const setUp = async (): Promise<void> => {
       const maps = new Map<string, remoteMap.RemoteMap<unknown>>()
       const inMemRemoteMapCreator =
         (): remoteMap.RemoteMapCreator =>
@@ -931,17 +931,6 @@ describe('workspace', () => {
       const otherStaticFiles = { [defaultFilePath]: Buffer.from('I am a little static file') }
       const mockStaticFileDirStore = mockDirStore(undefined, undefined, otherStaticFiles)
       const staticFilesSource = buildStaticFilesSource(mockStaticFileDirStore, staticFilesCache)
-      const otherChanges: DetailedChange[] = [
-        // modify static file
-        {
-          id: new ElemID('salesforce', 'staticFile', 'instance', 'staticFileInstance', 'staticFile'),
-          action: 'modify',
-          data: {
-            before: beforeStaticFile,
-            after: afterStaticFile,
-          },
-        },
-      ]
       const otherNaclFiles = {
         'staticFile.nacl': `
         
@@ -969,8 +958,21 @@ salesforce.staticFile staticFileInstance {
         undefined,
         inMemRemoteMapCreator(),
       )
-
-      const otherUpdateNaclFileResults = await workspace.updateNaclFiles(otherChanges)
+    }
+    it('should have right number of results when there is only a change in 1 static file', async () => {
+      await setUp()
+      const changes: DetailedChange[] = [
+        // modify static file
+        {
+          id: new ElemID('salesforce', 'staticFile', 'instance', 'staticFileInstance', 'staticFile'),
+          action: 'modify',
+          data: {
+            before: beforeStaticFile,
+            after: afterStaticFile,
+          },
+        },
+      ]
+      const otherUpdateNaclFileResults = await workspace.updateNaclFiles(changes)
       expect(otherUpdateNaclFileResults).toEqual({
         naclFilesChangesCount: 1,
         stateOnlyChangesCount: 0,

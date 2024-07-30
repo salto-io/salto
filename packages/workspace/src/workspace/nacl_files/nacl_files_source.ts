@@ -313,15 +313,7 @@ const createNaclFilesState = async (
     await remoteMapCreator<Element>({
       namespace: getRemoteMapNamespace('merged', sourceName),
       serialize: async element => serialize([element], 'keepRef'),
-      deserialize: async data =>
-        deserializeSingleElement(data, async sf =>
-          staticFilesSource.getStaticFile({
-            filepath: sf.filepath,
-            encoding: sf.encoding,
-            isTemplate: sf.isTemplate,
-            hash: sf.hash,
-          }),
-        ),
+      deserialize: async data => deserializeSingleElement(data, async sf => staticFilesSource.getStaticFile(sf)),
       persistent,
     }),
   ),
@@ -812,7 +804,7 @@ const buildNaclFilesSource = (
     const naclFiles = _.uniq(
       await awu(changes)
         .map(change => change.id)
-        .flatMap(async elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
+        .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
         .toArray(),
     )
 

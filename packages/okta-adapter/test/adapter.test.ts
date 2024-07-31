@@ -636,6 +636,73 @@ describe('adapter', () => {
         )
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+
+      it('should successfully activate an authorization server policy', async () => {
+        // TODO: it looks like this action sends an unexpected PUT request to the server
+        // This should be fixed when upgrading to the new infra.
+        loadMockReplies('authorization_server_policy_activate.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: INACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserverpolicy-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully deactivate an authorization server policy', async () => {
+        // TODO: it looks like this action sends an unexpected PUT request to the server
+        // This should be fixed when upgrading to the new infra.
+        loadMockReplies('authorization_server_policy_deactivate.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserverpolicy-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
 
     describe('deploy group', () => {

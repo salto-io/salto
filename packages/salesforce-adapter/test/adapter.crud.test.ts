@@ -52,20 +52,27 @@ import {
 import Connection from '../src/client/jsforce'
 import { CustomObject } from '../src/client/types'
 import mockAdapter from './adapter'
-import { createValueSetEntry, createCustomObjectType, nullProgressReporter } from './utils'
+import {
+  createValueSetEntry,
+  createCustomObjectType,
+  nullProgressReporter,
+  MockProgressReporter,
+  createMockProgressReporter,
+} from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
-import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
+import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterPrefix } from '../src/constants'
 
 const { makeArray } = collections.array
 
 describe('SalesforceAdapter CRUD', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
+  let progressReporter: MockProgressReporter
 
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
@@ -97,6 +104,7 @@ describe('SalesforceAdapter CRUD', () => {
   }
 
   beforeEach(() => {
+    progressReporter = createMockProgressReporter()
     ;({ connection, adapter } = mockAdapter({
       adapterParams: {
         config: {
@@ -451,6 +459,8 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       describe('when preforming quick deploy', () => {
+        const POLLING_INTERVAL = 10
+
         let result: DeployResult
         describe('when the received hash is corresponding with the calculated hash', () => {
           beforeEach(async () => {
@@ -458,6 +468,9 @@ describe('SalesforceAdapter CRUD', () => {
               adapterParams: {
                 config: {
                   client: {
+                    polling: {
+                      interval: POLLING_INTERVAL,
+                    },
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
@@ -469,23 +482,29 @@ describe('SalesforceAdapter CRUD', () => {
               },
             }))
             connection.metadata.deployRecentValidation.mockReturnValue(
-              mockDeployResult({
-                success: true,
-                componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
-                checkOnly: true,
-              }),
+              mockDeployResult(
+                {
+                  success: true,
+                  componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+                  checkOnly: true,
+                },
+                POLLING_INTERVAL * 2,
+              ),
             )
             result = await adapter.deploy({
               changeGroup: {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
-              progressReporter: nullProgressReporter,
+              progressReporter,
             })
           })
           it('should deploy', () => {
             expect(result.errors).toBeEmpty()
             expect(result.appliedChanges).toHaveLength(1)
+            expect(progressReporter.getReportedMessages()).toSatisfyAny(message =>
+              message.startsWith(ProgressReporterPrefix.QuickDeploy),
+            )
           })
         })
 
@@ -524,6 +543,9 @@ describe('SalesforceAdapter CRUD', () => {
               adapterParams: {
                 config: {
                   client: {
+                    polling: {
+                      interval: POLLING_INTERVAL,
+                    },
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
@@ -537,17 +559,30 @@ describe('SalesforceAdapter CRUD', () => {
             connection.metadata.deployRecentValidation.mockImplementation(() => {
               throw new Error('INVALID_TOKEN')
             })
+            connection.metadata.deploy.mockReturnValue(
+              mockDeployResult(
+                {
+                  success: true,
+                  componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+                  checkOnly: true,
+                },
+                POLLING_INTERVAL * 2,
+              ),
+            )
             const { errors } = await adapter.deploy({
               changeGroup: {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
-              progressReporter: nullProgressReporter,
+              progressReporter,
             })
             expect(errors).toBeEmpty()
           })
           it('should fallback to the regular deploy', () => {
             expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+            expect(progressReporter.getReportedMessages()).toSatisfyAny(message =>
+              message.startsWith(ProgressReporterPrefix.QuickDeployFailed),
+            )
           })
         })
       })

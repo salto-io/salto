@@ -406,3 +406,15 @@ export const emptyLastChangeDateOfTypesWithNestedInstances = (): LastChangeDateO
 export const nullProgressReporter: ProgressReporter = {
   reportProgress: () => {},
 }
+
+export type MockProgressReporter = ProgressReporter & { getReportedMessages: () => string[] }
+
+export const createMockProgressReporter = (): MockProgressReporter => {
+  const reportedMessages: string[] = []
+  return {
+    reportProgress: progress => {
+      reportedMessages.push(progress.message)
+    },
+    getReportedMessages: () => reportedMessages,
+  }
+}

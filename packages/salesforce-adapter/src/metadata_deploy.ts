@@ -53,6 +53,7 @@ import {
   API_NAME_SEPARATOR,
   CUSTOM_FIELD,
   CUSTOM_OBJECT_TYPE_NAME,
+  ProgressReporterPrefix,
   GLOBAL_VALUE_SET_SUFFIX,
   INSTANCE_FULL_NAME_FIELD,
   SalesforceArtifacts,
@@ -431,23 +432,34 @@ const quickDeployOrDeploy = async (
   quickDeployParams?: QuickDeployParams,
   progressReporter?: ProgressReporter,
 ): Promise<SFDeployResult> => {
-  const progressReportCallback = async (deployResult: SFDeployResult): Promise<void> => {
-    if (!progressReporter) {
-      return
+  const createProgressReporterCallback =
+    (prefixMessage?: string) =>
+    async (deployResult: SFDeployResult): Promise<void> => {
+      if (!progressReporter) {
+        return
+      }
+      const progressMessage = await deployProgressMessage(client, deployResult)
+      progressReporter.reportProgress({
+        message: prefixMessage ? `${prefixMessage}: ${progressMessage}` : progressMessage,
+      })
     }
-    progressReporter.reportProgress({
-      message: await deployProgressMessage(client, deployResult),
-    })
-  }
 
   if (quickDeployParams !== undefined) {
     try {
-      return await client.quickDeploy(quickDeployParams.requestId)
+      return await client.quickDeploy(
+        quickDeployParams.requestId,
+        createProgressReporterCallback(ProgressReporterPrefix.QuickDeploy),
+      )
     } catch (e) {
       log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
+      return client.deploy(
+        pkgData,
+        { checkOnly },
+        createProgressReporterCallback(ProgressReporterPrefix.QuickDeployFailed),
+      )
     }
   }
-  return client.deploy(pkgData, { checkOnly }, progressReportCallback)
+  return client.deploy(pkgData, { checkOnly }, createProgressReporterCallback())
 }
 
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>

@@ -1184,6 +1184,10 @@ describe('adapter', () => {
           {
             id: group.value.id,
             priority: 2,
+            // These are synthetic fields that we copy IDs to, since reference expressions can't be configured as
+            // service IDs. We add them here to verify that they are not included in external requests.
+            appId: 'app-fakeid1',
+            groupId: 'group-fakeid1',
           },
           undefined,
           {

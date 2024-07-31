@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
+import { RateLimiterOptions } from './rate_limiter'
 
 export const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
@@ -29,13 +30,19 @@ export const DEFAULT_TIMEOUT_OPTS: Required<ClientTimeoutConfig> = {
 
 export const RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS = -1
 
-export const RATE_LIMIT_DEFAULT_MAX_CONCURRENT_CALLS = Infinity
-export const RATE_LIMIT_DEFAULT_MAX_CALLS_PER_INTERVAL = Infinity
-export const RATE_LIMIT_DEFAULT_CARRY_RUNNING_CALLS_OVER = true
-export const RATE_LIMIT_DEFAULT_INTERVAL_LENGTH_MS = 0
-export const RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS = 0
-export const RATE_LIMIT_DEFAULT_START_PAUSED = false
-export const RATE_LIMIT_DEFAULT_USE_BOTTLENECK = true
-export const RATE_LIMIT_DEFAULT_SHOULD_RETRY = (): boolean => false
-export const RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY = (): number => 0
-export const RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY = false
+export const RATE_LIMIT_DEFAULT_RETRY_OPTIONS = {
+  retryPredicate: (): boolean => false,
+  calculateRetryDelayMS: (): number => 0,
+  pauseDuringRetryDelay: false,
+}
+
+export const RATE_LIMIT_DEFAULT_OPTIONS: RateLimiterOptions = {
+  maxConcurrentCalls: Infinity,
+  maxCallsPerInterval: Infinity,
+  intervalLengthMS: 0,
+  carryRunningCallsOver: true,
+  delayMS: 0,
+  startPaused: false,
+  useBottleneck: true,
+  ...RATE_LIMIT_DEFAULT_RETRY_OPTIONS,
+}

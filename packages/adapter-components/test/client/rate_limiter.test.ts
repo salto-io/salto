@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS } from '../../src/client'
+import { RATE_LIMIT_DEFAULT_OPTIONS } from '../../src/client'
 import { RateLimiter, RateLimiterOptions } from '../../src/client/rate_limiter'
 
 describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck => {
@@ -71,7 +71,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
       { delayMS: 1, expected: 1 },
       { delayMS: 0, expected: 0 },
       { delayMS: -1, expected: 0 },
-      { delayMS: undefined, expected: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS },
+      { delayMS: undefined, expected: RATE_LIMIT_DEFAULT_OPTIONS.delayMS },
     ])('should handle boundary values for delayMS', ({ delayMS, expected }) => {
       const rateLimiter = new RateLimiter({ delayMS, useBottleneck })
       expect(rateLimiter.options.delayMS).toBe(expected)
@@ -263,86 +263,66 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
     })
   })
   describe('Configuring retry', () => {
-    it('should not retry if not configured.', async () => {
-      const errorMessage = 'Some error'
-      const throwingTask = jest.fn(() => {
+    const errorMessage = 'Some error'
+    const maxRetries = 2
+    const retryDelayMS = 50
+    const toleranceMS = 5
+
+    let throwingTask: () => Promise<never>
+    let retryPredicate: (numAttempts: number, error: Error) => boolean
+    let calculateRetryDelayMS: (numAttempts: number, error: Error) => number
+
+    beforeEach(() => {
+      throwingTask = jest.fn(async () => {
         throw new Error(errorMessage)
       })
+      retryPredicate = jest.fn(
+        (numAttempts: number, error: Error): boolean =>
+          error instanceof Error && error.message === errorMessage && numAttempts < maxRetries,
+      )
+      calculateRetryDelayMS = jest.fn((numAttempts: number, error: Error): number =>
+        error instanceof Error && error.message === errorMessage && numAttempts < maxRetries ? (numAttempts + 1) * retryDelayMS : 0,
+      )
+    })
+    it('should not retry if not configured.', async () => {
       await expect(DEFAULT_RATE_LIMITER.add(throwingTask)).rejects.toThrow(errorMessage)
       expect(DEFAULT_RATE_LIMITER.counters.retries).toEqual(0)
       expect(DEFAULT_RATE_LIMITER.counters.failed).toEqual(1)
     })
     it('should retry if configured.', async () => {
-      const errorMessage = 'Some error'
-      const maxAttempts = 3
-      const throwingTask = jest.fn(async () => {
-        throw new Error(errorMessage)
-      })
-      const retryPredicate = jest.fn(
-        (numAttempts: number, error: Error): boolean =>
-          error instanceof Error && error.message === errorMessage && numAttempts < maxAttempts,
-      )
       const rateLimiter = new RateLimiter({ retryPredicate, useBottleneck })
 
       await expect(rateLimiter.add(throwingTask)).rejects.toThrow(errorMessage)
-      expect(throwingTask).toHaveBeenCalledTimes(maxAttempts)
-      expect(retryPredicate).toHaveBeenCalledTimes(maxAttempts)
-      expect(rateLimiter.counters.retries).toEqual(maxAttempts - 1)
-      expect(rateLimiter.counters.failed).toEqual(maxAttempts)
-      expect(rateLimiter.counters.total).toEqual(maxAttempts)
-      expect(rateLimiter.counters.done).toEqual(maxAttempts)
+      expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(rateLimiter.counters.retries).toEqual(maxRetries)
+      expect(rateLimiter.counters.failed).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.total).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.done).toEqual(maxRetries + 1)
     })
     it('should delay between retries.', async () => {
-      const toleranceMS = 5
-      const errorMessage = 'Some error'
-      const retryDelayMS = 50
-      const maxAttempts = 3
-      const throwingTask = jest.fn(async () => {
-        throw new Error(errorMessage)
-      })
-      const retryPredicate = jest.fn(
-        (numAttempts: number, error: Error): boolean =>
-          error instanceof Error && error.message === errorMessage && numAttempts < maxAttempts,
-      )
-      const calculateRetryDelayMS = jest.fn((numAttempts: number, error: Error): number =>
-        error instanceof Error && error.message === errorMessage ? numAttempts * retryDelayMS : 0,
-      )
       const startTime = Date.now()
       const rateLimiter = new RateLimiter({ retryPredicate, calculateRetryDelayMS })
 
       await expect(rateLimiter.add(throwingTask)).rejects.toThrow(errorMessage)
       const timeElapsed = Date.now() - startTime
 
-      expect(throwingTask).toHaveBeenCalledTimes(maxAttempts)
-      expect(retryPredicate).toHaveBeenCalledTimes(maxAttempts)
-      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxAttempts - 1)
+      expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxRetries)
 
       let expectedTimeElapsed = 0
-      for (let index = 1; index < maxAttempts; index += 1) {
+      for (let index = 1; index <= maxRetries; index += 1) {
         expectedTimeElapsed += index * retryDelayMS
       }
       expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed - toleranceMS)
       expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
-      expect(rateLimiter.counters.retries).toEqual(maxAttempts - 1)
-      expect(rateLimiter.counters.failed).toEqual(maxAttempts)
-      expect(rateLimiter.counters.total).toEqual(maxAttempts)
-      expect(rateLimiter.counters.done).toEqual(maxAttempts)
+      expect(rateLimiter.counters.retries).toEqual(maxRetries)
+      expect(rateLimiter.counters.failed).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.total).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.done).toEqual(maxRetries + 1)
     })
     it('should delay between retries without affecting other jobs when pauseDuringRetryDelay==false.', async () => {
-      const toleranceMS = 5
-      const errorMessage = 'Some error'
-      const retryDelayMS = 50
-      const maxAttempts = 3
-      const throwingTask = jest.fn(async () => {
-        throw new Error(errorMessage)
-      })
-      const retryPredicate = jest.fn(
-        (numAttempts: number, error: Error): boolean =>
-          error instanceof Error && error.message === errorMessage && numAttempts < maxAttempts,
-      )
-      const calculateRetryDelayMS = jest.fn((numAttempts: number, error: Error): number =>
-        error instanceof Error && error.message === errorMessage ? numAttempts * retryDelayMS : 0,
-      )
       const startTime = Date.now()
       const rateLimiter = new RateLimiter({
         retryPredicate,
@@ -361,99 +341,86 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
       const timeElapsed = Date.now() - startTime
 
       expect(timingTask).toHaveBeenCalledTimes(1)
-      expect(throwingTask).toHaveBeenCalledTimes(maxAttempts)
-      expect(retryPredicate).toHaveBeenCalledTimes(maxAttempts)
-      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxAttempts - 1)
+      expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxRetries)
 
       let expectedTimeElapsed = 0
-      for (let index = 1; index < maxAttempts; index += 1) {
+      for (let index = 1; index <= maxRetries; index += 1) {
         expectedTimeElapsed += index * retryDelayMS
       }
       expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed - toleranceMS)
       expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
-      expect(rateLimiter.counters.retries).toEqual(maxAttempts - 1)
-      expect(rateLimiter.counters.failed).toEqual(maxAttempts)
-      expect(rateLimiter.counters.total).toEqual(maxAttempts + 1)
-      expect(rateLimiter.counters.done).toEqual(maxAttempts + 1)
+      expect(rateLimiter.counters.retries).toEqual(maxRetries)
+      expect(rateLimiter.counters.failed).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.total).toEqual(maxRetries + 1 + 1)
+      expect(rateLimiter.counters.done).toEqual(maxRetries + 1 + 1)
       expect(rateLimiter.counters.succeeded).toEqual(1)
+    })
+    it('should pause entire queue on retry if configured to do so', async () => {
+      if (!useBottleneck) {
+        const startTime = Date.now()
+        const rateLimiter = new RateLimiter({
+          retryPredicate,
+          calculateRetryDelayMS,
+          pauseDuringRetryDelay: true,
+          useBottleneck,
+          maxConcurrentCalls: 1,
+          delayMS: 0,
+          startPaused: true,
+        })
+        const timingTask = jest.fn(async () => Date.now() - startTime)
+
+        const thrownRes = rateLimiter.add(throwingTask)
+        const timingRes = rateLimiter.add(timingTask)
+        rateLimiter.resume()
+
+        await expect(thrownRes).rejects.toThrow(errorMessage)
+        expect(await timingRes).toBeGreaterThanOrEqual(retryDelayMS)
+
+        const timeElapsed = Date.now() - startTime
+
+        expect(timingTask).toHaveBeenCalledTimes(1)
+        expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
+        expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
+        expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxRetries + 1)
+
+        let expectedTimeElapsed = 0
+        for (let index = 1; index <= maxRetries; index += 1) {
+          expectedTimeElapsed += index * retryDelayMS
+        }
+        expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed)
+        expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
+        expect(rateLimiter.counters.retries).toEqual(maxRetries)
+        expect(rateLimiter.counters.failed).toEqual(maxRetries + 1)
+        expect(rateLimiter.counters.total).toEqual(maxRetries + 1 + 1)
+        expect(rateLimiter.counters.done).toEqual(maxRetries + 1 + 1)
+        expect(rateLimiter.counters.succeeded).toEqual(1)
+      }
     })
   })
 })
 
-describe('RateLimiter PQueue only', () => {
-  describe('performance', () => {
-    const ratePerSecond = 100000
-
-    it.each([1, 10, 100, 1000, 10000, 100000, 1000000])(
-      'should be performant and not add a big overhead between invocations (numTasks: %s).',
-      async numTasks => {
-        const startTime = Date.now()
-        const mockTask = jest.fn(async () => true)
-        const rateLimiter = new RateLimiter({ delayMS: 0, useBottleneck: false })
-        const tasks = Array.from({ length: numTasks }, () => mockTask)
-        await Promise.all(rateLimiter.addAll(tasks))
-        const timeElapsed = Date.now() - startTime
-        const expectedTimeElapsedMS = Math.max((numTasks / ratePerSecond) * 1000, 1)
-        const toleranceThresholdMS = expectedTimeElapsedMS * 0.33
-        expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsedMS + toleranceThresholdMS)
-        // This test will fail a lot of times because of different hardware. We want to at least be certain of a lower threshold of speed.
-        // expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsedMS - toleranceThresholdMS)
-      },
-    )
+describe('performance', () => {
+  const ratePerSecond = 100000
+  beforeEach(() => {
+    jest.resetAllMocks() // Reset all mocks after each test
+    jest.restoreAllMocks()
   })
-  describe('PQueue only features', () => {
-    it('should pause entire queue on retry if configured to do so', async () => {
-      const toleranceMS = 5
-      const errorMessage = 'Some error'
-      const retryDelayMS = 50
-      const maxAttempts = 3
-
-      const retryPredicate = jest.fn(
-        (numAttempts: number, error: Error): boolean =>
-          error instanceof Error && error.message === errorMessage && numAttempts < maxAttempts,
-      )
-      const calculateRetryDelayMS = jest.fn((numAttempts: number, error: Error): number =>
-        error instanceof Error && error.message === errorMessage ? numAttempts * retryDelayMS : 0,
-      )
+  it.each([100000, 1000000])(
+    'should be performant and not add a big overhead between invocations (numTasks: %s).',
+    async numTasks => {
       const startTime = Date.now()
-      const rateLimiter = new RateLimiter({
-        retryPredicate,
-        calculateRetryDelayMS,
-        pauseDuringRetryDelay: true,
-        useBottleneck: false,
-        maxConcurrentCalls: 1,
-        delayMS: 0,
-        startPaused: true,
-      })
-      const timingTask = jest.fn(async () => Date.now() - startTime)
-      const throwingTask = jest.fn(async () => {
-        throw new Error(errorMessage)
-      })
-      const thrownRes = rateLimiter.add(throwingTask)
-      const timingRes = rateLimiter.add(timingTask)
-      rateLimiter.resume()
-
-      await expect(thrownRes).rejects.toThrow(errorMessage)
-      expect(await timingRes).toBeGreaterThanOrEqual(retryDelayMS)
-
+      const mockTask = jest.fn(async () => true)
+      const rateLimiter = new RateLimiter({ delayMS: 0, useBottleneck: false })
+      const tasks = Array.from({ length: numTasks }, () => mockTask)
+      await Promise.all(rateLimiter.addAll(tasks))
       const timeElapsed = Date.now() - startTime
-
-      expect(timingTask).toHaveBeenCalledTimes(1)
-      expect(throwingTask).toHaveBeenCalledTimes(maxAttempts)
-      expect(retryPredicate).toHaveBeenCalledTimes(maxAttempts * 2)
-      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxAttempts - 1)
-
-      let expectedTimeElapsed = 0
-      for (let index = 1; index < maxAttempts; index += 1) {
-        expectedTimeElapsed += index * retryDelayMS
-      }
-      expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed)
-      expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
-      expect(rateLimiter.counters.retries).toEqual(maxAttempts - 1)
-      expect(rateLimiter.counters.failed).toEqual(maxAttempts)
-      expect(rateLimiter.counters.total).toEqual(maxAttempts + 1)
-      expect(rateLimiter.counters.done).toEqual(maxAttempts + 1)
-      expect(rateLimiter.counters.succeeded).toEqual(1)
-    })
-  })
+      const expectedTimeElapsedMS = Math.max((numTasks / ratePerSecond) * 1000, 1)
+      const toleranceThresholdMS = expectedTimeElapsedMS * 0.33
+      expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsedMS + toleranceThresholdMS)
+      // This test will fail a lot of times because of different hardware. We want to at least be certain of a lower threshold of speed.
+      // expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsedMS - toleranceThresholdMS)
+    },
+  )
 })

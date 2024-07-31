@@ -15,26 +15,42 @@
  */
 import PQueue from 'p-queue'
 import Bottleneck from 'bottleneck'
-import {
-  RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
-  RATE_LIMIT_DEFAULT_CARRY_RUNNING_CALLS_OVER,
-  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
-  RATE_LIMIT_DEFAULT_INTERVAL_LENGTH_MS,
-  RATE_LIMIT_DEFAULT_MAX_CALLS_PER_INTERVAL,
-  RATE_LIMIT_DEFAULT_MAX_CONCURRENT_CALLS,
-  RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
-  RATE_LIMIT_DEFAULT_SHOULD_RETRY,
-  RATE_LIMIT_DEFAULT_START_PAUSED,
-  RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
-} from './constants'
+import _ from 'lodash'
+import { RATE_LIMIT_DEFAULT_OPTIONS } from './constants'
 
-type TaskReturnType<T> = Promise<T>
-type TaskType<T> = () => TaskReturnType<T>
+/**
+ * Type for specifying retry options for the RateLimiter
+ */
+export type RateLimiterRetryOptions = {
+  /**
+   * Predicate to determine if a task should be retried based on the number of attempts and the error encountered.
+   * @param numAttempts The current attempt number.
+   * @param error The error encountered during the task execution.
+   * @returns A boolean indicating whether the task should be retried.
+   * @default () => false
+   */
+  retryPredicate: (numAttempts: number, error: Error) => boolean
+
+  /**
+   * Function to calculate the delay before retrying a task based on the number of attempts and the error encountered.
+   * @param numAttempts The current attempt number.
+   * @param error The error encountered during the task execution.
+   * @returns The delay in milliseconds before the next retry.
+   * @default () => 0
+   */
+  calculateRetryDelayMS: (numAttempts: number, error: Error) => number
+
+  /**
+   * Flag indicating whether to pause the queue for the delay calculated.
+   * @default false
+   */
+  pauseDuringRetryDelay: boolean
+}
 
 /**
  * Type for specifying options for the RateLimiter.
  */
-export type RateLimiterOptions = {
+export type RateLimiterOptions = RateLimiterRetryOptions & {
   /**
    * The maximum number of concurrent calls allowed.
    * If set to 0 or a negative number, it will be treated as Infinity.
@@ -84,30 +100,6 @@ export type RateLimiterOptions = {
    * @default true
    */
   useBottleneck: boolean
-
-  /**
-   * Predicate to determine if a task should be retried based on the number of attempts and the error encountered.
-   * @param attempt The current attempt number.
-   * @param error The error encountered during the task execution.
-   * @returns A boolean indicating whether the task should be retried.
-   * @default () => false
-   */
-  retryPredicate: (attempt: number, error: Error) => boolean
-
-  /**
-   * Function to calculate the delay before retrying a task based on the number of attempts and the error encountered.
-   * @param attempt The current attempt number.
-   * @param error The error encountered during the task execution.
-   * @returns The delay in milliseconds before the next retry.
-   * @default () => 0
-   */
-  calculateRetryDelayMS: (attempt: number, error: Error) => number
-
-  /**
-   * Flag indicating whether to pause the queue for the delay calculated.
-   * @default false
-   */
-  pauseDuringRetryDelay: boolean
 }
 
 /**
@@ -141,8 +133,11 @@ export class RateLimiter {
    * @param options Configuration options for the rate limiter.
    */
   constructor(options: Partial<RateLimiterOptions> = {}) {
-    const maxCallsPerInterval = toValidNumber(RATE_LIMIT_DEFAULT_MAX_CALLS_PER_INTERVAL, options.maxCallsPerInterval)
-    const intervalLengthMS = toValidNumber(RATE_LIMIT_DEFAULT_INTERVAL_LENGTH_MS, options.intervalLengthMS)
+    const maxCallsPerInterval = toValidNumber(
+      RATE_LIMIT_DEFAULT_OPTIONS.maxCallsPerInterval,
+      options.maxCallsPerInterval,
+    )
+    const intervalLengthMS = toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.intervalLengthMS, options.intervalLengthMS)
 
     if (
       (maxCallsPerInterval !== Infinity && intervalLengthMS === 0) ||
@@ -152,18 +147,12 @@ export class RateLimiter {
         'When setting either maxCallsPerInterval or intervalLengthMS to a valid finite number bigger than 0, the other must be set as well.',
       )
     }
+    const combinedOptions = _.defaults({ maxCallsPerInterval, intervalLengthMS }, options, RATE_LIMIT_DEFAULT_OPTIONS)
 
     this.internalOptions = {
-      maxConcurrentCalls: toValidNumber(RATE_LIMIT_DEFAULT_MAX_CONCURRENT_CALLS, options.maxConcurrentCalls),
-      maxCallsPerInterval,
-      intervalLengthMS,
-      carryRunningCallsOver: options.carryRunningCallsOver ?? RATE_LIMIT_DEFAULT_CARRY_RUNNING_CALLS_OVER,
-      delayMS: toValidNumber(RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS, options.delayMS),
-      startPaused: options.startPaused ?? RATE_LIMIT_DEFAULT_START_PAUSED,
-      useBottleneck: options.useBottleneck ?? RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
-      retryPredicate: options.retryPredicate ?? RATE_LIMIT_DEFAULT_SHOULD_RETRY,
-      calculateRetryDelayMS: options.calculateRetryDelayMS ?? RATE_LIMIT_DEFAULT_CALCULATE_RETRY_DELAY,
-      pauseDuringRetryDelay: options.pauseDuringRetryDelay ?? RATE_LIMIT_DEFAULT_PAUSE_DURING_RETRY_DELAY,
+      ...combinedOptions,
+      maxConcurrentCalls: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.maxConcurrentCalls, options.maxConcurrentCalls),
+      delayMS: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.delayMS, options.delayMS),
     }
 
     if (
@@ -234,7 +223,7 @@ export class RateLimiter {
    * @param task The task to be wrapped and delayed.
    * @returns A function that returns a promise resolving to the result of the task.
    */
-  private getDelayedTask<T>(task: TaskType<T>): TaskType<T> {
+  private getDelayedTask<T>(task: () => Promise<T>): () => Promise<T> {
     const delayedTask = async (): Promise<T> => {
       if (this.internalOptions.delayMS > 0) {
         await new Promise(resolve => setTimeout(resolve, this.nextDelay()))
@@ -249,16 +238,15 @@ export class RateLimiter {
    * @param task The task to be wrapped with bookkeeping.
    * @returns A function that returns a promise resolving to the result of the task.
    */
-  private wrapWithBookKeeping<T>(task: TaskType<T>, isRetry: boolean = false): TaskType<T> {
+  private wrapWithBookKeeping<T>(task: () => Promise<T>, isRetry: boolean = false): () => Promise<T> {
     return async (): Promise<T> => {
       this.internalCounters.pending -= 1
       this.internalCounters.running += 1
       if (isRetry) {
         this.internalCounters.retries += 1
       }
-      let res
       try {
-        res = await task()
+        const res = await task()
         this.internalCounters.succeeded += 1
         return res
       } catch (e) {
@@ -271,47 +259,56 @@ export class RateLimiter {
     }
   }
 
-  private wrapWithPauseOnFail<T>(task: TaskType<T>, numAttempts: number): TaskType<T> {
+  /**
+   * Wraps a task to pause the queue on failure if necessary.
+   * @param task The task to be wrapped.
+   * @param numAttempts The number of attempts made so far.
+   * @returns A function that returns a promise resolving to the result of the task.
+   */
+  private wrapWithPauseOnFail<T>(task: () => Promise<T>, numAttempts: number): () => Promise<T> {
     return async () => {
       try {
         return await task()
       } catch (e) {
-        if (this.internalOptions.retryPredicate(numAttempts, e)) {
-          const delay = this.internalOptions.calculateRetryDelayMS(numAttempts, e)
-          if (delay > 0) {
-            this.pause(delay)
-          }
+        const delay = this.internalOptions.calculateRetryDelayMS(numAttempts, e)
+        if (delay > 0) {
+          this.pause(delay)
         }
         throw e
       }
     }
   }
 
-  private async recursiveAdd<T>(task: TaskType<T>, numAttempts: number): TaskReturnType<T> {
-    let res: TaskReturnType<T>
+  /**
+   * Recursively attempts to add a task to the queue, retrying if necessary.
+   * @param task The task to be added.
+   * @param numRetries The number of retry attempts made so far, defaults to 0.
+   * @returns A promise that resolves when the task is completed.
+   */
+  private async recursiveAdd<T>(task: () => Promise<T>, numRetries: number = 0): Promise<T> {
     this.internalCounters.total += 1
     this.internalCounters.pending += 1
-    const bookKeepingWrap = this.wrapWithBookKeeping(this.getDelayedTask(task), numAttempts > 1)
+    const bookKeepingWrap = this.wrapWithBookKeeping(this.getDelayedTask(task), numRetries > 0)
     const wrappedTask = this.internalOptions.pauseDuringRetryDelay
-      ? this.wrapWithPauseOnFail(bookKeepingWrap, numAttempts)
+      ? this.wrapWithPauseOnFail(bookKeepingWrap, numRetries)
       : bookKeepingWrap
     try {
-      res = this.internalOptions.useBottleneck
+      const res = this.internalOptions.useBottleneck
         ? (this.queue as Bottleneck).schedule(wrappedTask)
         : (this.queue as PQueue).add(wrappedTask)
       return await res
     } catch (e) {
-      if (!this.internalOptions.retryPredicate(numAttempts, e)) {
+      if (!this.internalOptions.retryPredicate(numRetries, e)) {
         throw e
       }
 
       if (!this.internalOptions.pauseDuringRetryDelay) {
-        const delay = this.internalOptions.calculateRetryDelayMS(numAttempts, e)
+        const delay = this.internalOptions.calculateRetryDelayMS(numRetries, e)
         if (delay > 0) {
           await new Promise(resolve => setTimeout(resolve, delay))
         }
       }
-      return this.recursiveAdd(task, numAttempts + 1)
+      return this.recursiveAdd(task, numRetries + 1)
     }
   }
 
@@ -321,8 +318,8 @@ export class RateLimiter {
    * @param task The task to be added to the queue.
    * @returns A promise that resolves when the task is completed.
    */
-  async add<T>(task: TaskType<T>): TaskReturnType<T> {
-    return this.recursiveAdd(task, 1)
+  async add<T>(task: () => Promise<T>): Promise<T> {
+    return this.recursiveAdd(task)
   }
 
   /**
@@ -330,7 +327,7 @@ export class RateLimiter {
    * @param tasks The tasks to be added to the queue.
    * @returns A promise that resolves when all tasks are completed.
    */
-  addAll<T>(tasks: Array<TaskType<T>>): TaskReturnType<T>[] {
+  addAll<T>(tasks: Array<() => Promise<T>>): Promise<T>[] {
     return tasks.map(task => this.add(task))
   }
 
@@ -339,7 +336,7 @@ export class RateLimiter {
    * @param fn The asynchronous function to be wrapped.
    * @returns The wrapped function.
    */
-  wrap<T extends unknown[], R>(fn: (...args: T) => TaskReturnType<R>): (...args: T) => TaskReturnType<R> {
+  wrap<T extends unknown[], R>(fn: (...args: T) => Promise<R>): (...args: T) => Promise<R> {
     return (...args: T) => this.add(() => fn(...args))
   }
 
@@ -348,9 +345,7 @@ export class RateLimiter {
    * @param fns The asynchronous functions to be wrapped.
    * @returns The wrapped functions.
    */
-  wrapAll<T extends unknown[], R>(
-    fns: Array<(...args: T) => TaskReturnType<R>>,
-  ): Array<(...args: T) => TaskReturnType<R>> {
+  wrapAll<T extends unknown[], R>(fns: Array<(...args: T) => Promise<R>>): Array<(...args: T) => Promise<R>> {
     return fns.map(fn => this.wrap(fn))
   }
 
@@ -366,6 +361,9 @@ export class RateLimiter {
 
   /**
    * Pauses the processing of tasks in the queue.
+   * If a duration is provided, the queue will automatically resume after the specified time.
+   * This method is not supported when using Bottleneck as the underlying queue.
+   * @param time The duration in milliseconds for which to pause the queue. If not provided, the queue will remain paused until `resume` is called.
    */
   pause(time?: number): void {
     if (this.queue instanceof Bottleneck) {

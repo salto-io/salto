@@ -13,9 +13,7 @@
       "system": false,
       "conditions": {
         "clients": {
-          "include": [
-            "ALL_CLIENTS"
-          ]
+          "include": ["ALL_CLIENTS"]
         }
       },
       "created": "2024-07-31T11:05:06.000Z",
@@ -24,27 +22,19 @@
         "self": {
           "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1",
           "hints": {
-            "allow": [
-              "GET",
-              "PUT",
-              "DELETE"
-            ]
+            "allow": ["GET", "PUT", "DELETE"]
           }
         },
         "rules": {
           "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/rules",
           "hints": {
-            "allow": [
-              "GET"
-            ]
+            "allow": ["GET"]
           }
         },
         "deactivate": {
           "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/lifecycle/deactivate",
           "hints": {
-            "allow": [
-              "POST"
-            ]
+            "allow": ["POST"]
           }
         }
       },

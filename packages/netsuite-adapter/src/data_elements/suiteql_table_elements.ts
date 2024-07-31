@@ -538,7 +538,7 @@ const getSavedSearchInternalIdsMapFromColumn =
     return internalIdsMap
   }
 
-const ADDITIONAL_QUERIES: Record<AdditionalQueryName, ReturnType<typeof getSavedSearchInternalIdsMap>> = {
+export const ADDITIONAL_QUERIES: Record<AdditionalQueryName, ReturnType<typeof getSavedSearchInternalIdsMap>> = {
   [TAX_SCHEDULE]: getSavedSearchInternalIdsMap(TAX_SCHEDULE),
   [PROJECT_EXPENSE_TYPE]: getSavedSearchInternalIdsMap(PROJECT_EXPENSE_TYPE),
   [ALLOCATION_TYPE]: getSavedSearchInternalIdsMapFromColumn('resourceAllocation', ALLOCATION_TYPE),

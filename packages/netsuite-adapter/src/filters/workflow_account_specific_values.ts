@@ -122,6 +122,16 @@ type ResolvedAccountSpecificValuesResult = {
   missingInternalIds: MissingInternalId[]
 }
 
+const ADDITIONAL_INTERNAL_ID_TO_TYPES: Record<string, SuiteQLTableName | AdditionalQueryName> = {
+  '-192': 'shipItem',
+  '-3': 'vendor',
+  '-104': 'entityStatus',
+  '-320': 'supportCaseStatus',
+  '-166': 'employeeStatus',
+  '-253': 'accountingBook',
+  '-517': 'jobResourceRole',
+}
+
 const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, SuiteQLTableName | AdditionalQueryName> = {
   // STDBODY fields
   STDBODYACCOUNT: 'account',
@@ -371,6 +381,9 @@ const getQueryRecordType = (path: ElemID): QueryRecordType | undefined => {
   return QUERY_RECORD_TYPES[path.createParentID().name as QueryRecordType]
 }
 
+const getTypesFromInternalId = (typeInternalId: string): string[] =>
+  INTERNAL_ID_TO_TYPES[typeInternalId] ?? ADDITIONAL_INTERNAL_ID_TO_TYPES[typeInternalId] ?? []
+
 const getQueryRecordFieldType = (
   instance: InstanceElement,
   value: Values,
@@ -411,7 +424,7 @@ const getQueryRecordFieldType = (
   const suiteQLTableName =
     suiteQLTablesMap[fieldType] !== undefined
       ? fieldType
-      : (INTERNAL_ID_TO_TYPES[fieldType] ?? []).find(typeName => suiteQLTablesMap[typeName] !== undefined)
+      : getTypesFromInternalId(fieldType).find(typeName => suiteQLTablesMap[typeName] !== undefined)
 
   if (suiteQLTableName === undefined) {
     log.warn('could not find SuiteQL table instance %s', fieldType)

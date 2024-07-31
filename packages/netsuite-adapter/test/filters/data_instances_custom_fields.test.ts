@@ -21,28 +21,35 @@ import { PLATFORM_CORE_CUSTOM_FIELD } from '../../src/client/suiteapp_client/con
 import { LocalFilterOpts } from '../../src/filter'
 
 describe('data_instances_custom_fields', () => {
+  const customFieldListType = new ObjectType({ elemID: new ElemID(NETSUITE, CUSTOM_FIELD_LIST) })
+  const addressType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'address'),
+    fields: {
+      [CUSTOM_FIELD_LIST]: { refType: customFieldListType },
+    },
+  })
+  const customerType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'customer'),
+    fields: {
+      custom_someId: { refType: BuiltinTypes.NUMBER },
+      address: { refType: addressType },
+    },
+    annotations: { source: 'soap' },
+  })
+
   describe('onFetch', () => {
     let instance: InstanceElement
-
     beforeEach(() => {
-      instance = new InstanceElement(
-        'name',
-        new ObjectType({
-          elemID: new ElemID(NETSUITE, 'Customer'),
-          fields: { custom_someId: { refType: BuiltinTypes.NUMBER } },
-          annotations: { source: 'soap' },
-        }),
-        {
-          [CUSTOM_FIELD_LIST]: {
-            customField: [
-              {
-                value: '123',
-                scriptId: 'someId',
-              },
-            ],
-          },
+      instance = new InstanceElement('name', customerType, {
+        [CUSTOM_FIELD_LIST]: {
+          customField: [
+            {
+              value: '123',
+              scriptId: 'someId',
+            },
+          ],
         },
-      )
+      })
     })
     it('should add an integer field', async () => {
       await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
@@ -58,21 +65,32 @@ describe('data_instances_custom_fields', () => {
   })
 
   describe('preDeploy', () => {
-    const type = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'Customer'),
-      annotations: { source: 'soap' },
-    })
     let instance: InstanceElement
     beforeEach(() => {
-      instance = new InstanceElement('name', type, {
+      instance = new InstanceElement('name', customerType, {
         custom_a: true,
         custom_b: 'string',
         custom_c: 1.5,
         custom_d: '2020-05-02T13:44:31.000-07:00',
-        custom_e: {},
+        custom_e: { internalId: '1' },
         custom_f: 1,
-        custom_g: [{}],
+        custom_g: [{ internalId: '1' }],
         custom_h: '2020-05-02T13:44:31.000Z',
+        address: {
+          country: '_unitedStates',
+          [CUSTOM_FIELD_LIST]: {
+            customField: [
+              {
+                value: true,
+                scriptId: 'custrecord_address_field',
+              },
+              {
+                value: 'test',
+                scriptId: 'custrecord_address_text_field',
+              },
+            ],
+          },
+        },
       })
     })
     it('should convert all custom fields to customFieldList on instance addition', async () => {
@@ -113,7 +131,7 @@ describe('data_instances_custom_fields', () => {
                 scriptId: 'e',
                 'xsi:type': SOAP_FIELDS_TYPES.SELECT,
               },
-              'platformCore:value': {},
+              'platformCore:value': { internalId: '1' },
             },
             {
               attributes: {
@@ -127,7 +145,7 @@ describe('data_instances_custom_fields', () => {
                 scriptId: 'g',
                 'xsi:type': SOAP_FIELDS_TYPES.MULTISELECT,
               },
-              'platformCore:value': [{}],
+              'platformCore:value': [{ internalId: '1' }],
             },
             {
               attributes: {
@@ -137,6 +155,27 @@ describe('data_instances_custom_fields', () => {
               'platformCore:value': '2020-05-02T13:44:31.000Z',
             },
           ],
+        },
+        address: {
+          country: '_unitedStates',
+          [CUSTOM_FIELD_LIST]: {
+            [PLATFORM_CORE_CUSTOM_FIELD]: [
+              {
+                attributes: {
+                  scriptId: 'custrecord_address_field',
+                  'xsi:type': SOAP_FIELDS_TYPES.BOOLEAN,
+                },
+                'platformCore:value': true,
+              },
+              {
+                attributes: {
+                  scriptId: 'custrecord_address_text_field',
+                  'xsi:type': SOAP_FIELDS_TYPES.STRING,
+                },
+                'platformCore:value': 'test',
+              },
+            ],
+          },
         },
       })
     })
@@ -155,6 +194,27 @@ describe('data_instances_custom_fields', () => {
               'platformCore:value': false,
             },
           ],
+        },
+        address: {
+          country: '_unitedStates',
+          [CUSTOM_FIELD_LIST]: {
+            [PLATFORM_CORE_CUSTOM_FIELD]: [
+              {
+                attributes: {
+                  scriptId: 'custrecord_address_field',
+                  'xsi:type': SOAP_FIELDS_TYPES.BOOLEAN,
+                },
+                'platformCore:value': true,
+              },
+              {
+                attributes: {
+                  scriptId: 'custrecord_address_text_field',
+                  'xsi:type': SOAP_FIELDS_TYPES.STRING,
+                },
+                'platformCore:value': 'test',
+              },
+            ],
+          },
         },
       })
     })

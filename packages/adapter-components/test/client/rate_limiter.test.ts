@@ -281,7 +281,9 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
           error instanceof Error && error.message === errorMessage && numAttempts < maxRetries,
       )
       calculateRetryDelayMS = jest.fn((numAttempts: number, error: Error): number =>
-        error instanceof Error && error.message === errorMessage && numAttempts < maxRetries ? (numAttempts + 1) * retryDelayMS : 0,
+        error instanceof Error && error.message === errorMessage && numAttempts < maxRetries
+          ? (numAttempts + 1) * retryDelayMS
+          : 0,
       )
     })
     it('should not retry if not configured.', async () => {

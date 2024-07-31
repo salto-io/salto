@@ -28,8 +28,7 @@ import { PAGE_SIZE, DEFAULT_TIMEOUT_OPTS } from '../config'
 const {
   DEFAULT_RETRY_OPTS,
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
-  RATE_LIMIT_USE_BOTTLENECK,
+  RATE_LIMIT_DEFAULT_OPTIONS,
   throttle,
   logDecorator,
   requiresLogin,
@@ -145,8 +144,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-      delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
-      useBottleneck: RATE_LIMIT_USE_BOTTLENECK,
+      delayPerRequestMS: RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
+      useBottleneck: RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
       // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
       retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
       timeout: DEFAULT_TIMEOUT_OPTS,

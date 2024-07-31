@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './src/change'
-export * from './src/compare'
-export * from './src/decorators'
-export * from './src/dependencies'
-export * from './src/element_source'
-export * from './src/element'
-export * as filter from './src/filter'
-export * from './src/nacl_case_utils'
-export * from './src/utils'
-export * from './src/template'
-export * from './src/walk_element'
-export * from './src/collisions'
-export * as references from './src/references'
-export * from './src/elem_id_discrepancy'
-export * from './src/important_values'
-export * from './src/additional_properties'
-export * from './src/config_options'
+
+import { ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
+
+export const isOptionsTypeInstance = <T>(
+  instance: InstanceElement,
+  optionsElemId: ElemID,
+): instance is InstanceElement & { value: T } => {
+  if (instance.refType.elemID.isEqual(optionsElemId)) {
+    return true
+  }
+  log.error(
+    `Received an invalid instance for config options. Received instance with refType ElemId full name: ${instance.refType.elemID.getFullName()}`,
+  )
+  return false
+}

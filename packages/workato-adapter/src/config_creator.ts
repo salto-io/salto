@@ -16,36 +16,32 @@
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, createMatchingObjectType, isOptionsTypeInstance } from '@salto-io/adapter-utils'
-import { configType } from './config/config'
-import * as constants from './constants'
+import { ENABLE_DEPLOY_SUPPORT_FLAG, configType } from './config'
+import { WORKATO } from './constants'
 
-const optionsElemId = new ElemID(constants.JIRA, 'configOptionsType')
+const optionsElemId = new ElemID(WORKATO, 'configOptionsType')
 
 type ConfigOptionsType = {
-  enableScriptRunnerAddon?: boolean
-  enableJSM?: boolean
+  enableDeploy?: boolean
 }
-
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
-    enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
-    enableJSM: { refType: BuiltinTypes.BOOLEAN },
+    enableDeploy: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
-  const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options !== undefined && isOptionsTypeInstance<ConfigOptionsType>(options, optionsElemId)) {
-    if (options.value.enableScriptRunnerAddon) {
-      defaultConf.value.fetch.enableScriptRunnerAddon = true
-    }
-    if (options.value.enableJSM) {
-      defaultConf.value.fetch.enableJSM = true
-      defaultConf.value.fetch.enableJSMPremium = true
-    }
+  const defaultConfig = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  if (options === undefined || !isOptionsTypeInstance<ConfigOptionsType>(options, optionsElemId)) {
+    return defaultConfig
   }
-  return defaultConf
+  if (options.value.enableDeploy !== undefined) {
+    const clonedConfig = defaultConfig.clone()
+    clonedConfig.value[ENABLE_DEPLOY_SUPPORT_FLAG] = options.value.enableDeploy
+    return clonedConfig
+  }
+  return defaultConfig
 }
 
 export const configCreator: ConfigCreator = {

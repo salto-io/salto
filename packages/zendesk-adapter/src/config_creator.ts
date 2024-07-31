@@ -15,13 +15,10 @@
  */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
+import { createDefaultInstanceFromType, createMatchingObjectType, isOptionsTypeInstance } from '@salto-io/adapter-utils'
 import { configType } from './config'
 import * as constants from './constants'
 import { Themes } from './user_config'
-
-const log = logger(module)
 
 const optionsElemId = new ElemID(constants.ZENDESK, 'configOptionsType')
 
@@ -36,17 +33,6 @@ export const optionsType = createMatchingObjectType<ConfigOptionsType>({
     enableGuideThemes: { refType: BuiltinTypes.BOOLEAN },
   },
 })
-const isOptionsTypeInstance = (
-  instance: InstanceElement,
-): instance is InstanceElement & { value: ConfigOptionsType } => {
-  if (instance.refType.elemID.isEqual(optionsElemId)) {
-    return true
-  }
-  log.error(
-    `Received an invalid instance for config options. Received instance with refType ElemId full name: ${instance.refType.elemID.getFullName()}`,
-  )
-  return false
-}
 
 export const DEFAULT_GUIDE_THEME_CONFIG: { themes: Themes } = {
   themes: {
@@ -63,7 +49,7 @@ export const DEFAULT_GUIDE_THEME_CONFIG: { themes: Themes } = {
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options === undefined || !isOptionsTypeInstance(options)) {
+  if (options === undefined || !isOptionsTypeInstance<ConfigOptionsType>(options, optionsElemId)) {
     return defaultConf
   }
   if (options.value.enableGuide === true || options.value.enableGuideThemes === true) {

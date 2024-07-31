@@ -779,13 +779,13 @@ describe('suiteapp_file_cabinet', () => {
   describe('deploy', () => {
     beforeEach(() => {
       mockSuiteAppClient.updateFileCabinetInstances.mockImplementation(async fileCabinetInstances =>
-        fileCabinetInstances.map(({ id }: { id: number }) => id),
+        fileCabinetInstances.map(({ id }: { id: number }) => ({ isSuccess: true, internalId: String(id) })),
       )
       mockSuiteAppClient.addFileCabinetInstances.mockImplementation(async fileCabinetInstances =>
-        fileCabinetInstances.map(() => _.random(101, 200)),
+        fileCabinetInstances.map(() => ({ isSuccess: true, internalId: String(_.random(101, 200)) })),
       )
       mockSuiteAppClient.deleteFileCabinetInstances.mockImplementation(async fileCabinetInstances =>
-        fileCabinetInstances.map(({ id }: { id: number }) => id),
+        fileCabinetInstances.map(({ id }: { id: number }) => ({ isSuccess: true, internalId: String(id) })),
       )
     })
 
@@ -823,7 +823,10 @@ describe('suiteapp_file_cabinet', () => {
       })
 
       it('should return applied changes for successful updates and errors for others', async () => {
-        mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([0, new Error('someError')])
+        mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([
+          { isSuccess: true, internalId: '0' },
+          { isSuccess: false, errorMessage: 'someError' },
+        ])
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient).deploy(
           changes.slice(0, 2),
           'update',
@@ -963,7 +966,7 @@ describe('suiteapp_file_cabinet', () => {
           }),
         ]
         mockSuiteAppClient.addFileCabinetInstances.mockImplementation(async fileCabinetInstances =>
-          fileCabinetInstances.map(() => new Error('some error')),
+          fileCabinetInstances.map(() => ({ isSuccess: false, errorMessage: 'some error' })),
         )
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient).deploy(
           changes,

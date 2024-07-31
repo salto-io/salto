@@ -72,7 +72,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config/constants'
 import { CONSUMER_KEY, CONSUMER_SECRET, INSUFFICIENT_PERMISSION_ERROR } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { CustomRecordResponse, RecordResponse } from './soap_client/types'
+import { CustomRecordResponse, SoapDeployResult, RecordResponse } from './soap_client/types'
 import {
   ReadFileEncodingError,
   ReadFileError,
@@ -728,19 +728,19 @@ export default class SuiteAppClient {
 
   public async updateFileCabinetInstances(
     fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.updateFileCabinetInstances(fileCabinetInstances)
   }
 
   public async addFileCabinetInstances(
     fileCabinetInstances: FileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.addFileCabinetInstances(fileCabinetInstances)
   }
 
   public async deleteFileCabinetInstances(
     fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteFileCabinetInstances(fileCabinetInstances)
   }
 
@@ -756,19 +756,19 @@ export default class SuiteAppClient {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 
-  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<SoapDeployResult[]> {
     return this.soapClient.updateInstances(instances, hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<SoapDeployResult[]> {
     return this.soapClient.addInstances(instances, hasElemID)
   }
 
-  public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async deleteInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteInstances(instances)
   }
 
-  public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async deleteSdfInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteSdfInstances(instances)
   }
 

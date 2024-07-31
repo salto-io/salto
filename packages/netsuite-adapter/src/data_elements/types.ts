@@ -175,6 +175,10 @@ const ADDITIONAL_TABLES = [
   'revenueRecognitionRule',
   'incoterm',
   'approvalStatus',
+  'accountingBook',
+  'shipItem',
+  'employeeStatus',
+  'jobResourceRole',
 ] as const
 
 export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID | (typeof ADDITIONAL_TABLES)[number]

@@ -703,6 +703,95 @@ describe('adapter', () => {
         )
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+      it('should successfully modify an authorization server policy without status change', async () => {
+        loadMockReplies('authorization_server_policy_modify.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.name = 'your policy'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your policy')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and activate an authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_modify_and_activate.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: INACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.name = 'your policy'
+        activatedAuthorizationServerPolicy.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your policy')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate an authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_modify_and_deactivate.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.name = 'your policy'
+        activatedAuthorizationServerPolicy.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your policy')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
 
     describe('deploy group', () => {

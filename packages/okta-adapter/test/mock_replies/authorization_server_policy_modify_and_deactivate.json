@@ -66,18 +66,7 @@
     "body": {
       "id": "authorizationserverpolicy-fakeid1",
       "status": "INACTIVE",
-      "name": "my policy name3",
-      "description": "my policy description",
-      "priority": 1,
-      "system": false,
-      "conditions": {
-        "clients": {
-          "include": [
-            "ALL_CLIENTS"
-          ]
-        }
-      },
-      "type": "OAUTH_AUTHORIZATION_POLICY"
+      "name": "your policy"
     },
     "reqHeaders": {
       "x-rate-limit-limit": "100",

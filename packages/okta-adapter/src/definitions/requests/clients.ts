@@ -87,6 +87,11 @@ export const createClientDefinitions = (
               omitBody: true,
             },
           },
+          '/api/v1/apps/{appId}/groups/{id}': {
+            delete: {
+              additionalValidStatuses: [404],
+            },
+          },
         },
       },
     },

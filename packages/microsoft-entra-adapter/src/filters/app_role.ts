@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import {
-  AdditionChange,
   Change,
   ChangeGroup,
   DeployResult,
   Element,
   InstanceElement,
-  ModificationChange,
   ReadOnlyElementsSource,
   SaltoElementError,
-  Values,
   getChangeData,
   isAdditionChange,
   isInstanceChange,
   isInstanceElement,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { deployment } from '@salto-io/adapter-components'
 import { APP_ROLE_TYPE_NAME, APP_ROLES_FIELD_NAME, APPLICATION_TYPE_NAME } from '../constants'
@@ -41,8 +38,12 @@ import { changeResolver } from '../definitions/references'
 import { customConvertError } from '../error_utils'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 const { isDefined } = values
+
+// We remove the changes from the array in reverse order to avoid changing the indices of the elements we still need to remove
+const removeArrayElementsByIndices = (arr: unknown[], indicesToRemove: number[]): void => {
+  indicesToRemove.sort((a, b) => b - a).forEach(index => arr.splice(index, 1))
+}
 
 type CustomDeployChangesFunc = (params: {
   changes: Change<InstanceElement>[]
@@ -50,8 +51,6 @@ type CustomDeployChangesFunc = (params: {
 }) => Promise<DeployResult>
 
 type DeployResultWithLeftoverChanges = { deployResult: DeployResult; leftoverChanges: Change[] }
-
-type AdditionOrModificationInstanceChange = AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
 
 const isAppRoleInstanceElement = (elem: Element): elem is InstanceElement =>
   isInstanceElement(elem) && elem.elemID.typeName === APP_ROLE_TYPE_NAME
@@ -86,9 +85,10 @@ const removeDuplicatedAppRoles = async (elements: Element[]): Promise<void> => {
     'Removing the following app roles: %s',
     appRolesToRemove.map(({ elem }) => elem.elemID.getFullName()).join(', '),
   )
-  // We remove the app roles in reverse order to avoid changing the indices of the elements we still need to remove
-  const indicesToRemove = appRolesToRemove.map(({ index }) => index).sort((a, b) => b - a)
-  indicesToRemove.forEach(index => elements.splice(index, 1))
+  removeArrayElementsByIndices(
+    elements,
+    appRolesToRemove.map(({ index }) => index),
+  )
 }
 
 const extractUniqueParentsFromAppRoleChanges = (
@@ -121,37 +121,24 @@ const groupAppRolesByParent = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<Record<string, InstanceElement[]>> =>
   _.groupBy(
-    await awu(await elementSource.list())
-      .filter(id => id.typeName === APP_ROLE_TYPE_NAME)
-      .map(id => elementSource.get(id))
-      .filter(isInstanceElement)
-      .toArray(),
+    await getInstancesFromElementSource(elementSource, [APP_ROLE_TYPE_NAME]),
     // If no parent is found & the app role is not part of the received changes, we will just skip it
     elem => getParents(elem)[0]?.elemID.getFullName(),
   )
 
-const applyFunctionToChangeDataAfter = (
-  change: AdditionOrModificationInstanceChange,
-  func: (elem: InstanceElement) => InstanceElement,
-): AdditionOrModificationInstanceChange => {
-  const adjustedData = func(getChangeData(change))
-  return isAdditionChange(change)
-    ? { ...change, data: { after: adjustedData } }
-    : { ...change, data: { ...change.data, after: adjustedData } }
-}
-
 const setOrCreateParentChangeWithAppRoles = async ({
   parent,
   otherChanges,
-  getAppRolesByFullName,
+  parentToAppRolesMap,
 }: {
   parent: InstanceElement
   otherChanges: Change[]
-  getAppRolesByFullName: (name: string) => Values[]
+  parentToAppRolesMap: Record<string, InstanceElement[]>
 }): Promise<
   | {
       adjustedParentChange: Change<InstanceElement>
       existingParentChange: Change<InstanceElement> | undefined
+      existingParentChangeIdx: number
     }
   | undefined
 > => {
@@ -167,11 +154,9 @@ const setOrCreateParentChangeWithAppRoles = async ({
       return undefined
     }
 
-    otherChanges.splice(existingParentChangeIdx, 1)
-
     if (isRemovalChange(existingParentChange)) {
       // We deploy removal changes through the filter as well, so we will know whether the app role changes should be marked as applied or not
-      return { adjustedParentChange: existingParentChange, existingParentChange }
+      return { adjustedParentChange: existingParentChange, existingParentChange, existingParentChangeIdx }
     }
   }
 
@@ -185,13 +170,18 @@ const setOrCreateParentChangeWithAppRoles = async ({
 
   const applyFunction = (instance: InstanceElement): InstanceElement => {
     const dupInstance = instance.clone()
-    dupInstance.value[APP_ROLES_FIELD_NAME] = getAppRolesByFullName(parentFullName)
+    dupInstance.value[APP_ROLES_FIELD_NAME] = parentToAppRolesMap[parentFullName].map(appRole => appRole.value)
     return dupInstance
   }
 
+  const adjustedParentData = applyFunction(parent)
+  const adjustedParentChange = isAdditionChange(parentChange)
+    ? { ...parentChange, data: { after: adjustedParentData } }
+    : { ...parentChange, data: { ...parentChange.data, after: adjustedParentData } }
   return {
-    adjustedParentChange: applyFunctionToChangeDataAfter(parentChange, applyFunction),
+    adjustedParentChange,
     existingParentChange,
+    existingParentChangeIdx,
   }
 }
 
@@ -211,21 +201,22 @@ const deployAppRoleChangesViaParent = async ({
     extractUniqueParentsFromAppRoleChanges(appRoleInstanceChanges)
 
   const parentToAppRolesMap = await groupAppRolesByParent(elementSource)
-  const getAppRolesByFullName = (parentFullName: string): Values[] =>
-    parentToAppRolesMap[parentFullName].map(appRole => appRole.value)
-
   const parentChanges = (
     await Promise.all(
       uniqueParents.map(parent =>
         setOrCreateParentChangeWithAppRoles({
           parent,
-          getAppRolesByFullName,
+          parentToAppRolesMap,
           otherChanges,
         }),
       ),
     )
   ).filter(isDefined)
 
+  const existingParentChangeIndices = parentChanges
+    .map(({ existingParentChangeIdx }) => existingParentChangeIdx)
+    .filter(index => index !== -1)
+  removeArrayElementsByIndices(otherChanges, existingParentChangeIndices)
   const changesToDeploy = parentChanges.map(({ adjustedParentChange }) => adjustedParentChange)
   const existingParentChanges = parentChanges.map(({ existingParentChange }) => existingParentChange).filter(isDefined)
 

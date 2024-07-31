@@ -44,10 +44,11 @@ export const omitReadOnlyFields: AdjustFunctionSingle = async ({ typeName, value
 /*
  * Adjust the value of the object using the provided adjust function, and then omit read-only fields from the result.
  */
-export const adjustWrapper: (adjust: AdjustFunctionSingle) => AdjustFunctionSingle = adjust => async args => {
-  const result = await adjust(args)
-  return {
-    ...args,
-    ...(await omitReadOnlyFields({ ...args, ...result })),
+export const omitReadOnlyFieldsWrapper: (adjust: AdjustFunctionSingle) => AdjustFunctionSingle =
+  adjust => async args => {
+    const result = await adjust(args)
+    return {
+      ...args,
+      value: (await omitReadOnlyFields({ ...args, ...result })).value,
+    }
   }
-}

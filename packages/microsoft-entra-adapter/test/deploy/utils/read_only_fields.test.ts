@@ -18,7 +18,7 @@ import {
   TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
   TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
 } from '../../../src/change_validators'
-import { adjustWrapper, omitReadOnlyFields } from '../../../src/definitions/deploy/utils'
+import { omitReadOnlyFieldsWrapper, omitReadOnlyFields } from '../../../src/definitions/deploy/utils'
 import { contextMock, modificationChangeMock, removalChangeMock } from '../../mocks'
 
 const typeNamesWithReadOnlyFieldsOnAddition = Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION)
@@ -94,7 +94,7 @@ describe(`${omitReadOnlyFields.name}`, () => {
   })
 })
 
-describe(`${adjustWrapper.name}`, () => {
+describe(`${omitReadOnlyFieldsWrapper.name}`, () => {
   it('should omit the read only fields after calling the adjust function', async () => {
     const value = {
       a: 1,
@@ -102,7 +102,7 @@ describe(`${adjustWrapper.name}`, () => {
       [TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION[readOnlyTypeNameAddition][0]]: 'read only',
     }
     const adjustFunction = jest.fn().mockResolvedValue({ value: { a: 1, b: '2' } })
-    const adjustWrapped = adjustWrapper(adjustFunction)
+    const adjustWrapped = omitReadOnlyFieldsWrapper(adjustFunction)
     const result = await adjustWrapped({ value, typeName: readOnlyTypeNameAddition, context: contextMock })
     expect(adjustFunction).toHaveBeenCalled()
     expect(result.value).toEqual({ a: 1, b: '2' })

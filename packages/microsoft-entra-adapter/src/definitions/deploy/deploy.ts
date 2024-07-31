@@ -47,7 +47,7 @@ import { AdditionalAction, ClientOptions } from '../types'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { DeployCustomDefinitions, DeployRequestDefinition, DeployableRequestDefinition } from './types'
 import {
-  adjustWrapper,
+  omitReadOnlyFieldsWrapper,
   adjustRoleDefinitionForDeployment,
   createCustomConditionCheckChangesInFields,
   createCustomizationsWithBasePathForDeploy,
@@ -674,7 +674,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                adjust: adjustWrapper(adjustRoleDefinitionForDeployment),
+                adjust: omitReadOnlyFieldsWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },
@@ -687,7 +687,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'patch',
               },
               transformation: {
-                adjust: adjustWrapper(adjustRoleDefinitionForDeployment),
+                adjust: omitReadOnlyFieldsWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },

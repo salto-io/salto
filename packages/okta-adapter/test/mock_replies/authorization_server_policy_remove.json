@@ -1,6 +1,6 @@
 [
   {
-    "path": "/api/v1/authorizationServers/ausinwbminMwmB4EM5d7/policies/authorizationserverpolicy-fakeid1",
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1",
     "scope": "",
     "method": "DELETE",
     "status": 204,

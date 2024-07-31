@@ -792,6 +792,32 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your policy')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+      it('should successfully remove an authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_remove.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
 
     describe('deploy group', () => {

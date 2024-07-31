@@ -50,6 +50,7 @@ import {
 } from '../config'
 import { OktaUserConfig, ChangeValidatorName } from '../user_config'
 import { OktaOptions } from '../definitions/types'
+import { BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 
 const {
   createCheckDeploymentBasedOnConfigValidator,
@@ -75,6 +76,7 @@ export default ({
     ...Object.keys(oldApiDefsConfig[API_DEFINITIONS_CONFIG].types),
     ...Object.keys(oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types),
   ]
+  const typesHandledByFilters = [FAV_ICON_TYPE_NAME, BRAND_LOGO_TYPE_NAME]
   const typesDeployedWithNewInfra = definitionUtils.queryWithDefault(definitions.deploy?.instances ?? {}).allKeys()
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
@@ -83,11 +85,11 @@ export default ({
         oldApiDefsConfig[API_DEFINITIONS_CONFIG].types,
         oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types,
       ),
-      typesWithNoDeploy: typesDeployedWithNewInfra,
+      typesWithNoDeploy: [...typesDeployedWithNewInfra, ...typesHandledByFilters],
     }),
     createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator<OktaOptions>({
       deployDefinitions: definitions.deploy ?? { instances: {} },
-      typesWithNoDeploy: typesDeployedWithOldInfra,
+      typesWithNoDeploy: [...typesDeployedWithOldInfra, ...typesHandledByFilters],
     }),
     appGroup: appGroupValidator,
     groupRuleStatus: groupRuleStatusValidator,

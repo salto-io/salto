@@ -272,10 +272,8 @@ describe('soap_client', () => {
           },
         ]),
       ).toEqual([
-        6233,
-        new Error(
-          'SOAP api call to update file cabinet instance somePath2 failed. error code: MEDIA_NOT_FOUND, error message: Media item not found 62330',
-        ),
+        { isSuccess: true, internalId: '6233' },
+        { isSuccess: false, errorMessage: 'Media item not found 62330' },
       ])
     })
 
@@ -428,10 +426,8 @@ describe('soap_client', () => {
           },
         ]),
       ).toEqual([
-        6334,
-        new Error(
-          'SOAP api call to add file cabinet instance addedFile2 failed. error code: INVALID_KEY_OR_REF, error message: Invalid folder reference key -600',
-        ),
+        { isSuccess: true, internalId: '6334' },
+        { isSuccess: false, errorMessage: 'Invalid folder reference key -600' },
       ])
     })
 
@@ -568,10 +564,8 @@ describe('soap_client', () => {
           },
         ] as ExistingFileCabinetInstanceDetails[]),
       ).toEqual([
-        7148,
-        new Error(
-          'SOAP api call to delete file cabinet instance somePath2 failed. error code: MEDIA_NOT_FOUND, error message: Media item not found 99999',
-        ),
+        { isSuccess: true, internalId: '7148' },
+        { isSuccess: false, errorMessage: 'Media item not found 99999' },
       ])
     })
 
@@ -1173,10 +1167,8 @@ describe('soap_client', () => {
 
       const instance2 = new InstanceElement('instance2', subsidiaryType, { name: 'name' })
       expect(await client.updateInstances([instance1, instance2], async () => true)).toEqual([
-        1,
-        new Error(
-          `SOAP api call updateList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`,
-        ),
+        { isSuccess: true, internalId: '1' },
+        { isSuccess: false, errorMessage: 'Some Error Message' },
       ])
     })
 
@@ -1270,11 +1262,9 @@ describe('soap_client', () => {
       const customRecord = new InstanceElement('custrecord_record1', customRecordType, { name: 'record1' })
 
       expect(await client.addInstances([instance1, instance2, customRecord], async () => true)).toEqual([
-        1,
-        new Error(
-          `SOAP api call addList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`,
-        ),
-        3,
+        { isSuccess: true, internalId: '1' },
+        { isSuccess: false, errorMessage: 'Some Error Message' },
+        { isSuccess: true, internalId: '3' },
       ])
     })
 
@@ -1386,11 +1376,9 @@ describe('soap_client', () => {
       })
 
       expect(await client.deleteInstances([instance1, instance2, customRecord])).toEqual([
-        1,
-        new Error(
-          `SOAP api call deleteList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`,
-        ),
-        3,
+        { isSuccess: true, internalId: '1' },
+        { isSuccess: false, errorMessage: 'Some Error Message' },
+        { isSuccess: true, internalId: '3' },
       ])
     })
 
@@ -1806,7 +1794,9 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListError1])
         .mockResolvedValueOnce([writeResponseListSuccess])
 
-      expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
+      expect(await client.updateInstances([instance], elementsSource.has)).toEqual([
+        { isSuccess: true, internalId: '1' },
+      ])
       expect(updateListAsyncMock).toHaveBeenCalledTimes(2)
       expect(updateListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
     })
@@ -1816,7 +1806,7 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListError1])
         .mockResolvedValueOnce([writeResponseListSuccess])
 
-      expect(await client.addInstances([instance], elementsSource.has)).toEqual([1])
+      expect(await client.addInstances([instance], elementsSource.has)).toEqual([{ isSuccess: true, internalId: '1' }])
       expect(addListAsyncMock).toHaveBeenCalledTimes(2)
       expect(addListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
     })
@@ -1827,7 +1817,9 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListError2])
         .mockResolvedValueOnce([writeResponseListSuccess])
 
-      expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
+      expect(await client.updateInstances([instance], elementsSource.has)).toEqual([
+        { isSuccess: true, internalId: '1' },
+      ])
       expect(updateListAsyncMock).toHaveBeenCalledTimes(3)
       expect(updateListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
       expect(updateListAsyncMock).toHaveBeenNthCalledWith(3, instanceWithoutBothFields)
@@ -1838,10 +1830,7 @@ describe('soap_client', () => {
       jest.spyOn(filterUneditableLockedFieldModule, 'removeUneditableLockedField').mockResolvedValue(true)
 
       expect(await client.updateInstances([instance], elementsSource.has)).toEqual([
-        new Error(
-          `SOAP api call updateList for instance ${instance.elemID.getFullName()} failed.` +
-            ` error code: ${INSUFFICIENT_PERMISSION_ERROR}, error message: ${errorMessage1}`,
-        ),
+        { isSuccess: false, errorMessage: errorMessage1 },
       ])
       expect(updateListAsyncMock).toHaveBeenCalledTimes(6)
     })

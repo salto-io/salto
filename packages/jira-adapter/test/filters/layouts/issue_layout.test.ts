@@ -35,7 +35,7 @@ import {
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
-import JiraClient, { graphQLResponseType } from '../../../src/client/client'
+import JiraClient, { GQL_BASE_URL_GIRA, graphQLResponseType } from '../../../src/client/client'
 import issueLayoutFilter, { getLayoutRequestsAsync } from '../../../src/filters/layouts/issue_layout'
 import asyncApiCallsFilter from '../../../src/filters/async_api_calls'
 import { getFilterParams, mockClient, createEmptyType } from '../../utils'
@@ -256,7 +256,7 @@ describe('issue layout filter', () => {
 
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return requestReply
         }
         throw new Error('Err')

@@ -1093,7 +1093,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         })
       })
       it('should use updateInstances for data instances modifications', async () => {
-        updateInstancesMock.mockResolvedValue([1, new Error('error')])
+        updateInstancesMock.mockResolvedValue([
+          { isSuccess: true, internalId: '1' },
+          { isSuccess: false, errorMessage: 'error' },
+        ])
         const results = await client.deploy(
           [change1, change2],
           SUITEAPP_UPDATING_RECORDS_GROUP_ID,
@@ -1106,7 +1109,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
       })
 
       it('should use addInstances for data instances creations', async () => {
-        addInstancesMock.mockResolvedValue([1, new Error('error')])
+        addInstancesMock.mockResolvedValue([
+          { isSuccess: true, internalId: '1' },
+          { isSuccess: false, errorMessage: 'error' },
+        ])
         const results = await client.deploy(
           [toChange({ after: instance1 }), toChange({ after: instance2 })],
           SUITEAPP_CREATING_RECORDS_GROUP_ID,
@@ -1119,7 +1125,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
       })
 
       it('should use deleteInstances for data instances deletions', async () => {
-        deleteInstancesMock.mockResolvedValue([1, new Error('error')])
+        deleteInstancesMock.mockResolvedValue([
+          { isSuccess: true, internalId: '1' },
+          { isSuccess: false, errorMessage: 'error' },
+        ])
         const results = await client.deploy(
           [toChange({ before: instance1 }), toChange({ before: instance2 })],
           SUITEAPP_DELETING_RECORDS_GROUP_ID,
@@ -1156,7 +1165,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
       })
 
       it('should use deleteInstances for sdf instances deletions', async () => {
-        deleteSdfInstancesMock.mockResolvedValue([1, new Error('error')])
+        deleteSdfInstancesMock.mockResolvedValue([
+          { isSuccess: true, internalId: '1' },
+          { isSuccess: false, errorMessage: 'error' },
+        ])
         const results = await client.deploy(
           [toChange({ before: instance1 }), toChange({ before: instance2 })],
           SDF_DELETE_GROUP_ID,

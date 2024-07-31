@@ -72,6 +72,16 @@ export const isWriteResponseSuccess = (result: WriteResponse): result is WriteRe
 export const isWriteResponseError = (result: WriteResponse): result is WriteResponseError =>
   result.status.attributes.isSuccess === 'false'
 
+export type SoapDeployResult =
+  | {
+      isSuccess: true
+      internalId: string
+    }
+  | {
+      isSuccess: false
+      errorMessage: string
+    }
+
 export type DeployListSuccess = {
   writeResponseList: {
     writeResponse: WriteResponse[]

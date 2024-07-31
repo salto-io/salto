@@ -121,7 +121,7 @@ describe('adapter', () => {
 
   describe('fetch', () => {
     describe('full fetch', () => {
-      it('should generate the right elements on fetch', async () => {
+      it('should generate the right elements on fetch with old infra', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
@@ -138,6 +138,7 @@ describe('adapter', () => {
                   },
                 ],
                 exclude: [],
+                useNewInfra: false,
                 guide: {
                   brands: ['.*'],
                 },
@@ -692,7 +693,6 @@ describe('adapter', () => {
                 guide: {
                   brands: ['.*'],
                 },
-                useNewInfra: true,
                 useGuideNewInfra: true,
                 omitInactive: {
                   default: false,
@@ -1508,6 +1508,13 @@ describe('adapter', () => {
           'zendesk.guide_settings__help_center__settings__preferences',
           'zendesk.guide_settings__help_center__text_filter',
           'zendesk.layout',
+          'zendesk.layout.instance.Test_Layout@s',
+          'zendesk.layout__sections',
+          'zendesk.layout__sections__columns',
+          'zendesk.layout__sections__columns__components',
+          'zendesk.layout__sections__columns__components__config',
+          'zendesk.layout__sections__columns__components__config__components',
+          'zendesk.layout__sections__columns__components__config__open',
           'zendesk.locale',
           'zendesk.locale.instance.en_US@b',
           'zendesk.locale.instance.es',
@@ -1553,7 +1560,6 @@ describe('adapter', () => {
           'zendesk.organization.instance.myBrand',
           'zendesk.organization.instance.test_org_123@s',
           'zendesk.organization.instance.test_org_124@s',
-          'zendesk.organization__organization_fields',
           'zendesk.organization_field',
           'zendesk.organization_field.instance.dropdown_26',
           'zendesk.organization_field.instance.org_field301',
@@ -1576,7 +1582,7 @@ describe('adapter', () => {
           'zendesk.permission_group.instance.Admins',
           'zendesk.permission_groups',
           'zendesk.resource_collection',
-          'zendesk.resource_collection.instance.unnamed_0_0',
+          'zendesk.resource_collection.instance.unnamed_0',
           'zendesk.resource_collection__resources',
           'zendesk.resource_collections',
           'zendesk.routing_attribute',
@@ -1693,8 +1699,6 @@ describe('adapter', () => {
           'zendesk.trigger__conditions__all',
           'zendesk.trigger__conditions__any',
           'zendesk.trigger_categories',
-          'zendesk.trigger_categories__links',
-          'zendesk.trigger_categories__meta',
           'zendesk.trigger_category',
           'zendesk.trigger_category.instance.Custom_Events@s',
           'zendesk.trigger_category.instance.Custom_Events___edited@ssbs',
@@ -1793,7 +1797,6 @@ describe('adapter', () => {
           'zendesk.webhook.instance.test',
           'zendesk.webhook__authentication',
           'zendesk.webhooks',
-          'zendesk.webhooks__meta',
           'zendesk.workspace',
           'zendesk.workspace.instance.New_Workspace_123@s',
           'zendesk.workspace__apps',
@@ -2053,6 +2056,13 @@ describe('adapter', () => {
           'zendesk.guide_settings__help_center__settings__preferences',
           'zendesk.guide_settings__help_center__text_filter',
           'zendesk.layout',
+          'zendesk.layout.instance.Test_Layout@s',
+          'zendesk.layout__sections',
+          'zendesk.layout__sections__columns',
+          'zendesk.layout__sections__columns__components',
+          'zendesk.layout__sections__columns__components__config',
+          'zendesk.layout__sections__columns__components__config__components',
+          'zendesk.layout__sections__columns__components__config__open',
           'zendesk.locale',
           'zendesk.locale.instance.en_US@b',
           'zendesk.locale.instance.es',
@@ -2098,7 +2108,6 @@ describe('adapter', () => {
           'zendesk.organization.instance.myBrand',
           'zendesk.organization.instance.test_org_123@s',
           'zendesk.organization.instance.test_org_124@s',
-          'zendesk.organization__organization_fields',
           'zendesk.organization_field',
           'zendesk.organization_field.instance.dropdown_26',
           'zendesk.organization_field.instance.org_field301',
@@ -2121,7 +2130,7 @@ describe('adapter', () => {
           'zendesk.permission_group.instance.Admins',
           'zendesk.permission_groups',
           'zendesk.resource_collection',
-          'zendesk.resource_collection.instance.unnamed_0_0',
+          'zendesk.resource_collection.instance.unnamed_0',
           'zendesk.resource_collection__resources',
           'zendesk.resource_collections',
           'zendesk.routing_attribute',
@@ -2241,8 +2250,6 @@ describe('adapter', () => {
           'zendesk.trigger__conditions__all',
           'zendesk.trigger__conditions__any',
           'zendesk.trigger_categories',
-          'zendesk.trigger_categories__links',
-          'zendesk.trigger_categories__meta',
           'zendesk.trigger_category',
           'zendesk.trigger_category.instance.Custom_Events@s',
           'zendesk.trigger_category.instance.Custom_Events___edited@ssbs',
@@ -2339,7 +2346,6 @@ describe('adapter', () => {
           'zendesk.webhook.instance.test',
           'zendesk.webhook__authentication',
           'zendesk.webhooks',
-          'zendesk.webhooks__meta',
           'zendesk.workspace',
           'zendesk.workspace.instance.New_Workspace_123@s',
           'zendesk.workspace__apps',
@@ -2470,9 +2476,9 @@ describe('adapter', () => {
         expect(errors).toBeDefined()
         expect(errors?.length).toEqual(3)
         expect(errors?.[0]).toEqual({
-          severity: 'Warning',
+          severity: 'Info',
           message:
-            "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+            "Salto could not access the custom_status resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         })
         expect(errors?.[1].message.split('.')[0]).toEqual(
           'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',

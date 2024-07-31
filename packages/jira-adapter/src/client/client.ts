@@ -211,6 +211,46 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     throw new Error('Failed to get GQL response')
   }
 
+  public async atlassianApiGet(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.get({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiPost(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.post({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiPut(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.put({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiDelete(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.delete({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
   public async getPrivate(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
@@ -276,6 +316,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       url: GET_CLOUD_ID_URL,
     })
     if (!isCloudIdResponse(response.data)) {
+      this.cloudId = undefined // This invalidates cloudId cache.
       throw new Error(`'Failed to get cloud id, received invalid response' ${response.data}`)
     }
     return response.data.cloudId
@@ -283,6 +324,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
 
   public async getCloudId(): Promise<string> {
     if (this.cloudId === undefined) {
+      // Caches result/promise so that future calls await on the same request.
       this.cloudId = this.getCloudIdPromise()
     }
     return this.cloudId

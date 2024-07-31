@@ -1470,7 +1470,7 @@ describe('Adapter', () => {
         })
       })
       it('should call getChangedObjects with the right date range', async () => {
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(getElementMock).toHaveBeenCalledWith(
           new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
         )
@@ -1499,7 +1499,7 @@ describe('Adapter', () => {
 
       it('should pass the received query to the client', async () => {
         const getCustomObjectsMock = jest.spyOn(client, 'getCustomObjects')
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
 
         const passedQuery = getCustomObjectsMock.mock.calls[0][1].updatedFetchQuery
         expect(passedQuery.isObjectMatch({ instanceId: 'aaaa', type: 'workflow' })).toBeTruthy()
@@ -1534,7 +1534,6 @@ describe('Adapter', () => {
               },
               filePaths: [],
             },
-            useChangesDetection: false,
           },
           getElemIdFunc: mockGetElemIdFunc,
         })
@@ -1550,12 +1549,11 @@ describe('Adapter', () => {
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: {
             ...config,
-            useChangesDetection: true,
           },
           getElemIdFunc: mockGetElemIdFunc,
         })
 
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(getChangedObjectsMock).toHaveBeenCalled()
       })
     })

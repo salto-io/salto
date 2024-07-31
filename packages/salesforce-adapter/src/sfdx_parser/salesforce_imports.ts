@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { getElements, getUniqueConfigSuggestions } from './fetch'
-export * as element from './element'
-export * as query from './query'
-export * as request from './request'
-export * as resource from './resource'
-export * as errors from './errors'
-export { FetchElements, ValueGeneratedItem } from './types'
+
+// We have to have this import before any import from a @salesforce package
+import './salesforce_imports_fix'
+
+export { SfProject } from '@salesforce/core'
+export {
+  ComponentSet,
+  ZipTreeContainer,
+  MetadataConverter,
+  TreeContainer,
+  ManifestResolver,
+  SourceComponent,
+  SourcePath,
+} from '@salesforce/source-deploy-retrieve'

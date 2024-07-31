@@ -98,7 +98,7 @@ describe('customObjectFieldsOrderFilter', () => {
       expect(elements[initialLength + 1]).toEqual(
         createCustomObjectFieldsOrder(
           `${customObject1.elemID.name}_fields_order`,
-          [customObjectField1, customObjectField2],
+          [customObjectField2, customObjectField1],
           customObject1,
         ),
       )

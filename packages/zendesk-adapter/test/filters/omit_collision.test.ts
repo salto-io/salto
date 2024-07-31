@@ -25,8 +25,12 @@ describe('collision errors', () => {
   let filter: FilterType
   const objType = new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') })
   const inst = new InstanceElement('inst1', objType, { name: 'test', position: 1 })
-  const collidedInst = new InstanceElement('inst1', objType, { name: 'test', position: 2 })
-  const differentInst = new InstanceElement('inst2', objType, { name: 'test2', position: 3 })
+  const collidedInst = new InstanceElement('inst1', objType, { name: 'test', position: 2 }, undefined, {
+    [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+  })
+  const differentInst = new InstanceElement('inst2', objType, { name: 'test2', position: 3 }, undefined, {
+    [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+  })
   const childInst1 = new InstanceElement('childInst1', objType, { name: 'childInst1', position: 2 }, undefined, {
     [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(inst.elemID, inst),
   })
@@ -49,7 +53,7 @@ Current Salto ID configuration for obj is defined as [name].
 Breakdown per colliding Salto ID:
 - inst1:
 \t* Instance with Id - inst1
-\t* Instance with Id - inst1
+\t* Instance with Id - inst1. View in the service - someUrl
 
 To resolve these collisions please take one of the following actions and fetch again:
 \t1. Change obj's idFields to include all fields that uniquely identify the type's instances.

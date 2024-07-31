@@ -41,7 +41,6 @@ import { logger } from '@salto-io/logging'
 import { resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
-import { getCloudId } from '../automation/cloud_id'
 import { createFormType, isCreateFormResponse, isDetailedFormsResponse, isFormsResponse } from './forms_types'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
@@ -57,21 +56,7 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
   if (form.value.design?.settings?.name === undefined) {
     throw new Error('Form name is missing')
   }
-  const cloudId = await getCloudId(client)
   if (isAdditionOrModificationChange(change)) {
-    if (isAdditionChange(change)) {
-      const resp = await client.post({
-        url: `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms`,
-        data: {
-          name: form.value.design.settings.name,
-        },
-      })
-      if (!isCreateFormResponse(resp.data)) {
-        throw new Error('Failed to create form')
-      }
-      form.value.id = resp.data.id
-      form.value.design.settings.templateId = resp.data.id
-    }
     const resolvedForm = await resolveValues(form, getLookUpName)
     const data = mapKeysRecursive(resolvedForm.value, ({ key }) => invertNaclCase(key))
     // RequestType Id is a string, but the forms API expects a number
@@ -80,13 +65,24 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
         Number(id),
       )
     }
-    await client.put({
-      url: `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${form.value.id}`,
-      data,
-    })
+    if (isAdditionChange(change)) {
+      const resp = await client.atlassianApiPost({
+        url: `project/${project.value.id}/form`,
+        data,
+      })
+      if (!isCreateFormResponse(resp.data)) {
+        throw new Error('Failed to create form')
+      }
+      form.value.id = resp.data.id
+    } else {
+      await client.atlassianApiPut({
+        url: `project/${project.value.id}/form/${form.value.id}`,
+        data,
+      })
+    }
   } else {
-    await client.delete({
-      url: `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms/${form.value.id}`,
+    await client.atlassianApiDelete({
+      url: `project/${project.value.id}/form/${form.value.id}`,
     })
   }
 }
@@ -101,7 +97,6 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
       return { errors: [] }
     }
-    const cloudId = await getCloudId(client)
     const { formType, subTypes } = createFormType()
     setTypeDeploymentAnnotations(formType)
     await addAnnotationRecursively(formType, CORE_ANNOTATIONS.CREATABLE)
@@ -124,8 +119,9 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       await Promise.all(
         jsmProjects.flatMap(async project => {
           try {
-            const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-            const res = await client.get({ url })
+            const res = await client.atlassianApiGet({
+              url: `project/${project.value.id}/form`,
+            })
             if (!isFormsResponse(res)) {
               log.debug(
                 `Didn't fetch forms for project ${project.value.name} with the following response: ${inspectValue(res)}`,
@@ -134,8 +130,9 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
             }
             return await Promise.all(
               res.data.map(async formResponse => {
-                const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-                const detailedRes = await client.get({ url: detailedUrl })
+                const detailedRes = await client.atlassianApiGet({
+                  url: `project/${project.value.id}/form/${formResponse.id}`,
+                })
                 if (!isDetailedFormsResponse(detailedRes.data)) {
                   projectsWithUntitledForms.add(project.elemID.name)
                   return undefined

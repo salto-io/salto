@@ -51,7 +51,7 @@ import {
   SuiteAppType,
   SuiteQLQueryArgs,
 } from './suiteapp_client/types'
-import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
+import { CustomRecordResponse, SoapDeployResult, RecordResponse } from './suiteapp_client/soap_client/types'
 import {
   DeployableChange,
   FeaturesMap,
@@ -585,7 +585,7 @@ export default class NetsuiteClient {
     elements: InstanceElement[],
     groupID: string,
     hasElemID: HasElemIDFunc,
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     if (this.suiteAppClient === undefined) {
       throw new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)
     }

@@ -190,11 +190,6 @@ export const mergeWithHidden = async (
   return mergeElements(awu(hiddenStateElements).concat(workspaceElementsWithHiddenParts))
 }
 
-const removeHidden =
-  (elementsSource: ReadOnlyElementsSource): TransformFunc =>
-  async ({ value, field }) =>
-    (await isHidden(field, elementsSource)) ? undefined : value
-
 const removeHiddenValue =
   (): TransformFunc =>
   ({ value, field }) =>
@@ -206,7 +201,7 @@ export const removeHiddenFromElement = <T extends Element>(
 ): Promise<T> =>
   transformElement({
     element,
-    transformFunc: isInstanceElement(element) ? removeHiddenValue() : removeHidden(elementsSource),
+    transformFunc: removeHiddenValue(),
     strict: false,
     elementsSource,
     allowEmptyArrays: true,

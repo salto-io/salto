@@ -42,6 +42,7 @@ import { ConfigRecord } from './suiteapp_client/types'
 import { isFileCabinetInstance } from '../types'
 import { getServiceIdsToElemIds } from '../service_id_info'
 import { ATTRIBUTE_PREFIX } from './constants'
+import { SoapDeployResult } from './suiteapp_client/soap_client/types'
 
 const log = logger(module)
 const { matchAll } = strings
@@ -124,7 +125,7 @@ export const toDependencyError = (dependency: { elemId: ElemID; dependOn: ElemID
 
 export const getDeployResultFromSuiteAppResult = <T extends Change>(
   changes: T[],
-  results: (number | Error)[],
+  results: SoapDeployResult[],
 ): {
   appliedChanges: T[]
   errors: SaltoElementError[]
@@ -141,11 +142,11 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
       return
     }
     const { elemID } = getChangeData(change)
-    if (typeof result === 'number') {
+    if (result.isSuccess) {
       appliedChanges.push(change)
-      elemIdToInternalId[elemID.getFullName()] = result.toString()
+      elemIdToInternalId[elemID.getFullName()] = result.internalId
     } else {
-      errors.push(toElementError(elemID, result.message))
+      errors.push(toElementError(elemID, result.errorMessage))
     }
   })
 

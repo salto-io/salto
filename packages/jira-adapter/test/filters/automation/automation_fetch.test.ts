@@ -15,7 +15,6 @@
  */
 import { ElemID, InstanceElement, ObjectType, Element, BuiltinTypes, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   filterUtils,
   client as clientUtils,
@@ -23,19 +22,19 @@ import {
   config as configDeprecated,
 } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { getFilterParams, mockClient } from '../../utils'
+import { FAULTY_CLOUD_ID_RESPONSE, DEFAULT_CLOUD_ID, getFilterParams, mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, OBJECT_TYPE_TYPE, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
-import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
 jest.mock('../../../src/constants', () => ({
   ...jest.requireActual<{}>('../../../src/constants'),
   AUTOMATION_RETRY_PERIODS: [1, 2, 3, 4],
 }))
 
+const DEFAULT_URL = `/gateway/api/automation/internal-api/jira/${DEFAULT_CLOUD_ID}/pro/rest/GLOBAL/rules`
 describe('automationFetchFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let projectType: ObjectType
@@ -73,22 +72,8 @@ describe('automationFetchFilter', () => {
       ],
     },
   }
-
   const mockPostResponse = (url: string): Value => {
-    if (url === '/rest/webResources/1.0/resources') {
-      return {
-        status: 200,
-        data: {
-          unparsedData: {
-            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-              tenantId: 'cloudId',
-            }),
-          },
-        },
-      }
-    }
-
-    if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+    if (url === DEFAULT_URL) {
       return automationResponse
     }
 
@@ -96,10 +81,9 @@ describe('automationFetchFilter', () => {
   }
 
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient()
+    const { client: cli, paginator, connection: conn } = mockClient(false)
     client = cli
     connection = conn
-
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     fetchQuery = elementUtils.query.createMockQuery()
@@ -165,20 +149,8 @@ describe('automationFetchFilter', () => {
           ],
         },
       })
-
       expect(connection.post).toHaveBeenCalledWith(
-        '/rest/webResources/1.0/resources',
-        {
-          r: [],
-          c: ['jira.webresources:jira-global'],
-          xc: [],
-          xr: [],
-        },
-        undefined,
-      )
-
-      expect(connection.post).toHaveBeenCalledWith(
-        '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules',
+        DEFAULT_URL,
         {
           offset: 0,
           limit: 1000,
@@ -191,7 +163,6 @@ describe('automationFetchFilter', () => {
       const { client: cli, connection: conn } = mockClient(true)
       client = cli
       connection = conn
-
       conn.get.mockImplementation(async url => {
         if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
           return {
@@ -295,17 +266,12 @@ describe('automationFetchFilter', () => {
     })
 
     it('should throw if resources response is invalid', async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(false, null)
+      client = cli
+      connection = conn
+      connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {},
-            },
-          }
-        }
-
-        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+        if (url === DEFAULT_URL) {
           return {
             status: 200,
             data: {
@@ -329,23 +295,27 @@ describe('automationFetchFilter', () => {
       })
 
       const elements = [project2Instance]
-      await expect(filter.onFetch(elements)).rejects.toThrow()
+      await expect(
+        (
+          automationFetchFilter(
+            getFilterParams({
+              client,
+              paginator,
+              config,
+              fetchQuery,
+            }),
+          ) as filterUtils.FilterWith<'onFetch'>
+        ).onFetch(elements),
+      ).rejects.toThrow()
     })
 
     it('should throw if cloud resource is not an object', async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(false, null)
+      client = cli
+      connection = conn
+      connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: '[]',
-              },
-            },
-          }
-        }
-
-        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+        if (url === DEFAULT_URL) {
           return {
             status: 200,
             data: {
@@ -369,23 +339,27 @@ describe('automationFetchFilter', () => {
       })
 
       const elements = [project2Instance]
-      await expect(filter.onFetch(elements)).rejects.toThrow()
+      await expect(
+        (
+          automationFetchFilter(
+            getFilterParams({
+              client,
+              paginator,
+              config,
+              fetchQuery,
+            }),
+          ) as filterUtils.FilterWith<'onFetch'>
+        ).onFetch(elements),
+      ).rejects.toThrow()
     })
 
     it('should throw if tenantId not in response', async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(false, null)
+      client = cli
+      connection = conn
+      connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: '{}',
-              },
-            },
-          }
-        }
-
-        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+        if (url === DEFAULT_URL) {
           return {
             status: 200,
             data: {
@@ -409,25 +383,23 @@ describe('automationFetchFilter', () => {
       })
 
       const elements = [project2Instance]
-      await expect(filter.onFetch(elements)).rejects.toThrow()
+      await expect(
+        (
+          automationFetchFilter(
+            getFilterParams({
+              client,
+              paginator,
+              config,
+              fetchQuery,
+            }),
+          ) as filterUtils.FilterWith<'onFetch'>
+        ).onFetch(elements),
+      ).rejects.toThrow()
     })
 
     it('should throw if automation response is not valid', async () => {
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
-
-        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+        if (url === DEFAULT_URL) {
           return {
             status: 200,
             data: {
@@ -612,7 +584,6 @@ describe('automationFetchFilter', () => {
     client = cli
     connection = conn
     conn.post.mockClear()
-    conn.post.mockImplementationOnce(mockPostResponse) // for cloud id
     conn.post.mockImplementation(async () => {
       throw new clientUtils.HTTPError('failed', { data: {}, status: 504 })
     })
@@ -627,14 +598,13 @@ describe('automationFetchFilter', () => {
         ) as filterUtils.FilterWith<'onFetch'>
       ).onFetch(elements),
     ).rejects.toThrow()
-    expect(conn.post.mock.calls.length).toEqual(6) // (1 for cloud id, 5 times for automation as we have 4 retries)
+    expect(conn.post.mock.calls.length).toEqual(5) // 5 times for automation as we have 4 retries
   })
   it('should fail without retries if error is not http', async () => {
     const { client: cli, connection: conn } = mockClient(false)
     client = cli
     connection = conn
     conn.post.mockClear()
-    conn.post.mockImplementationOnce(mockPostResponse) // for cloud id
     conn.post.mockImplementation(async () => {
       throw new Error('failed')
     })
@@ -648,7 +618,7 @@ describe('automationFetchFilter', () => {
         ) as filterUtils.FilterWith<'onFetch'>
       ).onFetch(elements),
     ).rejects.toThrow()
-    expect(conn.post.mock.calls.length).toEqual(2) // (1 for cloud id, 5 times for automation as we have 4 retries)
+    expect(conn.post.mock.calls.length).toEqual(1)
   })
   describe('component with assets in automation', () => {
     const automationResponseWithAssets = {
@@ -749,25 +719,12 @@ describe('automationFetchFilter', () => {
       name: 'objectTypeName',
     })
     beforeEach(() => {
-      const { client: cli, connection: conn } = mockClient()
+      const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
-
-        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+        if (url === DEFAULT_URL) {
           return automationResponseWithAssets
         }
 
@@ -969,20 +926,7 @@ describe('automationFetchFilter', () => {
     })
     it('should fetch automations with assets support from the service when enableJsm is true and only schemaId', async () => {
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
-
-        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+        if (url === DEFAULT_URL) {
           return {
             status: 200,
             data: {
@@ -1111,20 +1055,7 @@ describe('automationFetchFilter', () => {
     })
     it('should not modify components if not expected asset component', async () => {
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
-
-        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+        if (url === DEFAULT_URL) {
           return {
             status: 200,
             data: {
@@ -1222,20 +1153,7 @@ describe('automationFetchFilter', () => {
     })
     it('should do nothing if no components', async () => {
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
-        }
-
-        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+        if (url === DEFAULT_URL) {
           return {
             status: 200,
             data: {

@@ -23,12 +23,16 @@ import { APIDefinitionsOptions } from './api'
 const log = logger(module)
 export const DEFINITIONS_OVERRIDES = 'SALTO_DEFINITIONS_OVERRIDES'
 
-const getParsedDefinitionsOverrides = (): Values => {
+const getParsedDefinitionsOverrides = (accountName: string): Values => {
   const overrides = process.env[DEFINITIONS_OVERRIDES]
   try {
     const parsedOverrides = overrides === undefined ? undefined : JSON.parse(overrides)
-    if (parsedOverrides !== undefined && typeof parsedOverrides === 'object') {
-      return parsedOverrides as Values
+    if (
+      parsedOverrides !== undefined &&
+      parsedOverrides[accountName] !== undefined &&
+      typeof parsedOverrides === 'object'
+    ) {
+      return parsedOverrides[accountName] as Values
     }
   } catch (e) {
     if (e instanceof SyntaxError) {
@@ -50,6 +54,7 @@ const getParsedDefinitionsOverrides = (): Values => {
  */
 export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOptions>(
   definitions: RequiredDefinitions<Options>,
+  accountName?: string,
 ): RequiredDefinitions<Options> => {
   const customMerge = (objValue: Value, srcValue: Value): Value => {
     if (_.isArray(objValue)) {
@@ -57,8 +62,12 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     }
     return undefined
   }
+  if (accountName === undefined) {
+    log.error('Account name is undefined, cannot merge definitions with overrides')
+    return definitions
+  }
   log.debug('starting to merge definitions with overrides')
-  const overrides = getParsedDefinitionsOverrides()
+  const overrides = getParsedDefinitionsOverrides(accountName)
   if (_.isEmpty(overrides)) {
     return definitions
   }

@@ -361,6 +361,41 @@ const METADATA_TO_RETRIEVE = [
   'Workflow',
 ]
 
+export const NESTED_METADATA_TYPES = {
+  CustomLabels: {
+    nestedInstanceFields: ['labels'],
+    isNestedApiNameRelative: false,
+  },
+  AssignmentRules: {
+    nestedInstanceFields: ['assignmentRule'],
+    isNestedApiNameRelative: true,
+  },
+  AutoResponseRules: {
+    nestedInstanceFields: ['autoresponseRule'],
+    isNestedApiNameRelative: true,
+  },
+  EscalationRules: {
+    nestedInstanceFields: ['escalationRule'],
+    isNestedApiNameRelative: true,
+  },
+  MatchingRules: {
+    nestedInstanceFields: ['matchingRules'],
+    isNestedApiNameRelative: true,
+  },
+  SharingRules: {
+    nestedInstanceFields: ['sharingCriteriaRules', 'sharingGuestRules', 'sharingOwnerRules', 'sharingTerritoryRules'],
+    isNestedApiNameRelative: true,
+  },
+  Workflow: {
+    nestedInstanceFields: Object.keys(WORKFLOW_FIELD_TO_TYPE),
+    isNestedApiNameRelative: true,
+  },
+  CustomObject: {
+    nestedInstanceFields: [...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), 'fields'],
+    isNestedApiNameRelative: true,
+  },
+}
+
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
 export const SYSTEM_FIELDS = [
   'ConnectionReceivedId',
@@ -417,45 +452,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
-    nestedMetadataTypes = {
-      CustomLabels: {
-        nestedInstanceFields: ['labels'],
-        isNestedApiNameRelative: false,
-      },
-      AssignmentRules: {
-        nestedInstanceFields: ['assignmentRule'],
-        isNestedApiNameRelative: true,
-      },
-      AutoResponseRules: {
-        nestedInstanceFields: ['autoresponseRule'],
-        isNestedApiNameRelative: true,
-      },
-      EscalationRules: {
-        nestedInstanceFields: ['escalationRule'],
-        isNestedApiNameRelative: true,
-      },
-      MatchingRules: {
-        nestedInstanceFields: ['matchingRules'],
-        isNestedApiNameRelative: true,
-      },
-      SharingRules: {
-        nestedInstanceFields: [
-          'sharingCriteriaRules',
-          'sharingGuestRules',
-          'sharingOwnerRules',
-          'sharingTerritoryRules',
-        ],
-        isNestedApiNameRelative: true,
-      },
-      Workflow: {
-        nestedInstanceFields: Object.keys(WORKFLOW_FIELD_TO_TYPE),
-        isNestedApiNameRelative: true,
-      },
-      CustomObject: {
-        nestedInstanceFields: [...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), 'fields'],
-        isNestedApiNameRelative: true,
-      },
-    },
+    nestedMetadataTypes = NESTED_METADATA_TYPES,
     filterCreators = defaultFilters,
     client,
     getElemIdFunc,

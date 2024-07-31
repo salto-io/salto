@@ -251,6 +251,7 @@ describe('netsuite config suggestions', () => {
     }
     Object.assign(config.fetch, { skipResolvingAccountSpecificValuesToTypes: [] })
     Object.assign(config.suiteAppClient ?? {}, { maxRecordsPerSuiteQLTable: [] })
+    Object.assign(config, { useChangesDetection: true })
 
     const configChange = getConfigFromConfigChanges(
       {
@@ -270,6 +271,7 @@ describe('netsuite config suggestions', () => {
       toRemovedDeprecatedConfigsMessage([
         'fetch.skipResolvingAccountSpecificValuesToTypes',
         'suiteAppClient.maxRecordsPerSuiteQLTable',
+        'useChangesDetection',
       ]),
     )
   })

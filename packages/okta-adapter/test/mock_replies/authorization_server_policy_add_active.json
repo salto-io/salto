@@ -1,11 +1,11 @@
 [
   {
-    "path": "/api/v1/authorizationServers/ausinwbminMwmB4EM5d7/policies",
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/policies",
     "scope": "",
     "method": "POST",
     "status": 201,
     "response": {
-      "id": "00pinyc3pflWJznJ55d7",
+      "id": "authorizationserverpolicy-fakeid1",
       "status": "ACTIVE",
       "name": "my policy name2",
       "description": "my policy description",
@@ -22,7 +22,7 @@
       "lastUpdated": "2024-07-31T11:05:06.000Z",
       "_links": {
         "self": {
-          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/ausinwbminMwmB4EM5d7/policies/00pinyc3pflWJznJ55d7",
+          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1",
           "hints": {
             "allow": [
               "GET",
@@ -32,7 +32,7 @@
           }
         },
         "rules": {
-          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/ausinwbminMwmB4EM5d7/policies/00pinyc3pflWJznJ55d7/rules",
+          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/rules",
           "hints": {
             "allow": [
               "GET"
@@ -40,7 +40,7 @@
           }
         },
         "deactivate": {
-          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/ausinwbminMwmB4EM5d7/policies/00pinyc3pflWJznJ55d7/lifecycle/deactivate",
+          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/lifecycle/deactivate",
           "hints": {
             "allow": [
               "POST"
@@ -52,18 +52,7 @@
     },
     "body": {
       "status": "ACTIVE",
-      "name": "my policy name2",
-      "description": "my policy description",
-      "priority": 1,
-      "system": false,
-      "conditions": {
-        "clients": {
-          "include": [
-            "ALL_CLIENTS"
-          ]
-        }
-      },
-      "type": "OAUTH_AUTHORIZATION_POLICY"
+      "name": "my policy"
     },
     "reqHeaders": {
       "x-rate-limit-limit": "100",

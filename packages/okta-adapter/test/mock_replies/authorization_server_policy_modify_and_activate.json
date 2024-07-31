@@ -6,8 +6,8 @@
     "status": 200,
     "response": {
       "id": "authorizationserverpolicy-fakeid1",
-      "status": "ACTIVE",
-      "name": "my policy name3",
+      "status": "INACTIVE",
+      "name": "my policy name4",
       "description": "my policy description",
       "priority": 1,
       "system": false,
@@ -18,9 +18,17 @@
           ]
         }
       },
-      "created": "2024-07-31T11:05:06.000Z",
-      "lastUpdated": "2024-07-31T11:05:52.000Z",
+      "created": "2024-07-31T11:11:57.000Z",
+      "lastUpdated": "2024-07-31T11:15:42.000Z",
       "_links": {
+        "activate": {
+          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/lifecycle/activate",
+          "hints": {
+            "allow": [
+              "POST"
+            ]
+          }
+        },
         "self": {
           "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1",
           "hints": {
@@ -38,14 +46,6 @@
               "GET"
             ]
           }
-        },
-        "deactivate": {
-          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/lifecycle/deactivate",
-          "hints": {
-            "allow": [
-              "POST"
-            ]
-          }
         }
       },
       "type": "OAUTH_AUTHORIZATION_POLICY"
@@ -53,7 +53,7 @@
     "body": {
       "id": "authorizationserverpolicy-fakeid1",
       "status": "ACTIVE",
-      "name": "my policy name3",
+      "name": "my policy name4",
       "description": "my policy description",
       "priority": 1,
       "system": false,
@@ -68,8 +68,21 @@
     },
     "reqHeaders": {
       "x-rate-limit-limit": "100",
-      "x-rate-limit-remaining": "96",
-      "x-rate-limit-reset": "1722423965"
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1722424601"
+    }
+  },
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/lifecycle/activate",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "97",
+      "x-rate-limit-reset": "1722424601"
     }
   }
 ]

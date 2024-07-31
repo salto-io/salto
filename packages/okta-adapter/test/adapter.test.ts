@@ -60,6 +60,8 @@ import {
   ACCESS_POLICY_TYPE_NAME,
   BRAND_THEME_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
+  AUTHORIZATION_SERVER,
+  AUTHORIZATION_POLICY,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -548,6 +550,92 @@ describe('adapter', () => {
 
     afterEach(() => {
       nock.cleanAll()
+    })
+
+    describe('deploy authorization server policy', () => {
+      let authorizationServerType: ObjectType
+      let authorizationServerPolicyType: ObjectType
+      let authorizationServer: InstanceElement
+
+      beforeEach(() => {
+        authorizationServerType = new ObjectType({
+          elemID: new ElemID(OKTA, AUTHORIZATION_SERVER),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        authorizationServer = new InstanceElement('authorizationServer', authorizationServerType, {
+          id: 'authorizationserver-fakeid1',
+        })
+        authorizationServerPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, AUTHORIZATION_POLICY),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an active authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_add_active.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ after: authorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserverpolicy-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_add_inactive.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            name: 'my policy',
+            status: INACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ after: authorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserverpolicy-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
 
     describe('deploy group', () => {

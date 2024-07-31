@@ -30,6 +30,10 @@ export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomizat
   updated_by_id: {
     hide: true,
   },
+  // This field is used to define a consistent service id (for elements that don't have unique id across the tenant)
+  parent_id: {
+    hide: true,
+  },
 
   // omit
   _links: {
@@ -45,12 +49,6 @@ export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomizat
     omit: true,
   },
   expirationDateTime: {
-    omit: true,
-  },
-  includeUsers: {
-    omit: true,
-  },
-  excludeUsers: {
     omit: true,
   },
   securityIdentifier: {

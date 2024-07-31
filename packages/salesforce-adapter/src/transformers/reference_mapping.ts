@@ -911,6 +911,18 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
   },
+  {
+    src: { field: 'value', parentTypes: ['ComponentInstancePropertyListItem'] },
+    sourceTransformation: 'globalPrefix',
+    target: { type: 'QuickAction' },
+  },
+  {
+    src: {
+      field: 'fieldItem',
+      parentTypes: ['FieldInstance'],
+    },
+    target: { type: CUSTOM_FIELD },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>

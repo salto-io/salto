@@ -84,7 +84,10 @@ export type ReferenceSourceTransformation = {
   validate: (referringFieldValue: string | number, serializedRefExpr: string) => boolean
 }
 
-export type ReferenceSourceTransformationName = 'exact' | 'asString' | 'asCaseInsensitiveString'
+const removeGlobalPrefix = (fieldValue: string): string =>
+  fieldValue.startsWith('Global.') ? fieldValue.substr(7) : fieldValue
+
+export type ReferenceSourceTransformationName = 'exact' | 'asString' | 'asCaseInsensitiveString' | 'globalPrefix'
 export const ReferenceSourceTransformationLookup: Record<
   ReferenceSourceTransformationName,
   ReferenceSourceTransformation
@@ -102,6 +105,11 @@ export const ReferenceSourceTransformationLookup: Record<
     transform: fieldValue => _.toString(fieldValue).toLocaleLowerCase(),
     validate: (referringFieldValue, serializedRefExpr) =>
       _.toString(referringFieldValue).toLocaleLowerCase() === _.toString(serializedRefExpr).toLocaleLowerCase(),
+  },
+  globalPrefix: {
+    transform: fieldValue => removeGlobalPrefix(_.toString(fieldValue)),
+    validate: (referringFieldValue, serializedRefExpr) =>
+      removeGlobalPrefix(_.toString(referringFieldValue)) === serializedRefExpr,
   },
 }
 

@@ -148,6 +148,8 @@ const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, SuiteQLTableName | Addition
   STDENTITYDEPARTMENT: 'department',
   STDENTITYTERMS: 'term',
   STDENTITYSUBSIDIARY: 'subsidiary',
+  STDENTITYRECEIVABLESACCOUNT: 'account',
+  STDENTITYPAYABLESACCOUNT: 'account',
 
   // STDTIME fields
   STDTIMEDEPARTMENT: 'department',

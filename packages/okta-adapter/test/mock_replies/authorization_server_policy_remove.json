@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/ausinwbminMwmB4EM5d7/policies/00pinyc3pflWJznJ55d7",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1722424030"
+    }
+  }
+]

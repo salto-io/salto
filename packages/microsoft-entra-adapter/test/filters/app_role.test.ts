@@ -22,6 +22,7 @@ import {
   toChange,
   getChangeData,
   ModificationChange,
+  Change,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, definitions, fetch } from '@salto-io/adapter-components'
@@ -235,16 +236,24 @@ describe('app roles filter', () => {
     })
 
     describe('when there is a change in one of the app roles', () => {
-      const applicationInstance = new InstanceElement('app', applicationType, { id: 'app' })
-      const appRoleInstanceA = new InstanceElement('appRoleA', appRoleType, { id: 'appRoleA' }, undefined, {
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
+      let applicationInstance: InstanceElement
+      let appRoleInstanceA: InstanceElement
+      let appRoleInstanceB: InstanceElement
+      let appRoleObjectType: ObjectType
+      let appRoleObjectTypeChange: Change<ObjectType>
+
+      beforeEach(() => {
+        applicationInstance = new InstanceElement('app', applicationType, { id: 'app' })
+        appRoleInstanceA = new InstanceElement('appRoleA', appRoleType, { id: 'appRoleA' }, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
+        })
+        appRoleInstanceB = new InstanceElement('appRoleB', appRoleType, { id: 'appRoleB' }, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
+        })
+        appRoleObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, APP_ROLE_TYPE_NAME) })
+        // Used to check that we handle properly non instance changes
+        appRoleObjectTypeChange = toChange({ after: appRoleObjectType })
       })
-      const appRoleInstanceB = new InstanceElement('appRoleB', appRoleType, { id: 'appRoleB' }, undefined, {
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
-      })
-      const appRoleObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, APP_ROLE_TYPE_NAME) })
-      // Used to check that we handle properly non instance changes
-      const appRoleObjectTypeChange = toChange({ after: appRoleObjectType })
 
       beforeEach(() => {
         mockDeployChanges.mockResolvedValueOnce({

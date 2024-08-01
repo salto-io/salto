@@ -209,6 +209,9 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               toSharedContext: {
                 pick: ['id'],
               },
+              additional: {
+                pick: ['appId'],
+              },
             },
           },
           {

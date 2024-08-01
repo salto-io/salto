@@ -53,6 +53,8 @@ import {
   DOMAIN_TYPE_NAME,
   PERMISSION_GRANT_POLICY_TYPE_NAME,
   CROSS_TENANT_ACCESS_POLICY_TYPE_NAME,
+  APP_ROLE_TYPE_NAME,
+  PARENT_ID_FIELD_NAME,
 } from '../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { FetchCustomizations } from './types'
@@ -67,7 +69,17 @@ import {
   adjustEntitiesWithExpandedMembers,
   createCustomizationsWithBasePathForFetch,
   createDefinitionForAppRoleAssignment,
+  addParentIdToAppRoles,
+  adjustApplication,
 } from './utils'
+
+const APP_ROLES_FIELD_CUSTOMIZATIONS = {
+  standalone: {
+    typeName: APP_ROLE_TYPE_NAME,
+    nestPathUnderParent: true,
+    referenceFromParent: false,
+  },
+}
 
 const graphV1Customizations: FetchCustomizations = {
   [GROUP_TYPE_NAME]: {
@@ -234,7 +246,10 @@ const graphV1Customizations: FetchCustomizations = {
         endpoint: {
           path: '/applications',
         },
-        transformation: DEFAULT_TRANSFORMATION,
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          adjust: adjustApplication,
+        },
       },
     ],
     resource: {
@@ -249,11 +264,7 @@ const graphV1Customizations: FetchCustomizations = {
         appId: {
           hide: true,
         },
-        [APP_ROLES_FIELD_NAME]: {
-          sort: {
-            properties: [{ path: 'displayName' }, { path: 'value' }],
-          },
-        },
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
       },
     },
   },
@@ -270,7 +281,6 @@ const graphV1Customizations: FetchCustomizations = {
             'appDescription',
             'appDisplayName',
             'applicationTemplateId',
-            'appRoles',
             'customSecurityAttributes',
             'disabledByMicrosoftStatus',
             'homepage',
@@ -285,6 +295,16 @@ const graphV1Customizations: FetchCustomizations = {
             'appManagementPolicy',
             'appRoleAssignments',
           ],
+          adjust: async ({ value }) => {
+            validatePlainObject(value, 'service principal')
+
+            return {
+              value: {
+                ...value,
+                [APP_ROLES_FIELD_NAME]: addParentIdToAppRoles(value),
+              },
+            }
+          },
         },
       },
     ],
@@ -326,7 +346,24 @@ const graphV1Customizations: FetchCustomizations = {
             referenceFromParent: false,
           },
         },
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
       },
+    },
+  },
+  [APP_ROLE_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+      serviceIDFields: [PARENT_ID_FIELD_NAME, 'id'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          extendsParent: true,
+          parts: [NAME_ID_FIELD, { fieldName: 'value' }],
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
   [SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME]: createDefinitionForAppRoleAssignment('servicePrincipals'),
@@ -453,9 +490,9 @@ const graphV1Customizations: FetchCustomizations = {
             return {
               value: {
                 ...value,
-                // The appRoles ids are unique *per custom security attribute definition*, so we need to add the parent_id in order to be able to
+                // The ids are unique *per custom security attribute definition*, so we need to add the parent_id in order to be able to
                 // add its id as part of the serviceIDFields
-                parent_id: context.id,
+                [PARENT_ID_FIELD_NAME]: context.id,
               },
             }
           },
@@ -464,7 +501,7 @@ const graphV1Customizations: FetchCustomizations = {
     ],
     resource: {
       directFetch: false,
-      serviceIDFields: ['parent_id', 'id'],
+      serviceIDFields: [PARENT_ID_FIELD_NAME, 'id'],
     },
     element: {
       topLevel: {
@@ -472,11 +509,6 @@ const graphV1Customizations: FetchCustomizations = {
         elemID: {
           extendsParent: true,
           parts: [{ fieldName: 'id' }],
-        },
-      },
-      fieldCustomizations: {
-        parent_id: {
-          hide: true,
         },
       },
     },

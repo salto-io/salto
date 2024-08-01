@@ -35,9 +35,7 @@ import {
   deployment,
   definitions as definitionsUtils,
   filterUtils,
-  references,
   ChangeElementResolver,
-  createChangeElementResolver,
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { types } from '@salto-io/lowerdash'
@@ -51,6 +49,7 @@ import {
 import { Options } from '../definitions/types'
 import { ADAPTER_NAME } from '../constants'
 import { customConvertError } from '../error_utils'
+import { changeResolver } from '../definitions/references'
 
 const log = logger(module)
 
@@ -270,6 +269,7 @@ export const deployArrayFieldsFilterCreator =
       const { deploy, ...otherDefs } = definitions
       const { topLevelTypeName } = arrayFieldDefinition
       if (deploy === undefined) {
+        log.error('could not find deploy definitions')
         return {
           deployResult: {
             appliedChanges: [],
@@ -284,6 +284,7 @@ export const deployArrayFieldsFilterCreator =
         }
       }
       if (changeGroup === undefined) {
+        log.error('change group not provided')
         return {
           deployResult: {
             appliedChanges: [],
@@ -303,9 +304,7 @@ export const deployArrayFieldsFilterCreator =
         changeGroup,
         elementSource,
         convertError: customConvertError,
-        changeResolver: createChangeElementResolver<Change<InstanceElement>>({
-          getLookUpName: references.generateLookupFunc(definitions.references?.rules ?? []),
-        }),
+        changeResolver,
         sharedContext,
       }
 

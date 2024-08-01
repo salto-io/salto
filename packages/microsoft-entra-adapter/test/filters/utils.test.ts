@@ -64,7 +64,10 @@ describe(`${mapMemberRefToChangeData}`, () => {
   it('should throw an error when the member reference value is missing the id', () => {
     expect(() =>
       mapMemberRefToChangeData({
-        id: new ReferenceExpression(new ElemID('adapter', 'someType', 'instance'), { value: {} }),
+        id: new ReferenceExpression(
+          new ElemID('adapter', 'someType', 'instance'),
+          new InstanceElement('refInstance', new ObjectType({ elemID: typeID }), {}),
+        ),
         [ODATA_TYPE_FIELD_NACL_CASE]: 'type1',
       }),
     ).toThrow()

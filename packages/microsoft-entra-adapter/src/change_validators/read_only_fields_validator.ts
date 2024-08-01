@@ -49,8 +49,8 @@ const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> =
   [SERVICE_PRINCIPAL_TYPE_NAME]: [{ fieldName: 'appId' }, { fieldName: 'displayName' }],
   [APPLICATION_TYPE_NAME]: [
     { fieldName: 'appId' },
-    { fieldName: 'publisherDomain' },
-    { fieldName: 'applicationTemplateId' },
+    { fieldName: 'publisherDomain', verifyAdditionChanges: true },
+    { fieldName: 'applicationTemplateId', verifyAdditionChanges: true },
   ],
   [DIRECTORY_ROLE_TYPE_NAME]: [
     { fieldName: 'description' },

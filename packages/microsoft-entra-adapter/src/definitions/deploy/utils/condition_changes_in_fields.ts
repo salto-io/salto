@@ -14,24 +14,28 @@
  * limitations under the License.
  */
 
-import { getChangeData, isAdditionChange } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 
 /*
- * Creates a custom condition that returns true if at least one of the specified fields is not empty
- * This custom condition is used to filter out changes that are not relevant for *addition* deploy requests,
- * since the transformForCheck field is irrelevant for addition changes
+ * Creates a custom condition that checks if the specified fields have changed in the change
+ * For addition changes this means that the fields are not empty
+ * For modification changes this means that the fields have different values
+ * Make sure to use this custom condition for addition changes, since transformForCheck field is irrelevant for them.
  */
-export const createCustomConditionEmptyFieldsOnAddition = (
+export const createCustomConditionCheckChangesInFields = (
   fieldNames: string[],
 ): definitions.deploy.DeployRequestCondition => ({
   custom:
     () =>
     ({ change }) => {
-      if (!isAdditionChange(change)) {
-        return false
+      if (isAdditionChange(change)) {
+        return !_.isEmpty(_.pick(getChangeData(change).value, fieldNames))
       }
-      return _.some(fieldNames, fieldName => !_.isEmpty(_.get(getChangeData(change).value, fieldName)))
+      if (isModificationChange(change)) {
+        return !isEqualValues(_.pick(change.data.before.value, fieldNames), _.pick(change.data.after.value, fieldNames))
+      }
+      return false
     },
 })

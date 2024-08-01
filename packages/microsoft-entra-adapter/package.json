@@ -37,7 +37,8 @@
     "axios": "^1.7.2",
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
-    "node-html-parser": "^6.1.5"
+    "node-html-parser": "^6.1.5",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.1.0",

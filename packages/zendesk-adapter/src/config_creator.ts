@@ -15,7 +15,11 @@
  */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType, createOptionsTypeGuard } from '@salto-io/adapter-utils'
+import {
+  createDefaultInstanceFromType,
+  createMatchingObjectType,
+  createOptionsTypeGuard,
+} from '@salto-io/adapter-utils'
 import { configType } from './config'
 import * as constants from './constants'
 import { Themes } from './user_config'

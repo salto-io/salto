@@ -15,7 +15,11 @@
  */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType, createOptionsTypeGuard } from '@salto-io/adapter-utils'
+import {
+  createDefaultInstanceFromType,
+  createMatchingObjectType,
+  createOptionsTypeGuard,
+} from '@salto-io/adapter-utils'
 import { ENABLE_DEPLOY_SUPPORT_FLAG, configType } from './config'
 import { WORKATO } from './constants'
 

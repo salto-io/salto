@@ -19,15 +19,14 @@ import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
-export const createOptionsTypeGuard = <T>(
-  optionsElemID: ElemID
-): ((instance: InstanceElement) => instance is InstanceElement & { value: T }) => 
+export const createOptionsTypeGuard =
+  <T>(optionsElemID: ElemID): ((instance: InstanceElement) => instance is InstanceElement & { value: T }) =>
   (instance): instance is InstanceElement & { value: T } => {
-  if (instance.refType.elemID.isEqual(optionsElemID)) {
-    return true
+    if (instance.refType.elemID.isEqual(optionsElemID)) {
+      return true
+    }
+    log.error(
+      `Received an invalid instance for config options. Received instance with refType ElemId full name: ${instance.refType.elemID.getFullName()}`,
+    )
+    return false
   }
-  log.error(
-    `Received an invalid instance for config options. Received instance with refType ElemId full name: ${instance.refType.elemID.getFullName()}`,
-  )
-  return false
-}

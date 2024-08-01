@@ -61,13 +61,13 @@ import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import accessPolicyRuleConstraintsFilter from './filters/access_policy_rule_constraints'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
-import appUserSchemaDeploymentFilter from './filters/app_user_schema_deployment'
+import appUserSchemaAdditionAndRemovalFilter from './filters/app_user_schema_deployment'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
 import userFilter from './filters/user'
 import serviceUrlFilter from './filters/service_url'
-import schemaFieldsRemovalFilter from './filters/schema_field_removal'
+import schemaDeploymentFilter from './filters/schema_deployment'
 import appLogoFilter from './filters/app_logo'
 import brandThemeRemovalFilter from './filters/brand_theme_removal'
 import brandThemeFilesFilter from './filters/brand_theme_files'
@@ -118,8 +118,8 @@ const DEFAULT_FILTERS = [
   addImportantValues, // TODO SALTO-5607 - move to infra
   accessPolicyRuleConstraintsFilter,
   defaultPolicyRuleDeployment,
-  appUserSchemaDeploymentFilter,
-  schemaFieldsRemovalFilter,
+  appUserSchemaAdditionAndRemovalFilter,
+  schemaDeploymentFilter,
   appLogoFilter,
   brandThemeRemovalFilter,
   brandThemeFilesFilter,

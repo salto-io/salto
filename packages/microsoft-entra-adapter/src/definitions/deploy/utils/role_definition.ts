@@ -17,12 +17,12 @@
 import _ from 'lodash'
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { ODATA_TYPE_FIELD, ROLE_DEFINITION_TYPE_NAME } from '../../../constants'
-import { AdjustFunction } from '../types'
+import { AdjustFunctionSingle } from '../types'
 
 // For some reason the fetch result doesn't return proper structure according to the docs
 // https://learn.microsoft.com/en-us/graph/api/intune-rbac-roledefinition-list?view=graph-rest-1.0&tabs=http
 // So we adjust the structure to match the docs
-export const adjustRoleDefinitionForDeployment: AdjustFunction = async ({ value }) => {
+export const adjustRoleDefinitionForDeployment: AdjustFunctionSingle = async ({ value }) => {
   validatePlainObject(value, ROLE_DEFINITION_TYPE_NAME)
   const rolePermissions = _.get(value, 'rolePermissions', [])
   validateArray(rolePermissions, 'rolePermissions')

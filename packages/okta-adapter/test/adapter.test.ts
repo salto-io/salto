@@ -33,6 +33,7 @@ import {
   ReferenceExpression,
   CORE_ANNOTATIONS,
   isObjectType,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -62,6 +63,9 @@ import {
   GROUP_MEMBERSHIP_TYPE_NAME,
   AUTHORIZATION_SERVER,
   AUTHORIZATION_POLICY,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  BRAND_LOGO_TYPE_NAME,
+  FAV_ICON_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -515,6 +519,8 @@ describe('adapter', () => {
 
     let brandType: ObjectType
     let brand1: InstanceElement
+    let appType: ObjectType
+    let groupType: ObjectType
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
@@ -546,10 +552,14 @@ describe('adapter', () => {
         name: 'subdomain.example.com',
         removePoweredByOkta: false,
       })
-    })
-
-    afterEach(() => {
-      nock.cleanAll()
+      appType = new ObjectType({
+        elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
     })
 
     describe('deploy authorization server policy', () => {
@@ -818,20 +828,23 @@ describe('adapter', () => {
         expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+      groupType = new ObjectType({
+        elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+    })
+
+    afterEach(() => {
+      nock.cleanAll()
     })
 
     describe('deploy group', () => {
-      let groupType: ObjectType
       let group1: InstanceElement
       beforeEach(() => {
-        groupType = new ObjectType({
-          elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
         group1 = new InstanceElement('group1', groupType, {
           id: 'group-fakeid1',
           objectClass: ['okta:user_group'],
@@ -1382,8 +1395,120 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
+    describe('deploy application group assignment', () => {
+      let appGroupAssignmentType: ObjectType
+      let app: InstanceElement
+      let group: InstanceElement
+
+      beforeEach(() => {
+        appGroupAssignmentType = new ObjectType({
+          elemID: new ElemID(OKTA, APP_GROUP_ASSIGNMENT_TYPE_NAME),
+        })
+
+        app = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          name: 'app1',
+          label: 'app1',
+          signOnMode: 'AUTO_LOGIN',
+          settings: {
+            app: {
+              url: 'https://app1.com',
+            },
+          },
+        })
+        group = new InstanceElement('group', groupType, {
+          id: 'group-fakeid1',
+        })
+      })
+
+      it('should successfully add an app group assignment', async () => {
+        loadMockReplies('app_group_assignment_add.json')
+        const appGroupAssignment = new InstanceElement(
+          'appGroupAssignment',
+          appGroupAssignmentType,
+          {
+            id: group.value.id,
+            priority: 2,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appGroupAssignment',
+            changes: [toChange({ after: appGroupAssignment })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('group-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an app group assignment', async () => {
+        loadMockReplies('app_group_assignment_modify.json')
+        const appGroupAssignment = new InstanceElement(
+          'appGroupAssignment',
+          appGroupAssignmentType,
+          {
+            id: group.value.id,
+            priority: 2,
+            // These are synthetic fields that we copy IDs to, since reference expressions can't be configured as
+            // service IDs. We add them here to verify that they are not included in external requests.
+            appId: 'app-fakeid1',
+            groupId: 'group-fakeid1',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+        const updatedAppGroupAssignment = appGroupAssignment.clone()
+        updatedAppGroupAssignment.value.priority = 3
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appGroupAssignment',
+            changes: [toChange({ before: appGroupAssignment, after: updatedAppGroupAssignment })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.priority).toEqual(3)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove an app group assignment', async () => {
+        loadMockReplies('app_group_assignment_remove.json')
+        const appGroupAssignment = new InstanceElement(
+          'appGroupAssignment',
+          appGroupAssignmentType,
+          {
+            id: group.value.id,
+            priority: 2,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appGroupAssignment',
+            changes: [toChange({ before: appGroupAssignment })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
     describe('deploy application', () => {
-      let appType: ObjectType
       let profileEnrollmentPolicyType: ObjectType
       let profileEnrollmentPolicy1: InstanceElement
       let profileEnrollmentPolicy2: InstanceElement
@@ -1391,14 +1516,6 @@ describe('adapter', () => {
       let accessPolicy: InstanceElement
 
       beforeEach(() => {
-        appType = new ObjectType({
-          elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
         profileEnrollmentPolicyType = new ObjectType({
           elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
         })
@@ -1778,6 +1895,160 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(1)
         expect(result.errors[0].message).toEqual('Expected BrandTheme to be deleted')
         expect(result.appliedChanges).toHaveLength(0)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy brand theme files (logo and favicon)', () => {
+      let brandThemeType: ObjectType
+      let brandLogoType: ObjectType
+      let brandFaviconType: ObjectType
+      let brandTheme: InstanceElement
+      let brandLogo: InstanceElement
+      let brandFavicon: InstanceElement
+
+      beforeEach(() => {
+        brandThemeType = new ObjectType({
+          elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        brandLogoType = new ObjectType({
+          elemID: new ElemID(OKTA, BRAND_LOGO_TYPE_NAME),
+          fields: {},
+        })
+        brandFaviconType = new ObjectType({
+          elemID: new ElemID(OKTA, FAV_ICON_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        brandTheme = new InstanceElement(
+          'brandTheme',
+          brandThemeType,
+          {
+            id: 'brandtheme-fakeid1',
+            primaryColorHex: '#1662ee',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        brandLogo = new InstanceElement(
+          'brandLogo',
+          brandLogoType,
+          {
+            fileName: 'logo.png',
+            content: new StaticFile({
+              filepath: 'logo.png',
+              encoding: 'binary',
+              content: Buffer.from('logo-fake-binary-data'),
+            }),
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(brandTheme.elemID, brandTheme),
+              new ReferenceExpression(brand1.elemID, brand1),
+            ],
+          },
+        )
+        brandFavicon = new InstanceElement(
+          'brandFavicon',
+          brandFaviconType,
+          {
+            fileName: 'favicon.ico',
+            content: new StaticFile({
+              filepath: 'favicon.ico',
+              encoding: 'binary',
+              content: Buffer.from('favicon-fake-binary-data'),
+            }),
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(brandTheme.elemID, brandTheme),
+              new ReferenceExpression(brand1.elemID, brand1),
+            ],
+          },
+        )
+      })
+
+      it('should successfully add brand theme files', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo', /logo-fake-binary-data/)
+          .reply(201, { url: 'https://somepath.to/brandlogo-fakeid1' })
+        nock('https://test.okta.com/')
+          .post('/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon', /favicon-fake-binary-data/)
+          .reply(201)
+
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandThemeFiles',
+            changes: [toChange({ after: brandLogo }), toChange({ after: brandFavicon })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify brand theme files', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo', /updated-logo-fake-binary-data/)
+          .reply(201)
+        nock('https://test.okta.com/')
+          .post('/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon', /updated-favicon-fake-binary-data/)
+          .reply(201)
+
+        const updatedBrandLogo = brandLogo.clone()
+        updatedBrandLogo.value.content = new StaticFile({
+          filepath: 'logo.png',
+          encoding: 'binary',
+          content: Buffer.from('updated-logo-fake-binary-data'),
+        })
+        const updatedBrandFavicon = brandFavicon.clone()
+        updatedBrandFavicon.value.content = new StaticFile({
+          filepath: 'favicon.ico',
+          encoding: 'binary',
+          content: Buffer.from('updated-favicon-fake-binary-data'),
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandThemeFiles',
+            changes: [
+              toChange({ before: brandLogo, after: updatedBrandLogo }),
+              toChange({ before: brandFavicon, after: updatedBrandFavicon }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove brand theme files', async () => {
+        loadMockReplies('brand_theme_files_remove.json')
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandThemeFiles',
+            changes: [toChange({ before: brandLogo }), toChange({ before: brandFavicon })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

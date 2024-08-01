@@ -16,9 +16,10 @@
 export { createDefinitionForAppRoleAssignment } from './app_role_assignment'
 export { adjustRoleDefinitionForDeployment } from './role_definition'
 export { createCustomizationsWithBasePath as createCustomizationsWithBasePathForDeploy } from './path_adjustment'
-export { omitReadOnlyFields } from './read_only_fields'
+export { omitReadOnlyFields, omitReadOnlyFieldsWrapper } from './read_only_fields'
 export {
   getGroupLifecyclePolicyGroupModificationRequest,
   createDefinitionForGroupLifecyclePolicyGroupModification,
 } from './group_deployment_life_cycle_policy'
-export { createCustomConditionEmptyFieldsOnAddition } from './condition_empty_fields'
+export { createCustomConditionCheckChangesInFields } from './condition_changes_in_fields'
+export { adjustParentWithAppRoles } from './app_role'

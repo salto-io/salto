@@ -58,7 +58,7 @@ const toSaltoError = (err: Error): SaltoError => ({
 })
 
 /**
- * Fetches and deploys brand theme fiels as static file.
+ * Fetches and deploys brand theme fields as static file.
  */
 const brandThemeFilesFilter: FilterCreator = ({ definitions }) => ({
   name: 'brandThemeFilesFilter',

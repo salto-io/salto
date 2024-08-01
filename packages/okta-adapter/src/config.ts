@@ -213,35 +213,6 @@ const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] =
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
-  ApplicationGroupAssignment: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'put',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-      },
-      modify: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'put',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'delete',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
   AppUserSchema: {
     deployRequests: {
       // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and removals
@@ -416,64 +387,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         url: '/api/v1/org',
         method: 'put',
         fieldsToIgnore: ['contactTypes'],
-      },
-    },
-  },
-  BrandLogo: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'delete',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
-  FavIcon: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'delete',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-        omitRequestBody: true,
       },
     },
   },

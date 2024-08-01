@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { RequiredDefinitions } from '../definitions/system/types'
 import { APIDefinitionsOptions, ResolveReferenceContextStrategiesType } from '../definitions'
-import { ResolveReferenceSerializationStrategyLookup, ResolveReferenceIndexNames } from '../definitions/system/api'
+import {
+  ResolveReferenceSerializationStrategyLookup,
+  ResolveReferenceIndexNames,
+  ApiDefinitions,
+} from '../definitions/system/api'
 import {
   FieldReferenceDefinition,
   FieldReferenceResolver,
@@ -29,7 +32,7 @@ import {
  * create a reference resolver based on the definitions
  */
 export const getResolverCreator = <Options extends APIDefinitionsOptions>(
-  definitions: RequiredDefinitions<Options>,
+  definitions: Pick<ApiDefinitions<Options>, 'references'>,
 ): ((
   def: FieldReferenceDefinition<
     ResolveReferenceContextStrategiesType<Options>,

@@ -260,7 +260,7 @@ export const accountIdValidator: (client: JiraClient, config: JiraConfig) => Cha
       .filter(isInstanceElement)
       .filter(isDeployableAccountIdType)
 
-    if (_.isEmpty(accountIdChangesData)) {
+    if (accountIdChangesData.length === 0) {
       return []
     }
 

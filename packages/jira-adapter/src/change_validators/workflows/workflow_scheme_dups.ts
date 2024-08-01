@@ -12,7 +12,6 @@ import {
   isInstanceElement,
   SeverityLevel,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { WORKFLOW_SCHEME_TYPE_NAME } from '../../constants'
@@ -22,7 +21,7 @@ const { awu } = collections.asynciterable
 
 export const workflowSchemeDupsValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
-    log.info('Skipping workflowSchemeDupsValidator due to missing elements source')
+    log.warn('Skipping workflowSchemeDupsValidator due to missing elements source')
     return []
   }
 
@@ -32,7 +31,7 @@ export const workflowSchemeDupsValidator: ChangeValidator = async (changes, elem
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
 
-  if (_.isEmpty(workflowSchemeNameChangesData)) {
+  if (workflowSchemeNameChangesData.length === 0) {
     return []
   }
   const nameToInstance = await awu(await elementSource.list())

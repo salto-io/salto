@@ -13,7 +13,6 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { isPermissionSchemeStructure, PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
@@ -42,8 +41,12 @@ Check ${new URL(JIRA_USERS_PAGE, url).href} to see valid users and account IDs.`
  */
 export const wrongUserPermissionSchemeValidator: (client: JiraClient, config: JiraConfig) => ChangeValidator =
   (client, config) => async (changes, elementsSource) => {
-    if (!(config.fetch.convertUsersIds ?? true) || elementsSource === undefined) {
-      log.info('Skipping wrongUserPermissionSchemeValidator due to missing config or elements source')
+    if (!(config.fetch.convertUsersIds ?? true)) {
+      log.warn('Skipping wrongUserPermissionSchemeValidator due to missing config or elements source')
+      return []
+    }
+    if (elementsSource === undefined) {
+      log.warn('Skipping wrongUserPermissionSchemeValidator due to missing elements source')
       return []
     }
     const { baseUrl } = client
@@ -56,7 +59,7 @@ export const wrongUserPermissionSchemeValidator: (client: JiraClient, config: Ji
         element => element.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME && element.value.permissions !== undefined,
       )
 
-    if (_.isEmpty(permissionsSchemeChangesData)) {
+    if (permissionsSchemeChangesData.length === 0) {
       return []
     }
     const rawUserMap = await getUsersMap(elementsSource)

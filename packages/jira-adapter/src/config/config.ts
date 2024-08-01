@@ -255,6 +255,7 @@ export type ChangeValidatorName =
   | 'addJsmProject'
   | 'deleteLabelAtttribute'
   | 'jsmPermissions'
+  | 'fieldContextOptions'
   | 'uniqueFields'
   | 'assetsObjectFieldConfigurationAql'
   | 'projectAssigneeType'
@@ -320,6 +321,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     addJsmProject: { refType: BuiltinTypes.BOOLEAN },
     deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
     jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
+    fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
     uniqueFields: { refType: BuiltinTypes.BOOLEAN },
     assetsObjectFieldConfigurationAql: { refType: BuiltinTypes.BOOLEAN },
     projectAssigneeType: { refType: BuiltinTypes.BOOLEAN },

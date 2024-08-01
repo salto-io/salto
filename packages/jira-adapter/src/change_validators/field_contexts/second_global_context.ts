@@ -15,6 +15,7 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange,
+  isInstanceElement,
   isReferenceExpression,
   isRemovalOrModificationChange,
   ReferenceExpression,
@@ -61,26 +62,12 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     log.error('Failed to run fieldSecondGlobalContextValidator because element source is undefined')
     return []
   }
-
-  const projectRemovalAndModificationChanges = changes
-    .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
-    .filter(isRemovalOrModificationChange)
-
-  const globalContextChangesData = changes
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-    .filter(instance => instance.value.isGlobalContext)
-
-  if (globalContextChangesData.length === 0 && projectRemovalAndModificationChanges.length === 0) {
-    return []
-  }
   const fieldToGlobalContextCount: Record<string, number> = {}
   const fieldToImplicitGlobalContextCount: Record<string, number> = {}
   const fillFieldToGlobalContextCount = async (): Promise<void> =>
-    awu(await getInstancesFromElementSource(elementSource, [FIELD_CONTEXT_TYPE_NAME]))
+    awu(await elementSource.getAll())
+      .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(isInstanceElement)
       .filter(instance => instance.value.isGlobalContext)
       .forEach(async instance => {
         const fieldElemId = getParentElemID(instance)
@@ -91,25 +78,29 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
           fieldToGlobalContextCount[fieldName] += 1
         }
       })
-  const fillFieldContextToProjectChangesData = async (): Promise<Map<string, ProjectChangesData>> => {
-    const fieldContextToProjectChangesData = new Map<string, ProjectChangesData>()
-    await awu(projectRemovalAndModificationChanges).forEach(async change => {
-      await awu(change.data.before.value.fieldContexts ?? [])
-        .filter(isReferenceExpression)
-        .forEach(async (context: ReferenceExpression) => {
-          if (fieldContextToProjectChangesData.get(context.elemID.getFullName()) === undefined) {
-            const fieldElemId = getParentElemID(await context.getResolvedValue(elementSource))
-            fieldContextToProjectChangesData.set(context.elemID.getFullName(), {
-              fieldElemId,
-              fieldContextName: context.elemID.name,
-              changes: [],
-            })
-          }
-          fieldContextToProjectChangesData.get(context.elemID.getFullName())?.changes.push(change)
-        })
-    })
-    if (fieldContextToProjectChangesData.size === 0) {
-      return fieldContextToProjectChangesData
+  const fillFieldContextToProjectChangeData = async (): Promise<Map<string, ProjectChangesData>> => {
+    const fieldContextToProjectChangeData = new Map<string, ProjectChangesData>()
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
+      .filter(isRemovalOrModificationChange)
+      .forEach(async change => {
+        await awu(change.data.before.value.fieldContexts ?? [])
+          .filter(isReferenceExpression)
+          .forEach(async (context: ReferenceExpression) => {
+            if (fieldContextToProjectChangeData.get(context.elemID.getFullName()) === undefined) {
+              const fieldElemId = getParentElemID(await context.getResolvedValue(elementSource))
+              fieldContextToProjectChangeData.set(context.elemID.getFullName(), {
+                fieldElemId,
+                fieldContextName: context.elemID.name,
+                changes: [],
+              })
+            }
+            fieldContextToProjectChangeData.get(context.elemID.getFullName())?.changes.push(change)
+          })
+      })
+    if (fieldContextToProjectChangeData.size === 0) {
+      return fieldContextToProjectChangeData
     }
     const projectInstances = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
     // if there is a project that using a field context that is not global context
@@ -117,15 +108,22 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
       .flatMap(instance => instance.value.fieldContexts)
       .filter(isReferenceExpression)
       .forEach((context: ReferenceExpression) => {
-        fieldContextToProjectChangesData.delete(context.elemID.getFullName())
+        fieldContextToProjectChangeData.delete(context.elemID.getFullName())
       })
-    return fieldContextToProjectChangesData
+    return fieldContextToProjectChangeData
   }
 
-  const globalContextElemIdsSet = new Set(globalContextChangesData.map(instance => instance.elemID.getFullName()))
+  const globalContextList = await awu(changes)
+    .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+    .filter(instance => instance.value.isGlobalContext)
+    .toArray()
+  const globalContextElemIdsSet = new Set(globalContextList.map(instance => instance.elemID.getFullName()))
 
   await fillFieldToGlobalContextCount()
-  const fieldContextToProjectChangesData = await fillFieldContextToProjectChangesData()
+  const fieldContextToProjectChangesData = await fillFieldContextToProjectChangeData()
 
   Array.from(fieldContextToProjectChangesData)
     .filter(([fieldContextName]) => !globalContextElemIdsSet.has(fieldContextName))
@@ -152,8 +150,8 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
       projectChanges.map(change => createProjectErrorMessage(getChangeData(change).elemID, fieldContextName)),
     )
 
-  if (globalContextChangesData.length > 0) {
-    const secondGlobalContextErrorMessages = globalContextChangesData
+  if (globalContextList.length > 0) {
+    const secondGlobalContextErrorMessages = globalContextList
       .map(instance => ({ context: instance, field: getParent(instance) }))
       .map(contextAndField => {
         if (fieldToGlobalContextCount[contextAndField.field.elemID.getFullName()] > 1) {

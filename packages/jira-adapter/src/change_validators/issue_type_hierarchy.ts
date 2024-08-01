@@ -20,7 +20,6 @@ import {
   isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import _ from 'lodash'
 import { ISSUE_TYPE_NAME } from '../constants'
 import { isJiraSoftwareFreeLicense } from '../utils'
 
@@ -80,11 +79,11 @@ const getIsuueTypeHierearchyWarningMessage = (instance: InstanceElement): Change
 
 export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
-    log.info('Skipping issueTypeHierarchyValidator as element source is undefined')
+    log.error('Skipping issueTypeHierarchyValidator as element source is undefined')
     return []
   }
   const relevantChanges = getIssueTypeWithHierachyChanges(changes)
-  if (_.isEmpty(relevantChanges)) {
+  if (relevantChanges.length === 0) {
     return []
   }
   const isLicenseFree = await isJiraSoftwareFreeLicense(elementSource)

@@ -12,7 +12,6 @@ import {
   SeverityLevel,
   isAdditionChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { PROJECT_TYPE, SERVICE_DESK } from '../constants'
 import { hasJiraServiceDeskLicense } from '../utils'
 
@@ -31,7 +30,7 @@ export const addJsmProjectValidator: ChangeValidator = async (changes, elementsS
     .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
     .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
-  if (_.isEmpty(jsmProjectChangesData) || (await hasJiraServiceDeskLicense(elementsSource)) === true) {
+  if (jsmProjectChangesData.length === 0 || (await hasJiraServiceDeskLicense(elementsSource)) === true) {
     return []
   }
 

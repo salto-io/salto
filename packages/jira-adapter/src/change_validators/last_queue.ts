@@ -14,7 +14,6 @@ import {
   isInstanceElement,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -31,7 +30,7 @@ const { awu } = collections.asynciterable
 export const deleteLastQueueValidator: (config: JiraConfig) => ChangeValidator =
   config => async (changes, elementsSource) => {
     if (elementsSource === undefined || !config.fetch.enableJSM) {
-      log.info('Skipping deleteLastQueueValidator due to missing elements source or JSM disabled')
+      log.warn('Skipping deleteLastQueueValidator due to missing elements source or JSM disabled')
       return []
     }
 
@@ -41,7 +40,7 @@ export const deleteLastQueueValidator: (config: JiraConfig) => ChangeValidator =
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
 
-    if (_.isEmpty(queueChangesData)) {
+    if (queueChangesData.length === 0) {
       return []
     }
 

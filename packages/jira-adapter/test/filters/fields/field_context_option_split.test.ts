@@ -314,7 +314,7 @@ describe('fieldContextOptionSplitFilter', () => {
     })
   })
   describe('editDefaultValue', () => {
-    it('should edit defaultValue to include references', async () => {
+    it('should edit defaultValue to include references in a sorted array', async () => {
       const context = new InstanceElement('contextName', contextType, {
         options: {
           option1: {
@@ -338,7 +338,7 @@ describe('fieldContextOptionSplitFilter', () => {
         },
         defaultValue: {
           type: 'option.multiple',
-          optionIds: ['1', '3'],
+          optionIds: ['3', '1'],
         },
       })
       const elements = [contextType, optionType, context]

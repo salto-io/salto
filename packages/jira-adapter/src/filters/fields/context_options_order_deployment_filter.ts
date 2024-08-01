@@ -5,14 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Change,
-  InstanceElement,
-  ReferenceExpression,
-  getChangeData,
-  isInstanceChange,
-  isRemovalChange,
-} from '@salto-io/adapter-api'
+import { Change, InstanceElement, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { OPTIONS_ORDER_TYPE_NAME } from './constants'
@@ -38,8 +33,11 @@ const filter: FilterCreator = ({ config, client }) => ({
       }
       const { contextId, fieldId } = getContextAndFieldIds(change)
       const baseUrl = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
-      const optionsValues =
-        getChangeData(change).value.options?.map((optionRef: ReferenceExpression) => optionRef.value.value) ?? []
+      const optionsValues = collections.array
+        .makeArray(getChangeData(change).value.options)
+        .filter(isResolvedReferenceExpression)
+        .map(optionRef => optionRef.value.value)
+
       await reorderContextOptions(optionsValues, client, baseUrl)
     })
 

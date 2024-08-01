@@ -8,7 +8,6 @@
 import {
   Change,
   InstanceElement,
-  ReferenceExpression,
   SaltoElementError,
   SeverityLevel,
   getChangeData,
@@ -18,8 +17,9 @@ import {
   isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './constants'
 import { setContextOptionsSplitted } from './context_options_splitted'
@@ -63,9 +63,7 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
       }
     }
 
-    const [addChanges, modifyOrRemoveChanges] = _.partition(relevantChanges.filter(isInstanceChange), change =>
-      isAdditionChange(change),
-    )
+    const [addChanges, modifyOrRemoveChanges] = _.partition(relevantChanges, change => isAdditionChange(change))
     const [modifyChanges, removeChanges] = _.partition(modifyOrRemoveChanges, change => isModificationChange(change))
     try {
       await setContextOptionsSplitted({
@@ -84,13 +82,15 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
           .map(getChangeData)
           .filter(isInstanceElement)
           .filter(relevantInstance => relevantInstance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
-          .forEach(orderInstance => {
-            orderInstance.value.options.forEach((optionRef: ReferenceExpression) => {
-              if (optionRef.value.elemID.isEqual(instance.elemID)) {
-                optionRef.value.value.id = instance.value.id
-              }
-            })
-          })
+          .forEach(orderInstance =>
+            collections.array
+              .makeArray(orderInstance.value.options)
+              .filter(isResolvedReferenceExpression)
+              .filter(optionRef => optionRef.elemID.isEqual(instance.elemID))
+              .forEach(relevantOptionRef => {
+                relevantOptionRef.value.value.id = instance.value.id
+              }),
+          )
       })
     } catch (err) {
       log.error('An error occurred during deployment of custom field context options: %o', err)

@@ -6,7 +6,16 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { Change, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  ChangeValidator,
+  CORE_ANNOTATIONS,
+  InstanceElement,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { fieldContextOptionsValidator } from '../../../src/change_validators/field_contexts/field_context_options'
 import {
   FIELD_CONTEXT_OPTION_TYPE_NAME,
@@ -22,6 +31,8 @@ describe('fieldContextOptionsValidator', () => {
   const contextInstance = new InstanceElement('context', createEmptyType(FIELD_CONTEXT_TYPE_NAME), {})
   let optionInstance: InstanceElement
   let orderInstance: InstanceElement
+  let config: JiraConfig
+  let validator: ChangeValidator
 
   beforeEach(() => {
     optionInstance = new InstanceElement('option', optionType, {}, undefined, {
@@ -38,75 +49,144 @@ describe('fieldContextOptionsValidator', () => {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(contextInstance.elemID, contextInstance)],
       },
     )
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.splitFieldContextOptions = true
+    validator = fieldContextOptionsValidator(config)
+    changes = []
+  })
+  it('should return no errors when fiture flag is false', async () => {
+    config.fetch.splitFieldContextOptions = false
+    changes = [optionInstance, orderInstance].map(instance => toChange({ after: instance }))
+    validator = fieldContextOptionsValidator(config)
+    const result = await validator(changes)
+    expect(result).toEqual([])
   })
   it('should return an empty array when no changes', async () => {
-    const result = await fieldContextOptionsValidator(changes)
+    const result = await validator(changes)
     expect(result).toEqual([])
   })
-
-  it('should not return an error when the order contains the option', async () => {
-    orderInstance.value.options = [new ReferenceExpression(optionInstance.elemID, optionInstance)]
-    changes = [optionInstance, orderInstance].map(instance => toChange({ after: instance }))
-    const result = await fieldContextOptionsValidator(changes)
-    expect(result).toEqual([])
-  })
-
-  it('should return an error if there is no order change', async () => {
-    changes = [toChange({ after: optionInstance })]
-    const result = await fieldContextOptionsValidator(changes)
-    expect(result).toEqual([
-      {
-        elemID: optionInstance.elemID,
-        severity: 'Error',
-        message: "This option is not being referenced by it's corresponding order",
-        detailedMessage: "The order instance context_order_child should reference all it's options",
-      },
-    ])
-  })
-  it('should return an error if there is an order change but does not contain it in the options', async () => {
-    changes = [optionInstance, orderInstance].map(instance => toChange({ after: instance }))
-    const result = await fieldContextOptionsValidator(changes)
-    expect(result).toEqual([
-      {
-        elemID: optionInstance.elemID,
-        severity: 'Error',
-        message: "This option is not being referenced by it's corresponding order",
-        detailedMessage: "The order instance context_order_child should reference all it's options",
-      },
-    ])
-  })
-  it('should return an error for cascading changes', async () => {
-    const cascadeOption = new InstanceElement('cascadeOption', optionType, {}, undefined, {
-      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
+  describe('option addition', () => {
+    it('should not return an error when the order contains the option', async () => {
+      orderInstance.value.options = [new ReferenceExpression(optionInstance.elemID, optionInstance)]
+      changes = [optionInstance, orderInstance].map(instance => toChange({ after: instance }))
+      const result = await validator(changes)
+      expect(result).toEqual([])
     })
-    const cascadeOrder = new InstanceElement('cascadeOrder', orderType, {}, undefined, {
-      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
+
+    it('should return an error if there is no order change', async () => {
+      changes = [toChange({ after: optionInstance })]
+      const result = await validator(changes)
+      expect(result).toEqual([
+        {
+          elemID: optionInstance.elemID,
+          severity: 'Error',
+          message: "This option is not being referenced by it's corresponding order",
+          detailedMessage: "The order instance context_order_child should reference all it's options",
+        },
+      ])
     })
-    orderInstance.value.options = [new ReferenceExpression(optionInstance.elemID, optionInstance)]
-    changes = [optionInstance, orderInstance, cascadeOption, cascadeOrder].map(instance =>
-      toChange({ after: instance }),
-    )
-    const result = await fieldContextOptionsValidator(changes)
-    expect(result).toEqual([
-      {
-        elemID: cascadeOption.elemID,
-        severity: 'Error',
-        message: "This option is not being referenced by it's corresponding order",
-        detailedMessage: "The order instance option_order_child should reference all it's options",
-      },
-    ])
+    it('should return an error if there is an order change but does not contain it in the options', async () => {
+      changes = [optionInstance, orderInstance].map(instance => toChange({ after: instance }))
+      const result = await validator(changes)
+      expect(result).toEqual([
+        {
+          elemID: optionInstance.elemID,
+          severity: 'Error',
+          message: "This option is not being referenced by it's corresponding order",
+          detailedMessage: "The order instance context_order_child should reference all it's options",
+        },
+      ])
+    })
+    it('should return an error for cascading changes', async () => {
+      const cascadeOption = new InstanceElement('cascadeOption', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
+      })
+      const cascadeOrder = new InstanceElement('cascadeOrder', orderType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
+      })
+      orderInstance.value.options = [new ReferenceExpression(optionInstance.elemID, optionInstance)]
+      changes = [optionInstance, orderInstance, cascadeOption, cascadeOrder].map(instance =>
+        toChange({ after: instance }),
+      )
+      const result = await validator(changes)
+      expect(result).toEqual([
+        {
+          elemID: cascadeOption.elemID,
+          severity: 'Error',
+          message: "This option is not being referenced by it's corresponding order",
+          detailedMessage: "The order instance option_order_child should reference all it's options",
+        },
+      ])
+    })
+    it('should return an error if the order does not have an options field', async () => {
+      orderInstance.value = {}
+      changes = [optionInstance, orderInstance].map(instance => toChange({ after: instance }))
+      const result = await validator(changes)
+      expect(result).toEqual([
+        {
+          elemID: optionInstance.elemID,
+          severity: 'Error',
+          message: "This option is not being referenced by it's corresponding order",
+          detailedMessage: "The order instance context_order_child should reference all it's options",
+        },
+      ])
+    })
   })
-  it('should return an error if the order does not have an options field', async () => {
-    orderInstance.value = {}
-    changes = [optionInstance, orderInstance].map(instance => toChange({ after: instance }))
-    const result = await fieldContextOptionsValidator(changes)
-    expect(result).toEqual([
-      {
-        elemID: optionInstance.elemID,
-        severity: 'Error',
-        message: "This option is not being referenced by it's corresponding order",
-        detailedMessage: "The order instance context_order_child should reference all it's options",
-      },
-    ])
+  describe('option removal', () => {
+    it('should not return an error when the option is removed and deleted from the order', async () => {
+      const before = orderInstance.clone()
+      before.value.options = [new ReferenceExpression(optionInstance.elemID, optionInstance)]
+      changes = [toChange({ before, after: orderInstance }), toChange({ before: optionInstance })]
+      const result = await validator(changes)
+      expect(result).toEqual([])
+    })
+    it('should return an error when the option is deleted from the order but not removed', async () => {
+      const before = orderInstance.clone()
+      const optionInstance2 = new InstanceElement('option2', optionType, {}, undefined, {})
+      before.value.options = [
+        new ReferenceExpression(optionInstance.elemID, optionInstance),
+        new ReferenceExpression(optionInstance2.elemID, optionInstance2),
+      ]
+      orderInstance.value.options = [new ReferenceExpression(optionInstance2.elemID, optionInstance2)]
+      changes = [toChange({ before, after: orderInstance })]
+      const result = await validator(changes)
+      expect(result).toEqual([
+        {
+          elemID: orderInstance.elemID,
+          severity: 'Error',
+          message: "This order is not referencing all it's options",
+          detailedMessage:
+            'The option jira.CustomFieldContextOption.instance.option was deleted from the order but was not removed',
+        },
+      ])
+    })
+    it('should return an error when a cascade option is deleted from the order but not removed', async () => {
+      const cascadeOption1 = new InstanceElement('cascadeOption', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
+      })
+      const cascadeOption2 = new InstanceElement('cascadeOption2', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
+      })
+
+      const cascadeOrder = new InstanceElement('cascadeOrder', orderType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
+      })
+      const before = cascadeOrder.clone()
+      before.value.options = [
+        new ReferenceExpression(cascadeOption1.elemID, cascadeOption1),
+        new ReferenceExpression(cascadeOption2.elemID, cascadeOption2),
+      ]
+      changes = [toChange({ before, after: cascadeOrder })]
+      const result = await validator(changes)
+      expect(result).toEqual([
+        {
+          elemID: cascadeOrder.elemID,
+          severity: 'Error',
+          message: "This order is not referencing all it's options",
+          detailedMessage:
+            'The options jira.CustomFieldContextOption.instance.cascadeOption,jira.CustomFieldContextOption.instance.cascadeOption2 were deleted from the order but were not removed',
+        },
+      ])
+    })
   })
 })

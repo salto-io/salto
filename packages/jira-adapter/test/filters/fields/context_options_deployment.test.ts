@@ -8,10 +8,13 @@
 import {
   Change,
   CORE_ANNOTATIONS,
+  Element,
   ElemID,
   getChangeData,
   InstanceElement,
+  isAdditionChange,
   isSaltoElementError,
+  ReadOnlyElementsSource,
   ReferenceExpression,
   SeverityLevel,
   toChange,
@@ -52,6 +55,8 @@ describe('ContextOptionsDeployment', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
   let paginator: clientUtils.Paginator
+  let elements: Element[]
+  let elementsSource: ReadOnlyElementsSource
   // Done here as it is needed got the 10K options, and we want to create them once
   const fieldInstance = new InstanceElement('field', createEmptyType(FIELD_TYPE_NAME), { id: '1field' })
   const contextInstance = new InstanceElement(
@@ -64,23 +69,18 @@ describe('ContextOptionsDeployment', () => {
     },
   )
   let changes: Change<InstanceElement>[]
+  let addOption1: InstanceElement
+  let addOption2: InstanceElement
 
   beforeEach(() => {
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.splitFieldContextOptions = true
     ;({ connection, client, paginator } = mockClient())
-    filter = optionsDeploymentFilter(
-      getFilterParams({
-        client,
-        paginator,
-        config,
-      }),
-    ) as typeof filter
     const optionType = createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME)
-    const addOption1 = new InstanceElement('option0', optionType, { value: 'p1' }, undefined, {
+    addOption1 = new InstanceElement('option0', optionType, { value: 'p1' }, undefined, {
       [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, contextInstance),
     })
-    const addOption2 = new InstanceElement('option1', optionType, { value: 'p2' }, undefined, {
+    addOption2 = new InstanceElement('option1', optionType, { value: 'p2' }, undefined, {
       [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, contextInstance),
     })
     const optionsInstances = _.range(2, 6).map(
@@ -90,6 +90,16 @@ describe('ContextOptionsDeployment', () => {
         }),
     )
     const randomInstance = new InstanceElement('random', createEmptyType('random'), {})
+    elements = [fieldInstance, contextInstance, addOption1, addOption2, ...optionsInstances, randomInstance]
+    elementsSource = buildElementsSourceFromElements(elements)
+    filter = optionsDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        elementsSource,
+      }),
+    ) as typeof filter
     changes = [
       toChange({ after: addOption1 }),
       toChange({ after: addOption2 }),
@@ -339,18 +349,41 @@ describe('ContextOptionsDeployment', () => {
         },
       })
       const orderType = createEmptyType(OPTIONS_ORDER_TYPE_NAME)
-      const orderInstance1 = new InstanceElement('order1', orderType, {
-        options: [
-          new ReferenceExpression(getChangeData(changes[0]).elemID, _.cloneDeep(getChangeData(changes[0]))),
-          new ReferenceExpression(getChangeData(changes[1]).elemID, _.cloneDeep(getChangeData(changes[1]))),
-        ],
-      })
-      const orderInstance2 = new InstanceElement('order2', orderType, {
-        options: [
-          new ReferenceExpression(getChangeData(changes[2]).elemID, _.cloneDeep(getChangeData(changes[2]))),
-          new ReferenceExpression(getChangeData(changes[3]).elemID, _.cloneDeep(getChangeData(changes[3]))),
-        ],
-      })
+      const contextInstance2 = new InstanceElement(
+        'context2',
+        createEmptyType(FIELD_CONTEXT_TYPE_NAME),
+        { id: '2context' },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        },
+      )
+      const orderInstance1 = new InstanceElement(
+        'order1',
+        orderType,
+        {
+          options: [
+            new ReferenceExpression(getChangeData(changes[0]).elemID, _.cloneDeep(getChangeData(changes[0]))),
+            new ReferenceExpression(getChangeData(changes[1]).elemID, _.cloneDeep(getChangeData(changes[1]))),
+          ],
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, contextInstance) },
+      )
+      const orderInstance2 = new InstanceElement(
+        'order2',
+        orderType,
+        {
+          options: [
+            new ReferenceExpression(getChangeData(changes[2]).elemID, _.cloneDeep(getChangeData(changes[2]))),
+            new ReferenceExpression(getChangeData(changes[3]).elemID, _.cloneDeep(getChangeData(changes[3]))),
+          ],
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance2.elemID, contextInstance2),
+        },
+      )
       const cascadeInstance10 = new InstanceElement(
         'p1cas10',
         optionType,
@@ -407,18 +440,53 @@ describe('ContextOptionsDeployment', () => {
           ),
         },
       )
-      const cascadeOrderInstance1 = new InstanceElement('cascadeOrder1', orderType, {
-        options: [
-          new ReferenceExpression(cascadeInstance10.elemID, _.cloneDeep(cascadeInstance10)),
-          new ReferenceExpression(cascadeInstance11.elemID, _.cloneDeep(cascadeInstance11)),
-        ],
-      })
-      const cascadeOrderInstance2 = new InstanceElement('cascadeOrder2', orderType, {
-        options: [
-          new ReferenceExpression(cascadeInstance20.elemID, _.cloneDeep(cascadeInstance20)),
-          new ReferenceExpression(cascadeInstance21.elemID, _.cloneDeep(cascadeInstance21)),
-        ],
-      })
+      const cascadeOrderInstance1 = new InstanceElement(
+        'cascadeOrder1',
+        orderType,
+        {
+          options: [
+            new ReferenceExpression(cascadeInstance10.elemID, _.cloneDeep(cascadeInstance10)),
+            new ReferenceExpression(cascadeInstance11.elemID, _.cloneDeep(cascadeInstance11)),
+          ],
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption1.elemID, addOption1),
+        },
+      )
+      const cascadeOrderInstance2 = new InstanceElement(
+        'cascadeOrder2',
+        orderType,
+        {
+          options: [
+            new ReferenceExpression(cascadeInstance20.elemID, _.cloneDeep(cascadeInstance20)),
+            new ReferenceExpression(cascadeInstance21.elemID, _.cloneDeep(cascadeInstance21)),
+          ],
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption2.elemID, addOption2),
+        },
+      )
+      elementsSource = buildElementsSourceFromElements([
+        ...elements,
+        orderInstance1,
+        orderInstance2,
+        cascadeInstance10,
+        cascadeInstance11,
+        cascadeInstance20,
+        cascadeInstance21,
+        cascadeOrderInstance1,
+        cascadeOrderInstance2,
+      ])
+      filter = optionsDeploymentFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config,
+          elementsSource,
+        }),
+      ) as typeof filter
       changes = changes.concat([
         toChange({ after: orderInstance1 }),
         toChange({ after: orderInstance2 }),
@@ -480,6 +548,19 @@ describe('ContextOptionsDeployment', () => {
       expect(getChangeData(changes[14]).value.options[0].value.value.id).toEqual('20')
       expect(getChangeData(changes[14]).value.options[1].value.value.id).toEqual('22')
     })
+    it('should not modify the option changes except for the id in additions', async () => {
+      const optionChanges = changes.filter(
+        change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME,
+      )
+      const originalOptionChanges = _.cloneDeep(optionChanges)
+      await filter.deploy(changes)
+      optionChanges.filter(isAdditionChange).forEach(change => {
+        delete change.data.after.value.id
+      })
+      optionChanges.forEach((change, i) => {
+        expect(change).toEqual(originalOptionChanges[i])
+      })
+    })
   })
   it('should call post with 1000 or less batches', async () => {
     const largeOptionsList = generateOptions(1001, contextInstance)
@@ -532,9 +613,9 @@ describe('ContextOptionsDeployment', () => {
             [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, contextInstance),
           },
         )
-        const elementsSource = buildElementsSourceFromElements([order10k])
 
         beforeEach(async () => {
+          elementsSource = buildElementsSourceFromElements([order10k, contextInstance, ...tenKOptions])
           filter = optionsDeploymentFilter(
             getFilterParams({
               client,

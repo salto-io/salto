@@ -41,6 +41,7 @@ import {
   VariableExpression,
   PlaceholderObjectType,
   UnresolvedReference,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -82,6 +83,7 @@ import {
   getInstancesFromElementSource,
   validatePlainObject,
   validateArray,
+  getParentAsync,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2782,6 +2784,45 @@ describe('Test utils.ts', () => {
     it('should throw when having a non instance parent', () => {
       child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, 'a')]
       expect(() => getParent(child)).toThrow()
+    })
+  })
+  describe('getParentAsync', () => {
+    let parent: InstanceElement
+    let child: InstanceElement
+    let elementsSource: ReadOnlyElementsSource
+
+    beforeEach(() => {
+      const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
+      parent = new InstanceElement('parent', obj, {})
+      child = new InstanceElement('child', obj, {}, [], {})
+      elementsSource = buildElementsSourceFromElements([])
+    })
+
+    it('should return the parent when there is a single instance parent with resolved value', async () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, parent)]
+      expect(await getParentAsync(child, elementsSource)).toBe(parent)
+    })
+
+    it('should throw when having more than one parent', async () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(parent.elemID, parent),
+        new ReferenceExpression(parent.elemID),
+      ]
+      await expect(() => getParentAsync(child, elementsSource)).rejects.toThrow()
+    })
+
+    it('should throw when having a non instance parent', async () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, 'a')]
+      await expect(() => getParentAsync(child, elementsSource)).rejects.toThrow()
+    })
+    it('should return the parent when there is a single instance parent with unresolved value', async () => {
+      elementsSource = buildElementsSourceFromElements([parent])
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID)]
+      expect(await getParentAsync(child, elementsSource)).toBe(parent)
+    })
+    it('should throw when the parent is unresolved and not in the elementsSource', async () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID)]
+      await expect(getParentAsync(child, elementsSource)).rejects.toThrow()
     })
   })
 

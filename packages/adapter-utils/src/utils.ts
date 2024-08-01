@@ -1100,6 +1100,24 @@ export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
 export const isResolvedReferenceExpression = (value: unknown): value is ReferenceExpression =>
   isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined
 
+export const getParentAsync = async (
+  instance: Element,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<InstanceElement> => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+  const parentReference = parents[0]
+  const parent = isResolvedReferenceExpression(parentReference)
+    ? parentReference.value
+    : await elementsSource.get(parentReference.elemID)
+  if (!isInstanceElement(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
+  }
+  return parent
+}
+
 export const getInstancesFromElementSource = async (
   elementSource: ReadOnlyElementsSource,
   typeNames: string[],

@@ -5,8 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
-import { getParent, invertNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { Change, getChangeData, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { getParent, getParentAsync, invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, ORDER_INSTANCE_SUFFIX } from '../filters/fields/constants'
 
@@ -27,6 +27,14 @@ export const getContextParent = (instance: InstanceElement): InstanceElement => 
     parent = getParent(parent)
   }
   return parent
+}
+
+export const getContextParentAsync = async (
+  instance: InstanceElement,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<InstanceElement> => {
+  const parent = await getParentAsync(instance, elementsSource)
+  return parent.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME ? getParentAsync(parent, elementsSource) : parent
 }
 
 export const getContextAndFieldIds = (change: Change<InstanceElement>): { contextId: string; fieldId: string } => {

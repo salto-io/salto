@@ -20,7 +20,7 @@ import {
   transformOption,
   Option,
 } from './context_options'
-import { getContextParent } from '../../common/fields'
+import { getContextParentAsync } from '../../common/fields'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -177,6 +177,12 @@ const setCascadeOptions = (options: InstanceElement[]): void => {
   })
 }
 
+const unsetOptions = (options: InstanceElement[]): void =>
+  options.forEach(option => {
+    delete option.value.optionId
+    delete option.value.parentValue
+  })
+
 export const setContextOptionsSplitted = async ({
   contextId,
   fieldId,
@@ -200,11 +206,17 @@ export const setContextOptionsSplitted = async ({
 
   setCascadeOptions(modified)
   setCascadeOptions(addedCascade)
-
-  const optionsCount = (await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME]))
-    .filter(instance => getContextParent(instance).value.id === contextId)
-    .map(instance => instance.value.options.length)
-    .reduce((acc, num) => acc + num, 0)
+  const bla = await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME])
+  log.debug('bla %o', bla)
+  const optionsCount = _.sum(
+    await Promise.all(
+      (await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME])).map(async instance =>
+        (await getContextParentAsync(instance, elementsSource)).value.id === contextId
+          ? instance.value.options.length
+          : 0,
+      ),
+    ),
+  )
 
   const baseUrl = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
   await updateContextOptions({
@@ -231,4 +243,7 @@ export const setContextOptionsSplitted = async ({
     isCascade: true,
     optionsCount,
   })
+  unsetOptions(added)
+  unsetOptions(modified)
+  unsetOptions(removed)
 }

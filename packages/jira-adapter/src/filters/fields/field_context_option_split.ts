@@ -121,10 +121,13 @@ const editDefaultValue = (context: InstanceElement, idToOptionRecord: Record<str
     optionIds.find(option => !_.isString(option)) === undefined &&
     optionIds.find(id => !Object.prototype.hasOwnProperty.call(idToOptionRecord, id)) === undefined
   ) {
-    context.value.defaultValue.optionIds = optionIds.map((id: string) => {
-      const optionInstance = idToOptionRecord[id]
-      return new ReferenceExpression(optionInstance.elemID, optionInstance)
-    })
+    context.value.defaultValue.optionIds = _.sortBy(
+      optionIds.map((id: string) => {
+        const optionInstance = idToOptionRecord[id]
+        return new ReferenceExpression(optionInstance.elemID, optionInstance)
+      }),
+      ref => ref.elemID.getFullName(),
+    )
   }
   if (_.isString(cascadingOptionId) && Object.prototype.hasOwnProperty.call(idToOptionRecord, cascadingOptionId)) {
     const optionInstance = idToOptionRecord[cascadingOptionId]

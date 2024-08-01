@@ -202,6 +202,98 @@ describe('default values', () => {
         },
       })
     })
+    it('should resolve default value optionIds, optionId and cascadingOptionId correctly', async () => {
+      const after = new InstanceElement(
+        'instance',
+        type,
+        {
+          name: 'a',
+          id: 3,
+          options: {
+            p1: {
+              id: 1,
+            },
+            p2: {
+              id: 2,
+            },
+          },
+          defaultValue: {
+            optionId: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance', 'options', 'p2'), {}),
+            optionIds: [
+              new ReferenceExpression(type.elemID.createNestedID('instance', 'instance', 'options', 'p2'), {}),
+            ],
+            cascadingOptionId: new ReferenceExpression(
+              type.elemID.createNestedID('instance', 'instance', 'options', 'p2'),
+              {},
+            ),
+            type: 'option.multiple',
+          },
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [{ id: '2' }],
+        },
+      )
+
+      await updateDefaultValues(toChange({ after }), client, config)
+
+      expect(client.put).toHaveBeenCalledWith({
+        url: '/rest/api/3/field/2/context/defaultValue',
+        data: {
+          defaultValues: [
+            {
+              optionId: 2,
+              optionIds: [2],
+              cascadingOptionId: 2,
+              contextId: 3,
+              type: 'option.multiple',
+            },
+          ],
+        },
+      })
+    })
+    it('should resolve default value optionIds, optionId and cascadingOptionId correctly when splitFieldContextOptions is true', async () => {
+      config.fetch.splitFieldContextOptions = true
+      const optionInstance = new InstanceElement('option', createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME), {
+        id: 111,
+      })
+
+      const after = new InstanceElement(
+        'instance',
+        type,
+        {
+          name: 'a',
+          id: 3,
+          defaultValue: {
+            optionId: new ReferenceExpression(optionInstance.elemID, optionInstance),
+            optionIds: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
+            cascadingOptionId: new ReferenceExpression(optionInstance.elemID, optionInstance),
+            type: 'option.multiple',
+          },
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [{ id: '2' }],
+        },
+      )
+
+      await updateDefaultValues(toChange({ after }), client, config)
+
+      expect(client.put).toHaveBeenCalledWith({
+        url: '/rest/api/3/field/2/context/defaultValue',
+        data: {
+          defaultValues: [
+            {
+              optionId: 111,
+              optionIds: [111],
+              cascadingOptionId: 111,
+              contextId: 3,
+              type: 'option.multiple',
+            },
+          ],
+        },
+      })
+    })
   })
 
   describe('setDefaultValueTypeDeploymentAnnotations', () => {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import {
   Change,
   ChangeGroup,
@@ -24,12 +24,11 @@ import {
   ReadOnlyElementsSource,
   SaltoElementError,
   getChangeData,
-  isAdditionChange,
   isInstanceChange,
   isInstanceElement,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import { getInstancesFromElementSource, getParents } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, getInstancesFromElementSource, getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { deployment } from '@salto-io/adapter-components'
 import { APP_ROLE_TYPE_NAME, APP_ROLES_FIELD_NAME, APPLICATION_TYPE_NAME } from '../constants'
@@ -39,6 +38,7 @@ import { customConvertError } from '../error_utils'
 
 const log = logger(module)
 const { isDefined } = values
+const { awu } = collections.asynciterable
 
 // We remove the changes from the array in reverse order to avoid changing the indices of the elements we still need to remove
 const removeArrayElementsByIndices = (arr: unknown[], indicesToRemove: number[]): void => {
@@ -136,17 +136,17 @@ const setOrCreateParentChangeWithAppRoles = async ({
   parentToAppRolesMap: Record<string, InstanceElement[]>
 }): Promise<
   | {
-      adjustedParentChange: Change<InstanceElement>
-      existingParentChange: Change<InstanceElement> | undefined
-      existingParentChangeIdx: number
+      parentChange: Change<InstanceElement>
+      existingParentChangeIdx: number | undefined
     }
   | undefined
 > => {
   const parentFullName = parent.elemID.getFullName()
-  const existingParentChangeIdx = otherChanges.findIndex(
+  const parentChangeIdx = otherChanges.findIndex(
     change => getChangeData(change).elemID.getFullName() === parentFullName,
   )
-  const existingParentChange = existingParentChangeIdx !== -1 ? otherChanges[existingParentChangeIdx] : undefined
+  const existingParentChangeIdx = parentChangeIdx !== -1 ? parentChangeIdx : undefined
+  const existingParentChange = existingParentChangeIdx !== undefined ? otherChanges[existingParentChangeIdx] : undefined
   if (existingParentChange !== undefined) {
     // We shouldn't really reach this point, as we validate the parent in 'extractUniqueParentsFromAppRoleChanges', but just for TS to be happy
     if (!isInstanceChange(existingParentChange)) {
@@ -156,7 +156,7 @@ const setOrCreateParentChangeWithAppRoles = async ({
 
     if (isRemovalChange(existingParentChange)) {
       // We deploy removal changes through the filter as well, so we will know whether the app role changes should be marked as applied or not
-      return { adjustedParentChange: existingParentChange, existingParentChange, existingParentChangeIdx }
+      return { parentChange: existingParentChange, existingParentChangeIdx }
     }
   }
 
@@ -168,19 +168,11 @@ const setOrCreateParentChangeWithAppRoles = async ({
     },
   }
 
-  const applyFunction = (instance: InstanceElement): InstanceElement => {
-    const dupInstance = instance.clone()
-    dupInstance.value[APP_ROLES_FIELD_NAME] = parentToAppRolesMap[parentFullName].map(appRole => appRole.value)
-    return dupInstance
-  }
-
-  const adjustedParentData = applyFunction(parent)
-  const adjustedParentChange = isAdditionChange(parentChange)
-    ? { ...parentChange, data: { after: adjustedParentData } }
-    : { ...parentChange, data: { ...parentChange.data, after: adjustedParentData } }
+  parentChange.data.after.value[APP_ROLES_FIELD_NAME] = parentToAppRolesMap[parentFullName].map(
+    appRole => appRole.value,
+  )
   return {
-    adjustedParentChange,
-    existingParentChange,
+    parentChange,
     existingParentChangeIdx,
   }
 }
@@ -215,19 +207,32 @@ const deployAppRoleChangesViaParent = async ({
 
   const existingParentChangeIndices = parentChanges
     .map(({ existingParentChangeIdx }) => existingParentChangeIdx)
-    .filter(index => index !== -1)
+    .filter(isDefined)
   removeArrayElementsByIndices(otherChanges, existingParentChangeIndices)
-  const changesToDeploy = parentChanges.map(({ adjustedParentChange }) => adjustedParentChange)
-  const existingParentChanges = parentChanges.map(({ existingParentChange }) => existingParentChange).filter(isDefined)
+  const changesToDeploy = parentChanges.map(({ parentChange }) => parentChange)
 
   const calculateResult = async ({
     errors,
     appliedChanges: appliedParentChanges,
   }: DeployResult): Promise<DeployResultWithLeftoverChanges> => {
     const appliedParentChangesFullNames = appliedParentChanges.map(change => getChangeData(change).elemID.getFullName())
-    const appliedExistingParentChanges = existingParentChanges.filter(change =>
-      appliedParentChangesFullNames.includes(getChangeData(change).elemID.getFullName()),
-    )
+    const appliedExistingParentChanges = await awu(parentChanges)
+      .filter(
+        ({ parentChange, existingParentChangeIdx }) =>
+          existingParentChangeIdx !== undefined &&
+          appliedParentChangesFullNames.includes(getChangeData(parentChange).elemID.getFullName()),
+      )
+      .map(({ parentChange }) =>
+        // We add the app roles field to the parent change in place, but we don't want to copy it to the workspace.
+        // So we remove it before returning it as an applied change.
+        // The reason we modify the change in place is that the `copy from response` flow works on the original change,
+        // and in case where we add an application we need to copy its id and appId.
+        applyFunctionToChangeData(parentChange, instance => {
+          instance.value = _.omit(instance.value, APP_ROLES_FIELD_NAME)
+          return instance
+        }),
+      )
+      .toArray()
     const appliedAppRoleChanges = appRoleInstanceChanges.filter(change =>
       appliedParentChangesFullNames.includes(getParents(getChangeData(change))[0]?.elemID.getFullName()),
     )

@@ -61,6 +61,7 @@ import {
   ACCESS_POLICY_TYPE_NAME,
   BRAND_THEME_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
 } from '../src/constants'
@@ -516,6 +517,8 @@ describe('adapter', () => {
 
     let brandType: ObjectType
     let brand1: InstanceElement
+    let appType: ObjectType
+    let groupType: ObjectType
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
@@ -547,6 +550,22 @@ describe('adapter', () => {
         name: 'subdomain.example.com',
         removePoweredByOkta: false,
       })
+      appType = new ObjectType({
+        elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      groupType = new ObjectType({
+        elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
     })
 
     afterEach(() => {
@@ -554,17 +573,8 @@ describe('adapter', () => {
     })
 
     describe('deploy group', () => {
-      let groupType: ObjectType
       let group1: InstanceElement
       beforeEach(() => {
-        groupType = new ObjectType({
-          elemID: new ElemID(OKTA, GROUP_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
         group1 = new InstanceElement('group1', groupType, {
           id: 'group-fakeid1',
           objectClass: ['okta:user_group'],
@@ -1115,8 +1125,120 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
+    describe('deploy application group assignment', () => {
+      let appGroupAssignmentType: ObjectType
+      let app: InstanceElement
+      let group: InstanceElement
+
+      beforeEach(() => {
+        appGroupAssignmentType = new ObjectType({
+          elemID: new ElemID(OKTA, APP_GROUP_ASSIGNMENT_TYPE_NAME),
+        })
+
+        app = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          name: 'app1',
+          label: 'app1',
+          signOnMode: 'AUTO_LOGIN',
+          settings: {
+            app: {
+              url: 'https://app1.com',
+            },
+          },
+        })
+        group = new InstanceElement('group', groupType, {
+          id: 'group-fakeid1',
+        })
+      })
+
+      it('should successfully add an app group assignment', async () => {
+        loadMockReplies('app_group_assignment_add.json')
+        const appGroupAssignment = new InstanceElement(
+          'appGroupAssignment',
+          appGroupAssignmentType,
+          {
+            id: group.value.id,
+            priority: 2,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appGroupAssignment',
+            changes: [toChange({ after: appGroupAssignment })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('group-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an app group assignment', async () => {
+        loadMockReplies('app_group_assignment_modify.json')
+        const appGroupAssignment = new InstanceElement(
+          'appGroupAssignment',
+          appGroupAssignmentType,
+          {
+            id: group.value.id,
+            priority: 2,
+            // These are synthetic fields that we copy IDs to, since reference expressions can't be configured as
+            // service IDs. We add them here to verify that they are not included in external requests.
+            appId: 'app-fakeid1',
+            groupId: 'group-fakeid1',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+        const updatedAppGroupAssignment = appGroupAssignment.clone()
+        updatedAppGroupAssignment.value.priority = 3
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appGroupAssignment',
+            changes: [toChange({ before: appGroupAssignment, after: updatedAppGroupAssignment })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.priority).toEqual(3)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove an app group assignment', async () => {
+        loadMockReplies('app_group_assignment_remove.json')
+        const appGroupAssignment = new InstanceElement(
+          'appGroupAssignment',
+          appGroupAssignmentType,
+          {
+            id: group.value.id,
+            priority: 2,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appGroupAssignment',
+            changes: [toChange({ before: appGroupAssignment })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
     describe('deploy application', () => {
-      let appType: ObjectType
       let profileEnrollmentPolicyType: ObjectType
       let profileEnrollmentPolicy1: InstanceElement
       let profileEnrollmentPolicy2: InstanceElement
@@ -1124,14 +1246,6 @@ describe('adapter', () => {
       let accessPolicy: InstanceElement
 
       beforeEach(() => {
-        appType = new ObjectType({
-          elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
         profileEnrollmentPolicyType = new ObjectType({
           elemID: new ElemID(OKTA, PROFILE_ENROLLMENT_POLICY_TYPE_NAME),
         })

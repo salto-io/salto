@@ -23,13 +23,14 @@ import {
   InstanceElement,
   ListType,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
+import {
+  createDefaultInstanceFromType,
+  createMatchingObjectType,
+  createOptionsTypeGuard,
+} from '@salto-io/adapter-utils'
 import { configType } from './types'
 import * as constants from './constants'
 import { CPQ_NAMESPACE, CUSTOM_OBJECT_ID_FIELD } from './constants'
-
-const log = logger(module)
 
 export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType, {
   fetch: {
@@ -211,21 +212,10 @@ export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>
     },
   },
 })
-const isOptionsTypeInstance = (
-  instance: InstanceElement,
-): instance is InstanceElement & { value: SalesforceConfigOptionsType } => {
-  if (instance.refType.elemID.isEqual(optionsElemId)) {
-    return true
-  }
-  log.error(
-    `Received an invalid instance for config options. Received instance with refType ElemId full name: ${instance.refType.elemID.getFullName()}`,
-  )
-  return false
-}
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options === undefined || !isOptionsTypeInstance(options)) {
+  if (options === undefined || !createOptionsTypeGuard<SalesforceConfigOptionsType>(optionsElemId)(options)) {
     return defaultConf
   }
   if (options.value.cpq === true || options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)) {

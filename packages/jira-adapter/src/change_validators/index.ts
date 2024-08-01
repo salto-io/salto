@@ -74,6 +74,7 @@ import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referen
 import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
 import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
 import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE } from '../constants'
+import { fieldContextDefaultValueValidator } from './field_contexts/field_context_default_value'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator } =
   deployment.changeValidators
@@ -144,7 +145,8 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
-    fieldContextOptions: fieldContextOptionsValidator,
+    fieldContextOptions: fieldContextOptionsValidator(config),
+    fieldContextDefaultValue: fieldContextDefaultValueValidator(config),
   }
 
   return createChangeValidator({

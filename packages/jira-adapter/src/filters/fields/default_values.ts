@@ -22,6 +22,7 @@ import {
   isAdditionOrModificationChange,
   isEqualValues,
   isObjectType,
+  isReferenceExpression,
   isRemovalChange,
   isRemovalOrModificationChange,
   ObjectType,
@@ -57,6 +58,15 @@ const resolveDefaultOption = (
           ? clonedInstance.value.defaultValue[fieldName].value.value.id
           : resolvePath(clonedInstance, clonedInstance.value.defaultValue[fieldName].elemID).id
       })
+    const optionIds = clonedInstance.value.defaultValue?.optionIds
+    if (Array.isArray(optionIds)) {
+      clonedInstance.value.defaultValue.optionIds = optionIds
+        .filter(isReferenceExpression)
+        .filter(isResolvedReferenceExpression)
+        .map(ref =>
+          config.fetch.splitFieldContextOptions ? ref.value.value.id : resolvePath(clonedInstance, ref.elemID).id,
+        )
+    }
     return clonedInstance
   })
 

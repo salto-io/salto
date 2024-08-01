@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import {
-  AdditionChange,
   BuiltinTypes,
   Change,
   CORE_ANNOTATIONS,

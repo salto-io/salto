@@ -1,0 +1,67 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "authorizationserverpolicy-fakeid1",
+      "status": "INACTIVE",
+      "name": "my policy name3",
+      "description": "my policy description",
+      "priority": 1,
+      "system": false,
+      "conditions": {
+        "clients": {
+          "include": ["ALL_CLIENTS"]
+        }
+      },
+      "created": "2024-07-31T11:11:57.000Z",
+      "lastUpdated": "2024-07-31T11:13:15.000Z",
+      "_links": {
+        "activate": {
+          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/lifecycle/activate",
+          "hints": {
+            "allow": ["POST"]
+          }
+        },
+        "self": {
+          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        },
+        "rules": {
+          "href": "https://dev-91042815.okta.com/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/rules",
+          "hints": {
+            "allow": ["GET"]
+          }
+        }
+      },
+      "type": "OAUTH_AUTHORIZATION_POLICY"
+    },
+    "body": {
+      "id": "authorizationserverpolicy-fakeid1",
+      "status": "ACTIVE",
+      "name": "my policy"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1722424454"
+    }
+  },
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/lifecycle/activate",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "97",
+      "x-rate-limit-reset": "1722424454"
+    }
+  }
+]

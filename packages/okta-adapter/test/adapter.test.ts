@@ -61,6 +61,8 @@ import {
   ACCESS_POLICY_TYPE_NAME,
   BRAND_THEME_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
+  AUTHORIZATION_SERVER,
+  AUTHORIZATION_POLICY,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
@@ -557,6 +559,274 @@ describe('adapter', () => {
             refType: BuiltinTypes.SERVICE_ID,
           },
         },
+      })
+    })
+
+    describe('deploy authorization server policy', () => {
+      let authorizationServerType: ObjectType
+      let authorizationServerPolicyType: ObjectType
+      let authorizationServer: InstanceElement
+
+      beforeEach(() => {
+        authorizationServerType = new ObjectType({
+          elemID: new ElemID(OKTA, AUTHORIZATION_SERVER),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        authorizationServer = new InstanceElement('authorizationServer', authorizationServerType, {
+          id: 'authorizationserver-fakeid1',
+        })
+        authorizationServerPolicyType = new ObjectType({
+          elemID: new ElemID(OKTA, AUTHORIZATION_POLICY),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an active authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_add_active.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ after: authorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserverpolicy-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_add_inactive.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            name: 'my policy',
+            status: INACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ after: authorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserverpolicy-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully activate an authorization server policy', async () => {
+        // TODO: it looks like this action sends an unexpected PUT request to the server
+        // This should be fixed when upgrading to the new infra.
+        loadMockReplies('authorization_server_policy_activate.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: INACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserverpolicy-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully deactivate an authorization server policy', async () => {
+        // TODO: it looks like this action sends an unexpected PUT request to the server
+        // This should be fixed when upgrading to the new infra.
+        loadMockReplies('authorization_server_policy_deactivate.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserverpolicy-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify an authorization server policy without status change', async () => {
+        loadMockReplies('authorization_server_policy_modify.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.name = 'your policy'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your policy')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and activate an authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_modify_and_activate.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: INACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.name = 'your policy'
+        activatedAuthorizationServerPolicy.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your policy')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate an authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_modify_and_deactivate.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
+        activatedAuthorizationServerPolicy.value.name = 'your policy'
+        activatedAuthorizationServerPolicy.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy, after: activatedAuthorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your policy')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove an authorization server policy', async () => {
+        loadMockReplies('authorization_server_policy_remove.json')
+        const authorizationServerPolicy = new InstanceElement(
+          'authorizationServerPolicy',
+          authorizationServerPolicyType,
+          {
+            id: 'authorizationserverpolicy-fakeid1',
+            name: 'my policy',
+            status: ACTIVE_STATUS,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'authorizationServerPolicy',
+            changes: [toChange({ before: authorizationServerPolicy })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
       groupType = new ObjectType({
         elemID: new ElemID(OKTA, GROUP_TYPE_NAME),

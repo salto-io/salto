@@ -19,11 +19,11 @@ import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
-export const isOptionsTypeInstance = <T>(
-  instance: InstanceElement,
-  optionsElemId: ElemID,
-): instance is InstanceElement & { value: T } => {
-  if (instance.refType.elemID.isEqual(optionsElemId)) {
+export const createOptionsTypeGuard = <T>(
+  optionsElemID: ElemID
+): ((instance: InstanceElement) => instance is InstanceElement & { value: T }) => 
+  (instance): instance is InstanceElement & { value: T } => {
+  if (instance.refType.elemID.isEqual(optionsElemID)) {
     return true
   }
   log.error(

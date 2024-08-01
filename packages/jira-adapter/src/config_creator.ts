@@ -15,7 +15,7 @@
  */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType, isOptionsTypeInstance } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, createMatchingObjectType, createOptionsTypeGuard } from '@salto-io/adapter-utils'
 import { configType } from './config/config'
 import * as constants from './constants'
 
@@ -36,7 +36,7 @@ export const optionsType = createMatchingObjectType<ConfigOptionsType>({
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options !== undefined && isOptionsTypeInstance<ConfigOptionsType>(options, optionsElemId)) {
+  if (options !== undefined && createOptionsTypeGuard<ConfigOptionsType>(optionsElemId)(options)) {
     if (options.value.enableScriptRunnerAddon) {
       defaultConf.value.fetch.enableScriptRunnerAddon = true
     }

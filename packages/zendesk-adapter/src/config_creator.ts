@@ -15,7 +15,7 @@
  */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType, isOptionsTypeInstance } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, createMatchingObjectType, createOptionsTypeGuard } from '@salto-io/adapter-utils'
 import { configType } from './config'
 import * as constants from './constants'
 import { Themes } from './user_config'
@@ -49,7 +49,7 @@ export const DEFAULT_GUIDE_THEME_CONFIG: { themes: Themes } = {
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options === undefined || !isOptionsTypeInstance<ConfigOptionsType>(options, optionsElemId)) {
+  if (options === undefined || !createOptionsTypeGuard<ConfigOptionsType>(optionsElemId)(options)) {
     return defaultConf
   }
   if (options.value.enableGuide === true || options.value.enableGuideThemes === true) {

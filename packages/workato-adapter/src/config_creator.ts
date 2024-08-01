@@ -15,7 +15,7 @@
  */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType, isOptionsTypeInstance } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, createMatchingObjectType, createOptionsTypeGuard } from '@salto-io/adapter-utils'
 import { ENABLE_DEPLOY_SUPPORT_FLAG, configType } from './config'
 import { WORKATO } from './constants'
 
@@ -33,7 +33,7 @@ export const optionsType = createMatchingObjectType<ConfigOptionsType>({
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConfig = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options === undefined || !isOptionsTypeInstance<ConfigOptionsType>(options, optionsElemId)) {
+  if (options === undefined || !createOptionsTypeGuard<ConfigOptionsType>(optionsElemId)(options)) {
     return defaultConfig
   }
   if (options.value.enableDeploy !== undefined) {

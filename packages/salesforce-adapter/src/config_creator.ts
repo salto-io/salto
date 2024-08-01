@@ -23,7 +23,7 @@ import {
   InstanceElement,
   ListType,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType, isOptionsTypeInstance } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, createMatchingObjectType, createOptionsTypeGuard } from '@salto-io/adapter-utils'
 import { configType } from './types'
 import * as constants from './constants'
 import { CPQ_NAMESPACE, CUSTOM_OBJECT_ID_FIELD } from './constants'
@@ -211,7 +211,7 @@ export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options === undefined || !isOptionsTypeInstance<SalesforceConfigOptionsType>(options, optionsElemId)) {
+  if (options === undefined || !createOptionsTypeGuard<SalesforceConfigOptionsType>(optionsElemId)(options)) {
     return defaultConf
   }
   if (options.value.cpq === true || options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)) {

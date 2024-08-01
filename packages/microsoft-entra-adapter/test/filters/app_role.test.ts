@@ -332,9 +332,7 @@ describe('app roles filter', () => {
           const changesParam = mockDeployChanges.mock.calls[0][0].changes
           expect(changesParam).toHaveLength(1)
           expect(changesParam[0].action).toEqual('add')
-          expect(_.get(getChangeData(changesParam[0]), `value.${APP_ROLES_FIELD_NAME}`)).toEqual(
-            expect.arrayContaining([appRoleInstanceA.value, appRoleInstanceB.value]),
-          )
+          expect(changesParam[0]).toEqual(applicationChange)
 
           expect(result.deployResult.appliedChanges).toEqual([applicationChange, appRoleChange])
           expect(result.deployResult.errors).toHaveLength(0)

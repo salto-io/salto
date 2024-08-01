@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME } from '../filters/fields/constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, ORDER_INSTANCE_SUFFIX } from '../filters/fields/constants'
 
 const log = logger(module)
 export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: string[]): boolean => {
@@ -44,3 +44,6 @@ export const getContextAndFieldIds = (change: Change<InstanceElement>): { contex
     fieldId: getParent(parent).value.id,
   }
 }
+
+export const getOrderNameFromOption = (option: InstanceElement): string =>
+  naclCase(`${invertNaclCase(getParent(option).elemID.name)}_${ORDER_INSTANCE_SUFFIX}`)

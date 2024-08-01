@@ -61,7 +61,7 @@ export const referencedWorkflowDeletionChangeValidator =
   (config: JiraConfig): ChangeValidator =>
   async (changes, elementsSource) => {
     if (!config.fetch.enableNewWorkflowAPI) {
-      log.info('New workflow api not enabled, skipping validator.')
+      log.warn('New workflow api not enabled, skipping validator.')
       return []
     }
     if (elementsSource === undefined) {
@@ -74,7 +74,7 @@ export const referencedWorkflowDeletionChangeValidator =
       .map(getChangeData)
       .filter(isWorkflowV2Instance)
 
-    if (_.isEmpty(workflowChangesData)) {
+    if (workflowChangesData.length === 0) {
       return []
     }
     const workflowNameToReferencingWorkflowSchemes =

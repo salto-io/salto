@@ -22,7 +22,6 @@ import {
   isReferenceExpression,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { QUEUE_TYPE } from '../constants'
@@ -45,7 +44,7 @@ export const defaultAdditionQueueValidator: (config: JiraConfig) => ChangeValida
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
 
-    if (_.isEmpty(queueChangesData)) {
+    if (queueChangesData.length === 0) {
       return []
     }
 

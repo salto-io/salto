@@ -27,7 +27,6 @@ import {
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import _ from 'lodash'
 import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS, JIRA } from '../constants'
 
 const log = logger(module)
@@ -72,7 +71,7 @@ const getInvalidPermissionErrorMessage = (
 
 export const permissionTypeValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
-    log.info('Skipping permissionTypeValidator as elements source is undefined')
+    log.warn('Skipping permissionTypeValidator as elements source is undefined')
     return []
   }
   const permissionSchemeChangesData = changes
@@ -81,7 +80,7 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
 
-  if (_.isEmpty(permissionSchemeChangesData)) {
+  if (permissionSchemeChangesData.length === 0) {
     return []
   }
   const allowedPermissionTypes = await getAllowedPermissionTypes(elementsSource)
@@ -90,7 +89,7 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     return []
   }
   return permissionSchemeChangesData
-    .filter(instance => !_.isEmpty(getInvalidPermissions(instance, allowedPermissionTypes)))
+    .filter(instance => getInvalidPermissions(instance, allowedPermissionTypes).length > 0)
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Warning' as SeverityLevel,

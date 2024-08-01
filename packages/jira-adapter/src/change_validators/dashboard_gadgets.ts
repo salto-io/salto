@@ -23,7 +23,6 @@ import {
   isReferenceExpression,
   SeverityLevel,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -60,7 +59,7 @@ export const dashboardGadgetsValidator: ChangeValidator = async (changes, elemen
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
 
-  if (_.isEmpty(dashboardGadgetChangesData)) {
+  if (dashboardGadgetChangesData.length === 0) {
     return []
   }
 

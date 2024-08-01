@@ -92,6 +92,16 @@ export const createClientDefinitions = (
               additionalValidStatuses: [404],
             },
           },
+          '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/deactivate': {
+            post: {
+              omitBody: true,
+            },
+          },
         },
       },
     },

@@ -648,8 +648,6 @@ describe('adapter', () => {
       })
 
       it('should successfully activate an authorization server policy', async () => {
-        // TODO: it looks like this action sends an unexpected PUT request to the server
-        // This should be fixed when upgrading to the new infra.
         loadMockReplies('authorization_server_policy_activate.json')
         const authorizationServerPolicy = new InstanceElement(
           'authorizationServerPolicy',
@@ -681,8 +679,6 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully deactivate an authorization server policy', async () => {
-        // TODO: it looks like this action sends an unexpected PUT request to the server
-        // This should be fixed when upgrading to the new infra.
         loadMockReplies('authorization_server_policy_deactivate.json')
         const authorizationServerPolicy = new InstanceElement(
           'authorizationServerPolicy',

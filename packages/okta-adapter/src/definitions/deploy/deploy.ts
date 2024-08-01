@@ -41,6 +41,7 @@ import {
   ID_FIELD,
   BRAND_THEME_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  AUTHORIZATION_POLICY,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -125,6 +126,115 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       actionDependencies: [
         {
           first: 'add',
+          second: 'modify',
+        },
+      ],
+    },
+    [AUTHORIZATION_POLICY]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: {
+                skipIfIdentical: true,
+                transformForCheck: {
+                  omit: ['status'],
+                },
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}',
+                  method: 'put',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}',
+                  method: 'delete',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          activate: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          deactivate: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/deactivate',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => {
+        if (isAdditionChange(change) && getChangeData(change).value.status === INACTIVE_STATUS) {
+          return ['add', 'deactivate']
+        }
+        if (isModificationChange(change)) {
+          if (isActivationChange(change)) {
+            return ['modify', 'activate']
+          }
+          if (isDeactivationChange(change)) {
+            return ['deactivate', 'modify']
+          }
+        }
+        return [change.action]
+      },
+      actionDependencies: [
+        {
+          first: 'add',
+          second: 'activate',
+        },
+        {
+          first: 'add',
+          second: 'deactivate',
+        },
+        {
+          first: 'modify',
+          second: 'activate',
+        },
+        {
+          first: 'deactivate',
           second: 'modify',
         },
       ],

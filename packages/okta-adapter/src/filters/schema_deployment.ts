@@ -69,7 +69,7 @@ const ensureCustomPropertiesExists = (instance: InstanceElement): void => {
   const afterCustomProperties = resolvePath(instance, customPropertiesElemID)
   if (!values.isPlainRecord(afterCustomProperties)) {
     if (afterCustomProperties !== undefined) {
-      log.error('Custom properties should be a record. Instance: %s', instance.elemID.getFullName())
+      log.error(`Custom properties should be a record. Instance: ${instance.elemID.getFullName()}`)
     }
     setPath(instance, customPropertiesElemID, {})
   }
@@ -83,16 +83,13 @@ const makeCustomPropertiesDeployable = (
   }
 }
 
-const returnCustomPropertiesToOriginal = (instance: InstanceElement, originalInstance: InstanceElement): void => {
-  const customPropertiesElemID = instance.elemID.createNestedID(...CUSTOM_PROPERTIES_PATH)
-  const originalCustomProperties = resolvePath(originalInstance, customPropertiesElemID)
-  setPath(instance, customPropertiesElemID, originalCustomProperties)
-}
-
-const returnBaseToOriginal = (instance: InstanceElement, originalInstance: InstanceElement): void => {
-  const baseElemId = getBaseElemID(instance)
-  const originalBase = resolvePath(originalInstance, baseElemId)
-  setPath(instance, baseElemId, originalBase)
+const returnValueToOriginal = (
+  instance: InstanceElement,
+  originalInstance: InstanceElement,
+  nestedElemId: ElemID,
+): void => {
+  const originalValue = resolvePath(originalInstance, nestedElemId)
+  setPath(instance, nestedElemId, originalValue)
 }
 
 export const makeSchemaDeployable = (
@@ -113,9 +110,13 @@ const returnToOriginalForm = (
 ): void => {
   const { after } = change.data
   const originalAfter = elemIdToOriginalAfter[getChangeData(change).elemID.getFullName()]
-  returnCustomPropertiesToOriginal(after, originalAfter)
+  if (originalAfter === undefined) {
+    log.error(`Could not find original after value in the onDeploy for ${after.elemID.getFullName()}`)
+    return
+  }
+  returnValueToOriginal(after, originalAfter, after.elemID.createNestedID(...CUSTOM_PROPERTIES_PATH))
   if (isModificationChange(change)) {
-    returnBaseToOriginal(after, originalAfter)
+    returnValueToOriginal(after, originalAfter, getBaseElemID(after))
   }
 }
 

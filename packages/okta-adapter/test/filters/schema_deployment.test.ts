@@ -93,6 +93,14 @@ describe('schemaDeploymentFilter', () => {
       await filter.onDeploy(changes)
       expect(changes).toEqual(beforePreDeployChanges)
     })
+    it('should log an error when original after value is not found', async () => {
+      const changes = [toChange({ after: groupSchemaInstance })]
+      await filter.onDeploy(changes)
+      expect(logSpy).toHaveBeenCalledTimes(1)
+      expect(logSpy).toHaveBeenCalledWith(
+        'Could not find original after value in the onDeploy for okta.GroupSchema.instance.groupSchemaInstance',
+      )
+    })
     describe('modification changes', () => {
       it("shouldn't edit modification change if the base haven't changed", async () => {
         const groupSchemaAfterInstance = groupSchemaInstance.clone()
@@ -228,6 +236,9 @@ describe('schemaDeploymentFilter', () => {
         })
         await filter.preDeploy([toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterInstanceThree })])
         expect(logSpy).toHaveBeenCalledTimes(1)
+        expect(logSpy).toHaveBeenCalledWith(
+          'Custom properties should be a record. Instance: okta.GroupSchema.instance.defaultGroupSchema',
+        )
       })
       it('should create an object with nulls if the custom properties field is undefined on preDeploy and delete it on onDeploy', async () => {
         const groupSchemaAfterInstanceFour = new InstanceElement('defaultGroupSchema', groupSchemaType, {
@@ -328,6 +339,9 @@ describe('schemaDeploymentFilter', () => {
         })
         await filter.preDeploy([toChange({ before: userSchemaBeforeInstance, after: userSchemaAfterInstanceThree })])
         expect(logSpy).toHaveBeenCalledTimes(1)
+        expect(logSpy).toHaveBeenCalledWith(
+          'Custom properties should be a record. Instance: okta.UserSchema.instance.defaultGroupSchema',
+        )
       })
       it('should create an empty object if the custom properties field is undefined on preDeploy and delete it on onDeploy', async () => {
         const userSchemaAfterInstanceFour = new InstanceElement('defaultGroupSchema', userSchemaType, {

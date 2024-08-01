@@ -47,7 +47,6 @@ import {
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { adapter as salesforceAdapter, loadElementsFromFolder } from '@salto-io/salesforce-adapter'
 import * as api from '../src/api'
 import { getAdapterConfigOptionsType, getAdditionalReferences, getLoginStatuses } from '../src/api'
 import * as plan from '../src/core/plan/plan'
@@ -129,21 +128,6 @@ jest.mock('../src/core/diff', () => ({
       : detailedChanges
   }),
 }))
-
-jest.mock('@salto-io/salesforce-adapter', () => {
-  const actual = jest.requireActual('@salto-io/salesforce-adapter')
-  return {
-    ...actual,
-    adapter: {
-      ...actual.adapter,
-      loadElementsFromFolder: jest.fn().mockImplementation(actual.adapter.loadElementsFromFolder),
-    },
-  }
-})
-
-const mockLoadElementsFromFolder = salesforceAdapter.loadElementsFromFolder as jest.MockedFunction<
-  typeof loadElementsFromFolder
->
 
 describe('api.ts', () => {
   const mockAdapterOps = {
@@ -1179,175 +1163,6 @@ describe('api.ts', () => {
           }),
         ]),
       )
-    })
-  })
-
-  describe('calculatePatch', () => {
-    const type = new ObjectType({
-      elemID: new ElemID('salesforce', 'type'),
-      fields: {
-        f: { refType: BuiltinTypes.STRING },
-      },
-    })
-
-    const instance = new InstanceElement('instance', type, { f: 'v' })
-    const instanceWithHidden = new InstanceElement('instance', type, { f: 'v', _service_id: 123 })
-    const instanceState = new InstanceElement('instanceState', type, { f: 'v' })
-    const instanceNacl = instanceState.clone()
-    instanceNacl.value.f = 'v2'
-
-    const ws = mockWorkspace({
-      elements: [type, instanceWithHidden, instanceNacl],
-      elementsWithoutHidden: [type, instance, instanceNacl],
-      stateElements: [type, instanceWithHidden, instanceState],
-      name: 'workspace',
-      accounts: ['salesforce'],
-      accountToServiceName: { salesforce: 'salesforce' },
-    })
-
-    adapterCreators.salesforce = salesforceAdapter
-
-    beforeEach(() => {
-      mockLoadElementsFromFolder.mockClear()
-    })
-
-    describe('when there is a difference between the folders', () => {
-      it('should return the changes with no errors', async () => {
-        const afterModifyInstance = instance.clone()
-        afterModifyInstance.value.f = 'v3'
-        const afterNewInstance = new InstanceElement('instance2', type, { f: 'v' })
-        const beforeElements = [instance]
-        const afterElements = [afterModifyInstance, afterNewInstance]
-        mockLoadElementsFromFolder
-          .mockResolvedValueOnce({ elements: beforeElements })
-          .mockResolvedValueOnce({ elements: afterElements })
-        const res = await api.calculatePatch({
-          workspace: ws,
-          fromDir: 'before',
-          toDir: 'after',
-          accountName: 'salesforce',
-        })
-        expect(res.success).toBeTruthy()
-        expect(res.fetchErrors).toHaveLength(0)
-        expect(res.mergeErrors).toHaveLength(0)
-        expect(res.changes).toHaveLength(2)
-      })
-    })
-
-    describe('when an element is added and also exists in ws', () => {
-      it('should not return changes for hidden values', async () => {
-        const afterModifyInstance = instance.clone()
-        afterModifyInstance.value.f = 'v3'
-        const beforeElements: Element[] = []
-        const afterElements = [afterModifyInstance]
-        mockLoadElementsFromFolder
-          .mockResolvedValueOnce({ elements: beforeElements })
-          .mockResolvedValueOnce({ elements: afterElements })
-        const res = await api.calculatePatch({
-          workspace: ws,
-          fromDir: 'before',
-          toDir: 'after',
-          accountName: 'salesforce',
-        })
-        expect(res.success).toBeTruthy()
-        expect(res.fetchErrors).toHaveLength(0)
-        expect(res.mergeErrors).toHaveLength(0)
-        expect(res.changes).toHaveLength(1)
-        expect(res.changes[0].change.id.name).toEqual('f')
-      })
-    })
-
-    describe('when there is no difference between the folders', () => {
-      it('should return with no changes and no errors', async () => {
-        const beforeElements = [instance]
-        const afterElements = [instance]
-        mockLoadElementsFromFolder
-          .mockResolvedValueOnce({ elements: beforeElements })
-          .mockResolvedValueOnce({ elements: afterElements })
-        const res = await api.calculatePatch({
-          workspace: ws,
-          fromDir: 'before',
-          toDir: 'after',
-          accountName: 'salesforce',
-        })
-        expect(res.success).toBeTruthy()
-        expect(res.fetchErrors).toHaveLength(0)
-        expect(res.mergeErrors).toHaveLength(0)
-        expect(res.changes).toHaveLength(0)
-      })
-    })
-
-    describe('when there is a merge error', () => {
-      it('should return with merge error and success false', async () => {
-        const beforeElements = [instance, instance]
-        mockLoadElementsFromFolder.mockResolvedValueOnce({ elements: beforeElements })
-        const res = await api.calculatePatch({
-          workspace: ws,
-          fromDir: 'before',
-          toDir: 'after',
-          accountName: 'salesforce',
-        })
-        expect(res.success).toBeFalsy()
-        expect(res.fetchErrors).toHaveLength(0)
-        expect(res.changes).toHaveLength(0)
-        expect(res.mergeErrors).toHaveLength(1)
-      })
-    })
-
-    describe('when there is a fetch error', () => {
-      it('should return with changes and fetch errors', async () => {
-        const afterModifyInstance = instance.clone()
-        afterModifyInstance.value.f = 'v3'
-        const beforeElements = [instance]
-        const afterElements = [afterModifyInstance]
-        mockLoadElementsFromFolder
-          .mockResolvedValueOnce({ elements: beforeElements })
-          .mockResolvedValueOnce({ elements: afterElements, errors: [{ message: 'err', severity: 'Warning' }] })
-        const res = await api.calculatePatch({
-          workspace: ws,
-          fromDir: 'before',
-          toDir: 'after',
-          accountName: 'salesforce',
-        })
-        expect(res.success).toBeTruthy()
-        expect(res.changes).toHaveLength(1)
-        expect(res.mergeErrors).toHaveLength(0)
-        expect(res.fetchErrors).toHaveLength(1)
-      })
-    })
-
-    describe('when there are conflicts', () => {
-      it('should return the changes with pendingChanges', async () => {
-        const beforeConflictInstance = instanceState.clone()
-        beforeConflictInstance.value.f = 'v5'
-        const afterConflictInstance = instanceState.clone()
-        afterConflictInstance.value.f = 'v4'
-        const beforeElements = [beforeConflictInstance]
-        const afterElements = [afterConflictInstance]
-        mockLoadElementsFromFolder
-          .mockResolvedValueOnce({ elements: beforeElements })
-          .mockResolvedValueOnce({ elements: afterElements })
-        const res = await api.calculatePatch({
-          workspace: ws,
-          fromDir: 'before',
-          toDir: 'after',
-          accountName: 'salesforce',
-        })
-        expect(res.success).toBeTruthy()
-        expect(res.fetchErrors).toHaveLength(0)
-        expect(res.mergeErrors).toHaveLength(0)
-        expect(res.changes).toHaveLength(1)
-        const firstChange = (await awu(res.changes).toArray())[0]
-        expect(firstChange.pendingChanges).toHaveLength(1)
-      })
-    })
-
-    describe('when used with an account that does not support loadElementsFromFolder', () => {
-      it('Should throw an error', async () => {
-        await expect(
-          api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'notSalesforce' }),
-        ).rejects.toThrow()
-      })
     })
   })
 

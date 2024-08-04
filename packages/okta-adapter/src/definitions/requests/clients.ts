@@ -35,6 +35,7 @@ export const createClientDefinitions = (
             readonly: true,
           },
           delete: {
+            additionalValidStatuses: [404],
             omitBody: true,
           },
         },
@@ -85,11 +86,6 @@ export const createClientDefinitions = (
           '/api/v1/apps/{source}/policies/{target}': {
             put: {
               omitBody: true,
-            },
-          },
-          '/api/v1/apps/{appId}/groups/{id}': {
-            delete: {
-              additionalValidStatuses: [404],
             },
           },
           '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate': {

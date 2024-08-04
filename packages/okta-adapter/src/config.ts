@@ -233,24 +233,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  AppLogo: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps/{appId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/apps/{appId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-        },
-      },
-    },
-  },
   UserSchema: {
     deployRequests: {
       add: {

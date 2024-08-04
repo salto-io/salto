@@ -25,12 +25,11 @@ import { appGroupValidator } from './app_group'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
 import { appIntegrationSetupValidator } from './app_integration_setup'
 import { assignedAccessPoliciesValidator } from './assigned_policies'
-import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_fields'
 import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { usersValidator } from './user'
 import { appWithGroupPushValidator } from './app_with_group_push'
 import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
-import { appUserSchemaBaseChangesValidator } from './app_user_schema_base_properties'
+import { schemaBaseChangesValidator } from './app_user_schema_base_properties'
 import { appGroupAssignmentValidator } from './app_group_assignments'
 import { appUrlsValidator } from './app_urls'
 import { profileMappingRemovalValidator } from './profile_mapping_removal'
@@ -99,11 +98,10 @@ export default ({
     userTypeAndSchema: userTypeAndSchemaValidator,
     appIntegrationSetup: appIntegrationSetupValidator(client),
     assignedAccessPolicies: assignedAccessPoliciesValidator,
-    groupSchemaModifyBase: groupSchemaModifyBaseValidator,
     enabledAuthenticators: enabledAuthenticatorsValidator,
     users: usersValidator(client, userConfig, fetchQuery),
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
-    appUserSchemaBaseChanges: appUserSchemaBaseChangesValidator,
+    schemaBaseChanges: schemaBaseChangesValidator,
     appWithGroupPush: appWithGroupPushValidator,
     groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
     appGroupAssignment: appGroupAssignmentValidator,

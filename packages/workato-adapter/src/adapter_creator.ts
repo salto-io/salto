@@ -29,6 +29,7 @@ import {
 } from './config'
 import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'
+import { configCreator } from './config_creator'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
@@ -96,4 +97,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  configCreator,
 }

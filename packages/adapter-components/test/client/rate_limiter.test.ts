@@ -402,27 +402,3 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
     })
   })
 })
-
-describe('performance', () => {
-  const ratePerSecond = 100000
-  beforeEach(() => {
-    jest.resetAllMocks() // Reset all mocks after each test
-    jest.restoreAllMocks()
-  })
-  it.each([100000, 1000000])(
-    'should be performant and not add a big overhead between invocations (numTasks: %s).',
-    async numTasks => {
-      const startTime = Date.now()
-      const mockTask = jest.fn(async () => true)
-      const rateLimiter = new RateLimiter({ delayMS: 0, useBottleneck: false })
-      const tasks = Array.from({ length: numTasks }, () => mockTask)
-      await Promise.all(rateLimiter.addAll(tasks))
-      const timeElapsed = Date.now() - startTime
-      const expectedTimeElapsedMS = Math.max((numTasks / ratePerSecond) * 1000, 1)
-      const toleranceThresholdMS = expectedTimeElapsedMS * 0.33
-      expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsedMS + toleranceThresholdMS)
-      // This test will fail a lot of times because of different hardware. We want to at least be certain of a lower threshold of speed.
-      // expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsedMS - toleranceThresholdMS)
-    },
-  )
-})

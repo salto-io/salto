@@ -65,7 +65,7 @@ import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRet
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
-import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterPrefix } from '../src/constants'
+import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterSuffix } from '../src/constants'
 
 const { makeArray } = collections.array
 
@@ -503,7 +503,7 @@ describe('SalesforceAdapter CRUD', () => {
             expect(result.errors).toBeEmpty()
             expect(result.appliedChanges).toHaveLength(1)
             expect(progressReporter.getReportedMessages()).toSatisfyAny(message =>
-              message.startsWith(ProgressReporterPrefix.QuickDeploy),
+              message.endsWith(ProgressReporterSuffix.QuickDeploy),
             )
           })
         })
@@ -581,7 +581,7 @@ describe('SalesforceAdapter CRUD', () => {
           it('should fallback to the regular deploy', () => {
             expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
             expect(progressReporter.getReportedMessages()).toSatisfyAny(message =>
-              message.startsWith(ProgressReporterPrefix.QuickDeployFailed),
+              message.endsWith(ProgressReporterSuffix.QuickDeployFailed),
             )
           })
         })

@@ -692,7 +692,7 @@ export const PROFILE_RELATED_METADATA_TYPES = [
   APEX_PAGE_METADATA_TYPE,
 ] as const
 
-export const ProgressReporterPrefix = {
+export const ProgressReporterSuffix = {
   QuickDeploy: 'Attempting quick deploy',
   QuickDeployFailed: 'Quick deploy failed. Attempting regular deploy',
 }

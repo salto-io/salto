@@ -53,7 +53,7 @@ import {
   API_NAME_SEPARATOR,
   CUSTOM_FIELD,
   CUSTOM_OBJECT_TYPE_NAME,
-  ProgressReporterPrefix,
+  ProgressReporterSuffix,
   GLOBAL_VALUE_SET_SUFFIX,
   INSTANCE_FULL_NAME_FIELD,
   SalesforceArtifacts,
@@ -433,14 +433,14 @@ const quickDeployOrDeploy = async (
   progressReporter?: ProgressReporter,
 ): Promise<SFDeployResult> => {
   const createProgressReporterCallback =
-    (prefixMessage?: string) =>
+    (suffixMessage?: string) =>
     async (deployResult: SFDeployResult): Promise<void> => {
       if (!progressReporter) {
         return
       }
       const progressMessage = await deployProgressMessage(client, deployResult)
       progressReporter.reportProgress({
-        message: prefixMessage ? `${prefixMessage}: ${progressMessage}` : progressMessage,
+        message: suffixMessage ? `${progressMessage}, ${suffixMessage}` : progressMessage,
       })
     }
 
@@ -448,14 +448,14 @@ const quickDeployOrDeploy = async (
     try {
       return await client.quickDeploy(
         quickDeployParams.requestId,
-        createProgressReporterCallback(ProgressReporterPrefix.QuickDeploy),
+        createProgressReporterCallback(ProgressReporterSuffix.QuickDeploy),
       )
     } catch (e) {
       log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
       return client.deploy(
         pkgData,
         { checkOnly },
-        createProgressReporterCallback(ProgressReporterPrefix.QuickDeployFailed),
+        createProgressReporterCallback(ProgressReporterSuffix.QuickDeployFailed),
       )
     }
   }

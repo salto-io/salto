@@ -4878,6 +4878,7 @@ __metadata:
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/async-lock": ^1.1.2
     "@types/esprima": ^4.0.6
+    "@types/estraverse": ^5.1.7
     "@types/he": ^1.1.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5903,6 +5904,15 @@ __metadata:
   dependencies:
     "@types/estree": "*"
   checksum: 36c5ca24a6506eb5742e8c66c0372918a859535022a5605f1e898b66e4941b91384f43c6aeb5c8ca1ed984af469dfabd22e784e833175bb1ab25af40787466ba
+  languageName: node
+  linkType: hard
+
+"@types/estraverse@npm:^5.1.7":
+  version: 5.1.7
+  resolution: "@types/estraverse@npm:5.1.7"
+  dependencies:
+    "@types/estree": "*"
+  checksum: e598a73ec90c0b1989b55d55271742a7abfaa873ebe5041bfb1fbfe44fa5e64e5d759a60f4cb0a3f24b90c4ba98d87955aa836a8eea796ad4d880e4def92c23d
   languageName: node
   linkType: hard
 

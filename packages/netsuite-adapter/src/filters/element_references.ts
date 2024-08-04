@@ -67,7 +67,7 @@ const pathPrefixRegex = new RegExp(
   `^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`,
   'm',
 )
-// matches strings in the format of 'key: value'
+// matches key strings in the format of 'key: value'
 const mappedReferenceRegex = new RegExp(`(?<${OPTIONAL_REFS}>\\w+):\\s*.+`, 'gm')
 // matches comments in js files
 const jsCommentsRegex = new RegExp('\\/\\*[\\s\\S]*?\\*\\/|^\\/\\/.*|(?<=[^:])\\/\\/.*', 'gm')
@@ -150,7 +150,7 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
-const parseAST = (ast: esprima.Program): Set<string> => {
+const parseAST = (ast: esprima.Program): string[] => {
   const commentRanges = ast.comments?.map(comment => comment.range).filter(isDefined) ?? []
   const results: Set<string> = new Set()
   // TODO: remove this and related logic once SALTO-6026 is communicated
@@ -185,7 +185,7 @@ const parseAST = (ast: esprima.Program): Set<string> => {
   if (objectKeyReferences.size > 0) {
     log.info('Found %d object key references: %o', objectKeyReferences.size, objectKeyReferences)
   }
-  return results
+  return Array.from(results).filter(ref => !ref.startsWith(NETSUITE_MODULE_PREFIX))
 }
 
 const getReferencesWithRegex = (content: string): string[] => {
@@ -224,7 +224,7 @@ const getSuiteScriptReferences = async (
   try {
     const ast = esprima.parseScript(content, { range: true })
     const results = parseAST(ast)
-    const resultsWithConfigReferences = Array.from(results).concat(nsConfigReferences)
+    const resultsWithConfigReferences = results.concat(nsConfigReferences)
     return getServiceElemIDsFromPaths(
       resultsWithConfigReferences,
       serviceIdToElemID,

@@ -717,14 +717,18 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
   return {
     name: 'workflowFilter',
     onFetch: async (elements: Element[]) => {
-      if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(WORKFLOW_CONFIGURATION_TYPE)) {
+      if (
+        client.isDataCenter ||
+        !config.fetch.enableNewWorkflowAPI ||
+        !fetchQuery.isTypeMatch(WORKFLOW_CONFIGURATION_TYPE)
+      ) {
         return { errors: [] }
       }
       const workflowConfiguration = findObject(elements, WORKFLOW_CONFIGURATION_TYPE)
       if (workflowConfiguration === undefined) {
         log.error('WorkflowConfiguration type was not found')
         return {
-          errors: [workflowFetchError()],
+          errors: [],
         }
       }
       setTypeDeploymentAnnotations(workflowConfiguration)

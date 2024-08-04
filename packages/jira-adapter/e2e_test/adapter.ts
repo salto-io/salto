@@ -52,6 +52,7 @@ export const realAdapter = (
   })
   const config = jiraConfig ?? getDefaultConfig({ isDataCenter })
   config.fetch.enableScriptRunnerAddon = enableScriptRunner
+  config.fetch.enableNewWorkflowAPI = true
   config.fetch.enableIssueLayouts = true
   config.fetch.enableJSM = true
   config.fetch.enableJsmExperimental = true

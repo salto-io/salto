@@ -52,7 +52,7 @@ import {
   SECURITY_LEVEL_TYPE,
   SECURITY_SCHEME_TYPE,
   SLA_TYPE_NAME,
-  WORKFLOW_TYPE_NAME,
+  WORKFLOW_CONFIGURATION_TYPE,
 } from '../../../src/constants'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'
@@ -83,6 +83,7 @@ import { createObjectSchemaStatusValues } from './jsm/objectSchemaStatus'
 import { createObjectSchemaGlobalStatusValues } from './jsm/objectSchemaGlobalStatus'
 import { createObjectTypeValues } from './jsm/objectType'
 import { createObjectTypeAttributeValues } from './jsm/objectTypeAttribute'
+import { createWorkflowSchemeValues } from './workflowScheme'
 
 const ISSUE_LAYOUT_NAME = 'Test_Project_TP__Kanban_Default_Issue_Screen@sufssss'
 
@@ -131,8 +132,14 @@ export const createInstances = (
 
   const workflow = new InstanceElement(
     randomString,
-    findType(WORKFLOW_TYPE_NAME, fetchedElements),
+    findType(WORKFLOW_CONFIGURATION_TYPE, fetchedElements),
     createWorkflowValues(randomString, fetchedElements),
+  )
+
+  const workflowScheme = new InstanceElement(
+    randomString,
+    findType('WorkflowScheme', fetchedElements),
+    createWorkflowSchemeValues(randomString, fetchedElements),
   )
 
   const fieldConfiguration = new InstanceElement(
@@ -319,6 +326,7 @@ export const createInstances = (
     [dashboardGadget2],
     [issueTypeScheme],
     [workflow],
+    [workflowScheme],
     [fieldConfiguration],
     [securityScheme, securityLevel],
     [notificationScheme],

@@ -162,7 +162,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     removeDuplicateProjectRoles: true,
     addAlias: true,
     enableIssueLayouts: true,
-    enableNewWorkflowAPI: false,
+    enableNewWorkflowAPI: true,
     enableAssetsObjectFieldConfiguration: false,
   },
   deploy: {
@@ -177,8 +177,16 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   },
 }
 
-export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): JiraConfig => ({
+const getPartialDefaultConfig = (isDataCenter: boolean): Omit<JiraConfig, 'apiDefinitions'> => ({
   ...PARTIAL_DEFAULT_CONFIG,
+  fetch: {
+    ...PARTIAL_DEFAULT_CONFIG.fetch,
+    enableNewWorkflowAPI: !isDataCenter,
+  },
+})
+
+export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): JiraConfig => ({
+  ...getPartialDefaultConfig(isDataCenter),
   apiDefinitions: getProductSettings({ isDataCenter }).defaultApiDefinitions,
   [SCRIPT_RUNNER_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultScriptRunnerApiDefinitions,
   [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultDuckTypeApiDefinitions,

@@ -420,7 +420,7 @@ export const createMockProgressReporter = (): MockDeployProgressReporter => {
     },
   }
   return {
-    ...createDeployProgressReporter(mockProgressReporter, new URL('test.salesforce.org')),
+    ...createDeployProgressReporter(mockProgressReporter, new URL('https://test.salesforce.org')),
     getReportedMessages: () => reportedMessages,
   }
 }

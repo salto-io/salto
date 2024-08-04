@@ -16,7 +16,10 @@
 import PQueue from 'p-queue'
 import Bottleneck from 'bottleneck'
 import { Value } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { RATE_LIMIT_DEFAULT_OPTIONS } from './constants'
+
+const log = logger(module)
 
 /**
  * Type for specifying retry options for the RateLimiter
@@ -126,13 +129,15 @@ export class RateLimiter {
   private internalOptions: RateLimiterOptions
   private internalCounters: RateLimiterCounters
   private prevInvocationTime: number
-  private resumeTimer: NodeJS.Timeout | undefined
+  private resumeTimer?: NodeJS.Timeout
+  private name?: string
 
   /**
    * Constructs a RateLimiter instance.
    * @param options Configuration options for the rate limiter.
    */
-  constructor(options: Partial<RateLimiterOptions> = {}) {
+  constructor(options: Partial<RateLimiterOptions> = {}, name?: string) {
+    this.name = name
     this.internalOptions = {
       maxConcurrentCalls: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.maxConcurrentCalls, options.maxConcurrentCalls),
       delayMS: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.delayMS, options.delayMS),
@@ -192,6 +197,7 @@ export class RateLimiter {
       failed: 0,
       retries: 0,
     }
+    log.debug('RateLimiter options %s', this.options)
     this.prevInvocationTime = Date.now()
     this.resumeTimer = undefined
   }
@@ -271,6 +277,9 @@ export class RateLimiter {
       try {
         return await task()
       } catch (e) {
+        if (!(await this.internalOptions.retryPredicate(numAttempts, e))) {
+          throw e
+        }
         const delay = this.internalOptions.calculateRetryDelayMS(numAttempts, e)
         if (delay > 0) {
           this.pause(delay)
@@ -370,10 +379,14 @@ export class RateLimiter {
     if (this.queue instanceof Bottleneck) {
       throw new Error('RateLimiter has no implementation for pause when the underlying queue is Bottleneck')
     }
+    log.debug(`Pausing RateLimiter (${this.name}) for ${time} ms.`)
     this.queue.pause()
     if (time !== undefined) {
       clearTimeout(this.resumeTimer)
-      this.resumeTimer = setTimeout(() => this.resume(), time)
+      this.resumeTimer = setTimeout(() => {
+        log.debug(`Trying to resuming RateLimiter (${this.name}).`)
+        this.resume()
+      }, time)
     }
   }
 
@@ -384,6 +397,8 @@ export class RateLimiter {
     if (this.queue instanceof Bottleneck) {
       throw new Error('RateLimiter has no implementation for resume when the underlying queue is Bottleneck')
     }
+
+    log.debug(`Resuming RateLimiter (${this.name}).`)
     this.queue.start()
   }
 

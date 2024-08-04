@@ -152,6 +152,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     this.credentials = credentials
   }
 
+  @throttle<TRateLimitConfig>({ bucketName: 'total', keys: ['url', 'queryParams'] })
   protected async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
       if (this.loginPromise === undefined) {
@@ -295,13 +296,26 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
             paramsSerializer,
           }
         : undefined
-
-      const res = isMethodWithDataParam(method)
-        ? await this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
-        : await this.apiClient[method](
+        
+      const res = await this.rateLimiters.total.add(async () => {
+        if (this.apiClient === undefined) {
+          // initialized by requiresLogin (through ensureLoggedIn in this case)
+          throw new Error(`uninitialized ${this.clientName} client`)
+        }
+        return isMethodWithDataParam(method)
+        ?  this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
+        :  this.apiClient[method](
             url,
             isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
           )
+        }
+      )
+      // const res =  isMethodWithDataParam(method)
+      //   ?  await this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
+      //   :  await this.apiClient[method](
+      //       url,
+      //       isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
+      //     )
 
       logResponse(res)
       return {

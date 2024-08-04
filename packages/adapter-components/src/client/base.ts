@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { ClientBaseConfig, ClientRateLimitConfig } from '../definitions/user/client_config'
 import { APIConnection } from './http_connection'
 import { RateLimitBuckets, createRateLimitersFromConfig } from './rate_limit'
 import { ClientDefaults } from './http_client'
+
+const log = logger(module)
 
 export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimitConfig> {
   readonly clientName: string
@@ -33,17 +36,22 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
     config: ClientBaseConfig<TRateLimitConfig> | undefined,
     defaults: ClientDefaults<TRateLimitConfig>,
   ) {
-    const originalEnabledRetry = config?.retry?.enabledRetry ?? defaults.retry.enabledRetry
-    const retryInRateLimiter = config?.retryInRateLimiter ?? defaults.retryInRateLimiter
-    if (config?.retry?.enabledRetry !== undefined) {
-      if (retryInRateLimiter) {
-        config.retry.enabledRetry = originalEnabledRetry && !retryInRateLimiter
-      }
-    } else {
-      defaults.retry.enabledRetry = originalEnabledRetry && !retryInRateLimiter
-    }
+    log.debug('original config %s', config)
+    log.debug('original default config %s', defaults)
+    
+    const concreteConfig = {...config, retry: {...defaults.retry, ...config?.retry}, timeout: {...defaults.timeout, ...config?.timeout}}
+    const originalEnabledRetry = concreteConfig.retry.enabledRetry
+    log.debug('originalEnabledRetry %s', originalEnabledRetry)
+
+    concreteConfig.retry.enabledRetry &&= !(config?.retryInRateLimiter ?? defaults.retryInRateLimiter)
+    log.debug('concrete config %s', concreteConfig)
+    log.debug('concrete retry config  %s', concreteConfig.retry)
+    log.debug('concrete timeout config  %s', concreteConfig.timeout)
+
+
+    
+    this.config = {...concreteConfig}
     this.clientName = clientName
-    this.config = config
     this.rateLimiters = createRateLimitersFromConfig<TRateLimitConfig>({
       rateLimit: _.defaults({}, config?.rateLimit, defaults.rateLimit),
       clientName: this.clientName,
@@ -51,14 +59,8 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
       delayPerRequestMS: config?.delayPerRequestMS ?? defaults.delayPerRequestMS,
       useBottleneck: config?.useBottleneck ?? defaults.useBottleneck,
       pauseDuringRetryDelay: config?.pauseDuringRetryDelay ?? defaults.pauseDuringRetryDelay,
-      retryConfig: _.defaults(
-        { enabledRetry: originalEnabledRetry && retryInRateLimiter },
-        config?.retry,
-        defaults.retry,
-      ),
-      timeoutConfig: {
-        ..._.defaults({}, config?.timeout, defaults.timeout),
-      },
+      retryConfig: {...concreteConfig.retry, enabledRetry: originalEnabledRetry},
+      timeoutConfig: concreteConfig.timeout,
     })
     this.getPageSizeInner = this.config?.pageSize?.get ?? defaults.pageSize.get
   }

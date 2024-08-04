@@ -20,6 +20,7 @@ import { ClientRateLimitConfig, ClientRetryConfig, ClientTimeoutConfig } from '.
 import { logOperationDecorator } from './decorators'
 import { RateLimiter, RateLimiterRetryOptions } from './rate_limiter'
 import { createRetryOptions } from './http_connection'
+import _default from '../../../confluence-adapter/dist/src/change_validator'
 
 const log = logger(module)
 
@@ -54,6 +55,9 @@ export const createRateLimitersFromConfig = <TRateLimitConfig extends RateLimitE
   ): number | undefined => (num && num < 0 ? undefined : num)
   const rateLimitConfig = _.mapValues(rateLimit, toLimit)
   log.debug('%s client rate limit config: %o', clientName, rateLimitConfig)
+  log.debug('%s client rate limit retry config: %o', clientName, retryConfig)
+  log.debug('%s client rate limit timeout config: %o', clientName, timeoutConfig)
+
   const retryOptions: Partial<RateLimiterRetryOptions> = { pauseDuringRetryDelay }
   if (retryConfig !== undefined) {
     const axiosRetryOptions = createRetryOptions(retryConfig, timeoutConfig)
@@ -68,19 +72,36 @@ export const createRateLimitersFromConfig = <TRateLimitConfig extends RateLimitE
     (maxRequestsPerMinute ?? 0) > 0
       ? { maxCallsPerInterval: maxRequestsPerMinute, intervalLengthMS: 60 * 1000, carryRunningCallsOver: true }
       : {}
-
-  return _.mapValues(
-    rateLimitConfig,
-    val =>
-      new RateLimiter({
-        maxConcurrentCalls: val,
-        delayMS: delayPerRequestMS,
-        useBottleneck,
-        pauseDuringRetryDelay,
-        ...intervalOptions,
-        ...retryOptions,
-      }),
-  ) as RateLimitBuckets<TRateLimitConfig>
+  return _.defaults(
+    {
+      total: new RateLimiter(
+        {
+          maxConcurrentCalls: rateLimitConfig.total,
+          delayMS: delayPerRequestMS,
+          useBottleneck,
+          pauseDuringRetryDelay,
+          ...intervalOptions,
+          ...retryOptions,
+        },
+        'total',
+      ),
+    },
+    _.mapValues(
+      rateLimitConfig,
+      (val, key) =>
+        new RateLimiter(
+          {
+            maxConcurrentCalls: val,
+            delayMS: delayPerRequestMS,
+            useBottleneck,
+            pauseDuringRetryDelay,
+            ...intervalOptions,
+            // ...retryOptions,
+          },
+          key,
+        ),
+    ) as RateLimitBuckets<TRateLimitConfig>,
+  )
 }
 
 type ThrottleParameters<TRateLimitConfig extends ClientRateLimitConfig> = {
@@ -100,7 +121,8 @@ export const throttle = <TRateLimitConfig extends ClientRateLimitConfig>({
     originalMethod: decorators.OriginalCall,
   ): Promise<unknown> {
     log.debug('%s enqueued', logOperationDecorator(originalMethod, this.clientName, keys))
-    const wrappedCall = this.rateLimiters.total.wrap(async () => originalMethod.call())
+    // const wrappedCall = this.rateLimiters.total.wrap(async () => originalMethod.call())
+    const wrappedCall = async (): Promise<unknown> => originalMethod.call()
     if (bucketName !== undefined && bucketName !== 'total') {
       // we already verified that the bucket exists
       return this.rateLimiters[bucketName].wrap(async () => wrappedCall())()

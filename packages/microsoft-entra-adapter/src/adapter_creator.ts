@@ -29,7 +29,7 @@ import {
   credentialsType,
   oauthRequestParameters,
 } from './client/oauth'
-import { deployAdministrativeUnitMembersFilter, deployDirectoryRoleMembersFilter } from './filters'
+import { appRolesFilter, deployAdministrativeUnitMembersFilter, deployDirectoryRoleMembersFilter } from './filters'
 import { customConvertError } from './error_utils'
 
 const { defaultCredentialsFromConfig } = credentials
@@ -62,6 +62,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     customizeFilterCreators: args => ({
       deployAdministrativeUnitMembersFilter,
       deployDirectoryRoleMembersFilter,
+      appRolesFilter,
       ...filters.createCommonFilters<Options, UserConfig>(args),
     }),
   },

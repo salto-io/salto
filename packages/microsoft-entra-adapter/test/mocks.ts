@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 
-import { Change, ChangeGroup, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import {
+  AdditionChange,
+  CORE_ANNOTATIONS,
+  Change,
+  ChangeGroup,
+  ElemID,
+  InstanceElement,
+  ModificationChange,
+  ObjectType,
+  ReferenceExpression,
+  RemovalChange,
+  toChange,
+} from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from '../src/constants'
@@ -27,17 +39,46 @@ export const instanceElementMock = new InstanceElement('testInstance', objectTyp
   testField: 'testValue',
 })
 
-export const additionChangeMock: Change<InstanceElement> = toChange({
-  after: instanceElementMock,
+export const instanceElementWithParentMock = new InstanceElement(
+  'testInstanceChild',
+  objectTypeMock,
+  {
+    testField: 'testValueChild',
+  },
+  undefined,
+  {
+    [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(instanceElementMock.elemID),
+  },
+)
+
+export const additionChangeMock: AdditionChange<InstanceElement> = {
+  action: 'add',
+  data: {
+    after: instanceElementMock,
+  },
+}
+
+export const modificationChangeMock: ModificationChange<InstanceElement> = {
+  action: 'modify',
+  data: {
+    before: instanceElementMock,
+    after: instanceElementWithParentMock,
+  },
+}
+
+export const removalChangeMock: RemovalChange<InstanceElement> = {
+  action: 'remove',
+  data: {
+    before: instanceElementMock,
+  },
+}
+
+export const objectTypeElementMock = new ObjectType({
+  elemID: new ElemID(ADAPTER_NAME, 'testType'),
 })
 
-export const modificationChangeMock: Change<InstanceElement> = toChange({
-  before: instanceElementMock,
-  after: instanceElementMock,
-})
-
-export const removalChangeMock: Change<InstanceElement> = toChange({
-  before: instanceElementMock,
+export const objectTypeChangeMock: Change<ObjectType> = toChange({
+  after: objectTypeElementMock,
 })
 
 export const changeGroupMock: ChangeGroup = {

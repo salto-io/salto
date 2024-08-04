@@ -35,6 +35,7 @@ export const createClientDefinitions = (
             readonly: true,
           },
           delete: {
+            additionalValidStatuses: [404],
             omitBody: true,
           },
         },

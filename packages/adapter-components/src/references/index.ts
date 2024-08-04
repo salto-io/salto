@@ -40,3 +40,4 @@ export {
   basicLookUp,
   ReferenceIndexField,
 } from './reference_mapping'
+export { getResolverCreator } from './resolver_creator'

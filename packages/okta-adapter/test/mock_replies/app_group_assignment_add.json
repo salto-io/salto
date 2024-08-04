@@ -1,0 +1,34 @@
+[
+  {
+    "path": "/api/v1/apps/app-fakeid1/groups/group-fakeid1",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "group-fakeid1",
+      "lastUpdated": "2024-07-25T11:08:20.000Z",
+      "priority": 4,
+      "profile": {},
+      "_links": {
+        "app": {
+          "href": "https://salto.okta.com/api/v1/apps/app-fakeid1"
+        },
+        "self": {
+          "href": "https://salto.okta.com/api/v1/apps/app-fakeid1/groups/00geqm0h4e91pFfyA697"
+        },
+        "group": {
+          "href": "https://salto.okta.com/api/v1/groups/00geqm0h4e91pFfyA697"
+        }
+      }
+    },
+    "body": {
+      "id": "group-fakeid1",
+      "priority": 2
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "49",
+      "x-rate-limit-reset": "1721905760"
+    }
+  }
+]

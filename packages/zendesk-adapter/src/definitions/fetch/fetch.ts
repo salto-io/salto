@@ -959,7 +959,8 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/workspaces/agent-workspace/dynamic_content' },
-        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
+        elemID: { parts: [{ fieldName: 'name', mapping: 'lowercase' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'name', mapping: 'lowercase' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },

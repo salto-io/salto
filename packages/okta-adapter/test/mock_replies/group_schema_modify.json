@@ -1,0 +1,119 @@
+[
+  {
+    "path": "/api/v1/meta/schemas/group/default",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "id": "https://<sanitized>.okta.com/meta/schemas/group/default",
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "name": "group",
+      "title": "Okta group",
+      "description": "Okta group profile",
+      "lastUpdated": "2024-08-01T11:40:05.000Z",
+      "created": "2022-09-08T12:57:30.000Z",
+      "definitions": {
+        "custom": {
+          "id": "#custom",
+          "type": "object",
+          "properties": {
+            "Liri": {
+              "title": "Liri",
+              "type": "string",
+              "mutability": "READ_WRITE",
+              "scope": "NONE",
+              "permissions": [
+                {
+                  "principal": "SELF",
+                  "action": "READ_WRITE"
+                }
+              ],
+              "master": {
+                "type": "PROFILE_MASTER"
+              }
+            }
+          },
+          "required": []
+        },
+        "base": {
+          "id": "#base",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "description": "Name",
+              "type": "string",
+              "required": true,
+              "mutability": "READ_WRITE",
+              "scope": "NONE",
+              "maxLength": 255,
+              "permissions": [
+                {
+                  "principal": "SELF",
+                  "action": "READ_WRITE"
+                }
+              ],
+              "master": {
+                "type": "PROFILE_MASTER"
+              }
+            },
+            "description": {
+              "title": "Description",
+              "description": "Description",
+              "type": "string",
+              "mutability": "READ_WRITE",
+              "scope": "NONE",
+              "maxLength": 1024,
+              "permissions": [
+                {
+                  "principal": "SELF",
+                  "action": "READ_WRITE"
+                }
+              ],
+              "master": {
+                "type": "PROFILE_MASTER"
+              }
+            }
+          },
+          "required": ["name"]
+        }
+      },
+      "type": "object",
+      "properties": {
+        "profile": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/custom"
+            },
+            {
+              "$ref": "#/definitions/base"
+            }
+          ]
+        }
+      },
+      "_links": {
+        "self": {
+          "rel": "self",
+          "href": "https://<sanitized>.okta.com/api/v1/meta/schemas/group/default",
+          "method": "GET"
+        }
+      }
+    },
+    "body": {
+      "id": "groupschema-fakeid1",
+      "description": "your schema",
+      "definitions": {
+        "custom": {
+          "properties": {
+            "MyProperty": null
+          }
+        }
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1722512464"
+    }
+  }
+]

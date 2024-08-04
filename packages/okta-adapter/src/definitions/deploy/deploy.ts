@@ -41,6 +41,7 @@ import {
   ID_FIELD,
   BRAND_THEME_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  APP_LOGO_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -339,6 +340,29 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 context: {
                   appId: '{_parent.0.id}',
                 },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [APP_LOGO_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          // AppLogo deployment is handled by a filter.
+          // We define actions here to avoid "action not supported" CV error. AppLogo doesn't support "remove" action,
+          // so we can't add it to the CV ignore list.
+          add: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                earlySuccess: true,
               },
             },
           ],

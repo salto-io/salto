@@ -99,8 +99,7 @@ describe('defaultDynamicContentItemVariantValidator', () => {
         toChange({ before: defaultVariant, after: notDefaultVariant }),
         toChange({ before: notDefaultVariant, after: defaultVariant }),
       ]
-      // Passing invalidVariant to make sure we don't fail on resolved value that isn't InstanceElement.
-      setDynamicContentItemVariants([defaultVariant, notDefaultVariant, invalidVariant])
+      setDynamicContentItemVariants([defaultVariant, notDefaultVariant])
       const errors = await defaultDynamicContentItemVariantValidator(changes)
       expect(errors.length).toBe(0)
     })
@@ -153,6 +152,10 @@ describe('defaultDynamicContentItemVariantValidator', () => {
       dynamicContentItem.value.variants = [unresolvedVariant]
       const arrayErrors = await defaultDynamicContentItemVariantValidator(changes)
       expect(arrayErrors.length).toBe(0)
+    })
+    it('should not throw when one of the variants in not a valid InstanceElement', async () => {
+      setDynamicContentItemVariants([invalidVariant])
+      await expect(defaultDynamicContentItemVariantValidator(changes)).resolves.not.toThrow()
     })
   })
 })

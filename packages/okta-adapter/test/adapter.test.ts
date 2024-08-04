@@ -521,11 +521,12 @@ describe('adapter', () => {
     let brand1: InstanceElement
     let appType: ObjectType
     let groupType: ObjectType
+    let orgSettingType: ObjectType
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
 
-      const orgSettingType = new ObjectType({
+      orgSettingType = new ObjectType({
         elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME),
       })
       const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain' })
@@ -586,6 +587,38 @@ describe('adapter', () => {
               refType: BuiltinTypes.SERVICE_ID,
             },
           },
+        })
+      })
+
+      describe('deploy org setting', () => {
+        it('should successfully modify org setting', async () => {
+          loadMockReplies('org_setting_modify.json')
+          const orgSetting = new InstanceElement(
+            'orgSetting',
+            orgSettingType,
+            {
+              id: 'orgsetting-fakeid1',
+              subdomain: 'subdomain',
+              phoneNumber: '00000',
+            },
+            undefined,
+            {
+              [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+            },
+          )
+          const updatedOrgSetting = orgSetting.clone()
+          updatedOrgSetting.value.phoneNumber = '12345'
+          const result = await operations.deploy({
+            changeGroup: {
+              groupID: 'orgSetting',
+              changes: [toChange({ before: orgSetting, after: updatedOrgSetting })],
+            },
+            progressReporter: nullProgressReporter,
+          })
+          expect(result.errors).toHaveLength(0)
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.phoneNumber).toEqual('12345')
+          expect(nock.pendingMocks()).toHaveLength(0)
         })
       })
 

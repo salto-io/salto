@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
-import { EVERYONE_USER_TYPE } from '../../constants'
+import { BUSINESS_HOUR_SCHEDULE_HOLIDAY, EVERYONE_USER_TYPE } from '../../constants'
 import { transformGuideItem, transformQueueItem, transformSectionItem } from './transforms'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
@@ -1339,7 +1339,7 @@ const createCustomizations = (): Record<
       // the holiday and nest the response under the 'holidays' field
       recurseInto: {
         holidays: {
-          typeName: 'business_hours_schedule_holiday',
+          typeName: BUSINESS_HOUR_SCHEDULE_HOLIDAY,
           context: { args: { parent_id: { root: 'id' } } },
         },
       },
@@ -1355,16 +1355,16 @@ const createCustomizations = (): Record<
         holidays: {
           // extract each item in the holidays field to its own instance
           standalone: {
-            typeName: 'business_hours_schedule_holiday',
+            typeName: BUSINESS_HOUR_SCHEDULE_HOLIDAY,
             addParentAnnotation: true,
             referenceFromParent: true,
-            nestPathUnderParent: false,
+            nestPathUnderParent: true,
           },
         },
       },
     },
   },
-  business_hours_schedule_holiday: {
+  [BUSINESS_HOUR_SCHEDULE_HOLIDAY]: {
     requests: [
       {
         endpoint: { path: '/api/v2/business_hours/schedules/{parent_id}/holidays' },
@@ -1375,7 +1375,6 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: DEFAULT_ID_PARTS, extendsParent: true },
-        path: { pathParts: [{ parts: [{ fieldName: 'name' }], extendsParent: true }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },

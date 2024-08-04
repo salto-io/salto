@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
-import { Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../../src/filters/dynamic_content'
 import { defaultDynamicContentItemVariantValidator } from '../../src/change_validators'
@@ -45,8 +53,18 @@ const notDefaultVariant = new InstanceElement(
   },
 )
 
-const setDynamicContentItemVariants = (variants: InstanceElement[]): void => {
-  dynamicContentItem.value.variants = variants.map(variant => new ReferenceExpression(variant.elemID, variant))
+const invalidVariant = {
+  invalid: 'test',
+} as const
+
+const setDynamicContentItemVariants = (variants: (InstanceElement | typeof invalidVariant)[]): void => {
+  dynamicContentItem.value.variants = variants.map(
+    variant =>
+      new ReferenceExpression(
+        isInstanceElement(variant) ? variant.elemID : ElemID.fromFullName('zendesk.mock.instance.invalid'),
+        variant,
+      ),
+  )
 }
 
 describe('defaultDynamicContentItemVariantValidator', () => {
@@ -81,7 +99,8 @@ describe('defaultDynamicContentItemVariantValidator', () => {
         toChange({ before: defaultVariant, after: notDefaultVariant }),
         toChange({ before: notDefaultVariant, after: defaultVariant }),
       ]
-      setDynamicContentItemVariants([defaultVariant, notDefaultVariant])
+      // Passing invalidVariant to make sure we don't fail on resolved value that isn't InstanceElement.
+      setDynamicContentItemVariants([defaultVariant, notDefaultVariant, invalidVariant])
       const errors = await defaultDynamicContentItemVariantValidator(changes)
       expect(errors.length).toBe(0)
     })

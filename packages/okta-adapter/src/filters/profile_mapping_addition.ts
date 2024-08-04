@@ -53,7 +53,9 @@ const deployProfileMappingAddition = async (
   const targetId = instance.value.target?.id
   if (!_.isString(sourceId) || !_.isString(targetId)) {
     // references are already resolved
-    log.error(`Failed to deploy ProfileMapping with sourceId: ${sourceId}, targetId: ${targetId}`)
+    log.error(
+      `Failed to deploy ProfileMapping with sourceId: ${inspectValue(sourceId)}, targetId: ${inspectValue(targetId)}`,
+    )
     throw new Error('ProfileMapping must have valid sourceId and targetId')
   }
   const mappingId = await getMappingIdBySourceAndTarget(sourceId, targetId, client)

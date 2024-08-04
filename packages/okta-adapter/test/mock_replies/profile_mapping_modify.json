@@ -1,0 +1,72 @@
+[
+  {
+    "path": "/api/v1/mappings/profilemapping-fakeid1",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "id": "profilemapping-fakeid1",
+      "source": {
+        "id": "usertype-fakeid1",
+        "name": "superuser",
+        "type": "user",
+        "_links": {
+          "self": {
+            "href": "https://<omitted>.okta.com/api/v1/meta/types/user/usertype-fakeid1"
+          },
+          "schema": {
+            "href": "https://<omitted>.okta.com/api/v1/meta/schemas/user/osc6fmhw45TcuJJSb5d7"
+          }
+        }
+      },
+      "target": {
+        "id": "app-fakeid1",
+        "name": "app",
+        "type": "appuser",
+        "_links": {
+          "self": {
+            "href": "https://<omitted>.okta.com/api/v1/apps/app-fakeid1"
+          },
+          "schema": {
+            "href": "https://<omitted>.okta.com/api/v1/meta/schemas/apps/app-fakeid1/default"
+          }
+        }
+      },
+      "properties": {
+        "name": {
+          "expression": "user.name",
+          "pushStatus": "PUSH"
+        }
+      },
+      "_links": {
+        "self": {
+          "href": "https://<omitted>.okta.com/api/v1/mappings/profilemapping-fakeid1"
+        }
+      }
+    },
+    "body": {
+      "id": "profilemapping-fakeid1",
+      "source": {
+        "id": "usertype-fakeid1",
+        "name": "superuser",
+        "type": "user"
+      },
+      "target": {
+        "id": "app-fakeid1",
+        "name": "app1",
+        "type": "appuser"
+      },
+      "properties": {
+        "name": {
+          "expression": "user.name",
+          "pushStatus": "PUSH"
+        }
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1722759613"
+    }
+  }
+]

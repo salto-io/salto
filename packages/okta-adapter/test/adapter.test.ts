@@ -66,6 +66,7 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
+  APP_LOGO_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -2049,6 +2050,93 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy app logo', () => {
+      let appLogoType: ObjectType
+      let app: InstanceElement
+      let appLogo: InstanceElement
+
+      beforeEach(() => {
+        appLogoType = new ObjectType({
+          elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        app = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          name: 'app1',
+          label: 'app1',
+          signOnMode: 'AUTO_LOGIN',
+          settings: {
+            app: {
+              url: 'https://app1.com',
+            },
+          },
+        })
+        appLogo = new InstanceElement(
+          'appLogo',
+          appLogoType,
+          {
+            fileName: 'logo.png',
+            content: new StaticFile({
+              filepath: 'applogo.png',
+              encoding: 'binary',
+              content: Buffer.from('logo-fake-binary-data'),
+            }),
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+      })
+
+      it('should successfully add an app logo', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/apps/app-fakeid1/logo', /logo-fake-binary-data/)
+          .reply(201, { url: 'https://somepath.to/applogo-fakeid1' })
+
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appLogo',
+            changes: [toChange({ after: appLogo })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an app logo', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/apps/app-fakeid1/logo', /logo-fake-binary-data/)
+          .reply(201, { url: 'https://somepath.to/applogo-fakeid1' })
+
+        const updatedAppLogo = appLogo.clone()
+        updatedAppLogo.value.content = new StaticFile({
+          filepath: 'applogo.png',
+          encoding: 'binary',
+          content: Buffer.from('updated-logo-fake-binary-data'),
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appLogo',
+            changes: [toChange({ before: appLogo, after: updatedAppLogo })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

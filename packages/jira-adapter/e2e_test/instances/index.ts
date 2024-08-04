@@ -30,7 +30,6 @@ import { createContextValues, createFieldValues } from './field'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
 import { createScreenValues } from './screen'
-import { createWorkflowSchemeValues } from './workflowScheme'
 import { createWebhookValues } from './webhook'
 import { createStatusValues } from './status'
 import { createInstances as createDataCenterInstances, modifyDataCenterInstances } from './datacenter'
@@ -59,12 +58,6 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     randomString,
     findType('Screen', fetchedElements),
     createScreenValues(randomString, fetchedElements),
-  )
-
-  const workflowScheme = new InstanceElement(
-    randomString,
-    findType('WorkflowScheme', fetchedElements),
-    createWorkflowSchemeValues(randomString, fetchedElements),
   )
 
   const screenScheme = new InstanceElement(randomString, findType('ScreenScheme', fetchedElements), {
@@ -125,7 +118,6 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     [field],
     [fieldContext],
     [screen],
-    [workflowScheme],
     [screenScheme],
     [issueTypeScreenScheme],
     [fieldConfigurationScheme],

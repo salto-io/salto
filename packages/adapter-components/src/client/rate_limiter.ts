@@ -15,7 +15,6 @@
  */
 import PQueue from 'p-queue'
 import Bottleneck from 'bottleneck'
-import _ from 'lodash'
 import { RATE_LIMIT_DEFAULT_OPTIONS } from './constants'
 
 /**
@@ -133,26 +132,26 @@ export class RateLimiter {
    * @param options Configuration options for the rate limiter.
    */
   constructor(options: Partial<RateLimiterOptions> = {}) {
-    const maxCallsPerInterval = toValidNumber(
-      RATE_LIMIT_DEFAULT_OPTIONS.maxCallsPerInterval,
-      options.maxCallsPerInterval,
-    )
-    const intervalLengthMS = toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.intervalLengthMS, options.intervalLengthMS)
+    this.internalOptions = {
+      maxConcurrentCalls: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.maxConcurrentCalls, options.maxConcurrentCalls),
+      delayMS: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.delayMS, options.delayMS),
+      maxCallsPerInterval: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.maxCallsPerInterval, options.maxCallsPerInterval),
+      intervalLengthMS: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.intervalLengthMS, options.intervalLengthMS),
+      carryRunningCallsOver: options.carryRunningCallsOver ?? RATE_LIMIT_DEFAULT_OPTIONS.carryRunningCallsOver,
+      startPaused: options.startPaused ?? RATE_LIMIT_DEFAULT_OPTIONS.startPaused,
+      useBottleneck: options.useBottleneck ?? RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
+      retryPredicate: options.retryPredicate ?? RATE_LIMIT_DEFAULT_OPTIONS.retryPredicate,
+      calculateRetryDelayMS: options.calculateRetryDelayMS ?? RATE_LIMIT_DEFAULT_OPTIONS.calculateRetryDelayMS,
+      pauseDuringRetryDelay: options.pauseDuringRetryDelay ?? RATE_LIMIT_DEFAULT_OPTIONS.pauseDuringRetryDelay,
+    }
 
     if (
-      (maxCallsPerInterval !== Infinity && intervalLengthMS === 0) ||
-      (maxCallsPerInterval === Infinity && intervalLengthMS !== 0)
+      (this.internalOptions.maxCallsPerInterval !== Infinity && this.internalOptions.intervalLengthMS === 0) ||
+      (this.internalOptions.maxCallsPerInterval === Infinity && this.internalOptions.intervalLengthMS !== 0)
     ) {
       throw new Error(
         'When setting either maxCallsPerInterval or intervalLengthMS to a valid finite number bigger than 0, the other must be set as well.',
       )
-    }
-    const combinedOptions = _.defaults({ maxCallsPerInterval, intervalLengthMS }, options, RATE_LIMIT_DEFAULT_OPTIONS)
-
-    this.internalOptions = {
-      ...combinedOptions,
-      maxConcurrentCalls: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.maxConcurrentCalls, options.maxConcurrentCalls),
-      delayMS: toValidNumber(RATE_LIMIT_DEFAULT_OPTIONS.delayMS, options.delayMS),
     }
 
     if (
@@ -163,6 +162,7 @@ export class RateLimiter {
         "Bottleneck queue can't be paused and thus can't be initialized with startPaused==true or pauseDuringDelay==true.",
       )
     }
+
     this.queue = this.internalOptions.useBottleneck
       ? new Bottleneck({
           maxConcurrent:

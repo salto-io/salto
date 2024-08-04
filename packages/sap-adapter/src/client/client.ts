@@ -17,7 +17,6 @@ import { client as clientUtils, definitions } from '@salto-io/adapter-components
 import { createConnection } from './connection'
 import { SAP } from '../constants'
 import { Credentials } from '../auth'
-import {} from '@salto-io/adapter-components/src/client'
 
 const {
   DEFAULT_RETRY_OPTS,

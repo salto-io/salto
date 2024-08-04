@@ -227,7 +227,7 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
-type DeployProgressReporter = ProgressReporter & {
+export type DeployProgressReporter = ProgressReporter & {
   reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
   reportDataProgress: (successInstances: number) => void
 }
@@ -236,7 +236,10 @@ export type SalesforceAdapterDeployOptions = DeployOptions & {
   progressReporter: DeployProgressReporter
 }
 
-const createDeployProgressReporter = (progressReporter: ProgressReporter, baseUrl?: URL): DeployProgressReporter => {
+export const createDeployProgressReporter = (
+  progressReporter: ProgressReporter,
+  baseUrl?: URL,
+): DeployProgressReporter => {
   let deployResult: DeployResult | undefined
   let suffix: string | undefined
   let deployedDataInstances = 0

@@ -56,7 +56,7 @@ import {
   createValueSetEntry,
   createCustomObjectType,
   nullProgressReporter,
-  MockProgressReporter,
+  MockDeployProgressReporter,
   createMockProgressReporter,
 } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
@@ -72,7 +72,7 @@ const { makeArray } = collections.array
 describe('SalesforceAdapter CRUD', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
-  let progressReporter: MockProgressReporter
+  let progressReporter: MockDeployProgressReporter
 
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')

@@ -30,7 +30,6 @@ import {
   ElemID,
   PartialFetchData,
   Element,
-  ProgressReporter,
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -681,15 +680,13 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         changeGroup.groupID,
         fetchProfile.dataManagement,
       )
+      progressReporter.reportDataProgress(deployResult.appliedChanges.length)
     } else {
-      const nullProgressReporter: ProgressReporter = {
-        reportProgress: () => {},
-      }
       deployResult = await deployMetadata(
         resolvedChanges,
         this.client,
         this.nestedMetadataTypes,
-        progressReporter ?? nullProgressReporter,
+        progressReporter,
         this.userConfig.client?.deploy?.deleteBeforeUpdate,
         checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams,

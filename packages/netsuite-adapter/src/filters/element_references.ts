@@ -32,6 +32,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
 import { constants as bufferConstants } from 'buffer'
 import { logger } from '@salto-io/logging'
+import * as esprima from 'esprima'
+import * as estraverse from 'estraverse'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import {
@@ -65,6 +67,10 @@ const pathPrefixRegex = new RegExp(
   `^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`,
   'm',
 )
+// matches strings in the format of 'key: value'
+const mappedReferenceRegex = new RegExp(`(?<${OPTIONAL_REFS}>\\w+):\\s*.+`, 'gm')
+// matches comments in js files
+const jsCommentsRegex = new RegExp('\\/\\*[\\s\\S]*?\\*\\/|^\\/\\/.*|(?<=[^:])\\/\\/.*', 'gm')
 
 const shouldExtractToGeneratedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
   serviceIdInfoRecord.appid !== undefined ||
@@ -144,6 +150,59 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
+const parseAST = (ast: esprima.Program): Set<string> => {
+  const commentRanges = ast.comments?.map(comment => comment.range).filter(isDefined) ?? []
+  const results: Set<string> = new Set()
+  // TODO: remove this and related logic once SALTO-6026 is communicated
+  const objectKeyReferences: Set<string> = new Set()
+
+  const isInCommentRange = (position: number): boolean =>
+    commentRanges.some(([start, end]) => position >= start && position <= end)
+
+  const addIfValid = (value: string, range: [number, number] | undefined, isObjectKey?: boolean): void => {
+    if (range && !isInCommentRange(range[0])) {
+      if (isObjectKey) {
+        objectKeyReferences.add(value)
+      } else {
+        results.add(value)
+      }
+    }
+  }
+
+  estraverse.traverse(ast, {
+    enter(node) {
+      if (node.type === 'Literal' && typeof node.value === 'string') {
+        addIfValid(node.value, node.range)
+      } else if (node.type === 'Property') {
+        if (node.key.type === 'Identifier') {
+          addIfValid(node.key.name, node.key.range, true)
+        } else if (node.key.type === 'Literal' && typeof node.key.value === 'string') {
+          addIfValid(node.key.value, node.key.range, true)
+        }
+      }
+    },
+  })
+  if (objectKeyReferences.size > 0) {
+    log.info('Found %d object key references: %o', objectKeyReferences.size, objectKeyReferences)
+  }
+  return results
+}
+
+const getReferencesWithRegex = (content: string): string[] => {
+  const contentWithoutComments = content.replace(jsCommentsRegex, '')
+  const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
+  if (objectKeyReferences.length > 0) {
+    log.info('Found %d object key references: %o', objectKeyReferences.length, objectKeyReferences)
+  }
+  const semanticReferences = getGroupItemFromRegex(
+    contentWithoutComments,
+    semanticReferenceRegex,
+    OPTIONAL_REFS,
+  ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+
+  return semanticReferences
+}
+
 const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
@@ -160,13 +219,24 @@ const getSuiteScriptReferences = async (
   }
 
   const content = fileContent.toString()
-
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
-  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
-    .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-    .concat(nsConfigReferences)
 
-  return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
+  try {
+    const ast = esprima.parseScript(content, { range: true })
+    const results = parseAST(ast)
+    const resultsWithConfigReferences = Array.from(results).concat(nsConfigReferences)
+    return getServiceElemIDsFromPaths(
+      resultsWithConfigReferences,
+      serviceIdToElemID,
+      customRecordFieldsToServiceIds,
+      element,
+    )
+  } catch (e) {
+    log.warn('Failed to parse file %s content with error %s', element.value[PATH], e)
+    const foundReferences = getReferencesWithRegex(content)
+    const semanticReferences = foundReferences.concat(nsConfigReferences)
+    return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
+  }
 }
 
 const replaceReferenceValues = async (
@@ -223,7 +293,6 @@ const replaceReferenceValues = async (
     isFileCabinetInstance(element) && isFileInstance(element)
       ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
       : []
-
   extendGeneratedDependencies(
     newElement,
     dependenciesToAdd.concat(suiteScriptReferences).map(elemID => ({ reference: new ReferenceExpression(elemID) })),

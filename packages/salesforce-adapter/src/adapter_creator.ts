@@ -21,8 +21,12 @@ import {
   OAuthRequestParameters,
   OauthAccessTokenResponse,
   Values,
+  ProgressReporter,
+  DeployOptions,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
+import { DeployResult } from '@salto-io/jsforce-types'
+import { values } from '@salto-io/lowerdash'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import {
@@ -59,6 +63,7 @@ import { dependencyChanger } from './dependency_changer'
 type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
 const log = logger(module)
+const { isDefined } = values
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
@@ -222,6 +227,59 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
+type DeployProgressReporter = ProgressReporter & {
+  reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
+  reportDataProgress: (successInstances: number) => void
+}
+
+export type SalesforceAdapterDeployOptions = DeployOptions & {
+  progressReporter: DeployProgressReporter
+}
+
+const createDeployProgressReporter = (progressReporter: ProgressReporter, baseUrl?: URL): DeployProgressReporter => {
+  let deployResult: DeployResult | undefined
+  let suffix: string | undefined
+  let deployedDataInstances = 0
+
+  const linkToSalesforce = ({ id, checkOnly }: DeployResult): string => {
+    if (!baseUrl) {
+      return ''
+    }
+    const deploymentUrl = `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
+    const deploymentOrValidation = checkOnly ? 'validation' : 'deployment'
+    return ` View ${deploymentOrValidation} status at ${deploymentUrl}`
+  }
+
+  const reportProgress = (): void => {
+    let metadataProgress: string | undefined
+    let dataProgress: string | undefined
+    if (deployResult) {
+      metadataProgress = `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests.${linkToSalesforce(deployResult)}`
+    }
+    if (deployedDataInstances > 0) {
+      dataProgress = `${deployedDataInstances} Data Instances`
+    }
+    if (metadataProgress || dataProgress) {
+      progressReporter.reportProgress({
+        message: [dataProgress, metadataProgress, suffix].filter(isDefined).join(', '),
+      })
+    }
+  }
+
+  return {
+    ...progressReporter,
+    reportMetadataProgress: args => {
+      deployResult = args.result
+      suffix = args.suffix
+      reportProgress()
+    },
+    reportDataProgress: successInstances => {
+      deployedDataInstances += successInstances
+      reportProgress()
+    },
+  }
+}
+
 export const adapter: Adapter = {
   operations: context => {
     const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
@@ -231,6 +289,7 @@ export const adapter: Adapter = {
       credentials,
       config: config[CLIENT_CONFIG],
     })
+    let deployProgressReporter: DeployProgressReporter | undefined
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
@@ -258,12 +317,20 @@ export const adapter: Adapter = {
 
       deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        return salesforceAdapter.deploy(opts)
+        return salesforceAdapter.deploy({
+          ...opts,
+          progressReporter:
+            deployProgressReporter ?? createDeployProgressReporter(opts.progressReporter, await client.getUrl()),
+        })
       },
 
       validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        return salesforceAdapter.validate(opts)
+        return salesforceAdapter.validate({
+          ...opts,
+          progressReporter:
+            deployProgressReporter ?? createDeployProgressReporter(opts.progressReporter, await client.getUrl()),
+        })
       },
 
       deployModifiers: {

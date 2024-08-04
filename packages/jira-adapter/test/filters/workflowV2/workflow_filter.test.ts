@@ -364,13 +364,10 @@ describe('workflow filter', () => {
       await filter.onFetch(elements)
       expect(elements).toHaveLength(2)
     })
-    it('should fail when WorkflowConfiguration type is not found', async () => {
+    it('should not fail when WorkflowConfiguration type is not found', async () => {
       const filterResult = (await filter.onFetch([])) as FilterResult
       const errors = filterResult.errors ?? []
-      expect(errors).toBeDefined()
-      expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Failed to fetch Workflows.')
-      expect(errors[0].severity).toEqual('Error')
+      expect(errors).toEqual([])
     })
     it('should fail when id response data is not valid', async () => {
       mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {

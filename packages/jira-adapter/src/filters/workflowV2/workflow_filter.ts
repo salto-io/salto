@@ -728,7 +728,7 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
       if (workflowConfiguration === undefined) {
         log.error('WorkflowConfiguration type was not found')
         return {
-          errors: [workflowFetchError()],
+          errors: [],
         }
       }
       setTypeDeploymentAnnotations(workflowConfiguration)

@@ -15,6 +15,7 @@
  */
 import PQueue from 'p-queue'
 import Bottleneck from 'bottleneck'
+import { Value } from '@salto-io/adapter-api'
 import { RATE_LIMIT_DEFAULT_OPTIONS } from './constants'
 
 /**
@@ -28,7 +29,7 @@ export type RateLimiterRetryOptions = {
    * @returns A boolean indicating whether the task should be retried.
    * @default () => false
    */
-  retryPredicate: (numAttempts: number, error: Error) => boolean
+  retryPredicate: (numAttempts: number, error: Value) => boolean | Promise<boolean>
 
   /**
    * Function to calculate the delay before retrying a task based on the number of attempts and the error encountered.
@@ -37,7 +38,7 @@ export type RateLimiterRetryOptions = {
    * @returns The delay in milliseconds before the next retry.
    * @default () => 0
    */
-  calculateRetryDelayMS: (numAttempts: number, error: Error) => number
+  calculateRetryDelayMS: (numAttempts: number, error: Value) => number
 
   /**
    * Flag indicating whether to pause the queue for the delay calculated.
@@ -298,7 +299,7 @@ export class RateLimiter {
         : (this.queue as PQueue).add(wrappedTask)
       return await res
     } catch (e) {
-      if (!this.internalOptions.retryPredicate(numRetries, e)) {
+      if (!(await this.internalOptions.retryPredicate(numRetries, e))) {
         throw e
       }
 

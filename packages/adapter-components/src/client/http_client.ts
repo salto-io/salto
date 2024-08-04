@@ -109,9 +109,11 @@ export class TimeoutError extends Error {}
 export type ClientDefaults<TRateLimitConfig extends ClientRateLimitConfig> = {
   retry: Required<ClientRetryConfig>
   rateLimit: Required<TRateLimitConfig>
+  retryInRateLimiter: boolean
   maxRequestsPerMinute: number
   delayPerRequestMS: number
   useBottleneck: boolean
+  pauseDuringRetryDelay: boolean
   pageSize: Required<ClientPageSizeConfig>
   timeout?: ClientTimeoutConfig
 }
@@ -137,6 +139,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     defaults: ClientDefaults<TRateLimitConfig>,
   ) {
     super(clientName, config, defaults)
+
     this.conn = createClientConnection({
       connection,
       retryOptions: createRetryOptions(

@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import {
-  ClientBaseConfig,
-  ClientRateLimitConfig,
-  ClientRetryConfig,
-  ClientPageSizeConfig,
-} from '../definitions/user/client_config'
+import { ClientBaseConfig, ClientRateLimitConfig } from '../definitions/user/client_config'
 import { APIConnection } from './http_connection'
 import { RateLimitBuckets, createRateLimitersFromConfig } from './rate_limit'
+import { ClientDefaults } from './http_client'
 
 export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimitConfig> {
   readonly clientName: string
@@ -35,15 +31,17 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
   constructor(
     clientName: string,
     config: ClientBaseConfig<TRateLimitConfig> | undefined,
-    defaults: {
-      retry: Required<ClientRetryConfig>
-      rateLimit: Required<TRateLimitConfig>
-      maxRequestsPerMinute: number
-      delayPerRequestMS: number
-      useBottleneck: boolean
-      pageSize: Required<ClientPageSizeConfig>
-    },
+    defaults: ClientDefaults<TRateLimitConfig>,
   ) {
+    const originalEnabledRetry = config?.retry?.enabledRetry ?? defaults.retry.enabledRetry
+    const retryInRateLimiter = config?.retryInRateLimiter ?? defaults.retryInRateLimiter
+    if (config?.retry?.enabledRetry !== undefined) {
+      if (retryInRateLimiter) {
+        config.retry.enabledRetry = originalEnabledRetry && !retryInRateLimiter
+      }
+    } else {
+      defaults.retry.enabledRetry = originalEnabledRetry && !retryInRateLimiter
+    }
     this.clientName = clientName
     this.config = config
     this.rateLimiters = createRateLimitersFromConfig<TRateLimitConfig>({
@@ -52,6 +50,15 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
       maxRequestsPerMinute: config?.maxRequestsPerMinute ?? defaults.maxRequestsPerMinute,
       delayPerRequestMS: config?.delayPerRequestMS ?? defaults.delayPerRequestMS,
       useBottleneck: config?.useBottleneck ?? defaults.useBottleneck,
+      pauseDuringRetryDelay: config?.pauseDuringRetryDelay ?? defaults.pauseDuringRetryDelay,
+      retryConfig: _.defaults(
+        { enabledRetry: originalEnabledRetry && retryInRateLimiter },
+        config?.retry,
+        defaults.retry,
+      ),
+      timeoutConfig: {
+        ..._.defaults({}, config?.timeout, defaults.timeout),
+      },
     })
     this.getPageSizeInner = this.config?.pageSize?.get ?? defaults.pageSize.get
   }

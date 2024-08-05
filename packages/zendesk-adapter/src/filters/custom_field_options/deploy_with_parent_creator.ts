@@ -15,7 +15,8 @@
  */
 import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { replaceTemplatesWithValues } from '@salto-io/adapter-utils'
+import { inspectValue, replaceTemplatesWithValues } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { createAdditionalParentChanges, getCustomFieldOptionsFromChanges } from '../utils'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../constants'
@@ -23,6 +24,8 @@ import { prepRef } from '../handle_template_expressions'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../../deployment'
 import { API_DEFINITIONS_CONFIG } from '../../config'
 import { CustomFieldOptionsFilterCreatorParams } from './creator'
+
+const log = logger(module)
 
 export const createDeployOptionsWithParentCreator =
   ({ filterName, parentTypeName, childTypeName, onFetch }: CustomFieldOptionsFilterCreatorParams): FilterCreator =>
@@ -40,6 +43,7 @@ export const createDeployOptionsWithParentCreator =
       getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
         delete option.name
         if (option.id === null) {
+          log.warn('Option id is null after deploy. Option values: %s', inspectValue(option))
           delete option.id
         }
       })

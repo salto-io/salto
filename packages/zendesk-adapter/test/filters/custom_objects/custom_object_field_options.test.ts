@@ -108,15 +108,32 @@ describe('customObjectFieldOptionsFilter', () => {
     expect(customObjectFieldOption.value.name).toBeUndefined()
   })
   describe('when deploying new option', () => {
-    it('should set null id on preDeploy and omit the id on onDeploy', async () => {
-      const newOptionInstance = createOptionInstance({ id: 'newOption', value: 'newOptionValue' })
-      const changes = [toChange({ after: newOptionInstance })]
+    describe('when id does not return on the deployed option', () => {
+      it('should set null id on preDeploy and omit the id on onDeploy', async () => {
+        const newOptionInstance = createOptionInstance({ id: 'newOption', value: 'newOptionValue' })
+        const changes = [toChange({ after: newOptionInstance })]
 
-      await customObjectFieldOptionsFilter.preDeploy(changes)
-      expect(newOptionInstance.value.id).toBeNull()
+        await customObjectFieldOptionsFilter.preDeploy(changes)
+        expect(newOptionInstance.value.id).toBeNull()
 
-      await customObjectFieldOptionsFilter.onDeploy(changes)
-      expect(newOptionInstance.value.id).toBeUndefined()
+        await customObjectFieldOptionsFilter.onDeploy(changes)
+        expect(newOptionInstance.value.id).toBeUndefined()
+      })
+    })
+    describe('when id returns on the deployed option', () => {
+      const NEW_OPTION_ID = 1
+      it('should set null id on preDeploy and keep the id on onDeploy', async () => {
+        const newOptionInstance = createOptionInstance({ id: 'newOption', value: 'newOptionValue' })
+        const changes = [toChange({ after: newOptionInstance })]
+
+        await customObjectFieldOptionsFilter.preDeploy(changes)
+        expect(newOptionInstance.value.id).toBeNull()
+
+        newOptionInstance.value.id = NEW_OPTION_ID
+
+        await customObjectFieldOptionsFilter.onDeploy(changes)
+        expect(newOptionInstance.value.id).toEqual(NEW_OPTION_ID)
+      })
     })
   })
 })

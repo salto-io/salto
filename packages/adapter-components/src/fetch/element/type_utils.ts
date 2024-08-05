@@ -248,14 +248,21 @@ export const overrideFieldTypes = <Options extends FetchApiDefinitionsOptions>({
 
       Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
         const { fieldType, restrictions, hide } = customization
-        if (type.fields[fieldName] === undefined && hide) {
-          overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: BUILTIN_TYPE_NAMES.UNKNOWN })
-        }
-        if (type.fields[fieldName] === undefined && resourceDef?.serviceIDFields?.includes(fieldName)) {
-          overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: BUILTIN_TYPE_NAMES.SERVICEID })
-        }
         if (fieldType !== undefined) {
           overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: fieldType })
+        }
+        if (type.fields[fieldName] === undefined) {
+          // we don't want field to be undefined if it is a serviceId or field we want to hide
+          if (resourceDef?.serviceIDFields?.includes(fieldName)) {
+            overrideFieldType({
+              type,
+              definedTypes,
+              fieldName,
+              fieldTypeName: BUILTIN_TYPE_NAMES.STRING, // fallback to string serviceId
+            })
+          } else if (hide) {
+            overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: BUILTIN_TYPE_NAMES.UNKNOWN })
+          }
         }
         if (type.fields[fieldName] === undefined) {
           return

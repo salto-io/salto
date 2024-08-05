@@ -182,7 +182,7 @@ const setCustomConditionReferences = ({
     createTemplateExpression({
       parts: rawParts.map(part => {
         const index = Number(part)
-        if (index == null) {
+        if (Number.isNaN(index)) {
           return part
         }
         const condition = conditionsByIndex[index]

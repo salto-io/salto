@@ -59,6 +59,8 @@ jira {
 | [maxRequestsPerMinute]                           | unlimited              | Limits on the number of requests per minute                         |
 | [delayPerRequestMS]                              | 0                      | Delay waited between each request in milliseconds                   |
 | [useBottleneck]                                  | true                   | Flag indicating usage of Bottleneck package for rate limiting       |
+| [pauseDuringRetryDelay]                          | false                  | Flag indicating whether to pause the the rate limiter queue on delay|
+| [retryInRateLimiter]                             | false                  | Flag indicating where the retry occurs: rate limiter or axios       |
 | usePrivateAPI                                    | true                   | Whether to use Jira Private API when fetching and deploying changes |
 | [timeout](#client-timeout-configuration-options) | `{}` (no overrides)    | Configuration for setting request timeouts                          |
 

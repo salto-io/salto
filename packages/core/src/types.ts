@@ -18,9 +18,12 @@ import {
   AuthorInformation,
   Change,
   DetailedChangeWithBaseChange,
+  InstanceElement,
   SaltoElementError,
   SaltoError,
 } from '@salto-io/adapter-api'
+import { MergeErrorWithElements } from './core/fetch'
+import { Plan } from './core/plan'
 
 export type FetchChangeMetadata = AuthorInformation
 export type FetchChange = {
@@ -32,6 +35,16 @@ export type FetchChange = {
   pendingChanges?: DetailedChangeWithBaseChange[]
   // Metadata information about the change.
   metadata?: FetchChangeMetadata
+}
+
+export type FetchResult = {
+  changes: FetchChange[]
+  mergeErrors: MergeErrorWithElements[]
+  fetchErrors: SaltoError[]
+  success: boolean
+  configChanges?: Plan
+  updatedConfig: Record<string, InstanceElement[]>
+  accountNameToConfigMessage?: Record<string, string>
 }
 
 export type GroupProperties = AdapterGroupProperties & {

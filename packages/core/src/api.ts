@@ -36,7 +36,6 @@ import {
   isRemovalChange,
   ObjectType,
   ReferenceMapping,
-  SaltoError,
   TopLevelElement,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -46,9 +45,7 @@ import { collections, objects, promises, values } from '@salto-io/lowerdash'
 import {
   ElementSelector,
   elementSource,
-  expressions,
   isTopLevelSelector,
-  merger,
   pathIndex as pathIndexModule,
   selectElementIdsByTraversal,
   Workspace,
@@ -76,7 +73,6 @@ import {
   FetchProgressEvents,
   getDetailedChanges,
   getFetchAdapterAndServicesSetup,
-  MergeErrorWithElements,
 } from './core/fetch'
 import { defaultDependencyChangers, IDFilter } from './core/plan/plan'
 import { createRestoreChanges, createRestorePathChanges } from './core/restore'
@@ -85,7 +81,7 @@ import { createDiffChanges } from './core/diff'
 import getChangeValidators from './core/plan/change_validators'
 import { renameChecks, renameElement } from './core/rename'
 import { ChangeWithDetails } from './core/plan/plan_item'
-import { DeployResult, FetchChange } from './types'
+import { DeployResult, FetchChange, FetchResult } from './types'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -231,15 +227,6 @@ export const deploy = async (
 
 export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
 
-export type FetchResult = {
-  changes: FetchChange[]
-  mergeErrors: MergeErrorWithElements[]
-  fetchErrors: SaltoError[]
-  success: boolean
-  configChanges?: Plan
-  updatedConfig: Record<string, InstanceElement[]>
-  accountNameToConfigMessage?: Record<string, string>
-}
 export type FetchFunc = (
   workspace: Workspace,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
@@ -412,107 +399,6 @@ export const calculatePatchFromChanges = async ({
     new Set(accounts),
   )
   return result.changes
-}
-
-type CalculatePatchArgs = {
-  workspace: Workspace
-  fromDir: string
-  toDir: string
-  accountName: string
-  ignoreStateElemIdMapping?: boolean
-  ignoreStateElemIdMappingForSelectors?: ElementSelector[]
-}
-
-export const calculatePatch = async ({
-  workspace,
-  fromDir,
-  toDir,
-  accountName,
-  ignoreStateElemIdMapping,
-  ignoreStateElemIdMappingForSelectors,
-}: CalculatePatchArgs): Promise<FetchResult> => {
-  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
-  const adapterName = accountToServiceNameMap[accountName]
-  if (adapterName !== accountName) {
-    throw new Error('Account name that is different from the adapter name is not supported')
-  }
-  const { loadElementsFromFolder } = adapterCreators[adapterName]
-  if (loadElementsFromFolder === undefined) {
-    throw new Error(`Account ${accountName}'s adapter ${adapterName} does not support calculate patch`)
-  }
-  const wsElements = await workspace.elements()
-  const resolvedWSElements = await expressions.resolve(await awu(await wsElements.getAll()).toArray(), wsElements)
-  const { adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
-    workspace,
-    fetchAccounts: [accountName],
-    accountToServiceNameMap,
-    elementsSource: elementSource.createInMemoryElementSource(resolvedWSElements),
-    ignoreStateElemIdMapping,
-    ignoreStateElemIdMappingForSelectors,
-  })
-  const adapterContext = adaptersCreatorConfigs[accountName]
-
-  const loadElementsAndMerge = async (
-    dir: string,
-  ): Promise<{
-    elements: Element[]
-    loadErrors?: SaltoError[]
-    mergeErrors: MergeErrorWithElements[]
-    mergedElements: Element[]
-  }> => {
-    const { elements, errors } = await loadElementsFromFolder({ baseDir: dir, ...adapterContext })
-    const mergeResult = await merger.mergeElements(awu(elements))
-    return {
-      elements,
-      loadErrors: errors,
-      mergeErrors: await awu(mergeResult.errors.values()).flat().toArray(),
-      mergedElements: await awu(mergeResult.merged.values()).toArray(),
-    }
-  }
-  const {
-    loadErrors: beforeLoadErrors,
-    mergeErrors: beforeMergeErrors,
-    mergedElements: mergedBeforeElements,
-  } = await loadElementsAndMerge(fromDir)
-  if (beforeMergeErrors.length > 0) {
-    return {
-      changes: [],
-      mergeErrors: beforeMergeErrors,
-      fetchErrors: [],
-      success: false,
-      updatedConfig: {},
-    }
-  }
-  const {
-    elements: afterElements,
-    loadErrors: afterLoadErrors,
-    mergeErrors: afterMergeErrors,
-    mergedElements: mergedAfterElements,
-  } = await loadElementsAndMerge(toDir)
-  if (afterMergeErrors.length > 0) {
-    return {
-      changes: [],
-      mergeErrors: afterMergeErrors,
-      fetchErrors: [],
-      success: false,
-      updatedConfig: {},
-    }
-  }
-  const { changes } = await calcFetchChanges(
-    afterElements,
-    mergedAfterElements,
-    elementSource.createInMemoryElementSource(mergedBeforeElements),
-    await workspace.elements(false),
-    new Map([[accountName, {}]]),
-    new Set([accountName]),
-  )
-  return {
-    changes,
-    mergeErrors: [],
-    fetchErrors: [...(beforeLoadErrors ?? []), ...(afterLoadErrors ?? [])],
-    success: true,
-    updatedConfig: {},
-  }
 }
 
 export type LocalChange = Omit<FetchChange, 'pendingChanges'>

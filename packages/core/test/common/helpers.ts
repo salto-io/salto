@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element } from '@salto-io/adapter-api'
+import { Adapter, AdapterOperations, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
 import { elementSource, remoteMap } from '@salto-io/workspace'
 
 export const createElementSource = (elements: readonly Element[]): elementSource.RemoteElementSource =>
@@ -27,5 +28,38 @@ export const inMemRemoteMapCreator = (): remoteMap.RemoteMapCreator => {
       maps.set(opts.namespace, map)
     }
     return map as remoteMap.RemoteMap<T, K>
+  }
+}
+
+export const createMockAdapter = (adapterName: string): jest.Mocked<Required<Adapter>> => {
+  const configType = new ObjectType({ elemID: new ElemID(adapterName) })
+  const credentialsType = new ObjectType({ elemID: new ElemID(adapterName) })
+  const optionsType = new ObjectType({ elemID: new ElemID(adapterName) })
+  return {
+    operations: mockFunction<Adapter['operations']>().mockReturnValue({
+      fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+      deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
+    }),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: 'accountID' }),
+    authenticationMethods: {
+      basic: { credentialsType },
+    },
+    configType,
+    configCreator: {
+      getConfig: mockFunction<Required<Adapter>['configCreator']['getConfig']>().mockResolvedValue(
+        new InstanceElement(ElemID.CONFIG_NAME, configType, {}),
+      ),
+      optionsType,
+    },
+    install: mockFunction<Required<Adapter>['install']>().mockResolvedValue({ success: true, installedVersion: '1' }),
+    loadElementsFromFolder: mockFunction<Required<Adapter>['loadElementsFromFolder']>().mockResolvedValue({
+      elements: [],
+    }),
+    dumpElementsToFolder: mockFunction<Required<Adapter>['dumpElementsToFolder']>().mockResolvedValue({
+      errors: [],
+      unappliedChanges: [],
+    }),
+    getAdditionalReferences: mockFunction<Required<Adapter>['getAdditionalReferences']>().mockResolvedValue([]),
+    getCustomReferences: mockFunction<Required<Adapter>['getCustomReferences']>().mockResolvedValue([]),
   }
 }

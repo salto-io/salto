@@ -1,0 +1,92 @@
+[
+  {
+    "path": "/api/v1/zones/networkzone-fakeid1",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "type": "IP",
+      "id": "networkzone-fakeid1",
+      "name": "my_zone",
+      "status": "ACTIVE",
+      "usage": "POLICY",
+      "created": "2024-08-05T08:00:33.000Z",
+      "lastUpdated": "2024-08-05T08:04:22.000Z",
+      "system": false,
+      "gateways": [
+        {
+          "type": "RANGE",
+          "value": "100.100.100.100-200.100.100.100"
+        }
+      ],
+      "proxies": null,
+      "_links": {
+        "self": {
+          "href": "https://dev-91042815.okta.com/api/v1/zones/networkzone-fakeid1",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        },
+        "deactivate": {
+          "href": "https://dev-91042815.okta.com/api/v1/zones/networkzone-fakeid1/lifecycle/deactivate",
+          "hints": {
+            "allow": ["POST"]
+          }
+        }
+      }
+    },
+    "body": {
+      "id": "networkzone-fakeid1",
+      "name": "my_zone",
+      "status": "ACTIVE"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "95",
+      "x-rate-limit-reset": "1722845121"
+    }
+  },
+  {
+    "path": "/api/v1/zones/networkzone-fakeid1/lifecycle/activate",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "type": "IP",
+      "id": "networkzone-fakeid1",
+      "name": "my_zone",
+      "status": "ACTIVE",
+      "usage": "POLICY",
+      "created": "2024-08-05T08:00:33.000Z",
+      "lastUpdated": "2024-08-05T08:04:49.000Z",
+      "system": false,
+      "gateways": [
+        {
+          "type": "RANGE",
+          "value": "100.100.100.100-200.100.100.100"
+        }
+      ],
+      "proxies": null,
+      "_links": {
+        "self": {
+          "href": "https://dev-91042815.okta.com/api/v1/zones/networkzone-fakeid1",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        },
+        "deactivate": {
+          "href": "https://dev-91042815.okta.com/api/v1/zones/networkzone-fakeid1/lifecycle/deactivate",
+          "hints": {
+            "allow": ["POST"]
+          }
+        }
+      }
+    },
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "94",
+      "x-rate-limit-reset": "1722845121"
+    }
+  }
+]

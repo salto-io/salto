@@ -1,0 +1,37 @@
+[
+  {
+    "path": "/api/v1/zones",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "type": "IP",
+      "id": "networkzone-fakeid1",
+      "name": "my_zone",
+      "status": "ACTIVE",
+      "_links": {
+        "self": {
+          "href": "https://dev-91042815.okta.com/api/v1/zones/networkzone-fakeid1",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        },
+        "deactivate": {
+          "href": "https://dev-91042815.okta.com/api/v1/zones/networkzone-fakeid1/lifecycle/deactivate",
+          "hints": {
+            "allow": ["POST"]
+          }
+        }
+      }
+    },
+    "body": {
+      "name": "my_zone",
+      "status": "ACTIVE"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1722844893"
+    }
+  }
+]

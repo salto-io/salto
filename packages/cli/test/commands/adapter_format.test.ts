@@ -7,10 +7,10 @@
  */
 import { Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { calculatePatch } from '@salto-io/core'
+import { calculatePatch, syncWorkspaceToFolder } from '@salto-io/core'
 import { merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import * as mocks from '../mocks'
-import { applyPatchAction } from '../../src/commands/apply_patch'
+import { applyPatchAction, syncWorkspaceToFolderAction } from '../../src/commands/adapter_format'
 import { CliExitCode } from '../../src/types'
 
 jest.mock('@salto-io/core', () => {
@@ -18,10 +18,12 @@ jest.mock('@salto-io/core', () => {
   return {
     ...actual,
     calculatePatch: jest.fn().mockImplementation(actual.calculatePatch),
+    syncWorkspaceToFolder: jest.fn().mockImplementation(actual.syncWorkspaceToFolder),
   }
 })
 
 const mockCalculatePatch = calculatePatch as jest.MockedFunction<typeof calculatePatch>
+const mockSyncWorkspaceToFolder = syncWorkspaceToFolder as jest.MockedFunction<typeof syncWorkspaceToFolder>
 
 describe('apply-patch command', () => {
   const commandName = 'apply-patch'
@@ -219,6 +221,56 @@ describe('apply-patch command', () => {
     })
     it('should not flush changes to any environment', () => {
       expect(workspace.flush).not.toHaveBeenCalled()
+    })
+  })
+})
+
+describe('sync-to-workspace command', () => {
+  const commandName = 'sync-to-workspace'
+  let workspace: mocks.MockWorkspace
+  let cliCommandArgs: mocks.MockCommandArgs
+
+  beforeEach(async () => {
+    const cliArgs = mocks.mockCliArgs()
+    cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
+    workspace = mocks.mockWorkspace({
+      accounts: ['salesforce'],
+    })
+  })
+
+  describe('when core sync returns without errors', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [] })
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+        },
+      })
+    })
+    it('should return success exit code', () => {
+      expect(result).toEqual(CliExitCode.Success)
+    })
+  })
+
+  describe('when core sync returns with errors', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [{ severity: 'Error', message: 'Not supported' }] })
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+        },
+      })
+    })
+    it('should return non-success exit code', () => {
+      expect(result).not.toEqual(CliExitCode.Success)
     })
   })
 })

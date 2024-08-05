@@ -9,13 +9,13 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { calculatePatch } from '@salto-io/core'
-import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
+import { calculatePatch, syncWorkspaceToFolder } from '@salto-io/core'
+import { WorkspaceCommandAction, createWorkspaceCommand, createCommandGroupDef } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
 import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace'
 import { CliExitCode, CliOutput } from '../types'
 import { UpdateModeArg, UPDATE_MODE_OPTION } from './common/update_mode'
-import { formatFetchWarnings } from '../formatter'
+import { formatFetchWarnings, formatSyncToWorkspaceErrors } from '../formatter'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -111,7 +111,7 @@ export const applyPatchAction: WorkspaceCommandAction<ApplyPatchArgs> = async ({
   return success ? CliExitCode.Success : CliExitCode.AppError
 }
 
-const ApplyPatchCmd = createWorkspaceCommand({
+const applyPatchCmd = createWorkspaceCommand({
   properties: {
     name: 'apply-patch',
     description: 'Calculate the difference between two SFDX folders and apply it to the workspace',
@@ -158,4 +158,56 @@ const ApplyPatchCmd = createWorkspaceCommand({
   action: applyPatchAction,
 })
 
-export default ApplyPatchCmd
+type SyncWorkspaceToFolderArgs = {
+  toDir: string
+  accountName: 'salesforce'
+}
+export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceToFolderArgs> = async ({
+  workspace,
+  input,
+  output,
+}) => {
+  const { accountName, toDir } = input
+
+  outputLine(`Synchronizing content of workspace to folder at ${toDir}`, output)
+  const result = await syncWorkspaceToFolder({ workspace, accountName, baseDir: toDir })
+  if (result.errors.length > 0) {
+    outputLine(formatSyncToWorkspaceErrors(result.errors), output)
+    return CliExitCode.AppError
+  }
+
+  return CliExitCode.Success
+}
+
+const syncToWorkspaceCmd = createWorkspaceCommand({
+  properties: {
+    name: 'sync-to-folder',
+    description: 'Synchronize the content of a workspace with a project folder',
+    keyedOptions: [
+      {
+        name: 'toDir',
+        type: 'string',
+        alias: 'd',
+        description: 'The project folder to update',
+        required: true,
+      },
+      {
+        name: 'accountName',
+        type: 'string',
+        alias: 'a',
+        description: 'The name of the account to synchronize to the project',
+        choices: ['salesforce'],
+        default: 'salesforce',
+      },
+    ],
+  },
+  action: syncWorkspaceToFolderAction,
+})
+
+export const adapterFormatGroupDef = createCommandGroupDef({
+  properties: {
+    name: 'adapter-format',
+    description: 'Commands that deal with project folders in adapter specific formats (e.g - salesforce SFDX)',
+  },
+  subCommands: [applyPatchCmd, syncToWorkspaceCmd],
+})

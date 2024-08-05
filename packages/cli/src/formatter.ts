@@ -32,6 +32,7 @@ import {
   ChangeDataType,
   isStaticFile,
   isSaltoElementError,
+  SaltoElementError,
 } from '@salto-io/adapter-api'
 import {
   Plan,
@@ -490,6 +491,12 @@ export const formatMergeErrors = (mergeErrors: FetchResult['mergeErrors']): stri
 
 export const formatFetchWarnings = (warnings: string[]): string =>
   [emptyLine(), `${Prompts.FETCH_WARNINGS}\n${warnings.join('\n\n')}`].join('\n')
+
+export const formatSyncToWorkspaceErrors = (syncErrors: ReadonlyArray<SaltoError | SaltoElementError>): string =>
+  [
+    emptyLine(),
+    `${Prompts.SYNC_TO_WORKSPACE_ERRORS}\n${syncErrors.map(err => `${err.severity} ${err.message}${isSaltoElementError(err) ? ` (${err.elemID.getFullName()})` : ''}`).join('\n')}`,
+  ].join('\n')
 
 export const formatWorkspaceLoadFailed = (numErrors: number): string =>
   formatSimpleError(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}`)

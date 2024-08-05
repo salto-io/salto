@@ -17,6 +17,7 @@ import _ from 'lodash'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
+  BUILTIN_TYPE_NAMES,
   Field,
   FieldDefinition,
   GENERIC_ID_PREFIX,
@@ -246,17 +247,22 @@ export const overrideFieldTypes = <Options extends FetchApiDefinitionsOptions>({
       const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}
 
       Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
-        const { fieldType, restrictions } = customization
+        const { fieldType, restrictions, hide } = customization
+        if (type.fields[fieldName] === undefined && hide) {
+          overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: BUILTIN_TYPE_NAMES.UNKNOWN })
+        }
+        if (type.fields[fieldName] === undefined && resourceDef?.serviceIDFields?.includes(fieldName)) {
+          overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: BUILTIN_TYPE_NAMES.SERVICEID })
+        }
         if (fieldType !== undefined) {
           overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: fieldType })
         }
-        const field = type.fields[fieldName]
-        if (field === undefined) {
+        if (type.fields[fieldName] === undefined) {
           return
         }
         if (restrictions) {
           log.trace('applying restrictions to field %s.%s', type.elemID.name, fieldName)
-          field.annotate({ [CORE_ANNOTATIONS.RESTRICTION]: createRestriction(restrictions) })
+          type.fields[fieldName].annotate({ [CORE_ANNOTATIONS.RESTRICTION]: createRestriction(restrictions) })
         }
       })
       // mark service ids after applying field customizations, in order to set the right type

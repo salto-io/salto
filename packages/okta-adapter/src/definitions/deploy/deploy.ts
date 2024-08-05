@@ -43,6 +43,7 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   AUTHORIZATION_POLICY,
   APP_LOGO_TYPE_NAME,
+  ACTIVE_STATUS,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -145,6 +146,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   authorizationServerId: '{_parent.0.id}',
                 },
               },
+              copyFromResponse: {
+                toSharedContext: {
+                  pick: ['status'],
+                  nestUnderElemID: true,
+                },
+              },
             },
           ],
           modify: [
@@ -181,6 +188,21 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
           activate: [
             {
+              condition: {
+                custom:
+                  () =>
+                  ({ change, sharedContext }) => {
+                    if (isAdditionChange(change)) {
+                      if (getChangeData(change).value.status !== ACTIVE_STATUS) {
+                        return false
+                      }
+                      return (
+                        _.get(sharedContext, [getChangeData(change).elemID.getFullName(), 'status']) !== ACTIVE_STATUS
+                      )
+                    }
+                    return true
+                  },
+              },
               request: {
                 endpoint: {
                   path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate',
@@ -194,6 +216,21 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
           deactivate: [
             {
+              condition: {
+                custom:
+                  () =>
+                  ({ change, sharedContext }) => {
+                    if (isAdditionChange(change)) {
+                      if (getChangeData(change).value.status !== INACTIVE_STATUS) {
+                        return false
+                      }
+                      return (
+                        _.get(sharedContext, [getChangeData(change).elemID.getFullName(), 'status']) !== INACTIVE_STATUS
+                      )
+                    }
+                    return true
+                  },
+              },
               request: {
                 endpoint: {
                   path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/deactivate',
@@ -208,8 +245,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
       toActionNames: ({ change }) => {
-        if (isAdditionChange(change) && getChangeData(change).value.status === INACTIVE_STATUS) {
-          return ['add', 'deactivate']
+        if (isAdditionChange(change)) {
+          // Conditions inside 'activate' and 'deactivate' will determine which one to run, based on the service
+          // response to the 'add' action.
+          return ['add', 'deactivate', 'activate']
         }
         if (isModificationChange(change)) {
           if (isActivationChange(change)) {

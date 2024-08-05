@@ -267,7 +267,7 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     src: { field: 'assignments', parentTypes: ['ProvisioningGroups'] },
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
-  }
+  },
 ]
 
 const userReferenceRules: OktaFieldReferenceDefinition[] = [

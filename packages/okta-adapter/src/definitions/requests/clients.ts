@@ -98,6 +98,16 @@ export const createClientDefinitions = (
               omitBody: true,
             },
           },
+          '/api/v1/zones/{id}/lifecycle/activate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/zones/{id}/lifecycle/deactivate': {
+            post: {
+              omitBody: true,
+            },
+          },
         },
       },
     },

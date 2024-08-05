@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 export {
+  ActionDependency,
   DeployApiDefinitions,
   DeployableRequestDefinition,
   DeployRequestCondition,

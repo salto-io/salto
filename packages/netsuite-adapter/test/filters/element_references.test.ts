@@ -504,6 +504,7 @@ describe('instance_references filter', () => {
     })
 
     it('should add extracted elements to generated dependencies from AST', async () => {
+      const mockLogWarn = jest.spyOn(logging, 'warn')
       const fileContent = `
       define(['N/record', '../SuiteScripts/oauth_1.js', '../SuiteScripts/oauth_2'], function(record) {
         return{
@@ -555,6 +556,7 @@ describe('instance_references filter', () => {
         customSegmentInstance,
         workflowInstance,
       ])
+      expect(mockLogWarn).not.toHaveBeenCalled()
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
         expect.arrayContaining([

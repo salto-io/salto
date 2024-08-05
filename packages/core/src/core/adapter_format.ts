@@ -67,7 +67,7 @@ const getAdapterAndContext = async ({
   return { adapter, adapterContext, resolvedElements }
 }
 
-const loadElementsAndMerge = async (
+const loadElementsAndMerge = (
   dir: string,
   loadElementsFromFolder: NonNullable<Adapter['loadElementsFromFolder']>,
   adapterContext: AdapterOperationsContext,
@@ -76,25 +76,26 @@ const loadElementsAndMerge = async (
   loadErrors?: SaltoError[]
   mergeErrors: MergeErrorWithElements[]
   mergedElements: Element[]
-}> => {
-  const { elements, errors } = await loadElementsFromFolder({ baseDir: dir, ...adapterContext })
-  const mergeResult = await merger.mergeElements(awu(elements))
-  return {
-    elements,
-    loadErrors: errors,
-    mergeErrors: await awu(mergeResult.errors.values()).flat().toArray(),
-    mergedElements: await awu(mergeResult.merged.values()).toArray(),
-  }
-}
+}> =>
+  log.time(
+    async () => {
+      const { elements, errors } = await loadElementsFromFolder({ baseDir: dir, ...adapterContext })
+      const mergeResult = await merger.mergeElements(awu(elements))
+      return {
+        elements,
+        loadErrors: errors,
+        mergeErrors: await awu(mergeResult.errors.values()).flat().toArray(),
+        mergedElements: await awu(mergeResult.merged.values()).toArray(),
+      }
+    },
+    'loadElementsAndMerge from dir %s',
+    dir,
+  )
 
 type CalculatePatchArgs = {
-  workspace: Workspace
   fromDir: string
   toDir: string
-  accountName: string
-  ignoreStateElemIdMapping?: boolean
-  ignoreStateElemIdMappingForSelectors?: ElementSelector[]
-}
+} & GetAdapterAndContextArgs
 
 export const calculatePatch = async ({
   workspace,
@@ -162,67 +163,71 @@ export const calculatePatch = async ({
 }
 
 type SyncWorkspaceToFolderArgs = {
-  workspace: Workspace
-  accountName: string
   baseDir: string
-  ignoreStateElemIdMapping?: boolean
-  ignoreStateElemIdMappingForSelectors?: ElementSelector[]
-}
+} & GetAdapterAndContextArgs
 
 export type SyncWorkspaceToFolderResult = {
   errors: ReadonlyArray<SaltoError>
 }
-export const syncWorkspaceToFolder = async ({
+export const syncWorkspaceToFolder = ({
   workspace,
   accountName,
   baseDir,
   ignoreStateElemIdMapping,
   ignoreStateElemIdMappingForSelectors,
-}: SyncWorkspaceToFolderArgs): Promise<SyncWorkspaceToFolderResult> => {
-  const { resolvedElements, adapter, adapterContext } = await getAdapterAndContext({
-    workspace,
-    accountName,
-    ignoreStateElemIdMapping,
-    ignoreStateElemIdMappingForSelectors,
-  })
-  const { loadElementsFromFolder, dumpElementsToFolder } = adapter
-  if (loadElementsFromFolder === undefined) {
-    throw new Error(`Account ${accountName}'s adapter does not support loading a non-nacl format`)
-  }
-  if (dumpElementsToFolder === undefined) {
-    throw new Error(`Account ${accountName}'s adapter does not support writing a non-nacl format`)
-  }
+}: SyncWorkspaceToFolderArgs): Promise<SyncWorkspaceToFolderResult> =>
+  log.time(
+    async () => {
+      const { resolvedElements, adapter, adapterContext } = await getAdapterAndContext({
+        workspace,
+        accountName,
+        ignoreStateElemIdMapping,
+        ignoreStateElemIdMappingForSelectors,
+      })
+      const { loadElementsFromFolder, dumpElementsToFolder } = adapter
+      if (loadElementsFromFolder === undefined) {
+        throw new Error(`Account ${accountName}'s adapter does not support loading a non-nacl format`)
+      }
+      if (dumpElementsToFolder === undefined) {
+        throw new Error(`Account ${accountName}'s adapter does not support writing a non-nacl format`)
+      }
 
-  log.debug('Loading elements from folder %s', baseDir)
-  const loadResult = await loadElementsAndMerge(baseDir, loadElementsFromFolder, adapterContext)
-  if (!_.isEmpty(loadResult.loadErrors) || !_.isEmpty(loadResult.mergeErrors)) {
-    return {
-      errors: makeArray(loadResult.loadErrors).concat(loadResult.mergeErrors.map(mergeError => mergeError.error)),
-    }
-  }
+      const loadResult = await loadElementsAndMerge(baseDir, loadElementsFromFolder, adapterContext)
+      if (!_.isEmpty(loadResult.loadErrors) || !_.isEmpty(loadResult.mergeErrors)) {
+        return {
+          errors: makeArray(loadResult.loadErrors).concat(loadResult.mergeErrors.map(mergeError => mergeError.error)),
+        }
+      }
 
-  const workspaceElementIDs = new Set(resolvedElements.map(elem => elem.elemID.getFullName()))
+      const workspaceElementIDs = new Set(resolvedElements.map(elem => elem.elemID.getFullName()))
 
-  const deleteChanges = loadResult.elements
-    .filter(elem => !workspaceElementIDs.has(elem.elemID.getFullName()))
-    .map(elem => toChange({ before: elem as ChangeDataType }))
+      const deleteChanges = loadResult.elements
+        .filter(elem => !workspaceElementIDs.has(elem.elemID.getFullName()))
+        .map(elem => toChange({ before: elem as ChangeDataType }))
 
-  const folderElementsByID = _.keyBy(loadResult.elements, elem => elem.elemID.getFullName())
+      const folderElementsByID = _.keyBy(loadResult.elements, elem => elem.elemID.getFullName())
 
-  const changes = deleteChanges.concat(
-    resolvedElements.map(elem =>
-      toChange({
-        before: folderElementsByID[elem.elemID.getFullName()] as ChangeDataType,
-        after: elem as ChangeDataType,
-      }),
-    ),
+      const changes = deleteChanges.concat(
+        resolvedElements.map(elem =>
+          toChange({
+            before: folderElementsByID[elem.elemID.getFullName()] as ChangeDataType,
+            after: elem as ChangeDataType,
+          }),
+        ),
+      )
+
+      log.debug(
+        'Loaded %d elements from folder %s and %d elements from workspace, applying %d changes (%d delete, %d modify, %d add) to folder',
+        loadResult.elements.length,
+        baseDir,
+        resolvedElements.length,
+        changes.length,
+        deleteChanges.length,
+        loadResult.elements.length - deleteChanges.length,
+        resolvedElements.length - (loadResult.elements.length - deleteChanges.length),
+      )
+      return dumpElementsToFolder({ baseDir, changes, elementsSource: adapterContext.elementsSource })
+    },
+    'syncWorkspaceToFolder %s',
+    baseDir,
   )
-
-  log.debug(
-    'Loaded %d elements from folder %s, applying %d delete changes and %d addition changes to folder %s',
-    loadResult.elements.length,
-    deleteChanges.length,
-    resolvedElements.length,
-  )
-  return dumpElementsToFolder({ baseDir, changes, elementsSource: adapterContext.elementsSource })
-}

@@ -262,50 +262,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  AuthorizationServerPolicy: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies',
-        method: 'post',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
-        method: 'put',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-          policyId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
-        method: 'delete',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-          policyId: 'id',
-        },
-        omitRequestBody: true,
-      },
-      activate: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/activate',
-        method: 'post',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-          policyId: 'id',
-        },
-      },
-      deactivate: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/deactivate',
-        method: 'post',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-          policyId: 'id',
-        },
-      },
-    },
-  },
   AuthorizationServerPolicyRule: {
     deployRequests: {
       add: {

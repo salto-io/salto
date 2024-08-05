@@ -37,8 +37,8 @@ import {
 const { RECORDS_PATH } = elementsUtils
 type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
 
-const createOptionsValue = (id: number, value?: string): Value => ({
-  id,
+const createOptionsValue = (id: number | 'newOption', value?: string): Value => ({
+  id: id === 'newOption' ? undefined : id,
   name: id.toString(),
   raw_name: id.toString().repeat(2),
   value: value ?? id.toString().repeat(3),
@@ -60,7 +60,7 @@ const customObjectFieldOptionType = new ObjectType({
   },
 })
 
-const createOptionInstance = ({ id, value }: { id: number; value: string }): InstanceElement => {
+const createOptionInstance = ({ id, value }: { id: number | 'newOption'; value: string }): InstanceElement => {
   const test = pathNaclCase(naclCase(`customObjectField__${value.toString()}`))
   return new InstanceElement(
     naclCase(`customObjectField__${value.toString()}`),
@@ -106,5 +106,17 @@ describe('customObjectFieldOptionsFilter', () => {
     customObjectFieldOption.value.name = 'test'
     await customObjectFieldOptionsFilter.onDeploy([toChange({ after: customObjectFieldOption })])
     expect(customObjectFieldOption.value.name).toBeUndefined()
+  })
+  describe('when deploying new option', () => {
+    it('should set null id on preDeploy and omit the id on onDeploy', async () => {
+      const newOptionInstance = createOptionInstance({ id: 'newOption', value: 'newOptionValue' })
+      const changes = [toChange({ after: newOptionInstance })]
+
+      await customObjectFieldOptionsFilter.preDeploy(changes)
+      expect(newOptionInstance.value.id).toBeNull()
+
+      await customObjectFieldOptionsFilter.onDeploy(changes)
+      expect(newOptionInstance.value.id).toBeUndefined()
+    })
   })
 })

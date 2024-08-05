@@ -32,11 +32,16 @@ export const createDeployOptionsWithParentCreator =
     preDeploy: async changes => {
       getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
         option.name = option.raw_name
+        // Added option won't have id until it is deployed. The API requires to pass null for new options
+        option.id = option.id ?? null
       })
     },
     onDeploy: async changes => {
       getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
         delete option.name
+        if (option.id === null) {
+          delete option.id
+        }
       })
     },
     deploy: async (changes: Change<InstanceElement>[]) => {

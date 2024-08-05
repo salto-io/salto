@@ -88,6 +88,16 @@ export const createClientDefinitions = (
               omitBody: true,
             },
           },
+          '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate': {
+            post: {
+              omitBody: true,
+            },
+          },
+          '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/deactivate': {
+            post: {
+              omitBody: true,
+            },
+          },
         },
       },
     },

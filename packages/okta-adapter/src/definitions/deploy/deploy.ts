@@ -41,7 +41,9 @@ import {
   ID_FIELD,
   BRAND_THEME_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  AUTHORIZATION_POLICY,
   APP_LOGO_TYPE_NAME,
+  ACTIVE_STATUS,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -126,6 +128,153 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       actionDependencies: [
         {
           first: 'add',
+          second: 'modify',
+        },
+      ],
+    },
+    [AUTHORIZATION_POLICY]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+              copyFromResponse: {
+                toSharedContext: {
+                  pick: ['status'],
+                  nestUnderElemID: true,
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: {
+                skipIfIdentical: true,
+                transformForCheck: {
+                  omit: ['status'],
+                },
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}',
+                  method: 'put',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}',
+                  method: 'delete',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          activate: [
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change, sharedContext }) => {
+                    if (isAdditionChange(change)) {
+                      if (getChangeData(change).value.status !== ACTIVE_STATUS) {
+                        return false
+                      }
+                      return (
+                        _.get(sharedContext, [getChangeData(change).elemID.getFullName(), 'status']) !== ACTIVE_STATUS
+                      )
+                    }
+                    return true
+                  },
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          deactivate: [
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change, sharedContext }) => {
+                    if (isAdditionChange(change)) {
+                      if (getChangeData(change).value.status !== INACTIVE_STATUS) {
+                        return false
+                      }
+                      return (
+                        _.get(sharedContext, [getChangeData(change).elemID.getFullName(), 'status']) !== INACTIVE_STATUS
+                      )
+                    }
+                    return true
+                  },
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/deactivate',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => {
+        if (isAdditionChange(change)) {
+          // Conditions inside 'activate' and 'deactivate' will determine which one to run, based on the service
+          // response to the 'add' action.
+          return ['add', 'deactivate', 'activate']
+        }
+        if (isModificationChange(change)) {
+          if (isActivationChange(change)) {
+            return ['modify', 'activate']
+          }
+          if (isDeactivationChange(change)) {
+            return ['deactivate', 'modify']
+          }
+        }
+        return [change.action]
+      },
+      actionDependencies: [
+        {
+          first: 'add',
+          second: 'activate',
+        },
+        {
+          first: 'add',
+          second: 'deactivate',
+        },
+        {
+          first: 'modify',
+          second: 'activate',
+        },
+        {
+          first: 'deactivate',
           second: 'modify',
         },
       ],

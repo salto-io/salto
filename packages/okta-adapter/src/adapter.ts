@@ -300,7 +300,7 @@ export default class OktaAdapter implements AdapterOperations {
     )
   }
 
-  @logDuration('fetching account configuration')
+  @logDuration('generating instances and types from service')
   async getElements(): Promise<fetchUtils.FetchElements> {
     const typesByTypeName = await this.getAllSwaggerTypes()
 

@@ -108,7 +108,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     ],
     resource: {
-      directFetch: true,
+      directFetch: false,
     },
     element: {
       topLevel: {

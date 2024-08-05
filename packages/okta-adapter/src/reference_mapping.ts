@@ -73,7 +73,7 @@ const getProfileMappingRefByType: referenceUtils.ContextValueMapperFunc = val =>
 const getProfileMappingRefByName: referenceUtils.ContextValueMapperFunc = val =>
   val.endsWith('_idp') ? IDENTITY_PROVIDER_TYPE_NAME : undefined
 
-const getUserSchemaPropertyOverrideType: referenceUtils.ContextValueMapperFunc = val => 
+const getUserSchemaPropertyOverrideType: referenceUtils.ContextValueMapperFunc = val =>
   val === 'APP' ? APPLICATION_TYPE_NAME : undefined
 
 export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName' | 'UserSchemaPropertyAppOverride'

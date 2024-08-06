@@ -406,6 +406,9 @@ const createCustomizations = (): Record<
         name: { hide: true },
         id: { fieldType: 'number', hide: true },
         display_name: { omit: true },
+        restricted_brand_ids: {
+          sort: { properties: [{ path: 'name' }] },
+        },
       },
     },
   },

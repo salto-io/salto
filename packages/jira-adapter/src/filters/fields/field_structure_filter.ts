@@ -168,7 +168,8 @@ const transformOptionsToMap = (instance: InstanceElement): void => {
         if (option.value === '') {
           return '@'
         }
-        return naclCase(option.value)})
+        return naclCase(option.value)
+      })
     })
 }
 

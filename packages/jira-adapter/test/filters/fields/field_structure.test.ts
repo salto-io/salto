@@ -202,7 +202,7 @@ describe('fields_structure', () => {
             {
               id: 7,
               value: '',
-            }
+            },
           ],
         },
       ],
@@ -248,11 +248,11 @@ describe('fields_structure', () => {
             },
           },
         },
-        '@':{
+        '@': {
           id: 7,
           value: '',
           position: 3,
-        }
+        },
       },
     })
   })

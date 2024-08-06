@@ -384,7 +384,6 @@ export class RateLimiter {
     if (time !== undefined) {
       clearTimeout(this.resumeTimer)
       this.resumeTimer = setTimeout(() => {
-        log.debug(`Trying to resuming RateLimiter (${this.name}).`)
         this.resume()
       }, time)
     }

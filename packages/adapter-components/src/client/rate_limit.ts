@@ -20,7 +20,6 @@ import { ClientRateLimitConfig, ClientRetryConfig, ClientTimeoutConfig } from '.
 import { logOperationDecorator } from './decorators'
 import { RateLimiter, RateLimiterRetryOptions } from './rate_limiter'
 import { createRetryOptions } from './http_connection'
-import _default from '../../../confluence-adapter/dist/src/change_validator'
 
 const log = logger(module)
 
@@ -96,7 +95,6 @@ export const createRateLimitersFromConfig = <TRateLimitConfig extends RateLimitE
             useBottleneck,
             pauseDuringRetryDelay,
             ...intervalOptions,
-            // ...retryOptions,
           },
           key,
         ),
@@ -121,11 +119,9 @@ export const throttle = <TRateLimitConfig extends ClientRateLimitConfig>({
     originalMethod: decorators.OriginalCall,
   ): Promise<unknown> {
     log.debug('%s enqueued', logOperationDecorator(originalMethod, this.clientName, keys))
-    // const wrappedCall = this.rateLimiters.total.wrap(async () => originalMethod.call())
-    const wrappedCall = async (): Promise<unknown> => originalMethod.call()
-    if (bucketName !== undefined && bucketName !== 'total') {
+    if (bucketName !== undefined) {
       // we already verified that the bucket exists
-      return this.rateLimiters[bucketName].wrap(async () => wrappedCall())()
+      return this.rateLimiters[bucketName].wrap(async () => originalMethod.call())()
     }
-    return wrappedCall()
+    return originalMethod.call()
   })

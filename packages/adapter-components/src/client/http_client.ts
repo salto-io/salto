@@ -152,7 +152,6 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     this.credentials = credentials
   }
 
-  @throttle<TRateLimitConfig>({ bucketName: 'total', keys: ['url', 'queryParams'] })
   protected async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
       if (this.loginPromise === undefined) {
@@ -240,6 +239,29 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     return this.sendRequest('options', params)
   }
 
+  @throttle<TRateLimitConfig>({ bucketName: 'total', keys: ['url', 'queryParams'] })
+  protected async innerSendRequest<T extends keyof HttpMethodToClientParams>(
+    method: T,
+    params: HttpMethodToClientParams[T],
+  ): Promise<Response<ResponseValue | ResponseValue[]>> {
+    const { url, queryParams, headers, responseType, queryParamsSerializer: paramsSerializer } = params
+    const requestConfig = [queryParams, headers, responseType, paramsSerializer].some(values.isDefined)
+      ? {
+          params: queryParams,
+          headers,
+          responseType,
+          paramsSerializer,
+        }
+      : undefined
+    if (this.apiClient === undefined) {
+      // initialized by requiresLogin (through ensureLoggedIn in this case)
+      throw new Error(`uninitialized ${this.clientName} client`)
+    }
+    return isMethodWithDataParam(method)
+      ? this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
+      : this.apiClient[method](url, isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig)
+  }
+
   protected async sendRequest<T extends keyof HttpMethodToClientParams>(
     method: T,
     params: HttpMethodToClientParams[T],
@@ -249,7 +271,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
-    const { url, queryParams, headers, responseType, queryParamsSerializer: paramsSerializer } = params
+    const { url, queryParams, headers } = params
     const data = isMethodWithData(params) ? params.data : undefined
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -288,34 +310,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     }
 
     try {
-      const requestConfig = [queryParams, headers, responseType, paramsSerializer].some(values.isDefined)
-        ? {
-            params: queryParams,
-            headers,
-            responseType,
-            paramsSerializer,
-          }
-        : undefined
-        
-      const res = await this.rateLimiters.total.add(async () => {
-        if (this.apiClient === undefined) {
-          // initialized by requiresLogin (through ensureLoggedIn in this case)
-          throw new Error(`uninitialized ${this.clientName} client`)
-        }
-        return isMethodWithDataParam(method)
-        ?  this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
-        :  this.apiClient[method](
-            url,
-            isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
-          )
-        }
-      )
-      // const res =  isMethodWithDataParam(method)
-      //   ?  await this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
-      //   :  await this.apiClient[method](
-      //       url,
-      //       isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
-      //     )
+      const res = await this.innerSendRequest(method, params)
 
       logResponse(res)
       return {

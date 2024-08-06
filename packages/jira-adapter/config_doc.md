@@ -52,17 +52,17 @@ jira {
 
 ### Client configuration options
 
-| Name                                             | Default when undefined | Description                                                         |
-| ------------------------------------------------ | ---------------------- | ------------------------------------------------------------------- |
-| [retry](#retry-configuration-options)            | `{}` (no overrides)    | Configuration for retrying on errors                                |
-| [rateLimit](#rate-limit-configuration-options)   | `{}` (no overrides)    | Limits on the number of concurrent requests of different types      |
-| [maxRequestsPerMinute]                           | unlimited              | Limits on the number of requests per minute                         |
-| [delayPerRequestMS]                              | 0                      | Delay waited between each request in milliseconds                   |
-| [useBottleneck]                                  | true                   | Flag indicating usage of Bottleneck package for rate limiting       |
-| [pauseDuringRetryDelay]                          | false                  | Flag indicating whether to pause the the rate limiter queue on delay|
-| [retryInRateLimiter]                             | false                  | Flag indicating where the retry occurs: rate limiter or axios       |
-| usePrivateAPI                                    | true                   | Whether to use Jira Private API when fetching and deploying changes |
-| [timeout](#client-timeout-configuration-options) | `{}` (no overrides)    | Configuration for setting request timeouts                          |
+| Name                                             | Default when undefined | Description                                                          |
+| ------------------------------------------------ | ---------------------- | -------------------------------------------------------------------- |
+| [retry](#retry-configuration-options)            | `{}` (no overrides)    | Configuration for retrying on errors                                 |
+| [rateLimit](#rate-limit-configuration-options)   | `{}` (no overrides)    | Limits on the number of concurrent requests of different types       |
+| [maxRequestsPerMinute]                           | unlimited              | Limits on the number of requests per minute                          |
+| [delayPerRequestMS]                              | 0                      | Delay waited between each request in milliseconds                    |
+| [useBottleneck]                                  | true                   | Flag indicating usage of Bottleneck package for rate limiting        |
+| [pauseDuringRetryDelay]                          | false                  | Flag indicating whether to pause the the rate limiter queue on delay |
+| [retryInRateLimiter]                             | false                  | Flag indicating where the retry occurs: rate limiter or axios        |
+| usePrivateAPI                                    | true                   | Whether to use Jira Private API when fetching and deploying changes  |
+| [timeout](#client-timeout-configuration-options) | `{}` (no overrides)    | Configuration for setting request timeouts                           |
 
 #### Client timeout configuration options
 

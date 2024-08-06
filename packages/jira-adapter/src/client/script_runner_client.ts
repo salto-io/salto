@@ -19,6 +19,7 @@ import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { JIRA } from '../constants'
 import { createScriptRunnerConnection } from './script_runner_connection'
 import JiraClient, {
+  DEFAULT_JIRA_RETRY_OPTIONS,
   DELAY_PER_REQUEST_MS,
   PAUSE_DURING_RETRY_DELAY,
   RETRY_IN_RATE_LIMITER,
@@ -30,7 +31,7 @@ const log = logger(module)
 
 const NO_LICENSE_ERROR_CODE = 402
 
-const { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const { DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
 // The below default values are taken from Jira and were not verified for ScriptRunner
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
@@ -60,7 +61,7 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
       delayPerRequestMS: DELAY_PER_REQUEST_MS,
       useBottleneck: USE_BOTTLENECK,
       pauseDuringRetryDelay: PAUSE_DURING_RETRY_DELAY,
-      retry: DEFAULT_RETRY_OPTS,
+      retry: DEFAULT_JIRA_RETRY_OPTIONS,
       retryInRateLimiter: RETRY_IN_RATE_LIMITER,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })

@@ -189,7 +189,7 @@ const buildMultiEnvSource = (
     // (without content) that came from common. To avoid this we filter the sources before the calls to get static file
     // so that only the ones with files will be called.
     const sourcesFiles = await awu(Object.values(getActiveSources(env)))
-      .filter(async source => !(await source.isEmpty()))
+      .filter(async src => !(await (await src.getElementsSource()).isEmpty()))
       .map(src =>
         src.getStaticFile({
           filePath,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, ListType, MapType } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { elements as adapterElements } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
@@ -181,7 +181,7 @@ export const createFormType = (): {
         refType: BuiltinTypes.UNKNOWN,
       },
       questions: {
-        refType: new ListType(questionType),
+        refType: new MapType(questionType),
       },
     },
   })

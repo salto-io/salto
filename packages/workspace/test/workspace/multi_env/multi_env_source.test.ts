@@ -271,6 +271,7 @@ describe('multi env source', () => {
         [activePrefix]: envStaticFileSource,
       }
       const src = multiEnvSource(realSources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      await src.load({})
       expect(
         await src.getStaticFile({
           filePath: staticFile.filepath,

@@ -78,6 +78,7 @@ import {
   PayloadWorkflowStatus,
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
   TRANSITION_LIST_FIELDS,
+  WorkflowV2Transition,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_RETRY_PERIODS } from '../../constants'
@@ -92,6 +93,7 @@ import {
   isWorkflowSchemeItem,
   projectHasWorkflowSchemeReference,
 } from '../../change_validators/workflow_scheme_migration'
+import { RESOLUTION_KEY_PATTERN } from '../../references/workflow_properties'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -140,6 +142,26 @@ const fetchWorkflowData = async (paginator: clientUtils.Paginator): Promise<Work
 }
 
 const convertIdsStringToList = (ids: string): string[] => ids.split(',')
+
+const splitResolutionProperties = (transitions: WorkflowV2Transition[]): void => {
+  transitions.forEach(transition => {
+    if (transition.properties !== undefined) {
+      transition.properties = _.mapValues(transition.properties, (value, key) =>
+        new RegExp(RESOLUTION_KEY_PATTERN).test(key) ? value.split(',') : value,
+      )
+    }
+  })
+}
+
+const joinResolutionProperties = (transitions: WorkflowV2Transition[]): void => {
+  transitions.forEach(transition => {
+    if (transition.properties !== undefined) {
+      transition.properties = _.mapValues(transition.properties, (value, key) =>
+        new RegExp(RESOLUTION_KEY_PATTERN).test(key) ? value.join(',') : value,
+      )
+    }
+  })
+}
 
 const convertTransitionParametersFields = (
   workflowName: string,
@@ -223,6 +245,7 @@ const createWorkflowInstances = async ({
       await Promise.all(
         response.data.workflows.map(async workflow => {
           convertTransitionParametersFields(workflow.name, workflow.transitions, convertParametersFieldsToList)
+          splitResolutionProperties(workflow.transitions)
           convertPropertiesToList([...(workflow.statuses ?? []), ...(workflow.transitions ?? [])])
           if (workflow.id === undefined) {
             // should never happen
@@ -689,6 +712,7 @@ const getWorkflowForDeploy = async (
     convertParametersFieldsToString,
   )
   convertPropertiesToMap([...(resolvedInstance.value.statuses ?? []), ...(resolvedInstance.value.transitions ?? [])])
+  joinResolutionProperties(resolvedInstance.value.transitions)
   walkOnElement({ element: resolvedInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
   walkOnElement({ element: resolvedInstance, func: insertConditionGroups })
   return resolvedInstance

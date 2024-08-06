@@ -119,9 +119,7 @@ export const throttle = <TRateLimitConfig extends ClientRateLimitConfig>({
     originalMethod: decorators.OriginalCall,
   ): Promise<unknown> {
     log.debug('%s enqueued', logOperationDecorator(originalMethod, this.clientName, keys))
-    if (bucketName !== undefined) {
-      // we already verified that the bucket exists
-      return this.rateLimiters[bucketName].wrap(async () => originalMethod.call())()
-    }
-    return originalMethod.call()
+    return bucketName !== undefined
+      ? this.rateLimiters[bucketName].wrap(async () => originalMethod.call())()
+      : originalMethod.call()
   })

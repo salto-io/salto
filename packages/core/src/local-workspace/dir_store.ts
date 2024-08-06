@@ -165,7 +165,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     if (cachedIsEmpty !== undefined) {
       return cachedIsEmpty
     }
-    cachedIsEmpty = Object.keys(updated).length > 0 ? false : (await list()).length === 0
+    cachedIsEmpty = (await list()).length === 0
     return cachedIsEmpty
   }
 

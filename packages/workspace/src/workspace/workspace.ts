@@ -324,7 +324,6 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
     isTemplate?: boolean
-    hash?: string
   }): Promise<StaticFile | undefined>
   getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
   getElemIdsByStaticFilePaths(filePaths?: Set<string>, envName?: string): Promise<Record<string, string>>
@@ -574,7 +573,6 @@ export const loadWorkspace = async (
                           encoding: staticFile.encoding,
                           env: envName,
                           isTemplate: staticFile.isTemplate,
-                          hash: staticFile.hash,
                         })) ?? staticFile,
                     ),
                   persistent,
@@ -1650,8 +1648,8 @@ export const loadWorkspace = async (
     getElementSourceOfPath: async (filePath, includeHidden = true) =>
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
-    getStaticFile: async ({ filepath, encoding, env, isTemplate, hash }) =>
-      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv(), isTemplate, hash }),
+    getStaticFile: async ({ filepath, encoding, env, isTemplate }) =>
+      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv(), isTemplate }),
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,

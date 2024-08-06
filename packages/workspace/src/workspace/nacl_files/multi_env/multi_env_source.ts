@@ -181,18 +181,27 @@ const buildMultiEnvSource = (
     hash?: string
   }): Promise<StaticFile> => {
     const { env, filePath, encoding, isTemplate, hash } = args
-    const sourcesFiles = (
-      await Promise.all(
-        Object.values(getActiveSources(env)).map(src =>
-          src.getStaticFile({
-            filePath,
-            encoding,
-            isTemplate,
-            hash,
-          }),
-        ),
+    // without filtering the sources, we would run getStaticFile on an empty source and we will get invalid results. for
+    // example if common is empty, when we will run getStaticFile of buildNaclFilesSource, this will run
+    // staticFilesSource.getStaticFile, and since we are passing a hash, we will get a static file without content
+    // and not a missing staticFile. Finally we will get both common and env as sourcesFiles (common returned a static
+    // file and therefore is not filtered out). As we return sourcesFiles[0], we will return the invalid static file
+    // (without content) that came from common. To avoid this we filter the sources before the calls to get static file
+    // so that only the ones with files will be called.
+    const sourcesFiles = await awu(Object.values(getActiveSources(env)))
+      .filter(async source => {
+        return !(await source.isEmpty())
+      })
+      .map(src =>
+        src.getStaticFile({
+          filePath,
+          encoding,
+          isTemplate,
+          hash,
+        }),
       )
-    ).filter(values.isDefined)
+      .filter(values.isDefined)
+      .toArray()
     if (sourcesFiles.length > 1 && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
       log.warn(`Found different hashes for static file ${filePath}`)
     }

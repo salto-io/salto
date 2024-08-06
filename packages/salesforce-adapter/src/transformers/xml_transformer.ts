@@ -8,7 +8,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { XMLBuilder, XMLParser, X2jOptions } from 'fast-xml-parser'
-import { RetrieveResult, FileProperties, RetrieveRequest } from '@salto-io/jsforce'
+import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement, ElemID } from '@salto-io/adapter-api'
@@ -60,7 +60,7 @@ export const metadataTypesWithAttributes = [LIGHTNING_COMPONENT_BUNDLE_METADATA_
 
 export const PACKAGE = 'unpackaged'
 const HIDDEN_CONTENT_VALUE = '(hidden)'
-const METADATA_XML_SUFFIX = '-meta.xml'
+export const METADATA_XML_SUFFIX = '-meta.xml'
 const UNFILED_PUBLIC_FOLDER = 'unfiled$public'
 
 // ComplexTypes used constants
@@ -95,25 +95,38 @@ export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): Retriev
   },
 })
 
-const addContentFieldAsStaticFile = (
-  values: Values,
-  valuePath: string[],
-  content: Buffer,
-  fileName: string,
-  type: string,
-  namespacePrefix?: string,
-): void => {
+type AddContentFieldAsStaticFileArgs = {
+  values: Values
+  valuePath: string[]
+  content: Buffer
+  contentFileName: string
+  type: string
+  namespacePrefix?: string
+  packagePath: string
+}
+const addContentFieldAsStaticFile = ({
+  values,
+  valuePath,
+  content,
+  contentFileName,
+  type,
+  namespacePrefix,
+  packagePath,
+}: AddContentFieldAsStaticFileArgs): void => {
   const folder =
     namespacePrefix === undefined
       ? `${SALESFORCE}/${RECORDS_PATH}/${type}`
       : `${SALESFORCE}/${INSTALLED_PACKAGES_PATH}/${namespacePrefix}/${RECORDS_PATH}/${type}`
+  const filePathInPackage = packagePath ? contentFileName.replace(new RegExp(`^${packagePath}`), '') : contentFileName
   _.set(
     values,
     valuePath,
     content.toString() === HIDDEN_CONTENT_VALUE
       ? content.toString()
       : new StaticFile({
-          filepath: `${folder}/${fileName.split('/').slice(2).join('/')}`,
+          // The first folder in the file path represents the type, that is already represented in the "folder" variable
+          // so we remove the value for the file path here
+          filepath: `${folder}/${filePathInPackage.split('/').slice(1).join('/')}`,
           content,
         }),
   )
@@ -122,13 +135,15 @@ const addContentFieldAsStaticFile = (
 type FieldName = string
 type FileName = string
 type Content = Buffer
+type AddContentFieldsArgs = {
+  fileNameToContent: Record<string, Buffer>
+  values: Values
+  type: string
+  namespacePrefix?: string
+  packagePath: string
+}
 type ComplexType = {
-  addContentFields(
-    fileNameToContent: Record<string, Buffer>,
-    values: Values,
-    type: string,
-    namespacePrefix?: string,
-  ): void
+  addContentFields(args: AddContentFieldsArgs): void
   getMissingFields?(metadataFileName: string): Values
   mapContentFields(instanceName: string, values: Values): Record<FieldName, Record<FileName, Content>>
   sortMetadataValues?(metadataValues: Values): Values
@@ -170,12 +185,7 @@ export const complexTypesMap: ComplexTypesMap = {
    * suffix in order to set their content to the correct field
    */
   AuraDefinitionBundle: {
-    addContentFields: (
-      fileNameToContent: Record<string, Buffer>,
-      values: Values,
-      type: string,
-      namespacePrefix?: string,
-    ) => {
+    addContentFields: ({ fileNameToContent, values, type, namespacePrefix, packagePath }) => {
       Object.entries(fileNameToContent).forEach(([contentFileName, content]) => {
         const fieldName = Object.entries(auraFileSuffixToFieldName).find(([fileSuffix, _fieldName]) =>
           contentFileName.endsWith(fileSuffix),
@@ -184,7 +194,15 @@ export const complexTypesMap: ComplexTypesMap = {
           log.warn(`Could not extract field content from ${contentFileName}`)
           return
         }
-        addContentFieldAsStaticFile(values, [fieldName], content, contentFileName, type, namespacePrefix)
+        addContentFieldAsStaticFile({
+          values,
+          valuePath: [fieldName],
+          content,
+          contentFileName,
+          type,
+          namespacePrefix,
+          packagePath,
+        })
       })
     },
     /**
@@ -238,23 +256,23 @@ export const complexTypesMap: ComplexTypesMap = {
    * LightningComponentBundle has array of base64Binary content fields under LWC_RESOURCES field.
    */
   LightningComponentBundle: {
-    addContentFields: (
-      fileNameToContent: Record<string, Buffer>,
-      values: Values,
-      type: string,
-      namespacePrefix?: string,
-    ) => {
+    addContentFields: ({ fileNameToContent, values, type, namespacePrefix, packagePath }) => {
       Object.entries(fileNameToContent).forEach(([contentFileName, content], index) => {
         const resourcePath = [LWC_RESOURCES, LWC_RESOURCE, String(index)]
-        addContentFieldAsStaticFile(
+        addContentFieldAsStaticFile({
           values,
-          [...resourcePath, 'source'],
+          valuePath: [...resourcePath, 'source'],
           content,
           contentFileName,
           type,
           namespacePrefix,
+          packagePath,
+        })
+        _.set(
+          values,
+          [...resourcePath, 'filePath'],
+          packagePath ? contentFileName.replace(new RegExp(`^${packagePath}`), '') : contentFileName,
         )
-        _.set(values, [...resourcePath, 'filePath'], contentFileName.split(`${PACKAGE}/`)[1])
       })
     },
     mapContentFields: (_instanceName: string, values: Values) => ({
@@ -327,6 +345,7 @@ type ExtractFileNameToDataParams = {
   withMetadataSuffix: boolean
   complexType: boolean
   namespacePrefix?: string
+  packagePath: string
 }
 
 const fixPath = (path: string): string =>
@@ -340,10 +359,10 @@ const extractFileNameToData = async ({
   withMetadataSuffix,
   complexType,
   namespacePrefix,
+  packagePath,
 }: ExtractFileNameToDataParams): Promise<Record<string, Buffer>> => {
   if (!complexType) {
-    // this is a single file
-    const path = `${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`
+    const path = `${packagePath}${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`
     const fixedFilePath = fixPath(path)
     const zipFile = zip.file(fixedFilePath)
     if (zipFile === null) {
@@ -353,10 +372,12 @@ const extractFileNameToData = async ({
     return { [zipFile.name]: await zipFile.async('nodebuffer') }
   }
   // bring all matching files from the fileName directory
-  const instanceFolderName =
-    namespacePrefix === undefined ? fileName : fileName.replace(`${namespacePrefix}${NAMESPACE_SEPARATOR}`, '')
+  let instanceFolderName = `${packagePath}${fileName}`
+  if (namespacePrefix !== undefined) {
+    instanceFolderName = instanceFolderName.replace(`${namespacePrefix}${NAMESPACE_SEPARATOR}`, '')
+  }
   const zipFiles = zip
-    .file(new RegExp(`^${PACKAGE}/${instanceFolderName}/.*`))
+    .file(new RegExp(`^${instanceFolderName}/.*`))
     .filter(zipFile => zipFile.name.endsWith(METADATA_XML_SUFFIX) === withMetadataSuffix)
   return _.isEmpty(zipFiles)
     ? {}
@@ -365,15 +386,25 @@ const extractFileNameToData = async ({
       )
 }
 
-export const fromRetrieveResult = async (
-  result: RetrieveResult,
-  fileProps: ReadonlyArray<FileProperties>,
-  typesWithMetaFile: Set<string>,
-  typesWithContent: Set<string>,
-  fetchProfile: FetchProfile,
-): Promise<{ file: FileProperties; values: MetadataValues }[]> => {
+type FromRetrieveResultArgs = {
+  zip: JSZip
+  fileProps: ReadonlyArray<FileProperties>
+  typesWithMetaFile: Set<string>
+  typesWithContent: Set<string>
+  fetchProfile: FetchProfile
+  packagePath?: string
+}
+
+export const fromRetrieveResult = async ({
+  zip,
+  fileProps,
+  typesWithMetaFile,
+  typesWithContent,
+  fetchProfile,
+  packagePath = `${PACKAGE}/`,
+}: FromRetrieveResultArgs): Promise<{ file: FileProperties; values: MetadataValues }[]> => {
   const typesWithDiff = new Set<string>()
-  const fromZip = async (zip: JSZip, file: FileProperties): Promise<MetadataValues | undefined> => {
+  const fromZip = async (file: FileProperties): Promise<MetadataValues | undefined> => {
     // extract metadata values
     const fileNameToValuesBuffer = await extractFileNameToData({
       zip,
@@ -381,6 +412,7 @@ export const fromRetrieveResult = async (
       withMetadataSuffix: typesWithMetaFile.has(file.type) || isComplexType(file.type),
       complexType: isComplexType(file.type),
       namespacePrefix: file.namespacePrefix,
+      packagePath,
     })
     if (Object.values(fileNameToValuesBuffer).length !== 1) {
       if (file.fullName !== UNFILED_PUBLIC_FOLDER) {
@@ -427,6 +459,7 @@ export const fromRetrieveResult = async (
         withMetadataSuffix: false,
         complexType: isComplexType(file.type),
         namespacePrefix: file.namespacePrefix,
+        packagePath,
       })
       if (_.isEmpty(fileNameToContent)) {
         log.warn(`Could not find content files for instance (type:${file.type}, fullName:${file.fullName})`)
@@ -435,17 +468,24 @@ export const fromRetrieveResult = async (
       if (isComplexType(file.type)) {
         const complexType = complexTypesMap[file.type]
         Object.assign(metadataValues, complexType.getMissingFields?.(valuesFileName) ?? {})
-        complexType.addContentFields(fileNameToContent, metadataValues, file.type, file.namespacePrefix)
+        complexType.addContentFields({
+          fileNameToContent,
+          values: metadataValues,
+          type: file.type,
+          namespacePrefix: file.namespacePrefix,
+          packagePath,
+        })
       } else {
         const [contentFileName, content] = Object.entries(fileNameToContent)[0]
-        addContentFieldAsStaticFile(
-          metadataValues,
-          [METADATA_CONTENT_FIELD],
+        addContentFieldAsStaticFile({
+          values: metadataValues,
+          valuePath: [METADATA_CONTENT_FIELD],
           content,
           contentFileName,
-          file.type,
-          file.namespacePrefix,
-        )
+          type: file.type,
+          namespacePrefix: file.namespacePrefix,
+          packagePath,
+        })
       }
     }
     if (file.id !== undefined && file.id !== '') {
@@ -454,11 +494,10 @@ export const fromRetrieveResult = async (
     return metadataValues
   }
 
-  const zip = await new JSZip().loadAsync(Buffer.from(result.zipFile, 'base64'))
   log.debug(`retrieved zip contains the following files: ${safeJsonStringify(Object.keys(zip.files))}`)
   const instances = await Promise.all(
     fileProps.map(async file => {
-      const values = await fromZip(zip, file)
+      const values = await fromZip(file)
       return values === undefined ? undefined : { file, values }
     }),
   )

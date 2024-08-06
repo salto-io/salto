@@ -1,2 +1,2 @@
-netsuite-adapter
-jira-adapter
+@salto-io/netsuite-adapter
+@salto-io/jira-adapter

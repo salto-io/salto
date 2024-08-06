@@ -50,7 +50,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   let currentBaseDir = path.join(..._.compact([baseDir, storeName, nameSuffix]))
   let updated: FileMap<T> = initUpdated || {}
   let deleted: Set<string> = new Set(initDeleted || [])
-  let isEmptyInfo: boolean | undefined
+  let cachedIsEmpty: boolean | undefined
 
   const getAbsFileName = (filename: string, dir?: string): string => path.resolve(dir ?? currentBaseDir, filename)
 
@@ -162,11 +162,11 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       .value()
 
   const isEmpty = async (): Promise<boolean> => {
-    if (isEmptyInfo !== undefined) {
-      return isEmptyInfo
+    if (cachedIsEmpty !== undefined) {
+      return cachedIsEmpty
     }
-    isEmptyInfo = Object.keys(updated).length > 0 ? false : (await list()).length === 0
-    return isEmptyInfo
+    cachedIsEmpty = Object.keys(updated).length > 0 ? false : (await list()).length === 0
+    return cachedIsEmpty
   }
 
   const flush = async (): Promise<void> => {
@@ -226,7 +226,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       file.timestamp = Date.now()
       updated[relFilename] = file
       deleted.delete(relFilename)
-      isEmptyInfo = undefined
+      cachedIsEmpty = undefined
       return Promise.resolve()
     },
 
@@ -238,7 +238,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         return Promise.reject(err)
       }
       deleted.add(relFilename)
-      isEmptyInfo = undefined
+      cachedIsEmpty = undefined
       return Promise.resolve()
     },
 
@@ -250,7 +250,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       )
       updated = {}
       deleted = new Set()
-      isEmptyInfo = undefined
+      cachedIsEmpty = undefined
       await deleteAllEmptyDirectories()
     },
 

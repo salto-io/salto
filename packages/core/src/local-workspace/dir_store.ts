@@ -162,10 +162,9 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       .value()
 
   const isEmpty = async (): Promise<boolean> => {
-    if (cachedIsEmpty !== undefined) {
-      return cachedIsEmpty
+    if (cachedIsEmpty === undefined) {
+      cachedIsEmpty = (await list()).length === 0
     }
-    cachedIsEmpty = (await list()).length === 0
     return cachedIsEmpty
   }
 

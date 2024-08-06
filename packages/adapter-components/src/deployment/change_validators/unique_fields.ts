@@ -25,7 +25,6 @@ import {
   isInstanceChange,
   ModificationChange,
   ReadOnlyElementsSource,
-  SeverityLevel,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -39,12 +38,12 @@ const { isDefined } = values
 type TypeInfo = {
   changesOfType: (ModificationChange<InstanceElement> | AdditionChange<InstanceElement>)[]
   instancesOfType: InstanceElement[]
-  uniqueFieldName: string
+  uniqueFieldNames: string[]
 }
 
 const createTypeToChangesRecord = (
   changes: readonly Change<ChangeDataType>[],
-  typeToFieldRecord: Record<string, string>,
+  typeToFieldRecord: Record<string, string[]>,
 ): Record<string, (ModificationChange<InstanceElement> | AdditionChange<InstanceElement>)[]> => {
   const relevantChanges = changes
     .filter(isAdditionOrModificationChange)
@@ -64,7 +63,7 @@ const createTypeToInstancesRecord = async (
 const createTypeInfos = async (
   changes: readonly Change<ChangeDataType>[],
   elementsSource: ReadOnlyElementsSource,
-  typeToFieldRecord: Record<string, string>,
+  typeToFieldRecord: Record<string, string[]>,
 ): Promise<TypeInfo[]> => {
   const typeToChangesRecord = createTypeToChangesRecord(changes, typeToFieldRecord)
   const relevantTypes = Object.keys(typeToChangesRecord)
@@ -72,7 +71,7 @@ const createTypeInfos = async (
   return relevantTypes.map(typeName => ({
     changesOfType: typeToChangesRecord[typeName],
     instancesOfType: typeToInstancesRecord[typeName],
-    uniqueFieldName: typeToFieldRecord[typeName],
+    uniqueFieldNames: typeToFieldRecord[typeName],
   }))
 }
 
@@ -87,41 +86,39 @@ const getFieldValue = (instance: InstanceElement, fieldName: string): string | u
 
 const getErrorForChange = (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
-  fieldName: string,
-  fieldValueToInstancesRecord: Record<string, InstanceElement[]>,
+  fieldNames: string[],
+  fieldValueCount: Record<string, Record<string, number>>,
 ): ChangeError | undefined => {
-  const fieldValue = getFieldValue(getChangeData(change), fieldName)
-  if (fieldValue === undefined) {
-    return undefined
-  }
-  const otherInstance = fieldValueToInstancesRecord[fieldValue].find(
-    instance => !instance.elemID.isEqual(getChangeData(change).elemID),
-  )
-  if (otherInstance === undefined) {
+  const changeData = getChangeData(change)
+  const nonUniqueFieldValues = fieldNames.filter(fieldName => {
+    const fieldValue = getFieldValue(changeData, fieldName)
+    return fieldValue !== undefined && fieldValueCount[fieldName][fieldValue] > 1
+  })
+  if (nonUniqueFieldValues.length === 0) {
     return undefined
   }
   return {
-    elemID: getChangeData(change).elemID,
-    severity: 'Error' as SeverityLevel,
-    message: `The field '${fieldName}' in type ${otherInstance.elemID.typeName} must have a unique value`,
-    detailedMessage: `This ${otherInstance.elemID.typeName} have the same '${fieldName}' as the instance ${otherInstance.elemID.getFullName()}, and can not be deployed.`,
+    elemID: changeData.elemID,
+    severity: 'Error',
+    message: `The ${fieldNames.length > 1 ? 'fields' : 'field'} ${fieldNames.map(str => `'${str}'`).join(',')} in type ${changeData.elemID.typeName} must have ${fieldNames.length > 1 ? 'unique values' : 'a unique value'}`,
+    detailedMessage: `This instance cannot be deployed due to non unique values in the following fields: ${nonUniqueFieldValues.join(',')}.`,
   }
 }
 
 export const uniqueFieldsChangeValidatorCreator =
-  (typeNameToUniqueFieldRecord: Record<string, string>): ChangeValidator =>
+  (typeNameToUniqueFieldRecord: Record<string, string[]>): ChangeValidator =>
   async (changes, elementsSource) => {
     if (elementsSource === undefined) {
       log.info("Didn't run unique fields validator as elementsSource is undefined")
       return []
     }
     return (await createTypeInfos(changes, elementsSource, typeNameToUniqueFieldRecord)).flatMap(typeInfo => {
-      const { changesOfType, instancesOfType, uniqueFieldName } = typeInfo
-      const fieldValueToInstancesRecord = _.groupBy(instancesOfType, instance =>
-        getFieldValue(instance, uniqueFieldName),
-      )
-      return changesOfType
-        .map(change => getErrorForChange(change, uniqueFieldName, fieldValueToInstancesRecord))
-        .filter(isDefined)
+      const { changesOfType, instancesOfType, uniqueFieldNames } = typeInfo
+      const fieldValueCount: Record<string, Record<string, number>> = {}
+      uniqueFieldNames.forEach(fieldName => {
+        const fieldValueToInstances = _.groupBy(instancesOfType, instance => getFieldValue(instance, fieldName))
+        fieldValueCount[fieldName] = _.mapValues(fieldValueToInstances, instances => instances.length)
+      })
+      return changesOfType.map(change => getErrorForChange(change, uniqueFieldNames, fieldValueCount)).filter(isDefined)
     })
   }

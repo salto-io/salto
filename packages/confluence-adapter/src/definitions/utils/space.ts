@@ -154,15 +154,23 @@ export const getSpaceRequests = (
   const includeSpaceDefs = userConfig.fetch.include.filter(include => isSpaceTypeMatch(include.type))
   const spaceTypesToFetch = getTypesOrStatusesToFetch({ excludeSpaceDefs, includeSpaceDefs, query: 'type' })
   const spaceStatusesToFetch = getTypesOrStatusesToFetch({ excludeSpaceDefs, includeSpaceDefs, query: 'status' })
-  const requestQueryArgs = spaceRequest.endpoint?.queryArgs
-  if (spaceTypesToFetch.length === 0 && spaceStatusesToFetch.length === 0) {
+  if (spaceTypesToFetch.length === 0 || spaceStatusesToFetch.length === 0) {
+    // if no types or statuses to fetch, we don't need any request
     return []
   }
-  if (spaceStatusesToFetch.length === 1 && requestQueryArgs !== undefined) {
+
+  const requestQueryArgs = spaceRequest.endpoint?.queryArgs ?? {}
+  if (spaceStatusesToFetch.length === 1) {
+    // Add the only status to query args
     ;[requestQueryArgs.status] = spaceStatusesToFetch
   }
+
   if (spaceTypesToFetch.length === ALL_SPACE_TYPES.length) {
-    return [spaceRequest]
+    // If all types are to be fetched, no need "type" query arg
+    return [_.merge({}, spaceRequest, { endpoint: { queryArgs: requestQueryArgs } })]
   }
-  return spaceTypesToFetch.map(type => _.merge({}, spaceRequest, { endpoint: { queryArgs: { type } } }))
+  // Multiply the request for each type
+  return spaceTypesToFetch.map(type =>
+    _.merge({}, spaceRequest, { endpoint: { queryArgs: _.merge({}, requestQueryArgs, { type }) } }),
+  )
 }

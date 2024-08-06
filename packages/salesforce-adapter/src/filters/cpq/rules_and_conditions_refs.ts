@@ -26,6 +26,7 @@ import {
   TemplatePart,
 } from '@salto-io/adapter-api'
 import {
+  compactTemplate,
   createTemplateExpression,
   inspectValue,
   replaceTemplatesWithValues,
@@ -177,21 +178,23 @@ const setCustomConditionReferences = ({
   if (rawParts == null || rawParts.every(part => _.isNaN(Number(part)))) {
     return 0
   }
-  rule.value[def.rule.customConditionField] = createTemplateExpression({
-    parts: rawParts.map(part => {
-      const index = Number(part)
-      if (index == null) {
-        return part
-      }
-      const condition = conditionsByIndex[index]
-      if (condition === undefined) {
-        log.warn(`Could not find condition with index ${index} for rule ${rule.elemID.getFullName()}`)
-        return part
-      }
-      createdReferences += 1
-      return new ReferenceExpression(condition.elemID, condition)
+  rule.value[def.rule.customConditionField] = compactTemplate(
+    createTemplateExpression({
+      parts: rawParts.map(part => {
+        const index = Number(part)
+        if (Number.isNaN(index)) {
+          return part
+        }
+        const condition = conditionsByIndex[index]
+        if (condition === undefined) {
+          log.warn(`Could not find condition with index ${index} for rule ${rule.elemID.getFullName()}`)
+          return part
+        }
+        createdReferences += 1
+        return new ReferenceExpression(condition.elemID, condition)
+      }),
     }),
-  })
+  )
   return createdReferences
 }
 

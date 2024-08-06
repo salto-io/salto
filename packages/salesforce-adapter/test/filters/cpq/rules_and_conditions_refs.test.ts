@@ -121,5 +121,9 @@ describe('CPQ Rules and Conditions References', () => {
       expect(advancedConditionAfterDeploy).toSatisfy(isTemplateExpression)
       expect(advancedConditionAfterDeploy.parts).toEqual(clonedAdvancedConditionParts)
     })
+    it('should not convert advanced conditions to TemplateExpressions if no conditions are fetched for rule', async () => {
+      await filter.onFetch([ruleInstance])
+      expect(ruleInstance.value[CPQ_ADVANCED_CONDITION_FIELD]).toEqual(ADVANCED_CONDITION)
+    })
   })
 })

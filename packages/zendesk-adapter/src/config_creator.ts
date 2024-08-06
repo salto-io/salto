@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
-import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ConfigCreator,
+  CORE_ANNOTATIONS,
+  createRestriction,
+  ElemID,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import {
   createDefaultInstanceFromType,
   createMatchingObjectType,
@@ -26,15 +33,33 @@ import { Themes } from './user_config'
 
 const optionsElemId = new ElemID(constants.ZENDESK, 'configOptionsType')
 
+const NO_GUIDE = 'No guide'
+const GUIDE_WITHOUT_THEMES = 'Guide without Themes'
+const GUIDE_WITH_THEMES = 'Guide with Themes'
+const GUIDE_OPTIONS = [NO_GUIDE, GUIDE_WITHOUT_THEMES, GUIDE_WITH_THEMES] as const
+
 type ConfigOptionsType = {
   enableGuide?: boolean
   enableGuideThemes?: boolean
+  guideOptions?: string
 }
+
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
     enableGuide: { refType: BuiltinTypes.BOOLEAN },
     enableGuideThemes: { refType: BuiltinTypes.BOOLEAN },
+    guideOptions: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: GUIDE_OPTIONS,
+          enforce_value: true,
+        }),
+        [CORE_ANNOTATIONS.DESCRIPTION]:
+          'Manage [Guide](https://help.salto.io/en/articles/6948736-salto-for-zendesk-guide) or [Guide Themes](https://help.salto.io/en/articles/9031533-fetching-zendesk-guide-themes) with Salto',
+      },
+    },
   },
 })
 
@@ -56,13 +81,14 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
   if (options === undefined || !createOptionsTypeGuard<ConfigOptionsType>(optionsElemId)(options)) {
     return defaultConf
   }
-  if (options.value.enableGuide === true || options.value.enableGuideThemes === true) {
+  const { enableGuide, enableGuideThemes, guideOptions } = options.value
+  if (enableGuide === true || enableGuideThemes === true || (guideOptions && guideOptions !== NO_GUIDE)) {
     const configWithGuide = defaultConf.clone()
-    const guideOverride = options.value.enableGuide === true ? { brands: ['.*'] } : {}
-    const guideThemesOverride = options.value.enableGuideThemes === true ? DEFAULT_GUIDE_THEME_CONFIG : {}
+    const guideThemesOverride =
+      enableGuideThemes === true || guideOptions === GUIDE_WITH_THEMES ? DEFAULT_GUIDE_THEME_CONFIG : {}
     configWithGuide.value.fetch = {
       ...configWithGuide.value.fetch,
-      guide: { ...guideOverride, ...guideThemesOverride },
+      guide: { brands: ['.*'], ...guideThemesOverride },
     }
     return configWithGuide
   }

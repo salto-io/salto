@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import _ from 'lodash'
+import _, { first } from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import {
   getChangeData,
@@ -294,7 +294,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         }
         return simpleStatus.toActionNames(changeContext)
       },
-      actionDependencies: simpleStatus.actionDependencies,
+      actionDependencies: [
+        ...simpleStatus.actionDependencies,
+        {
+          first: 'deactivate',
+          second: 'remove',
+        },
+      ],
     },
     [APPLICATION_TYPE_NAME]: {
       requestsByAction: {

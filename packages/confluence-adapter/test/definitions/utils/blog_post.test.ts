@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  toChange,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, BLOG_POST_TYPE_NAME } from '../../../src/constants'
-import {
-  adjustUserReferencesOnBlogPostReverse,
-} from '../../../src/definitions/utils'
+import { adjustUserReferencesOnBlogPostReverse } from '../../../src/definitions/utils'
 
 describe('blog_post definitions utils', () => {
   const blogPostObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, BLOG_POST_TYPE_NAME) })
-  const blogPostChange = toChange({ after: new InstanceElement('mockBlogPostName', blogPostObjectType, { id: 'mockId' }) })
+  const blogPostChange = toChange({
+    after: new InstanceElement('mockBlogPostName', blogPostObjectType, { id: 'mockId' }),
+  })
   describe('adjustBlogPostOnModification', () => {
     describe('adjustUserReferencesOnBlogPostReverse', () => {
       it('should adjust user references on blog_post', async () => {

@@ -23,19 +23,16 @@ import { ADAPTER_NAME, GROUP_TYPE_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '
 import { createDeployDefinitions, createFetchDefinitions } from '../../src/definitions'
 import * as getUsersAndGroupsModule from '../../src/get_users'
 
-
-const mockGetUsersAndGroups = jest.spyOn(getUsersAndGroupsModule, 'getUsersIndex').mockResolvedValue(
-{
-    userId1: {
-      accountId: 'userId1',
-      displayName: 'user1',
-    },
-    userId2: {
-      accountId: 'userId2',
-      displayName: 'user2',
-    },
+const mockGetUsersAndGroups = jest.spyOn(getUsersAndGroupsModule, 'getUsersIndex').mockResolvedValue({
+  userId1: {
+    accountId: 'userId1',
+    displayName: 'user1',
   },
-)
+  userId2: {
+    accountId: 'userId2',
+    displayName: 'user2',
+  },
+})
 
 describe('groupsAndUsersFilter', () => {
   let filter: filterUtils.Filter<filterUtils.FilterResult>

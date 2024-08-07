@@ -1,0 +1,46 @@
+[
+  {
+    "path": "/api/v1/org",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "orgsetting-fakeid1",
+      "subdomain": "subdomain",
+      "phoneNumber": "12345",
+      "_links": {
+        "preferences": {
+          "href": "https://<sanitized>.okta.com/api/v1/org/preferences"
+        },
+        "uploadLogo": {
+          "href": "https://<sanitized>.okta.com/api/v1/org/logo",
+          "hints": {
+            "allow": ["POST"]
+          }
+        },
+        "oktaCommunication": {
+          "href": "https://<sanitized>.okta.com/api/v1/org/privacy/oktaCommunication"
+        },
+        "logo": {
+          "href": "https://ok12static.oktacdn.com/fs/bco/1/fs09ra4kthUPGpq195d7"
+        },
+        "oktaSupport": {
+          "href": "https://<sanitized>.okta.com/api/v1/org/privacy/oktaSupport"
+        },
+        "contacts": {
+          "href": "https://<sanitized>.okta.com/api/v1/org/contacts"
+        }
+      }
+    },
+    "body": {
+      "id": "orgsetting-fakeid1",
+      "subdomain": "subdomain",
+      "phoneNumber": "12345"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "95",
+      "x-rate-limit-reset": "1722753049"
+    }
+  }
+]

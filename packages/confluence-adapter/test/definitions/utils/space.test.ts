@@ -291,9 +291,13 @@ describe('space definitions utils', () => {
         ],
       },
     })
-    it('should return no requests when user exclude all statuses and types', () => {
+    it('should return no requests when user exclude all statuses', () => {
+      const requests = getSpaceRequests(createMockUserConfig(['current'], [], ['current']), mockRequest)
+      expect(requests).toHaveLength(0)
+    })
+    it('should return no requests when user exclude all types', () => {
       const requests = getSpaceRequests(
-        createMockUserConfig(['current'], ['personal'], ['current'], ['personal']),
+        createMockUserConfig([], ['global', 'collaboration', 'knowledge_base', 'personal']),
         mockRequest,
       )
       expect(requests).toHaveLength(0)

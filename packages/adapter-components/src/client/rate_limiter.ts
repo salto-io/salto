@@ -197,7 +197,7 @@ export class RateLimiter {
       failed: 0,
       retries: 0,
     }
-    log.debug('RateLimiter options %s', this.options)
+    log.debug('RateLimiter (%s) options %s', this.name, this.options)
     this.prevInvocationTime = Date.now()
     this.resumeTimer = undefined
   }

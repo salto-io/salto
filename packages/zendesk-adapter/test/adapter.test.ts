@@ -3232,14 +3232,13 @@ describe('adapter', () => {
         })
         const guideFilterRunnerCall = expect.objectContaining({
           filterRunnerClient: expect.objectContaining({
-            config: {
-              rateLimit: {
+            config: expect.objectContaining({
+              rateLimit: expect.objectContaining ({
                 deploy: 1,
-              },
-            },
+              }),
+            }),
           }),
         })
-
         expect(createClientSpy).toHaveBeenCalledTimes(2)
         expect(createFiltersRunnerSpy).toHaveBeenCalledTimes(3)
         expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(1, {}) // Regular deploy

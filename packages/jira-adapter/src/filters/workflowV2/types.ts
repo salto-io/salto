@@ -108,6 +108,7 @@ export type WorkflowV2Transition = {
   actions?: WorkflowV2TransitionRule[]
   conditions?: WorkflowV2TransitionConditionGroup
   validators?: WorkflowV2TransitionRule[]
+  properties?: Values
 }
 
 type WorkflowDataResponse = {
@@ -169,6 +170,7 @@ const TRANSITION_SCHEME = Joi.object({
   }),
   conditions: TRANSITION_CONDITION_GROUP_SCHEME.optional(),
   validators: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
+  properties: Joi.alternatives(Joi.array().items(Joi.object()), Joi.object()).optional(),
 })
   .unknown(true)
   .required()

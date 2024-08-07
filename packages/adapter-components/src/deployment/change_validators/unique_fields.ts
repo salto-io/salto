@@ -89,19 +89,19 @@ const getErrorForChange = (
   fieldNames: string[],
   fieldValueCount: Record<string, Record<string, number>>,
 ): ChangeError | undefined => {
-  const changeData = getChangeData(change)
+  const instance = getChangeData(change)
   const nonUniqueFieldValues = fieldNames.filter(fieldName => {
-    const fieldValue = getFieldValue(changeData, fieldName)
+    const fieldValue = getFieldValue(instance, fieldName)
     return fieldValue !== undefined && fieldValueCount[fieldName][fieldValue] > 1
   })
   if (nonUniqueFieldValues.length === 0) {
     return undefined
   }
   return {
-    elemID: changeData.elemID,
+    elemID: instance.elemID,
     severity: 'Error',
-    message: `The ${fieldNames.length > 1 ? 'fields' : 'field'} ${fieldNames.map(str => `'${str}'`).join(',')} in type ${changeData.elemID.typeName} must have ${fieldNames.length > 1 ? 'unique values' : 'a unique value'}`,
-    detailedMessage: `This instance cannot be deployed due to non unique values in the following fields: ${nonUniqueFieldValues.join(',')}.`,
+    message: `The ${fieldNames.length > 1 ? 'fields' : 'field'} ${fieldNames.map(str => `'${str}'`).join(', ')} in type ${instance.elemID.typeName} must have ${fieldNames.length > 1 ? 'unique values' : 'a unique value'}`,
+    detailedMessage: `This instance cannot be deployed due to non unique values in the following fields: ${nonUniqueFieldValues.map(str => `'${str}'`).join(', ')}.`,
   }
 }
 

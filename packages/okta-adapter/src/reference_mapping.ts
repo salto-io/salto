@@ -131,7 +131,7 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     target: { type: USERTYPE_TYPE_NAME },
   },
   {
-    src: { field: 'include', parentTypes: ['GroupCondition'] },
+    src: { field: 'include', parentTypes: ['GroupCondition', 'PolicyAccountLinkFilterGroups'] },
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
   },
@@ -262,6 +262,11 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     serializationStrategy: 'mappingRuleId',
     missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_PUSH_RULE_TYPE_NAME },
+  },
+  {
+    src: { field: 'assignments', parentTypes: ['ProvisioningGroups'] },
+    serializationStrategy: 'id',
+    target: { type: GROUP_TYPE_NAME },
   },
 ]
 

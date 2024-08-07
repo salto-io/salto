@@ -67,6 +67,7 @@ import {
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
   APP_LOGO_TYPE_NAME,
+  NETWORK_ZONE_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -832,6 +833,190 @@ describe('adapter', () => {
             refType: BuiltinTypes.SERVICE_ID,
           },
         },
+      })
+    })
+
+    describe('deploy network zone', () => {
+      let networkZoneType: ObjectType
+
+      beforeEach(() => {
+        networkZoneType = new ObjectType({
+          elemID: new ElemID(OKTA, NETWORK_ZONE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an active network zone', async () => {
+        loadMockReplies('network_zone_add_active.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ after: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'networkzone-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive network zone', async () => {
+        loadMockReplies('network_zone_add_inactive.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ after: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'networkzone-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully activate a network zone', async () => {
+        loadMockReplies('network_zone_activate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const activatedNetworkZone = networkZone.clone()
+        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: activatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(ACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully deactivate a network zone', async () => {
+        loadMockReplies('network_zone_deactivate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const deactivatedNetworkZone = networkZone.clone()
+        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: deactivatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify a network zone without status change', async () => {
+        loadMockReplies('network_zone_modify.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const updatedNetworkZone = networkZone.clone()
+        updatedNetworkZone.value.name = 'your_zone'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: updatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and activate a network zone', async () => {
+        loadMockReplies('network_zone_modify_and_activate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const activatedNetworkZone = networkZone.clone()
+        activatedNetworkZone.value.name = 'your_zone'
+        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: activatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate a network zone', async () => {
+        loadMockReplies('network_zone_modify_and_deactivate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const deactivatedNetworkZone = networkZone.clone()
+        deactivatedNetworkZone.value.name = 'your_zone'
+        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: deactivatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove a network zone', async () => {
+        loadMockReplies('network_zone_remove.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
 

@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
-import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, SeverityLevel, toChange } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  SeverityLevel,
+  toChange,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
+import { JIRA, PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 import { createEmptyType } from '../utils'
 import { defaultAdditionQueueValidator } from '../../src/change_validators/default_addition_queue'
 import { JiraConfig, getDefaultConfig } from '../../src/config/config'
@@ -90,5 +98,12 @@ describe('defaultAdditionQueueValidator', () => {
       message: 'Cannot deploy queue, because queues names must be unique',
       detailedMessage: 'Cannot deploy this queue, as it has the same name as another queue in project project1.',
     })
+  })
+  it('should not return error if there are no queue changes', async () => {
+    const validator = defaultAdditionQueueValidator(config)
+    const otherInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'someType') }), {})
+    expect(
+      await validator([toChange({ after: otherInstance })], buildElementsSourceFromElements([otherInstance])),
+    ).toBeEmpty()
   })
 })

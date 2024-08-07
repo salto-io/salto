@@ -25,6 +25,7 @@ import { SPACE_TYPE_NAME } from '../../constants'
 import { FetchCriteria, Options } from '../types'
 
 const log = logger(module)
+const PERMISSION_TYPES = ['group', 'user']
 
 const ALL_SPACE_TYPES = ['global', 'collaboration', 'knowledge_base', 'personal']
 const ALL_SPACE_STATUSES = ['current', 'archived']
@@ -36,8 +37,8 @@ export type PermissionObject = {
   targetType: string
 }
 
-export const createPermissionUniqueKey = ({ type, principalId, key, targetType }: PermissionObject): string =>
-  `${type}_${principalId}_${key}_${targetType}`
+export const createPermissionUniqueKey = ({ type, key, targetType }: PermissionObject): string =>
+  `${type}_${key}_${targetType}`
 
 export const isPermissionObject = (value: unknown): value is PermissionObject =>
   _.isString(_.get(value, 'type')) &&
@@ -63,6 +64,9 @@ export const transformPermissionAndUpdateIdMap = (
   const internalId = _.get(permission, 'id')
   if ([type, principalId, key, targetType].some(x => !_.isString(x)) || internalId === undefined) {
     log.warn('permission is not in expected format: %o, skipping', permission)
+    return undefined
+  }
+  if (!PERMISSION_TYPES.includes(type)) {
     return undefined
   }
   permissionInternalIdMap[createPermissionUniqueKey({ type, principalId, key, targetType })] = String(internalId)

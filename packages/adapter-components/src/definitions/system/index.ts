@@ -34,6 +34,7 @@ export {
   DefaultWithCustomizations,
   ArgsWithCustomizer,
   OptionsWithDefault,
+  TransformDefinition,
   TransformFunction,
   AdjustFunction,
   AdjustFunctionSingle,

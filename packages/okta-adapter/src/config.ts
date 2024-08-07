@@ -399,43 +399,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  NetworkZone: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/zones',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/zones/{zoneId}',
-        method: 'put',
-        urlParamsToFields: {
-          zoneId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/zones/{zoneId}',
-        method: 'delete',
-        urlParamsToFields: {
-          zoneId: 'id',
-        },
-        omitRequestBody: true,
-      },
-      activate: {
-        url: '/api/v1/zones/{zoneId}/lifecycle/activate',
-        method: 'post',
-        urlParamsToFields: {
-          zoneId: 'id',
-        },
-      },
-      deactivate: {
-        url: '/api/v1/zones/{zoneId}/lifecycle/deactivate',
-        method: 'post',
-        urlParamsToFields: {
-          zoneId: 'id',
-        },
-      },
-    },
-  },
   TrustedOrigin: {
     deployRequests: {
       add: {

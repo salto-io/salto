@@ -15,9 +15,12 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { definitions } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import {
   createAdjustUserReferences,
   createPermissionUniqueKey,
+  getSpaceRequests,
   isPermissionObject,
   restructurePermissionsAndCreateInternalIdMap,
   spaceChangeGroupWithItsHomepage,
@@ -25,6 +28,8 @@ import {
   transformPermissionAndUpdateIdMap,
 } from '../../../src/definitions/utils'
 import { ADAPTER_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
+import { UserConfig } from '../../../src/config'
+import { Options } from '../../../src/definitions/types'
 
 describe('space definitions utils', () => {
   const spaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SPACE_TYPE_NAME) })
@@ -259,6 +264,77 @@ describe('space definitions utils', () => {
         authorId: { accountId: 'authorId', displayName: 'authorId' },
         notUser: 'not',
       })
+    })
+  })
+  describe('getSpaceRequests', () => {
+    const mockRequest = {
+      endpoint: {
+        queryArgs: {
+          anExistingQueryArg: 'someValue',
+        },
+      },
+    } as unknown as definitions.fetch.FetchRequestDefinition<definitions.ResolveClientOptionsType<Options>>
+    const createMockUserConfig = (
+      statusesToExclude: string[],
+      typesToExclude: string[],
+      statusesToInclude: string[] = [],
+      typesToInclude: string[] = [],
+    ): UserConfig => ({
+      fetch: {
+        include: [
+          ...statusesToInclude.map(status => ({ type: 'space', criteria: { status } })),
+          ...typesToInclude.map(type => ({ type: 'spa.*', criteria: { type } })),
+        ],
+        exclude: [
+          ...statusesToExclude.map(status => ({ type: 's.*', criteria: { status } })),
+          ...typesToExclude.map(type => ({ type: 'space', criteria: { type } })),
+        ],
+      },
+    })
+    it('should return no requests when user exclude all statuses', () => {
+      const requests = getSpaceRequests(createMockUserConfig(['current'], [], ['current']), mockRequest)
+      expect(requests).toHaveLength(0)
+    })
+    it('should return no requests when user exclude all types', () => {
+      const requests = getSpaceRequests(
+        createMockUserConfig([], ['global', 'collaboration', 'knowledge_base', 'personal']),
+        mockRequest,
+      )
+      expect(requests).toHaveLength(0)
+    })
+    it('should return the given request when user include all statuses and types', () => {
+      const requests = getSpaceRequests(createMockUserConfig([], [], ['current', 'archived'], []), mockRequest)
+      expect(requests).toHaveLength(1)
+      expect(requests).toEqual([mockRequest])
+    })
+    it('should return the given request with modified status param when user include all types and a single status', () => {
+      const requests = getSpaceRequests(
+        createMockUserConfig([], [], ['current'], ['knowledge_base', 'global', 'personal', 'collaboration']),
+        mockRequest,
+      )
+      expect(requests).toHaveLength(1)
+      expect(requests).toEqual([_.merge({}, mockRequest, { endpoint: { queryArgs: { status: 'current' } } })])
+    })
+    it('should return requests with the correct params when user include some types', () => {
+      const requests = getSpaceRequests(createMockUserConfig([], ['knowledge_base'], ['current'], []), mockRequest)
+      expect(requests).toHaveLength(3)
+      expect(requests.map(r => r.endpoint?.queryArgs).sort()).toEqual([
+        {
+          anExistingQueryArg: 'someValue',
+          status: 'current',
+          type: 'global',
+        },
+        {
+          anExistingQueryArg: 'someValue',
+          status: 'current',
+          type: 'collaboration',
+        },
+        {
+          anExistingQueryArg: 'someValue',
+          status: 'current',
+          type: 'personal',
+        },
+      ])
     })
   })
 })

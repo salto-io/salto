@@ -35,7 +35,7 @@ export type ElementQuery = {
 
 export type QueryCriterion = (args: { instance: InstanceElement; value: Value }) => boolean
 
-const isTypeMatch = (typeName: string, typeRegex: string): boolean => new RegExp(`^${typeRegex}$`).test(typeName)
+export const isTypeMatch = (typeName: string, typeRegex: string): boolean => new RegExp(`^${typeRegex}$`).test(typeName)
 
 const isPredicatesMatch = (
   instance: InstanceElement,

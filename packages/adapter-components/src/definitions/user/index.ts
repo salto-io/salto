@@ -28,6 +28,7 @@ export {
   ElemIDCustomization,
   DefaultFetchCriteria,
   UserFetchConfigOptions,
+  FetchEntry,
 } from './fetch_config'
 export {
   UserDeployConfig,

@@ -27,7 +27,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { spaceMergeAndTransformAdjust } from '../utils/space'
+import { getSpaceRequests, spaceMergeAndTransformAdjust } from '../utils/space'
 import { UserConfig } from '../../config'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
@@ -95,20 +95,18 @@ const createCustomizations = (
     },
   },
   [SPACE_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/wiki/api/v2/spaces',
-          queryArgs: {
-            'description-format': 'plain',
-          },
-        },
-        transformation: {
-          root: 'results',
-          adjust: createAdjustUserReferences(SPACE_TYPE_NAME),
+    requests: getSpaceRequests(userConfig, {
+      endpoint: {
+        path: '/wiki/api/v2/spaces',
+        queryArgs: {
+          'description-format': 'plain',
         },
       },
-    ],
+      transformation: {
+        root: 'results',
+        adjust: createAdjustUserReferences(SPACE_TYPE_NAME),
+      },
+    }),
     resource: {
       directFetch: true,
       mergeAndTransform: {

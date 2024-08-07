@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-import { definitions, deployment } from '@salto-io/adapter-components'
+import { definitions, deployment, fetch as fetchUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { getChangeData, isAdditionChange, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { validateValue } from './generic'
+import { UserConfig } from '../../config'
+import { SPACE_TYPE_NAME } from '../../constants'
+import { FetchCriteria, Options } from '../types'
 
 const log = logger(module)
+
+const ALL_SPACE_TYPES = ['global', 'collaboration', 'knowledge_base', 'personal']
+const ALL_SPACE_STATUSES = ['current', 'archived']
 
 export type PermissionObject = {
   type: string
@@ -108,4 +114,63 @@ export const spaceChangeGroupWithItsHomepage: deployment.grouping.ChangeIdFuncti
     }
   }
   return changeData.elemID.getFullName()
+}
+
+const isSpaceTypeMatch = (typeRegex: string): boolean => fetchUtils.query.isTypeMatch(SPACE_TYPE_NAME, typeRegex)
+
+type FetchEntry = definitions.FetchEntry<FetchCriteria>
+
+const getSpaceDefaults = (query: 'type' | 'status'): string[] =>
+  query === 'type' ? ALL_SPACE_TYPES : ALL_SPACE_STATUSES
+
+const getTypesOrStatusesToFetch = ({
+  excludeSpaceDefs,
+  includeSpaceDefs,
+  query,
+}: {
+  excludeSpaceDefs: FetchEntry[]
+  includeSpaceDefs: FetchEntry[]
+  query: 'type' | 'status'
+}): string[] => {
+  const excludeSpaceQuery = excludeSpaceDefs.map(exclude => exclude.criteria?.[query]).filter(values.isDefined)
+  const includeSpaceQuery = includeSpaceDefs.map(include => include.criteria?.[query]).filter(values.isDefined)
+  const includeSpaceQueryWithDefault = Array.from(
+    new Set(includeSpaceQuery.length === 0 ? getSpaceDefaults(query) : includeSpaceQuery),
+  )
+  return includeSpaceQueryWithDefault.filter(t => !excludeSpaceQuery.includes(t))
+}
+
+/*
+ * Get space requester and multiply it to several requests if needed to fetch specific space types and statuses.
+ * In a single request we can fetch only one type or status, to fetch multiple we need to multiply the request.
+ * Not specifying a type or status in the request will fetch all types or statuses.
+ * By default we fetch all space types and statuses, unless specified otherwise in the user config.
+ */
+export const getSpaceRequests = (
+  userConfig: UserConfig,
+  spaceRequest: definitions.fetch.FetchRequestDefinition<definitions.ResolveClientOptionsType<Options>>,
+): definitions.fetch.FetchRequestDefinition<definitions.ResolveClientOptionsType<Options>>[] => {
+  const excludeSpaceDefs = userConfig.fetch.exclude.filter(exclude => isSpaceTypeMatch(exclude.type))
+  const includeSpaceDefs = userConfig.fetch.include.filter(include => isSpaceTypeMatch(include.type))
+  const spaceTypesToFetch = getTypesOrStatusesToFetch({ excludeSpaceDefs, includeSpaceDefs, query: 'type' })
+  const spaceStatusesToFetch = getTypesOrStatusesToFetch({ excludeSpaceDefs, includeSpaceDefs, query: 'status' })
+  if (spaceTypesToFetch.length === 0 || spaceStatusesToFetch.length === 0) {
+    // if no types or statuses to fetch, we don't need any request
+    return []
+  }
+
+  const requestQueryArgs = spaceRequest.endpoint?.queryArgs ?? {}
+  if (spaceStatusesToFetch.length === 1) {
+    // Add the only status to query args
+    ;[requestQueryArgs.status] = spaceStatusesToFetch
+  }
+
+  if (spaceTypesToFetch.length === ALL_SPACE_TYPES.length) {
+    // If all types are to be fetched, no need "type" query arg
+    return [_.merge({}, spaceRequest, { endpoint: { queryArgs: requestQueryArgs } })]
+  }
+  // Multiply the request for each type
+  return spaceTypesToFetch.map(type =>
+    _.merge({}, spaceRequest, { endpoint: { queryArgs: _.merge({}, requestQueryArgs, { type }) } }),
+  )
 }

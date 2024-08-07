@@ -34,6 +34,7 @@ import { AdapterFilterCreator, FilterResult } from '../../filter_utils'
 import { RequiredDefinitions } from '../../definitions/system/types'
 import { ResolveReferenceSerializationStrategyLookup, ResolveReferenceIndexNames } from '../../definitions/system/api'
 import { FieldReferenceDefinition, FieldReferenceResolver } from '../../references'
+import { QueryCriterion } from '../../fetch/query'
 
 export interface AdapterParams<
   Credentials,
@@ -63,6 +64,7 @@ export interface AdapterParams<
   elementSource: ReadOnlyElementsSource
   adapterName: string
   fixElements: FixElementsFunc | undefined
+  allCriteria: Record<string, QueryCriterion>
   // TODO SALTO-5578 pass in account name as well
 }
 

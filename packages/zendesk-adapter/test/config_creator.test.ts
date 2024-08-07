@@ -91,7 +91,7 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should return adapter config with guide themes', async () => {
-      expect(resultConfig.value?.fetch?.guide).toEqual(DEFAULT_GUIDE_THEME_CONFIG)
+      expect(resultConfig.value?.fetch?.guide).toEqual({ brands: ['.*'], ...DEFAULT_GUIDE_THEME_CONFIG })
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -117,6 +117,39 @@ describe('config_creator', () => {
         ...DEFAULT_GUIDE_THEME_CONFIG,
         brands: ['.*'],
       })
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains guideOptions equal GUIDE_WITH_THEMES', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ guideOptions: 'Guide with Themes' })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toEqual({ brands: ['.*'], ...DEFAULT_GUIDE_THEME_CONFIG })
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains guideOptions equal NO_GUIDE', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ guideOptions: 'No guide' })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toBeUndefined()
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains guideOptions equal GUIDE_WITHOUT_THEMES', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ guideOptions: 'Guide without Themes' })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config without guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toEqual({ brands: ['.*'] })
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })

@@ -107,9 +107,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -247,9 +244,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   [SCHEDULE_LAYERS_TYPE_NAME]: {
-    resource: {
-      directFetch: false,
-    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -318,9 +312,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
-    resource: {
-      directFetch: true,
-    },
     element: {
       topLevel: {
         isTopLevel: true,

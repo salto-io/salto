@@ -19,12 +19,13 @@ import {
   getChangeData,
   isAdditionChange,
   isInstanceChange,
+  isInstanceElement,
   isModificationChange,
   isRemovalOrModificationChange,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { getParent, inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../filters/dynamic_content'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
@@ -32,12 +33,21 @@ import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 const { isDefined } = values
 const log = logger(module)
 
+const isDefaultVariant = (variantRef: ReferenceExpression): boolean => {
+  const variant: unknown = variantRef.value
+  if (!isInstanceElement(variant)) {
+    log.warn('Expected variant reference value to be InstanceElement. Reference is %s', inspectValue(variantRef))
+    return false
+  }
+  return variant.value.default === true
+}
+
 const hasResolvedVariantsWithADefault = (variants: ReferenceExpression[]): boolean => {
   const resolvedVariants = variants.filter(isResolvedReferenceExpression)
   if (resolvedVariants.length === 0) {
     return true
   }
-  return variants.some((variantRef: ReferenceExpression) => variantRef.value.value.default === true)
+  return variants.some(isDefaultVariant)
 }
 
 /**

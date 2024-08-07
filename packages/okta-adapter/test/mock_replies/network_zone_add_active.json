@@ -11,13 +11,13 @@
       "status": "ACTIVE",
       "_links": {
         "self": {
-          "href": "https://dev-91042815.okta.com/api/v1/zones/networkzone-fakeid1",
+          "href": "https://<sanitized>.okta.com/api/v1/zones/networkzone-fakeid1",
           "hints": {
             "allow": ["GET", "PUT", "DELETE"]
           }
         },
         "deactivate": {
-          "href": "https://dev-91042815.okta.com/api/v1/zones/networkzone-fakeid1/lifecycle/deactivate",
+          "href": "https://<sanitized>.okta.com/api/v1/zones/networkzone-fakeid1/lifecycle/deactivate",
           "hints": {
             "allow": ["POST"]
           }

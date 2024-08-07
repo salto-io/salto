@@ -78,3 +78,4 @@ export {
 } from './src/local-workspace/remote_map'
 export { NoWorkspaceConfig } from './src/local-workspace/errors'
 export * from './src/types'
+export { calculatePatch, syncWorkspaceToFolder } from './src/core/adapter_format'

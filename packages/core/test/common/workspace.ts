@@ -148,10 +148,12 @@ export const mockWorkspace = ({
       filepath,
       encoding,
       isTemplate,
+      hash,
     }: {
       filepath: string
       encoding: BufferEncoding
       isTemplate?: boolean
-    }) => (staticFilesSource ? staticFilesSource.getStaticFile({ filepath, encoding, isTemplate }) : undefined),
+      hash?: string
+    }) => (staticFilesSource ? staticFilesSource.getStaticFile({ filepath, encoding, isTemplate, hash }) : undefined),
   } as unknown as workspace.Workspace
 }

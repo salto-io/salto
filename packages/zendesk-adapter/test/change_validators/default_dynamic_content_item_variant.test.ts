@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
-import { Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../../src/filters/dynamic_content'
 import { defaultDynamicContentItemVariantValidator } from '../../src/change_validators'
@@ -45,8 +53,18 @@ const notDefaultVariant = new InstanceElement(
   },
 )
 
-const setDynamicContentItemVariants = (variants: InstanceElement[]): void => {
-  dynamicContentItem.value.variants = variants.map(variant => new ReferenceExpression(variant.elemID, variant))
+const invalidVariant = {
+  invalid: 'test',
+} as const
+
+const setDynamicContentItemVariants = (variants: (InstanceElement | typeof invalidVariant)[]): void => {
+  dynamicContentItem.value.variants = variants.map(
+    variant =>
+      new ReferenceExpression(
+        isInstanceElement(variant) ? variant.elemID : ElemID.fromFullName('zendesk.mock.instance.invalid'),
+        variant,
+      ),
+  )
 }
 
 describe('defaultDynamicContentItemVariantValidator', () => {
@@ -134,6 +152,10 @@ describe('defaultDynamicContentItemVariantValidator', () => {
       dynamicContentItem.value.variants = [unresolvedVariant]
       const arrayErrors = await defaultDynamicContentItemVariantValidator(changes)
       expect(arrayErrors.length).toBe(0)
+    })
+    it('should not throw when one of the variants in not a valid InstanceElement', async () => {
+      setDynamicContentItemVariants([invalidVariant])
+      await expect(defaultDynamicContentItemVariantValidator(changes)).resolves.not.toThrow()
     })
   })
 })

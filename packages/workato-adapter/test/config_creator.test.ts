@@ -36,13 +36,13 @@ describe('config creator', () => {
     const config = await getConfig()
     expect(config).toEqual(await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType))
   })
-  it('should return config with deploy disabled when enableDeploy option is false', async () => {
-    options.value.enableDeploy = false
+  it('should return config with deploy disabled when provided usecase is Impact Analysis', async () => {
+    options.value.useCase = ['Impact Analysis']
     const config = await getConfig(options)
     expect(config.value[ENABLE_DEPLOY_SUPPORT_FLAG]).toEqual(false)
   })
-  it('should return config with deploy enabled when enableDeploy option is true', async () => {
-    options.value.enableDeploy = true
+  it('should return config with deploy enabled when provided usecase is Deploy', async () => {
+    options.value.useCase = ['Deploy']
     const config = await getConfig(options)
     expect(config.value[ENABLE_DEPLOY_SUPPORT_FLAG]).toEqual(true)
   })

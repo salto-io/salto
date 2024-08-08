@@ -585,6 +585,23 @@ export const ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP = groupIdForInstanceChangeGr
   'Custom QuoteTerm and TermCondition',
 )
 
+export const REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'remove',
+  'Custom ApprovalRule and ApprovalCondition',
+)
+export const REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'remove',
+  'Custom PriceRule and PriceCondition',
+)
+export const REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'remove',
+  'Custom ProductRule and ErrorCondition',
+)
+export const REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'remove',
+  'Custom QuoteTerm and TermCondition',
+)
+
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 
 export const UNLIMITED_INSTANCES_VALUE = -1

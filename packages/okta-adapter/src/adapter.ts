@@ -92,7 +92,7 @@ import { getLookUpNameCreator } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances, shouldConvertUserIds } from './user_utils'
 import { isClassicEngineOrg, logUsersCount } from './utils'
 import { createFixElementFunctions } from './fix_elements'
-import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch'
+import { createFetchDefinitions } from './definitions/fetch'
 import { createDeployDefinitions } from './definitions/deploy/deploy'
 import { PAGINATION } from './definitions/requests/pagination'
 import { createClientDefinitions, shouldAccessPrivateAPIs } from './definitions/requests/clients'
@@ -248,11 +248,17 @@ export default class OktaAdapter implements AdapterOperations {
     const { isClassicOrg: isClassicOrgByConfig } = this.userConfig[FETCH_CONFIG]
     const isClassicOrg = isClassicOrgByConfig ?? (await isClassicEngineOrg(this.client))
     if (isClassicOrg) {
-      const updatedCustomizations = _.omit(
-        this.definitions.fetch.instances.customizations,
-        CLASSIC_ENGINE_UNSUPPORTED_TYPES,
-      )
-      this.definitions.fetch.instances.customizations = updatedCustomizations
+      const updatedFetchDefinitions = definitionsUtils.mergeWithUserElemIDDefinitions({
+        userElemID: this.userConfig.fetch.elemID,
+        fetchConfig: createFetchDefinitions({
+          userConfig: this.userConfig,
+          fetchQuery: this.fetchQuery,
+          usePrivateAPI: shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig),
+          isClassicEngine: true,
+          baseUrl: getAdminUrl(this.client.baseUrl),
+        }),
+      })
+      this.definitions.fetch = updatedFetchDefinitions
       return {
         type: 'enableFetchFlag',
         value: 'isClassicOrg',

@@ -191,7 +191,7 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'key', parentTypes: ['MultifactorEnrollmentPolicyAuthenticatorSettings'] },
     serializationStrategy: 'key',
-    missingRefStrategy: 'typeAndValue',
+    // no missingRefStrategy as non-existing authenticators are allowed
     target: { type: AUTHENTICATOR_TYPE_NAME },
   },
   {

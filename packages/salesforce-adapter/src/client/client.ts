@@ -572,7 +572,7 @@ interface ISalesforceClient {
   delete(type: string, fullNames: string[]): Promise<SaveResult[]>
   retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult>
   deploy(zip: Buffer, deployOptions: DeployOptions, progressCallback?: DeployProgressCallback): Promise<DeployResult>
-  quickDeploy(validationId: string): Promise<DeployResult>
+  quickDeploy(validationId: string, progressCallback?: DeployProgressCallback): Promise<DeployResult>
   queryAll(queryString: string): Promise<AsyncIterable<SalesforceRecord[]>>
   bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>
   request(url: string): Promise<unknown>
@@ -921,6 +921,26 @@ export default class SalesforceClient implements ISalesforceClient {
     return deployStatus.complete(true).then(clearPollingInterval, clearPollingIntervalOnError)
   }
 
+  private async deployWithProgress(
+    deployStatus: DeployResultLocator<DeployResult>,
+    progressCallback?: DeployProgressCallback,
+  ): Promise<DeployResult> {
+    this.setDeployPollingTimeout()
+    try {
+      let deployResult: DeployResult
+
+      if (progressCallback) {
+        deployResult = await this.reportDeployProgressUntilComplete(deployStatus, progressCallback)
+      } else {
+        deployResult = await deployStatus.complete(true)
+      }
+
+      return flatValues(deployResult)
+    } finally {
+      this.setFetchPollingTimeout() // Revert the timeouts to what they were before
+    }
+  }
+
   /**
    * Updates salesforce metadata with the Deploy API
    * @param zip The package zip
@@ -938,7 +958,6 @@ export default class SalesforceClient implements ISalesforceClient {
     deployOptions?: DeployOptions,
     progressCallback?: DeployProgressCallback,
   ): Promise<DeployResult> {
-    this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
     const { checkOnly = false } = deployOptions ?? {}
     const optionsToSend: (keyof ClientDeployConfig)[] = [
@@ -949,41 +968,22 @@ export default class SalesforceClient implements ISalesforceClient {
       'runTests',
       'performRetrieve',
     ]
-    const deployStatus = this.conn.metadata.deploy(zip, {
-      ...defaultDeployOptions,
-      ..._.pick(this.config?.deploy, optionsToSend),
-      checkOnly,
-    })
-
-    try {
-      let deployResult: DeployResult
-
-      if (progressCallback) {
-        deployResult = await this.reportDeployProgressUntilComplete(deployStatus, progressCallback)
-      } else {
-        deployResult = await deployStatus.complete(true)
-      }
-
-      return flatValues(deployResult)
-    } finally {
-      this.setFetchPollingTimeout() // Revert the timeouts to what they were before
-    }
+    return this.deployWithProgress(
+      this.conn.metadata.deploy(zip, {
+        ...defaultDeployOptions,
+        ..._.pick(this.config?.deploy, optionsToSend),
+        checkOnly,
+      }),
+      progressCallback,
+    )
   }
 
-  /**
-   * preform quick deploy to salesforce metadata
-   * @param validationId The package zip
-   * @returns The save result of the requested update
-   */
   @mapToUserFriendlyErrorMessages
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-  public async quickDeploy(validationId: string): Promise<DeployResult> {
-    this.setDeployPollingTimeout()
-    const deployResult = flatValues(await this.conn.metadata.deployRecentValidation(validationId).complete(true))
-    this.setFetchPollingTimeout()
-    return deployResult
+  public async quickDeploy(validationId: string, progressCallback?: DeployProgressCallback): Promise<DeployResult> {
+    return this.deployWithProgress(this.conn.metadata.deployRecentValidation(validationId), progressCallback)
   }
 
   @mapToUserFriendlyErrorMessages

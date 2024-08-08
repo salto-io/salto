@@ -39,6 +39,7 @@ import { annotationsFileName, customFieldsFileName, standardFieldsFileName } fro
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
+import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
 
 export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
   const expectedElemId =
@@ -403,6 +404,23 @@ export const emptyLastChangeDateOfTypesWithNestedInstances = (): LastChangeDateO
   CustomLabels: '2023-11-06T00:00:00.000Z',
 })
 
-export const nullProgressReporter: ProgressReporter = {
+export const nullProgressReporter: DeployProgressReporter = {
   reportProgress: () => {},
+  reportDataProgress: () => {},
+  reportMetadataProgress: () => {},
+}
+
+export type MockDeployProgressReporter = ProgressReporter & { getReportedMessages: () => string[] }
+
+export const createMockProgressReporter = (): MockDeployProgressReporter => {
+  const reportedMessages: string[] = []
+  const mockProgressReporter: ProgressReporter = {
+    reportProgress: args => {
+      reportedMessages.push(args.message)
+    },
+  }
+  return {
+    ...createDeployProgressReporter(mockProgressReporter, new URL('https://test.salesforce.org')),
+    getReportedMessages: () => reportedMessages,
+  }
 }

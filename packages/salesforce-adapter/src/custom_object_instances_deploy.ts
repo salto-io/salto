@@ -82,7 +82,7 @@ import {
   REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
   REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
   REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
-  REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
+  REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP, CPQ_RULE_FIELD, CPQ_QUOTE_TERM_FIELD,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
 import {
@@ -1010,7 +1010,7 @@ const deployRemoveCustomRulesAndConditions = async ({
     .filter(change => !appliedConditionChanges.includes(change))
     .map<SaltoElementError>(change => ({
       elemID: getChangeData(change).elemID,
-      message: 'Condition Instance was not removed since its we could not remove its parent Rule instance',
+      message: 'Condition Instance was not removed due to error when attempting to remove its parent Rule Instance',
       severity: 'Error',
     }))
   return {
@@ -1038,43 +1038,47 @@ export const deployCustomObjectInstancesGroup = async (
     case ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP: {
       return deployAddCustomQuoteTermsAndConditions(changes, client, dataManagement)
     }
+    // Remove Approval Rules
     case REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP: {
       return deployRemoveCustomRulesAndConditions({
         changes,
         client,
         ruleTypeName: SBAA_APPROVAL_RULE,
         groupId,
-        ruleFieldInCondition: SBAA_APPROVAL_CONDITION,
+        ruleFieldInCondition: SBAA_APPROVAL_RULE,
         dataManagement,
       })
     }
+    // Remove Price Rules
     case REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP: {
       return deployRemoveCustomRulesAndConditions({
         changes,
         client,
         ruleTypeName: CPQ_PRICE_RULE,
         groupId,
-        ruleFieldInCondition: CPQ_PRICE_CONDITION_RULE_FIELD,
+        ruleFieldInCondition: CPQ_RULE_FIELD,
         dataManagement,
       })
     }
+    // Remove Product Rules
     case REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP: {
       return deployRemoveCustomRulesAndConditions({
         changes,
         client,
         ruleTypeName: CPQ_PRODUCT_RULE,
         groupId,
-        ruleFieldInCondition: CPQ_ERROR_CONDITION_RULE_FIELD,
+        ruleFieldInCondition: CPQ_RULE_FIELD,
         dataManagement,
       })
     }
+    // Remove Quote Terms
     case REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP: {
       return deployRemoveCustomRulesAndConditions({
         changes,
         client,
         ruleTypeName: CPQ_QUOTE_TERM,
         groupId,
-        ruleFieldInCondition: CPQ_TERM_CONDITION,
+        ruleFieldInCondition: CPQ_QUOTE_TERM_FIELD,
         dataManagement,
       })
     }

@@ -23,6 +23,7 @@ import {
   isInstanceElement,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../constants'
@@ -38,6 +39,17 @@ export const deleteLastQueueValidator: (config: JiraConfig) => ChangeValidator =
     if (elementsSource === undefined || !config.fetch.enableJSM) {
       return []
     }
+
+    const queueChanges = changes
+      .filter(isInstanceChange)
+      .filter(isRemovalChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+
+    if (_.isEmpty(queueChanges)) {
+      return []
+    }
+
     const projects = await awu(await elementsSource.list())
       .filter(id => id.typeName === PROJECT_TYPE)
       .map(id => elementsSource.get(id))
@@ -51,11 +63,7 @@ export const deleteLastQueueValidator: (config: JiraConfig) => ChangeValidator =
       .filter(queue => isReferenceExpression(queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0]))
       .groupBy(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.getFullName())
 
-    return awu(changes)
-      .filter(isInstanceChange)
-      .filter(isRemovalChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+    return awu(queueChanges)
       .filter(queue => hasValidParent(queue))
       .filter(async instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]

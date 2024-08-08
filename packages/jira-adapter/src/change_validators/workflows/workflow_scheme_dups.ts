@@ -20,6 +20,7 @@ import {
   isInstanceChange,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { WORKFLOW_SCHEME_TYPE_NAME } from '../../constants'
 
@@ -30,16 +31,21 @@ export const workflowSchemeDupsValidator: ChangeValidator = async (changes, elem
     return []
   }
 
+  const workflowSchemeNameChanges = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
+
+  if (_.isEmpty(workflowSchemeNameChanges)) {
+    return []
+  }
   const nameToInstance = await awu(await elementSource.list())
     .filter(id => id.idType === 'instance' && id.typeName === WORKFLOW_SCHEME_TYPE_NAME)
     .map(id => elementSource.get(id))
     .groupBy(instance => instance.value.name?.toLowerCase())
 
-  return changes
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
+  return workflowSchemeNameChanges
     .filter(
       instance =>
         Object.prototype.hasOwnProperty.call(nameToInstance, instance.value.name?.toLowerCase()) &&

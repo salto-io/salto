@@ -27,6 +27,7 @@ import {
   isAdditionChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { ISSUE_TYPE_NAME } from '../constants'
 import { isJiraSoftwareFreeLicense } from '../utils'
@@ -90,6 +91,9 @@ export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elem
     return []
   }
   const relevantChanges = getIssueTypeWithHierachyChanges(changes)
+  if (_.isEmpty(relevantChanges)) {
+    return []
+  }
   const isLicenseFree = await isJiraSoftwareFreeLicense(elementSource)
   return awu(relevantChanges)
     .map(change => {

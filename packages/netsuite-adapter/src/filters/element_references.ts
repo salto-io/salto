@@ -32,6 +32,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
 import { constants as bufferConstants } from 'buffer'
 import { logger } from '@salto-io/logging'
+import * as esprima from 'esprima'
+import * as estraverse from 'estraverse'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import {
@@ -65,6 +67,10 @@ const pathPrefixRegex = new RegExp(
   `^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`,
   'm',
 )
+// matches key strings in the format of 'key: value'
+const mappedReferenceRegex = new RegExp(`(?<${OPTIONAL_REFS}>\\w+):\\s*.+`, 'gm')
+// matches comments in js files
+const jsCommentsRegex = new RegExp('\\/\\*[\\s\\S]*?\\*\\/|^\\/\\/.*|(?<=[^:])\\/\\/.*', 'gm')
 
 const shouldExtractToGeneratedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
   serviceIdInfoRecord.appid !== undefined ||
@@ -144,13 +150,44 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
+const parseAST = (ast: esprima.Program): [string[], string[]] => {
+  const results: Set<string> = new Set()
+  const objectKeyReferences: Set<string> = new Set()
+
+  estraverse.traverse(ast, {
+    enter(node) {
+      if (node.type === 'Literal' && typeof node.value === 'string') {
+        results.add(node.value)
+      } else if (node.type === 'Property') {
+        if (node.key.type === 'Identifier') {
+          objectKeyReferences.add(node.key.name)
+        } else if (node.key.type === 'Literal' && typeof node.key.value === 'string') {
+          objectKeyReferences.add(node.key.value)
+        }
+      }
+    },
+  })
+  const semanticReferences = Array.from(results).filter(ref => !ref.startsWith(NETSUITE_MODULE_PREFIX))
+  return [semanticReferences, Array.from(objectKeyReferences)]
+}
+
+const getReferencesWithRegex = (content: string): [string[], string[]] => {
+  const contentWithoutComments = content.replace(jsCommentsRegex, '')
+  const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
+  const semanticReferences = getGroupItemFromRegex(
+    contentWithoutComments,
+    semanticReferenceRegex,
+    OPTIONAL_REFS,
+  ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+  return [semanticReferences, objectKeyReferences]
+}
+
 const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
 ): Promise<ElemID[]> => {
   const fileContent = await getContent(element.value.content)
-
   if (fileContent.length > bufferConstants.MAX_STRING_LENGTH) {
     log.warn('skip parsing file with size larger than MAX_STRING_LENGTH: %o', {
       fileSize: fileContent.length,
@@ -160,13 +197,54 @@ const getSuiteScriptReferences = async (
   }
 
   const content = fileContent.toString()
-
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
-  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
-    .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-    .concat(nsConfigReferences)
 
-  return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
+  try {
+    const ast = esprima.parseScript(content)
+    const [results, objectKeyReferences] = parseAST(ast)
+    // TODO: remove objectKeyReferences and related logic once SALTO-6026 is communicated
+    const objectKeyReferencesElemIDs = getServiceElemIDsFromPaths(
+      objectKeyReferences,
+      serviceIdToElemID,
+      customRecordFieldsToServiceIds,
+      element,
+    )
+    if (objectKeyReferencesElemIDs.length > 0) {
+      log.info(
+        'Found %d object key references in file %s: %o',
+        objectKeyReferences.length,
+        element.value[PATH],
+        objectKeyReferencesElemIDs,
+      )
+    }
+    const resultsWithConfigReferences = results.concat(nsConfigReferences)
+    return getServiceElemIDsFromPaths(
+      resultsWithConfigReferences,
+      serviceIdToElemID,
+      customRecordFieldsToServiceIds,
+      element,
+    )
+  } catch (e) {
+    log.warn('Failed to parse file %s content with error %s', element.value[PATH], e)
+    const [foundReferences, objectKeyReferences] = getReferencesWithRegex(content)
+    // TODO: remove objectKeyReferences and related logic once SALTO-6026 is communicated
+    const objectKeyReferencesElemIDs = getServiceElemIDsFromPaths(
+      objectKeyReferences,
+      serviceIdToElemID,
+      customRecordFieldsToServiceIds,
+      element,
+    )
+    if (objectKeyReferencesElemIDs.length > 0) {
+      log.info(
+        'Found %d object key references in file %s: %o',
+        objectKeyReferences.length,
+        element.value[PATH],
+        objectKeyReferencesElemIDs,
+      )
+    }
+    const semanticReferences = foundReferences.concat(nsConfigReferences)
+    return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
+  }
 }
 
 const replaceReferenceValues = async (
@@ -223,7 +301,6 @@ const replaceReferenceValues = async (
     isFileCabinetInstance(element) && isFileInstance(element)
       ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
       : []
-
   extendGeneratedDependencies(
     newElement,
     dependenciesToAdd.concat(suiteScriptReferences).map(elemID => ({ reference: new ReferenceExpression(elemID) })),

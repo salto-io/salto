@@ -148,7 +148,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
     fieldContextOptions: fieldContextOptionsValidator,
-    assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator,
+    assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator(client),
   }
 
   return createChangeValidator({

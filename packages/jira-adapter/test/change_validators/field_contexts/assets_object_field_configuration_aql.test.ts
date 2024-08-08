@@ -14,25 +14,40 @@
  * limitations under the License.
  */
 
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { createEmptyType } from '../../utils'
+import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { createEmptyType, mockClient } from '../../utils'
 import { assetsObjectFieldConfigurationAqlValidator } from '../../../src/change_validators/field_contexts/assets_object_field_configuration_aql'
+import JiraClient from '../../../src/client/client'
 
 describe('assetsObjectFieldConfigurationAql', () => {
   let contextInstance: InstanceElement
+  let fieldInstance: InstanceElement
+  let client: JiraClient
+
   beforeEach(() => {
-    contextInstance = new InstanceElement('context', createEmptyType('CustomFieldContext'), {
-      name: 'context',
-      assetsObjectFieldConfiguration: {
-        issueScopeFilterQuery:
-          // eslint-disable-next-line no-template-curly-in-string
-          'object HAVING inboundReferences(objecttype = Server AND objectId IN (${customfield_14168${0}}))',
+    const mockCli = mockClient()
+    client = mockCli.client
+    fieldInstance = new InstanceElement('field', createEmptyType('Field'), { id: 'customfield_10000' })
+    contextInstance = new InstanceElement(
+      'context',
+      createEmptyType('CustomFieldContext'),
+      {
+        name: 'context',
+        assetsObjectFieldConfiguration: {
+          issueScopeFilterQuery:
+            // eslint-disable-next-line no-template-curly-in-string
+            'object HAVING inboundReferences(objecttype = Server AND objectId IN (${customfield_14168${0}}))',
+        },
       },
-    })
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)],
+      },
+    )
   })
 
   it('should return warning for AQL with placeholder', async () => {
-    const result = await assetsObjectFieldConfigurationAqlValidator([toChange({ after: contextInstance })])
+    const result = await assetsObjectFieldConfigurationAqlValidator(client)([toChange({ after: contextInstance })])
     expect(result).toHaveLength(1)
     expect(result[0]).toEqual({
       elemID: contextInstance.elemID.createNestedID('assetsObjectFieldConfiguration', 'issueScopeFilterQuery'),
@@ -44,8 +59,9 @@ describe('assetsObjectFieldConfigurationAql', () => {
         postAction: {
           title: 'Edit AQL placeholders manually',
           subActions: [
-            'In Jira, navigate to the field context "context" > Edit Assets object/s field configuration',
-            'Inside Filter issue scope section, fix the placeholder with the correct value',
+            'Go to https://ori-salto-test.atlassian.net/secure/admin/ConfigureCustomField!default.jspa?customFieldId=10000',
+            'Under the context "context", click on "Edit Assets object/s field configuration"',
+            'Inside "Filter issue scope" section, fix the placeholder with the correct value',
             'Click "Save"',
           ],
         },
@@ -56,24 +72,26 @@ describe('assetsObjectFieldConfigurationAql', () => {
   it('should not return warning for AQL without placeholder', async () => {
     contextInstance.value.assetsObjectFieldConfiguration.issueScopeFilterQuery =
       'object HAVING inboundReferences(objecttype = Server AND objectId IN (customfield_14168))'
-    const result = await assetsObjectFieldConfigurationAqlValidator([toChange({ after: contextInstance })])
+    const result = await assetsObjectFieldConfigurationAqlValidator(client)([toChange({ after: contextInstance })])
     expect(result).toHaveLength(0)
   })
 
   it('should do nothing for non context changes', async () => {
-    const result = await assetsObjectFieldConfigurationAqlValidator([toChange({ after: createEmptyType('Field') })])
+    const result = await assetsObjectFieldConfigurationAqlValidator(client)([
+      toChange({ after: createEmptyType('Field') }),
+    ])
     expect(result).toHaveLength(0)
   })
 
   it('should do nothing for context without assetsObjectFieldConfiguration', async () => {
     contextInstance.value.assetsObjectFieldConfiguration = undefined
-    const result = await assetsObjectFieldConfigurationAqlValidator([toChange({ after: contextInstance })])
+    const result = await assetsObjectFieldConfigurationAqlValidator(client)([toChange({ after: contextInstance })])
     expect(result).toHaveLength(0)
   })
 
   it('should do nothing for context without issueScopeFilterQuery', async () => {
     contextInstance.value.assetsObjectFieldConfiguration.issueScopeFilterQuery = undefined
-    const result = await assetsObjectFieldConfigurationAqlValidator([toChange({ after: contextInstance })])
+    const result = await assetsObjectFieldConfigurationAqlValidator(client)([toChange({ after: contextInstance })])
     expect(result).toHaveLength(0)
   })
 })

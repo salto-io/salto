@@ -17,7 +17,7 @@
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
 
-const PLACEHOLDER_PATTERN = /\$\{(.*?)\}/g
+const PLACEHOLDER_PATTERN = /\$\{(.*)\}/
 
 const isAqlHasPlaceholder = (aql: string): boolean => {
   const matches = aql.match(PLACEHOLDER_PATTERN)
@@ -30,11 +30,7 @@ export const assetsObjectFieldConfigurationAqlValidator: ChangeValidator = async
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-    .filter(
-      instance =>
-        instance.value.assetsObjectFieldConfiguration !== undefined &&
-        instance.value.assetsObjectFieldConfiguration.issueScopeFilterQuery !== undefined,
-    )
+    .filter(instance => instance.value.assetsObjectFieldConfiguration?.issueScopeFilterQuery !== undefined)
     .filter(instance => isAqlHasPlaceholder(instance.value.assetsObjectFieldConfiguration.issueScopeFilterQuery))
     .map(instance => ({
       elemID: instance.elemID.createNestedID('assetsObjectFieldConfiguration', 'issueScopeFilterQuery'),

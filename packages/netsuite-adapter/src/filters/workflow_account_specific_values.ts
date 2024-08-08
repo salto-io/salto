@@ -72,6 +72,8 @@ const RECORDS_PER_QUERY = 10
 const FORMULA = 'formula'
 const FORMULA_PARAMS = 'formulaParams'
 
+const MULTISELECT_FIELD = 'valuemultiselect'
+
 const RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX = `${ACCOUNT_SPECIFIC_VALUE} (`
 const RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX = ')'
 
@@ -131,6 +133,7 @@ const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, string> = {
   STDEVENTALLOCATIONTYPE: ALLOCATION_TYPE,
   STDENTITYPROJECTEXPENSETYPE: PROJECT_EXPENSE_TYPE,
   STDENTITYSTATUS: 'entityStatus',
+  STDITEMSUBSIDIARY: 'subsidiary',
 }
 
 const getSelectRecordTypeFromReference = (
@@ -597,6 +600,14 @@ const getAccountSpecificValueToTransform = (
     if (internalId === undefined || internalId === '') {
       log.warn('missing field %s in record %s: %o', field.name, record.serviceId, innerResult.body)
       return []
+    }
+    if (
+      field.name === MULTISELECT_FIELD &&
+      Array.isArray(internalId) &&
+      internalId.length === 1 &&
+      typeof internalId[0] === 'string'
+    ) {
+      return { field, value: innerValue, internalId: internalId[0] }
     }
     if (typeof internalId !== 'string') {
       log.warn('field %s in record %s is not a string: %o', field.name, record.serviceId, internalId)

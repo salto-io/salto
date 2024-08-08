@@ -76,7 +76,7 @@ const getProfileMappingRefByName: referenceUtils.ContextValueMapperFunc = val =>
 const getUserSchemaPropertyOverrideType: referenceUtils.ContextValueMapperFunc = val =>
   val === 'APP' ? APPLICATION_TYPE_NAME : undefined
 
-export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName' | 'UserSchemaPropertyAppOverride'
+export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName' | 'userSchemaPropertyAppOverride'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   profileMappingType: referenceUtils.neighborContextGetter({
@@ -89,7 +89,7 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
     getLookUpName: async ({ ref }) => ref.elemID.name,
     contextValueMapper: getProfileMappingRefByName,
   }),
-  UserSchemaPropertyAppOverride: referenceUtils.neighborContextGetter({
+  userSchemaPropertyAppOverride: referenceUtils.neighborContextGetter({
     contextFieldName: 'type',
     getLookUpName: async ({ ref }) => ref.elemID.name,
     contextValueMapper: getUserSchemaPropertyOverrideType,
@@ -262,7 +262,7 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['UserSchemaAttributeMasterPriority'] },
     serializationStrategy: 'id',
-    target: { typeContext: 'UserSchemaPropertyAppOverride' },
+    target: { typeContext: 'userSchemaPropertyAppOverride' },
   },
   {
     src: { field: 'userGroupId', parentTypes: [GROUP_PUSH_TYPE_NAME] },

@@ -1084,6 +1084,12 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
+    src: { field: 'id', parentTypes: ['queue__primary_groups__groups'] },
+    serializationStrategy: 'id',
+    target: { type: 'group' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
+  {
     src: {
       field: 'custom_statuses',
       parentTypes: ['ticket_form__agent_conditions__child_fields__required_on_statuses'],

@@ -890,6 +890,26 @@ const createCustomizations = (): Record<
     },
   },
 
+  queue: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/queues' },
+        transformation: { root: 'queues' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'string' },
+      },
+    },
+  },
+
   monitored_twitter_handle: {
     requests: [
       {

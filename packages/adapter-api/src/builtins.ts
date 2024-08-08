@@ -27,7 +27,7 @@ import {
 import { TypeReference } from './values'
 import { BUILTIN_TYPE_NAMES, CORE_ANNOTATIONS } from './constants'
 
-export { CORE_ANNOTATIONS }
+export { CORE_ANNOTATIONS, BUILTIN_TYPE_NAMES }
 
 const StandardBuiltinTypes = {
   STRING: new PrimitiveType({

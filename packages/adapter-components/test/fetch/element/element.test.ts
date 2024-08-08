@@ -22,6 +22,7 @@ import {
   isEqualElements,
   isInstanceElement,
   isObjectType,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getElementGenerator } from '../../../src/fetch/element/element'
@@ -48,6 +49,37 @@ describe('element', () => {
       expect(res.errors).toEqual([])
       expect(res.elements).toHaveLength(1)
       expect(res.elements[0].isEqual(new ObjectType({ elemID: typeID, fields: {} }))).toEqual(true)
+    })
+    it('should create type with serviceId field as string and hidden fields as unknown when no entries provided', () => {
+      const generator = getElementGenerator({
+        adapterName: 'myAdapter',
+        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+          customizations: {
+            myType: {
+              element: {
+                topLevel: { isTopLevel: true },
+                fieldCustomizations: { fieldToHide: { hide: true }, serviceId: { hide: true } },
+              },
+              resource: { serviceIDFields: ['serviceId'], directFetch: true },
+            },
+          },
+        }),
+        customNameMappingFunctions: {},
+      })
+      generator.pushEntries({
+        entries: [],
+        typeName: 'myType',
+      })
+      const res = generator.generate()
+      expect(res.errors).toEqual([])
+      expect(res.elements).toHaveLength(1)
+      expect(res.elements[0]).toBeInstanceOf(ObjectType)
+      const objType = res.elements[0] as ObjectType
+      expect(_.mapValues(objType?.fields, f => f.getTypeSync().elemID.name)).toEqual({
+        fieldToHide: 'unknown',
+        serviceId: 'serviceid',
+      })
+      expect(objType.fields.fieldToHide?.annotations).toEqual({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
     })
     it('should not throw when type is not marked as top-level', () => {
       const generator = getElementGenerator({

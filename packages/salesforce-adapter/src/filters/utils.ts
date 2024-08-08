@@ -328,7 +328,7 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
   }
 }
 
-const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`__(${INSTANCE_SUFFIXES.join('|')})$`)
+export const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`__(${INSTANCE_SUFFIXES.join('|')})$`)
 
 export const removeCustomSuffix = (elementApiName: string): string =>
   elementApiName.replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')

@@ -733,6 +733,8 @@ describe('profiles', () => {
       fieldPermissions: {
         Account: {
           testField__c: 'ReadWrite',
+          // Make sure we don't omit non-custom fields with broken reference
+          testField: 'ReadWrite',
         },
       },
       applicationVisibilities: {
@@ -803,7 +805,9 @@ describe('profiles', () => {
         expect(fixedElements).toEqual([
           new InstanceElement('test', mockTypes.Profile, {
             fieldPermissions: {
-              Account: {},
+              Account: {
+                testField: 'ReadWrite',
+              },
             },
             applicationVisibilities: {},
             classAccesses: {},
@@ -878,7 +882,9 @@ describe('profiles', () => {
         expect(fixedElements).toEqual([
           new InstanceElement('test', mockTypes.Profile, {
             fieldPermissions: {
-              Account: {},
+              Account: {
+                testField: 'ReadWrite',
+              },
             },
             applicationVisibilities: {},
             classAccesses: {},

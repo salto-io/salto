@@ -27,7 +27,7 @@ import {
 } from '../../src/client'
 import { createConnection, Credentials } from './common'
 import { TimeoutError } from '../../src/client/http_client'
-import { RATE_LIMIT_DEFAULT_USE_BOTTLENECK } from '../../src/client/constants'
+import { RATE_LIMIT_DEFAULT_OPTIONS, DEFAULT_RETRY_IN_RATE_LIMITER } from '../../src/client/constants'
 
 const STATUSES_TO_RETRY = [1, 2, 3]
 
@@ -52,12 +52,15 @@ describe('client_http_client', () => {
         rateLimit: { total: -1, get: 3, deploy: 4 },
         maxRequestsPerMinute: -1,
         delayPerRequestMS: 0,
-        useBottleneck: RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
+        useBottleneck: RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
+        pauseDuringRetryDelay: RATE_LIMIT_DEFAULT_OPTIONS.pauseDuringRetryDelay,
         retry: {
           maxAttempts: 3,
           retryDelay: 123,
           additionalStatusCodesToRetry: STATUSES_TO_RETRY,
+          enabledRetry: true,
         },
+        retryInRateLimiter: DEFAULT_RETRY_IN_RATE_LIMITER,
         timeout: {
           lastRetryNoTimeout: true,
           retryOnTimeout: true,

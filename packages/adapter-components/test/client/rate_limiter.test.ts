@@ -384,8 +384,8 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
 
         expect(timingTask).toHaveBeenCalledTimes(1)
         expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
-        expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
-        expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxRetries + 1)
+        expect(retryPredicate).toHaveBeenCalledTimes((maxRetries + 1) * 2)
+        expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxRetries)
 
         let expectedTimeElapsed = 0
         for (let index = 1; index <= maxRetries; index += 1) {

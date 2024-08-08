@@ -16,7 +16,7 @@
 import { InstanceElement, ObjectType, Element, ReadOnlyElementsSource } from './elements'
 import { AdapterAuthentication } from './authentication_types'
 import { ElemID } from './element_id'
-import {Change, ChangeDataType} from './change'
+import { Change, ChangeDataType } from './change'
 import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'

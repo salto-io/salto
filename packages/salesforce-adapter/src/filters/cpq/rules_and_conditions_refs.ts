@@ -148,7 +148,7 @@ const resolveConditionIndexFunc =
     return index.toString()
   }
 
-const isConditionOfRuleFunc =
+export const isConditionOfRuleFunc =
   (rule: InstanceElement, ruleField: string) =>
   (condition: InstanceElement): boolean => {
     const ruleRef = condition.value[ruleField]

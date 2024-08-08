@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
+import { DAG } from '@salto-io/dag'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../../src/config/config'
@@ -30,6 +32,9 @@ describe('assetsObjectTypePathsFilter', () => {
   let sonTwoInstance: InstanceElement
   let grandsonOneInstance: InstanceElement
   let grandsonTwoInstance: InstanceElement
+  let getDataSpy: jest.SpyInstance
+  let logErrorSpy: jest.SpyInstance
+
   const assetSchemaInstance = new InstanceElement(
     'assetsSchema1',
     createEmptyType(OBJECT_SCHEMA_TYPE),
@@ -41,6 +46,9 @@ describe('assetsObjectTypePathsFilter', () => {
   )
   describe('on fetch', () => {
     beforeEach(async () => {
+      getDataSpy = jest.spyOn(DAG.prototype, 'getData')
+      const logging = logger('jira-adapter/src/filters/assets/assets_object_type_path')
+      logErrorSpy = jest.spyOn(logging, 'error')
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       config.fetch.enableJsmExperimental = true
@@ -153,6 +161,52 @@ describe('assetsObjectTypePathsFilter', () => {
         'grandsonTwoInstance',
         'grandsonTwoInstance',
       ])
+    })
+    it('should not fail the fetch if one instance throws an error', async () => {
+      getDataSpy.mockImplementationOnce(() => {
+        getDataSpy.mockClear()
+        throw new Error('failed to get data')
+      })
+      await expect(filter.onFetch(elements)).resolves.not.toThrow()
+      expect(sonOneInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'sonOneInstance',
+      ])
+      expect(sonTwoInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonTwoInstance',
+        'sonTwoInstance',
+      ])
+      expect(grandsonOneInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'grandsonOneInstance',
+        'grandsonOneInstance',
+      ])
+      expect(grandsonTwoInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'grandsonTwoInstance',
+        'grandsonTwoInstance',
+      ])
+      expect(logErrorSpy).toHaveBeenCalled()
     })
   })
 })

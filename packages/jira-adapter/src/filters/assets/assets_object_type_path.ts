@@ -38,6 +38,7 @@ const createPaths = async (objectTypes: InstanceElement[]): Promise<void> => {
   await awu(graph.evaluationOrder()).forEach(graphNode => {
     try {
       const instance = graph.getData(graphNode.toString())
+      console.log('instance: ', instance)
       const parentPath = instance.value.parentObjectTypeId.value.path
       instance.path =
         instance.value.parentObjectTypeId.elemID.typeName === OBJECT_SCHEMA_TYPE
@@ -49,9 +50,11 @@ const createPaths = async (objectTypes: InstanceElement[]): Promise<void> => {
             ]
           : [...parentPath.slice(0, -1), pathNaclCase(instance.value.name), pathNaclCase(instance.elemID.name)]
     } catch (e) {
+      console.log('faild on: ', graphNode.toString())
+      console.log('error: ', e)
       const errorObjectType =
         objectTypes.find(instance => instance.elemID.name === graphNode.toString()) ?? graphNode.toString()
-      log.error('Failed to create path for object type %o, error: %o', errorObjectType, e.message)
+      log.error('Failed to create path for objectType instance %o, error: %o', errorObjectType, e.message)
     }
   })
 }

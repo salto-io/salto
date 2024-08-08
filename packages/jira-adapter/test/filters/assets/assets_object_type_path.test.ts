@@ -162,11 +162,50 @@ describe('assetsObjectTypePathsFilter', () => {
         'grandsonTwoInstance',
       ])
     })
-    it('should not fail the fetch if throws an error', async () => {
-      getDataSpy.mockImplementation(() => {
+    it('should not fail the fetch if one instance throws an error', async () => {
+      getDataSpy.mockImplementationOnce(() => {
+        getDataSpy.mockClear()
         throw new Error('failed to get data')
       })
       await expect(filter.onFetch(elements)).resolves.not.toThrow()
+      expect(sonOneInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'sonOneInstance',
+      ])
+      expect(sonTwoInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonTwoInstance',
+        'sonTwoInstance',
+      ])
+      expect(grandsonOneInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'grandsonOneInstance',
+        'grandsonOneInstance',
+      ])
+      expect(grandsonTwoInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'grandsonTwoInstance',
+        'grandsonTwoInstance',
+      ])
       expect(logErrorSpy).toHaveBeenCalled()
     })
   })

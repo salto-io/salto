@@ -264,6 +264,7 @@ export type ChangeValidatorName =
   | 'jsmPermissions'
   | 'fieldContextOptions'
   | 'uniqueFields'
+  | 'assetsObjectFieldConfigurationAql'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -328,6 +329,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
     fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
     uniqueFields: { refType: BuiltinTypes.BOOLEAN },
+    assetsObjectFieldConfigurationAql: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

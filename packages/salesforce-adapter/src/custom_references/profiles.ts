@@ -31,7 +31,7 @@ import {
   RECORD_TYPE_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
-import { extractFlatCustomObjectFields, isInstanceOfTypeSync } from '../filters/utils'
+import { ENDS_WITH_CUSTOM_SUFFIX_REGEX, extractFlatCustomObjectFields, isInstanceOfTypeSync } from '../filters/utils'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -252,6 +252,9 @@ const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
     .fromPairs()
     .value()
 
+const isStandardFieldPermissionsPath = (path: string): boolean =>
+  path.startsWith('fieldPermissions') && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
+
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async elements => {
@@ -265,7 +268,8 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
     )
     const brokenReferenceFields = Object.keys(
       await pickAsync(entriesTargets, async target => !elementNames.has(target.getFullName())),
-    )
+      // fieldPermissions may contain standard values that are not referring to any field, we shouldn't omit these
+    ).filter(path => !isStandardFieldPermissionsPath(path))
     const profilesWithBrokenReferences = profiles.filter(profile =>
       brokenReferenceFields.some(field => _(profile.value).has(field)),
     )

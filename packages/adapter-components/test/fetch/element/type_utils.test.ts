@@ -17,6 +17,7 @@ import {
   markServiceIdField,
   getContainerForType,
   toNestedTypeName,
+  recursiveNestedTypeName,
   toPrimitiveType,
   getReachableTypes,
 } from '../../../src/fetch/element/type_utils'
@@ -87,6 +88,12 @@ describe('type utils', () => {
   describe('toNestedTypeName', () => {
     it('should concatenate the parent and child types', () => {
       expect(toNestedTypeName('aaa', 'bbb')).toEqual('aaa__bbb')
+    })
+  })
+
+  describe('recursiveNestedTypeName', () => {
+    it('should recursively concatenate the parent and child types', () => {
+      expect(recursiveNestedTypeName('aaa', 'bbb', 'ccc', 'ddd')).toEqual('aaa__bbb__ccc__ddd')
     })
   })
 

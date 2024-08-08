@@ -10,6 +10,7 @@ export {
   getContainerForType,
   markServiceIdField,
   toNestedTypeName,
+  recursiveNestedTypeName,
   toPrimitiveType,
   overrideFieldTypes,
 } from './type_utils'

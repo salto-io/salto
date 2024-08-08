@@ -61,15 +61,20 @@ export const areAuthenticators = createSchemeGuard<Authenticator[]>(
   'Received an invalid value for authenticators',
 )
 
-// Options are taken from: https://developer.okta.com/docs/reference/api/policy/#policy-factor-enroll-object
-const ENABLED_AUTHENTICATORS = ['OPTIONAL', 'REQUIRED']
-
-const getAutheticatorsForPolicy = (instance: InstanceElement): PolicyToAuthenticator[] => {
+export const getAuthenticatorsFromMfaPolicy = (instance: InstanceElement): Authenticator[] => {
   const authenticators = instance.value.settings?.authenticators
   if (!areAuthenticators(authenticators)) {
     log.warn(`Received invalid authenticator for instance ${instance.elemID.getFullName()}`)
     return []
   }
+  return authenticators
+}
+
+// Options are taken from: https://developer.okta.com/docs/reference/api/policy/#policy-factor-enroll-object
+const ENABLED_AUTHENTICATORS = ['OPTIONAL', 'REQUIRED']
+
+const getAutheticatorsForPolicy = (instance: InstanceElement): PolicyToAuthenticator[] => {
+  const authenticators = getAuthenticatorsFromMfaPolicy(instance)
   return (
     authenticators
       // Indicates the authenticator is enabled for this policy

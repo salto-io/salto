@@ -35,7 +35,6 @@ import {
   isModificationChange,
   TypeElement,
   SaltoElementError,
-  SaltoError,
   SeverityLevel,
   isInstanceElement,
   isInstanceChange,
@@ -80,6 +79,12 @@ import {
   CPQ_QUOTE_TERM,
   ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
   CPQ_TERM_CONDITION,
+  REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+  REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+  REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
+  CPQ_RULE_FIELD,
+  CPQ_QUOTE_TERM_FIELD,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
 import {
@@ -94,6 +99,7 @@ import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement } from './fetch_profile/data_management'
 import { DataManagement } from './types'
+import { isConditionOfRuleFunc } from './filters/cpq/rules_and_conditions_refs'
 
 const { toArrayAsync } = collections.asynciterable
 const { partition } = promises.array
@@ -105,7 +111,7 @@ const log = logger(module)
 
 type ActionResult = {
   successInstances: InstanceElement[]
-  errorInstances: (SaltoElementError | SaltoError)[]
+  errorInstances: SaltoElementError[]
 }
 
 type InstanceAndResult = {
@@ -114,6 +120,8 @@ type InstanceAndResult = {
 }
 
 type ErrorType = 'recoverable' | 'fatal' | 'given-up-on-recoverable'
+
+type SalesforceDataDeployResult = Omit<DeployResult<InstanceElement>, 'errors'> & { errors: SaltoElementError[] }
 
 const logErroredInstances = (instancesAndResults: InstanceAndResult[], errorType: ErrorType): void =>
   instancesAndResults.forEach(({ instance, result }) => {
@@ -295,7 +303,7 @@ export const retryFlow = async (
   const { retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
-  let errors: (SaltoElementError | SaltoError)[] = []
+  let errors: SaltoElementError[] = []
 
   const instanceResults = await crudFn(crudFnArgs)
 
@@ -474,7 +482,7 @@ const deployAddInstances = async (
   idFields: Field[],
   client: SalesforceClient,
   groupId: string,
-): Promise<DeployResult> => {
+): Promise<SalesforceDataDeployResult> => {
   const instances = changes.map(getChangeData)
   // Instances with internalIds have been already deployed previously, unless they are in the current
   // deployed group of instances This is relevant to the ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP group for example.
@@ -581,7 +589,7 @@ const deployRemoveInstances = async (
   instances: InstanceElement[],
   client: SalesforceClient,
   groupId: string,
-): Promise<DeployResult> => {
+): Promise<SalesforceDataDeployResult> => {
   const { successInstances, errorInstances } = await retryFlow(
     deleteInstances,
     {
@@ -605,7 +613,7 @@ const deployModifyChanges = async (
   changes: ReadonlyArray<ModificationChange<InstanceElement>>,
   client: SalesforceClient,
   groupId: string,
-): Promise<DeployResult> => {
+): Promise<SalesforceDataDeployResult> => {
   const changesData = changes.map(change => change.data)
   const instancesType = await apiName(await changesData[0].after.getType())
   const [validData, diffApiNameData] = await partition(
@@ -632,7 +640,7 @@ const deployModifyChanges = async (
       severity: 'Error' as SeverityLevel,
     }))
     .toArray()
-  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors, ...invalidFieldsWarnings]
+  const errors = [...errorInstances, ...diffApiNameErrors, ...invalidFieldsWarnings]
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
@@ -674,8 +682,8 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   client: SalesforceClient,
   groupId: string,
   dataManagement?: DataManagement,
-): Promise<DeployResult> => {
-  const customObjectInstancesDeployError = (message: string): DeployResult => ({
+): Promise<SalesforceDataDeployResult> => {
+  const customObjectInstancesDeployError = (message: string): SalesforceDataDeployResult => ({
     appliedChanges: [],
     errors: changes.map(change => ({
       message,
@@ -691,7 +699,7 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
       elemID: getChangeData(change).elemID,
       message: `The values of the following fields were not deployed since they are not defined in the type: [${missingFields.join(', ')}]`,
     }))
-  const withMissingFieldValuesErrors = (deployResult: DeployResult): DeployResult => {
+  const withMissingFieldValuesErrors = (deployResult: SalesforceDataDeployResult): SalesforceDataDeployResult => {
     const appliedChangesElemIds = new Set(
       deployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),
     )
@@ -786,7 +794,7 @@ const deployRulesAndConditionsGroup = async (
   changeGroupId: string,
   client: SalesforceClient,
   dataManagement: DataManagement | undefined,
-): Promise<DeployResult> => {
+): Promise<SalesforceDataDeployResult> => {
   const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => ({
     message: `Cannot deploy ${conditionTypeName} instance ${getChangeData(change).elemID.getFullName()} since it depends on an ${ruleTypeName} instance that was not deployed successfully`,
     severity: 'Error',
@@ -915,7 +923,7 @@ const deployAddCustomApprovalRulesAndConditions = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   dataManagement: DataManagement | undefined,
-): Promise<DeployResult> =>
+): Promise<SalesforceDataDeployResult> =>
   deployRulesAndConditionsGroup(
     SBAA_APPROVAL_RULE,
     SBAA_CONDITIONS_MET,
@@ -931,7 +939,7 @@ const deployAddCustomPriceRulesAndConditions = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   dataManagement: DataManagement | undefined,
-): Promise<DeployResult> =>
+): Promise<SalesforceDataDeployResult> =>
   deployRulesAndConditionsGroup(
     CPQ_PRICE_RULE,
     CPQ_CONDITIONS_MET,
@@ -947,7 +955,7 @@ const deployAddCustomProductRulesAndConditions = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   dataManagement: DataManagement | undefined,
-): Promise<DeployResult> =>
+): Promise<SalesforceDataDeployResult> =>
   deployRulesAndConditionsGroup(
     CPQ_PRODUCT_RULE,
     CPQ_CONDITIONS_MET,
@@ -963,7 +971,7 @@ const deployAddCustomQuoteTermsAndConditions = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   dataManagement: DataManagement | undefined,
-): Promise<DeployResult> =>
+): Promise<SalesforceDataDeployResult> =>
   deployRulesAndConditionsGroup(
     CPQ_QUOTE_TERM,
     CPQ_CONDITIONS_MET,
@@ -975,12 +983,50 @@ const deployAddCustomQuoteTermsAndConditions = async (
     dataManagement,
   )
 
+const deployRemoveCustomRulesAndConditions = async ({
+  changes,
+  client,
+  ruleTypeName,
+  groupId,
+  ruleFieldInCondition,
+  dataManagement,
+}: {
+  changes: ReadonlyArray<Change<InstanceElement>>
+  client: SalesforceClient
+  ruleTypeName: string
+  ruleFieldInCondition: string
+  groupId: string
+  dataManagement?: DataManagement
+}): Promise<SalesforceDataDeployResult> => {
+  const [ruleChanges, conditionChanges] = _.partition(changes, change =>
+    isInstanceOfTypeChangeSync(ruleTypeName)(change),
+  )
+  const { appliedChanges: appliedRuleChanges, errors: ruleErrors } =
+    await deploySingleTypeAndActionCustomObjectInstancesGroup(ruleChanges, client, groupId, dataManagement)
+  const appliedConditionChanges = appliedRuleChanges
+    .map(getChangeData)
+    .flatMap(rule =>
+      conditionChanges.filter(change => isConditionOfRuleFunc(rule, ruleFieldInCondition)(getChangeData(change))),
+    )
+  const conditionErrors = conditionChanges
+    .filter(change => !appliedConditionChanges.includes(change))
+    .map<SaltoElementError>(change => ({
+      elemID: getChangeData(change).elemID,
+      message: 'Condition Instance was not removed due to error when attempting to remove its parent Rule Instance',
+      severity: 'Error',
+    }))
+  return {
+    appliedChanges: appliedRuleChanges.concat(appliedConditionChanges),
+    errors: ruleErrors.concat(conditionErrors),
+  }
+}
+
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   groupId: string,
   dataManagement?: DataManagement,
-): Promise<DeployResult> => {
+): Promise<SalesforceDataDeployResult> => {
   switch (groupId) {
     case ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP: {
       return deployAddCustomApprovalRulesAndConditions(changes, client, dataManagement)
@@ -993,6 +1039,50 @@ export const deployCustomObjectInstancesGroup = async (
     }
     case ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP: {
       return deployAddCustomQuoteTermsAndConditions(changes, client, dataManagement)
+    }
+    // Remove Approval Rules
+    case REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP: {
+      return deployRemoveCustomRulesAndConditions({
+        changes,
+        client,
+        ruleTypeName: SBAA_APPROVAL_RULE,
+        groupId,
+        ruleFieldInCondition: SBAA_APPROVAL_RULE,
+        dataManagement,
+      })
+    }
+    // Remove Price Rules
+    case REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP: {
+      return deployRemoveCustomRulesAndConditions({
+        changes,
+        client,
+        ruleTypeName: CPQ_PRICE_RULE,
+        groupId,
+        ruleFieldInCondition: CPQ_RULE_FIELD,
+        dataManagement,
+      })
+    }
+    // Remove Product Rules
+    case REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP: {
+      return deployRemoveCustomRulesAndConditions({
+        changes,
+        client,
+        ruleTypeName: CPQ_PRODUCT_RULE,
+        groupId,
+        ruleFieldInCondition: CPQ_RULE_FIELD,
+        dataManagement,
+      })
+    }
+    // Remove Quote Terms
+    case REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP: {
+      return deployRemoveCustomRulesAndConditions({
+        changes,
+        client,
+        ruleTypeName: CPQ_QUOTE_TERM,
+        groupId,
+        ruleFieldInCondition: CPQ_QUOTE_TERM_FIELD,
+        dataManagement,
+      })
     }
     default: {
       return deploySingleTypeAndActionCustomObjectInstancesGroup(changes, client, groupId, dataManagement)

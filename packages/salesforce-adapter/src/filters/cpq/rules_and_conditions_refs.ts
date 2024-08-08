@@ -148,10 +148,13 @@ const resolveConditionIndexFunc =
     return index.toString()
   }
 
-const isConditionOfRuleFunc =
+export const isConditionOfRuleFunc =
   (rule: InstanceElement, ruleField: string) =>
   (condition: InstanceElement): boolean => {
     const ruleRef = condition.value[ruleField]
+    if (_.isString(ruleRef)) {
+      return apiNameSync(rule) === ruleRef
+    }
     return isReferenceExpression(ruleRef) && ruleRef.elemID.isEqual(rule.elemID)
   }
 

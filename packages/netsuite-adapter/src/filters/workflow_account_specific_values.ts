@@ -36,14 +36,10 @@ import NetsuiteClient from '../client/client'
 import { RemoteFilterCreator } from '../filter'
 import {
   ACCOUNT_SPECIFIC_VALUE,
-  ALLOCATION_TYPE,
-  EMPLOYEE,
   INIT_CONDITION,
   NAME_FIELD,
-  PROJECT_EXPENSE_TYPE,
   SCRIPT_ID,
   SELECT_RECORD_TYPE,
-  TAX_SCHEDULE,
   WORKFLOW,
 } from '../constants'
 import {
@@ -53,12 +49,13 @@ import {
   QueryRecordSchema,
 } from '../client/suiteapp_client/types'
 import {
+  AdditionalQueryName,
   MissingInternalId,
   SUITEQL_TABLE,
   getSuiteQLTableInternalIdsMap,
   updateSuiteQLTableInstances,
 } from '../data_elements/suiteql_table_elements'
-import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
+import { INTERNAL_ID_TO_TYPES, SuiteQLTableName } from '../data_elements/types'
 import { captureServiceIdInfo } from '../service_id_info'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { assignToCustomFieldsSelectRecordTypeIndex } from '../elements_source_index/elements_source_index'
@@ -125,12 +122,62 @@ type ResolvedAccountSpecificValuesResult = {
   missingInternalIds: MissingInternalId[]
 }
 
-const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, string> = {
-  STDITEMTAXSCHEDULE: TAX_SCHEDULE,
+const ADDITIONAL_INTERNAL_ID_TO_TYPES: Record<string, SuiteQLTableName | AdditionalQueryName> = {
+  '-192': 'shipItem',
+  '-3': 'vendor',
+  '-104': 'entityStatus',
+  '-320': 'supportCaseStatus',
+  '-166': 'employeeStatus',
+  '-253': 'accountingBook',
+  '-517': 'jobResourceRole',
+}
+
+const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, SuiteQLTableName | AdditionalQueryName> = {
+  // STDBODY fields
   STDBODYACCOUNT: 'account',
-  STDEVENTALLOCATIONTYPE: ALLOCATION_TYPE,
-  STDENTITYPROJECTEXPENSETYPE: PROJECT_EXPENSE_TYPE,
+  STDBODYCLASS: 'classification',
+  STDBODYDEPARTMENT: 'department',
+  STDBODYTOSUBSIDIARY: 'subsidiary',
+  STDBODYLOCATION: 'location',
+  STDBODYNEXTAPPROVER: 'employee',
+  STDBODYINCOTERM: 'incoterm',
+  STDBODYENTITYEMPLOYEE: 'employee',
+  STDBODYENTITYSTATUS: 'entityStatus',
+  STDBODYPAYMENTMETHOD: 'paymentMethod',
+
+  // STDEVENT fields
+  STDEVENTALLOCATIONTYPE: 'allocationType',
+  STDEVENTCASESTATUS: 'supportCaseStatus',
+  STDEVENTCASEPRIORITY: 'supportCasePriority',
+
+  // STDENTITY fields
+  STDENTITYPROJECTEXPENSETYPE: 'projectExpenseType',
   STDENTITYSTATUS: 'entityStatus',
+  STDENTITYPURCHASEORDERAPPROVER: 'employee',
+  STDENTITYTIMEAPPROVER: 'employee',
+  STDENTITYDEPARTMENT: 'department',
+  STDENTITYTERMS: 'term',
+  STDENTITYSUBSIDIARY: 'subsidiary',
+  STDENTITYRECEIVABLESACCOUNT: 'account',
+  STDENTITYPAYABLESACCOUNT: 'account',
+
+  // STDTIME fields
+  STDTIMEDEPARTMENT: 'department',
+  STDTIMECLASS: 'classification',
+  STDTIMELOCATION: 'location',
+  STDTIMEEMPLOYEE: 'employee',
+  STDTIMEAPPROVALSTATUS: 'approvalStatus',
+  STDTIMEITEM: 'item',
+  STDTIMEVENDOR: 'vendor',
+  STDTIMENEXTAPPROVER: 'employee',
+
+  // STDITEM fields
+  STDITEMTAXSCHEDULE: 'taxSchedule',
+  STDITEMSUBSIDIARY: 'subsidiary',
+  STDITEMCLASS: 'classification',
+  STDITEMDEPARTMENT: 'department',
+  STDITEMREVENUERECOGNITIONRULE: 'revenueRecognitionRule',
+  STDITEMLOCATION: 'location',
 }
 
 const getSelectRecordTypeFromReference = (
@@ -173,12 +220,13 @@ const getSelectRecordType: GetFieldTypeIDFunc = params => {
 }
 
 const GET_FIELD_TYPE_FUNCTIONS: Record<string, GetFieldTypeIDFunc> = {
-  sender: ({ isFieldWithAccountSpecificValue }) => (isFieldWithAccountSpecificValue ? EMPLOYEE : undefined),
-  recipient: ({ isFieldWithAccountSpecificValue }) =>
+  sender: ({ isFieldWithAccountSpecificValue }): SuiteQLTableName | undefined =>
+    isFieldWithAccountSpecificValue ? 'employee' : undefined,
+  recipient: ({ isFieldWithAccountSpecificValue }): SuiteQLTableName[] | undefined =>
     // there is no intersection between the internal ids of those types,
     // and no indication in the element which type should be used.
-    isFieldWithAccountSpecificValue ? [EMPLOYEE, 'contact', 'customer', 'partner', 'vendor'] : undefined,
-  campaignevent: ({ isFieldWithAccountSpecificValue }) =>
+    isFieldWithAccountSpecificValue ? ['employee', 'contact', 'customer', 'partner', 'vendor'] : undefined,
+  campaignevent: ({ isFieldWithAccountSpecificValue }): SuiteQLTableName | undefined =>
     isFieldWithAccountSpecificValue ? 'campaignEvent' : undefined,
   selectrecordtype: getSelectRecordType,
   resultfield: params => {
@@ -333,6 +381,9 @@ const getQueryRecordType = (path: ElemID): QueryRecordType | undefined => {
   return QUERY_RECORD_TYPES[path.createParentID().name as QueryRecordType]
 }
 
+const getTypesFromInternalId = (typeInternalId: string): string[] =>
+  INTERNAL_ID_TO_TYPES[typeInternalId] ?? ADDITIONAL_INTERNAL_ID_TO_TYPES[typeInternalId] ?? []
+
 const getQueryRecordFieldType = (
   instance: InstanceElement,
   value: Values,
@@ -373,7 +424,7 @@ const getQueryRecordFieldType = (
   const suiteQLTableName =
     suiteQLTablesMap[fieldType] !== undefined
       ? fieldType
-      : (INTERNAL_ID_TO_TYPES[fieldType] ?? []).find(typeName => suiteQLTablesMap[typeName] !== undefined)
+      : getTypesFromInternalId(fieldType).find(typeName => suiteQLTablesMap[typeName] !== undefined)
 
   if (suiteQLTableName === undefined) {
     log.warn('could not find SuiteQL table instance %s', fieldType)

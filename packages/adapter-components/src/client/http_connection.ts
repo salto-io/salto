@@ -212,6 +212,12 @@ export const axiosConnection = <TCredentials>({
       ...(await authParamsFunc(credentials)),
       maxBodyLength: Infinity,
       timeout,
+      // maxRedirects: 0, // Disable automatic redirection handling
+      beforeRedirect: async options => {
+        const tempCredentials = await authParamsFunc(credentials)
+        options.auth = tempCredentials.auth
+        options.headers = tempCredentials.headers // ???
+      },
     })
     axiosRetry(httpClient, retryOptions)
 

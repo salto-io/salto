@@ -3222,7 +3222,7 @@ describe('adapter', () => {
         // eslint-disable-next-line
         const createClientSpy = jest.spyOn(zendeskAdapter as any, 'createClientBySubdomain')
         // eslint-disable-next-line
-        const createFiltersRunnerSpy = jest.spyOn(zendeskAdapter as any, 'createFiltersRunner')
+        const deprecatedCreateFiltersRunnerSpy = jest.spyOn(zendeskAdapter as any, 'deprecatedCreateFiltersRunner')
         await zendeskAdapter.deploy({
           changeGroup: {
             groupID: '1',
@@ -3241,10 +3241,10 @@ describe('adapter', () => {
         })
 
         expect(createClientSpy).toHaveBeenCalledTimes(2)
-        expect(createFiltersRunnerSpy).toHaveBeenCalledTimes(3)
-        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(1, {}) // Regular deploy
-        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(2, guideFilterRunnerCall) // guide deploy
-        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(3, guideFilterRunnerCall) // guide deploy
+        expect(deprecatedCreateFiltersRunnerSpy).toHaveBeenCalledTimes(3)
+        expect(deprecatedCreateFiltersRunnerSpy).toHaveBeenNthCalledWith(1, {}) // Regular deploy
+        expect(deprecatedCreateFiltersRunnerSpy).toHaveBeenNthCalledWith(2, guideFilterRunnerCall) // guide deploy
+        expect(deprecatedCreateFiltersRunnerSpy).toHaveBeenNthCalledWith(3, guideFilterRunnerCall) // guide deploy
       })
       it('should use the same client for all guide requests of the same subdomain', async () => {
         const zendeskAdapter = new ZendeskAdapter({

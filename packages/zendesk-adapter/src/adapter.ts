@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _, { isString } from 'lodash'
+import _, { isString, pick, values } from 'lodash'
 import {
   AdapterOperations,
   Change,
@@ -44,6 +44,8 @@ import {
   definitions,
   fetch as fetchUtils,
   restoreChangeElement,
+  filters,
+  filterUtils,
 } from '@salto-io/adapter-components'
 import { getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -187,7 +189,10 @@ const {
 } = elementUtils.ducktype
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
+const { filterRunner } = filterUtils
 const SECTIONS_TYPE_NAME = 'sections'
+
+const SUPPORTED_COMMON_FILTERS = ['sortListsFilter']
 
 export const DEFAULT_FILTERS = [
   addRecurseIntoFieldFilter,
@@ -486,7 +491,8 @@ export default class ZendeskAdapter implements AdapterOperations {
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
   private adapterDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
-  private createFiltersRunner: ({
+  private createFiltersRunner: () => Required<filterUtils.Filter<FilterResult>>
+  private deprecatedCreateFiltersRunner: ({
     filterRunnerClient,
     paginator,
     brandIdToClient,
@@ -555,7 +561,28 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG], fetchCriteria)
 
-    this.createFiltersRunner = async ({
+    this.createFiltersRunner = () =>
+      filterRunner<ZendeskConfig, FilterResult, {}, ZendeskFetchOptions>(
+        {
+          fetchQuery: this.fetchQuery,
+          definitions: this.adapterDefinitions,
+          config: this.userConfig,
+          getElemIdFunc: this.getElemIdFunc,
+          elementSource: elementsSource,
+          sharedContext: {},
+        },
+        values(
+          pick(
+            filters.createCommonFilters<ZendeskFetchOptions, ZendeskConfig>({
+              config: this.userConfig,
+              definitions: this.adapterDefinitions,
+            }),
+            SUPPORTED_COMMON_FILTERS,
+          ),
+        ),
+        objects.concatObjects,
+      )
+    this.deprecatedCreateFiltersRunner = async ({
       filterRunnerClient,
       paginator,
       brandIdToClient = {},
@@ -806,8 +833,10 @@ export default class ZendeskAdapter implements AdapterOperations {
         this.createClientBySubdomain(brandInstance.value.subdomain),
       ]),
     )
-    // This exposes different subdomain clients for Guide related types filters
-    const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
+    const deprecatedFilterResult = (await (
+      await this.deprecatedCreateFiltersRunner({ brandIdToClient })
+    ).onFetch(elements)) as FilterResult
+    const filterResult = (await this.createFiltersRunner().onFetch(elements)) as FilterResult
     const updatedConfig =
       this.configInstance && configChanges
         ? definitions.getUpdatedConfigFromConfigChanges({
@@ -817,7 +846,10 @@ export default class ZendeskAdapter implements AdapterOperations {
           })
         : undefined
 
-    const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
+    const fetchErrors = (errors ?? [])
+      .concat(deprecatedFilterResult.errors ?? [])
+      .concat(localeError ?? [])
+      .concat(filterResult.errors ?? [])
     if (this.logIdsFunc !== undefined) {
       this.logIdsFunc()
     }
@@ -854,7 +886,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     try {
       return await awu(Object.entries(subdomainToClient))
         .map(async ([subdomain, client]) => {
-          const brandRunner = await this.createFiltersRunner({
+          const brandRunner = await this.deprecatedCreateFiltersRunner({
             filterRunnerClient: client,
             paginator: createPaginator({
               client,
@@ -912,7 +944,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       ),
     })) as Change<InstanceElement>[]
     const sourceChanges = _.keyBy(changesToDeploy, change => getChangeData(change).elemID.getFullName())
-    const runner = await this.createFiltersRunner({})
+    const runner = await this.deprecatedCreateFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)

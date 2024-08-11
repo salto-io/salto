@@ -40,7 +40,7 @@ import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement } from '../utils'
 import { profilesAndPermissionSetsHandler } from '../../src/custom_references/profiles_and_permission_sets'
 
-describe('profiles', () => {
+describe('Profiles And Permission Sets Custom References', () => {
   describe('weak references handler', () => {
     let refs: ReferenceInfo[]
     let profileInstance: InstanceElement

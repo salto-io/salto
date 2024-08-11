@@ -26,26 +26,22 @@ import {
   SalesforceConfig,
   WeakReferencesHandler,
 } from '../types'
-import { profilesHandler } from './profiles'
+import { profilesAndPermissionSetsHandler } from './profiles_and_permission_sets'
 import { managedElementsHandler } from './managed_elements'
-import { permissionSetsHandler } from './permission_sets'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
-  profiles: profilesHandler,
+  profilesAndPermissionSets: profilesAndPermissionSetsHandler,
   managedElements: managedElementsHandler,
-  permisisonSets: permissionSetsHandler,
 }
 
 const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> = {
-  profiles: true,
+  profilesAndPermissionSets: true,
   managedElements: true,
-  permisisonSets: true,
 }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
-  profiles: false,
+  profilesAndPermissionSets: false,
   managedElements: true,
-  permisisonSets: true,
 }
 
 export const customReferencesConfiguration = (

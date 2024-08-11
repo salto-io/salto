@@ -207,13 +207,9 @@ export const addReferences = async (
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async elements => {
-    const typesToIgnore: string[] = []
-    if (!config.fetchProfile.isFeatureEnabled('generateRefsInProfiles')) {
-      typesToIgnore.push(PROFILE_METADATA_TYPE)
-    }
-    if (config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets')) {
-      typesToIgnore.push(PERMISSION_SET_METADATA_TYPE, MUTING_PERMISSION_SET_METADATA_TYPE)
-    }
+    const typesToIgnore = config.fetchProfile.isCustomReferencesHandlerEnabled('profilesAndPermissionSets')
+      ? [PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, MUTING_PERMISSION_SET_METADATA_TYPE]
+      : []
     await addReferences(
       elements,
       buildElementsSourceForFetch(elements, config),

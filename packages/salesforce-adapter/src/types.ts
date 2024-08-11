@@ -201,7 +201,7 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = ['profiles', 'managedElements', 'permisisonSets'] as const
+const customReferencesHandlersNames = ['profilesAndPermissionSets', 'managedElements'] as const
 export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
 
 export type CustomReferencesSettings = Partial<Record<CustomReferencesHandlers, boolean>>

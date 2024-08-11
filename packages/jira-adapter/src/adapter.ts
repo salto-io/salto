@@ -197,7 +197,7 @@ import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_ord
 import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import asyncApiCallsFilter from './filters/async_api_calls'
-import defaultSlaAdditionFilter from './filters/default_sla_addition_deployment'
+import slaAdditionFilter from './filters/sla_addition_deployment'
 import addImportantValuesFilter from './filters/add_important_values'
 import ScriptRunnerClient from './client/script_runner_client'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
@@ -388,7 +388,7 @@ export const DEFAULT_FILTERS = [
   scriptRunnerInstancesDeploy,
   portalSettingsFilter,
   queueDeploymentFilter,
-  defaultSlaAdditionFilter,
+  slaAdditionFilter,
   portalGroupsFilter,
   requestTypeFilter,
   fieldContextOptionsDeploymentFilter,

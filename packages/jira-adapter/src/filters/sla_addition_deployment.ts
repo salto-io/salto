@@ -30,7 +30,7 @@ import { elements as elementUtils, config as configDeprecated } from '@salto-io/
 import Joi from 'joi'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
-import { SLA_DEFAULT_NAMES, SLA_TYPE_NAME } from '../constants'
+import { SLA_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 
 const log = logger(module)
@@ -100,7 +100,7 @@ const updateDefaultSla = async (
  * all other sla, will be deployed through the standard JSM deployment.
  */
 const filter: FilterCreator = ({ config, client }) => ({
-  name: 'defaultSlaAdditionFilter',
+  name: 'slaAdditionFilter',
   deploy: async changes => {
     const { jsmApiDefinitions } = config
     if (!config.fetch.enableJSM || jsmApiDefinitions === undefined) {
@@ -109,23 +109,20 @@ const filter: FilterCreator = ({ config, client }) => ({
         leftoverChanges: changes,
       }
     }
-    const [defaultSlaAdditionChanges, leftoverChanges] = _.partition(
+    const [slaAdditionChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        isAdditionChange(change) &&
-        isInstanceChange(change) &&
-        getChangeData(change).elemID.typeName === SLA_TYPE_NAME &&
-        SLA_DEFAULT_NAMES.includes(getChangeData(change).value.name),
+        isAdditionChange(change) && isInstanceChange(change) && getChangeData(change).elemID.typeName === SLA_TYPE_NAME,
     )
 
-    if (defaultSlaAdditionChanges.length === 0) {
+    if (slaAdditionChanges.length === 0) {
       return {
         deployResult: { appliedChanges: [], errors: [] },
         leftoverChanges: changes,
       }
     }
 
-    const projectToDefaultSlaAdditions = _.groupBy(defaultSlaAdditionChanges, change => {
+    const projectToDefaultSlaAdditions = _.groupBy(slaAdditionChanges, change => {
       try {
         const parent = getParent(getChangeData(change))
         return parent.elemID.getFullName()
@@ -142,7 +139,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         }),
       ),
     )
-    const typeFixedChanges = defaultSlaAdditionChanges.map(change => ({
+    const typeFixedChanges = slaAdditionChanges.map(change => ({
       action: change.action,
       data: _.mapValues(change.data, (instance: InstanceElement) =>
         replaceInstanceTypeForDeploy({
@@ -155,10 +152,18 @@ const filter: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       typeFixedChanges.filter(isInstanceChange).filter(isAdditionChange),
       async change => {
-        const serviceSlas = Object.fromEntries(
+        const serviceId = Object.fromEntries(
           projectToServiceSlas[getParent(getChangeData(change)).elemID.getFullName()] ?? [],
-        )
-        await updateDefaultSla(change, client, serviceSlas[change.data.after.value.name], jsmApiDefinitions)
+        )[change.data.after.value.name]
+        if (serviceId === undefined) {
+          await defaultDeployChange({
+            change,
+            client,
+            apiDefinitions: jsmApiDefinitions,
+          })
+        } else {
+          await updateDefaultSla(change, client, serviceId, jsmApiDefinitions)
+        }
       },
     )
 

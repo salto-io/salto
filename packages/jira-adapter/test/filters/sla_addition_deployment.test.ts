@@ -18,12 +18,12 @@ import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../src/config/config'
-import defaultSlaAdditionFilter from '../../src/filters/default_sla_addition_deployment'
+import defaultSlaAdditionFilter from '../../src/filters/sla_addition_deployment'
 import { createEmptyType, getFilterParams, mockClient } from '../utils'
 import { PROJECT_TYPE, SLA_TYPE_NAME } from '../../src/constants'
 import JiraClient from '../../src/client/client'
 
-describe('defaultSlaAdditionFilter', () => {
+describe('slaAdditionFilter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   let client: JiraClient
@@ -66,7 +66,7 @@ describe('defaultSlaAdditionFilter', () => {
         return {
           status: 200,
           data: {
-            values: [{ id: '11', name: DEFAULT_SLA_NAME }],
+            timeMetrics: [{ id: 11, name: DEFAULT_SLA_NAME }],
           },
         }
       }
@@ -94,8 +94,6 @@ describe('defaultSlaAdditionFilter', () => {
       ])
 
       expect(mockGet).toHaveBeenCalledTimes(1)
-      expect(mockPut).toHaveBeenCalledTimes(2)
-      expect(mockPost).not.toHaveBeenCalled()
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
@@ -103,18 +101,18 @@ describe('defaultSlaAdditionFilter', () => {
   })
 
   describe('deploying SLAs with non-default names', () => {
-    it('should not process addition of a SLA with non-default name through the filter', async () => {
+    it('should process addition of a SLA with non-default name through the filter as addition change', async () => {
       const nonDefaultSlaInstance = createSlaInstance('Custom SLA')
       const res = await filter.deploy([{ action: 'add', data: { after: nonDefaultSlaInstance } }])
 
-      expect(res.leftoverChanges).toHaveLength(1)
+      expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(mockPut).not.toHaveBeenCalled()
-      expect(mockPost).not.toHaveBeenCalled()
+      expect(mockPost).toHaveBeenCalledTimes(1)
     })
 
-    it('should deploy only SLAs with default names when mixed', async () => {
+    it('should deploy SLAs with default names as modification and non default SLA as addition when mixed', async () => {
       const nonDefaultSlaInstance = createSlaInstance('Custom SLA')
 
       const res = await filter.deploy([
@@ -122,11 +120,11 @@ describe('defaultSlaAdditionFilter', () => {
         { action: 'add', data: { after: defaultSlaInstance } },
       ])
 
-      expect(res.leftoverChanges).toHaveLength(1)
+      expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(2)
       expect(mockPut).toHaveBeenCalledTimes(1)
-      expect(mockPost).not.toHaveBeenCalled()
+      expect(mockPost).toHaveBeenCalledTimes(1)
     })
   })
 

@@ -62,11 +62,14 @@ export const addAuthenticatorToMfaPolicyDependency: DependencyChanger = async ch
     getChangeData(change.change).elemID.getFullName(),
   )
 
+  const changedAuthenticatorsElemIDs = new Set(Object.keys(authenticatorChangesById))
+
   return mfaChanges
     .flatMap(mfaChange => {
       const usedAuthenticatorChanges = getAuthenticatorsFromMfaPolicy(getChangeData(mfaChange.change))
         .map(authenticator => authenticator.key)
         .map(reference => reference.elemID.getFullName())
+        .filter(authenticatorId => changedAuthenticatorsElemIDs.has(authenticatorId))
         .map(authenticatorId => authenticatorChangesById[authenticatorId])
         .filter(values.isDefined)
       const dependencies = usedAuthenticatorChanges.map(authenticator =>

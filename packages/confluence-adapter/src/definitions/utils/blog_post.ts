@@ -14,28 +14,17 @@
  * limitations under the License.
  */
 
-import { definitions } from '@salto-io/adapter-components'
-import { collections } from '@salto-io/lowerdash'
 import { BLOG_POST_TYPE_NAME } from '../../constants'
-import { validateValue } from './generic'
+import { createAdjustFunctionFromMultipleFunctions } from './generic'
 import { createAdjustUserReferencesReverse } from './users'
 import { increaseVersion } from './version'
-
-const { reduceAsync } = collections.asynciterable
 
 export const adjustUserReferencesOnBlogPostReverse = createAdjustUserReferencesReverse(BLOG_POST_TYPE_NAME)
 
 /**
  * AdjustFunction that runs all blog_post modification adjust functions.
  */
-export const adjustBlogPostOnModification: definitions.AdjustFunctionSingle<
-  definitions.deploy.ChangeAndContext
-> = async args => {
-  const value = validateValue(args.value)
-  const argsWithValidatedValue = { ...args, value }
-  return reduceAsync(
-    [increaseVersion, adjustUserReferencesOnBlogPostReverse],
-    async (input, func) => ({ ...argsWithValidatedValue, ...(await func(input)) }),
-    argsWithValidatedValue,
-  )
-}
+export const adjustBlogPostOnModification = createAdjustFunctionFromMultipleFunctions([
+  increaseVersion,
+  adjustUserReferencesOnBlogPostReverse,
+])

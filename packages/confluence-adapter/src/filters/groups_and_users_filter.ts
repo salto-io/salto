@@ -18,7 +18,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { Options } from '../definitions/types'
 import { UserConfig } from '../config'
-import { getUsersIndex } from '../get_users'
+import { getUsersIndex } from '../users'
 import { BLOG_POST_TYPE_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../constants'
 
 export const TYPE_NAME_TO_USER_FIELDS: Record<string, string[]> = {

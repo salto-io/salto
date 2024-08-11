@@ -21,7 +21,7 @@ import { DEFAULT_CONFIG, UserConfig } from '../../src/config'
 import { Options } from '../../src/definitions/types'
 import { ADAPTER_NAME, GROUP_TYPE_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../src/constants'
 import { createDeployDefinitions, createFetchDefinitions } from '../../src/definitions'
-import * as getUsersAndGroupsModule from '../../src/get_users'
+import * as getUsersAndGroupsModule from '../../src/users'
 
 const mockGetUsersAndGroups = jest.spyOn(getUsersAndGroupsModule, 'getUsersIndex').mockResolvedValue({
   userId1: {

@@ -23,15 +23,13 @@ import {
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../constants'
 import { AdditionalAction } from '../types'
-import { validateValue } from './generic'
+import { createAdjustFunctionFromMultipleFunctions, validateValue } from './generic'
 import { createAdjustUserReferencesReverse } from './users'
 import { increaseVersion } from './version'
 
-const { reduceAsync } = collections.asynciterable
 const log = logger(module)
 
 /**
@@ -99,14 +97,8 @@ export const adjustUserReferencesOnPageReverse = createAdjustUserReferencesRever
 /**
  * AdjustFunction that runs all page modification adjust functions.
  */
-export const adjustPageOnModification: definitions.AdjustFunctionSingle<
-  definitions.deploy.ChangeAndContext
-> = async args => {
-  const value = validateValue(args.value)
-  const argsWithValidatedValue = { ...args, value }
-  return reduceAsync(
-    [increaseVersion, updateHomepageId, adjustUserReferencesOnPageReverse],
-    async (input, func) => ({ ...argsWithValidatedValue, ...(await func(input)) }),
-    argsWithValidatedValue,
-  )
-}
+export const adjustPageOnModification = createAdjustFunctionFromMultipleFunctions([
+  increaseVersion,
+  updateHomepageId,
+  adjustUserReferencesOnPageReverse,
+])

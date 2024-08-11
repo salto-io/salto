@@ -17,7 +17,7 @@
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../src/definitions/types'
 import { createDeployDefinitions, createFetchDefinitions } from '../src/definitions'
-import { getUsersIndex } from '../src/get_users'
+import { getUsersIndex } from '../src/users'
 import { DEFAULT_CONFIG } from '../src/config'
 
 const mockRequestAllResources = jest.fn()

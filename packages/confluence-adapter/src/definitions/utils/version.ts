@@ -19,21 +19,19 @@ import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { validateValue } from './generic'
 
-const isNumber = (value: unknown): value is number => typeof value === 'number'
-
 /**
- * AdjustFunction that increases the version number of a page for deploy modification change.
+ * AdjustFunction that increases version number on version object.
  */
 export const increaseVersion: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async args => {
   const value = validateValue(args.value)
   const version = _.get(value, 'version')
-  if (!values.isPlainRecord(version) || !isNumber(version.number)) {
+  if (!values.isPlainRecord(version) || !_.isNumber(version.number)) {
     return {
       value: {
         ...value,
         version: {
-          // In case of homepage addition, we don't have a version number yet but it is "1" in the service
-          // It has been set to one when we created the space and the default homepage was created
+          // Fallback to version 2, in case of homepage addition for example
+          // We don't have a version number yet but it is "1" in the service
           number: 2,
         },
       },

@@ -18,6 +18,7 @@ import {
   AdditionChange,
   Change,
   InstanceElement,
+  ModificationChange,
   getChangeData,
   isAdditionChange,
   isInstanceChange,
@@ -26,7 +27,7 @@ import {
 import { createSchemeGuard, getParent, hasValidParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { elements as elementUtils, config as configDeprecated } from '@salto-io/adapter-components'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
@@ -75,21 +76,14 @@ const getExistingSlaNamesAndIds = async (parent: InstanceElement, client: JiraCl
   }
 }
 
-const updateDefaultSla = async (
+const createSlaModificationChange = (
   change: AdditionChange<InstanceElement>,
-  client: JiraClient,
   serviceId: number,
-  jsmApiDefinitions: configDeprecated.AdapterDuckTypeApiConfig,
-): Promise<void> => {
+): ModificationChange<InstanceElement> => {
   change.data.after.value.id = serviceId
   const emptySlaInstance = change.data.after.clone()
   emptySlaInstance.value = {}
-  const modifyChange = toChange({ before: emptySlaInstance, after: change.data.after })
-  await defaultDeployChange({
-    change: modifyChange,
-    client,
-    apiDefinitions: jsmApiDefinitions,
-  })
+  return toChange({ before: emptySlaInstance, after: change.data.after }) as ModificationChange<InstanceElement>
 }
 
 /*
@@ -150,15 +144,15 @@ const filter: FilterCreator = ({ config, client }) => ({
           projectToServiceSlas[getParent(getChangeData(change)).elemID.getFullName()] ?? [],
           'name',
         )[change.data.after.value.name]
-        if (serviceSLA === undefined || serviceSLA.id === undefined) {
-          await defaultDeployChange({
-            change,
-            client,
-            apiDefinitions: jsmApiDefinitions,
-          })
-        } else {
-          await updateDefaultSla(change, client, serviceSLA.id, jsmApiDefinitions)
-        }
+        const updatedChange =
+          serviceSLA === undefined || serviceSLA.id === undefined
+            ? change
+            : createSlaModificationChange(change, serviceSLA.id)
+        await defaultDeployChange({
+          change: updatedChange,
+          client,
+          apiDefinitions: jsmApiDefinitions,
+        })
       },
     )
 

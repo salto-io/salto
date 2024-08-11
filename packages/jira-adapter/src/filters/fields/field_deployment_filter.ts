@@ -18,10 +18,11 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionChange,
-  isAdditionOrModificationChange,
   isInstanceChange,
+  isRemovalChange,
   toChange,
 } from '@salto-io/adapter-api'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
@@ -33,13 +34,27 @@ import { JiraConfig } from '../../config/config'
 
 const { awu } = collections.asynciterable
 
+const REDIRECT_PATH_PREFIX = '/rest/api/3/task/'
+
 const deployField = async (change: Change<InstanceElement>, client: JiraClient, config: JiraConfig): Promise<void> => {
-  await defaultDeployChange({
-    change,
-    client,
-    apiDefinitions: config.apiDefinitions,
-    fieldsToIgnore: ['contexts'],
-  })
+  try {
+    await defaultDeployChange({
+      change,
+      client,
+      apiDefinitions: config.apiDefinitions,
+      fieldsToIgnore: ['contexts'],
+    })
+  } catch (err) {
+    if (
+      isRemovalChange(change) &&
+      err instanceof clientUtils.HTTPError &&
+      err.response.status === 401 &&
+      err.response.requestPath?.startsWith(REDIRECT_PATH_PREFIX)
+    ) {
+      return
+    }
+    throw err
+  }
 
   if (isAdditionChange(change)) {
     const contextType = await getContextType(await getChangeData(change).getType())
@@ -60,10 +75,7 @@ const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change =>
-        isInstanceChange(change) &&
-        isAdditionOrModificationChange(change) &&
-        getChangeData(change).elemID.typeName === FIELD_TYPE_NAME,
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === FIELD_TYPE_NAME,
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), change =>

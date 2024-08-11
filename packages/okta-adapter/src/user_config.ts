@@ -68,6 +68,7 @@ const changeValidatorNames = [
   'domainModification',
   'schemaBaseChanges',
   'userStatusChanges',
+  'disabledAuthenticatorsInMfaPolicy',
 ] as const
 
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]

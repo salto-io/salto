@@ -16,10 +16,13 @@
 
 import { IDENTIFIER_URIS_FIELD_NAME } from '../../../src/constants'
 import { adjustApplication } from '../../../src/definitions/fetch/utils'
+import { contextMock } from '../../mocks'
 
 describe(`${adjustApplication.name}`, () => {
   it('should throw an error when value is not an object', async () => {
-    await expect(adjustApplication({ value: 'not an object', typeName: 'typeName', context: {} })).rejects.toThrow()
+    await expect(
+      adjustApplication({ value: 'not an object', typeName: 'typeName', context: contextMock }),
+    ).rejects.toThrow()
   })
 
   it('should throw an error when identifiersUri field is not an array', async () => {
@@ -27,13 +30,13 @@ describe(`${adjustApplication.name}`, () => {
       adjustApplication({
         value: { [IDENTIFIER_URIS_FIELD_NAME]: 'not an array' },
         typeName: 'typeName',
-        context: {},
+        context: contextMock,
       }),
     ).rejects.toThrow()
   })
 
   it('should not throw an error when identifierUris field is missing', async () => {
-    await expect(adjustApplication({ value: {}, typeName: 'typeName', context: {} })).resolves.not.toThrow()
+    await expect(adjustApplication({ value: {}, typeName: 'typeName', context: contextMock })).resolves.not.toThrow()
   })
 
   it('should filter out identifierUris with of the form api://<appId>', async () => {
@@ -42,7 +45,7 @@ describe(`${adjustApplication.name}`, () => {
     const result = await adjustApplication({
       value: { [IDENTIFIER_URIS_FIELD_NAME]: identifierUris, appId },
       typeName: 'typeName',
-      context: {},
+      context: contextMock,
     })
     expect(result.value[IDENTIFIER_URIS_FIELD_NAME]).toEqual(['otherUri', `api://not${appId}`])
   })

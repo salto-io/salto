@@ -247,7 +247,7 @@ describe('app roles filter', () => {
         appRoleInstanceA = new InstanceElement('appRoleA', appRoleType, { id: 'appRoleA' }, undefined, {
           [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
         })
-        appRoleInstanceB = new InstanceElement('appRoleB', appRoleType, { id: 'appRoleB' }, undefined, {
+        appRoleInstanceB = new InstanceElement('appRoleB', appRoleType, { not_id: 'appRoleB' }, undefined, {
           [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(applicationInstance.elemID, applicationInstance),
         })
         appRoleObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, APP_ROLE_TYPE_NAME) })
@@ -315,6 +315,33 @@ describe('app roles filter', () => {
           ).toBeUndefined()
 
           expect(result.deployResult.appliedChanges).toEqual([appRoleChange])
+          expect(result.deployResult.errors).toHaveLength(0)
+          expect(result.leftoverChanges).toHaveLength(1)
+          expect(result.leftoverChanges[0]).toEqual(appRoleObjectTypeChange)
+        })
+
+        it('should assign an id to the app role if it does not have one', async () => {
+          const appRoleChange = toChange({ after: appRoleInstanceB })
+          const changes = [appRoleObjectTypeChange, appRoleChange]
+
+          const result = await filter.deploy(changes, { changes, groupID: 'a' })
+
+          const changesParam = mockDeployChanges.mock.calls[0][0].changes
+          expect(changesParam).toHaveLength(1)
+          expect(changesParam[0].action).toEqual('modify')
+          expect(_.get(getChangeData(changesParam[0]), `value.${APP_ROLES_FIELD_NAME}`)).toEqual(
+            expect.arrayContaining([appRoleInstanceA.value, appRoleInstanceB.value]),
+          )
+          expect(
+            _.get(
+              (changesParam[0] as ModificationChange<InstanceElement>).data.before,
+              `value.${APP_ROLES_FIELD_NAME}`,
+            ),
+          ).toBeUndefined()
+
+          expect(result.deployResult.appliedChanges).toEqual([appRoleChange])
+          // Expect the id to be a UUID
+          expect(getChangeData(appRoleChange).value.id).toMatch(/^[\w-]{36}$/)
           expect(result.deployResult.errors).toHaveLength(0)
           expect(result.leftoverChanges).toHaveLength(1)
           expect(result.leftoverChanges[0]).toEqual(appRoleObjectTypeChange)

@@ -225,6 +225,36 @@ export const markServiceIdField = (
   }
 }
 
+const overrideServiceIdOrHiddenFieldIfNotDefined = ({
+  definedTypes,
+  type,
+  fieldName,
+  isServiceIdField,
+  isHiddenField,
+}: {
+  definedTypes: Record<string, ObjectType>
+  type: ObjectType
+  fieldName: string
+  isServiceIdField?: boolean
+  isHiddenField?: boolean
+}): void => {
+  if (type.fields[fieldName] === undefined) {
+    // we don't want field to be undefined if it is a serviceId or field we want to hide
+    if (isServiceIdField) {
+      overrideFieldType({
+        type,
+        definedTypes,
+        fieldName,
+        fieldTypeName: BUILTIN_TYPE_NAMES.STRING, // fallback to string serviceId
+      })
+      return
+    }
+    if (isHiddenField) {
+      overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: BUILTIN_TYPE_NAMES.UNKNOWN })
+    }
+  }
+}
+
 /**
  * Adjust field types based on the defined customization.
  */
@@ -251,19 +281,13 @@ export const overrideFieldTypes = <Options extends FetchApiDefinitionsOptions>({
         if (fieldType !== undefined) {
           overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: fieldType })
         }
-        if (type.fields[fieldName] === undefined) {
-          // we don't want field to be undefined if it is a serviceId or field we want to hide
-          if (resourceDef?.serviceIDFields?.includes(fieldName)) {
-            overrideFieldType({
-              type,
-              definedTypes,
-              fieldName,
-              fieldTypeName: BUILTIN_TYPE_NAMES.STRING, // fallback to string serviceId
-            })
-          } else if (hide) {
-            overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: BUILTIN_TYPE_NAMES.UNKNOWN })
-          }
-        }
+        overrideServiceIdOrHiddenFieldIfNotDefined({
+          definedTypes,
+          type,
+          fieldName,
+          isServiceIdField: resourceDef?.serviceIDFields?.includes(fieldName),
+          isHiddenField: hide,
+        })
         if (type.fields[fieldName] === undefined) {
           return
         }

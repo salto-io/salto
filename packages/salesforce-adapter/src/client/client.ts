@@ -1065,7 +1065,7 @@ export default class SalesforceClient implements ISalesforceClient {
     records: SalesforceRecord[],
   ): Promise<BatchResultInfo[]> {
     log.trace(
-      'client.bulkLoadOperation: %s %d records of type %s: %S',
+      'client.bulkLoadOperation: %s %d records of type %s: %s',
       operation,
       records.length,
       type,

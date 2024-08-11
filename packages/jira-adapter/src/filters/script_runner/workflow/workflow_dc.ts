@@ -52,7 +52,8 @@ const decodeScriptObject = (base64: string): unknown => {
     const value = JSON.parse(script)
     if (value.scriptPath === null) {
       delete value.scriptPath
-    } else if (value.script === null) {
+    }
+    if (value.script === null) {
       delete value.script
     }
     return value

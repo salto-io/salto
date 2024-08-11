@@ -28,7 +28,7 @@ import {
   FLOW_METADATA_TYPE,
   LAYOUT_TYPE_ID_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
-  RECORD_TYPE_METADATA_TYPE,
+  RECORD_TYPE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, MUTING_PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
 import { ENDS_WITH_CUSTOM_SUFFIX_REGEX, extractFlatCustomObjectFields, isInstanceOfTypeSync } from '../filters/utils'
@@ -50,6 +50,8 @@ enum section {
 }
 
 const FIELD_NO_ACCESS = 'NoAccess'
+
+const isProfileOrPermissionSetInstance = isInstanceOfTypeSync(PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, MUTING_PERMISSION_SET_METADATA_TYPE)
 
 const getMetadataElementName = (fullName: string): string =>
   Types.getElemId(fullName.replace(API_NAME_SEPARATOR, '_'), true).name
@@ -230,7 +232,7 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
-  const profiles = elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
+  const profiles = elements.filter(isProfileOrPermissionSetInstance)
   const refs = log.timeDebug(
     () => profiles.flatMap(referencesFromProfile),
     `Generating references from ${profiles.length} profiles.`,
@@ -258,7 +260,7 @@ const isStandardFieldPermissionsPath = (path: string): boolean =>
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async elements => {
-    const profiles = elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
+    const profiles = elements.filter(isProfileOrPermissionSetInstance)
     const entriesTargets: Dictionary<ElemID> = _.merge({}, ...profiles.map(profileEntriesTargets))
     const elementNames = new Set(
       await awu(await elementsSource.getAll())

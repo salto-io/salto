@@ -20,7 +20,6 @@ import {
   ConfigCreator,
   ElemID,
   InstanceElement,
-  ListType,
   createRestriction,
 } from '@salto-io/adapter-api'
 import {
@@ -28,11 +27,8 @@ import {
   createMatchingObjectType,
   createOptionsTypeGuard,
 } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { ENABLE_DEPLOY_SUPPORT_FLAG, configType } from './config'
 import { WORKATO } from './constants'
-
-const log = logger(module)
 
 const optionsElemId = new ElemID(WORKATO, 'configOptionsType')
 
@@ -40,15 +36,16 @@ const WORKATO_DEPLOY_OPTION = 'Deploy'
 const WORKATO_IMPACT_ANALYSIS_OPTION = 'Impact Analysis'
 
 type ConfigOptionsType = {
-  useCase?: string[]
+  useCase?: string
 }
 
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
     useCase: {
-      refType: new ListType(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: WORKATO_DEPLOY_OPTION,
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.ALIAS]: 'Choose your Workato use case',
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -80,12 +77,9 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
     return defaultConfig
   }
   if (options.value.useCase !== undefined) {
-    if (options.value.useCase.length !== 1) {
-      log.error('unexpected usecase options value')
-      return defaultConfig
-    }
     const clonedConfig = defaultConfig.clone()
-    clonedConfig.value[ENABLE_DEPLOY_SUPPORT_FLAG] = options.value.useCase[0] === WORKATO_DEPLOY_OPTION
+    // fallback to enable deploy support
+    clonedConfig.value[ENABLE_DEPLOY_SUPPORT_FLAG] = options.value.useCase !== WORKATO_IMPACT_ANALYSIS_OPTION
     return clonedConfig
   }
   return defaultConfig

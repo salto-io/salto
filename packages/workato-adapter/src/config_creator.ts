@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
-import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ConfigCreator,
+  ElemID,
+  InstanceElement,
+  createRestriction,
+} from '@salto-io/adapter-api'
 import {
   createDefaultInstanceFromType,
   createMatchingObjectType,
@@ -25,13 +32,41 @@ import { WORKATO } from './constants'
 
 const optionsElemId = new ElemID(WORKATO, 'configOptionsType')
 
+const WORKATO_DEPLOY_OPTION = 'Deploy'
+const WORKATO_IMPACT_ANALYSIS_OPTION = 'Impact Analysis'
+
 type ConfigOptionsType = {
-  enableDeploy?: boolean
+  useCase?: string
 }
+
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
-    enableDeploy: { refType: BuiltinTypes.BOOLEAN },
+    useCase: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: WORKATO_DEPLOY_OPTION,
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [CORE_ANNOTATIONS.ALIAS]: 'Choose your Workato use case',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: [WORKATO_DEPLOY_OPTION, WORKATO_IMPACT_ANALYSIS_OPTION],
+          enforce_value: true,
+        }),
+        [CORE_ANNOTATIONS.DESCRIPTION]: `## Customize Your Workato Use Case
+
+### Deploy
+Deploy recipes and move changes between environments.
+        
+Connecting to additional applications is not available in this mode.
+        
+### Impact Analysis
+Connect Workato to additional applications such as Salesforce, Netsuite, Jira, and more to analyze dependencies between your Workato recipes and these applications.
+        
+[Learn more about this feature](https://help.salto.io/en/articles/6933980-salto-for-workato-overview#h_c14c3e1e79).
+        
+Deploying changes is not available in this mode.`,
+      },
+    },
   },
 })
 
@@ -40,9 +75,10 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
   if (options === undefined || !createOptionsTypeGuard<ConfigOptionsType>(optionsElemId)(options)) {
     return defaultConfig
   }
-  if (options.value.enableDeploy !== undefined) {
+  if (options.value.useCase !== undefined) {
     const clonedConfig = defaultConfig.clone()
-    clonedConfig.value[ENABLE_DEPLOY_SUPPORT_FLAG] = options.value.enableDeploy
+    // fallback to enable deploy support
+    clonedConfig.value[ENABLE_DEPLOY_SUPPORT_FLAG] = options.value.useCase !== WORKATO_IMPACT_ANALYSIS_OPTION
     return clonedConfig
   }
   return defaultConfig

@@ -111,6 +111,17 @@ const graphV1Customizations: FetchCustomizations = {
           }
         },
       },
+      context: {
+        // We only need this dependency for the conditions under the group life cycle policy recurse definition
+        dependsOn: {
+          [`${LIFE_CYCLE_POLICY_TYPE_NAME}_condition`]: {
+            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
+            transformation: {
+              root: 'managedGroupTypes',
+            },
+          },
+        },
+      },
       recurseInto: {
         [GROUP_ADDITIONAL_DATA_FIELD_NAME]: {
           typeName: GROUP_ADDITIONAL_DATA_TYPE_NAME,
@@ -141,6 +152,12 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromContext: `${LIFE_CYCLE_POLICY_TYPE_NAME}_condition`,
+              match: ['Selected'],
+            },
+          ],
         },
       },
     },
@@ -210,23 +227,6 @@ const graphV1Customizations: FetchCustomizations = {
   [GROUP_LIFE_CYCLE_POLICY_TYPE_NAME]: {
     resource: {
       directFetch: false,
-      context: {
-        dependsOn: {
-          [LIFE_CYCLE_POLICY_TYPE_NAME]: {
-            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
-            transformation: {
-              pick: ['managedGroupTypes'],
-            },
-          },
-        },
-        // TODO SALTO-6077: we currently overlook this definition. We should validate this definition after fixing the issue
-        conditions: [
-          {
-            fromContext: LIFE_CYCLE_POLICY_TYPE_NAME,
-            match: ['Selected'],
-          },
-        ],
-      },
     },
     requests: [
       {

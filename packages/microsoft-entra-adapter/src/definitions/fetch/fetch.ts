@@ -347,6 +347,13 @@ const graphV1Customizations: FetchCustomizations = {
           },
         },
         [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        [APP_ROLE_ASSIGNMENT_FIELD_NAME]: {
+          standalone: {
+            typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+            nestPathUnderParent: true,
+            referenceFromParent: false,
+          },
+        },
       },
     },
   },

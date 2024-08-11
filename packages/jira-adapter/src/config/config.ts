@@ -60,6 +60,7 @@ type JiraDeployConfig = definitions.UserDeployConfig &
 
 type JiraFetchFilters = definitions.DefaultFetchCriteria & {
   type?: string
+  state?: string
 }
 
 type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFilters }> & {
@@ -349,6 +350,7 @@ const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
   fields: {
     name: { refType: BuiltinTypes.STRING },
     type: { refType: BuiltinTypes.STRING },
+    state: { refType: BuiltinTypes.STRING },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

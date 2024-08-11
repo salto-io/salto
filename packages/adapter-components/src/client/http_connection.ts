@@ -40,6 +40,7 @@ export type Response<T> = {
   status: number
   statusText?: string
   headers?: Partial<AxiosResponseHeaders>
+  requestPath?: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

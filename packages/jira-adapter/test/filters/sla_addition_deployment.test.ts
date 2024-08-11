@@ -41,7 +41,7 @@ describe('slaAdditionFilter', () => {
   })
 
   const createSlaInstance = (name: string): InstanceElement =>
-    new InstanceElement('queue1', createEmptyType(SLA_TYPE_NAME), { id: 11, name }, undefined, {
+    new InstanceElement('sla1', createEmptyType(SLA_TYPE_NAME), { id: 11, name }, undefined, {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
     })
   const defaultSlaInstance = createSlaInstance(DEFAULT_SLA_NAME)
@@ -66,7 +66,10 @@ describe('slaAdditionFilter', () => {
         return {
           status: 200,
           data: {
-            timeMetrics: [{ id: 11, name: DEFAULT_SLA_NAME }],
+            timeMetrics: [
+              { id: 11, name: DEFAULT_SLA_NAME },
+              { id: 12, name: 'another one' },
+            ],
           },
         }
       }
@@ -127,6 +130,4 @@ describe('slaAdditionFilter', () => {
       expect(mockPost).toHaveBeenCalledTimes(1)
     })
   })
-
-  // Additional test cases could be added here, such as error handling scenarios
 })

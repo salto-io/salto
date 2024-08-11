@@ -57,12 +57,9 @@ const SLA_RESPONSE_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-const isSlaResponse = createSchemeGuard<SlaGetResponse>(SLA_RESPONSE_SCHEME)
+const isSlaResponse = createSchemeGuard<SlaGetResponse>(SLA_RESPONSE_SCHEME, 'Received invalid SLA response')
 
-const getExistingSlaNamesAndIds = async (
-  parent: InstanceElement,
-  client: JiraClient,
-): Promise<(string | number)[][]> => {
+const getExistingSlaNamesAndIds = async (parent: InstanceElement, client: JiraClient): Promise<SlaParams[]> => {
   try {
     const response = await client.get({
       url: `/rest/servicedesk/1/servicedesk/agent/${parent.value.key}/sla/metrics`,
@@ -70,7 +67,7 @@ const getExistingSlaNamesAndIds = async (
     if (!isSlaResponse(response.data)) {
       return []
     }
-    const existingSlas = response.data.timeMetrics.map(sla => [sla.name, sla.id])
+    const existingSlas = response.data.timeMetrics.map(({ name, id }) => ({ name, id }))
     return existingSlas
   } catch (e) {
     log.error(`failed to get existing Slas due to an error ${e}`)
@@ -121,22 +118,14 @@ const filter: FilterCreator = ({ config, client }) => ({
         leftoverChanges: changes,
       }
     }
+    const projectsWithSlaAdditions = new Set(slaAdditionChanges.map(change => getParent(getChangeData(change))))
 
-    const projectToDefaultSlaAdditions = _.groupBy(slaAdditionChanges, change => {
-      try {
-        const parent = getParent(getChangeData(change))
-        return parent.elemID.getFullName()
-      } catch (e) {
-        log.error(`failed to get project name for change ${getChangeData(change).elemID.name} due to an error ${e}`)
-        return ''
-      }
-    })
-    const projectToServiceSlas: Record<string, string[][]> = Object.fromEntries(
+    const projectToServiceSlas: Record<string, SlaParams[]> = Object.fromEntries(
       await Promise.all(
-        Object.entries(projectToDefaultSlaAdditions).map(async ([projectName, slaChanges]) => {
-          const parent = getParent(getChangeData(slaChanges[0]))
-          return [projectName, await getExistingSlaNamesAndIds(parent, client)]
-        }),
+        Array.from(projectsWithSlaAdditions).map(async project => [
+          project.elemID.getFullName(),
+          await getExistingSlaNamesAndIds(project, client),
+        ]),
       ),
     )
     const typeFixedChanges = slaAdditionChanges.map(change => ({
@@ -152,17 +141,18 @@ const filter: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       typeFixedChanges.filter(isInstanceChange).filter(isAdditionChange),
       async change => {
-        const serviceId = Object.fromEntries(
+        const serviceSLA = _.keyBy(
           projectToServiceSlas[getParent(getChangeData(change)).elemID.getFullName()] ?? [],
+          'name',
         )[change.data.after.value.name]
-        if (serviceId === undefined) {
+        if (serviceSLA === undefined || serviceSLA.id === undefined) {
           await defaultDeployChange({
             change,
             client,
             apiDefinitions: jsmApiDefinitions,
           })
         } else {
-          await updateDefaultSla(change, client, serviceId, jsmApiDefinitions)
+          await updateDefaultSla(change, client, serviceSLA.id, jsmApiDefinitions)
         }
       },
     )

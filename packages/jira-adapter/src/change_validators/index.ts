@@ -82,7 +82,8 @@ const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsCha
 const TYPE_TO_UNIQUE_FIELD = {
   [ISSUE_TYPE_NAME]: ['name'],
   [PORTAL_GROUP_TYPE]: ['name'],
-  // [SLA_TYPE_NAME]: ['name'], # TODO: uncomment when we add Scope to unique fields filter. SALTO-6424
+  // TODO SALTO-6424 uncomment when we add Scope to unique fields filter.
+  // [SLA_TYPE_NAME]: ['name'],
   [PROJECT_TYPE]: ['name', 'key'],
 }
 

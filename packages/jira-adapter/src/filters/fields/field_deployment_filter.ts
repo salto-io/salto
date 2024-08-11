@@ -25,6 +25,7 @@ import {
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, getContexts, getContextType } from './contexts'
@@ -32,6 +33,7 @@ import { defaultDeployChange, deployChanges } from '../../deployment/standard_de
 import { FIELD_TYPE_NAME } from './constants'
 import { JiraConfig } from '../../config/config'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 
 const REDIRECT_PATH_PREFIX = '/rest/api/3/task/'
@@ -48,12 +50,14 @@ const deployField = async (change: Change<InstanceElement>, client: JiraClient, 
     if (
       isRemovalChange(change) &&
       err instanceof clientUtils.HTTPError &&
-      err.response.status === 401 &&
       err.response.requestPath?.startsWith(REDIRECT_PATH_PREFIX)
     ) {
-      return
+      log.warn(
+        `Got an error when trying to delete a field, probably becuase a redirect happened. Ignoring error. requestPath: ${err.response.requestPath}`,
+      )
+    } else {
+      throw err
     }
-    throw err
   }
 
   if (isAdditionChange(change)) {

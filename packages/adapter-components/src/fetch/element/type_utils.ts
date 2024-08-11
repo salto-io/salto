@@ -225,6 +225,8 @@ export const markServiceIdField = (
   }
 }
 
+// Verify that field is not undefined if it is a serviceId or field we want to hide.
+// This is to prevent writing to nacl (copyFromResponse on deployment) fields that supposed to be hidden.
 const overrideServiceIdOrHiddenFieldIfNotDefined = ({
   definedTypes,
   type,
@@ -239,7 +241,6 @@ const overrideServiceIdOrHiddenFieldIfNotDefined = ({
   isHiddenField?: boolean
 }): void => {
   if (type.fields[fieldName] === undefined) {
-    // we don't want field to be undefined if it is a serviceId or field we want to hide
     if (isServiceIdField) {
       overrideFieldType({
         type,

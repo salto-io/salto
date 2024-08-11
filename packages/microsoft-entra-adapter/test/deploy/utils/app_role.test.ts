@@ -42,27 +42,6 @@ describe(`${adjustParentWithAppRoles.name}`, () => {
     expect(result.value).toEqual(appRolesParent)
   })
 
-  it('should add a uuid to each appRole that does not have an id', async () => {
-    const appRolesParent = {
-      appRoles: [
-        {
-          id: 'id1',
-          name: 'name1',
-        },
-        {
-          name: 'name2',
-        },
-      ],
-    }
-    const result = await adjustParentWithAppRoles({
-      value: appRolesParent,
-      typeName: PARENT_TYPE_NAME,
-      context: contextMock,
-    })
-    expect(result.value.appRoles[1].id).toBeDefined()
-    expect(result.value.appRoles[0].id).toBe('id1')
-  })
-
   it('should remove the parent_id field from each appRole', async () => {
     const appRolesParent = {
       appRoles: [

@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-export * from './generic'
-export * from './page'
-export * from './label'
-export * from './restriction'
-export * from './template'
-export * from './space'
-export * from './users'
-export * from './blog_post'
+import { BLOG_POST_TYPE_NAME } from '../../constants'
+import { createAdjustFunctionFromMultipleFunctions } from './generic'
+import { createAdjustUserReferencesReverse } from './users'
+import { increaseVersion } from './version'
+
+export const adjustUserReferencesOnBlogPostReverse = createAdjustUserReferencesReverse(BLOG_POST_TYPE_NAME)
+
+/**
+ * AdjustFunction that runs all blog_post modification adjust functions.
+ */
+export const adjustBlogPostOnModification = createAdjustFunctionFromMultipleFunctions([
+  increaseVersion,
+  adjustUserReferencesOnBlogPostReverse,
+])

@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-import { Values } from '@salto-io/adapter-api'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { fetch as fetchUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Options } from './definitions/types'
-import { ADAPTER_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME } from './constants'
+import { ADAPTER_NAME, USER_TYPE_NAME } from './constants'
 import { USERS_PAGE_SIZE } from './definitions/requests/pagination'
 
 const log = logger(module)
@@ -31,11 +30,6 @@ type User = {
   displayName?: string
 }
 
-type Group = {
-  name: string
-  id: string
-}
-
 const USER_SCHEMA = Joi.object({
   accountId: Joi.string().required(),
   displayName: Joi.string(),
@@ -43,30 +37,7 @@ const USER_SCHEMA = Joi.object({
   .unknown(true)
   .required()
 
-const GROUP_SCHEMA = Joi.object({
-  name: Joi.string().required(),
-  id: Joi.string().required(),
-})
-  .unknown(true)
-  .required()
-
 const isUser = createSchemeGuard<User>(USER_SCHEMA)
-const isGroup = createSchemeGuard<Group>(GROUP_SCHEMA)
-
-const GROUP_FETCH_DEF: definitionsUtils.fetch.InstanceFetchApiDefinitions<Options> = {
-  requests: [
-    {
-      endpoint: {
-        method: 'get',
-        path: '/wiki/rest/api/group',
-      },
-      transformation: {
-        root: 'results',
-        pick: ['name', 'id'],
-      },
-    },
-  ],
-}
 
 const USERS_FETCH_DEF: definitionsUtils.fetch.InstanceFetchApiDefinitions<Options> = {
   requests: [
@@ -87,13 +58,12 @@ const USERS_FETCH_DEF: definitionsUtils.fetch.InstanceFetchApiDefinitions<Option
 }
 
 const CUSTOMIZATION_DEF: Record<string, definitionsUtils.fetch.InstanceFetchApiDefinitions<Options>> = {
-  [GROUP_TYPE_NAME]: GROUP_FETCH_DEF,
   [USER_TYPE_NAME]: USERS_FETCH_DEF,
 }
 
-export const getUsersAndGroups = async (
+export const getUsersIndex = async (
   definitions: definitionsUtils.ApiDefinitions<Options>,
-): Promise<{ usersIndex: Record<string, User>; groupsIndex: Record<string, Group> }> => {
+): Promise<Record<string, User>> => {
   const { fetch } = definitions
   if (fetch === undefined) {
     throw new Error('could not find fetch definitions')
@@ -113,26 +83,14 @@ export const getUsersAndGroups = async (
       ),
     ),
   })
-
-  const callSingleResource = async <T extends Values>(
-    typeName: string,
-    filterFn: (item: unknown) => item is T,
-    idKey: string,
-  ): Promise<Record<string, T>> => {
-    try {
-      const result = await requester.requestAllForResource({
-        callerIdentifier: { typeName },
-        contextPossibleArgs: {},
-      })
-      return _.keyBy(result.map(item => item.value).filter(filterFn), idKey)
-    } catch (e) {
-      log.error(`Failed to fetch ${typeName.toLowerCase()}s with error %o`, e)
-      return {}
-    }
+  try {
+    const result = await requester.requestAllForResource({
+      callerIdentifier: { typeName: USER_TYPE_NAME },
+      contextPossibleArgs: {},
+    })
+    return _.keyBy(result.map(item => item.value).filter(isUser), 'accountId')
+  } catch (e) {
+    log.error('Failed to fetch users with error %o', e)
+    return {}
   }
-  const [groupsIndex, usersIndex] = await Promise.all([
-    callSingleResource<Group>(GROUP_TYPE_NAME, isGroup, 'id'),
-    callSingleResource<User>(USER_TYPE_NAME, isUser, 'accountId'),
-  ])
-  return { groupsIndex, usersIndex }
 }

@@ -33,6 +33,9 @@ import {
   INSTANCE_FULL_NAME_FIELD,
   LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
@@ -40,12 +43,18 @@ import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement } from '../utils'
 import { profilesAndPermissionSetsHandler } from '../../src/custom_references/profiles_and_permission_sets'
 
+const HANDLED_TYPES = [
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+] as const
+
 describe('Profiles And Permission Sets Custom References', () => {
-  describe('weak references handler', () => {
+  describe.each(HANDLED_TYPES)('%s weak references handler', typeName => {
     let refs: ReferenceInfo[]
     let profileInstance: InstanceElement
     const createTestInstance = (fields: Values): InstanceElement =>
-      new InstanceElement('test', mockTypes.Profile, fields)
+      new InstanceElement('test', new ObjectType({ elemID: new ElemID(SALESFORCE, typeName) }), fields)
 
     describe('fields', () => {
       describe('when the fields are inaccessible', () => {
@@ -728,8 +737,9 @@ describe('Profiles And Permission Sets Custom References', () => {
     })
   })
 
-  describe('fix elements', () => {
-    const profileInstance = new InstanceElement('test', mockTypes.Profile, {
+  describe.each(HANDLED_TYPES)('%s fix elements', typeName => {
+    const metadataType = new ObjectType({ elemID: new ElemID(SALESFORCE, typeName) })
+    const instance = new InstanceElement('test', metadataType, {
       fieldPermissions: {
         Account: {
           testField__c: 'ReadWrite',
@@ -801,9 +811,9 @@ describe('Profiles And Permission Sets Custom References', () => {
       })
 
       it('should drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([instance])
         expect(fixedElements).toEqual([
-          new InstanceElement('test', mockTypes.Profile, {
+          new InstanceElement('test', metadataType, {
             fieldPermissions: {
               Account: {
                 testField: 'ReadWrite',
@@ -822,11 +832,10 @@ describe('Profiles And Permission Sets Custom References', () => {
         ])
         expect(errors).toEqual([
           {
-            elemID: profileInstance.elemID,
+            elemID: instance.elemID,
             severity: 'Info',
             message: 'Omitting entries which reference unavailable types',
-            detailedMessage:
-              'The Profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
+            detailedMessage: `The ${typeName} has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types`,
           },
         ])
       })
@@ -858,7 +867,7 @@ describe('Profiles And Permission Sets Custom References', () => {
       })
 
       it('should not drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([instance])
         expect(fixedElements).toBeEmpty()
         expect(errors).toBeEmpty()
       })
@@ -878,9 +887,9 @@ describe('Profiles And Permission Sets Custom References', () => {
       })
 
       it('should drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([instance])
         expect(fixedElements).toEqual([
-          new InstanceElement('test', mockTypes.Profile, {
+          new InstanceElement('test', metadataType, {
             fieldPermissions: {
               Account: {
                 testField: 'ReadWrite',
@@ -926,11 +935,10 @@ describe('Profiles And Permission Sets Custom References', () => {
         ])
         expect(errors).toEqual([
           {
-            elemID: profileInstance.elemID,
+            elemID: instance.elemID,
             severity: 'Info',
             message: 'Omitting entries which reference unavailable types',
-            detailedMessage:
-              'The Profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
+            detailedMessage: `The ${typeName} has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types`,
           },
         ])
       })

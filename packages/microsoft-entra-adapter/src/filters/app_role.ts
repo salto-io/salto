@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { v4 as uuid4 } from 'uuid'
 import { values, collections } from '@salto-io/lowerdash'
 import {
   Change,
@@ -117,11 +118,24 @@ const extractUniqueParentsFromAppRoleChanges = (
   }
 }
 
+const addAppRoleIdToAppRole = (
+  appRole: InstanceElement,
+  appRoleNameToInternalId: Record<string, string>,
+): InstanceElement => {
+  if (appRole.value.id === undefined) {
+    appRole.value.id = appRoleNameToInternalId[appRole.elemID.getFullName()]
+  }
+  return appRole
+}
+
 const groupAppRolesByParent = async (
   elementSource: ReadOnlyElementsSource,
+  appRoleNameToInternalId: Record<string, string>,
 ): Promise<Record<string, InstanceElement[]>> =>
   _.groupBy(
-    await getInstancesFromElementSource(elementSource, [APP_ROLE_TYPE_NAME]),
+    (await getInstancesFromElementSource(elementSource, [APP_ROLE_TYPE_NAME])).map(appRole =>
+      addAppRoleIdToAppRole(appRole, appRoleNameToInternalId),
+    ),
     // If no parent is found & the app role is not part of the received changes, we will just skip it
     elem => getParents(elem)[0]?.elemID.getFullName(),
   )
@@ -192,7 +206,15 @@ const deployAppRoleChangesViaParent = async ({
   const { uniqueParents, errors: appRoleWithNoParentErrors } =
     extractUniqueParentsFromAppRoleChanges(appRoleInstanceChanges)
 
-  const parentToAppRolesMap = await groupAppRolesByParent(elementSource)
+  // We must specify an id for each appRole on addition.
+  // Since they're not deployed on their own we should also make sure to update the relevant changes with the id we generate.
+  const appRoleNameToInternalId = Object.fromEntries(
+    appRoleInstanceChanges.map(change => [
+      getChangeData(change).elemID.getFullName(),
+      getChangeData(change).value.id ?? uuid4(),
+    ]),
+  )
+  const parentToAppRolesMap = await groupAppRolesByParent(elementSource, appRoleNameToInternalId)
   const parentChanges = (
     await Promise.all(
       uniqueParents.map(parent =>
@@ -233,9 +255,15 @@ const deployAppRoleChangesViaParent = async ({
         }),
       )
       .toArray()
-    const appliedAppRoleChanges = appRoleInstanceChanges.filter(change =>
-      appliedParentChangesFullNames.includes(getParents(getChangeData(change))[0]?.elemID.getFullName()),
-    )
+    const appliedAppRoleChanges = await awu(appRoleInstanceChanges)
+      .filter(change =>
+        appliedParentChangesFullNames.includes(getParents(getChangeData(change))[0]?.elemID.getFullName()),
+      )
+      .map(change =>
+        applyFunctionToChangeData(change, instance => addAppRoleIdToAppRole(instance, appRoleNameToInternalId)),
+      )
+      .toArray()
+
     return {
       deployResult: {
         errors: errors.concat(appRoleWithNoParentErrors),

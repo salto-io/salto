@@ -51,7 +51,6 @@ export const optionsType = createMatchingObjectType<ConfigOptionsType>({
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           values: [WORKATO_DEPLOY_OPTION, WORKATO_IMPACT_ANALYSIS_OPTION],
           enforce_value: true,
-          max_list_length: 1,
         }),
         [CORE_ANNOTATIONS.DESCRIPTION]: `## Customize Your Workato Use Case
 

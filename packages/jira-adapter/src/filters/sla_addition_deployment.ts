@@ -23,7 +23,7 @@ import {
   isInstanceChange,
   toChange,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, hasValidParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils, config as configDeprecated } from '@salto-io/adapter-components'
@@ -118,7 +118,12 @@ const filter: FilterCreator = ({ config, client }) => ({
         leftoverChanges: changes,
       }
     }
-    const projectsWithSlaAdditions = new Set(slaAdditionChanges.map(change => getParent(getChangeData(change))))
+    const projectsWithSlaAdditions = new Set(
+      slaAdditionChanges
+        .map(change => getChangeData(change))
+        .filter(instance => hasValidParent(instance))
+        .map(instance => getParent(instance)),
+    )
 
     const projectToServiceSlas: Record<string, SlaParams[]> = Object.fromEntries(
       await Promise.all(

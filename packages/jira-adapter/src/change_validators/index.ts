@@ -73,7 +73,7 @@ import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
 import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
-import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE, SLA_TYPE_NAME } from '../constants'
+import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../constants'
 import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator } =
@@ -82,7 +82,7 @@ const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsCha
 const TYPE_TO_UNIQUE_FIELD = {
   [ISSUE_TYPE_NAME]: ['name'],
   [PORTAL_GROUP_TYPE]: ['name'],
-  [SLA_TYPE_NAME]: ['name'],
+  // [SLA_TYPE_NAME]: ['name'], # TODO: uncomment when we add Scope to unique fields filter. SALTO-6424
   [PROJECT_TYPE]: ['name', 'key'],
 }
 

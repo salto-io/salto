@@ -26,9 +26,9 @@ mkdir -p extension/node_modules/
 rsync -a ../../../node_modules/ extension/node_modules/
 # Copy the current salto packages as if they were installed
 mkdir -p extension/node_modules/@salto-io
-yarn workspaces list --json | jq -r 'select(.name | startswith("@salto-io")) | "../../../\(.location) ./extension/node_modules/\(.name)"' | while read -r src dst; do
-    rm -rf $dst;
-    rsync -a --include /dist --include "/dist/***" --include /package.json --exclude "*" $src/ $dst/;
+yarn workspaces list --json | jq -r 'select(.name | startswith("@salto-io")) | "\(.location) \(.name)"' | while read -r src dst; do
+    rm -rf "./extension/node_modules/$dst";
+    rsync -a --include /dist --include "/dist/***" --include /package.json --exclude "*" "../../../$src/" "./extension/node_modules/$dst/";
 done
 
 zip -ur salto.vsix extension

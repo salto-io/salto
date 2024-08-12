@@ -32,6 +32,7 @@ const referenceFieldsWithFormulaIdentifiers: Record<string, string> = {
   FlowTestParameter: 'leftValueReference',
   FlowAssignmentItem: 'assignToReference',
   ComponentInstancePropertyListItem: 'value',
+  FieldInstance: 'fieldItem',
 }
 
 const referenceExpressionFromFieldValue = async (

@@ -245,7 +245,7 @@ const deployAppRoleChangesViaParent = async ({
           appliedParentChangesFullNames.includes(getChangeData(parentChange).elemID.getFullName()),
       )
       .map(({ parentChange }) =>
-        // We add the app roles field to the parent change in place, but we don't want to copy it to the workspace.
+        // We add the app roles field to the parent change in place, but we don't include it in the applied change.
         // So we remove it before returning it as an applied change.
         // The reason we modify the change in place is that the `copy from response` flow works on the original change,
         // and in case where we add an application we need to copy its id and appId.

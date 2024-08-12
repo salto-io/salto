@@ -18,7 +18,7 @@ import { createEmptyType } from '../../utils'
 import { projectAssigneeTypeValidator } from '../../../src/change_validators/projects/project_assignee_type'
 import { ASSIGNEE_TYPE_FIELD } from '../../../src/constants'
 
-describe('projectCategoryValidator', () => {
+describe('projectAssigneeTypeValidator', () => {
   const projectType = createEmptyType('Project')
   let projectInstance: InstanceElement
 

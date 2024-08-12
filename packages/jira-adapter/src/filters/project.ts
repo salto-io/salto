@@ -28,7 +28,7 @@ import {
 import { createSchemeGuard, setPath } from '@salto-io/adapter-utils'
 // import { resolveValues, config as configUtils } from '@salto-io/adapter-components'
 import { resolveValues } from '@salto-io/adapter-components'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
@@ -54,7 +54,6 @@ const PROJECT_CATEGORY_FIELD = 'projectCategory'
 const CUSTOMER_PERMISSIONS = 'customerPermissions'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 const changeProjectPath = (instance: InstanceElement, projectTypesKeysToFormatedKeys: Record<string, string>): void => {
   if (instance.path === undefined) {
@@ -280,49 +279,31 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         .map(inst => [inst.value.key, inst.value.formattedKey]),
     )
 
-    await awu(elements)
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
-      .forEach(async instance => {
-        instance.value.leadAccountId = client.isDataCenter ? instance.value.lead?.key : instance.value.lead?.accountId
-        delete instance.value.lead
+    await Promise.all(
+      elements
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
+        .map(async instance => {
+          instance.value.leadAccountId = client.isDataCenter ? instance.value.lead?.key : instance.value.lead?.accountId
+          delete instance.value.lead
 
-        instance.value[WORKFLOW_SCHEME_FIELD] =
-          instance.value[WORKFLOW_SCHEME_FIELD]?.[WORKFLOW_SCHEME_FIELD]?.id?.toString()
-        instance.value.issueTypeScreenScheme =
-          instance.value[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.id
-        instance.value.fieldConfigurationScheme =
-          instance.value[FIELD_CONFIG_SCHEME_FIELD]?.[FIELD_CONFIG_SCHEME_FIELD]?.id
-        instance.value[ISSUE_TYPE_SCHEME] = instance.value[ISSUE_TYPE_SCHEME]?.[ISSUE_TYPE_SCHEME]?.id
+          instance.value[WORKFLOW_SCHEME_FIELD] =
+            instance.value[WORKFLOW_SCHEME_FIELD]?.[WORKFLOW_SCHEME_FIELD]?.id?.toString()
+          instance.value.issueTypeScreenScheme =
+            instance.value[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.id
+          instance.value.fieldConfigurationScheme =
+            instance.value[FIELD_CONFIG_SCHEME_FIELD]?.[FIELD_CONFIG_SCHEME_FIELD]?.id
+          instance.value[ISSUE_TYPE_SCHEME] = instance.value[ISSUE_TYPE_SCHEME]?.[ISSUE_TYPE_SCHEME]?.id
 
-        instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
-        instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
-        instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
-        changeProjectPath(instance, projectTypesKeysToFormattedKeys)
-        await setAssigneeTypeField(instance, client)
-        // TODO: should we add other fields from this response?
-        // The list of fields I saw: issueTypes, versions, roles, avatarUrls, lead, properties
-
-        // const { fieldsToOmit } = configUtils.getTypeTransformationConfig(
-        //   PROJECT_TYPE_NAME,
-        //   config.apiDefinitions.types,
-        //   config.apiDefinitions.typeDefaults,
-        // )
-        // if (values.isPlainRecord(response.data)) {
-        //   instance.value = {
-        //     ..._.omit(response.data, [
-        //       ...(fieldsToOmit?.map(field => field.fieldName) ?? []),
-        //       'issueTypes',
-        //       'versions',
-        //       'roles',
-        //       'avatarUrls',
-        //       'lead',
-        //       'properties',
-        //     ]),
-        //     ...instance.value,
-        //   }
-        // }
-      })
+          instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
+          instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
+          instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
+          changeProjectPath(instance, projectTypesKeysToFormattedKeys)
+          if (!client.isDataCenter) {
+            await setAssigneeTypeField(instance, client)
+          }
+        }),
+    )
   },
 
   preDeploy: async changes => {

@@ -19,17 +19,18 @@ import { ASSIGNEE_TYPE_FIELD, PROJECT_TYPE } from '../../constants'
 
 const VALID_ASSIGNEE_TYPES = ['PROJECT_LEAD', 'UNASSIGNED']
 
+// this validator checks that the assignee type of a project as a valid value
 export const projectAssigneeTypeValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-    .filter(change => change.data.after.elemID.typeName === PROJECT_TYPE)
     .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
     .filter(project => project.value[ASSIGNEE_TYPE_FIELD] !== undefined)
     .filter(project => !VALID_ASSIGNEE_TYPES.includes(project.value[ASSIGNEE_TYPE_FIELD]))
-    .map(instance => ({
-      elemID: instance.elemID,
+    .map(project => ({
+      elemID: project.elemID,
       severity: 'Error',
       message: 'Invalid assignee type',
-      detailedMessage: `Project assignee type must be one of [${VALID_ASSIGNEE_TYPES.map(str => `'${str}'`).join(', ')}].`,
+      detailedMessage: `Project assignee type must be one of [${VALID_ASSIGNEE_TYPES.map(str => `'${str}'`).join(', ')}], got ${project.value[ASSIGNEE_TYPE_FIELD]}`,
     }))

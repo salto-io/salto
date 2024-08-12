@@ -209,6 +209,7 @@ import fieldContextOptionsSplitFilter from './filters/fields/field_context_optio
 import fieldContextOptionsDeploymentFilter from './filters/fields/context_options_deployment_filter'
 import fieldContextOptionsDeploymentOrderFilter from './filters/fields/context_options_order_deployment_filter'
 import contextDefaultValueDeploymentFilter from './filters/fields/context_default_value_deployment_filter'
+import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -279,6 +280,8 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
   scriptRunnerWorkflowReferencesFilter,
+  // must run before workflowTransitionIdsFilter
+  statusPropertiesReferencesFilter,
   // must run after scriptRunnerWorkflowReferencesFilter
   workflowTransitionIdsFilter,
   transitionIdsFilter,

@@ -148,6 +148,9 @@ const deployRequestTypeLayout = async (
           data: item.data,
         }
       }
+      log.error(
+        `Failed to deploy request type: ${requestType.elemID.getFullName()}'s ${fieldName} due to bad reference expression`,
+      )
       return undefined
     })
     .filter(isDefined)

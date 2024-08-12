@@ -1194,7 +1194,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'key', parentTypes: ['issueLayoutItem'] },
     serializationStrategy: 'id',
-    missingRefStrategy: 'typeAndValue',
     target: { type: FIELD_TYPE_NAME },
   },
   {

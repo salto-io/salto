@@ -170,9 +170,6 @@ describe('createReferencesIssueLayoutFilter', () => {
   it('should add key as missing ref if there is no field', async () => {
     fieldInstance1.value.id = 'testField3'
     await filter.onFetch(elements)
-    expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toBeInstanceOf(ReferenceExpression)
-    expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key.elemID.getFullName()).toEqual(
-      'jira.Field.instance.missing_testField1',
-    )
+    expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toEqual('testField1')
   })
 })

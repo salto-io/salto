@@ -125,16 +125,27 @@ const fromLayoutConfigRespToLayoutConfig = (layoutConfig: IssueLayoutConfigurati
   const fieldItemIdToMetaData: Record<string, Value> = Object.fromEntries(
     (layoutConfig.metadata?.configuration.items.nodes ?? [])
       .filter(node => !_.isEmpty(node))
-      .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')]),
+      .map(node => {
+        if (node.fieldItemId) {
+          return [node.fieldItemId, _.omit(node, 'fieldItemId')]
+        }
+        return [node.panelItemId, _.omit(node, 'panelItemId')]
+      }),
   )
   const items = containers
     .flatMap(container =>
-      container.items.nodes.map(node => ({
-        type: 'FIELD',
-        sectionType: container.containerType,
-        key: node.fieldItemId,
-        data: fieldItemIdToMetaData[node.fieldItemId],
-      })),
+      container.items.nodes.map(node => {
+        const dataKey = node.panelItemId ?? node.fieldItemId
+        if (dataKey === undefined) {
+          return undefined
+        }
+        return {
+          type: node.fieldItemId ? 'FIELD' : 'PANEL',
+          sectionType: container.containerType,
+          key: dataKey,
+          data: fieldItemIdToMetaData[dataKey],
+        }
+      }),
     )
     .filter(isLayoutConfigItem)
 

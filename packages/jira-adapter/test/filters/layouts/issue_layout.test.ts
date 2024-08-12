@@ -163,6 +163,9 @@ describe('issue layout filter', () => {
                     {
                       fieldItemId: 'testField1',
                     },
+                    {
+                      panelItemId: 'devSummary',
+                    },
                   ],
                 },
               },
@@ -187,6 +190,9 @@ describe('issue layout filter', () => {
                   },
                   {
                     fieldItemId: 'testField2',
+                  },
+                  {
+                    panelItemId: 'devSummary',
                   },
                 ],
               },
@@ -492,6 +498,29 @@ describe('issue layout filter', () => {
       expect(issueLayout?.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual(
         'https://ori-salto-test.atlassian.net/plugins/servlet/project-config/projKey/issuelayout?screenId=11',
       )
+      expect(issueLayout?.value).toEqual({
+        extraDefinerId: '11',
+        id: '11111_11',
+        issueLayoutConfig: {
+          items: [
+            {
+              type: 'FIELD',
+              sectionType: 'PRIMARY',
+              key: 'testField1',
+            },
+            {
+              type: 'PANEL',
+              sectionType: 'PRIMARY',
+              key: 'devSummary',
+            },
+            {
+              type: 'FIELD',
+              sectionType: 'SECONDARY',
+              key: 'testField2',
+            },
+          ],
+        },
+      })
     })
     it('should not crash if the adapterContext.layoutsPromise is empty', async () => {
       adapterContext.layoutsPromise = {}
@@ -705,6 +734,14 @@ describe('issue layout filter', () => {
         sectionType: 'PRIMARY',
         key: new ReferenceExpression(fieldInstance3.elemID, fieldInstance3),
       }
+      afterIssueLayoutInstance.value.issueLayoutConfig.items[3] = {
+        type: 'PANEL',
+        sectionType: 'PRIMARY',
+        key: 'devSummary',
+        data: {
+          name: 'Development',
+        },
+      }
       const res = await layoutFilter.deploy([
         { action: 'modify', data: { before: issueLayoutInstance, after: afterIssueLayoutInstance } },
       ])
@@ -750,6 +787,14 @@ describe('issue layout filter', () => {
                 data: {
                   name: 'TestField3',
                   type: 'testField3',
+                },
+              },
+              {
+                key: 'devSummary',
+                sectionType: 'primary',
+                type: 'PANEL',
+                data: {
+                  name: 'Development',
                 },
               },
             ],

@@ -318,6 +318,13 @@ describe('Unordered lists filter', () => {
         },
         {
           id: 'd',
+          restriction: {
+            ids: [
+              new ReferenceExpression(groupOneInstance.elemID, groupOneInstance),
+              new ReferenceExpression(groupThreeInstance.elemID, groupThreeInstance),
+              new ReferenceExpression(groupTwoInstance.elemID, groupTwoInstance),
+            ],
+          },
         },
         {
           id: referenceB,
@@ -657,6 +664,15 @@ describe('Unordered lists filter', () => {
       expect(instance.value.selected_macros[1].id.elemID.name).toEqual('a')
       expect(instance.value.selected_macros[2].id.elemID.name).toEqual('b')
       expect(instance.value.selected_macros[3].id.elemID.name).toEqual('c')
+    })
+    it('should sort selected macros restrictions correctly', async () => {
+      ;[instance] = allWorkspaces.filter(e => e.elemID.name === 'workspaceWithMacros')
+      expect(instance.value.selected_macros).toHaveLength(4)
+      expect(instance.value.selected_macros[0].id).toEqual('d')
+      const restrictionIds = instance.value.selected_macros[0].restriction.ids
+      expect(restrictionIds[0].elemID.name).toEqual('groupA')
+      expect(restrictionIds[1].elemID.name).toEqual('groupB')
+      expect(restrictionIds[2].elemID.name).toEqual('groupC')
     })
     it('should do nothing if selected macros is invalid', async () => {
       ;[instance] = allWorkspaces.filter(e => e.elemID.name === 'invalidWorkspaceWithMacros')

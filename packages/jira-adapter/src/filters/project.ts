@@ -25,9 +25,10 @@ import {
   isInstanceElement,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, setPath } from '@salto-io/adapter-utils'
+// import { resolveValues, config as configUtils } from '@salto-io/adapter-components'
 import { resolveValues } from '@salto-io/adapter-components'
-
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
@@ -38,7 +39,7 @@ import { FilterCreator } from '../filter'
 import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 import { JiraConfig } from '../config/config'
-import { PROJECT_TYPE_TYPE_NAME, SERVICE_DESK } from '../constants'
+import { ASSIGNEE_TYPE_FIELD, PROJECT_TYPE_TYPE_NAME, SERVICE_DESK } from '../constants'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -53,6 +54,7 @@ const PROJECT_CATEGORY_FIELD = 'projectCategory'
 const CUSTOMER_PERMISSIONS = 'customerPermissions'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 const changeProjectPath = (instance: InstanceElement, projectTypesKeysToFormatedKeys: Record<string, string>): void => {
   if (instance.path === undefined) {
@@ -241,6 +243,15 @@ const deleteFieldConfigurationScheme = async (change: Change<InstanceElement>, c
   })
 }
 
+const setAssigneeTypeField = async (instance: InstanceElement, client: JiraClient): Promise<void> => {
+  const response = await client.get({ url: `/rest/api/3/project/${instance.value.key}` })
+  setPath(
+    instance,
+    instance.elemID.createNestedID(ASSIGNEE_TYPE_FIELD),
+    values.isPlainRecord(response.data) ? response.data[ASSIGNEE_TYPE_FIELD] : undefined,
+  )
+}
+
 /**
  * Restructures Project type to fit the deployment endpoint
  */
@@ -269,10 +280,10 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         .map(inst => [inst.value.key, inst.value.formattedKey]),
     )
 
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
-      .forEach(instance => {
+      .forEach(async instance => {
         instance.value.leadAccountId = client.isDataCenter ? instance.value.lead?.key : instance.value.lead?.accountId
         delete instance.value.lead
 
@@ -288,6 +299,29 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
         instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
         changeProjectPath(instance, projectTypesKeysToFormattedKeys)
+        await setAssigneeTypeField(instance, client)
+        // TODO: should we add other fields from this response?
+        // The list of fields I saw: issueTypes, versions, roles, avatarUrls, lead, properties
+
+        // const { fieldsToOmit } = configUtils.getTypeTransformationConfig(
+        //   PROJECT_TYPE_NAME,
+        //   config.apiDefinitions.types,
+        //   config.apiDefinitions.typeDefaults,
+        // )
+        // if (values.isPlainRecord(response.data)) {
+        //   instance.value = {
+        //     ..._.omit(response.data, [
+        //       ...(fieldsToOmit?.map(field => field.fieldName) ?? []),
+        //       'issueTypes',
+        //       'versions',
+        //       'roles',
+        //       'avatarUrls',
+        //       'lead',
+        //       'properties',
+        //     ]),
+        //     ...instance.value,
+        //   }
+        // }
       })
   },
 

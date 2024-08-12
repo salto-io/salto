@@ -41,8 +41,8 @@ export const disabledAuthenticatorsInMfaPolicyValidator: ChangeValidator = async
   const mfaInstances = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === MFA_POLICY_TYPE_NAME)
     .map(getChangeData)
+    .filter(({ elemID }) => elemID.typeName === MFA_POLICY_TYPE_NAME)
 
   const disabledAuthenticatorsByMfaElemID: Record<string, InstanceElement[]> = Object.fromEntries(
     await awu(mfaInstances)
@@ -50,11 +50,9 @@ export const disabledAuthenticatorsInMfaPolicyValidator: ChangeValidator = async
         const disabledAuthenticators = await awu(getAuthenticatorsFromMfaPolicy(policy))
           .map(async ({ key }) => key.getResolvedValue(elementSource))
           .filter(isInstanceElement)
+          .filter(({ value }) => value.status === INACTIVE_STATUS)
           .toArray()
-        return [
-          policy.elemID.getFullName(),
-          disabledAuthenticators.filter(({ value }) => value.status === INACTIVE_STATUS),
-        ]
+        return [policy.elemID.getFullName(), disabledAuthenticators]
       })
       .toArray(),
   )

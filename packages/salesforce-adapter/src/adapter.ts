@@ -34,7 +34,7 @@ import {
   ProgressReporter,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
+import { filter, inspectValue, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
@@ -46,7 +46,6 @@ import {
   apiName,
   Types,
   isMetadataObjectType,
-  MetadataObjectType,
   createInstanceElement,
   isCustom,
   MetadataMetaType,
@@ -418,9 +417,7 @@ export const SYSTEM_FIELDS = [
 
 export const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
 
-const getMetadataTypesFromElementsSource = async (
-  elementsSource: ReadOnlyElementsSource,
-): Promise<MetadataObjectType[]> =>
+const getMetadataTypesFromElementsSource = async (elementsSource: ReadOnlyElementsSource): Promise<TypeElement[]> =>
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
     // standard and custom objects
@@ -559,9 +556,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     ]
     const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
     const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
-    const metadataTypesPromise = withChangesDetection
-      ? getMetadataTypesFromElementsSource(this.elementsSource)
-      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metadataMetaType)
+    const metadataTypesPromise = this.fetchTypes({
+      metadataQuery,
+      withChangesDetection,
+      typeInfoPromise: metadataTypeInfosPromise,
+      knownMetadataTypes: hardCodedTypes,
+      metaType: metadataMetaType,
+    })
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
 
@@ -729,6 +730,40 @@ export default class SalesforceAdapter implements AdapterOperations {
 
   private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {
     return (await this.client.listMetadataTypes()).filter(info => metadataQuery.isTypeMatch(info.xmlName))
+  }
+
+  private async fetchTypes({
+    metadataQuery,
+    withChangesDetection,
+    typeInfoPromise,
+    knownMetadataTypes,
+    metaType,
+  }: {
+    metadataQuery: MetadataQuery
+    withChangesDetection: boolean
+    typeInfoPromise: Promise<MetadataObject[]>
+    knownMetadataTypes: TypeElement[]
+    metaType?: ObjectType
+  }): Promise<TypeElement[]> {
+    if (!withChangesDetection) {
+      return this.fetchMetadataTypes(typeInfoPromise, knownMetadataTypes, metaType)
+    }
+    const metadataTypes = await typeInfoPromise
+    const typesFromSource = (await getMetadataTypesFromElementsSource(this.elementsSource)).filter(type =>
+      metadataQuery.isTypeMatch(apiNameSync(type) ?? ''),
+    )
+    const typesFromSourceNames = new Set(typesFromSource.map(metadataType => apiNameSync(metadataType)))
+    const missingTypes = metadataTypes.filter(type => !typesFromSourceNames.has(type.xmlName))
+    if (missingTypes.length === 0) {
+      return typesFromSource
+    }
+    log.debug(
+      'Going to fetch the following metadata types in fetchWithChangesDetection: %s',
+      inspectValue(missingTypes.map(type => type.xmlName)),
+    )
+    return typesFromSource.concat(
+      await this.fetchMetadataTypes(Promise.resolve(missingTypes), knownMetadataTypes, metaType),
+    )
   }
 
   @logDuration('fetching metadata types')

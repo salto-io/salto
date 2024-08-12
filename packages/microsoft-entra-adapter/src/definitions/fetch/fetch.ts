@@ -402,6 +402,9 @@ const graphV1Customizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/oauth2PermissionGrants',
+          queryArgs: {
+            $filter: "consentType eq 'AllPrincipals'",
+          },
         },
         transformation: DEFAULT_TRANSFORMATION,
       },
@@ -413,7 +416,6 @@ const graphV1Customizations: FetchCustomizations = {
           parts: [
             { fieldName: 'clientId', isReference: true },
             { fieldName: 'resourceId', isReference: true },
-            { fieldName: 'consentType' },
           ],
         },
       },

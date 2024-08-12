@@ -224,7 +224,7 @@ export const axiosConnection = <TCredentials>({
       if (e.response?.status === 401 || e instanceof UnauthorizedError) {
         throw new UnauthorizedError('Unauthorized - update credentials and try again')
       }
-      throw new Error(`Login failed with error: ${e}`)
+      throw new Error(`Login failed with error: ${e.message ?? e}`)
     }
   }
 

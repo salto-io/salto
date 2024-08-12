@@ -255,6 +255,38 @@ describe('projectFilter', () => {
       await filter.onFetch([type, instance, SoftwareTypeInstance, JsmTypeInstance])
       expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Other', 'instance', 'instance'])
     })
+    it('should add assigneeType field when exists in the response', async () => {
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          assigneeType: 'PROJECT_LEAD',
+        },
+      })
+      await filter.onFetch([type, instance])
+      expect(instance.value.assigneeType).toEqual('PROJECT_LEAD')
+    })
+    it('should not add assigneeType field when not exists in the response', async () => {
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          otherField: 'otherValue',
+        },
+      })
+      await filter.onFetch([type, instance])
+      expect(instance.value.assigneeType).toBeUndefined()
+    })
+    it('should not add assigneeType field when response is not a single element', async () => {
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: [
+          {
+            assigneeType: 'PROJECT_LEAD',
+          },
+        ],
+      })
+      await filter.onFetch([type, instance])
+      expect(instance.value.assigneeType).toBeUndefined()
+    })
   })
 
   describe('When deploying a modification change', () => {

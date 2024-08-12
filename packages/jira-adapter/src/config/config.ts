@@ -266,6 +266,7 @@ export type ChangeValidatorName =
   | 'fieldContextOptions'
   | 'uniqueFields'
   | 'assetsObjectFieldConfigurationAql'
+  | 'projectAssigneeType'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -331,6 +332,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
     uniqueFields: { refType: BuiltinTypes.BOOLEAN },
     assetsObjectFieldConfigurationAql: { refType: BuiltinTypes.BOOLEAN },
+    projectAssigneeType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

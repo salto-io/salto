@@ -301,7 +301,7 @@ const sortSelectedMacros = (selectedMacros: { restriction?: MacroRestriction }[]
 
 const orderSelectedMacros = (workspace: InstanceElement): void => {
   const selectedMacros = workspace.value.selected_macros
-  if (_.isArray(selectedMacros) && selectedMacros.every(macro => macro.id !== undefined)) {
+  if (_.isArray(selectedMacros) && selectedMacros.every(macro => _.isPlainObject(macro) && macro.id !== undefined)) {
     sortSelectedMacros(selectedMacros)
     workspace.value.selected_macros = _.sortBy(selectedMacros, macro => {
       if (isReferenceExpression(macro.id)) {

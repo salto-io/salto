@@ -606,6 +606,13 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromField: 'authenticationType',
+              // Exclude federated domains, as this api call does not support them
+              match: ['Managed'],
+            },
+          ],
         },
       },
       mergeAndTransform: {

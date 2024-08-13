@@ -167,6 +167,7 @@ export const mockRunTestResult = (params?: PartialRunTestResult): RunTestsResult
 type GetDeployResultParams = {
   id?: string
   success?: boolean
+  canceled?: boolean
   componentSuccess?: Partial<DeployMessage>[]
   componentFailure?: Partial<DeployMessage>[]
   runTestResult?: PartialRunTestResult
@@ -184,6 +185,7 @@ type MockDeployResultParams = GetDeployResultParams & Required<Pick<GetDeployRes
 export const mockDeployResultComplete = ({
   id,
   success = true,
+  canceled = false,
   errorMessage,
   componentSuccess = [],
   componentFailure = [],
@@ -194,34 +196,40 @@ export const mockDeployResultComplete = ({
   testCompleted = 0,
   testErrors = 0,
   retrieveResult,
-}: MockDeployResultParams): DeployResult => ({
-  id,
-  checkOnly,
-  completedDate: '2020-05-01T14:31:36.000Z',
-  createdDate: '2020-05-01T14:21:36.000Z',
-  done: true,
-  details: [
-    {
-      componentFailures: componentFailure.map(mockDeployMessage),
-      componentSuccesses: componentSuccess.map(mockDeployMessage),
-      runTestResult: mockRunTestResult(runTestResult),
-      retrieveResult,
-    },
-  ],
-  ignoreWarnings,
-  lastModifiedDate: '2020-05-01T14:31:36.000Z',
-  numberComponentErrors: componentFailure.length,
-  numberComponentsDeployed: componentSuccess.length,
-  numberComponentsTotal: componentFailure.length + componentSuccess.length,
-  numberTestErrors: testErrors,
-  numberTestsCompleted: testCompleted,
-  numberTestsTotal: testCompleted + testErrors,
-  rollbackOnError,
-  startDate: '2020-05-01T14:21:36.000Z',
-  status: success ? 'Succeeded' : 'Failed',
-  success,
-  errorMessage,
-})
+}: MockDeployResultParams): DeployResult => {
+  let status = success ? 'Succeeded' : 'Failed'
+  if (canceled) {
+    status = 'Canceled'
+  }
+  return {
+    id,
+    checkOnly,
+    completedDate: '2020-05-01T14:31:36.000Z',
+    createdDate: '2020-05-01T14:21:36.000Z',
+    done: true,
+    details: [
+      {
+        componentFailures: componentFailure.map(mockDeployMessage),
+        componentSuccesses: componentSuccess.map(mockDeployMessage),
+        runTestResult: mockRunTestResult(runTestResult),
+        retrieveResult,
+      },
+    ],
+    ignoreWarnings,
+    lastModifiedDate: '2020-05-01T14:31:36.000Z',
+    numberComponentErrors: componentFailure.length,
+    numberComponentsDeployed: componentSuccess.length,
+    numberComponentsTotal: componentFailure.length + componentSuccess.length,
+    numberTestErrors: testErrors,
+    numberTestsCompleted: testCompleted,
+    numberTestsTotal: testCompleted + testErrors,
+    rollbackOnError,
+    startDate: '2020-05-01T14:21:36.000Z',
+    status,
+    success,
+    errorMessage,
+  }
+}
 
 export const mockDeployResultInProgress = ({
   id,

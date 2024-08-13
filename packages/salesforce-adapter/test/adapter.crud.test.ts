@@ -1160,6 +1160,49 @@ describe('SalesforceAdapter CRUD', () => {
         })
       })
     })
+
+    describe('when the deploy gets canceled', () => {
+      let element: InstanceElement
+      let deployChangeGroup: ChangeGroup
+      let result: DeployResult
+      beforeEach(async () => {})
+      beforeEach(async () => {
+        element = createInstanceElement(
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'SuccessElement',
+          },
+          mockTypes.ApexClass,
+        )
+
+        deployChangeGroup = {
+          groupID: 'ChangeGroup',
+          changes: [toChange({ after: element })],
+        }
+        const deployResultParams = {
+          success: false,
+          canceled: true,
+        }
+        connection.metadata.deploy.mockReturnValue(
+          mockDeployResult({
+            ...deployResultParams,
+            rollbackOnError: true,
+          }),
+        )
+        result = await adapter.deploy({
+          changeGroup: deployChangeGroup,
+          progressReporter: nullProgressReporter,
+        })
+      })
+      it('Should return the correct error and no applied changes', () => {
+        expect(result.errors).toEqual([
+          {
+            severity: 'Error',
+            message: 'Deployment/Validation was canceled.',
+          },
+        ])
+        expect(result.appliedChanges).toBeEmpty()
+      })
+    })
   })
 
   describe('Remove operation', () => {

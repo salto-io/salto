@@ -247,6 +247,18 @@ const processDeployResponse = (
     return 'Warning'
   }
 
+  const canceledDeployError = (): SaltoError => ({
+    message: 'Deployment/Validation was canceled.',
+    severity: 'Error',
+  })
+
+  if (result.status === 'Canceled') {
+    return {
+      successfulFullNames: [],
+      errors: [canceledDeployError()],
+    }
+  }
+
   const allFailureMessages = makeArray(result.details).flatMap(detail => makeArray(detail.componentFailures))
 
   const allSuccessMessages = makeArray(result.details).flatMap(detail => makeArray(detail.componentSuccesses))

@@ -57,14 +57,14 @@ export const optionsType = createMatchingObjectType<ConfigOptionsType>({
 ### Deploy
 Deploy recipes and move changes between environments.
         
-Connecting to additional applications is not available in this mode.
+This mode does not support connecting additional applications to Workato.
         
 ### Impact Analysis
 Connect Workato to additional applications such as Salesforce, Netsuite, Jira, and more to analyze dependencies between your Workato recipes and these applications.
         
 [Learn more about this feature](https://help.salto.io/en/articles/6933980-salto-for-workato-overview#h_c14c3e1e79).
         
-Deploying changes is not available in this mode.`,
+This mode does not support deploying changes.`,
       },
     },
   },

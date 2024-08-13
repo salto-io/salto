@@ -752,6 +752,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/idps/{id}', method: 'put' },
+                transformation: { omit: ['status'] },
               },
               condition: simpleStatus.modificationCondition,
             },

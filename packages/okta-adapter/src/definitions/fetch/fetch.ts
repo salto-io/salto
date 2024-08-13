@@ -1104,7 +1104,7 @@ const createCustomizations = ({
     },
   },
   [JWK_TYPE_NAME]: {
-    requests: [{ endpoint: { path: '/api/v1/idps/credentials/keys' }, transformation: { root: '.' } }],
+    requests: [{ endpoint: { path: '/api/v1/idps/credentials/keys' } }],
     resource: { directFetch: true, serviceIDFields: ['kid'] },
     element: {
       topLevel: {

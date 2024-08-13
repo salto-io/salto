@@ -141,23 +141,21 @@ export const getExcludeJWKConfigSuggestion = (
 ): definitions.ConfigChangeSuggestion | undefined => {
   const typesToExclude = userConfig?.value?.fetch?.exclude
   const typesToInclude = userConfig?.value?.fetch?.include
-  if (!Array.isArray(typesToExclude)) {
+  if (!Array.isArray(typesToExclude) || !Array.isArray(typesToInclude)) {
     log.error(
-      'failed creating config suggestion to exclude JsonWebKey type, expected fetch.exclude to be an array, but instead got %s',
-      safeJsonStringify(typesToExclude),
+      'failed creating config suggestion to exclude JsonWebKey type, expected fetch.exclude and fetch.include to be an array, but instead got %s',
+      safeJsonStringify({ exclude: typesToExclude, include: typesToInclude }),
     )
     return undefined
   }
-  if (Array.isArray(typesToInclude)) {
-    const isJWKExcluded = typesToExclude.find(fetchEnty => fetchEnty?.type === JWK_TYPE_NAME)
-    const isJWKIncluded = typesToInclude.find(fetchEnty => fetchEnty?.type === JWK_TYPE_NAME)
-    if (!isJWKExcluded && !isJWKIncluded) {
-      return {
-        type: 'typeToExclude',
-        value: JWK_TYPE_NAME,
-        reason:
-          'JsonWebKey type is excluded by default. To include it, explicitly add "JsonWebKey" type into the include list.',
-      }
+  const isJWKExcluded = typesToExclude.find(fetchEnty => fetchEnty?.type === JWK_TYPE_NAME)
+  const isJWKIncluded = typesToInclude.find(fetchEnty => fetchEnty?.type === JWK_TYPE_NAME)
+  if (!isJWKExcluded && !isJWKIncluded) {
+    return {
+      type: 'typeToExclude',
+      value: JWK_TYPE_NAME,
+      reason:
+        'JsonWebKey type is excluded by default. To include it, explicitly add "JsonWebKey" type into the include list.',
     }
   }
   return undefined

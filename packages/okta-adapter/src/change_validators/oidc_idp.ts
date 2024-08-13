@@ -29,15 +29,16 @@ const OIDC_IDP_TYPE = 'OIDC'
 const IDP_PROTOCOL_TYPE_PATH = ['protocol', 'type']
 const AUTH_METHOD_PATH = ['protocol', 'credentials', 'client', 'token_endpoint_auth_method']
 
+const isOIDCIdentityProvider = (instance: InstanceElement): boolean =>
+  instance.elemID.typeName === IDENTITY_PROVIDER_TYPE_NAME &&
+  _.get(instance.value, IDP_PROTOCOL_TYPE_PATH) === OIDC_IDP_TYPE
+
 const isModificationOfOIDCIdentityProvider = (change: Change<InstanceElement>): boolean =>
-  isModificationChange(change) &&
-  getChangeData(change).elemID.typeName === IDENTITY_PROVIDER_TYPE_NAME &&
-  _.get(getChangeData(change).value, IDP_PROTOCOL_TYPE_PATH) === OIDC_IDP_TYPE
+  isModificationChange(change) && isOIDCIdentityProvider(getChangeData(change))
 
 const isAdditionOfClientOIDCIdentityProvider = (change: Change<InstanceElement>): boolean =>
   isAdditionChange(change) &&
-  getChangeData(change).elemID.typeName === IDENTITY_PROVIDER_TYPE_NAME &&
-  _.get(getChangeData(change).value, IDP_PROTOCOL_TYPE_PATH) === OIDC_IDP_TYPE &&
+  isOIDCIdentityProvider(getChangeData(change)) &&
   _.get(getChangeData(change).value, AUTH_METHOD_PATH) !== 'private_key_jwt'
 
 /**

@@ -253,7 +253,7 @@ const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
     .value()
 
 const isStandardFieldPermissionsPath = (path: string): boolean =>
-  path.startsWith('fieldPermissions') && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
+  path.startsWith(section.FIELD_PERMISSIONS) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
 
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>

@@ -291,7 +291,7 @@ const sortSelectedMacros = (selectedMacros: { restriction?: MacroRestriction }[]
     if (macro.restriction !== undefined && _.isObject(macro.restriction) && 'ids' in macro.restriction) {
       const restrictionIds = _.get(macro, 'restriction.ids')
       if (_.isArray(restrictionIds) && restrictionIds.every(isReferenceExpression)) {
-        macro.restriction.ids = _.sortBy(restrictionIds, 'value.value.name')
+        macro.restriction.ids = _.sortBy(restrictionIds, ref => ref.elemID.getFullName())
       } else {
         log.warn(`could not sort restriction ids for restriction ${macro.restriction}`)
       }

@@ -42,7 +42,7 @@ describe('projectAssigneeTypeValidator', () => {
       elemID: projectInstance.elemID,
       severity: 'Error',
       message: 'Invalid assignee type',
-      detailedMessage: "Project assignee type must be one of ['PROJECT_LEAD', 'UNASSIGNED'].",
+      detailedMessage: "Project assignee type must be one of ['PROJECT_LEAD', 'UNASSIGNED'], got INVALID",
     })
   })
 })

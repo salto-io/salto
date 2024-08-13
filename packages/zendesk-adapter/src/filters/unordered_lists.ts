@@ -231,7 +231,7 @@ const sortRestrictedBrands = (formInstances: InstanceElement[]): void => {
   formInstances.forEach(form => {
     const restrictedBrands = form.value.restricted_brand_ids
     if (_.isArray(restrictedBrands) && restrictedBrands.every(isReferenceExpression)) {
-      form.value.restricted_brand_ids = _.sortBy(restrictedBrands, brand => brand.value.value.name)
+      form.value.restricted_brand_ids = _.sortBy(restrictedBrands, brand => brand.elemID.getFullName())
     } else {
       log.warn(`could not sort restricted brands for ${form.elemID.getFullName()}`)
     }

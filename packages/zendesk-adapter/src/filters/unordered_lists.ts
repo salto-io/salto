@@ -22,7 +22,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
@@ -234,6 +234,7 @@ const sortRestrictedBrands = (formInstances: InstanceElement[]): void => {
       form.value.restricted_brand_ids = _.sortBy(restrictedBrands, brand => brand.elemID.getFullName())
     } else {
       log.warn(`could not sort restricted brands for ${form.elemID.getFullName()}`)
+      log.trace('restricted brands are: %s', inspectValue(restrictedBrands, { maxArrayLength: null }))
     }
   })
 }

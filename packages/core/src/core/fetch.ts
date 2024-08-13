@@ -263,6 +263,10 @@ const autoMergeChange: ChangeTransformFunction = async change => {
     return [merged !== undefined ? toMergedChange(change, merged) : change]
   }
   if (_.isArray(current) && _.isArray(incoming) && isTypeOfOrUndefined(base, _.isArray)) {
+    if (getCoreFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
+      log.debug('skipping list auto merge since the autoMergeListsDisabled core flag is true')
+      return [change]
+    }
     const merged = mergeLists(changeId, { current, base, incoming })
     return [merged !== undefined ? toMergedChange(change, merged) : change]
   }
@@ -302,6 +306,11 @@ const toListModificationChange = ({
   serviceChanges: types.NonEmptyArray<DetailedChangeWithBaseChange>
   pendingChanges: DetailedChangeWithBaseChange[]
 }): FetchChange | undefined => {
+  if (getCoreFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
+    log.debug('skip creating list modification change since the autoMergeListsDisabled core flag is true')
+    return undefined
+  }
+
   if (!types.isNonEmptyArray(pendingChanges)) {
     return undefined
   }

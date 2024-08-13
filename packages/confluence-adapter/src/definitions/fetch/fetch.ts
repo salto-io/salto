@@ -332,6 +332,7 @@ const createCustomizations = (
         },
         transformation: {
           root: 'results',
+          adjust: createAdjustUserReferences(BLOG_POST_TYPE_NAME),
         },
       },
     ],

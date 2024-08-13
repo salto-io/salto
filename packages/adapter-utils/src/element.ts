@@ -22,6 +22,8 @@ import {
   PrimitiveTypes,
   TypeElement,
   TypeReference,
+  Element,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 
@@ -63,3 +65,6 @@ type ObjectTypeCtorForType<T> = Omit<ConstructorParameters<typeof ObjectType>[0]
  * Create an object type with fields that match a typescript type
  */
 export const createMatchingObjectType = <T>(params: ObjectTypeCtorForType<T>): ObjectType => new ObjectType(params)
+
+export const getElementPrettyName = (element: Element): string =>
+  element.annotations[CORE_ANNOTATIONS.ALIAS] ?? element.elemID.name

@@ -25,7 +25,7 @@ import {
   WorkflowV2TransitionRule,
   isWorkflowV2Instance,
 } from '../filters/workflowV2/types'
-import { getExtensionIdFromWorkflowTransitionRule } from '../common/workflow/transition_rules'
+import { getExtensionIdFromWorkflowTransitionRule } from '../common/workflow/transitions'
 import { SeverityLevel } from '../../../adapter-api/src/error'
 
 const { awu } = collections.asynciterable

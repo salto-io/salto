@@ -42,6 +42,14 @@ export const createrequestTypeValues = (name: string, allElements: Element[]): V
     issueLayoutConfig: {
       items: [
         {
+          type: 'PANEL',
+          sectionType: 'PRIMARY',
+          key: 'SLA_PANEL',
+          data: {
+            name: 'SLAs',
+          },
+        },
+        {
           type: 'FIELD',
           sectionType: 'PRIMARY',
           key: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),

@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-import { Value } from '@salto-io/adapter-api'
-import { WorkflowV2TransitionRule } from '../../filters/workflowV2/types'
+import { references as referenceUtils } from '@salto-io/adapter-components'
+import { ReferenceExpression, Value } from '@salto-io/adapter-api'
+import { WorkflowV2Instance, WorkflowV2TransitionRule } from '../../filters/workflowV2/types'
+import { WorkflowV1Instance } from '../../filters/workflow/types'
 
 export enum RuleType {
   Connect = 'connect',
@@ -73,4 +75,35 @@ export const getExtensionIdFromWorkflowTransitionRule = (
     default:
       return undefined
   }
+}
+
+export const getTransitionIdToKeyMap = (
+  workflowInstance: WorkflowV1Instance | WorkflowV2Instance,
+): Map<string, string> =>
+  new Map(
+    Object.entries(workflowInstance.value.transitions)
+      .map(([key, transition]) => [transition.id, key])
+      .filter((entry): entry is [string, string] => entry[0] !== undefined),
+  )
+
+export const createTransitionReference = ({
+  transitionKey,
+  transitionId,
+  enableMissingReferences,
+  workflowInstance,
+}: {
+  transitionKey: string | undefined
+  transitionId: string
+  enableMissingReferences: boolean
+  workflowInstance: WorkflowV1Instance | WorkflowV2Instance
+}): ReferenceExpression | string => {
+  const missingValue = enableMissingReferences
+    ? referenceUtils.createMissingValueReference(workflowInstance.elemID.createNestedID('transitions'), transitionId)
+    : transitionId
+  return transitionKey === undefined
+    ? missingValue
+    : new ReferenceExpression(
+        workflowInstance.elemID.createNestedID('transitions', transitionKey),
+        workflowInstance.value.transitions[transitionKey],
+      )
 }

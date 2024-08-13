@@ -20,12 +20,11 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceElement,
-  ReferenceExpression,
   Value,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { references as referenceUtils, resolveValues, restoreValues } from '@salto-io/adapter-components'
+import { resolveValues, restoreValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
 import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../constants'
 import { getLookUpName } from '../../../reference_mapping'
@@ -36,15 +35,9 @@ import {
   walkOverTransitionIdsV2,
 } from '../../workflow/transition_structure'
 import { WorkflowV2Instance, isWorkflowInstance, isWorkflowV2Instance } from '../../workflowV2/types'
+import { getTransitionIdToKeyMap, createTransitionReference } from '../../../common/workflow/transitions'
 
 const { awu } = collections.asynciterable
-
-const getTransitionIdToKeyMap = (workflowInstance: WorkflowV1Instance | WorkflowV2Instance): Map<string, string> =>
-  new Map(
-    Object.entries(workflowInstance.value.transitions)
-      .map(([key, transition]) => [transition.id, key])
-      .filter((entry): entry is [string, string] => entry[0] !== undefined),
-  )
 
 const WALK_OVER_TRANSITION_IDS_FUNCS: Record<string, (transition: Value, func: (scriptRunner: Value) => void) => void> =
   {
@@ -59,20 +52,12 @@ const addTransitionReferences = (
   const transitionIdToKey = getTransitionIdToKeyMap(workflowInstance)
   Object.values(workflowInstance.value.transitions).forEach(transition => {
     WALK_OVER_TRANSITION_IDS_FUNCS[workflowInstance.elemID.typeName](transition, scriptRunner => {
-      const transitionKey = transitionIdToKey.get(scriptRunner.transitionId)
-      const missingValue = enableMissingReferences
-        ? referenceUtils.createMissingValueReference(
-            workflowInstance.elemID.createNestedID('transitions'),
-            scriptRunner.transitionId,
-          )
-        : scriptRunner.transitionId
-      scriptRunner.transitionId =
-        transitionKey === undefined
-          ? missingValue
-          : new ReferenceExpression(
-              workflowInstance.elemID.createNestedID('transitions', transitionKey),
-              workflowInstance.value.transitions[transitionKey],
-            )
+      scriptRunner.transitionId = createTransitionReference({
+        workflowInstance,
+        transitionId: scriptRunner.transitionId,
+        enableMissingReferences,
+        transitionKey: transitionIdToKey.get(scriptRunner.transitionId),
+      })
     })
   })
 }

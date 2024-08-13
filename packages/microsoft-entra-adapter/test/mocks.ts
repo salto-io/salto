@@ -17,7 +17,6 @@
 import {
   AdditionChange,
   CORE_ANNOTATIONS,
-  Change,
   ChangeGroup,
   ElemID,
   InstanceElement,
@@ -25,7 +24,6 @@ import {
   ObjectType,
   ReferenceExpression,
   RemovalChange,
-  toChange,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -72,14 +70,6 @@ export const removalChangeMock: RemovalChange<InstanceElement> = {
     before: instanceElementMock,
   },
 }
-
-export const objectTypeElementMock = new ObjectType({
-  elemID: new ElemID(ADAPTER_NAME, 'testType'),
-})
-
-export const objectTypeChangeMock: Change<ObjectType> = toChange({
-  after: objectTypeElementMock,
-})
 
 export const changeGroupMock: ChangeGroup = {
   groupID: 'testGroup',

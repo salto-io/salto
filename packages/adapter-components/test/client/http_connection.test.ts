@@ -90,7 +90,7 @@ describe('client_http_connection', () => {
               }),
           },
         ),
-      ).rejects.toThrow(new Error('Login failed with error: Error: aaa'))
+      ).rejects.toThrow(new Error('Login failed with error: aaa'))
     })
   })
   describe('createRetryOptions', () => {

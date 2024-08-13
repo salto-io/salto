@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-import { definitions } from '@salto-io/adapter-components'
-import { Options } from '../types'
+import { BLOG_POST_TYPE_NAME } from '../../constants'
+import { createAdjustFunctionFromMultipleFunctions } from './generic'
+import { createAdjustUserReferencesReverse } from './users'
+import { increaseVersion } from './version'
 
-export type FetchApiDefinition = definitions.fetch.InstanceFetchApiDefinitions<Options>
-export type FetchCustomizations = Record<string, FetchApiDefinition>
-export type ElementFieldCustomization = definitions.fetch.ElementFieldCustomization
-export type FieldIDPart = definitions.fetch.FieldIDPart
-export type AdjustFunctionSingle = definitions.AdjustFunctionSingle
+export const adjustUserReferencesOnBlogPostReverse = createAdjustUserReferencesReverse(BLOG_POST_TYPE_NAME)
+
+/**
+ * AdjustFunction that runs all blog_post modification adjust functions.
+ */
+export const adjustBlogPostOnModification = createAdjustFunctionFromMultipleFunctions([
+  increaseVersion,
+  adjustUserReferencesOnBlogPostReverse,
+])

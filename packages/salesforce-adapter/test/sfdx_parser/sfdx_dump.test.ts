@@ -221,8 +221,6 @@ describe('dumpElementsToFolder', () => {
     <type>Text</type>
     <length>80</length>
     <required>false</required>
-    <trackHistory>false</trackHistory>
-    <trackFeedHistory>false</trackFeedHistory>
 </CustomField>
 `)
       })

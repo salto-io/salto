@@ -19,12 +19,16 @@ import { isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   addSpaceKey,
+  adjustBlogPostOnModification,
   adjustPageOnModification,
+  adjustUserReferencesOnBlogPostReverse,
+  adjustUserReferencesOnPageReverse,
   createAdjustUserReferencesReverse,
   homepageAdditionToModification,
   putHomepageIdInAdditionContext,
   shouldDeleteRestrictionOnPageModification,
   shouldNotModifyRestrictionOnPageAddition,
+  spaceChangeGroupWithItsHomepage,
 } from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
@@ -37,7 +41,6 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { spaceChangeGroupWithItsHomepage } from '../utils/space'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
@@ -91,7 +94,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['restriction', 'version'],
-                  adjust: createAdjustUserReferencesReverse(PAGE_TYPE_NAME),
+                  adjust: adjustUserReferencesOnPageReverse,
                 },
               },
             },
@@ -185,6 +188,60 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/wiki/api/v2/pages/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [BLOG_POST_TYPE_NAME]: {
+      toActionNames: homepageAdditionToModification,
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['version'],
+                  adjust: adjustUserReferencesOnBlogPostReverse,
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: {
+                transformForCheck: {
+                  omit: ['version'],
+                },
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  adjust: adjustBlogPostOnModification,
+                },
+              },
+              copyFromResponse: {
+                additional: {
+                  pick: ['version.number'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts/{id}',
                   method: 'delete',
                 },
               },

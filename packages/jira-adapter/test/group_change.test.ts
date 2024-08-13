@@ -29,9 +29,11 @@ import {
   JIRA,
   SECURITY_LEVEL_TYPE,
   SECURITY_SCHEME_TYPE,
+  SLA_TYPE_NAME,
   WORKFLOW_TYPE_NAME,
 } from '../src/constants'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../src/filters/fields/constants'
+import { createEmptyType } from './utils'
 
 describe('group change', () => {
   let workflowType: ObjectType
@@ -338,5 +340,29 @@ describe('group change', () => {
         ]),
       ),
     ).rejects.toThrow()
+  })
+  it('should group addition of slas by project', async () => {
+    const projectInstance = new InstanceElement('project1', createEmptyType('project'), { id: 1 })
+    const slaInstance = new InstanceElement('sla1', createEmptyType(SLA_TYPE_NAME), { id: 11 }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
+    })
+    const sla2Instance = new InstanceElement('sla2', createEmptyType(SLA_TYPE_NAME), { id: 12 }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
+    })
+    const slaAdditionChange = toChange({ after: slaInstance })
+    const slaAdditionChange2 = toChange({ after: sla2Instance })
+
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [slaInstance.elemID.getFullName(), slaAdditionChange],
+          [sla2Instance.elemID.getFullName(), slaAdditionChange2],
+        ]),
+      )
+    ).changeGroupIdMap
+
+    expect(changeGroupIds.get(slaInstance.elemID.getFullName())).toEqual(
+      'sla addition of jira.project.instance.project1',
+    )
   })
 })

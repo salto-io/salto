@@ -132,10 +132,7 @@ describe('deploy array fields filter', () => {
         },
       },
     }
-    filter = deployArrayFieldsFilterCreator({
-      convertError: (_elemID, err) => err,
-      ...filterParams,
-    })({
+    filter = deployArrayFieldsFilterCreator(filterParams)({
       definitions: mockDefinitions,
       elementSource: buildElementsSourceFromElements([]),
       config: {},
@@ -149,10 +146,7 @@ describe('deploy array fields filter', () => {
 
   it('should return SaltoError if the deploy definitions are missing', async () => {
     const res = await (
-      deployArrayFieldsFilterCreator({
-        convertError: (_elemID, err) => err,
-        ...filterParams,
-      })({
+      deployArrayFieldsFilterCreator(filterParams)({
         definitions: {
           ...mockDefinitions,
           deploy: undefined,

@@ -17,9 +17,9 @@
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { ODATA_TYPE_FIELD, SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME } from '../../../constants'
-import { AdjustFunction } from '../types'
+import { AdjustFunctionSingle } from '../types'
 
-export const adjustEntitiesWithExpandedMembers: AdjustFunction = async ({ value, typeName }) => {
+export const adjustEntitiesWithExpandedMembers: AdjustFunctionSingle = async ({ value, typeName }) => {
   validatePlainObject(value, typeName)
   const members = _.get(value, 'members', [])
   validateArray(members, `${typeName} members`)

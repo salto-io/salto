@@ -489,8 +489,8 @@ describe('historyTracking', () => {
             await filter.preDeploy(changes)
             field = getChangeData(changes[0])
           })
-          it("should add 'trackHistory=false'", async () => {
-            expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, false)
+          it('should not set the trackHistory annotation on the fields', async () => {
+            expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY)
           })
         })
       })

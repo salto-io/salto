@@ -49,5 +49,25 @@ describe('fetch_criteria', () => {
       expect(fetchCriteria.type({ instance, value: '.ype' })).toBeTruthy()
       expect(fetchCriteria.type({ instance, value: 'ype' })).toBeFalsy()
     })
+    it('should not match if there is no schema field', () => {
+      const instance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
+        otherField: {
+          type: 'type',
+        },
+      })
+
+      expect(fetchCriteria.type({ instance, value: '.ype' })).toBeFalsy()
+      expect(fetchCriteria.type({ instance, value: 'ype' })).toBeFalsy()
+    })
+  })
+  describe('state', () => {
+    it('should match state field', () => {
+      const instance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
+        state: 'state',
+      })
+
+      expect(fetchCriteria.state({ instance, value: '.tate' })).toBeTruthy()
+      expect(fetchCriteria.state({ instance, value: 'tate' })).toBeFalsy()
+    })
   })
 })

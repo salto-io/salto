@@ -294,9 +294,28 @@ const orderMacroIds = (workspace: InstanceElement): void => {
     log.trace(`macro_ids in workspace ${workspace.elemID.getFullName()} is not an array`)
   }
 }
+
+type MacroRestriction = {
+  ids?: ReferenceExpression[]
+}
+
+const sortSelectedMacros = (selectedMacros: { restriction?: MacroRestriction }[]): void =>
+  selectedMacros.forEach(macro => {
+    if (macro.restriction !== undefined && _.isObject(macro.restriction) && 'ids' in macro.restriction) {
+      const restrictionIds = _.get(macro, 'restriction.ids')
+      if (_.isArray(restrictionIds) && restrictionIds.every(isReferenceExpression)) {
+        macro.restriction.ids = _.sortBy(restrictionIds, ref => ref.elemID.getFullName())
+      } else {
+        log.warn(`could not sort restriction ids for restriction ${macro.restriction}`)
+        log.trace(`restriction ids are: ${inspectValue(restrictionIds, { maxArrayLength: null })}`)
+      }
+    }
+  })
+
 const orderSelectedMacros = (workspace: InstanceElement): void => {
   const selectedMacros = workspace.value.selected_macros
-  if (_.isArray(selectedMacros) && selectedMacros.every(macro => macro.id !== undefined)) {
+  if (_.isArray(selectedMacros) && selectedMacros.every(macro => _.isPlainObject(macro) && macro.id !== undefined)) {
+    sortSelectedMacros(selectedMacros)
     workspace.value.selected_macros = _.sortBy(selectedMacros, macro => {
       if (isReferenceExpression(macro.id)) {
         return macro.id.elemID.getFullName()

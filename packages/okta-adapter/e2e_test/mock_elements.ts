@@ -28,6 +28,7 @@ import {
   BRAND_TYPE_NAME,
   BRAND_THEME_TYPE_NAME,
   DOMAIN_TYPE_NAME,
+  IDENTITY_PROVIDER_TYPE_NAME,
 } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
@@ -221,5 +222,70 @@ export const mockDefaultValues: Record<string, Values> = {
   [DOMAIN_TYPE_NAME]: {
     certificateSourceType: 'OKTA_MANAGED',
     validationStatus: 'NOT_STARTED',
+  },
+  [IDENTITY_PROVIDER_TYPE_NAME]: {
+    issuerMode: 'DYNAMIC',
+    status: 'ACTIVE',
+    protocol: {
+      type: 'OIDC',
+      endpoints: {
+        authorization: {
+          url: 'https://idp.example.io/auth',
+          binding: 'HTTP-REDIRECT',
+        },
+        token: {
+          url: 'https://idp.example.io/token',
+          binding: 'HTTP-POST',
+        },
+        jwks: {
+          url: 'https://idp.example.io/jwk',
+          binding: 'HTTP-REDIRECT',
+        },
+      },
+      scopes: ['email', 'openid', 'profile'],
+      issuer: {
+        url: 'https://idp.example.io/login/test',
+      },
+      credentials: {
+        client: {
+          token_endpoint_auth_method: 'private_key_jwt',
+          client_id: 'dummyClientId',
+          pkce_required: true,
+        },
+        signing: {
+          algorithm: 'RS256',
+        },
+      },
+    },
+    policy: {
+      provisioning: {
+        action: 'AUTO',
+        profileMaster: false,
+        groups: {
+          action: 'NONE',
+        },
+        conditions: {
+          deprovisioned: {
+            action: 'NONE',
+          },
+          suspended: {
+            action: 'NONE',
+          },
+        },
+      },
+      accountLink: {
+        action: 'DISABLED',
+      },
+      subject: {
+        userNameTemplate: {
+          template: 'idpuser.email',
+        },
+        filter: '',
+        matchType: 'USERNAME',
+        matchAttribute: '',
+      },
+      maxClockSkew: 0,
+    },
+    type: 'OIDC',
   },
 }

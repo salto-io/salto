@@ -44,6 +44,8 @@ import {
   AUTHORIZATION_POLICY,
   APP_LOGO_TYPE_NAME,
   NETWORK_ZONE_TYPE_NAME,
+  IDENTITY_PROVIDER_TYPE_NAME,
+  JWK_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -726,6 +728,83 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/users/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [IDENTITY_PROVIDER_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps', method: 'post' },
+                transformation: { omit: ['status'] },
+              },
+              copyFromResponse: {
+                toSharedContext: simpleStatus.toSharedContext,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/{id}', method: 'put' },
+              },
+              condition: simpleStatus.modificationCondition,
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/{id}', method: 'delete' },
+              },
+            },
+          ],
+          activate: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/{id}/lifecycle/activate', method: 'post' },
+              },
+              condition: {
+                custom: simpleStatus.activationCondition,
+              },
+            },
+          ],
+          deactivate: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/{id}/lifecycle/deactivate', method: 'post' },
+              },
+              condition: {
+                custom: simpleStatus.deactivationCondition,
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: simpleStatus.toActionNames,
+      actionDependencies: simpleStatus.actionDependencies,
+    },
+    [JWK_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/credentials/keys', method: 'post' },
+                transformation: {
+                  pick: ['x5c'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/credentials/keys/{kid}', method: 'delete' },
               },
             },
           ],

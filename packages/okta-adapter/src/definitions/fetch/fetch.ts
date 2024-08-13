@@ -31,6 +31,7 @@ import {
   AUTHENTICATOR_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
+  JWK_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
@@ -1102,6 +1103,21 @@ const createCustomizations = ({
       },
     },
   },
+  [JWK_TYPE_NAME]: {
+    requests: [{ endpoint: { path: '/api/v1/idps/credentials/keys' }, transformation: { root: '.' } }],
+    resource: { directFetch: true, serviceIDFields: ['kid'] },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        // hashed representation of the key
+        elemID: { parts: [{ fieldName: naclCase('x5t#S256') }] },
+      },
+      fieldCustomizations: {
+        kid: { hide: true },
+        expiresAt: { omit: true },
+      },
+    },
+  },
   // singleton types
   OrgSetting: {
     requests: [{ endpoint: { path: '/api/v1/org' }, transformation: { root: '.' } }],
@@ -1193,9 +1209,18 @@ const createCustomizations = ({
       },
     },
   },
-  Protocol: {
+  IdentityProviderCredentialsClient: {
     element: {
-      fieldCustomizations: { credentials: { omit: true } },
+      fieldCustomizations: {
+        client_secret: { omit: true },
+      },
+    },
+  },
+  IdentityProviderCredentialsSigning: {
+    element: {
+      fieldCustomizations: {
+        kid: { omit: true },
+      },
     },
   },
   AuthenticatorProviderConfiguration: {

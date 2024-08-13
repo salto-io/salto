@@ -36,12 +36,13 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   USER_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
+  JWK_TYPE_NAME,
 } from './constants'
 import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
 
-type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId'
+type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId' | 'kid'
 type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -57,6 +58,11 @@ const OktaReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => ref.value.value.mappingRuleId,
     lookup: val => val,
     lookupIndexName: 'mappingRuleId',
+  },
+  kid: {
+    serialize: ({ ref }) => ref.value.value.kid,
+    lookup: val => val,
+    lookupIndexName: 'kid',
   },
 }
 
@@ -280,6 +286,11 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     src: { field: 'assignments', parentTypes: ['ProvisioningGroups'] },
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'kid', parentTypes: ['IdentityProviderCredentialsTrust'] },
+    serializationStrategy: 'kid',
+    target: { type: JWK_TYPE_NAME },
   },
 ]
 

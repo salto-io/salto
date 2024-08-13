@@ -46,7 +46,7 @@ describe('assetsObjectFieldConfigurationAql', () => {
     )
   })
 
-  it('should return warning for AQL with placeholder', async () => {
+  it('should return warning for AQL with placeholder when field parent has id', async () => {
     const result = await assetsObjectFieldConfigurationAqlValidator(client)([toChange({ after: contextInstance })])
     expect(result).toHaveLength(1)
     expect(result[0]).toEqual({
@@ -60,6 +60,32 @@ describe('assetsObjectFieldConfigurationAql', () => {
           title: 'Edit AQL placeholders manually',
           subActions: [
             'Go to https://ori-salto-test.atlassian.net/secure/admin/ConfigureCustomField!default.jspa?customFieldId=10000',
+            'Under the context "context", click on "Edit Assets object/s field configuration"',
+            'Inside "Filter issue scope" section, fix the placeholder with the correct value',
+            'Click "Save"',
+          ],
+        },
+      },
+    })
+  })
+  it('should return warning for AQL with placeholder when field parent has no id', async () => {
+    const fieldInstanceWithoutId = new InstanceElement('field', createEmptyType('Field'), { name: 'field2' })
+    contextInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
+      new ReferenceExpression(fieldInstanceWithoutId.elemID, fieldInstanceWithoutId),
+    ]
+    const result = await assetsObjectFieldConfigurationAqlValidator(client)([toChange({ after: contextInstance })])
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      elemID: contextInstance.elemID.createNestedID('assetsObjectFieldConfiguration', 'issueScopeFilterQuery'),
+      severity: 'Warning',
+      message: 'AQL placeholders are not supported.',
+      detailedMessage:
+        'This AQL expression will be deployed as is. You may need to manually edit the ids later to match the target environment.',
+      deployActions: {
+        postAction: {
+          title: 'Edit AQL placeholders manually',
+          subActions: [
+            'Go to field2 field configuration',
             'Under the context "context", click on "Edit Assets object/s field configuration"',
             'Inside "Filter issue scope" section, fix the placeholder with the correct value',
             'Click "Save"',
@@ -91,6 +117,11 @@ describe('assetsObjectFieldConfigurationAql', () => {
 
   it('should do nothing for context without issueScopeFilterQuery', async () => {
     contextInstance.value.assetsObjectFieldConfiguration.issueScopeFilterQuery = undefined
+    const result = await assetsObjectFieldConfigurationAqlValidator(client)([toChange({ after: contextInstance })])
+    expect(result).toHaveLength(0)
+  })
+  it('should do nothing for context with invalid parent', async () => {
+    contextInstance.annotations[CORE_ANNOTATIONS.PARENT] = []
     const result = await assetsObjectFieldConfigurationAqlValidator(client)([toChange({ after: contextInstance })])
     expect(result).toHaveLength(0)
   })

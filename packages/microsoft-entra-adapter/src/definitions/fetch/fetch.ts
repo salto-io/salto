@@ -59,6 +59,7 @@ import {
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { FetchCustomizations } from './types'
 import {
+  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
   DEFAULT_FIELD_CUSTOMIZATIONS,
   DEFAULT_ID_PARTS,
   DEFAULT_TRANSFORMATION,
@@ -114,7 +115,7 @@ const graphV1Customizations: FetchCustomizations = {
       context: {
         // We only need this dependency for the conditions under the group life cycle policy recurse definition
         dependsOn: {
-          [`${LIFE_CYCLE_POLICY_TYPE_NAME}_condition`]: {
+          [CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES]: {
             parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
             transformation: {
               root: 'managedGroupTypes',
@@ -154,7 +155,7 @@ const graphV1Customizations: FetchCustomizations = {
           },
           conditions: [
             {
-              fromContext: `${LIFE_CYCLE_POLICY_TYPE_NAME}_condition`,
+              fromContext: CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
               match: ['Selected'],
             },
           ],

@@ -93,3 +93,6 @@ export const NAME_ID_FIELD: FieldIDPart = { fieldName: 'displayName' }
 export const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
 
 export const DEFAULT_TRANSFORMATION = { root: 'value' }
+
+// Values to that are added to the context of specific calls
+export const CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES = 'lifeCyclePolicyManagedGroupTypes'

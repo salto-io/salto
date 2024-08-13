@@ -16,9 +16,6 @@
 import {
   getChangeData,
   isAdditionOrModificationChange,
-  // getChangeData,
-  // isAdditionOrModificationChange,
-  // isInstanceChange,
   isInstanceElement,
   isReferenceExpression,
   Value,

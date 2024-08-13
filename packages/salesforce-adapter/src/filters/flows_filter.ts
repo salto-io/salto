@@ -27,7 +27,7 @@ import {
   ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
-import { findObjectType } from '@salto-io/adapter-utils'
+import { findObjectType, resolveTypeShallow } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import {
@@ -167,6 +167,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       )
       return
     }
+    await resolveTypeShallow(flowDefinitionType, config.elementsSource)
     deactivatedFlowOnlyChanges
       .map(flowChange => createDeactivatedFlowDefinitionChange(flowChange, flowDefinitionType))
       .forEach(flowDefinitionChange => changes.push(flowDefinitionChange))

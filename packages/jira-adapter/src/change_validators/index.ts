@@ -75,6 +75,7 @@ import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/m
 import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
 import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../constants'
 import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
+import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator } =
   deployment.changeValidators
@@ -150,6 +151,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     jsmPermissions: jsmPermissionsValidator(config, client),
     fieldContextOptions: fieldContextOptionsValidator,
     assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator(client),
+    projectAssigneeType: projectAssigneeTypeValidator,
   }
 
   return createChangeValidator({

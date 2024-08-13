@@ -22,7 +22,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
@@ -294,6 +294,7 @@ const sortSelectedMacros = (selectedMacros: { restriction?: MacroRestriction }[]
         macro.restriction.ids = _.sortBy(restrictionIds, ref => ref.elemID.getFullName())
       } else {
         log.warn(`could not sort restriction ids for restriction ${macro.restriction}`)
+        log.trace(`restriction ids are: ${inspectValue(restrictionIds, { maxArrayLength: null })}`)
       }
     }
   })

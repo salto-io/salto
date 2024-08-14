@@ -98,7 +98,7 @@ describe('app logo filter', () => {
         }),
       })
     })
-    it('should not create AppLogo instance if file type is forbiden and should create error', async () => {
+    it('should not create AppLogo instance if file type is forbidden and should create error', async () => {
       const clonedAppInstance = appInstance.clone()
       clonedAppInstance.value[LINKS_FIELD].logo[0].type = 'image/svg+xml'
       const elements = [appType, clonedAppInstance]

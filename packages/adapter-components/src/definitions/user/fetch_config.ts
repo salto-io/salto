@@ -33,7 +33,7 @@ export type DefaultFetchCriteria = {
   name?: string
 }
 
-type FetchEntry<T extends Record<string, unknown> | undefined> = {
+export type FetchEntry<T extends Record<string, unknown> | undefined> = {
   type: string
   criteria?: T
 }

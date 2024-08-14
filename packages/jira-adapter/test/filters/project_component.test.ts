@@ -213,11 +213,21 @@ describe('projectComponentFilter', () => {
       expect(instance.value.leadUserName).toEqual('1')
       expect(instance.value.leadAccountId).toBeUndefined()
     })
+    it('should not set lead user name if undefined on pre deploy', async () => {
+      delete instance.value.leadAccountId
+      await filter.preDeploy([toChange({ after: instance })])
+      expect(Object.prototype.hasOwnProperty.call(instance.value, 'leadUserName')).toBeFalsy()
+    })
     it('should switch to leadAccountId on onDeploy', async () => {
       instance.value.leadUserName = '18'
       await filter.onDeploy([toChange({ after: instance })])
       expect(instance.value.leadAccountId).toEqual('18')
       expect(instance.value.leadUserName).toBeUndefined()
+    })
+    it('should not a create leadAccountId if undefined on onDeploy', async () => {
+      delete instance.value.leadUserName
+      await filter.onDeploy([toChange({ after: instance })])
+      expect(Object.prototype.hasOwnProperty.call(instance.value, 'leadAccountId')).toBeFalsy()
     })
     it('should not fail or change when there is no lead property', async () => {
       instance.value = {

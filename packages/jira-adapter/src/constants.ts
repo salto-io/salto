@@ -149,6 +149,7 @@ export const FIELD_TYPE = 'Field'
 export const FIELD_CONFIGURATION_SCHEME_TYPE = 'FieldConfigurationScheme'
 export const COMPONENTS = 'components'
 export const SCHEMA_VERSION = 'schemaVersion'
+export const ASSIGNEE_TYPE_FIELD = 'assigneeType'
 export const FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH = 255
 export const FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH = 1000
 export const AUTOMATION_RETRY_PERIODS = [0, 1000 * 60, 1000 * 60 * 5] // 0, 1 minute, 5 minutes, increasing exponentially

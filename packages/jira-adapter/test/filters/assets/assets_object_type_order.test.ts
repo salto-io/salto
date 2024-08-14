@@ -171,7 +171,6 @@ describe('assetsObjectTypeOrderFilter', () => {
             new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),
             new ReferenceExpression(assetsObjectTypeInstanceThree.elemID, assetsObjectTypeInstanceThree),
           ],
-          assetSchema: new ReferenceExpression(assetSchema.elemID, assetSchema),
         },
         undefined,
         {

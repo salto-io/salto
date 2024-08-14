@@ -119,6 +119,7 @@ describe('configSource', () => {
   a = 2
 }
 `,
+        timestamp: expect.anything(),
       })
     })
   })

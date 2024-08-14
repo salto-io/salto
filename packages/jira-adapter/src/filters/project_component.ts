@@ -68,7 +68,7 @@ const filter: FilterCreator = ({ client, config }) => ({
         if (projectKey !== undefined) {
           instance.value.project = projectKey
         }
-        if (client.isDataCenter) {
+        if (client.isDataCenter && Object.prototype.hasOwnProperty.call(instance.value, 'leadAccountId')) {
           instance.value.leadUserName = instance.value.leadAccountId
           delete instance.value.leadAccountId
         }
@@ -121,7 +121,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(instance => instance.elemID.typeName === PROJECT_COMPONENT_TYPE_NAME)
       .forEach(instance => {
         delete instance.value.project
-        if (client.isDataCenter) {
+        if (client.isDataCenter && Object.prototype.hasOwnProperty.call(instance.value, 'leadUserName')) {
           instance.value.leadAccountId = instance.value.leadUserName
           delete instance.value.leadUserName
         }

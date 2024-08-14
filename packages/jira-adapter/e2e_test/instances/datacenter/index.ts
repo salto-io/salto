@@ -22,6 +22,7 @@ import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createFilterValues } from './filter'
 import { createPrioritySchemeValues } from './priorityScheme'
 import { createWorkflowValues } from './workflow'
+import { createWorkflowSchemeValues } from './workflowScheme'
 
 export const createInstances = (randomString: string, fetchedElements: Element[]): InstanceElement[][] => {
   const fieldConfiguration = new InstanceElement(
@@ -45,6 +46,12 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     randomString,
     findType(WORKFLOW_TYPE_NAME, fetchedElements),
     createWorkflowValues(randomString, fetchedElements),
+  )
+
+  const workflowScheme = new InstanceElement(
+    randomString,
+    findType('WorkflowScheme', fetchedElements),
+    createWorkflowSchemeValues(randomString, fetchedElements),
   )
 
   const kanbanBoard = new InstanceElement(
@@ -75,6 +82,7 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [fieldConfiguration],
     [automation],
     [workflow],
+    [workflowScheme],
     [kanbanBoard],
     [issueType],
     [scrumBoard],

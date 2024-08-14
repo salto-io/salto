@@ -15,7 +15,6 @@
  */
 
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
-import { v4 as uuid4 } from 'uuid'
 import _ from 'lodash'
 import { APP_ROLES_FIELD_NAME, PARENT_ID_FIELD_NAME } from '../../../constants'
 import { AdjustFunctionSingle } from '../types'
@@ -32,11 +31,7 @@ export const adjustParentWithAppRoles: AdjustFunctionSingle = omitReadOnlyFields
   validateArray(appRoles, `${typeName}.${APP_ROLES_FIELD_NAME}`)
   const adjustedAppRoles = appRoles.map(appRole => {
     validatePlainObject(appRole, `${typeName}.${APP_ROLES_FIELD_NAME}`)
-    return {
-      // We must specify an id for each appRole on addition. If the appRole already has an id, it will be preserved.
-      id: uuid4(),
-      ..._.omit(appRole, PARENT_ID_FIELD_NAME),
-    }
+    return _.omit(appRole, PARENT_ID_FIELD_NAME)
   })
   return {
     value: {

@@ -29,6 +29,7 @@ import {
   SCRIPT_FRAGMENT_TYPE,
   SCRIPT_RUNNER_LISTENER_TYPE,
   SECURITY_LEVEL_TYPE,
+  SLA_TYPE_NAME,
   WORKFLOW_TYPE_NAME,
 } from './constants'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './filters/fields/constants'
@@ -98,6 +99,14 @@ const getAttributeAdditionByObjectTypeGroup: deployment.grouping.ChangeIdFunctio
   }
   return undefined
 }
+const getSlaAdditionByProjectGroup: deployment.grouping.ChangeIdFunction = async change => {
+  const instance = getChangeData(change)
+  if (!isAdditionChange(change) || instance.elemID.typeName !== SLA_TYPE_NAME) {
+    return undefined
+  }
+  const parent = getParent(instance)
+  return `sla addition of ${parent.elemID.getFullName()}`
+}
 
 export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getWorkflowGroup,
@@ -108,4 +117,5 @@ export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getQueuesAdditionByProjectGroup,
   getAttributeAdditionByObjectTypeGroup,
   getFieldContextGroup,
+  getSlaAdditionByProjectGroup,
 ])

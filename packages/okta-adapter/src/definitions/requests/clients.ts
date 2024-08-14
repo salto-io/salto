@@ -17,6 +17,12 @@ import { definitions } from '@salto-io/adapter-components'
 import { OktaOptions } from '../types'
 import { OktaUserConfig } from '../../user_config'
 
+const OMIT_STATUS_REQUEST_BODY = {
+  post: {
+    omitBody: true,
+  },
+}
+
 export const createClientDefinitions = (
   clients: Record<
     definitions.ResolveClientOptionsType<OktaOptions>,
@@ -35,6 +41,7 @@ export const createClientDefinitions = (
             readonly: true,
           },
           delete: {
+            additionalValidStatuses: [404],
             omitBody: true,
           },
         },
@@ -72,26 +79,21 @@ export const createClientDefinitions = (
               },
             },
           },
-          '/api/v1/apps/{id}/lifecycle/activate': {
-            post: {
-              omitBody: true,
-            },
-          },
-          '/api/v1/apps/{id}/lifecycle/deactivate': {
-            post: {
-              omitBody: true,
-            },
-          },
+          '/api/v1/apps/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/apps/{id}/lifecycle/deactivate': OMIT_STATUS_REQUEST_BODY,
           '/api/v1/apps/{source}/policies/{target}': {
             put: {
               omitBody: true,
             },
           },
-          '/api/v1/apps/{appId}/groups/{id}': {
-            delete: {
-              additionalValidStatuses: [404],
-            },
-          },
+          '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate':
+            OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/deactivate':
+            OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/zones/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/zones/{id}/lifecycle/deactivate': OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/idps/{id}/lifecycle/deactivate': OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/idps/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,
         },
       },
     },

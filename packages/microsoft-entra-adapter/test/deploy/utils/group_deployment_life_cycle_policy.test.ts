@@ -15,12 +15,15 @@
  */
 
 import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import {
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
 } from '../../../src/definitions/deploy/utils'
 import { contextMock, objectTypeMock } from '../../mocks'
 import { ADAPTER_NAME, GROUP_LIFE_CYCLE_POLICY_FIELD_NAME } from '../../../src/constants'
+
+const { makeArray } = collections.array
 
 const lifeCycleReference = new ReferenceExpression(new ElemID(ADAPTER_NAME, 'obj', 'instance', 'test'), {
   value: { id: 'testLifeCyclePolicyId' },
@@ -73,7 +76,10 @@ describe(`${getGroupLifecyclePolicyGroupModificationRequest.name}`, () => {
         typeName: 'group',
         context: contextMock,
       })
-      expect(adjustedItem?.value).toEqual({ groupId: 'id1' })
+      // Just for TS reasons - since the adjust function can return an array or a single item
+      const adjustedItemAsArray = makeArray(adjustedItem)
+      expect(adjustedItemAsArray).toHaveLength(1)
+      expect(adjustedItemAsArray[0].value).toEqual({ groupId: 'id1' })
     })
   })
 })

@@ -73,15 +73,19 @@ import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
 import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
-import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, SLA_TYPE_NAME } from '../constants'
+import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../constants'
+import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
+import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator } =
   deployment.changeValidators
 
 const TYPE_TO_UNIQUE_FIELD = {
-  [ISSUE_TYPE_NAME]: 'name',
-  [PORTAL_GROUP_TYPE]: 'name',
-  [SLA_TYPE_NAME]: 'name',
+  [ISSUE_TYPE_NAME]: ['name'],
+  [PORTAL_GROUP_TYPE]: ['name'],
+  // TODO SALTO-6424 uncomment when we add Scope to unique fields filter.
+  // [SLA_TYPE_NAME]: ['name'],
+  [PROJECT_TYPE]: ['name', 'key'],
 }
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {
@@ -146,6 +150,8 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
     fieldContextOptions: fieldContextOptionsValidator,
+    assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator(client),
+    projectAssigneeType: projectAssigneeTypeValidator,
   }
 
   return createChangeValidator({

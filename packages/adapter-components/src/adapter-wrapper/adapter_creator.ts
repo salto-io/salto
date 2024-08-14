@@ -47,6 +47,8 @@ import { getResolverCreator } from '../references/resolver_creator'
 import { ConvertError } from '../deployment'
 import { combineElementFixers } from '../references/element_fixers'
 import { FixElementsArgs } from '../fix_elements/types'
+import { QueryCriterion } from '../fetch/query'
+import { DEFAULT_CRITERIA } from '../fetch/query/fetch_criteria'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -68,6 +70,7 @@ export const createAdapter = <
   operationsCustomizations,
   clientDefaults,
   customConvertError,
+  allCriteria = DEFAULT_CRITERIA,
 }: {
   adapterName: string
   // helper for determining the names of all clients that should be created
@@ -96,6 +99,7 @@ export const createAdapter = <
     additionalChangeValidators?: (args: { config: Co }) => Record<string, ChangeValidator>
     customizeFixElements?: (args: FixElementsArgs<Options, Co>) => Record<string, FixElementsFunc>
   }
+  allCriteria?: Record<string, QueryCriterion>
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
   customConvertError?: ConvertError
 }): Adapter => {
@@ -157,6 +161,7 @@ export const createAdapter = <
           configInstance: context.config,
           additionalChangeValidators,
           fixElements,
+          allCriteria,
         },
         adapterImpl ?? AdapterImpl,
       )

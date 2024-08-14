@@ -19,6 +19,12 @@ export type AdditionalAction = never
 export type ClientOptions = 'main' | 'users_client'
 type PaginationOptions = 'cursor' | 'usersPagination'
 
+export type FetchCriteria = {
+  name?: string
+  type?: string
+  status?: string
+}
+
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions
   paginationOptions: PaginationOptions

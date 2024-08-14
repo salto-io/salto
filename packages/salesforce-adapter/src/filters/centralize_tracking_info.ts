@@ -129,7 +129,7 @@ const isHistoryTrackedField = (field: Field, trackingDef: TrackedFieldsDefinitio
   trackedFields(field.parent, trackingDef).includes(field.name)
 
 const deleteFieldHistoryTrackingAnnotation = (field: Field, trackingDef: TrackedFieldsDefinition): void => {
-  if (field !== undefined) {
+  if (field?.annotations[trackingDef.fieldLevelEnable] !== undefined) {
     delete field.annotations[trackingDef.fieldLevelEnable]
   }
 }
@@ -248,6 +248,7 @@ const filter: LocalFilterCreator = () => {
           .map(getChangeData)
           .filter(isField)
           .filter(isFieldOfCustomObject)
+          .filter(field => isHistoryTrackingEnabled(field.parent, trackingDef))
           .toArray()
 
         fieldsThatChanged.forEach(field => {

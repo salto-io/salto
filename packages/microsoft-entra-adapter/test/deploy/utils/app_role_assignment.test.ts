@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+import { collections } from '@salto-io/lowerdash'
 import { AdjustFunction } from '../../../src/definitions/deploy/types'
 import { createDefinitionForAppRoleAssignment } from '../../../src/definitions/deploy/utils'
 import { contextMock } from '../../mocks'
+
+const { makeArray } = collections.array
 
 describe(`${createDefinitionForAppRoleAssignment.name}`, () => {
   it('should return the correct definition using the parent resource name', () => {
@@ -58,7 +61,10 @@ describe(`${createDefinitionForAppRoleAssignment.name}`, () => {
         typeName: 'someType',
         context: contextMock,
       })
-      expect(adjustedItem?.value).toEqual({ someField: 'someValue', principalId: 'parent_id' })
+      // Just for TS reasons - since the adjust function can return an array or a single item
+      const adjustedItemAsArray = makeArray(adjustedItem)
+      expect(adjustedItemAsArray).toHaveLength(1)
+      expect(adjustedItemAsArray[0].value).toEqual({ someField: 'someValue', principalId: 'parent_id' })
     })
   })
 })

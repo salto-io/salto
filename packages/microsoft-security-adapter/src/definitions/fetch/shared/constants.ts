@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ElementFieldCustomization, FieldIDPart } from '../shared/types'
+import { ElementFieldCustomization, FieldIDPart } from './types'
 
 export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomization> = {
   // hide

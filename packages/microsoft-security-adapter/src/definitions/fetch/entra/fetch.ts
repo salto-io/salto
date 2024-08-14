@@ -27,7 +27,7 @@ import {
   DEFAULT_TRANSFORMATION,
   ID_FIELD_TO_HIDE,
   NAME_ID_FIELD,
-} from './constants'
+} from '../shared/constants'
 import {
   adjustEntitiesWithExpandedMembers,
   createCustomizationsWithBasePathForFetch,

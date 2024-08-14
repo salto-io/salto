@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { ODATA_ID_FIELD_NACL_CASE, ODATA_TYPE_FIELD_NACL_CASE } from '../../constants'
 import { MapArrayValueToChangeData } from './array_fields_deployment'
-import { NAME_ID_FIELD } from '../../definitions/fetch/entra/constants'
+import { NAME_ID_FIELD } from '../../definitions/fetch/shared/constants'
 
 export const mapMemberRefToChangeData: MapArrayValueToChangeData = value => {
   validatePlainObject(value, 'member reference')

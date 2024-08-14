@@ -16,7 +16,7 @@
 
 import { EndpointPath } from '../../../types'
 import { FetchApiDefinition } from '../../shared/types'
-import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE } from '../constants'
+import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE } from '../../shared/constants'
 
 export const createDefinitionForAppRoleAssignment = (parentResourceName: string): FetchApiDefinition => ({
   requests: [

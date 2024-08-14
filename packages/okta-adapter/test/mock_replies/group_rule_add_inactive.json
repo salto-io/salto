@@ -6,7 +6,7 @@
     "status": 200,
     "response": {
       "type": "group_rule",
-      "id": "0prhskzotlDCxCWCP697",
+      "id": "grouprule-fakeid1",
       "status": "INACTIVE",
       "name": "my group rule",
       "created": "2024-08-14T13:28:25.000Z",

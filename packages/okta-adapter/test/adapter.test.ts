@@ -1080,6 +1080,7 @@ describe('adapter', () => {
       let groupRuleType: ObjectType
       let group: InstanceElement
       let userSchema: InstanceElement
+      let groupRule: InstanceElement
 
       beforeEach(() => {
         const groupRuleGroupAssignmentType = new ObjectType({
@@ -1124,14 +1125,9 @@ describe('adapter', () => {
             },
           },
         })
-      })
-
-      it('should successfully add an active group rule', async () => {
-        loadMockReplies('group_rule_add_active.json')
-        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+        groupRule = new InstanceElement('groupRule', groupRuleType, {
           name: 'my group rule',
           type: 'group_rule',
-          status: ACTIVE_STATUS,
           conditions: {
             expression: {
               value: new TemplateExpression({
@@ -1150,6 +1146,11 @@ describe('adapter', () => {
             assignUserToGroups: { groupIds: [new ReferenceExpression(group.elemID, group)] },
           },
         })
+      })
+
+      it('should successfully add an active group rule', async () => {
+        loadMockReplies('group_rule_add_active.json')
+        groupRule.value.status = ACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',
@@ -1164,11 +1165,8 @@ describe('adapter', () => {
       })
 
       it('should successfully add an inactive group rule', async () => {
-        loadMockReplies('group_rule_add_active.json')
-        const groupRule = new InstanceElement('groupRule', groupRuleType, {
-          name: 'my_zone',
-          status: INACTIVE_STATUS,
-        })
+        loadMockReplies('group_rule_add_inactive.json')
+        groupRule.value.status = INACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',
@@ -1184,17 +1182,14 @@ describe('adapter', () => {
 
       it('should successfully activate a group rule', async () => {
         loadMockReplies('group_rule_activate.json')
-        const groupRule = new InstanceElement('groupRule', groupRuleType, {
-          id: 'grouprule-fakeid1',
-          name: 'my_zone',
-          status: INACTIVE_STATUS,
-        })
-        const activatedNetworkZone = groupRule.clone()
-        activatedNetworkZone.value.status = ACTIVE_STATUS
+        groupRule.value.status = INACTIVE_STATUS
+        groupRule.value.id = 'grouprule-fakeid1'
+        const activatedGroupRule = groupRule.clone()
+        activatedGroupRule.value.status = ACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',
-            changes: [toChange({ before: groupRule, after: activatedNetworkZone })],
+            changes: [toChange({ before: groupRule, after: activatedGroupRule })],
           },
           progressReporter: nullProgressReporter,
         })
@@ -1206,17 +1201,14 @@ describe('adapter', () => {
 
       it('should successfully deactivate a group rule', async () => {
         loadMockReplies('group_rule_deactivate.json')
-        const groupRule = new InstanceElement('groupRule', groupRuleType, {
-          id: 'grouprule-fakeid1',
-          name: 'my_zone',
-          status: ACTIVE_STATUS,
-        })
-        const deactivatedNetworkZone = groupRule.clone()
-        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        groupRule.value.status = ACTIVE_STATUS
+        groupRule.value.id = 'grouprule-fakeid1'
+        const deactivatedGroupRule = groupRule.clone()
+        deactivatedGroupRule.value.status = INACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',
-            changes: [toChange({ before: groupRule, after: deactivatedNetworkZone })],
+            changes: [toChange({ before: groupRule, after: deactivatedGroupRule })],
           },
           progressReporter: nullProgressReporter,
         })
@@ -1232,12 +1224,12 @@ describe('adapter', () => {
           name: 'my_zone',
           status: ACTIVE_STATUS,
         })
-        const updatedNetworkZone = groupRule.clone()
-        updatedNetworkZone.value.name = 'your_zone'
+        const updatedGroupRule = groupRule.clone()
+        updatedGroupRule.value.name = 'your_zone'
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',
-            changes: [toChange({ before: groupRule, after: updatedNetworkZone })],
+            changes: [toChange({ before: groupRule, after: updatedGroupRule })],
           },
           progressReporter: nullProgressReporter,
         })
@@ -1253,13 +1245,13 @@ describe('adapter', () => {
           name: 'my_zone',
           status: INACTIVE_STATUS,
         })
-        const activatedNetworkZone = groupRule.clone()
-        activatedNetworkZone.value.name = 'your_zone'
-        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const activatedGroupRule = groupRule.clone()
+        activatedGroupRule.value.name = 'your_zone'
+        activatedGroupRule.value.status = ACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',
-            changes: [toChange({ before: groupRule, after: activatedNetworkZone })],
+            changes: [toChange({ before: groupRule, after: activatedGroupRule })],
           },
           progressReporter: nullProgressReporter,
         })
@@ -1275,13 +1267,13 @@ describe('adapter', () => {
           name: 'my_zone',
           status: ACTIVE_STATUS,
         })
-        const deactivatedNetworkZone = groupRule.clone()
-        deactivatedNetworkZone.value.name = 'your_zone'
-        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const deactivatedGroupRule = groupRule.clone()
+        deactivatedGroupRule.value.name = 'your_zone'
+        deactivatedGroupRule.value.status = INACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',
-            changes: [toChange({ before: groupRule, after: deactivatedNetworkZone })],
+            changes: [toChange({ before: groupRule, after: deactivatedGroupRule })],
           },
           progressReporter: nullProgressReporter,
         })

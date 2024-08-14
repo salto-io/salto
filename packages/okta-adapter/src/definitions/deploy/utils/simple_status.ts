@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ActionName, getChangeData, isAdditionChange, isModificationChange } from '@salto-io/adapter-api'
+import { ActionName, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { definitions as definitionUtils } from '@salto-io/adapter-components'
 import { AdditionalAction } from '../../types'

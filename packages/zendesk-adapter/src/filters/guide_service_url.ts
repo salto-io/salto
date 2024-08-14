@@ -52,14 +52,14 @@ const replaceUrlParamsBrand = (url: string, instance: InstanceElement): string =
     let replacement
     if (val.slice(1, -1).startsWith('_')) {
       // meaning that it refers to an annotation
-      replacement = _.get(instance.annotations, val.slice(1, -1)) ?? val
+      replacement = _.get(instance.annotations, val.slice(1, -1))
     } else {
-      replacement = instance.value[val.slice(1, -1)] ?? val
+      replacement = instance.value[val.slice(1, -1)]
     }
     if (!isPrimitiveValue(replacement)) {
       throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
     }
-    return String(replacement)
+    return replacement?.toString() ?? val
   })
 
 const createServiceUrl = (instance: InstanceElement, baseUrl: string): void => {

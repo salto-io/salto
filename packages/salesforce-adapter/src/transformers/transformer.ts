@@ -1228,13 +1228,16 @@ export const transformPrimitive: TransformFuncSync = ({ value, path, field }) =>
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
+  if (value === null || value === undefined) {
+    return undefined
+  }
   switch (fieldType.primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(value)
     case PrimitiveTypes.BOOLEAN:
-      return String(value).toLowerCase() === 'true'
+      return value.toString().toLowerCase() === 'true'
     case PrimitiveTypes.STRING:
-      return String(value)
+      return value.toString()
     default:
       return value
   }

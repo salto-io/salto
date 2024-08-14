@@ -59,7 +59,7 @@ const replaceUrlParamsBrand = (url: string, instance: InstanceElement): string =
     if (!isPrimitiveValue(replacement)) {
       throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
     }
-    return replacement.toString()
+    return String(replacement)
   })
 
 const createServiceUrl = (instance: InstanceElement, baseUrl: string): void => {

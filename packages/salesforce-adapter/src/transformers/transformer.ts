@@ -1232,9 +1232,9 @@ export const transformPrimitive: TransformFuncSync = ({ value, path, field }) =>
     case PrimitiveTypes.NUMBER:
       return Number(value)
     case PrimitiveTypes.BOOLEAN:
-      return value.toString().toLowerCase() === 'true'
+      return String(value).toLowerCase() === 'true'
     case PrimitiveTypes.STRING:
-      return value.toString()
+      return String(value)
     default:
       return value
   }

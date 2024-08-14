@@ -109,7 +109,7 @@ const getSingleValueKey = (value: LeafValue): string => {
   if (isTemplateExpression(value)) {
     return value.parts.map(getSingleValueKey).join('')
   }
-  return value.toString()
+  return value?.toString() ?? ''
 }
 
 /**

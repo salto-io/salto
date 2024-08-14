@@ -425,6 +425,61 @@ describe('detailedCompare', () => {
           },
         ])
       })
+
+      it('should work with null values in the list', () => {
+        beforeInst.value.list = [
+          null,
+          {
+            val: null,
+          },
+          {
+            val: undefined,
+          },
+        ]
+
+        afterInst.value.list = [
+          {
+            val: null,
+          },
+          {
+            val: undefined,
+          },
+          null,
+        ]
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('0'),
+            data: { before: { val: null }, after: { val: null } },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+              after: listID.createNestedID('0'),
+            },
+            baseChange,
+          },
+          {
+            id: listID.createNestedID('1'),
+            data: { before: { val: undefined }, after: { val: undefined } },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+              after: listID.createNestedID('1'),
+            },
+            baseChange,
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: null, after: null },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('0'),
+              after: listID.createNestedID('2'),
+            },
+            baseChange,
+          },
+        ])
+      })
     })
   })
 

@@ -43,7 +43,7 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   AUTHORIZATION_POLICY,
   APP_LOGO_TYPE_NAME,
-  ACTIVE_STATUS,
+  NETWORK_ZONE_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -52,6 +52,7 @@ import {
   isInactiveCustomAppChange,
 } from './types/application'
 import { isActivationChange, isDeactivationChange } from './utils/status'
+import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -147,21 +148,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
               },
               copyFromResponse: {
-                toSharedContext: {
-                  pick: ['status'],
-                  nestUnderElemID: true,
-                },
+                toSharedContext: simpleStatus.toSharedContext,
               },
             },
           ],
           modify: [
             {
-              condition: {
-                skipIfIdentical: true,
-                transformForCheck: {
-                  omit: ['status'],
-                },
-              },
+              condition: simpleStatus.modificationCondition,
               request: {
                 endpoint: {
                   path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}',
@@ -189,19 +182,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           activate: [
             {
               condition: {
-                custom:
-                  () =>
-                  ({ change, sharedContext }) => {
-                    if (isAdditionChange(change)) {
-                      if (getChangeData(change).value.status !== ACTIVE_STATUS) {
-                        return false
-                      }
-                      return (
-                        _.get(sharedContext, [getChangeData(change).elemID.getFullName(), 'status']) !== ACTIVE_STATUS
-                      )
-                    }
-                    return true
-                  },
+                custom: simpleStatus.activationCondition,
               },
               request: {
                 endpoint: {
@@ -217,19 +198,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           deactivate: [
             {
               condition: {
-                custom:
-                  () =>
-                  ({ change, sharedContext }) => {
-                    if (isAdditionChange(change)) {
-                      if (getChangeData(change).value.status !== INACTIVE_STATUS) {
-                        return false
-                      }
-                      return (
-                        _.get(sharedContext, [getChangeData(change).elemID.getFullName(), 'status']) !== INACTIVE_STATUS
-                      )
-                    }
-                    return true
-                  },
+                custom: simpleStatus.deactivationCondition,
               },
               request: {
                 endpoint: {
@@ -244,38 +213,95 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
-      toActionNames: ({ change }) => {
-        if (isAdditionChange(change)) {
-          // Conditions inside 'activate' and 'deactivate' will determine which one to run, based on the service
-          // response to the 'add' action.
-          return ['add', 'deactivate', 'activate']
+      toActionNames: simpleStatus.toActionNames,
+      actionDependencies: simpleStatus.actionDependencies,
+    },
+    [NETWORK_ZONE_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              omit: ['status'],
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones',
+                  method: 'post',
+                },
+              },
+              copyFromResponse: {
+                toSharedContext: simpleStatus.toSharedContext,
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: simpleStatus.modificationCondition,
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          activate: [
+            {
+              condition: {
+                custom: simpleStatus.activationCondition,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones/{id}/lifecycle/activate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          deactivate: [
+            {
+              condition: {
+                custom: simpleStatus.deactivationCondition,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones/{id}/lifecycle/deactivate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: changeContext => {
+        // NetworkZone works like other "simple status" types, except it must
+        // be deactivated before removal.
+        const { change } = changeContext
+        if (isRemovalChange(change)) {
+          return ['deactivate', 'remove']
         }
-        if (isModificationChange(change)) {
-          if (isActivationChange(change)) {
-            return ['modify', 'activate']
-          }
-          if (isDeactivationChange(change)) {
-            return ['deactivate', 'modify']
-          }
-        }
-        return [change.action]
+        return simpleStatus.toActionNames(changeContext)
       },
       actionDependencies: [
-        {
-          first: 'add',
-          second: 'activate',
-        },
-        {
-          first: 'add',
-          second: 'deactivate',
-        },
-        {
-          first: 'modify',
-          second: 'activate',
-        },
+        ...simpleStatus.actionDependencies,
         {
           first: 'deactivate',
-          second: 'modify',
+          second: 'remove',
         },
       ],
     },

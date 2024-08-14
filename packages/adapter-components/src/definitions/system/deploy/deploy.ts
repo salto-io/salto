@@ -67,7 +67,7 @@ export type ChangeDependency<AdditionalAction extends string> = {
   second: ChangeIdentifier<ActionName | AdditionalAction>
 }
 
-type ActionDependency<AdditionalAction extends string> = {
+export type ActionDependency<AdditionalAction extends string> = {
   first: ActionName | AdditionalAction
   second: ActionName | AdditionalAction
 }

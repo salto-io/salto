@@ -1992,12 +1992,20 @@ describe('adapter', () => {
       let userType: InstanceElement
 
       beforeEach(() => {
+        const profileMappingSourceType = new ObjectType({
+          elemID: new ElemID(OKTA, 'ProfileMappingSource'),
+          fields: {
+            id: { refType: BuiltinTypes.STRING },
+            type: { refType: BuiltinTypes.STRING },
+            name: { refType: BuiltinTypes.STRING },
+          },
+        })
         profileMappingType = new ObjectType({
           elemID: new ElemID(OKTA, PROFILE_MAPPING_TYPE_NAME),
           fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
+            id: { refType: BuiltinTypes.SERVICE_ID },
+            source: { refType: profileMappingSourceType },
+            target: { refType: profileMappingSourceType },
           },
         })
         app = new InstanceElement('app', appType, {
@@ -2013,8 +2021,8 @@ describe('adapter', () => {
       it('should successfully add a profile mapping', async () => {
         loadMockReplies('profile_mapping_add.json')
         const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
-          source: { id: userType.value.id, type: 'user', name: userType.value.name },
-          target: { id: app.value.id, type: 'appuser', name: app.value.name },
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
         })
         const result = await operations.deploy({
           changeGroup: {
@@ -2035,8 +2043,8 @@ describe('adapter', () => {
         loadMockReplies('profile_mapping_modify.json')
         const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
           id: 'profilemapping-fakeid1',
-          source: { id: userType.value.id, type: 'user', name: userType.value.name },
-          target: { id: app.value.id, type: 'appuser', name: app.value.name },
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
           properties: {
             name: {
               expression: 'user.displayName',
@@ -2067,8 +2075,8 @@ describe('adapter', () => {
         loadMockReplies('profile_mapping_remove.json')
         const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
           id: 'profilemapping-fakeid1',
-          source: { id: userType.value.id, type: 'user', name: userType.value.name },
-          target: { id: app.value.id, type: 'appuser', name: app.value.name },
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
         })
         const result = await operations.deploy({
           changeGroup: {

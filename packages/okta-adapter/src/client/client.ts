@@ -239,7 +239,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       return undefined
     }
     const URL_TO_OMIT_FUNC: Record<string, (key: string, val: unknown) => unknown> = {
-      '/api/v1/idps': key => (key === 'credentials' ? OMITTED_PLACEHODLER : undefined),
+      '/api/v1/idps': key => (key === 'client_secret' ? OMITTED_PLACEHODLER : undefined),
       '/api/v1/authenticators': key => (['sharedSecret', 'secretKey'].includes(key) ? OMITTED_PLACEHODLER : undefined),
       '/api/v1/users': cleanUsersData,
     }

@@ -260,9 +260,11 @@ describe('client', () => {
         id: '123',
         protocol: {
           type: 'OIDC',
-          credentials: '<OMITTED>',
+          credentials: {
+            client: { client_id: 'test', client_secret: '<OMITTED>' },
+          },
         },
-        array: [{ credentials: '<OMITTED>' }, { somethingElse: 'b' }],
+        array: [{ credentials: 'a' }, { somethingElse: 'b' }],
       })
       expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(2, [
         {

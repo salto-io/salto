@@ -46,7 +46,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { CLIENT_CONFIG, FETCH_CONFIG, OLD_API_DEFINITIONS_CONFIG } from './config'
-import { configType, OktaUserConfig } from './user_config'
+import { configType, getExcludeJWKConfigSuggestion, OktaUserConfig, OktaUserFetchConfig } from './user_config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -83,6 +83,7 @@ import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
+  JWK_TYPE_NAME,
   OKTA,
   POLICY_PRIORITY_TYPE_NAMES,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
@@ -162,6 +163,24 @@ export interface OktaAdapterParams {
   adminClient?: OktaClient
 }
 
+/**
+ * Temporary adjusment to support migration of JsonWebKey type into the exclude list
+ */
+const createElementQueryWithJsonWebKey = (
+  fetchConfig: OktaUserFetchConfig,
+  criteria: Record<string, elementUtils.query.QueryCriterion>,
+): elementUtils.query.ElementQuery => {
+  const isJWKExcluded = fetchConfig.exclude.find(fetchEnrty => fetchEnrty.type === JWK_TYPE_NAME)
+  const isJWKIncluded = fetchConfig.include.find(fetchEntry => fetchEntry.type === JWK_TYPE_NAME)
+  const updatedConfig =
+    !isJWKExcluded && !isJWKIncluded
+      ? {
+          ...fetchConfig,
+          exclude: fetchConfig.exclude.concat({ type: JWK_TYPE_NAME }),
+        }
+      : fetchConfig
+  return elementUtils.query.createElementQuery(updatedConfig, criteria)
+}
 export default class OktaAdapter implements AdapterOperations {
   private createFiltersRunner: (usersPromise?: Promise<User[]>) => Required<Filter>
   private client: OktaClient
@@ -195,7 +214,7 @@ export default class OktaAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
+    this.fetchQuery = createElementQueryWithJsonWebKey(this.userConfig.fetch, fetchCriteria)
 
     const definitions = {
       // TODO - SALTO-5746 - only provide adminClient when it is defined
@@ -339,6 +358,7 @@ export default class OktaAdapter implements AdapterOperations {
     const configChanges = (getElementsConfigChanges ?? [])
       .concat(classicOrgConfigSuggestion ?? [])
       .concat(oauthConfigChange ?? [])
+      .concat(getExcludeJWKConfigSuggestion(this.configInstance) ?? [])
     const updatedConfig =
       !_.isEmpty(configChanges) && this.configInstance
         ? definitionsUtils.getUpdatedConfigFromConfigChanges({

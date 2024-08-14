@@ -77,5 +77,28 @@ describe('custom field type change validator', () => {
       const changeErrors = await runChangeValidator(undefined, field)
       expect(changeErrors).toHaveLength(0)
     })
+    it('should have error when field type changed to unknown modification', async () => {
+      const beforeField = createField(customObj, Types.primitiveDataTypes.Date, 'Something')
+      const afterField = createField(customObj, Types.primitiveDataTypes.Unknown, 'Something')
+      const changeErrors = await runChangeValidator(beforeField, afterField)
+      expect(changeErrors).toHaveLength(1)
+      const [changeError] = changeErrors
+      expect(changeError.elemID).toEqual(beforeField.elemID)
+      expect(changeError.severity).toEqual('Error')
+    })
+    it('should have error for unknown field creation', async () => {
+      const field = createField(customObj, Types.primitiveDataTypes.Unknown, 'Something')
+      const changeErrors = await runChangeValidator(undefined, field)
+      expect(changeErrors).toHaveLength(1)
+      const [changeError] = changeErrors
+      expect(changeError.elemID).toEqual(field.elemID)
+      expect(changeError.severity).toEqual('Error')
+    })
+    it('should not have error when field type remains unknown in a modification', async () => {
+      const beforeField = createField(customObj, Types.primitiveDataTypes.Unknown, 'Something')
+      const afterField = beforeField.clone({ modifyMe: 'changed' })
+      const changeErrors = await runChangeValidator(beforeField, afterField)
+      expect(changeErrors).toHaveLength(0)
+    })
   })
 })

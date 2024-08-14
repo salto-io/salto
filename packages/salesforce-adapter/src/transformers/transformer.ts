@@ -198,12 +198,15 @@ export const apiName = async (elem: Readonly<Element>, relative = false): Promis
 
 export const formulaTypeName = (baseTypeName: FIELD_TYPE_NAMES): string => `${FORMULA_TYPE_NAME}${baseTypeName}`
 
-export const fieldTypeName = (typeName: string): string => {
+export const fieldTypeName = (typeName: string): string | undefined => {
   if (typeName.startsWith(FORMULA_TYPE_NAME)) {
     return typeName.slice(FORMULA_TYPE_NAME.length)
   }
   if (typeName === LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME) {
     return COMPOUND_FIELD_TYPE_NAMES.LOCATION
+  }
+  if (typeName === INTERNAL_FIELD_TYPE_NAMES.UNKNOWN) {
+    return undefined
   }
   return typeName
 }

@@ -2044,7 +2044,6 @@ describe('adapter', () => {
       })
     })
 
-
     describe('deploy profile mapping', () => {
       let profileMappingType: ObjectType
       let app: InstanceElement

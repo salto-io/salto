@@ -19,12 +19,12 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getFilterParams, mockClient } from '../../utils'
+import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import addDisplayNameFilter from '../../../src/filters/account_id/user_id_filter'
 import * as common from './account_id_common'
 import { ACCOUNT_ID_TYPES } from '../../../src/filters/account_id/account_id_filter'
-import { AUTOMATION_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
+import { AUTOMATION_TYPE, DASHBOARD_TYPE, JIRA, PROJECT_COMPONENT_TYPE } from '../../../src/constants'
 
 const { awu } = collections.asynciterable
 
@@ -294,6 +294,7 @@ describe('convert userId to key in Jira DC', () => {
   let dashboardInstance: InstanceElement
   let projectType: ObjectType
   let projectInstance: InstanceElement
+  let componentInstance: InstanceElement
 
   beforeEach(() => {
     const usersType = new ObjectType({
@@ -407,6 +408,11 @@ describe('convert userId to key in Jira DC', () => {
         id: 'JIRAUSER10300',
       },
     })
+    componentInstance = new InstanceElement('instance', createEmptyType(PROJECT_COMPONENT_TYPE), {
+      leadAccountId: {
+        id: 'JIRAUSER10300',
+      },
+    })
 
     mockConnection.get.mockResolvedValue({
       status: 200,
@@ -507,11 +513,12 @@ describe('convert userId to key in Jira DC', () => {
       expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
     })
     it('should not convert only project instance key to userId on preDeploy and onDeploy', async () => {
-      await filter.onFetch([automationInstance, dashboardInstance, projectInstance])
+      await filter.onFetch([automationInstance, dashboardInstance, projectInstance, componentInstance])
       await filter.preDeploy([
         toChange({ after: automationInstance }),
         toChange({ before: dashboardInstance, after: dashboardInstance }),
         toChange({ after: projectInstance }),
+        toChange({ after: componentInstance }),
       ])
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith('/rest/api/2/user/search', {
@@ -524,6 +531,7 @@ describe('convert userId to key in Jira DC', () => {
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'JIRAUSER10100' })
       expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'JIRAUSER10200' })
       expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
+      expect(componentInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
       await filter.onDeploy([
         toChange({ after: automationInstance }),
         toChange({ before: dashboardInstance, after: dashboardInstance }),
@@ -541,6 +549,7 @@ describe('convert userId to key in Jira DC', () => {
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
       expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })
       expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
+      expect(componentInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
     })
     it('should not convert userId to key or backwards for undefined types', async () => {
       const type = common.createType('Other')

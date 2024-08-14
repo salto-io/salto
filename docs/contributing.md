@@ -1,6 +1,6 @@
 # Contributing
 
-Salto is an open source project and we love to receive contributions of all kinds from our community.
+Salto is an a source available project and we love to receive contributions of all kinds from our community.
 
 There are many ways to contribute, from writing tutorials or blog posts, improving the documentation, recording bug reports and feature requests, writing code which can be incorporated into the project to providing (much valuable!) product feedback.
 

@@ -113,7 +113,7 @@ const deployAdditionIcon = async (
 const filter: FilterCreator = ({ client, config, adapterContext }) => ({
   name: 'objectTypeIconFilter',
   onFetch: async elements => {
-    if (!config.fetch.enableJSM || !config.fetch.enableJSMPremium) {
+    if (!config.fetch.enableJSM) {
       return { errors: [] }
     }
     const objectTypeIcons = elements.filter(e => e.elemID.typeName === OBJECT_TYPE_ICON_TYPE).filter(isInstanceElement)
@@ -145,7 +145,7 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
   is done in the standard jsm deployment. */
   deploy: async (changes: Change<InstanceElement>[]) => {
     const { jsmApiDefinitions } = config
-    if (!config.fetch.enableJSM || !config.fetch.enableJSMPremium || jsmApiDefinitions === undefined) {
+    if (!config.fetch.enableJSM || jsmApiDefinitions === undefined) {
       return { deployResult: { appliedChanges: [], errors: [] }, leftoverChanges: changes }
     }
 

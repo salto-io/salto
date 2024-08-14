@@ -34,7 +34,6 @@ describe('requestType filter', () => {
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJSMPremium = true
       const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli

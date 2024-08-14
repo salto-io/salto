@@ -62,9 +62,7 @@ const filter: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
     const { jsmApiDefinitions } = config
     if (
-      !config.fetch.enableJSM ||
-      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
-      jsmApiDefinitions === undefined
+      !config.fetch.enableJSM || jsmApiDefinitions === undefined
     ) {
       return {
         deployResult: { appliedChanges: [], errors: [] },

@@ -43,7 +43,6 @@ describe('service url filter', () => {
     paginator = mockCli.paginator
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableJSM = true
-    config.fetch.enableJSMPremium = true
     filter = filterCreator(
       getFilterParams({
         client,

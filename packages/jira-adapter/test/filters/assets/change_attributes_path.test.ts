@@ -39,7 +39,6 @@ describe('ChangeAttributesPath', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
       filter = addAttributesAsFieldsFilter(getFilterParams({ config })) as typeof filter
       parentInstance = new InstanceElement(
         'parentInstance',

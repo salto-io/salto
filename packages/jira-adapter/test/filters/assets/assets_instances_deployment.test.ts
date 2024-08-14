@@ -34,7 +34,6 @@ describe('assetsInstancesDeployment', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
       filter = assetsStatusAdditionFilter(getFilterParams({ config })) as typeof filter
       assetsStatusInstance = new InstanceElement(
         'assetsStatusInstance',
@@ -102,7 +101,6 @@ describe('assetsInstancesDeployment', () => {
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
       filter = assetsStatusAdditionFilter(getFilterParams({ config })) as typeof filter
       assetsStatusInstance = new InstanceElement(
         'assetsStatusInstance',

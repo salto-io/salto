@@ -41,7 +41,6 @@ describe('object type icon filter', () => {
   const adapterContext: Values = {}
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
   config.fetch.enableJSM = true
-  config.fetch.enableJSMPremium = true
 
   beforeEach(async () => {
     const { client: cli } = mockClient(false)

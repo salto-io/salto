@@ -42,9 +42,7 @@ const filter: FilterCreator = ({ config }) => ({
   preDeploy: async changes => {
     const { jsmApiDefinitions } = config
     if (
-      !config.fetch.enableJSM ||
-      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
-      jsmApiDefinitions === undefined
+      !config.fetch.enableJSM || jsmApiDefinitions === undefined
     ) {
       return
     }
@@ -71,9 +69,7 @@ const filter: FilterCreator = ({ config }) => ({
   onDeploy: async changes => {
     const { jsmApiDefinitions } = config
     if (
-      !config.fetch.enableJSM ||
-      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
-      jsmApiDefinitions === undefined
+      !config.fetch.enableJSM || jsmApiDefinitions === undefined
     ) {
       return
     }

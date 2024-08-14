@@ -822,7 +822,6 @@ describe('automationDeploymentFilter', () => {
         })
         it('should add missing fields to assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
-          config.fetch.enableJSMPremium = true
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0]).toEqual({
             component: 'ACTION',
@@ -867,7 +866,6 @@ describe('automationDeploymentFilter', () => {
         })
         it('should modify only assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
-          config.fetch.enableJSMPremium = true
           automationInstance.value.components.push({
             component: 'ACTION',
             schemaVersion: 1,
@@ -922,7 +920,6 @@ describe('automationDeploymentFilter', () => {
         })
         it('should not add missing fields to assets components when enable JSM is false', async () => {
           config.fetch.enableJSM = false
-          config.fetch.enableJSMPremium = false
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
@@ -932,14 +929,12 @@ describe('automationDeploymentFilter', () => {
         it('should do nothing if there are no components', async () => {
           automationInstance.value.components.value = undefined
           config.fetch.enableJSM = true
-          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components.value).toBeUndefined()
         })
         it('should do nothing if the component is not assets component', async () => {
           automationInstance.value.components = undefined
           config.fetch.enableJSM = true
-          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components).toBeUndefined()
         })
@@ -1060,7 +1055,6 @@ describe('automationDeploymentFilter', () => {
         it('should do nothing if the component is not requestType component', async () => {
           automationInstance.value.components = undefined
           config.fetch.enableJSM = true
-          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components).toBeUndefined()
         })
@@ -1120,7 +1114,6 @@ describe('automationDeploymentFilter', () => {
         })
         it('should remove extra fields for assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
-          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0]).toEqual({
             component: 'ACTION',
@@ -1156,7 +1149,6 @@ describe('automationDeploymentFilter', () => {
         })
         it('should not remove missing fields to assets components when enable JSM is false', async () => {
           config.fetch.enableJSM = false
-          config.fetch.enableJSMPremium = false
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
@@ -1169,13 +1161,11 @@ describe('automationDeploymentFilter', () => {
         it('should do nothing if there are no components', async () => {
           automationInstance.value.components = undefined
           config.fetch.enableJSM = true
-          config.fetch.enableJSMPremium = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components).toBeUndefined()
         })
         it('should modify only assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
-          config.fetch.enableJSMPremium = true
           automationInstance.value.components.push({
             component: 'ACTION',
             schemaVersion: 1,

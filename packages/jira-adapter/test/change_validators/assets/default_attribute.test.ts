@@ -63,7 +63,6 @@ describe('attributeValidator', () => {
     elementsSource = buildElementsSourceFromElements([])
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableJSM = true
-    config.fetch.enableJsmExperimental = true
   })
   it('should not return error if trying to add non editable defult attribute', async () => {
     attributeInstance = new InstanceElement('attribute1', createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE), {

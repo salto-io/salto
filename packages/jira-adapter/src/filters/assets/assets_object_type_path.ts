@@ -60,7 +60,7 @@ const createPaths = async (objectTypes: InstanceElement[]): Promise<void> => {
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypePath',
   onFetch: async elements => {
-    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
+    if (!config.fetch.enableJSM) {
       return
     }
     const objectTypes = elements

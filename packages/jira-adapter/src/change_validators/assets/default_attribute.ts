@@ -35,7 +35,7 @@ const { awu } = collections.asynciterable
  */
 export const defaultAttributeValidator: (config: JiraConfig, client: JiraClient) => ChangeValidator =
   config => async changes => {
-    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
+    if (!config.fetch.enableJSM) {
       return []
     }
 

@@ -47,7 +47,6 @@ describe('labelAttributeValidator', () => {
     )
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableJSM = true
-    config.fetch.enableJsmExperimental = true
   })
   it('should return error if trying to remove the label attribute', async () => {
     const validator = deleteLabelAtttributeValidator(config)

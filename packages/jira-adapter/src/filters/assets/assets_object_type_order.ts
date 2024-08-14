@@ -109,9 +109,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
   name: 'assetsObjectTypeOrderFilter',
   onFetch: async (elements: Element[]) => {
     if (
-      !config.fetch.enableJSM ||
-      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
-      !fetchQuery.isTypeMatch(OBJECT_TYPE_TYPE)
+      !config.fetch.enableJSM || !fetchQuery.isTypeMatch(OBJECT_TYPE_TYPE)
     ) {
       return
     }
@@ -154,9 +152,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
   deploy: async changes => {
     const { jsmApiDefinitions } = config
     if (
-      !config.fetch.enableJSM ||
-      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
-      jsmApiDefinitions === undefined
+      !config.fetch.enableJSM || jsmApiDefinitions === undefined
     ) {
       return {
         deployResult: { appliedChanges: [], errors: [] },

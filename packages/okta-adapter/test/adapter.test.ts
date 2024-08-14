@@ -66,6 +66,7 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
+  PROFILE_MAPPING_TYPE_NAME,
   APP_LOGO_TYPE_NAME,
   NETWORK_ZONE_TYPE_NAME,
 } from '../src/constants'
@@ -524,6 +525,7 @@ describe('adapter', () => {
     let appType: ObjectType
     let groupType: ObjectType
     let orgSettingType: ObjectType
+    let userTypeType: ObjectType
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
@@ -557,6 +559,14 @@ describe('adapter', () => {
       })
       appType = new ObjectType({
         elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      userTypeType = new ObjectType({
+        elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
         fields: {
           id: {
             refType: BuiltinTypes.SERVICE_ID,
@@ -1363,17 +1373,8 @@ describe('adapter', () => {
       })
     })
     describe('deploy user type', () => {
-      let userTypeType: ObjectType
       let userType: InstanceElement
       beforeEach(() => {
-        userTypeType = new ObjectType({
-          elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
         userType = new InstanceElement('userType', userTypeType, {
           id: 'usertype-fakeid1',
           name: 'superuser',
@@ -1984,6 +1985,112 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
+
+    describe('deploy profile mapping', () => {
+      let profileMappingType: ObjectType
+      let app: InstanceElement
+      let userType: InstanceElement
+
+      beforeEach(() => {
+        const profileMappingSourceType = new ObjectType({
+          elemID: new ElemID(OKTA, 'ProfileMappingSource'),
+          fields: {
+            id: { refType: BuiltinTypes.STRING },
+            type: { refType: BuiltinTypes.STRING },
+            name: { refType: BuiltinTypes.STRING },
+          },
+        })
+        profileMappingType = new ObjectType({
+          elemID: new ElemID(OKTA, PROFILE_MAPPING_TYPE_NAME),
+          fields: {
+            id: { refType: BuiltinTypes.SERVICE_ID },
+            source: { refType: profileMappingSourceType },
+            target: { refType: profileMappingSourceType },
+          },
+        })
+        app = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          name: 'app1',
+        })
+        userType = new InstanceElement('userType', userTypeType, {
+          id: 'usertype-fakeid1',
+          name: 'superuser',
+        })
+      })
+
+      it('should successfully add a profile mapping', async () => {
+        loadMockReplies('profile_mapping_add.json')
+        const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'profileMapping',
+            changes: [toChange({ after: profileMapping })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'profilemapping-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify a profile mapping', async () => {
+        loadMockReplies('profile_mapping_modify.json')
+        const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
+          id: 'profilemapping-fakeid1',
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
+          properties: {
+            name: {
+              expression: 'user.displayName',
+              pushStatus: 'PUSH',
+            },
+          },
+        })
+        const updatedProfileMapping = profileMapping.clone()
+        updatedProfileMapping.value.properties.name.expression = 'user.name'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'profileMapping',
+            changes: [toChange({ before: profileMapping, after: updatedProfileMapping })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(
+          getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.properties.name.expression,
+        ).toEqual('user.name')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      // In production, a ProfileMapping can only be removed alongside one of its mapping sides (this is enforced by a
+      // change validator). CVs don't run in this test though, so we only run the change group for the ProfileMapping
+      // removal and the mock HTTP response will behave as if one of its sides was removed as well.
+      it('should successfully remove a profile mapping', async () => {
+        loadMockReplies('profile_mapping_remove.json')
+        const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
+          id: 'profilemapping-fakeid1',
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'profileMapping',
+            changes: [toChange({ before: profileMapping })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+
     describe('deploy brand theme', () => {
       let brandThemeType: ObjectType
 

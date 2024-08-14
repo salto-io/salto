@@ -66,17 +66,19 @@ describe('ScriptRunner cloud Workflow', () => {
   beforeEach(() => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    const configWithNewWorkflowAPI = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    configWithNewWorkflowAPI.fetch.enableNewWorkflowAPI = true
-    configWithNewWorkflowAPI.fetch.enableScriptRunnerAddon = true
+    const configWithOutNewWorkflowAPI = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    configWithOutNewWorkflowAPI.fetch.enableNewWorkflowAPI = false
+    configWithOutNewWorkflowAPI.fetch.enableScriptRunnerAddon = true
     config.fetch.enableScriptRunnerAddon = true
-    filter = workflowFilter(getFilterParams({ config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filter = workflowFilter(getFilterParams({ config: configWithOutNewWorkflowAPI })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
     filterOff = workflowFilter(getFilterParams({ config: configOff })) as filterUtils.FilterWith<
       'onFetch' | 'preDeploy' | 'onDeploy'
     >
-    filterWithNewWorkflowAPI = workflowFilter(
-      getFilterParams({ config: configWithNewWorkflowAPI }),
-    ) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filterWithNewWorkflowAPI = workflowFilter(getFilterParams({ config })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
   })
   describe('post functions', () => {
     let accountAndGroupArrayed: Values

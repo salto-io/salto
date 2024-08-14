@@ -164,7 +164,12 @@ const transformOptionsToMap = (instance: InstanceElement): void => {
         position: position + 1,
       }))
 
-      context.options = _.keyBy(optionsWithIndex, option => naclCase(option.value))
+      context.options = _.keyBy(optionsWithIndex, option => {
+        if (option.value === '') {
+          return '@'
+        }
+        return naclCase(option.value)
+      })
     })
 }
 

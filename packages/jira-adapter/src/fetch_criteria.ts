@@ -22,4 +22,5 @@ const typeCriterion: elementUtils.query.QueryCriterion = ({ instance, value }): 
 export default {
   name: elementUtils.query.nameCriterion,
   type: typeCriterion,
+  state: elementUtils.query.fieldCriterionCreator('state'),
 }

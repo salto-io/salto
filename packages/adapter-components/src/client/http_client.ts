@@ -312,6 +312,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
           data: e?.response?.data ?? data,
           status: e?.response?.status ?? 'undefined',
           headers: e?.response?.headers ?? headers,
+          requestPath: e?.response?.request?.path,
         },
         e,
       )
@@ -323,6 +324,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
           status: e.response.status,
           data: e.response.data,
           headers: this.extractHeaders(e.response.headers),
+          requestPath: e.response.request?.path,
         })
       }
       throw new Error(`Failed to ${method} ${url} with error: ${e}`)

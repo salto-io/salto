@@ -197,6 +197,7 @@ import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_ord
 import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import asyncApiCallsFilter from './filters/async_api_calls'
+import slaAdditionFilter from './filters/sla_addition_deployment'
 import addImportantValuesFilter from './filters/add_important_values'
 import ScriptRunnerClient from './client/script_runner_client'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
@@ -208,6 +209,7 @@ import fieldContextOptionsSplitFilter from './filters/fields/field_context_optio
 import fieldContextOptionsDeploymentFilter from './filters/fields/context_options_deployment_filter'
 import fieldContextOptionsDeploymentOrderFilter from './filters/fields/context_options_order_deployment_filter'
 import contextDefaultValueDeploymentFilter from './filters/fields/context_default_value_deployment_filter'
+import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -278,6 +280,8 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
   scriptRunnerWorkflowReferencesFilter,
+  // must run before workflowTransitionIdsFilter
+  statusPropertiesReferencesFilter,
   // must run after scriptRunnerWorkflowReferencesFilter
   workflowTransitionIdsFilter,
   transitionIdsFilter,
@@ -387,6 +391,7 @@ export const DEFAULT_FILTERS = [
   scriptRunnerInstancesDeploy,
   portalSettingsFilter,
   queueDeploymentFilter,
+  slaAdditionFilter,
   portalGroupsFilter,
   requestTypeFilter,
   fieldContextOptionsDeploymentFilter,

@@ -35,11 +35,13 @@ describe('unique fields', () => {
   const irrelevantObjectType = new ObjectType({ elemID: new ElemID('adapter', 'irrelevantType') })
   const otherRelevantObjectType = new ObjectType({ elemID: new ElemID('adapter', 'otherRelevantType') })
   const uniqueInnerFieldObjectType = new ObjectType({ elemID: new ElemID('adapter', 'uniqueInnerField') })
+  const multiFieldsObjectType = new ObjectType({ elemID: new ElemID('adapter', 'multiFieldsType') })
 
   const changeValidator = uniqueFieldsChangeValidatorCreator({
-    [relevantObjectType.elemID.typeName]: 'uniqueField',
-    [otherRelevantObjectType.elemID.typeName]: 'otherUniqueField',
-    [uniqueInnerFieldObjectType.elemID.typeName]: 'field.uniqueInnerField',
+    [relevantObjectType.elemID.typeName]: ['uniqueField'],
+    [otherRelevantObjectType.elemID.typeName]: ['otherUniqueField'],
+    [uniqueInnerFieldObjectType.elemID.typeName]: ['field.uniqueInnerField'],
+    [multiFieldsObjectType.elemID.typeName]: ['uniqueField1', 'uniqueField2'],
   })
 
   beforeEach(() => {
@@ -133,7 +135,7 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
-        "This relevantType have the same 'uniqueField' as the instance adapter.relevantType.instance.relevantInstance1, and can not be deployed.",
+        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField'.",
     })
   })
   it('should return an error for multiple changes with the same field', async () => {
@@ -157,14 +159,14 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
-        "This relevantType have the same 'uniqueField' as the instance adapter.relevantType.instance.relevantInstance2, and can not be deployed.",
+        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField'.",
     })
     expect(changeErrors[1]).toEqual({
       elemID: relevantInstance2After.elemID,
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
-        "This relevantType have the same 'uniqueField' as the instance adapter.relevantType.instance.relevantInstance1, and can not be deployed.",
+        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField'.",
     })
   })
   it('should return errors for multiple relevant types and reference them correctly', async () => {
@@ -184,14 +186,14 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
-        "This relevantType have the same 'uniqueField' as the instance adapter.relevantType.instance.relevantInstance1, and can not be deployed.",
+        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField'.",
     })
     expect(changeErrors[1]).toEqual({
       elemID: otherRelevantInstance2.elemID,
       severity: 'Error',
       message: "The field 'otherUniqueField' in type otherRelevantType must have a unique value",
       detailedMessage:
-        "This otherRelevantType have the same 'otherUniqueField' as the instance adapter.otherRelevantType.instance.otherRelevantInstance1, and can not be deployed.",
+        "This instance cannot be deployed due to non unique values in the following fields: 'otherUniqueField'.",
     })
   })
   it('should return an error for the same unique inner field value', async () => {
@@ -203,7 +205,53 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The field 'field.uniqueInnerField' in type uniqueInnerField must have a unique value",
       detailedMessage:
-        "This uniqueInnerField have the same 'field.uniqueInnerField' as the instance adapter.uniqueInnerField.instance.uniqueInnerFieldInstance1, and can not be deployed.",
+        "This instance cannot be deployed due to non unique values in the following fields: 'field.uniqueInnerField'.",
     })
+  })
+  it('should return an error for the same unique values in multiple fields', async () => {
+    const multiFieldsInstance1 = new InstanceElement('multiFieldsInstance1', multiFieldsObjectType, {
+      uniqueField1: 'same',
+      uniqueField2: 'same',
+    })
+    const multiFieldsInstance2 = new InstanceElement('multiFieldsInstance2', multiFieldsObjectType, {
+      uniqueField1: 'same',
+      uniqueField2: 'same',
+    })
+
+    const elementSource = buildElementsSourceFromElements([multiFieldsInstance1, multiFieldsInstance2])
+    const changeErrors = await changeValidator([toChange({ after: multiFieldsInstance2 })], elementSource)
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      elemID: multiFieldsInstance2.elemID,
+      severity: 'Error',
+      message: "The fields 'uniqueField1', 'uniqueField2' in type multiFieldsType must have unique values",
+      detailedMessage:
+        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField1', 'uniqueField2'.",
+    })
+  })
+  it('should return an error for multiple fields type with only one non unique value', async () => {
+    const multiFieldsInstance1 = new InstanceElement('multiFieldsInstance1', multiFieldsObjectType, {
+      uniqueField1: 'same',
+      uniqueField2: 'same',
+    })
+    const multiFieldsInstance2 = new InstanceElement('multiFieldsInstance2', multiFieldsObjectType, {
+      uniqueField1: 'same',
+      uniqueField2: 'other',
+    })
+
+    const elementSource = buildElementsSourceFromElements([multiFieldsInstance1, multiFieldsInstance2])
+    const changeErrors = await changeValidator([toChange({ after: multiFieldsInstance2 })], elementSource)
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      elemID: multiFieldsInstance2.elemID,
+      severity: 'Error',
+      message: "The fields 'uniqueField1', 'uniqueField2' in type multiFieldsType must have unique values",
+      detailedMessage:
+        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField1'.",
+    })
+  })
+  it('should not return an error when the elementsSource is undefined', async () => {
+    const changeErrors = await changeValidator([toChange({ after: relevantInstance1 })], undefined)
+    expect(changeErrors).toHaveLength(0)
   })
 })

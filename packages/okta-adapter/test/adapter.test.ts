@@ -67,6 +67,8 @@ import {
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
   PROFILE_MAPPING_TYPE_NAME,
+  APP_LOGO_TYPE_NAME,
+  NETWORK_ZONE_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -522,12 +524,13 @@ describe('adapter', () => {
     let brand1: InstanceElement
     let appType: ObjectType
     let groupType: ObjectType
+    let orgSettingType: ObjectType
     let userTypeType: ObjectType
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
 
-      const orgSettingType = new ObjectType({
+      orgSettingType = new ObjectType({
         elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME),
       })
       const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain' })
@@ -599,6 +602,38 @@ describe('adapter', () => {
         })
       })
 
+      describe('deploy org setting', () => {
+        it('should successfully modify org setting', async () => {
+          loadMockReplies('org_setting_modify.json')
+          const orgSetting = new InstanceElement(
+            'orgSetting',
+            orgSettingType,
+            {
+              id: 'orgsetting-fakeid1',
+              subdomain: 'subdomain',
+              phoneNumber: '00000',
+            },
+            undefined,
+            {
+              [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+            },
+          )
+          const updatedOrgSetting = orgSetting.clone()
+          updatedOrgSetting.value.phoneNumber = '12345'
+          const result = await operations.deploy({
+            changeGroup: {
+              groupID: 'orgSetting',
+              changes: [toChange({ before: orgSetting, after: updatedOrgSetting })],
+            },
+            progressReporter: nullProgressReporter,
+          })
+          expect(result.errors).toHaveLength(0)
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.phoneNumber).toEqual('12345')
+          expect(nock.pendingMocks()).toHaveLength(0)
+        })
+      })
+
       it('should successfully add an active authorization server policy', async () => {
         loadMockReplies('authorization_server_policy_add_active.json')
         const authorizationServerPolicy = new InstanceElement(
@@ -658,8 +693,6 @@ describe('adapter', () => {
       })
 
       it('should successfully activate an authorization server policy', async () => {
-        // TODO: it looks like this action sends an unexpected PUT request to the server
-        // This should be fixed when upgrading to the new infra.
         loadMockReplies('authorization_server_policy_activate.json')
         const authorizationServerPolicy = new InstanceElement(
           'authorizationServerPolicy',
@@ -691,8 +724,6 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully deactivate an authorization server policy', async () => {
-        // TODO: it looks like this action sends an unexpected PUT request to the server
-        // This should be fixed when upgrading to the new infra.
         loadMockReplies('authorization_server_policy_deactivate.json')
         const authorizationServerPolicy = new InstanceElement(
           'authorizationServerPolicy',
@@ -845,6 +876,190 @@ describe('adapter', () => {
             refType: BuiltinTypes.SERVICE_ID,
           },
         },
+      })
+    })
+
+    describe('deploy network zone', () => {
+      let networkZoneType: ObjectType
+
+      beforeEach(() => {
+        networkZoneType = new ObjectType({
+          elemID: new ElemID(OKTA, NETWORK_ZONE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an active network zone', async () => {
+        loadMockReplies('network_zone_add_active.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ after: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'networkzone-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive network zone', async () => {
+        loadMockReplies('network_zone_add_inactive.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ after: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'networkzone-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully activate a network zone', async () => {
+        loadMockReplies('network_zone_activate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const activatedNetworkZone = networkZone.clone()
+        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: activatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(ACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully deactivate a network zone', async () => {
+        loadMockReplies('network_zone_deactivate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const deactivatedNetworkZone = networkZone.clone()
+        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: deactivatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify a network zone without status change', async () => {
+        loadMockReplies('network_zone_modify.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const updatedNetworkZone = networkZone.clone()
+        updatedNetworkZone.value.name = 'your_zone'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: updatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and activate a network zone', async () => {
+        loadMockReplies('network_zone_modify_and_activate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const activatedNetworkZone = networkZone.clone()
+        activatedNetworkZone.value.name = 'your_zone'
+        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: activatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate a network zone', async () => {
+        loadMockReplies('network_zone_modify_and_deactivate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const deactivatedNetworkZone = networkZone.clone()
+        deactivatedNetworkZone.value.name = 'your_zone'
+        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: deactivatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove a network zone', async () => {
+        loadMockReplies('network_zone_remove.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
 
@@ -2148,6 +2363,93 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy app logo', () => {
+      let appLogoType: ObjectType
+      let app: InstanceElement
+      let appLogo: InstanceElement
+
+      beforeEach(() => {
+        appLogoType = new ObjectType({
+          elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        app = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          name: 'app1',
+          label: 'app1',
+          signOnMode: 'AUTO_LOGIN',
+          settings: {
+            app: {
+              url: 'https://app1.com',
+            },
+          },
+        })
+        appLogo = new InstanceElement(
+          'appLogo',
+          appLogoType,
+          {
+            fileName: 'logo.png',
+            content: new StaticFile({
+              filepath: 'applogo.png',
+              encoding: 'binary',
+              content: Buffer.from('logo-fake-binary-data'),
+            }),
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+      })
+
+      it('should successfully add an app logo', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/apps/app-fakeid1/logo', /logo-fake-binary-data/)
+          .reply(201, { url: 'https://somepath.to/applogo-fakeid1' })
+
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appLogo',
+            changes: [toChange({ after: appLogo })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an app logo', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/apps/app-fakeid1/logo', /logo-fake-binary-data/)
+          .reply(201, { url: 'https://somepath.to/applogo-fakeid1' })
+
+        const updatedAppLogo = appLogo.clone()
+        updatedAppLogo.value.content = new StaticFile({
+          filepath: 'applogo.png',
+          encoding: 'binary',
+          content: Buffer.from('updated-logo-fake-binary-data'),
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appLogo',
+            changes: [toChange({ before: appLogo, after: updatedAppLogo })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

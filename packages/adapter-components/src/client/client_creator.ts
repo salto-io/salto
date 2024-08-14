@@ -19,9 +19,8 @@ import { ClientRateLimitConfig } from '../definitions'
 import { ConnectionCreator } from './http_connection'
 import {
   DEFAULT_RETRY_OPTS,
-  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  RATE_LIMIT_USE_BOTTLENECK,
+  RATE_LIMIT_DEFAULT_OPTIONS,
 } from './constants'
 
 interface ClientConstructor<Credentials> {
@@ -40,8 +39,8 @@ const CLIENT_UNLIMITED_DEFAULTS: Omit<ClientDefaults<ClientRateLimitConfig>, 'pa
     deploy: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   },
   maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
-  useBottleneck: RATE_LIMIT_USE_BOTTLENECK,
+  delayPerRequestMS: RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
+  useBottleneck: RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
   retry: DEFAULT_RETRY_OPTS,
 }
 

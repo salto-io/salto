@@ -59,6 +59,7 @@ import {
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { FetchCustomizations } from './types'
 import {
+  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
   DEFAULT_FIELD_CUSTOMIZATIONS,
   DEFAULT_ID_PARTS,
   DEFAULT_TRANSFORMATION,
@@ -111,6 +112,17 @@ const graphV1Customizations: FetchCustomizations = {
           }
         },
       },
+      context: {
+        // We only need this dependency for the conditions under the group life cycle policy recurse definition
+        dependsOn: {
+          [CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES]: {
+            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
+            transformation: {
+              root: 'managedGroupTypes',
+            },
+          },
+        },
+      },
       recurseInto: {
         [GROUP_ADDITIONAL_DATA_FIELD_NAME]: {
           typeName: GROUP_ADDITIONAL_DATA_TYPE_NAME,
@@ -141,6 +153,12 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromContext: CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
+              match: ['Selected'],
+            },
+          ],
         },
       },
     },
@@ -210,23 +228,6 @@ const graphV1Customizations: FetchCustomizations = {
   [GROUP_LIFE_CYCLE_POLICY_TYPE_NAME]: {
     resource: {
       directFetch: false,
-      context: {
-        dependsOn: {
-          [LIFE_CYCLE_POLICY_TYPE_NAME]: {
-            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
-            transformation: {
-              pick: ['managedGroupTypes'],
-            },
-          },
-        },
-        // TODO SALTO-6077: we currently overlook this definition. We should validate this definition after fixing the issue
-        conditions: [
-          {
-            fromContext: LIFE_CYCLE_POLICY_TYPE_NAME,
-            match: ['Selected'],
-          },
-        ],
-      },
     },
     requests: [
       {
@@ -347,6 +348,13 @@ const graphV1Customizations: FetchCustomizations = {
           },
         },
         [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        [APP_ROLE_ASSIGNMENT_FIELD_NAME]: {
+          standalone: {
+            typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+            nestPathUnderParent: true,
+            referenceFromParent: false,
+          },
+        },
       },
     },
   },
@@ -395,6 +403,9 @@ const graphV1Customizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/oauth2PermissionGrants',
+          queryArgs: {
+            $filter: "consentType eq 'AllPrincipals'",
+          },
         },
         transformation: DEFAULT_TRANSFORMATION,
       },
@@ -406,7 +417,6 @@ const graphV1Customizations: FetchCustomizations = {
           parts: [
             { fieldName: 'clientId', isReference: true },
             { fieldName: 'resourceId', isReference: true },
-            { fieldName: 'consentType' },
           ],
         },
       },
@@ -597,6 +607,13 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromField: 'authenticationType',
+              // Exclude federated domains, as this api call does not support them
+              match: ['Managed'],
+            },
+          ],
         },
       },
       mergeAndTransform: {

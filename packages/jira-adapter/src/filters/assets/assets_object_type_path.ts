@@ -15,6 +15,7 @@
  */
 
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { DAG } from '@salto-io/dag'
 import { pathNaclCase } from '@salto-io/adapter-utils'
@@ -22,6 +23,7 @@ import { FilterCreator } from '../../filter'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const createPaths = async (objectTypes: InstanceElement[]): Promise<void> => {
   const graph = new DAG<InstanceElement>()
@@ -34,17 +36,23 @@ const createPaths = async (objectTypes: InstanceElement[]): Promise<void> => {
     graph.addNode(objectType.elemID.name, dependencies, objectType)
   })
   await awu(graph.evaluationOrder()).forEach(graphNode => {
-    const instance = graph.getData(graphNode.toString())
-    const parentPath = instance.value.parentObjectTypeId.value.path
-    instance.path =
-      instance.value.parentObjectTypeId.elemID.typeName === OBJECT_SCHEMA_TYPE
-        ? [
-            ...parentPath.slice(0, -1),
-            'objectTypes',
-            pathNaclCase(instance.value.name),
-            pathNaclCase(instance.elemID.name),
-          ]
-        : [...parentPath.slice(0, -1), pathNaclCase(instance.value.name), pathNaclCase(instance.elemID.name)]
+    try {
+      const instance = graph.getData(graphNode.toString())
+      const parentPath = instance.value.parentObjectTypeId.value.path
+      instance.path =
+        instance.value.parentObjectTypeId.elemID.typeName === OBJECT_SCHEMA_TYPE
+          ? [
+              ...parentPath.slice(0, -1),
+              'objectTypes',
+              pathNaclCase(instance.value.name),
+              pathNaclCase(instance.elemID.name),
+            ]
+          : [...parentPath.slice(0, -1), pathNaclCase(instance.value.name), pathNaclCase(instance.elemID.name)]
+    } catch (e) {
+      const errorObjectType =
+        objectTypes.find(instance => instance.elemID.name === graphNode.toString()) ?? graphNode.toString()
+      log.error('Failed to create path for objectType instance %o, error: %o', errorObjectType, e.message)
+    }
   })
 }
 

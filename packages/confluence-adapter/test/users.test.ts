@@ -17,7 +17,7 @@
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../src/definitions/types'
 import { createDeployDefinitions, createFetchDefinitions } from '../src/definitions'
-import { getUsersAndGroups } from '../src/get_users_and_groups'
+import { getUsersIndex } from '../src/users'
 import { DEFAULT_CONFIG } from '../src/config'
 
 const mockRequestAllResources = jest.fn()
@@ -37,27 +37,18 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
-describe('getUsersAndGroups', () => {
+describe('getUsersIndex', () => {
   const fetchDef = createFetchDefinitions(DEFAULT_CONFIG)
   const deployDef = createDeployDefinitions()
   const mockDefinitions = {
     fetch: fetchDef,
     deploy: deployDef,
   } as definitions.ApiDefinitions<Options>
-  const mockGroupsResponse = [
-    { value: { id: 'group1Id', name: 'group1' } },
-    { value: { id: 'group2Id', name: 'group2' } },
-    { value: { notValid: 'aaaa', groupStructure: 'bbb' } },
-  ]
   const mockUsersResponse = [
     { value: { accountId: 'user1Id', emailAddress: 'user1@email.com', displayName: 'user1' } },
     { value: { accountId: 'user2Id', emailAddress: 'user2@email.com', displayName: 'user2' } },
     { value: { notValid: 'aaa', userStructure: 'bbb' } },
   ]
-  const expectedGroupsIndex = {
-    group1Id: { name: 'group1', id: 'group1Id' },
-    group2Id: { name: 'group2', id: 'group2Id' },
-  }
   const expectedUsersIndex = {
     user1Id: { accountId: 'user1Id', emailAddress: 'user1@email.com', displayName: 'user1' },
     user2Id: { accountId: 'user2Id', emailAddress: 'user2@email.com', displayName: 'user2' },
@@ -67,38 +58,14 @@ describe('getUsersAndGroups', () => {
     jest.clearAllMocks()
   })
   it('should throw an error when there is no fetch definition', async () => {
-    await expect(getUsersAndGroups({ ...mockDefinitions, fetch: undefined })).rejects.toThrow()
+    await expect(getUsersIndex({ ...mockDefinitions, fetch: undefined })).rejects.toThrow()
   })
-  it('should return empty indices when failed to fetch groups and users', async () => {
+  it('should return empty index when failed to fetch users', async () => {
     mockRequestAllResources.mockRejectedValue(new Error('Failed to fetch'))
-    expect(await getUsersAndGroups(mockDefinitions)).toEqual({
-      groupsIndex: {},
-      usersIndex: {},
-    })
-  })
-  it('should return empty groups index and correct users index when failed to fetch groups', async () => {
-    mockRequestAllResources
-      .mockRejectedValueOnce(new Error('Failed to fetch groups'))
-      .mockResolvedValueOnce(mockUsersResponse)
-    expect(await getUsersAndGroups(mockDefinitions)).toEqual({
-      groupsIndex: {},
-      usersIndex: expectedUsersIndex,
-    })
-  })
-  it('should return empty users index and correct groups index when failed to fetch users', async () => {
-    mockRequestAllResources
-      .mockResolvedValueOnce(mockGroupsResponse)
-      .mockRejectedValueOnce(new Error('Failed to fetch users'))
-    expect(await getUsersAndGroups(mockDefinitions)).toEqual({
-      groupsIndex: expectedGroupsIndex,
-      usersIndex: {},
-    })
+    expect(await getUsersIndex(mockDefinitions)).toEqual({})
   })
   it('should return user and group indices when succeed to fetch groups and users', async () => {
-    mockRequestAllResources.mockReturnValueOnce(mockGroupsResponse).mockReturnValueOnce(mockUsersResponse)
-    expect(await getUsersAndGroups(mockDefinitions)).toEqual({
-      groupsIndex: expectedGroupsIndex,
-      usersIndex: expectedUsersIndex,
-    })
+    mockRequestAllResources.mockReturnValueOnce(mockUsersResponse)
+    expect(await getUsersIndex(mockDefinitions)).toEqual(expectedUsersIndex)
   })
 })

@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 import { elements, definitions } from '@salto-io/adapter-components'
-import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
-import { OKTA, USER_TYPE_NAME } from './constants'
+import { BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, createRestriction } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { JWK_TYPE_NAME, OKTA, USER_TYPE_NAME } from './constants'
+
+const log = logger(module)
 
 type GetUsersStrategy = 'searchQuery' | 'allUsers'
 
@@ -68,6 +72,8 @@ const changeValidatorNames = [
   'domainModification',
   'schemaBaseChanges',
   'userStatusChanges',
+  'disabledAuthenticatorsInMfaPolicy',
+  'oidcIdentityProvider',
 ] as const
 
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]
@@ -84,7 +90,7 @@ export const DEFAULT_CONFIG: OktaUserConfig = {
   },
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
-    exclude: [{ type: USER_TYPE_NAME }],
+    exclude: [{ type: USER_TYPE_NAME }, { type: JWK_TYPE_NAME }],
     hideTypes: true,
     convertUsersIds: DEFAULT_CONVERT_USERS_IDS_VALUE,
     enableMissingReferences: true,
@@ -126,3 +132,31 @@ export const configType = definitions.createUserConfigType({
   omitElemID: false,
   pathsToOmitFromDefaultConfig: ['fetch.enableMissingReferences', 'fetch.getUsersStrategy'],
 })
+
+/*
+ * Temporary config suggestion to migrate existing configs to exclude JWK type
+ */
+export const getExcludeJWKConfigSuggestion = (
+  userConfig: Readonly<InstanceElement> | undefined,
+): definitions.ConfigChangeSuggestion | undefined => {
+  const typesToExclude = userConfig?.value?.fetch?.exclude
+  const typesToInclude = userConfig?.value?.fetch?.include
+  if (!Array.isArray(typesToExclude) || !Array.isArray(typesToInclude)) {
+    log.error(
+      'failed creating config suggestion to exclude JsonWebKey type, expected fetch.exclude and fetch.include to be an array, but instead got %s',
+      safeJsonStringify({ exclude: typesToExclude, include: typesToInclude }),
+    )
+    return undefined
+  }
+  const isJWKExcluded = typesToExclude.find(fetchEnty => fetchEnty?.type === JWK_TYPE_NAME)
+  const isJWKIncluded = typesToInclude.find(fetchEnty => fetchEnty?.type === JWK_TYPE_NAME)
+  if (!isJWKExcluded && !isJWKIncluded) {
+    return {
+      type: 'typeToExclude',
+      value: JWK_TYPE_NAME,
+      reason:
+        'JsonWebKey type is excluded by default. To include it, explicitly add "JsonWebKey" type into the include list.',
+    }
+  }
+  return undefined
+}

@@ -29,10 +29,9 @@ import { OktaClientRateLimitConfig } from '../user_config'
 const { sleep } = promises.timeout
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
   DEFAULT_RETRY_OPTS,
   DEFAULT_TIMEOUT_OPTS,
-  RATE_LIMIT_USE_BOTTLENECK,
+  RATE_LIMIT_DEFAULT_OPTIONS,
   throttle,
   logDecorator,
 } = clientUtils
@@ -159,8 +158,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
     super(OKTA, clientOpts, createConnection, {
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-      delayPerRequestMS: clientOpts.config?.delayPerRequestMS ?? RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
-      useBottleneck: clientOpts.config?.useBottleneck ?? RATE_LIMIT_USE_BOTTLENECK,
+      delayPerRequestMS: clientOpts.config?.delayPerRequestMS ?? RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
+      useBottleneck: clientOpts.config?.useBottleneck ?? RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
       maxRequestsPerMinute:
         clientOpts.config?.rateLimit?.rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
           ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default
@@ -240,7 +239,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       return undefined
     }
     const URL_TO_OMIT_FUNC: Record<string, (key: string, val: unknown) => unknown> = {
-      '/api/v1/idps': key => (key === 'credentials' ? OMITTED_PLACEHODLER : undefined),
+      '/api/v1/idps': key => (key === 'client_secret' ? OMITTED_PLACEHODLER : undefined),
       '/api/v1/authenticators': key => (['sharedSecret', 'secretKey'].includes(key) ? OMITTED_PLACEHODLER : undefined),
       '/api/v1/users': cleanUsersData,
     }

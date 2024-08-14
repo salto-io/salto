@@ -61,6 +61,7 @@ import {
   DOMAIN_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
+  IDENTITY_PROVIDER_TYPE_NAME,
   INACTIVE_STATUS,
   NETWORK_ZONE_TYPE_NAME,
   ORG_SETTING_TYPE_NAME,
@@ -278,6 +279,13 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
       removePoweredByOkta: true,
     },
   })
+  const identityProvider = createInstance({
+    typeName: IDENTITY_PROVIDER_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName(IDENTITY_PROVIDER_TYPE_NAME),
+    },
+  })
   return [
     toChange({ after: groupInstance }),
     toChange({ after: anotherGroupInstance }),
@@ -290,6 +298,7 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
     toChange({ after: app }),
     toChange({ after: appGroupAssignment }),
     toChange({ after: brand }),
+    toChange({ after: identityProvider }),
   ]
 }
 

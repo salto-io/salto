@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { definitions } from '@salto-io/adapter-components'
+import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
 
 export const validateValue = (value: unknown): Record<string, unknown> => {
   if (!lowerdashValues.isPlainRecord(value)) {
@@ -22,3 +25,17 @@ export const validateValue = (value: unknown): Record<string, unknown> => {
   }
   return value
 }
+
+export const createAdjustFunctionFromMultipleFunctions =
+  (
+    functions: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext>[],
+  ): definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> =>
+  async args => {
+    const value = validateValue(args.value)
+    const argsWithValidatedValue = { ...args, value }
+    const res = await awu(functions)
+      .map(adjust => adjust(argsWithValidatedValue))
+      .toArray()
+    res.pop()
+    return res.pop() ?? argsWithValidatedValue
+  }

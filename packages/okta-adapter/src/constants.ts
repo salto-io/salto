@@ -55,6 +55,7 @@ export const MFA_POLICY_PRIORITY_TYPE_NAME = 'MultifactorEnrollmentPolicyPriorit
 export const PASSWORD_POLICY_PRIORITY_TYPE_NAME = 'PasswordPolicyPriority'
 export const AUTOMATION_TYPE_NAME = 'Automation'
 export const AUTOMATION_RULE_TYPE_NAME = 'AutomationRule'
+export const JWK_TYPE_NAME = 'JsonWebKey'
 export const ACTIVE_STATUS = 'ACTIVE'
 export const INACTIVE_STATUS = 'INACTIVE'
 export const POLICY_TYPE_NAMES = [

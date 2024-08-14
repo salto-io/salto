@@ -36,7 +36,7 @@ import {
   getRuleTypeFromWorkflowTransitionRule,
   RuleType,
   getExtensionIdFromWorkflowTransitionRule,
-} from '../../common/workflow/transition_rules'
+} from '../../common/workflow/transitions'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

@@ -52,8 +52,8 @@ describe('workflow filter', () => {
         }),
       ) as typeof filter
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(2)
-      expect(elements).toEqual([workflowV2Instance, notWorkflowInstance])
+      expect(elements).toHaveLength(3)
+      expect(elements).toEqual([workflowType, workflowV2Instance, notWorkflowInstance])
     })
 
     it('should not remove workflowV1 instances when enableNewWorkflowAPI is false', async () => {

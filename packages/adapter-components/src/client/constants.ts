@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
+import { RateLimiterOptions, RateLimiterRetryOptions } from './rate_limiter'
 
 export const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
@@ -28,5 +29,20 @@ export const DEFAULT_TIMEOUT_OPTS: Required<ClientTimeoutConfig> = {
 }
 
 export const RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS = -1
-export const RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS = 0
-export const RATE_LIMIT_USE_BOTTLENECK = true
+
+export const RATE_LIMIT_DEFAULT_RETRY_OPTIONS: RateLimiterRetryOptions = {
+  retryPredicate: (): boolean => false,
+  calculateRetryDelayMS: (): number => 0,
+  pauseDuringRetryDelay: false,
+}
+
+export const RATE_LIMIT_DEFAULT_OPTIONS: RateLimiterOptions = {
+  maxConcurrentCalls: Infinity,
+  maxCallsPerInterval: Infinity,
+  intervalLengthMS: 0,
+  carryRunningCallsOver: true,
+  delayMS: 0,
+  startPaused: false,
+  useBottleneck: true,
+  ...RATE_LIMIT_DEFAULT_RETRY_OPTIONS,
+}

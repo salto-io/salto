@@ -1043,7 +1043,7 @@ const fixStaticFilesForFromStateChanges = async (
         env,
         isTemplate: staticFile.isTemplate,
       })
-      if (!actualStaticFile?.isEqual(staticFile)) {
+      if (!isStaticFile(actualStaticFile) || !actualStaticFile.isEqual(staticFile)) {
         invalidChangeIDs.add(change.id.getFullName())
         log.warn(
           'Static files mismatch in fetch from state for change in elemID %s. (stateHash=%s naclHash=%s)',

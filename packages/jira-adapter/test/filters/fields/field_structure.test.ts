@@ -199,6 +199,10 @@ describe('fields_structure', () => {
               value: 'someValue6',
               optionId: '2',
             },
+            {
+              id: 7,
+              value: '',
+            },
           ],
         },
       ],
@@ -243,6 +247,11 @@ describe('fields_structure', () => {
               position: 1,
             },
           },
+        },
+        '@': {
+          id: 7,
+          value: '',
+          position: 3,
         },
       },
     })

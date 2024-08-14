@@ -121,6 +121,7 @@ export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 
     filePath: string
     encoding: BufferEncoding
     isTemplate?: boolean
+    hash?: string
   }) => Promise<StaticFile | undefined>
   isPathIncluded: (filePath: string) => { included: boolean; isNacl?: boolean }
 }
@@ -312,10 +313,7 @@ const createNaclFilesState = async (
     await remoteMapCreator<Element>({
       namespace: getRemoteMapNamespace('merged', sourceName),
       serialize: async element => serialize([element], 'keepRef'),
-      deserialize: async data =>
-        deserializeSingleElement(data, async sf =>
-          staticFilesSource.getStaticFile({ filepath: sf.filepath, encoding: sf.encoding, isTemplate: sf.isTemplate }),
-        ),
+      deserialize: async data => deserializeSingleElement(data, async sf => staticFilesSource.getStaticFile(sf)),
       persistent,
     }),
   ),
@@ -1100,6 +1098,7 @@ const buildNaclFilesSource = (
         filepath: args.filePath,
         encoding: args.encoding,
         isTemplate: args.isTemplate,
+        hash: args.hash,
       })
       if (isStaticFile(staticFile)) {
         return staticFile

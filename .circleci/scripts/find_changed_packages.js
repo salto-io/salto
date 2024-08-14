@@ -30,8 +30,7 @@ const getWorkspacesInfo = () => {
   const output = execSync('yarn workspaces list --json -v', { encoding: 'utf8' })
   const transformToObject = (array) => {
     return array.reduce((acc,item) => {
-      const { name, ...rest } = item
-      acc[name] = rest
+      acc[item.location] = item
       return acc
     }, {})
   }

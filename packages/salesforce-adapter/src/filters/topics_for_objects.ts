@@ -59,6 +59,9 @@ export const DEFAULT_ENABLE_TOPICS_VALUE = false
 
 const getTopicsForObjects = (obj: ObjectType): Values => obj.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] || {}
 
+const isTopicsEnabledForObject = (obj: ObjectType): boolean =>
+  boolValue(getTopicsForObjects(obj)[ENABLE_TOPICS] ?? false)
+
 const setTopicsForObjects = (object: ObjectType, enableTopics: boolean): void => {
   object.annotate({
     [TOPICS_FOR_OBJECTS_ANNOTATION]: { [ENABLE_TOPICS]: enableTopics },
@@ -191,7 +194,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
 
     const newObjects = customObjectChanges.filter(isAdditionChange).map(getChangeData)
     // Add default value for new custom objects that have not specified a value
-    newObjects.filter(obj => _.isEmpty(getTopicsForObjects(obj))).forEach(setDefaultTopicsForObjects)
+    newObjects.filter(obj => !isCustomObjectWithTopics(obj)).forEach(setDefaultTopicsForObjects)
 
     const newObjectTopicsToSet = newObjects.filter(
       obj => getTopicsForObjects(obj)[ENABLE_TOPICS] !== DEFAULT_ENABLE_TOPICS_VALUE,
@@ -199,7 +202,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
 
     const changedObjectTopics = customObjectChanges
       .filter(isModificationChange)
-      .filter(change => !_.isEqual(getTopicsForObjects(change.data.before), getTopicsForObjects(change.data.after)))
+      .filter(change => isTopicsEnabledForObject(change.data.before) !== isTopicsEnabledForObject(change.data.after))
       .map(getChangeData)
 
     const topicsToSet = [...newObjectTopicsToSet, ...changedObjectTopics]
@@ -210,11 +213,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     // Add topics for objects instances to the list of changes to deploy
     changes.push(
       ...(await awu(topicsToSet)
-        .map(async obj => {
-          const topics = getTopicsForObjects(obj)
-          const topicsEnabled = boolValue(topics[ENABLE_TOPICS] ?? false)
-          return new TopicsForObjectsInfo(await apiName(obj), await apiName(obj), topicsEnabled)
-        })
+        .map(
+          async obj => new TopicsForObjectsInfo(await apiName(obj), await apiName(obj), isTopicsEnabledForObject(obj)),
+        )
         .map(createTopicsForObjectsInstance)
         .map(after => toChange({ after }))
         .toArray()),

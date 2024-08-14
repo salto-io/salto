@@ -31,6 +31,7 @@ import {
   isInstanceElement,
   isModificationChange,
   isReferenceExpression,
+  ElemID,
 } from '@salto-io/adapter-api'
 import { createSchemeGuard, getInstancesFromElementSource, validateReferenceExpression } from '@salto-io/adapter-utils'
 import { isWorkflowSchemeItem, projectHasWorkflowSchemeReference } from '../workflow_scheme_migration'
@@ -95,11 +96,11 @@ const getRemovedStatuses = (change: ModificationChange<InstanceElement>): Refere
 
 const getWorkflowSchemeMigrationIssueType = async ({
   workflowSchemeInstance,
-  workflowName,
+  workflowElemID,
   elementsSource,
 }: {
   workflowSchemeInstance: InstanceElement
-  workflowName: string
+  workflowElemID: ElemID
   elementsSource: ReadOnlyElementsSource
 }): Promise<ReferenceExpression[]> => {
   const workflowSchemeDefaultWorkflow = workflowSchemeInstance.value.defaultWorkflow
@@ -107,7 +108,7 @@ const getWorkflowSchemeMigrationIssueType = async ({
     isReferenceExpression(workflowSchemeDefaultWorkflow) &&
     // when the workflow that has changed is the default workflow of a workflowScheme
     // we need to include the issue types that use the default workflow in this scheme in the status mappings
-    workflowSchemeDefaultWorkflow.elemID.name === workflowName
+    workflowSchemeDefaultWorkflow.elemID.isEqual(workflowElemID)
   ) {
     // all the issueTypes
     const issueTypes = (await getInstancesFromElementSource(elementsSource, [ISSUE_TYPE_NAME])).map(
@@ -124,7 +125,7 @@ const getWorkflowSchemeMigrationIssueType = async ({
   const issueTypes = makeArray(workflowSchemeInstance.value.items)
     .filter(isWorkflowSchemeItem)
     // the issueTypes that using this workflow in the scheme are the ones that we need to migrate
-    .filter(item => item.workflow.elemID.name === workflowName)
+    .filter(item => item.workflow.elemID.isEqual(workflowElemID))
     .map(item => item.issueType)
   return issueTypes
 }
@@ -182,14 +183,14 @@ const getProjectIssueTypes = async (
 
 const getNewStatusMappings = async ({
   workflowSchemeInstance,
-  workflowName,
+  workflowElemID,
   removedStatuses,
   projectReferences,
   existingStatusMappings,
   elementsSource,
 }: {
   workflowSchemeInstance: InstanceElement
-  workflowName: string
+  workflowElemID: ElemID
   removedStatuses: ReferenceExpression[]
   projectReferences: ReferenceExpression[]
   existingStatusMappings: StatusMapping[]
@@ -197,7 +198,7 @@ const getNewStatusMappings = async ({
 }): Promise<StatusMapping[]> => {
   const issueTypeReferences = await getWorkflowSchemeMigrationIssueType({
     workflowSchemeInstance,
-    workflowName,
+    workflowElemID,
     elementsSource,
   })
   if (_.isEmpty(issueTypeReferences)) {
@@ -271,7 +272,7 @@ export const workflowStatusMappingsValidator: ChangeValidator = async (changes, 
         .flatMap(async ([workflowSchemeName, projectReferences]) =>
           getNewStatusMappings({
             workflowSchemeInstance: workflowSchemeNameToInstance[workflowSchemeName],
-            workflowName: change.data.after.value.name,
+            workflowElemID: change.data.after.elemID,
             removedStatuses,
             projectReferences,
             existingStatusMappings,

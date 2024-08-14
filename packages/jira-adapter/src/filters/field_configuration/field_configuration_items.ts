@@ -21,10 +21,11 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   ModificationChange,
+  Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getParent } from '@salto-io/adapter-utils'
-import { resolveValues } from '@salto-io/adapter-components'
+import { resolveValues, client as clientUtils } from '@salto-io/adapter-components'
 
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
@@ -34,6 +35,18 @@ import { getLookUpName } from '../../reference_mapping'
 import JiraClient from '../../client/client'
 
 const { awu } = collections.asynciterable
+
+const putFieldItemsChunk = async (
+  client: JiraClient,
+  parentId: string,
+  fieldsChunk: Values[],
+): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> =>
+  client.put({
+    url: `/rest/api/3/fieldconfiguration/${parentId}/fields`,
+    data: {
+      fieldConfigurationItems: fieldsChunk,
+    },
+  })
 
 const deployFieldConfigurationItems = async (
   changes: Array<AdditionChange<InstanceElement> | ModificationChange<InstanceElement>>,
@@ -52,16 +65,13 @@ const deployFieldConfigurationItems = async (
 
   const parentId = getParent(getChangeData(changes[0])).value.id
 
-  await Promise.all(
-    _.chunk(fields, config.client.fieldConfigurationItemsDeploymentLimit).map(async fieldsChunk =>
-      client.put({
-        url: `/rest/api/3/fieldconfiguration/${parentId}/fields`,
-        data: {
-          fieldConfigurationItems: fieldsChunk,
-        },
-      }),
-    ),
-  )
+  const fieldChunks = _.chunk(fields, config.client.fieldConfigurationItemsDeploymentLimit)
+  if (client.isDataCenter) {
+    // in DC calling deploy in parallel for field configuration items causes deadlocks and data corruption
+    await awu(fieldChunks).forEach(async fieldsChunk => putFieldItemsChunk(client, parentId, fieldsChunk))
+  } else {
+    await Promise.all(fieldChunks.map(async fieldsChunk => putFieldItemsChunk(client, parentId, fieldsChunk)))
+  }
 }
 
 const filter: FilterCreator = ({ client, config }) => ({

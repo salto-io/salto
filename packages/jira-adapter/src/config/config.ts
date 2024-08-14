@@ -60,6 +60,7 @@ type JiraDeployConfig = definitions.UserDeployConfig &
 
 type JiraFetchFilters = definitions.DefaultFetchCriteria & {
   type?: string
+  state?: string
 }
 
 type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFilters }> & {
@@ -162,7 +163,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     removeDuplicateProjectRoles: true,
     addAlias: true,
     enableIssueLayouts: true,
-    enableNewWorkflowAPI: false,
+    enableNewWorkflowAPI: true,
     enableAssetsObjectFieldConfiguration: false,
   },
   deploy: {
@@ -177,8 +178,16 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   },
 }
 
-export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): JiraConfig => ({
+const getPartialDefaultConfig = (isDataCenter: boolean): Omit<JiraConfig, 'apiDefinitions'> => ({
   ...PARTIAL_DEFAULT_CONFIG,
+  fetch: {
+    ...PARTIAL_DEFAULT_CONFIG.fetch,
+    enableNewWorkflowAPI: !isDataCenter,
+  },
+})
+
+export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): JiraConfig => ({
+  ...getPartialDefaultConfig(isDataCenter),
   apiDefinitions: getProductSettings({ isDataCenter }).defaultApiDefinitions,
   [SCRIPT_RUNNER_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultScriptRunnerApiDefinitions,
   [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultDuckTypeApiDefinitions,
@@ -256,6 +265,8 @@ export type ChangeValidatorName =
   | 'jsmPermissions'
   | 'fieldContextOptions'
   | 'uniqueFields'
+  | 'assetsObjectFieldConfigurationAql'
+  | 'projectAssigneeType'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -320,6 +331,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
     fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
     uniqueFields: { refType: BuiltinTypes.BOOLEAN },
+    assetsObjectFieldConfigurationAql: { refType: BuiltinTypes.BOOLEAN },
+    projectAssigneeType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -339,6 +352,7 @@ const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
   fields: {
     name: { refType: BuiltinTypes.STRING },
     type: { refType: BuiltinTypes.STRING },
+    state: { refType: BuiltinTypes.STRING },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

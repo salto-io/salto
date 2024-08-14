@@ -422,16 +422,6 @@ describe('requestType filter', () => {
         'Failed to deploy request type workflow statuses due to bad workflow statuses',
       )
     })
-    it('should not deploy addition of bad request form', async () => {
-      const requestTypeAfter = requestTypeInstance.clone()
-      requestTypeAfter.value.requestForm.issueLayoutConfig.items[0].key = 'not a reference'
-      const res = await filter.deploy([{ action: 'add', data: { after: requestTypeAfter } }])
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.errors[0].message).toContain(
-        'Error: Failed to deploy requestType requestForm due to a bad item key: not a reference',
-      )
-    })
     it('should not deploy requestType if bad issue Layout response', async () => {
       mockGet.mockImplementation(() => {
         throw new Error('Err')

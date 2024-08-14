@@ -91,6 +91,11 @@ const filter: FilterCreator = () => {
           workflowTransitionType,
           'properties',
           new ListType(propertyType),
+          {
+            [CORE_ANNOTATIONS.CREATABLE]: true,
+            [CORE_ANNOTATIONS.UPDATABLE]: true,
+            [CORE_ANNOTATIONS.DELETABLE]: true,
+          },
         )
       }
 

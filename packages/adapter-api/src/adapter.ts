@@ -193,7 +193,7 @@ export type LoadElementsFromFolderArgs = {
 
 export type DumpElementsToFolderArgs = {
   baseDir: string
-  changes: Change[]
+  changes: ReadonlyArray<Change>
   elementsSource: ReadOnlyElementsSource
 }
 

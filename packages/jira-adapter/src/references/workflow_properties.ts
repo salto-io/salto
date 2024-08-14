@@ -25,6 +25,8 @@ const KEY_ID_REGEX_TO_TYPE = {
   'jira\\.permission\\..*\\.userCF': FIELD_TYPE_NAME,
   [RESOLUTION_KEY_PATTERN]: RESOLUTION_TYPE_NAME,
   'jira\\.permission\\..*\\.group': GROUP_TYPE_NAME,
+  'approval\\.field\\.id': FIELD_TYPE_NAME,
+  'approval\\.pre-populated\\.field\\.id': FIELD_TYPE_NAME,
 }
 
 export const getRefType = (key: string): string | undefined =>

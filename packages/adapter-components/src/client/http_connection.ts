@@ -40,6 +40,7 @@ export type Response<T> = {
   status: number
   statusText?: string
   headers?: Partial<AxiosResponseHeaders>
+  requestPath?: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -223,7 +224,7 @@ export const axiosConnection = <TCredentials>({
       if (e.response?.status === 401 || e instanceof UnauthorizedError) {
         throw new UnauthorizedError('Unauthorized - update credentials and try again')
       }
-      throw new Error(`Login failed with error: ${e}`)
+      throw new Error(`Login failed with error: ${e.message ?? e}`)
     }
   }
 

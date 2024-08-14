@@ -2084,10 +2084,26 @@ describe('transformer', () => {
           }),
         ).toEqual('true')
       })
-      it('should omit null values', () => {
+      it('should omit null representing object', () => {
         expect(
           transformPrimitive({
             value: { $: { 'xsi:nil': 'true' } },
+            field: mockObjType.fields.bool,
+          }),
+        ).toBeUndefined()
+      })
+      it('should omit null value', () => {
+        expect(
+          transformPrimitive({
+            value: null,
+            field: mockObjType.fields.bool,
+          }),
+        ).toBeUndefined()
+      })
+      it('should omit undefined value', () => {
+        expect(
+          transformPrimitive({
+            value: undefined,
             field: mockObjType.fields.bool,
           }),
         ).toBeUndefined()

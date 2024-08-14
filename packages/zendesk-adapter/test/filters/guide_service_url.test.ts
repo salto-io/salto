@@ -80,14 +80,27 @@ describe('guide service_url filter', () => {
     id: 1,
     brand: 123,
   })
+  const sectionInstanceWithoutBrand = new InstanceElement('instance', sectionType, {
+    id: 1,
+    brand: null,
+  })
   const categoryInstance = new InstanceElement('instance', categoryType, {
     id: 2,
+    brand: 123,
+  })
+  const categoryInstanceWithoutId = new InstanceElement('instance', categoryType, {
+    id: null,
     brand: 123,
   })
   const articleInstance = new InstanceElement('instance', articleType, {
     id: 3,
     brand: 123,
     source_locale: 'en-us',
+  })
+  const articleInstanceWithObjectLocale = new InstanceElement('instance', articleType, {
+    id: 3,
+    brand: 123,
+    source_locale: { value: 'en-us' },
   })
   const articleTranslationInstance = new InstanceElement('instance', articleTranslationType, {
     brand: 123,
@@ -142,6 +155,13 @@ describe('guide service_url filter', () => {
         'https://free-tifder.zendesk.com/hc/admin/general_settings',
         'https://free-tifder.zendesk.com/hc/admin/language_settings',
       ])
+    })
+    it('should not create service urls when there are invalid params', async () => {
+      const elements = [sectionInstanceWithoutBrand, categoryInstanceWithoutId, articleInstanceWithObjectLocale]
+      await filter.onFetch(elements)
+      elements.forEach(elem => {
+        expect(elem.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+      })
     })
   })
 })

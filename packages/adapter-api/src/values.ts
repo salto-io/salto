@@ -22,7 +22,7 @@ import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement, isVariable } from './elements'
 
-export type PrimitiveValue = string | boolean | number
+export type PrimitiveValue = string | boolean | number | null | undefined
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type Value = any

@@ -1228,6 +1228,9 @@ export const transformPrimitive: TransformFuncSync = ({ value, path, field }) =>
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
+  if (value === null || value === undefined) {
+    return undefined
+  }
   switch (fieldType.primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(value)

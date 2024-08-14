@@ -119,7 +119,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
       // eslint-disable-next-line no-fallthrough
       case undefined:
       default:
-        log.error('unexpectedly failed to fetch type %s:%s: %s', adapterName, typeName, error.message)
+        log.error('unexpectedly failed to fetch type %s:%s: %s', adapterName, typeName, error.message, { adapterName, typeName })
     }
   }
 

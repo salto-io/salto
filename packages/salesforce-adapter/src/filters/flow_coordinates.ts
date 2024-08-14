@@ -17,7 +17,7 @@ import { getChangeData, InstanceElement, isAdditionOrModificationChange } from '
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import { apiNameSync, isInstanceOfTypeChangeSync, isInstanceOfTypeSync } from './utils'
+import { apiNameSync, ensureSafeFilterFetch, isInstanceOfTypeChangeSync, isInstanceOfTypeSync } from './utils'
 import { FLOW_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
@@ -86,21 +86,31 @@ const addZeroCoordinatesToAllSections: TransformFuncSync = ({ value, field }) =>
   return value
 }
 
-const filter: LocalFilterCreator = () => ({
-  name: 'flowCoordinatesFilter',
-  onFetch: async elements => {
-    elements
-      .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
-      .filter(isInCanvasAutoLayoutMode)
-      .forEach(instance => {
-        instance.value = transformValuesSync({
-          values: instance.value,
-          type: instance.getTypeSync(),
-          transformFunc: removeCoordinatesFromAllSections,
+const FILTER_NAME = 'flowCoordinates'
+
+const filter: LocalFilterCreator = ({config}) => ({
+  name: FILTER_NAME,
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: '',
+    config,
+    filterName: FILTER_NAME,
+    fetchFilterFunc: async elements => {
+      elements
+        .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
+        .filter(isInCanvasAutoLayoutMode)
+        .forEach(instance => {
+          instance.value = transformValuesSync({
+            values: instance.value,
+            type: instance.getTypeSync(),
+            transformFunc: removeCoordinatesFromAllSections,
+          })
         })
-      })
-  },
+    }
+  }),
   preDeploy: async changes => {
+    if (!config.fetchProfile.isFeatureEnabled(FILTER_NAME)) {
+      return
+    }
     changes
       .filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
       .filter(isAdditionOrModificationChange)
@@ -114,6 +124,9 @@ const filter: LocalFilterCreator = () => ({
       })
   },
   onDeploy: async changes => {
+    if (!config.fetchProfile.isFeatureEnabled(FILTER_NAME)) {
+      return
+    }
     changes
       .filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
       .filter(isAdditionOrModificationChange)

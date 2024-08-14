@@ -66,6 +66,7 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
+  GROUP_SCHEMA_TYPE_NAME,
   PROFILE_MAPPING_TYPE_NAME,
   APP_LOGO_TYPE_NAME,
   NETWORK_ZONE_TYPE_NAME,
@@ -1982,6 +1983,63 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy group schema', () => {
+      let groupSchemaType: ObjectType
+
+      beforeEach(() => {
+        groupSchemaType = new ObjectType({
+          elemID: new ElemID(OKTA, GROUP_SCHEMA_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully modify a group schema', async () => {
+        loadMockReplies('group_schema_modify.json')
+        const groupSchema = new InstanceElement(
+          'groupSchema',
+          groupSchemaType,
+          {
+            id: 'groupschema-fakeid1',
+            description: 'my schema',
+            definitions: {
+              custom: {
+                properties: {
+                  MyProperty: {
+                    title: 'My Property Title',
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const updatedGroupSchema = groupSchema.clone()
+        updatedGroupSchema.value.description = 'your schema'
+        // Schemas need to explicitly set deleted properties to `null`, so we check that here.
+        delete updatedGroupSchema.value.definitions.custom.properties.MyProperty
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupSchema',
+            changes: [toChange({ before: groupSchema, after: updatedGroupSchema })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.description).toEqual(
+          'your schema',
+        )
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

@@ -1,0 +1,65 @@
+[
+  {
+    "path": "/api/v1/groups/rules",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "type": "group_rule",
+      "id": "grouprule-fakeid1",
+      "status": "INACTIVE",
+      "name": "my group rule",
+      "created": "2024-08-14T13:18:36.000Z",
+      "lastUpdated": "2024-08-14T13:18:36.000Z",
+      "conditions": {
+        "expression": {
+          "value": "substringAfter(user.email, '@')==\"example.com\"",
+          "type": "urn:okta:expression:1.0"
+        }
+      },
+      "actions": {
+        "assignUserToGroups": {
+          "groupIds": [
+            "group-fakeid1"
+          ]
+        }
+      },
+      "allGroupsValid": true
+    },
+    "body": {
+      "type": "group_rule",
+      "name": "my group rule",
+      "conditions": {
+        "expression": {
+          "value": "substringAfter(user.email, '@')==\"example.com\"",
+          "type": "urn:okta:expression:1.0"
+        }
+      },
+      "actions": {
+        "assignUserToGroups": {
+          "groupIds": [
+            "group-fakeid1"
+          ]
+        }
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "250",
+      "x-rate-limit-remaining": "249",
+      "x-rate-limit-reset": "1723641576"
+    }
+  },
+  {
+    "path": "/api/v1/groups/rules/grouprule-fakeid1/lifecycle/activate",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "250",
+      "x-rate-limit-remaining": "248",
+      "x-rate-limit-reset": "1723641576"
+    }
+  }
+]

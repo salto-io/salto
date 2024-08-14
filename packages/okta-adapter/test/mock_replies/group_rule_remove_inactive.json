@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/api/v1/groups/rules/grouprule-fakeid1",
+    "scope": "",
+    "method": "DELETE",
+    "status": 202,
+    "response": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "250",
+      "x-rate-limit-remaining": "249",
+      "x-rate-limit-reset": "1723642143"
+    }
+  }
+]

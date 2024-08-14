@@ -34,6 +34,7 @@ import {
   CORE_ANNOTATIONS,
   isObjectType,
   StaticFile,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -70,6 +71,8 @@ import {
   PROFILE_MAPPING_TYPE_NAME,
   APP_LOGO_TYPE_NAME,
   NETWORK_ZONE_TYPE_NAME,
+  GROUP_RULE_TYPE_NAME,
+  USER_SCHEMA_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -527,6 +530,7 @@ describe('adapter', () => {
     let groupType: ObjectType
     let orgSettingType: ObjectType
     let userTypeType: ObjectType
+    let userSchemaType: ObjectType
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
@@ -568,6 +572,14 @@ describe('adapter', () => {
       })
       userTypeType = new ObjectType({
         elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      userSchemaType = new ObjectType({
+        elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME),
         fields: {
           id: {
             refType: BuiltinTypes.SERVICE_ID,
@@ -1055,6 +1067,240 @@ describe('adapter', () => {
           changeGroup: {
             groupID: 'networkZone',
             changes: [toChange({ before: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+
+    describe('deploy group rule', () => {
+      let groupRuleType: ObjectType
+      let group: InstanceElement
+      let userSchema: InstanceElement
+
+      beforeEach(() => {
+        const groupRuleGroupAssignmentType = new ObjectType({
+          elemID: new ElemID(OKTA, 'GroupRuleGroupAssignment'),
+        })
+        const groupRuleActionsType = new ObjectType({
+          elemID: new ElemID(OKTA, 'GroupRuleActions'),
+          fields: {
+            assignUserToGroups: {
+              refType: groupRuleGroupAssignmentType,
+            },
+          },
+        })
+        groupRuleType = new ObjectType({
+          elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+            actions: {
+              refType: groupRuleActionsType,
+            },
+          },
+        })
+        group = new InstanceElement('group', groupType, {
+          id: 'group-fakeid1',
+          objectClass: ['okta:user_group'],
+          type: 'OKTA_GROUP',
+          profile: {
+            name: 'Engineers',
+            description: 'all the engineers',
+          },
+        })
+        userSchema = new InstanceElement('userSchema', userSchemaType, {
+          id: 'userschema-fakeid1',
+          definitions: {
+            base: {
+              email: {
+                type: 'string',
+                title: 'email',
+              },
+            },
+          },
+        })
+      })
+
+      it('should successfully add an active group rule', async () => {
+        loadMockReplies('group_rule_add_active.json')
+        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+          name: 'my group rule',
+          type: 'group_rule',
+          status: ACTIVE_STATUS,
+          conditions: {
+            expression: {
+              value: new TemplateExpression({
+                parts: [
+                  'substringAfter(',
+                  new ReferenceExpression(
+                    userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'email'),
+                  ),
+                  ', \'@\')=="example.com"',
+                ],
+              }),
+              type: 'urn:okta:expression:1.0',
+            },
+          },
+          actions: {
+            assignUserToGroups: { groupIds: [new ReferenceExpression(group.elemID, group)] },
+          },
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ after: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('grouprule-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive group rule', async () => {
+        loadMockReplies('group_rule_add_active.json')
+        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ after: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('grouprule-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully activate a group rule', async () => {
+        loadMockReplies('group_rule_activate.json')
+        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+          id: 'grouprule-fakeid1',
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const activatedNetworkZone = groupRule.clone()
+        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: activatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(ACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully deactivate a group rule', async () => {
+        loadMockReplies('group_rule_deactivate.json')
+        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+          id: 'grouprule-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const deactivatedNetworkZone = groupRule.clone()
+        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: deactivatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify a group rule without status change', async () => {
+        loadMockReplies('group_rule_modify.json')
+        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+          id: 'grouprule-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const updatedNetworkZone = groupRule.clone()
+        updatedNetworkZone.value.name = 'your_zone'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: updatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and activate a group rule', async () => {
+        loadMockReplies('group_rule_modify_and_activate.json')
+        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+          id: 'grouprule-fakeid1',
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const activatedNetworkZone = groupRule.clone()
+        activatedNetworkZone.value.name = 'your_zone'
+        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: activatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate a group rule', async () => {
+        loadMockReplies('group_rule_modify_and_deactivate.json')
+        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+          id: 'grouprule-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const deactivatedNetworkZone = groupRule.clone()
+        deactivatedNetworkZone.value.name = 'your_zone'
+        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: deactivatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove a group rule', async () => {
+        loadMockReplies('group_rule_remove.json')
+        const groupRule = new InstanceElement('groupRule', groupRuleType, {
+          id: 'grouprule-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule })],
           },
           progressReporter: nullProgressReporter,
         })

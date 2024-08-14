@@ -485,6 +485,7 @@ describe('element', () => {
             expect.any(String),
             expect.any(String),
             fetchError.message,
+            { adapterName: 'myAdapter', typeName: 'myType' },
           )
         })
       })

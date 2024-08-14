@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import _, { first } from 'lodash'
+import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import {
   getChangeData,

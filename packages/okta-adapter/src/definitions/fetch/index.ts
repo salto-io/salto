@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-export { createFetchDefinitions, CLASSIC_ENGINE_UNSUPPORTED_TYPES } from './fetch'
+export { createFetchDefinitions } from './fetch'

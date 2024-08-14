@@ -27,16 +27,16 @@ import {
   CUSTOM_NAME_FIELD,
   MFA_RULE_TYPE_NAME,
   IDP_RULE_TYPE_NAME,
-  DEVICE_ASSURANCE_TYPE_NAME,
-  AUTHENTICATOR_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
+  MFA_POLICY_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
 import { shouldConvertUserIds } from '../../user_utils'
+import { createMfaFactorsAdjustFunc } from './types/mfa_policy'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -139,11 +139,18 @@ const accessPolicyRuleCustomizer: definitions.fetch.FetchTopLevelElementDefiniti
   extendsParent: true,
 }
 
-const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => {
+const getPolicyCustomizations = ({
+  isClassicEngine = false,
+}: {
+  isClassicEngine?: boolean
+}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => {
   const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
   const policyRulesToOmitPriorities = [PROFILE_ENROLLMENT_RULE_TYPE_NAME]
   const rulesWithFieldsCustomizations = [MFA_RULE_TYPE_NAME, IDP_RULE_TYPE_NAME]
-  const defs = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => ({
+  const filteredPolicyTypeNameToParams = !isClassicEngine
+    ? POLICY_TYPE_NAME_TO_PARAMS
+    : _.omit(POLICY_TYPE_NAME_TO_PARAMS, [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME])
+  const defs = Object.entries(filteredPolicyTypeNameToParams).map(([typeName, details]) => ({
     [typeName]: {
       requests: [
         {
@@ -153,6 +160,13 @@ const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFet
               type: details.queryParam,
               ...(typeName === AUTOMATION_TYPE_NAME ? { activate: 'false' } : {}),
             },
+            ...(typeName === MFA_POLICY_TYPE_NAME
+              ? {
+                  transformation: {
+                    adjust: createMfaFactorsAdjustFunc({ isClassicEngine }),
+                  },
+                }
+              : {}),
           },
         },
       ],
@@ -223,11 +237,13 @@ const createCustomizations = ({
   includeProfileMappingProperties,
   includeGroupMemberships,
   userIdentifier,
+  isClassicEngine = false,
 }: {
   usePrivateAPI: boolean
   includeProfileMappingProperties: boolean
   includeGroupMemberships: boolean
   userIdentifier: 'id' | 'email'
+  isClassicEngine?: boolean
 }): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => ({
   // top-level types
   Group: {
@@ -343,7 +359,7 @@ const createCustomizations = ({
       },
     },
   },
-  ...getPolicyCustomizations(),
+  ...getPolicyCustomizations({ isClassicEngine }),
   Application: {
     requests: [
       {
@@ -810,20 +826,24 @@ const createCustomizations = ({
       },
     },
   },
-  Authenticator: {
-    requests: [{ endpoint: { path: '/api/v1/authenticators' } }],
-    resource: { directFetch: true },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        serviceUrl: { path: '/admin/access/multifactor#policies' },
-      },
-      fieldCustomizations: {
-        id: { hide: true },
-        _links: { omit: true },
-      },
-    },
-  },
+  ...(!isClassicEngine
+    ? {
+        Authenticator: {
+          requests: [{ endpoint: { path: '/api/v1/authenticators' } }],
+          resource: { directFetch: true },
+          element: {
+            topLevel: {
+              isTopLevel: true,
+              serviceUrl: { path: '/admin/access/multifactor#policies' },
+            },
+            fieldCustomizations: {
+              id: { hide: true },
+              _links: { omit: true },
+            },
+          },
+        },
+      }
+    : {}),
   EventHook: {
     requests: [{ endpoint: { path: '/api/v1/eventHooks' } }],
     resource: { directFetch: true },
@@ -881,21 +901,25 @@ const createCustomizations = ({
       },
     },
   },
-  DeviceAssurance: {
-    requests: [{ endpoint: { path: '/api/v1/device-assurances' } }],
-    resource: { directFetch: true },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-      },
-      fieldCustomizations: {
-        id: { hide: true },
-        _links: { omit: true },
-        lastUpdate: { omit: true },
-        createdDate: { omit: true },
-      },
-    },
-  },
+  ...(!isClassicEngine
+    ? {
+        DeviceAssurance: {
+          requests: [{ endpoint: { path: '/api/v1/device-assurances' } }],
+          resource: { directFetch: true },
+          element: {
+            topLevel: {
+              isTopLevel: true,
+            },
+            fieldCustomizations: {
+              id: { hide: true },
+              _links: { omit: true },
+              lastUpdate: { omit: true },
+              createdDate: { omit: true },
+            },
+          },
+        },
+      }
+    : {}),
   Domain: {
     requests: [{ endpoint: { path: '/api/v1/domains' }, transformation: { root: 'domains' } }],
     resource: { directFetch: true },
@@ -1241,22 +1265,17 @@ const createCustomizations = ({
   },
 })
 
-export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
-  DEVICE_ASSURANCE_TYPE_NAME,
-  AUTHENTICATOR_TYPE_NAME,
-  ACCESS_POLICY_TYPE_NAME,
-  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
-]
-
 export const createFetchDefinitions = ({
   userConfig,
   fetchQuery,
   usePrivateAPI,
+  isClassicEngine = false,
   baseUrl,
 }: {
   userConfig: OktaUserConfig
   fetchQuery: elementUtils.query.ElementQuery
   usePrivateAPI: boolean
+  isClassicEngine?: boolean
   baseUrl?: string
 }): definitions.fetch.FetchApiDefinitions<OktaOptions> => {
   const {
@@ -1283,6 +1302,7 @@ export const createFetchDefinitions = ({
         includeProfileMappingProperties: includeProfileMappingProperties === true,
         includeGroupMemberships: includeGroupMemberships === true,
         userIdentifier,
+        isClassicEngine,
       }),
     },
   }

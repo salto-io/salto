@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement, isPrimitiveValue } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
+import { CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement, isPrimitiveValue } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
@@ -28,6 +29,8 @@ import {
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
 } from '../constants'
+
+const log = logger(module)
 
 const PARAM_MATCH = /\{([\w_.]+)}/g
 const BRAND_SPECIFIC_BASE_URL_TYPES = [
@@ -49,22 +52,25 @@ const SERVICE_URL_FOR_GUIDE: Record<string, string> = {
 
 const replaceUrlParamsBrand = (url: string, instance: InstanceElement): string =>
   url.replace(PARAM_MATCH, val => {
-    let replacement
-    if (val.slice(1, -1).startsWith('_')) {
-      // meaning that it refers to an annotation
-      replacement = _.get(instance.annotations, val.slice(1, -1))
-    } else {
-      replacement = instance.value[val.slice(1, -1)]
-    }
-    if (!isPrimitiveValue(replacement)) {
+    const valWithoutBrackets = val.slice(1, -1)
+    const isAnnotation = valWithoutBrackets.startsWith('_')
+    const valuesToLookIn = isAnnotation ? instance.annotations : instance.value
+    const replacement = _.get(valuesToLookIn, valWithoutBrackets)
+
+    if (!isPrimitiveValue(replacement) || replacement === null || replacement === undefined) {
       throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
     }
-    return replacement?.toString() ?? val
+
+    return replacement.toString()
   })
 
 const createServiceUrl = (instance: InstanceElement, baseUrl: string): void => {
-  const url = replaceUrlParamsBrand(SERVICE_URL_FOR_GUIDE[instance.elemID.typeName], instance)
-  instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, baseUrl).href
+  try {
+    const url = replaceUrlParamsBrand(SERVICE_URL_FOR_GUIDE[instance.elemID.typeName], instance)
+    instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, baseUrl).href
+  } catch (e) {
+    log.warn('failed setting service url of %s with error: %o', instance.elemID.getFullName(), e)
+  }
 }
 
 /**

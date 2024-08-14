@@ -6,6 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export * as entraConstants from './entra'
-export * as intuneConstants from './intune'
-export * from './shared'
+export { createCustomizationsWithBasePath as createCustomizationsWithBasePathForFetch } from './path_adjustment'
+export { toHiddenFields, toOmittedFields } from './field_customizations'
+export { concatAdjustFunctions } from './adjust_utils'

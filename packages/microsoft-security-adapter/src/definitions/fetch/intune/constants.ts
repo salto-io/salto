@@ -6,6 +6,16 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export * as entraConstants from './entra'
-export * as intuneConstants from './intune'
-export * from './shared'
+export const APPLICATION_OMITTED_FIELDS = [
+  'uploadState',
+  'publishingState',
+  'isAssigned',
+  'isPrivate',
+  'supportsOemConfig',
+  'dependentAppCount',
+  'supersedingAppCount',
+  'supersededAppCount',
+  'usedLicenseCount',
+  'totalLicenseCount',
+  'appTracks',
+]

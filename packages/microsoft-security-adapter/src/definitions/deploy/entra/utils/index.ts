@@ -11,4 +11,4 @@ export {
   getGroupLifecyclePolicyGroupModificationRequest,
   createDefinitionForGroupLifecyclePolicyGroupModification,
 } from './group_deployment_life_cycle_policy'
-export { adjustParentWithAppRoles } from './app_role'
+export { adjustParentWithAppRolesWrapped } from './app_role'

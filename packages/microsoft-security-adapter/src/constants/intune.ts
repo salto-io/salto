@@ -6,6 +6,14 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export * as entraConstants from './entra'
-export * as intuneConstants from './intune'
-export * from './shared'
+const toIntuneTypeName = (typeName: string): string => `intune_${typeName}`
+
+/* Field names */
+// Application fields
+export const PACKAGE_ID_FIELD_NAME = 'packageId'
+export const APP_IDENTIFIER_FIELD_NAME = 'appIdentifier'
+export const APP_STORE_URL_FIELD_NAME = 'appStoreUrl'
+
+/* Type names */
+// Top level
+export const APPLICATION_TYPE_NAME = toIntuneTypeName('application')

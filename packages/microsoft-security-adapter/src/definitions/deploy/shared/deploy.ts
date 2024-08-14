@@ -11,6 +11,7 @@ import { AdditionalAction, ClientOptions } from '../../types'
 import { DeployCustomDefinitions } from './types'
 import { createEntraCustomizations } from '../entra/deploy'
 import { omitReadOnlyFields } from './utils'
+import { createIntuneCustomizations } from '../intune/deploy'
 
 const createCustomizations = (): DeployCustomDefinitions => {
   const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
@@ -18,7 +19,10 @@ const createCustomizations = (): DeployCustomDefinitions => {
     ClientOptions
   >({})
 
-  return _.merge(standardRequestDefinitions, createEntraCustomizations())
+  return _.merge(standardRequestDefinitions, {
+    ...createEntraCustomizations(),
+    ...createIntuneCustomizations(),
+  })
 }
 
 export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitions<never, ClientOptions> => ({

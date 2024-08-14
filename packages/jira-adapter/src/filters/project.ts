@@ -25,9 +25,10 @@ import {
   isInstanceElement,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, setPath } from '@salto-io/adapter-utils'
+// import { resolveValues, config as configUtils } from '@salto-io/adapter-components'
 import { resolveValues } from '@salto-io/adapter-components'
-
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
@@ -38,7 +39,7 @@ import { FilterCreator } from '../filter'
 import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 import { JiraConfig } from '../config/config'
-import { PROJECT_TYPE_TYPE_NAME, SERVICE_DESK } from '../constants'
+import { ASSIGNEE_TYPE_FIELD, PROJECT_TYPE_TYPE_NAME, SERVICE_DESK } from '../constants'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -241,6 +242,15 @@ const deleteFieldConfigurationScheme = async (change: Change<InstanceElement>, c
   })
 }
 
+const setAssigneeTypeField = async (instance: InstanceElement, client: JiraClient): Promise<void> => {
+  const response = await client.get({ url: `/rest/api/3/project/${instance.value.key}` })
+  setPath(
+    instance,
+    instance.elemID.createNestedID(ASSIGNEE_TYPE_FIELD),
+    values.isPlainRecord(response.data) ? response.data[ASSIGNEE_TYPE_FIELD] : undefined,
+  )
+}
+
 /**
  * Restructures Project type to fit the deployment endpoint
  */
@@ -269,26 +279,31 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         .map(inst => [inst.value.key, inst.value.formattedKey]),
     )
 
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
-      .forEach(instance => {
-        instance.value.leadAccountId = client.isDataCenter ? instance.value.lead?.key : instance.value.lead?.accountId
-        delete instance.value.lead
+    await Promise.all(
+      elements
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
+        .map(async instance => {
+          instance.value.leadAccountId = client.isDataCenter ? instance.value.lead?.key : instance.value.lead?.accountId
+          delete instance.value.lead
 
-        instance.value[WORKFLOW_SCHEME_FIELD] =
-          instance.value[WORKFLOW_SCHEME_FIELD]?.[WORKFLOW_SCHEME_FIELD]?.id?.toString()
-        instance.value.issueTypeScreenScheme =
-          instance.value[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.id
-        instance.value.fieldConfigurationScheme =
-          instance.value[FIELD_CONFIG_SCHEME_FIELD]?.[FIELD_CONFIG_SCHEME_FIELD]?.id
-        instance.value[ISSUE_TYPE_SCHEME] = instance.value[ISSUE_TYPE_SCHEME]?.[ISSUE_TYPE_SCHEME]?.id
+          instance.value[WORKFLOW_SCHEME_FIELD] =
+            instance.value[WORKFLOW_SCHEME_FIELD]?.[WORKFLOW_SCHEME_FIELD]?.id?.toString()
+          instance.value.issueTypeScreenScheme =
+            instance.value[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.id
+          instance.value.fieldConfigurationScheme =
+            instance.value[FIELD_CONFIG_SCHEME_FIELD]?.[FIELD_CONFIG_SCHEME_FIELD]?.id
+          instance.value[ISSUE_TYPE_SCHEME] = instance.value[ISSUE_TYPE_SCHEME]?.[ISSUE_TYPE_SCHEME]?.id
 
-        instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
-        instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
-        instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
-        changeProjectPath(instance, projectTypesKeysToFormattedKeys)
-      })
+          instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
+          instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
+          instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
+          changeProjectPath(instance, projectTypesKeysToFormattedKeys)
+          if (!client.isDataCenter) {
+            await setAssigneeTypeField(instance, client)
+          }
+        }),
+    )
   },
 
   preDeploy: async changes => {

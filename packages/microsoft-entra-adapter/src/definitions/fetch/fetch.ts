@@ -347,6 +347,13 @@ const graphV1Customizations: FetchCustomizations = {
           },
         },
         [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        [APP_ROLE_ASSIGNMENT_FIELD_NAME]: {
+          standalone: {
+            typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+            nestPathUnderParent: true,
+            referenceFromParent: false,
+          },
+        },
       },
     },
   },
@@ -395,6 +402,9 @@ const graphV1Customizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/oauth2PermissionGrants',
+          queryArgs: {
+            $filter: "consentType eq 'AllPrincipals'",
+          },
         },
         transformation: DEFAULT_TRANSFORMATION,
       },
@@ -406,7 +416,6 @@ const graphV1Customizations: FetchCustomizations = {
           parts: [
             { fieldName: 'clientId', isReference: true },
             { fieldName: 'resourceId', isReference: true },
-            { fieldName: 'consentType' },
           ],
         },
       },
@@ -597,6 +606,13 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromField: 'authenticationType',
+              // Exclude federated domains, as this api call does not support them
+              match: ['Managed'],
+            },
+          ],
         },
       },
       mergeAndTransform: {

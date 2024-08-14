@@ -19,30 +19,18 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import groupsAndUsersFilter, { FALLBACK_DISPLAY_NAME } from '../../src/filters/groups_and_users_filter'
 import { DEFAULT_CONFIG, UserConfig } from '../../src/config'
 import { Options } from '../../src/definitions/types'
-import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../src/constants'
+import { ADAPTER_NAME, GROUP_TYPE_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../src/constants'
 import { createDeployDefinitions, createFetchDefinitions } from '../../src/definitions'
-import * as getUsersAndGroupsModule from '../../src/get_users_and_groups'
+import * as getUsersAndGroupsModule from '../../src/users'
 
-const mockGetUsersAndGroups = jest.spyOn(getUsersAndGroupsModule, 'getUsersAndGroups').mockResolvedValue({
-  usersIndex: {
-    userId1: {
-      accountId: 'userId1',
-      displayName: 'user1',
-    },
-    userId2: {
-      accountId: 'userId2',
-      displayName: 'user2',
-    },
+const mockGetUsersAndGroups = jest.spyOn(getUsersAndGroupsModule, 'getUsersIndex').mockResolvedValue({
+  userId1: {
+    accountId: 'userId1',
+    displayName: 'user1',
   },
-  groupsIndex: {
-    groupId1: {
-      name: 'group1',
-      id: 'groupId1',
-    },
-    groupId2: {
-      name: 'group2',
-      id: 'groupId2',
-    },
+  userId2: {
+    accountId: 'userId2',
+    displayName: 'user2',
   },
 })
 
@@ -51,6 +39,7 @@ describe('groupsAndUsersFilter', () => {
   let elements: InstanceElement[]
   const spaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SPACE_TYPE_NAME) })
   const pageObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, PAGE_TYPE_NAME) })
+  const groupObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, GROUP_TYPE_NAME) })
   const otherObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'otherType') })
   const generateElements = (): InstanceElement[] => {
     const spaceInst = new InstanceElement('space', spaceObjectType, {
@@ -90,7 +79,15 @@ describe('groupsAndUsersFilter', () => {
     const otherInst = new InstanceElement('other', otherObjectType, {
       authorId: { accountId: 'userId1' },
     })
-    return [spaceInst, pageInst, otherInst]
+    const group1Inst = new InstanceElement('group1', groupObjectType, {
+      name: 'group1',
+      id: 'groupId1',
+    })
+    const group2Inst = new InstanceElement('group2', groupObjectType, {
+      name: 'group2',
+      id: 'groupId2',
+    })
+    return [spaceInst, pageInst, otherInst, group1Inst, group2Inst]
   }
   const fetchDef = createFetchDefinitions(DEFAULT_CONFIG)
   const deployDef = createDeployDefinitions()

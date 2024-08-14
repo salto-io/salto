@@ -196,6 +196,15 @@ const deployLayoutChange = async (change: Change<InstanceElement>, client: JiraC
           },
         }
       }
+      if (item.type === 'PANEL') {
+        // Panel that is not a reference Expression
+        return {
+          type: item.type,
+          sectionType: item.sectionType.toLocaleLowerCase(),
+          key: item.key,
+          data: item.data,
+        }
+      }
       return undefined
     })
     .filter(isDefined)

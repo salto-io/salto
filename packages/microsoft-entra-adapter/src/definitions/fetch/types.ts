@@ -21,4 +21,4 @@ export type FetchApiDefinition = definitions.fetch.InstanceFetchApiDefinitions<O
 export type FetchCustomizations = Record<string, FetchApiDefinition>
 export type ElementFieldCustomization = definitions.fetch.ElementFieldCustomization
 export type FieldIDPart = definitions.fetch.FieldIDPart
-export type AdjustFunction = definitions.AdjustFunction
+export type AdjustFunctionSingle = definitions.AdjustFunctionSingle

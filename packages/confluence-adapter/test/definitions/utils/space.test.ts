@@ -15,9 +15,12 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { definitions } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import {
   createAdjustUserReferences,
   createPermissionUniqueKey,
+  getSpaceRequests,
   isPermissionObject,
   restructurePermissionsAndCreateInternalIdMap,
   spaceChangeGroupWithItsHomepage,
@@ -25,6 +28,8 @@ import {
   transformPermissionAndUpdateIdMap,
 } from '../../../src/definitions/utils'
 import { ADAPTER_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
+import { UserConfig } from '../../../src/config'
+import { Options } from '../../../src/definitions/types'
 
 describe('space definitions utils', () => {
   const spaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SPACE_TYPE_NAME) })
@@ -32,7 +37,7 @@ describe('space definitions utils', () => {
     {
       id: 'internalId1',
       principal: {
-        type: 'type1',
+        type: 'user',
         id: 'id1',
       },
       operation: {
@@ -43,7 +48,7 @@ describe('space definitions utils', () => {
     {
       id: 'internalId2',
       principal: {
-        type: 'type2',
+        type: 'group',
         id: 'id2',
       },
       operation: {
@@ -62,7 +67,7 @@ describe('space definitions utils', () => {
         targetType: 'targetType',
       }
       const uniqueKey = createPermissionUniqueKey(permissionObject)
-      expect(uniqueKey).toEqual('type_principalId_key_targetType')
+      expect(uniqueKey).toEqual('type_key_targetType')
     })
   })
 
@@ -94,7 +99,7 @@ describe('space definitions utils', () => {
       const permissionFromFetch = {
         id: 'internalId',
         principal: {
-          type: 'type',
+          type: 'user',
           id: 'id',
         },
         operation: {
@@ -112,6 +117,12 @@ describe('space definitions utils', () => {
           ),
         ).toBeUndefined()
       })
+      it('should return undefined when permission type is not valid', () => {
+        const permissionFromFetchInvalidType = _.merge({}, permissionFromFetch, { principal: { type: 'invalidType' } })
+        expect(
+          transformPermissionAndUpdateIdMap(permissionFromFetchInvalidType, permissionInternalIdMap, true),
+        ).toBeUndefined()
+      })
       it('should return undefined when there is no internal id', () => {
         expect(
           transformPermissionAndUpdateIdMap({ ...permissionFromFetch, id: undefined }, permissionInternalIdMap, true),
@@ -120,19 +131,19 @@ describe('space definitions utils', () => {
       it('should return restructured permission and update the id map', () => {
         const result = transformPermissionAndUpdateIdMap(permissionFromFetch, permissionInternalIdMap, true)
         expect(result).toEqual({
-          type: 'type',
+          type: 'user',
           principalId: 'id',
           key: 'key',
           targetType: 'targetType',
         })
-        expect(permissionInternalIdMap).toEqual({ type_id_key_targetType: 'internalId' })
+        expect(permissionInternalIdMap).toEqual({ user_key_targetType: 'internalId' })
       })
     })
     describe('on deploy', () => {
       const permissionFromFetch = {
         id: 'internalId',
         subject: {
-          type: 'type',
+          type: 'user',
           identifier: 'id',
         },
         operation: {
@@ -154,12 +165,12 @@ describe('space definitions utils', () => {
       it('should return restructured permission and update the id map', () => {
         const result = transformPermissionAndUpdateIdMap(permissionFromFetch, permissionInternalIdMap)
         expect(result).toEqual({
-          type: 'type',
+          type: 'user',
           principalId: 'id',
           key: 'key',
           targetType: 'target',
         })
-        expect(permissionInternalIdMap).toEqual({ type_id_key_target: 'internalId' })
+        expect(permissionInternalIdMap).toEqual({ user_key_target: 'internalId' })
       })
     })
   })
@@ -178,21 +189,21 @@ describe('space definitions utils', () => {
       expect(spaceClone.value).not.toEqual(space.value)
       expect(space.value.permissions).toEqual([
         {
-          type: 'type1',
+          type: 'user',
           principalId: 'id1',
           key: 'key1',
           targetType: 'targetType1',
         },
         {
-          type: 'type2',
+          type: 'group',
           principalId: 'id2',
           key: 'key2',
           targetType: 'targetType2',
         },
       ])
       expect(space.value.permissionInternalIdMap).toEqual({
-        type1_id1_key1_targetType1: 'internalId1',
-        type2_id2_key2_targetType2: 'internalId2',
+        user_key1_targetType1: 'internalId1',
+        group_key2_targetType2: 'internalId2',
       })
     })
   })
@@ -204,21 +215,21 @@ describe('space definitions utils', () => {
       expect(space.value).toEqual({
         permissions: [
           {
-            type: 'type1',
+            type: 'user',
             principalId: 'id1',
             key: 'key1',
             targetType: 'targetType1',
           },
           {
-            type: 'type2',
+            type: 'group',
             principalId: 'id2',
             key: 'key2',
             targetType: 'targetType2',
           },
         ],
         permissionInternalIdMap: {
-          type1_id1_key1_targetType1: 'internalId1',
-          type2_id2_key2_targetType2: 'internalId2',
+          user_key1_targetType1: 'internalId1',
+          group_key2_targetType2: 'internalId2',
         },
       })
     })
@@ -259,6 +270,77 @@ describe('space definitions utils', () => {
         authorId: { accountId: 'authorId', displayName: 'authorId' },
         notUser: 'not',
       })
+    })
+  })
+  describe('getSpaceRequests', () => {
+    const mockRequest = {
+      endpoint: {
+        queryArgs: {
+          anExistingQueryArg: 'someValue',
+        },
+      },
+    } as unknown as definitions.fetch.FetchRequestDefinition<definitions.ResolveClientOptionsType<Options>>
+    const createMockUserConfig = (
+      statusesToExclude: string[],
+      typesToExclude: string[],
+      statusesToInclude: string[] = [],
+      typesToInclude: string[] = [],
+    ): UserConfig => ({
+      fetch: {
+        include: [
+          ...statusesToInclude.map(status => ({ type: 'space', criteria: { status } })),
+          ...typesToInclude.map(type => ({ type: 'spa.*', criteria: { type } })),
+        ],
+        exclude: [
+          ...statusesToExclude.map(status => ({ type: 's.*', criteria: { status } })),
+          ...typesToExclude.map(type => ({ type: 'space', criteria: { type } })),
+        ],
+      },
+    })
+    it('should return no requests when user exclude all statuses', () => {
+      const requests = getSpaceRequests(createMockUserConfig(['current'], [], ['current']), mockRequest)
+      expect(requests).toHaveLength(0)
+    })
+    it('should return no requests when user exclude all types', () => {
+      const requests = getSpaceRequests(
+        createMockUserConfig([], ['global', 'collaboration', 'knowledge_base', 'personal']),
+        mockRequest,
+      )
+      expect(requests).toHaveLength(0)
+    })
+    it('should return the given request when user include all statuses and types', () => {
+      const requests = getSpaceRequests(createMockUserConfig([], [], ['current', 'archived'], []), mockRequest)
+      expect(requests).toHaveLength(1)
+      expect(requests).toEqual([mockRequest])
+    })
+    it('should return the given request with modified status param when user include all types and a single status', () => {
+      const requests = getSpaceRequests(
+        createMockUserConfig([], [], ['current'], ['knowledge_base', 'global', 'personal', 'collaboration']),
+        mockRequest,
+      )
+      expect(requests).toHaveLength(1)
+      expect(requests).toEqual([_.merge({}, mockRequest, { endpoint: { queryArgs: { status: 'current' } } })])
+    })
+    it('should return requests with the correct params when user include some types', () => {
+      const requests = getSpaceRequests(createMockUserConfig([], ['knowledge_base'], ['current'], []), mockRequest)
+      expect(requests).toHaveLength(3)
+      expect(requests.map(r => r.endpoint?.queryArgs).sort()).toEqual([
+        {
+          anExistingQueryArg: 'someValue',
+          status: 'current',
+          type: 'global',
+        },
+        {
+          anExistingQueryArg: 'someValue',
+          status: 'current',
+          type: 'collaboration',
+        },
+        {
+          anExistingQueryArg: 'someValue',
+          status: 'current',
+          type: 'personal',
+        },
+      ])
     })
   })
 })

@@ -86,7 +86,7 @@ export type ContainerIssueLayoutResponse = {
   containerType: string
   items: {
     nodes: {
-      fieldItemId: string
+      fieldItemId?: string
       panelItemId?: string
     }[]
   }
@@ -118,7 +118,8 @@ export type IssueLayoutConfiguration = {
     configuration: {
       items: {
         nodes: {
-          fieldItemId: string
+          fieldItemId?: string
+          panelItemId?: string
         }[]
       }
     }
@@ -130,7 +131,7 @@ export type IssueLayoutResponse = {
 }
 
 export type LayoutConfigItem = {
-  type: string
+  type: 'FIELD' | 'PANEL'
   sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST'
   key: string
   data:
@@ -141,7 +142,7 @@ export type LayoutConfigItem = {
 }
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
-  type: Joi.string().required(),
+  type: Joi.string().valid('FIELD', 'PANEL').required(),
   sectionType: Joi.string().valid('PRIMARY', 'SECONDARY', 'CONTENT', 'REQUEST').required(),
   key: Joi.string().required(),
   data: Joi.object({

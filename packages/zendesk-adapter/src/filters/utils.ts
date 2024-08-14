@@ -198,6 +198,7 @@ export const matchBrandSubdomainFunc = (
 type CustomFieldOption = {
   raw_name: string
   name?: string
+  id?: number | null
 }
 
 const isCustomFieldOption = (value: Value): value is CustomFieldOption =>

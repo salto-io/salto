@@ -73,7 +73,10 @@ const getProfileMappingRefByType: referenceUtils.ContextValueMapperFunc = val =>
 const getProfileMappingRefByName: referenceUtils.ContextValueMapperFunc = val =>
   val.endsWith('_idp') ? IDENTITY_PROVIDER_TYPE_NAME : undefined
 
-export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName'
+const getUserSchemaPropertyOverrideType: referenceUtils.ContextValueMapperFunc = val =>
+  val === 'APP' ? APPLICATION_TYPE_NAME : undefined
+
+export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName' | 'userSchemaPropertyAppOverride'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   profileMappingType: referenceUtils.neighborContextGetter({
@@ -85,6 +88,11 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
     contextFieldName: 'name',
     getLookUpName: async ({ ref }) => ref.elemID.name,
     contextValueMapper: getProfileMappingRefByName,
+  }),
+  userSchemaPropertyAppOverride: referenceUtils.neighborContextGetter({
+    contextFieldName: 'type',
+    getLookUpName: async ({ ref }) => ref.elemID.name,
+    contextValueMapper: getUserSchemaPropertyOverrideType,
   }),
 }
 
@@ -131,7 +139,7 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     target: { type: USERTYPE_TYPE_NAME },
   },
   {
-    src: { field: 'include', parentTypes: ['GroupCondition'] },
+    src: { field: 'include', parentTypes: ['GroupCondition', 'PolicyAccountLinkFilterGroups'] },
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
   },
@@ -252,6 +260,11 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     target: { type: BRAND_TYPE_NAME },
   },
   {
+    src: { field: 'value', parentTypes: ['UserSchemaAttributeMasterPriority'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'userSchemaPropertyAppOverride' },
+  },
+  {
     src: { field: 'userGroupId', parentTypes: [GROUP_PUSH_TYPE_NAME] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
@@ -262,6 +275,11 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     serializationStrategy: 'mappingRuleId',
     missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_PUSH_RULE_TYPE_NAME },
+  },
+  {
+    src: { field: 'assignments', parentTypes: ['ProvisioningGroups'] },
+    serializationStrategy: 'id',
+    target: { type: GROUP_TYPE_NAME },
   },
 ]
 

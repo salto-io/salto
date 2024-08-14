@@ -209,6 +209,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               toSharedContext: {
                 pick: ['id'],
               },
+              additional: {
+                // The appId is hidden, so it won't exist on addition.
+                // However, it is used to reference the application from other instances, so we should copy it to the applied change.
+                pick: ['appId'],
+              },
             },
           },
           {

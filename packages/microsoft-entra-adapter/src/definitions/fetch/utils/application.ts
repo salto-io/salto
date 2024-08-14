@@ -16,16 +16,16 @@
 
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { AdjustFunction } from '../types'
 import { addParentIdToAppRoles } from './app_role'
 import { APP_ROLES_FIELD_NAME, IDENTIFIER_URIS_FIELD_NAME } from '../../../constants'
+import { AdjustFunctionSingle } from '../types'
 
 /*
  * Adjust the application object.
  * 1. Remove the default identifier uri, as it's not deployable between envs.
  * 2. Add the parent id to the app roles.
  */
-export const adjustApplication: AdjustFunction = async ({ value }) => {
+export const adjustApplication: AdjustFunctionSingle = async ({ value }) => {
   validatePlainObject(value, 'application')
   const identifierUris = _.get(value, IDENTIFIER_URIS_FIELD_NAME, [])
   validateArray(identifierUris, IDENTIFIER_URIS_FIELD_NAME)

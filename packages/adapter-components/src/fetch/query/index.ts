@@ -20,5 +20,6 @@ export {
   QueryCriterion,
   createElementQuery,
   createMockQuery,
+  isTypeMatch,
 } from './query'
 export { nameCriterion, fieldCriterionCreator } from './fetch_criteria'

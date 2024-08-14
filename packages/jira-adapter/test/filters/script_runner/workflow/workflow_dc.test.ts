@@ -43,6 +43,7 @@ describe('Scriptrunner DC Workflow', () => {
   const goodBase64 = 'YCFgZGVtbyBzdHJpbmc=' // YCFg followed by base64 of 'demo string'
   const objectNoNullsBase64 = 'YCFgeyJhIjoxfQ==' // YCFg followed by base64 of '{"a":1}'
   const objectScriptOnlyBase64 = 'YCFgeyJzY3JpcHQiOjEsInNjcmlwdFBhdGgiOm51bGx9' // YCFg followed by base64 of '{"script":1,"scriptPath":null}'
+  const twoNulls = 'YCFgeyJzY3JpcHQiOm51bGwsICJzY3JpcHRQYXRoIjpudWxsfQ==' // YCFg followed by base64 of '{"script":null, "scriptPath":null}'
   const objectPathOnlyBase64 = 'YCFgeyJzY3JpcHQiOm51bGwsInNjcmlwdFBhdGgiOjF9'
   const FIELD_NAMES_STRINGS = [
     'FIELD_NOTES',
@@ -182,6 +183,13 @@ describe('Scriptrunner DC Workflow', () => {
         expect(
           instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT,
         ).toBeUndefined()
+      })
+      it('should not return null if both script and path are null', async () => {
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT = twoNulls
+        await filter.onFetch([instance])
+        expect(
+          instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT,
+        ).toEqual({})
       })
     })
     describe('pre deploy', () => {

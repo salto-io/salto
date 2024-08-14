@@ -23,6 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import {
+  BRAND_TYPE_NAME,
   GROUP_TYPE_NAME,
   MACRO_TYPE_NAME,
   ROUTING_ATTRIBUTE_TYPE_NAME,
@@ -58,11 +59,14 @@ describe('Unordered lists filter', () => {
     const dynamicContentItemVariantType = new ObjectType({
       elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME),
     })
+    const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
     const ticketFieldOneInstance = new InstanceElement('fieldA', ticketFieldType, { raw_title: 'a' })
     const ticketFieldThreeInstance = new InstanceElement('fieldC', ticketFieldType, { raw_title: 'c' })
     const invalidTicketFieldInstance = new InstanceElement('invalid field', ticketFieldType, {})
     const customOneInstance = new InstanceElement('customA', ticketCustomFieldType, { value: 'a' })
     const customThreeInstance = new InstanceElement('customC', ticketCustomFieldType, { value: 'c' })
+    const brandOneInstance = new InstanceElement('zzzBrand', brandType, { name: 'zzzBrand' })
+    const brandTwoInstance = new InstanceElement('heyBrand', brandType, { name: 'heyBrand' })
     const validTicketFormInstance = new InstanceElement('valid form', ticketFormType, {
       agent_conditions: [
         {
@@ -109,6 +113,10 @@ describe('Unordered lists filter', () => {
         {
           value: 'b',
         },
+      ],
+      restricted_brand_ids: [
+        new ReferenceExpression(brandOneInstance.elemID, brandOneInstance),
+        new ReferenceExpression(brandTwoInstance.elemID, brandTwoInstance),
       ],
     })
     const invalidTicketFormInstance = new InstanceElement('invalid form', ticketFormType, {
@@ -318,6 +326,13 @@ describe('Unordered lists filter', () => {
         },
         {
           id: 'd',
+          restriction: {
+            ids: [
+              new ReferenceExpression(groupOneInstance.elemID, groupOneInstance),
+              new ReferenceExpression(groupThreeInstance.elemID, groupThreeInstance),
+              new ReferenceExpression(groupTwoInstance.elemID, groupTwoInstance),
+            ],
+          },
         },
         {
           id: referenceB,
@@ -516,6 +531,9 @@ describe('Unordered lists filter', () => {
       expect(instances[0].value.end_user_conditions[0].child_fields).toHaveLength(2)
       expect(instances[0].value.end_user_conditions[0].child_fields[0].id.elemID.name).toEqual('fieldA')
       expect(instances[0].value.end_user_conditions[0].child_fields[1].id.elemID.name).toEqual('fieldC')
+      expect(instances[0].value.restricted_brand_ids).toHaveLength(2)
+      expect(instances[0].value.restricted_brand_ids[0].elemID.name).toEqual('heyBrand')
+      expect(instances[0].value.restricted_brand_ids[1].elemID.name).toEqual('zzzBrand')
     })
     it('should not change order the form is invalid', async () => {
       const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'invalid form')
@@ -657,6 +675,15 @@ describe('Unordered lists filter', () => {
       expect(instance.value.selected_macros[1].id.elemID.name).toEqual('a')
       expect(instance.value.selected_macros[2].id.elemID.name).toEqual('b')
       expect(instance.value.selected_macros[3].id.elemID.name).toEqual('c')
+    })
+    it('should sort selected macros restrictions correctly', async () => {
+      ;[instance] = allWorkspaces.filter(e => e.elemID.name === 'workspaceWithMacros')
+      expect(instance.value.selected_macros).toHaveLength(4)
+      expect(instance.value.selected_macros[0].id).toEqual('d')
+      const restrictionIds = instance.value.selected_macros[0].restriction.ids
+      expect(restrictionIds[0].elemID.name).toEqual('groupA')
+      expect(restrictionIds[1].elemID.name).toEqual('groupB')
+      expect(restrictionIds[2].elemID.name).toEqual('groupC')
     })
     it('should do nothing if selected macros is invalid', async () => {
       ;[instance] = allWorkspaces.filter(e => e.elemID.name === 'invalidWorkspaceWithMacros')

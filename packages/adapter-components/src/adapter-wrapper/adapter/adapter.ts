@@ -120,6 +120,7 @@ export class AdapterImpl<
     dependencyChangers,
     referenceResolver,
     fixElements,
+    allCriteria,
   }: AdapterParams<Credentials, Options, Co>) {
     this.adapterName = adapterName
     this.clients = clients
@@ -131,7 +132,7 @@ export class AdapterImpl<
         fetchConfig: definitions.fetch,
       }),
     }
-    this.fetchQuery = createElementQuery(config.fetch)
+    this.fetchQuery = createElementQuery(config.fetch, allCriteria)
     const sharedContext = {}
     this.createFiltersRunner = () =>
       filterRunner<Co, FilterResult, {}, Options>(

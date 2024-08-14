@@ -19,6 +19,7 @@ import { adjustLabelsToIdsFunc, adjustRestriction, createAdjustUserReferences } 
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
+  GROUP_TYPE_NAME,
   LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
   PERMISSION_TYPE_NAME,
@@ -27,7 +28,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { spaceMergeAndTransformAdjust } from '../utils/space'
+import { getSpaceRequests, spaceMergeAndTransformAdjust } from '../utils/space'
 import { UserConfig } from '../../config'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
@@ -95,20 +96,18 @@ const createCustomizations = (
     },
   },
   [SPACE_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/wiki/api/v2/spaces',
-          queryArgs: {
-            'description-format': 'plain',
-          },
-        },
-        transformation: {
-          root: 'results',
-          adjust: createAdjustUserReferences(SPACE_TYPE_NAME),
+    requests: getSpaceRequests(userConfig, {
+      endpoint: {
+        path: '/wiki/api/v2/spaces',
+        queryArgs: {
+          'description-format': 'plain',
         },
       },
-    ],
+      transformation: {
+        root: 'results',
+        adjust: createAdjustUserReferences(SPACE_TYPE_NAME),
+      },
+    }),
     resource: {
       directFetch: true,
       mergeAndTransform: {
@@ -207,7 +206,7 @@ const createCustomizations = (
         },
         permissions: {
           sort: {
-            properties: [{ path: 'principalId' }, { path: 'type' }, { path: 'key' }, { path: 'targetType' }],
+            properties: [{ path: 'type' }, { path: 'key' }, { path: 'targetType' }],
           },
         },
       },
@@ -333,6 +332,7 @@ const createCustomizations = (
         },
         transformation: {
           root: 'results',
+          adjust: createAdjustUserReferences(BLOG_POST_TYPE_NAME),
         },
       },
     ],
@@ -451,6 +451,35 @@ const createCustomizations = (
       },
       fieldCustomizations: {
         templateId: {
+          hide: true,
+        },
+      },
+    },
+  },
+  [GROUP_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/group',
+        },
+        transformation: {
+          root: 'results',
+          omit: ['type'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
+        },
+      },
+      fieldCustomizations: {
+        id: {
           hide: true,
         },
       },

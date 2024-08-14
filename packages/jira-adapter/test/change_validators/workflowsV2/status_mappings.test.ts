@@ -81,7 +81,7 @@ describe('status mappings', () => {
     issueType3 = new InstanceElement('issueType3', createEmptyType(ISSUE_TYPE_NAME))
     issueType4 = new InstanceElement('issueType4', createEmptyType(ISSUE_TYPE_NAME))
     workflowInstance = new InstanceElement('workflowInstance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
-      name: 'workflowInstance',
+      name: 'workflow instance',
       statuses: [
         {
           statusReference: new ReferenceExpression(status1.elemID, status1),

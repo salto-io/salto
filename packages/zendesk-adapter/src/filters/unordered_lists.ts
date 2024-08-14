@@ -22,7 +22,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
@@ -227,6 +227,18 @@ const sortChildFields = (formInstances: InstanceElement[], ticketFieldById: Reco
   })
 }
 
+const sortRestrictedBrands = (formInstances: InstanceElement[]): void => {
+  formInstances.forEach(form => {
+    const restrictedBrands = form.value.restricted_brand_ids
+    if (_.isArray(restrictedBrands) && restrictedBrands.every(isReferenceExpression)) {
+      form.value.restricted_brand_ids = _.sortBy(restrictedBrands, brand => brand.elemID.getFullName())
+    } else {
+      log.warn(`could not sort restricted brands for ${form.elemID.getFullName()}`)
+      log.trace('restricted brands are: %s', inspectValue(restrictedBrands, { maxArrayLength: null }))
+    }
+  })
+}
+
 const orderFormCondition = (instances: InstanceElement[]): void => {
   const formInstances = instances.filter(e => e.refType.elemID.name === TICKET_FORM_TYPE_NAME)
   const formAgentInstances = formInstances.filter(form => !_.isEmpty(form.value.agent_conditions))
@@ -238,6 +250,7 @@ const orderFormCondition = (instances: InstanceElement[]): void => {
   sortConditions(formAgentInstances, 'agent_conditions', customFieldById)
   sortConditions(formUserInstances, 'end_user_conditions', customFieldById)
   sortChildFields(formInstances, ticketFieldById)
+  sortRestrictedBrands(formInstances)
 }
 
 // The order is irrelevant and cannot be changed
@@ -281,9 +294,28 @@ const orderMacroIds = (workspace: InstanceElement): void => {
     log.trace(`macro_ids in workspace ${workspace.elemID.getFullName()} is not an array`)
   }
 }
+
+type MacroRestriction = {
+  ids?: ReferenceExpression[]
+}
+
+const sortSelectedMacros = (selectedMacros: { restriction?: MacroRestriction }[]): void =>
+  selectedMacros.forEach(macro => {
+    if (macro.restriction !== undefined && _.isObject(macro.restriction) && 'ids' in macro.restriction) {
+      const restrictionIds = _.get(macro, 'restriction.ids')
+      if (_.isArray(restrictionIds) && restrictionIds.every(isReferenceExpression)) {
+        macro.restriction.ids = _.sortBy(restrictionIds, ref => ref.elemID.getFullName())
+      } else {
+        log.warn(`could not sort restriction ids for restriction ${macro.restriction}`)
+        log.trace(`restriction ids are: ${inspectValue(restrictionIds, { maxArrayLength: null })}`)
+      }
+    }
+  })
+
 const orderSelectedMacros = (workspace: InstanceElement): void => {
   const selectedMacros = workspace.value.selected_macros
-  if (_.isArray(selectedMacros) && selectedMacros.every(macro => macro.id !== undefined)) {
+  if (_.isArray(selectedMacros) && selectedMacros.every(macro => _.isPlainObject(macro) && macro.id !== undefined)) {
+    sortSelectedMacros(selectedMacros)
     workspace.value.selected_macros = _.sortBy(selectedMacros, macro => {
       if (isReferenceExpression(macro.id)) {
         return macro.id.elemID.getFullName()

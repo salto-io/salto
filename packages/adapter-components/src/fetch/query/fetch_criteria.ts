@@ -23,3 +23,7 @@ export const fieldCriterionCreator =
     regex.isFullRegexMatch(_.get(instance.value, fieldName), value)
 
 export const nameCriterion = fieldCriterionCreator('name')
+
+export const DEFAULT_CRITERIA = {
+  name: nameCriterion,
+}

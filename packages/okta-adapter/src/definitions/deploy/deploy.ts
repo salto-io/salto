@@ -154,12 +154,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
           modify: [
             {
-              condition: {
-                skipIfIdentical: true,
-                transformForCheck: {
-                  omit: ['status'],
-                },
-              },
+              condition: simpleStatus.modificationCondition,
               request: {
                 endpoint: {
                   path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}',
@@ -223,6 +218,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     },
     [NETWORK_ZONE_TYPE_NAME]: {
       requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              omit: ['status'],
+            },
+          },
+        },
         customizations: {
           add: [
             {
@@ -239,6 +241,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
           modify: [
             {
+              condition: simpleStatus.modificationCondition,
               request: {
                 endpoint: {
                   path: '/api/v1/zones/{id}',

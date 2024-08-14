@@ -56,6 +56,13 @@ const statusChangeCondition: (status: string) => definitionUtils.deploy.DeployRe
 export const activationCondition = statusChangeCondition(ACTIVE_STATUS)
 export const deactivationCondition = statusChangeCondition(INACTIVE_STATUS)
 
+export const modificationCondition: definitionUtils.deploy.DeployRequestCondition = {
+  skipIfIdentical: true,
+  transformForCheck: {
+    omit: ['status'],
+  },
+}
+
 export const toActionNames: ({
   change,
 }: definitionUtils.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({ change }) => {
@@ -64,13 +71,11 @@ export const toActionNames: ({
     // response to the 'add' action.
     return ['add', 'deactivate', 'activate']
   }
-  if (isModificationChange(change)) {
-    if (isActivationChange(change)) {
-      return ['modify', 'activate']
-    }
-    if (isDeactivationChange(change)) {
-      return ['deactivate', 'modify']
-    }
+  if (isActivationChange(change)) {
+    return ['modify', 'activate']
+  }
+  if (isDeactivationChange(change)) {
+    return ['deactivate', 'modify']
   }
   return [change.action]
 }

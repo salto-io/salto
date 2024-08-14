@@ -84,7 +84,7 @@ export const createClientDefinitions = (
           '/api/v1/apps/{source}/policies/{target}': {
             put: {
               omitBody: true,
-            }
+            },
           },
           '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate':
             OMIT_STATUS_REQUEST_BODY,

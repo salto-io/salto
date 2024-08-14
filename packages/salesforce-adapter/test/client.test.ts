@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+Copyright 2024 Salto Labs Ltd.
+Licensed under the Salto Terms of Use (the "License");
+You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
+
+CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import nock from 'nock'
@@ -1117,11 +1109,11 @@ describe('salesforce client', () => {
 
           reads = _.times(2, () => makeResolvablePromise([]))
           _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+           
           readRequests = _.times(reads.length, i => testClient.readMetadata(`t${i}`, 'name'))
           retrieves = _.times(6, () => makeResolvablePromise(emptyRetrieveResult))
           _.times(retrieves.length, i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)))
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+           
           retrieveRequests = _.times(retrieves.length, i =>
             testClient.retrieve({
               apiVersion: API_VERSION,
@@ -1134,7 +1126,7 @@ describe('salesforce client', () => {
           )
           lists = _.times(2, () => makeResolvablePromise([]))
           _.times(lists.length, i => mockList.mockResolvedValueOnce(lists[i].promise))
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+           
           listRequests = _.times(lists.length, i => testClient.listMetadataObjects({ type: `t${i}` }))
 
           retrieves[0].resolve()
@@ -1189,11 +1181,11 @@ describe('salesforce client', () => {
 
           reads = _.times(2, () => makeResolvablePromise([]))
           _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+           
           readRequests = _.times(reads.length, i => testClient.readMetadata(`t${i}`, 'name'))
           retrieves = _.times(4, () => makeResolvablePromise(emptyRetrieveResult))
           _.times(retrieves.length, i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)))
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+           
           retrieveRequests = _.times(retrieves.length, i =>
             testClient.retrieve({
               apiVersion: API_VERSION,
@@ -1243,7 +1235,7 @@ describe('salesforce client', () => {
 
           retrieves = _.times(6, () => makeResolvablePromise(emptyRetrieveResult))
           _.times(retrieves.length, i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)))
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+           
           retrieveRequests = _.times(retrieves.length, i =>
             testClient.retrieve({
               apiVersion: API_VERSION,

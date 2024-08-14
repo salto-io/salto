@@ -1,7 +1,7 @@
 {
   "name": "@salto-io/google-workspace-adapter",
   "version": "0.3.61",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "description": "Salto google-workspace adapter",
   "repository": {
     "type": "git",

@@ -113,4 +113,4 @@ Once the PR is merged, the version will be published and a git tag will be creat
 See READMEs of individual packages under the `packages` directory.
 
 ### License
-[Apache License 2.0](LICENSE)
+[See LICENSE file](LICENSE)

@@ -81,7 +81,11 @@ export const createClientDefinitions = (
           },
           '/api/v1/apps/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,
           '/api/v1/apps/{id}/lifecycle/deactivate': OMIT_STATUS_REQUEST_BODY,
-          '/api/v1/apps/{source}/policies/{target}': OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/apps/{source}/policies/{target}': {
+            put: {
+              omitBody: true,
+            }
+          },
           '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate':
             OMIT_STATUS_REQUEST_BODY,
           '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/deactivate':

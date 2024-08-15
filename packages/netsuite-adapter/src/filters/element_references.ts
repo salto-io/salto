@@ -24,6 +24,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
 import { constants as bufferConstants } from 'buffer'
 import { logger } from '@salto-io/logging'
+import { parseScript, Program } from 'esprima'
+import { traverse } from 'estraverse'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import {
@@ -57,6 +59,13 @@ const pathPrefixRegex = new RegExp(
   `^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`,
   'm',
 )
+// matches key strings in the format of 'key: value'
+const mappedReferenceRegex = new RegExp(`['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*.+`, 'gm')
+// matches comments in js files
+// \\/\\*[\\s\\S]*?\\*\\/ - matches multiline comments by matching the first '/*' and the last '*/' and any character including newlines
+// ^\\s*\\/\\/.* - matches single line comments that start with '//'
+// (?<=[^:])\\/\\/.* - This prevents matching URLs that contain // by checking they are not preceded by a colon.
+const jsCommentsRegex = new RegExp('\\/\\*[\\s\\S]*?\\*\\/|^\\s*\\/\\/.*|(?<=[^:])\\/\\/.*', 'gm')
 
 const shouldExtractToGeneratedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
   serviceIdInfoRecord.appid !== undefined ||
@@ -136,13 +145,81 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
+const parseAST = (ast: Program): string[] => {
+  const foundReferences = new Set<string>()
+
+  traverse(ast, {
+    enter(node) {
+      if (node.type === 'Literal' && typeof node.value === 'string' && !node.value.startsWith(NETSUITE_MODULE_PREFIX)) {
+        foundReferences.add(node.value)
+      } else if (node.type === 'Property') {
+        if (node.key.type === 'Identifier') {
+          foundReferences.add(node.key.name)
+        } else if (node.key.type === 'Literal' && typeof node.key.value === 'string') {
+          foundReferences.add(node.key.value)
+        }
+      }
+    },
+  })
+  return Array.from(foundReferences)
+}
+
+const getReferencesWithRegex = (content: string): string[] => {
+  const contentWithoutComments = content.replace(jsCommentsRegex, '')
+  const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
+  const semanticReferences = getGroupItemFromRegex(
+    contentWithoutComments,
+    semanticReferenceRegex,
+    OPTIONAL_REFS,
+  ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+  return semanticReferences.concat(objectKeyReferences)
+}
+
+const getAndLogReferencesDiff = ({
+  newReferences,
+  existingReferences,
+  element,
+  serviceIdToElemID,
+  customRecordFieldsToServiceIds,
+}: {
+  newReferences: string[]
+  existingReferences: string[]
+  element: InstanceElement
+  serviceIdToElemID: ServiceIdRecords
+  customRecordFieldsToServiceIds: ServiceIdRecords
+}): void => {
+  const newFoundReferences = _.difference(newReferences, existingReferences)
+  const removedReferences = _.difference(existingReferences, newReferences)
+  const newReferencesElemIDs = getServiceElemIDsFromPaths(
+    newFoundReferences,
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
+  const removedReferencesElemIDs = getServiceElemIDsFromPaths(
+    removedReferences,
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
+  if (newReferencesElemIDs.length > 0 || removedReferencesElemIDs.length > 0) {
+    log.info(
+      'Found %d new references: %o and removed %d references: %o in file %s.',
+      newReferencesElemIDs.length,
+      newReferencesElemIDs,
+      removedReferencesElemIDs.length,
+      removedReferencesElemIDs,
+      element.value[PATH],
+    )
+  }
+}
+
 const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
 ): Promise<ElemID[]> => {
   const fileContent = await getContent(element.value.content)
-
   if (fileContent.length > bufferConstants.MAX_STRING_LENGTH) {
     log.warn('skip parsing file with size larger than MAX_STRING_LENGTH: %o', {
       fileSize: fileContent.length,
@@ -152,13 +229,42 @@ const getSuiteScriptReferences = async (
   }
 
   const content = fileContent.toString()
-
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
-  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
-    .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-    .concat(nsConfigReferences)
+  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
+    path => !path.startsWith(NETSUITE_MODULE_PREFIX),
+  )
 
-  return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
+  log.timeDebug(() => {
+    try {
+      const ast = parseScript(content)
+      const foundReferences = parseAST(ast)
+      // TODO: remove once SALTO-6026 is communicated
+      getAndLogReferencesDiff({
+        newReferences: foundReferences,
+        existingReferences: semanticReferences,
+        element,
+        serviceIdToElemID,
+        customRecordFieldsToServiceIds,
+      })
+    } catch (e) {
+      log.warn('Failed to parse file %s content with error %o', element.value[PATH], e)
+      const foundReferences = getReferencesWithRegex(content)
+      // TODO: remove once SALTO-6026 is communicated
+      getAndLogReferencesDiff({
+        newReferences: foundReferences,
+        existingReferences: semanticReferences,
+        element,
+        serviceIdToElemID,
+        customRecordFieldsToServiceIds,
+      })
+    }
+  }, 'getSuiteScriptReferences')
+  return getServiceElemIDsFromPaths(
+    semanticReferences.concat(nsConfigReferences),
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
 }
 
 const replaceReferenceValues = async (
@@ -215,7 +321,6 @@ const replaceReferenceValues = async (
     isFileCabinetInstance(element) && isFileInstance(element)
       ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
       : []
-
   extendGeneratedDependencies(
     newElement,
     dependenciesToAdd.concat(suiteScriptReferences).map(elemID => ({ reference: new ReferenceExpression(elemID) })),

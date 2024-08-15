@@ -153,28 +153,26 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
-const parseAST = (ast: Program): { semanticReferencesArray: string[]; objectKeyReferencesArray: string[] } => {
-  const semanticReferences = new Set<string>()
-  const objectKeyReferences = new Set<string>()
+const parseAST = (ast: Program): string[] => {
+  const foundReferences = new Set<string>()
 
   traverse(ast, {
     enter(node) {
       if (node.type === 'Literal' && typeof node.value === 'string' && !node.value.startsWith(NETSUITE_MODULE_PREFIX)) {
-        semanticReferences.add(node.value)
+        foundReferences.add(node.value)
       } else if (node.type === 'Property') {
         if (node.key.type === 'Identifier') {
-          objectKeyReferences.add(node.key.name)
+          foundReferences.add(node.key.name)
         } else if (node.key.type === 'Literal' && typeof node.key.value === 'string') {
-          objectKeyReferences.add(node.key.value)
+          foundReferences.add(node.key.value)
         }
       }
     },
   })
-  const semanticReferencesArray = Array.from(semanticReferences)
-  return { semanticReferencesArray, objectKeyReferencesArray: Array.from(objectKeyReferences) }
+  return Array.from(foundReferences)
 }
 
-const getReferencesWithRegex = (content: string): { semanticReferences: string[]; objectKeyReferences: string[] } => {
+const getReferencesWithRegex = (content: string): string[] => {
   const contentWithoutComments = content.replace(jsCommentsRegex, '')
   const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
   const semanticReferences = getGroupItemFromRegex(
@@ -182,7 +180,7 @@ const getReferencesWithRegex = (content: string): { semanticReferences: string[]
     semanticReferenceRegex,
     OPTIONAL_REFS,
   ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-  return { semanticReferences, objectKeyReferences }
+  return semanticReferences.concat(objectKeyReferences)
 }
 
 const getAndLogReferencesDiff = ({
@@ -240,28 +238,28 @@ const getSuiteScriptReferences = async (
 
   const content = fileContent.toString()
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
-  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
-    .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-    .concat(nsConfigReferences)
+  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
+    path => !path.startsWith(NETSUITE_MODULE_PREFIX),
+  )
 
   log.timeDebug(() => {
     try {
       const ast = parseScript(content)
-      const { semanticReferencesArray, objectKeyReferencesArray } = parseAST(ast)
+      const foundReferences = parseAST(ast)
       // TODO: remove once SALTO-6026 is communicated
       getAndLogReferencesDiff({
-        newReferences: semanticReferencesArray.concat(objectKeyReferencesArray),
+        newReferences: foundReferences,
         existingReferences: semanticReferences,
         element,
         serviceIdToElemID,
         customRecordFieldsToServiceIds,
       })
     } catch (e) {
-      log.warn('Failed to parse file %s content with error %s', element.value[PATH], e)
-      const { semanticReferences: foundReferences, objectKeyReferences } = getReferencesWithRegex(content)
+      log.warn('Failed to parse file %s content with error %o', element.value[PATH], e)
+      const foundReferences = getReferencesWithRegex(content)
       // TODO: remove once SALTO-6026 is communicated
       getAndLogReferencesDiff({
-        newReferences: foundReferences.concat(objectKeyReferences),
+        newReferences: foundReferences,
         existingReferences: semanticReferences,
         element,
         serviceIdToElemID,
@@ -269,7 +267,12 @@ const getSuiteScriptReferences = async (
       })
     }
   }, 'getSuiteScriptReferences')
-  return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
+  return getServiceElemIDsFromPaths(
+    semanticReferences.concat(nsConfigReferences),
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
 }
 
 const replaceReferenceValues = async (

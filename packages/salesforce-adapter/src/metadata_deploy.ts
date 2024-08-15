@@ -210,6 +210,11 @@ const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: stri
 const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean =>
   getUnFoundDeleteName(message, deletionsPackageName) !== undefined
 
+const canceledDeployError = (isCheckOnly: boolean): SaltoError => ({
+  message: `${isCheckOnly ? 'Validation' : 'Deployment'} was canceled.`,
+  severity: 'Error',
+})
+
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
@@ -247,15 +252,10 @@ const processDeployResponse = (
     return 'Warning'
   }
 
-  const canceledDeployError = (): SaltoError => ({
-    message: 'Deployment/Validation was canceled.',
-    severity: 'Error',
-  })
-
   if (result.status === 'Canceled') {
     return {
       successfulFullNames: [],
-      errors: [canceledDeployError()],
+      errors: [canceledDeployError(result.checkOnly)],
     }
   }
 

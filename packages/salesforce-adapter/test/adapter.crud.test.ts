@@ -1197,7 +1197,7 @@ describe('SalesforceAdapter CRUD', () => {
         expect(result.errors).toEqual([
           {
             severity: 'Error',
-            message: 'Deployment/Validation was canceled.',
+            message: 'Deployment was canceled.',
           },
         ])
         expect(result.appliedChanges).toBeEmpty()

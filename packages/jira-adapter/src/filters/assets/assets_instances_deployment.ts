@@ -41,9 +41,7 @@ const filter: FilterCreator = ({ config }) => ({
   name: 'assetsInstancesDeploymentFilter',
   preDeploy: async changes => {
     const { jsmApiDefinitions } = config
-    if (
-      !config.fetch.enableJSM || jsmApiDefinitions === undefined
-    ) {
+    if (!config.fetch.enableJSM || jsmApiDefinitions === undefined) {
       return
     }
 
@@ -68,9 +66,7 @@ const filter: FilterCreator = ({ config }) => ({
   },
   onDeploy: async changes => {
     const { jsmApiDefinitions } = config
-    if (
-      !config.fetch.enableJSM || jsmApiDefinitions === undefined
-    ) {
+    if (!config.fetch.enableJSM || jsmApiDefinitions === undefined) {
       return
     }
 

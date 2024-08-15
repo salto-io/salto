@@ -42,7 +42,7 @@
     "body": {
       "id": "grouprule-fakeid1",
       "type": "group_rule",
-      "name": "my group rule",
+      "name": "your group rule",
       "conditions": {
         "expression": {
           "value": "substringAfter(user.email, '@')==\"example.com\"",

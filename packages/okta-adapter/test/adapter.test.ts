@@ -1217,15 +1217,13 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
-      it('should successfully modify a group rule without status change', async () => {
-        loadMockReplies('group_rule_modify.json')
-        const groupRule = new InstanceElement('groupRule', groupRuleType, {
-          id: 'grouprule-fakeid1',
-          name: 'my_zone',
-          status: ACTIVE_STATUS,
-        })
+      // TODO(SALTO-6485): Allow to modify an active group rule
+      it.skip('should successfully modify an active group rule without status change', async () => {
+        loadMockReplies('group_rule_modify_active.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
         const updatedGroupRule = groupRule.clone()
-        updatedGroupRule.value.name = 'your_zone'
+        updatedGroupRule.value.name = 'your group rule'
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',
@@ -1238,15 +1236,30 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+      it('should successfully modify an inactive group rule without status change', async () => {
+        loadMockReplies('group_rule_modify_inactive.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
+        const updatedGroupRule = groupRule.clone()
+        updatedGroupRule.value.name = 'your group rule'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: updatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
       it('should successfully modify and activate a group rule', async () => {
         loadMockReplies('group_rule_modify_and_activate.json')
-        const groupRule = new InstanceElement('groupRule', groupRuleType, {
-          id: 'grouprule-fakeid1',
-          name: 'my_zone',
-          status: INACTIVE_STATUS,
-        })
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
         const activatedGroupRule = groupRule.clone()
-        activatedGroupRule.value.name = 'your_zone'
+        activatedGroupRule.value.name = 'your group rule'
         activatedGroupRule.value.status = ACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
@@ -1257,18 +1270,15 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully modify and deactivate a group rule', async () => {
         loadMockReplies('group_rule_modify_and_deactivate.json')
-        const groupRule = new InstanceElement('groupRule', groupRuleType, {
-          id: 'grouprule-fakeid1',
-          name: 'my_zone',
-          status: ACTIVE_STATUS,
-        })
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
         const deactivatedGroupRule = groupRule.clone()
-        deactivatedGroupRule.value.name = 'your_zone'
+        deactivatedGroupRule.value.name = 'your group rule'
         deactivatedGroupRule.value.status = INACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
@@ -1279,16 +1289,29 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
-      it('should successfully remove a group rule', async () => {
-        loadMockReplies('group_rule_remove.json')
-        const groupRule = new InstanceElement('groupRule', groupRuleType, {
-          id: 'grouprule-fakeid1',
-          name: 'my_zone',
-          status: ACTIVE_STATUS,
+      // TODO(SALTO-6485): Allow to remove an active group rule
+      it.skip('should successfully remove an active group rule', async () => {
+        loadMockReplies('group_rule_remove_active.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
         })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove an inactive group rule', async () => {
+        loadMockReplies('group_rule_remove_inactive.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'groupRule',

@@ -1,10 +1,10 @@
 /*
-Copyright 2024 Salto Labs Ltd.
-Licensed under the Salto Terms of Use (the "License");
-You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
-
-CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
- */
+* Copyright 2024 Salto Labs Ltd.
+* Licensed under the Salto Terms of Use (the "License");
+* You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
+*
+* CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
+*/
 
 export const emptyDefinition =
   'b4c02181b32dd312b31406b8197bbd385526fe868be8cb5a5b3b70207f8a457a@GZC@2021.1.0.103@H4sIAAAAAAAAAL1ZX2/iOBB/X2m/Q5R7PlKqu70VCqxCYsDX/JPjtMu9RCm429yFBCWme+ynv4kDlIbQvQKuWgllbM9vPDOeGY/1L/8uUuWJFWWSZ32127lSFZbN8nmSfeurIR39+ln9Mvj4Qc/KMp/1AlYkcZr8YHPv/m8242ae8TjJWKEAm6zsiVl99ZHzZU/Tvn//3skYL1cJZ51ZvtDK2SNbxKUmpqnKKpn3VRpQi9xeX//+x+dPV70gfmLzgMXF7LE3W5U8X5Ti47frXvfTNfx1r7vdz9cg5U7mq05XVXiyYCWPF0vYw4t5ILuibKRfxMsliPpi5QDkqoRM2fwbK0DKgnVqSPjZbLbo1Cs7tWCO+NC1fab7MHP2kGQJBwhBBXq9zmrSYWTOylmRLHle7GhALRjIMafrJVNmaVyWfbXmQHZ0dRAgg5iTCLmUTHXtecU+n6c4XbFyjwK024qmPCQsFdO3rEdbglqP9dUbNI18w7wxxkhVtDOYBCbBPo2wpVa7+fGjr5a8AP8C3b+wsK4JticijTCyrchCIyO0aeQaDkg9Z0uWzcGf1zds3VftfBanzNqpvLfRIcXURr9cHYhnCvGUYF1ytlDcnDOlRle6l5B1iz710QF0jVlBnolkG+PID4c2NncY93mesjhTBw9xWl6Cv40DKo+77xEwj0QAxzAn2EXyAAhysGshIg8hmHh3YAb3RqIZCBohQpAl29w7HOmGf4aS7gLPUCOPOO+BQ1AAgTCQB3WL0V1kBABUGUo+zpgY/uQ9YPYS1cVRQhfsQgk2KZKD4hhfI+LdBaenbCGnhQNjaKPIIti2I8u7c+XoRCRCMwSPdc1pRAyKNvnwLOkn2ELRCNsUEdiB51fyyzkJVX2zrTko+kqjekc19mFWpwahwR2mkwu4knFrYFsYCbx2hCT5k4Aa297QsCNkYYnn3Axu5TFHX01kSwy71kji+UAOWDoaEc8541zscQrC4Z/IpJdhNvSs6WU4mZ7jwHXmzLMPwXU8RlUGNGwkMy8F5gRZof3uQGA+xzEIRhJze4Dcyio+ncqvI+pNGbYNJSx4ZnVbHEqsxGo47Jp2CElCZP32wpkXq0vgTSA6U48atkQVbnfjI4I9MBwYjxLDDQyTYk9S5qtP7jC0byLPh7NrnZO0n3mJfoYokiPfIIZzbiEzDCEVg4Ik6sDzKXbwX1BrwB3i3PAlTp7nRqFvQTEk+cZohJDRK1fB/z836lqjq6RrLU0s/SFJOSv2e086P+hnoZQtWMZfNLTq0inQNb7fzNK1JkO9XC0WcbEenQpUh9HpUcAj/PX4KU7S+D5l9YjQ7wnwz+XbMQFeB9ILxldFdio8QTQkbl2uHkK38tbnjINEpyJaiIoyph2xlbde5gU383S1yE4xMFxLITDZoeM28Y70Ruv+6gsaUJdxAay3eCBOymZVF1dVCvbAYGwGh63T0cR/8/i/rZu7J/KRnu4x2QX9TdcWYYiDHun9vOjF2bqXrdL0la4k+I/pEastEL1NEnB+EUPJfn8sybg6aO2xvpG5uMqiwISgit3xG6JpS5yriQcu0hIP27xWj1NWcFidLBPwppOjhqheQPnYx5Aqg2PH6VW0hiwXEOMn+FsEXWt9Cdk+pTQeTnbPKRsHTXZKbo6sFS78oNng3zwx/bTvX03aPBUJ9s0FTQUN9hkchpZ/2HpwpWvVz/7CIs7KNK6213Aq0FCxbrpffeYGLItCUO/mq33Oq+8ULSt1rYkIe2iTTteOaOLZYlsLNAz5wmRb8tHXQ5jz8cN/hW7w3oscAAA='

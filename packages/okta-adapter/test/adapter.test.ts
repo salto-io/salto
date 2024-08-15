@@ -34,6 +34,7 @@ import {
   CORE_ANNOTATIONS,
   isObjectType,
   StaticFile,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -70,6 +71,8 @@ import {
   PROFILE_MAPPING_TYPE_NAME,
   APP_LOGO_TYPE_NAME,
   NETWORK_ZONE_TYPE_NAME,
+  GROUP_RULE_TYPE_NAME,
+  USER_SCHEMA_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -527,6 +530,7 @@ describe('adapter', () => {
     let groupType: ObjectType
     let orgSettingType: ObjectType
     let userTypeType: ObjectType
+    let userSchemaType: ObjectType
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
@@ -568,6 +572,14 @@ describe('adapter', () => {
       })
       userTypeType = new ObjectType({
         elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      userSchemaType = new ObjectType({
+        elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME),
         fields: {
           id: {
             refType: BuiltinTypes.SERVICE_ID,
@@ -1055,6 +1067,222 @@ describe('adapter', () => {
           changeGroup: {
             groupID: 'networkZone',
             changes: [toChange({ before: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+
+    describe('deploy group rule', () => {
+      let groupRuleType: ObjectType
+      let group: InstanceElement
+      let userSchema: InstanceElement
+      let groupRule: InstanceElement
+
+      beforeEach(() => {
+        const groupRuleGroupAssignmentType = new ObjectType({
+          elemID: new ElemID(OKTA, 'GroupRuleGroupAssignment'),
+        })
+        const groupRuleActionsType = new ObjectType({
+          elemID: new ElemID(OKTA, 'GroupRuleActions'),
+          fields: {
+            assignUserToGroups: {
+              refType: groupRuleGroupAssignmentType,
+            },
+          },
+        })
+        groupRuleType = new ObjectType({
+          elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+            actions: {
+              refType: groupRuleActionsType,
+            },
+          },
+        })
+        group = new InstanceElement('group', groupType, {
+          id: 'group-fakeid1',
+          objectClass: ['okta:user_group'],
+          type: 'OKTA_GROUP',
+          profile: {
+            name: 'Engineers',
+            description: 'all the engineers',
+          },
+        })
+        userSchema = new InstanceElement('userSchema', userSchemaType, {
+          id: 'userschema-fakeid1',
+          definitions: {
+            base: {
+              email: {
+                type: 'string',
+                title: 'email',
+              },
+            },
+          },
+        })
+        groupRule = new InstanceElement('groupRule', groupRuleType, {
+          name: 'my group rule',
+          type: 'group_rule',
+          conditions: {
+            expression: {
+              value: new TemplateExpression({
+                parts: [
+                  'substringAfter(',
+                  new ReferenceExpression(
+                    userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'email'),
+                  ),
+                  ', \'@\')=="example.com"',
+                ],
+              }),
+              type: 'urn:okta:expression:1.0',
+            },
+          },
+          actions: {
+            assignUserToGroups: { groupIds: [new ReferenceExpression(group.elemID, group)] },
+          },
+        })
+      })
+
+      it('should successfully add an active group rule', async () => {
+        loadMockReplies('group_rule_add_active.json')
+        groupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ after: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('grouprule-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive group rule', async () => {
+        loadMockReplies('group_rule_add_inactive.json')
+        groupRule.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ after: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('grouprule-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully activate a group rule', async () => {
+        loadMockReplies('group_rule_activate.json')
+        groupRule.value.status = INACTIVE_STATUS
+        groupRule.value.id = 'grouprule-fakeid1'
+        const activatedGroupRule = groupRule.clone()
+        activatedGroupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: activatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(ACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully deactivate a group rule', async () => {
+        loadMockReplies('group_rule_deactivate.json')
+        groupRule.value.status = ACTIVE_STATUS
+        groupRule.value.id = 'grouprule-fakeid1'
+        const deactivatedGroupRule = groupRule.clone()
+        deactivatedGroupRule.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: deactivatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      // TODO(SALTO-6485): Allow to modify an active group rule
+      it('should successfully modify an inactive group rule without status change', async () => {
+        loadMockReplies('group_rule_modify_inactive.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
+        const updatedGroupRule = groupRule.clone()
+        updatedGroupRule.value.name = 'your group rule'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: updatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and activate a group rule', async () => {
+        loadMockReplies('group_rule_modify_and_activate.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
+        const activatedGroupRule = groupRule.clone()
+        activatedGroupRule.value.name = 'your group rule'
+        activatedGroupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: activatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate a group rule', async () => {
+        loadMockReplies('group_rule_modify_and_deactivate.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
+        const deactivatedGroupRule = groupRule.clone()
+        deactivatedGroupRule.value.name = 'your group rule'
+        deactivatedGroupRule.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: deactivatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      // TODO(SALTO-6485): Allow to remove an active group rule
+      it('should successfully remove an inactive group rule', async () => {
+        loadMockReplies('group_rule_remove_inactive.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule })],
           },
           progressReporter: nullProgressReporter,
         })

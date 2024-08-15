@@ -18,21 +18,13 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { ADAPTER_NAME, entraConstants, ODATA_TYPE_FIELD_NACL_CASE } from '../../../src/constants'
 import { requiredFieldsValidator } from '../../../src/change_validators'
 
-const {
-  AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME,
-  CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
-  AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
-  DIRECTORY_ROLE_TYPE_NAME,
-  ROLE_DEFINITION_TYPE_NAME,
-} = entraConstants
-
 describe(`${requiredFieldsValidator.name}`, () => {
   describe.each(['addition', 'modification'])(
-    `${AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME} with %s change`,
+    `${entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME} with %s change`,
     changeType => {
       it('should return change error for missing required odata type field on %s', async () => {
         const authenticationMethodConfigurationType = new ObjectType({
-          elemID: new ElemID(ADAPTER_NAME, AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME),
+          elemID: new ElemID(ADAPTER_NAME, entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME),
         })
         const authenticationMethodConfiguration = new InstanceElement(
           'testAuthenticationMethodConfiguration',
@@ -56,7 +48,7 @@ describe(`${requiredFieldsValidator.name}`, () => {
 
       it('should not return change error for instance with all required fields on %s', async () => {
         const authenticationMethodConfigurationType = new ObjectType({
-          elemID: new ElemID(ADAPTER_NAME, AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME),
+          elemID: new ElemID(ADAPTER_NAME, entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME),
         })
         const authenticationMethodConfiguration = new InstanceElement(
           'testAuthenticationMethodConfiguration',
@@ -79,11 +71,11 @@ describe(`${requiredFieldsValidator.name}`, () => {
   )
 
   describe.each(['addition', 'modification'])(
-    `${CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME} with %s change`,
+    `${entraConstants.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME} with %s change`,
     changeType => {
       const INSTANCE_NAME = 'testConditionalAccessPolicyNamedLocation'
       const conditionalAccessPolicyNamedLocationType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME),
+        elemID: new ElemID(ADAPTER_NAME, entraConstants.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME),
       })
       it('when displayName is missing', async () => {
         const conditionalAccessPolicyNamedLocation = new InstanceElement(
@@ -267,9 +259,9 @@ describe(`${requiredFieldsValidator.name}`, () => {
     },
   )
 
-  describe(AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, () => {
+  describe(entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, () => {
     const authenticationStrengthPolicyType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
     })
 
     it('should return change error when allowedCombinations field is missing on addition', async () => {
@@ -330,9 +322,9 @@ describe(`${requiredFieldsValidator.name}`, () => {
     })
   })
 
-  describe(DIRECTORY_ROLE_TYPE_NAME, () => {
+  describe(entraConstants.DIRECTORY_ROLE_TYPE_NAME, () => {
     const directoryRoleType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, DIRECTORY_ROLE_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.DIRECTORY_ROLE_TYPE_NAME),
     })
 
     it('should return change error when roleTemplateId field is missing on addition', async () => {
@@ -381,9 +373,9 @@ describe(`${requiredFieldsValidator.name}`, () => {
     })
   })
 
-  describe(ROLE_DEFINITION_TYPE_NAME, () => {
+  describe(entraConstants.ROLE_DEFINITION_TYPE_NAME, () => {
     const roleDefinitionType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, ROLE_DEFINITION_TYPE_NAME),
+      elemID: new ElemID(ADAPTER_NAME, entraConstants.ROLE_DEFINITION_TYPE_NAME),
     })
 
     it('should return change error when displayName, rolePermissions, isBuiltIn fields are missing on addition', async () => {

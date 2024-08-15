@@ -30,14 +30,6 @@ import { ODATA_PREFIX, ODATA_TYPE_FIELD_NACL_CASE, entraConstants } from '../../
 
 const { isDefined } = lowerDashValues
 
-const {
-  CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME,
-  AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME,
-  AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
-  DIRECTORY_ROLE_TYPE_NAME,
-  ROLE_DEFINITION_TYPE_NAME,
-} = entraConstants
-
 type ValidateRequiredFieldsFunc = (instance: InstanceElement) => ChangeError | undefined
 type ValidationRule = types.XOR<{ fieldNames: string[] }, { custom: ValidateRequiredFieldsFunc }>
 type RequiredFieldsMap = Record<string, ValidationRule>
@@ -108,16 +100,16 @@ const validateRequiredFieldsForLocation = (instance: InstanceElement): ChangeErr
 }
 
 const TYPE_TO_VALIDATION_RULES_ON_ADDITION: RequiredFieldsMap = {
-  [CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: { custom: validateRequiredFieldsForLocation },
-  [AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
-  [AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: { fieldNames: ['allowedCombinations'] },
-  [DIRECTORY_ROLE_TYPE_NAME]: { fieldNames: ['roleTemplateId'] },
-  [ROLE_DEFINITION_TYPE_NAME]: { fieldNames: ['displayName', 'rolePermissions', 'isBuiltIn'] },
+  [entraConstants.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: { custom: validateRequiredFieldsForLocation },
+  [entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
+  [entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: { fieldNames: ['allowedCombinations'] },
+  [entraConstants.DIRECTORY_ROLE_TYPE_NAME]: { fieldNames: ['roleTemplateId'] },
+  [entraConstants.ROLE_DEFINITION_TYPE_NAME]: { fieldNames: ['displayName', 'rolePermissions', 'isBuiltIn'] },
 }
 
 const TYPE_TO_VALIDATION_RULES_ON_MODIFICATION: RequiredFieldsMap = {
-  [CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: { custom: validateRequiredFieldsForLocation },
-  [AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
+  [entraConstants.CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME]: { custom: validateRequiredFieldsForLocation },
+  [entraConstants.AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME]: { fieldNames: [ODATA_TYPE_FIELD_NACL_CASE] },
 }
 
 /*

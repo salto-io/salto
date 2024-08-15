@@ -18,13 +18,11 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { ADAPTER_NAME, entraConstants } from '../../../src/constants'
 import { builtInInstancesValidator } from '../../../src/change_validators'
 
-const { AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, ROLE_DEFINITION_TYPE_NAME } = entraConstants
-
 describe(`${builtInInstancesValidator.name}`, () => {
-  describe(AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, () => {
+  describe(entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, () => {
     it('should return change error for built-in authentication strength policy', async () => {
       const authenticationStrengthPolicyType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
+        elemID: new ElemID(ADAPTER_NAME, entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
       })
       const authenticationStrengthPolicy = new InstanceElement(
         'testAuthenticationStrengthPolicy',
@@ -43,7 +41,7 @@ describe(`${builtInInstancesValidator.name}`, () => {
 
     it('should not return change error for non built-in authentication strength policy', async () => {
       const authenticationStrengthPolicyType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
+        elemID: new ElemID(ADAPTER_NAME, entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME),
       })
       const authenticationStrengthPolicy = new InstanceElement(
         'testAuthenticationStrengthPolicy',
@@ -60,10 +58,10 @@ describe(`${builtInInstancesValidator.name}`, () => {
     })
   })
 
-  describe(ROLE_DEFINITION_TYPE_NAME, () => {
+  describe(entraConstants.ROLE_DEFINITION_TYPE_NAME, () => {
     it('should return change error for built-in role definition', async () => {
       const roleDefinitionType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, ROLE_DEFINITION_TYPE_NAME),
+        elemID: new ElemID(ADAPTER_NAME, entraConstants.ROLE_DEFINITION_TYPE_NAME),
       })
       const roleDefinition = new InstanceElement('testRoleDefinition', roleDefinitionType, { isBuiltIn: true })
       const changes = [
@@ -77,7 +75,9 @@ describe(`${builtInInstancesValidator.name}`, () => {
     })
 
     it('should not return change error for non built-in role definition', async () => {
-      const roleDefinitionType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, ROLE_DEFINITION_TYPE_NAME) })
+      const roleDefinitionType = new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, entraConstants.ROLE_DEFINITION_TYPE_NAME),
+      })
       const roleDefinition = new InstanceElement('testRoleDefinition', roleDefinitionType, { isBuiltIn: false })
       const changes = [
         toChange({

@@ -19,8 +19,6 @@ import { ODATA_TYPE_FIELD_NACL_CASE, entraConstants } from '../../constants'
 import { Options } from '../types'
 import { REFERENCE_RULES } from './entra_reference_rules'
 
-const { SUPPORTED_DIRECTORY_OBJECTS_ODATA_TYPE_NAME_TO_TYPE_NAME } = entraConstants
-
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
   fieldsToGroupBy: ['id', 'name', 'appId'],
@@ -35,7 +33,7 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
     ODataType: referenceUtils.neighborContextGetter({
       contextFieldName: ODATA_TYPE_FIELD_NACL_CASE,
       getLookUpName: async ({ ref }) => ref.elemID.name,
-      contextValueMapper: refType => SUPPORTED_DIRECTORY_OBJECTS_ODATA_TYPE_NAME_TO_TYPE_NAME[refType],
+      contextValueMapper: refType => entraConstants.SUPPORTED_DIRECTORY_OBJECTS_ODATA_TYPE_NAME_TO_TYPE_NAME[refType],
     }),
   },
 }

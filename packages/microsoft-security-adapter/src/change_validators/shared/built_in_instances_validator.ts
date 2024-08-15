@@ -23,18 +23,16 @@ import {
 import _ from 'lodash'
 import { entraConstants } from '../../constants'
 
-const { AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, ROLE_DEFINITION_TYPE_NAME } = entraConstants
-
 type BuiltInIndicator = {
   fieldName: string
   value: Value
 }
 const POTENTIAL_BUILD_IN_TYPES: Record<string, BuiltInIndicator> = {
-  [AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: {
+  [entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: {
     fieldName: 'policyType',
     value: 'builtIn',
   },
-  [ROLE_DEFINITION_TYPE_NAME]: {
+  [entraConstants.ROLE_DEFINITION_TYPE_NAME]: {
     fieldName: 'isBuiltIn',
     value: true,
   },

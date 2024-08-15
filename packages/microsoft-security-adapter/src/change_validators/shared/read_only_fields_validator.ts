@@ -27,46 +27,32 @@ import { entraConstants } from '../../constants'
 
 const { isDefined } = values
 
-const {
-  APPLICATION_TYPE_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_TYPE_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME,
-  CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME,
-  DIRECTORY_ROLE_TYPE_NAME,
-  DOMAIN_NAME_REFERENCES_FIELD_NAME,
-  DOMAIN_TYPE_NAME,
-  GROUP_TYPE_NAME,
-  OAUTH2_PERMISSION_GRANT_TYPE_NAME,
-  ROLE_DEFINITION_TYPE_NAME,
-  SERVICE_PRINCIPAL_TYPE_NAME,
-} = entraConstants
-
 type ReadOnlyFieldDefinition = {
   fieldName: string
   verifyAdditionChanges?: true
 }
 
 const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> = {
-  [ROLE_DEFINITION_TYPE_NAME]: [{ fieldName: 'inheritsPermissionsFrom' }],
-  [SERVICE_PRINCIPAL_TYPE_NAME]: [{ fieldName: 'appId' }, { fieldName: 'displayName' }],
-  [APPLICATION_TYPE_NAME]: [
+  [entraConstants.ROLE_DEFINITION_TYPE_NAME]: [{ fieldName: 'inheritsPermissionsFrom' }],
+  [entraConstants.SERVICE_PRINCIPAL_TYPE_NAME]: [{ fieldName: 'appId' }, { fieldName: 'displayName' }],
+  [entraConstants.APPLICATION_TYPE_NAME]: [
     { fieldName: 'appId' },
     { fieldName: 'publisherDomain', verifyAdditionChanges: true },
     { fieldName: 'applicationTemplateId', verifyAdditionChanges: true },
   ],
-  [DIRECTORY_ROLE_TYPE_NAME]: [
+  [entraConstants.DIRECTORY_ROLE_TYPE_NAME]: [
     { fieldName: 'description' },
     { fieldName: 'displayName' },
     { fieldName: 'roleTemplateId' },
   ],
-  [OAUTH2_PERMISSION_GRANT_TYPE_NAME]: [
+  [entraConstants.OAUTH2_PERMISSION_GRANT_TYPE_NAME]: [
     { fieldName: 'clientId' },
     { fieldName: 'consentType' },
     { fieldName: 'resourceId' },
     { fieldName: 'principalId' },
   ],
-  [CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_TYPE_NAME]: [{ fieldName: 'id' }],
-  [CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME]: [
+  [entraConstants.CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_TYPE_NAME]: [{ fieldName: 'id' }],
+  [entraConstants.CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME]: [
     { fieldName: 'attributeSet' },
     { fieldName: 'isCollection' },
     { fieldName: 'isSearchable' },
@@ -75,9 +61,12 @@ const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> =
     { fieldName: 'usePreDefinedValuesOnly' },
   ],
   // The id field for the following types is not hidden, since it also indicates the name and is used for creating new instances
-  [CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME]: [{ fieldName: 'id' }],
-  [DOMAIN_TYPE_NAME]: [{ fieldName: DOMAIN_NAME_REFERENCES_FIELD_NAME }, { fieldName: 'id' }],
-  [GROUP_TYPE_NAME]: [
+  [entraConstants.CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME]: [{ fieldName: 'id' }],
+  [entraConstants.DOMAIN_TYPE_NAME]: [
+    { fieldName: entraConstants.DOMAIN_NAME_REFERENCES_FIELD_NAME },
+    { fieldName: 'id' },
+  ],
+  [entraConstants.GROUP_TYPE_NAME]: [
     { fieldName: 'mail', verifyAdditionChanges: true },
     { fieldName: 'assignedLicenses', verifyAdditionChanges: true },
     { fieldName: 'onPremisesProvisioningErrors', verifyAdditionChanges: true },

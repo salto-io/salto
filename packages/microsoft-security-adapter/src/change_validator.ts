@@ -19,13 +19,11 @@ import { builtInInstancesValidator, readOnlyFieldsValidator, requiredFieldsValid
 import { createDeployDefinitions } from './definitions'
 import { entraConstants } from './constants'
 
-const { APP_ROLE_TYPE_NAME } = entraConstants
-
 export default (): Record<string, ChangeValidator> => ({
   createCheckDeploymentBasedOnDefinitions: deployment.changeValidators.createCheckDeploymentBasedOnDefinitionsValidator(
     {
       deployDefinitions: createDeployDefinitions(),
-      typesDeployedViaParent: [APP_ROLE_TYPE_NAME],
+      typesDeployedViaParent: [entraConstants.APP_ROLE_TYPE_NAME],
     },
   ),
   builtInInstances: builtInInstancesValidator,

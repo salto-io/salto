@@ -12,7 +12,6 @@
     "test/**/*",
     "test/**/*.json",
     "index.ts",
-    "../adapter-components/src/definitions/system/helpers/utils.ts"
   ],
   "references": [
     { "path": "../adapter-api" },

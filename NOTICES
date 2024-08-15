@@ -19499,8 +19499,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
-** jsforce; version https: -- 
-** jsforce-types; version https: -- 
+** jsforce; version https: --
+** jsforce-types; version https: --
 
 ------
 
@@ -19508,13 +19508,13 @@ The following files has certain contributions that fall under the Apache License
 * packages/cli/src/commands/account.ts (https://github.com/thilgen )
 * packages/cli/test/commands/account.test.ts (https://github.com/thilgen )
 * packages/cli/test/mocks.ts (https://github.com/thilgen )
-* packages/zendesk-adapter/specific-cli-options.md (https://github.com/thilgen) 
-* README.md (https://github.com/thilgen) 
-* packages/salesforce-adapter/config_doc.md (https://github.com/gruppin) 
+* packages/zendesk-adapter/specific-cli-options.md (https://github.com/thilgen)
+* README.md (https://github.com/thilgen)
+* packages/salesforce-adapter/config_doc.md (https://github.com/gruppin)
 * packages/core/src/local-workspace/workspace.ts (https://github.com/eransweep )
-* packages/salesforce-adapter/README.md (https://github.com/eransweep) 
-* packages/netsuite-adapter/README.md (https://github.com/burkybang,  https://github.com/nvais) 
-* packages/zendesk-adapter/src/filters/webhook.ts (https://github.com/cl8au) 
+* packages/salesforce-adapter/README.md (https://github.com/eransweep)
+* packages/netsuite-adapter/README.md (https://github.com/burkybang,  https://github.com/nvais)
+* packages/zendesk-adapter/src/filters/webhook.ts (https://github.com/cl8au)
 * packages/zendesk-adapter/test/filters/webhook.test.ts (https://github.com/cl8au)
 
 Licensed under the Apache License, Version 2.0 (the "License");

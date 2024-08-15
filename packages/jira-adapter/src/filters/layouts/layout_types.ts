@@ -80,7 +80,6 @@ export type ContainerIssueLayoutResponse = {
     nodes: {
       fieldItemId?: string
       panelItemId?: string
-      name?: string
       items?: {
         nodes: {
           fieldItemId?: string
@@ -99,7 +98,6 @@ const CONTAINER_ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
         Joi.object({
           fieldItemId: Joi.string(),
           panelItemId: Joi.string(),
-          name: Joi.string(),
           items: Joi.object({
             nodes: Joi.array().items(
               Joi.object({

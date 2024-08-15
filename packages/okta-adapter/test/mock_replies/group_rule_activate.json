@@ -19,9 +19,7 @@
       },
       "actions": {
         "assignUserToGroups": {
-          "groupIds": [
-            "group-fakeid1"
-          ]
+          "groupIds": ["group-fakeid1"]
         }
       },
       "allGroupsValid": true
@@ -38,9 +36,7 @@
       },
       "actions": {
         "assignUserToGroups": {
-          "groupIds": [
-            "group-fakeid1"
-          ]
+          "groupIds": ["group-fakeid1"]
         }
       }
     },

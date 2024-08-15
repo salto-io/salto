@@ -1,10 +1,10 @@
 /*
-* Copyright 2024 Salto Labs Ltd.
-* Licensed under the Salto Terms of Use (the "License");
-* You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
-*
-* CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
-*/
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
+ *
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
+ */
 import { BuiltinTypes, ChangeError, CORE_ANNOTATIONS, Field, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { API_NAME, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'

@@ -118,6 +118,7 @@ export type OptionalFeatures = {
   latestSupportedApiVersion?: boolean
   metaTypes?: boolean
   cpqRulesAndConditionsRefs?: boolean
+  flowCoordinates?: boolean
 }
 
 export type ChangeValidatorName =
@@ -812,6 +813,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     latestSupportedApiVersion: { refType: BuiltinTypes.BOOLEAN },
     metaTypes: { refType: BuiltinTypes.BOOLEAN },
     cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
+    flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

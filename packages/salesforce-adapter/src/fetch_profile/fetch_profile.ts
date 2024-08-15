@@ -39,6 +39,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   latestSupportedApiVersion: false,
   metaTypes: false,
   cpqRulesAndConditionsRefs: true,
+  flowCoordinates: false,
 }
 
 type BuildFetchProfileParams = {

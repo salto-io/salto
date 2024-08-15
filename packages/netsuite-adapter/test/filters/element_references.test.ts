@@ -505,6 +505,7 @@ describe('instance_references filter', () => {
 
     it('should add extracted elements to generated dependencies from AST', async () => {
       const mockLogWarn = jest.spyOn(logging, 'warn')
+      const mockLogInfo = jest.spyOn(logging, 'info')
       const fileContent = `
       define(['N/record', '../SuiteScripts/oauth_1.js', '../SuiteScripts/oauth_2'], function(record) {
         return{
@@ -557,7 +558,16 @@ describe('instance_references filter', () => {
         workflowInstance,
       ])
       expect(mockLogWarn).not.toHaveBeenCalled()
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
+      expect(mockLogInfo).toHaveBeenCalledTimes(1)
+      expect(mockLogInfo).toHaveBeenCalledWith(
+        'Found %d new references: %o and removed %d references: %o in file %s.',
+        1,
+        [customSegmentInstance.elemID.createNestedID(SCRIPT_ID)],
+        1,
+        [workflowInstance.elemID.createNestedID(SCRIPT_ID)],
+        fileInstance.value[PATH],
+      )
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
         expect.arrayContaining([
           {
@@ -576,12 +586,17 @@ describe('instance_references filter', () => {
             reference: new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID)),
             occurrences: undefined,
           },
+          {
+            reference: new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)),
+            occurrences: undefined,
+          },
         ]),
       )
     })
 
     it('should add extracted elements to generated dependencies using regex if AST fails', async () => {
       const mockLogWarn = jest.spyOn(logging, 'warn')
+      const mockLogInfo = jest.spyOn(logging, 'info')
       const corruptedFileContent = `
       define(['N/record', '../SuiteScripts/oauth_1.js', '../SuiteScripts/oauth_2'], function(record) {
         return{
@@ -641,7 +656,16 @@ describe('instance_references filter', () => {
         expect.stringContaining('/Templates/file.js'),
         expect.any(Error),
       )
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
+      expect(mockLogInfo).toHaveBeenCalledTimes(1)
+      expect(mockLogInfo).toHaveBeenCalledWith(
+        expect.stringContaining('Found %d new references: %o and removed %d references: %o in file %s.'),
+        1,
+        [customSegmentInstance.elemID.createNestedID(SCRIPT_ID)],
+        1,
+        [workflowInstance.elemID.createNestedID(SCRIPT_ID)],
+        '/Templates/file.js',
+      )
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
         expect.arrayContaining([
           {
@@ -658,6 +682,10 @@ describe('instance_references filter', () => {
           },
           {
             reference: new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)),
             occurrences: undefined,
           },
         ]),

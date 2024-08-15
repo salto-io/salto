@@ -32,8 +32,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
 import { constants as bufferConstants } from 'buffer'
 import { logger } from '@salto-io/logging'
-import * as esprima from 'esprima'
-import * as estraverse from 'estraverse'
+import { parseScript, Program } from 'esprima'
+import { traverse } from 'estraverse'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import {
@@ -68,9 +68,12 @@ const pathPrefixRegex = new RegExp(
   'm',
 )
 // matches key strings in the format of 'key: value'
-const mappedReferenceRegex = new RegExp(`(?<${OPTIONAL_REFS}>\\w+):\\s*.+`, 'gm')
+const mappedReferenceRegex = new RegExp(`['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*.+`, 'gm')
 // matches comments in js files
-const jsCommentsRegex = new RegExp('\\/\\*[\\s\\S]*?\\*\\/|^\\/\\/.*|(?<=[^:])\\/\\/.*', 'gm')
+// \\/\\*[\\s\\S]*?\\*\\/ - matches multiline comments by matching the first '/*' and the last '*/' and any character including newlines
+// ^\\s*\\/\\/.* - matches single line comments that start with '//'
+// (?<=[^:])\\/\\/.* - This prevents matching URLs that contain // by checking they are not preceded by a colon.
+const jsCommentsRegex = new RegExp('\\/\\*[\\s\\S]*?\\*\\/|^\\s*\\/\\/.*|(?<=[^:])\\/\\/.*', 'gm')
 
 const shouldExtractToGeneratedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
   serviceIdInfoRecord.appid !== undefined ||
@@ -150,14 +153,14 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
-const parseAST = (ast: esprima.Program): [string[], string[]] => {
-  const results: Set<string> = new Set()
-  const objectKeyReferences: Set<string> = new Set()
+const parseAST = (ast: Program): { semanticReferencesArray: string[]; objectKeyReferencesArray: string[] } => {
+  const semanticReferences = new Set<string>()
+  const objectKeyReferences = new Set<string>()
 
-  estraverse.traverse(ast, {
+  traverse(ast, {
     enter(node) {
-      if (node.type === 'Literal' && typeof node.value === 'string') {
-        results.add(node.value)
+      if (node.type === 'Literal' && typeof node.value === 'string' && !node.value.startsWith(NETSUITE_MODULE_PREFIX)) {
+        semanticReferences.add(node.value)
       } else if (node.type === 'Property') {
         if (node.key.type === 'Identifier') {
           objectKeyReferences.add(node.key.name)
@@ -167,11 +170,11 @@ const parseAST = (ast: esprima.Program): [string[], string[]] => {
       }
     },
   })
-  const semanticReferences = Array.from(results).filter(ref => !ref.startsWith(NETSUITE_MODULE_PREFIX))
-  return [semanticReferences, Array.from(objectKeyReferences)]
+  const semanticReferencesArray = Array.from(semanticReferences)
+  return { semanticReferencesArray, objectKeyReferencesArray: Array.from(objectKeyReferences) }
 }
 
-const getReferencesWithRegex = (content: string): [string[], string[]] => {
+const getReferencesWithRegex = (content: string): { semanticReferences: string[]; objectKeyReferences: string[] } => {
   const contentWithoutComments = content.replace(jsCommentsRegex, '')
   const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
   const semanticReferences = getGroupItemFromRegex(
@@ -179,7 +182,46 @@ const getReferencesWithRegex = (content: string): [string[], string[]] => {
     semanticReferenceRegex,
     OPTIONAL_REFS,
   ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-  return [semanticReferences, objectKeyReferences]
+  return { semanticReferences, objectKeyReferences }
+}
+
+const getAndLogReferencesDiff = ({
+  newReferences,
+  existingReferences,
+  element,
+  serviceIdToElemID,
+  customRecordFieldsToServiceIds,
+}: {
+  newReferences: string[]
+  existingReferences: string[]
+  element: InstanceElement
+  serviceIdToElemID: ServiceIdRecords
+  customRecordFieldsToServiceIds: ServiceIdRecords
+}): void => {
+  const newFoundReferences = _.difference(newReferences, existingReferences)
+  const removedReferences = _.difference(existingReferences, newReferences)
+  const newReferencesElemIDs = getServiceElemIDsFromPaths(
+    newFoundReferences,
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
+  const removedReferencesElemIDs = getServiceElemIDsFromPaths(
+    removedReferences,
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
+  if (newReferencesElemIDs.length > 0 || removedReferencesElemIDs.length > 0) {
+    log.info(
+      'Found %d new references: %o and removed %d references: %o in file %s.',
+      newReferencesElemIDs.length,
+      newReferencesElemIDs,
+      removedReferencesElemIDs.length,
+      removedReferencesElemIDs,
+      element.value[PATH],
+    )
+  }
 }
 
 const getSuiteScriptReferences = async (
@@ -198,53 +240,36 @@ const getSuiteScriptReferences = async (
 
   const content = fileContent.toString()
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
+  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
+    .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+    .concat(nsConfigReferences)
 
-  try {
-    const ast = esprima.parseScript(content)
-    const [results, objectKeyReferences] = parseAST(ast)
-    // TODO: remove objectKeyReferences and related logic once SALTO-6026 is communicated
-    const objectKeyReferencesElemIDs = getServiceElemIDsFromPaths(
-      objectKeyReferences,
-      serviceIdToElemID,
-      customRecordFieldsToServiceIds,
-      element,
-    )
-    if (objectKeyReferencesElemIDs.length > 0) {
-      log.info(
-        'Found %d object key references in file %s: %o',
-        objectKeyReferences.length,
-        element.value[PATH],
-        objectKeyReferencesElemIDs,
-      )
+  log.timeDebug(() => {
+    try {
+      const ast = parseScript(content)
+      const { semanticReferencesArray, objectKeyReferencesArray } = parseAST(ast)
+      // TODO: remove once SALTO-6026 is communicated
+      getAndLogReferencesDiff({
+        newReferences: semanticReferencesArray.concat(objectKeyReferencesArray),
+        existingReferences: semanticReferences,
+        element,
+        serviceIdToElemID,
+        customRecordFieldsToServiceIds,
+      })
+    } catch (e) {
+      log.warn('Failed to parse file %s content with error %s', element.value[PATH], e)
+      const { semanticReferences: foundReferences, objectKeyReferences } = getReferencesWithRegex(content)
+      // TODO: remove once SALTO-6026 is communicated
+      getAndLogReferencesDiff({
+        newReferences: foundReferences.concat(objectKeyReferences),
+        existingReferences: semanticReferences,
+        element,
+        serviceIdToElemID,
+        customRecordFieldsToServiceIds,
+      })
     }
-    const resultsWithConfigReferences = results.concat(nsConfigReferences)
-    return getServiceElemIDsFromPaths(
-      resultsWithConfigReferences,
-      serviceIdToElemID,
-      customRecordFieldsToServiceIds,
-      element,
-    )
-  } catch (e) {
-    log.warn('Failed to parse file %s content with error %s', element.value[PATH], e)
-    const [foundReferences, objectKeyReferences] = getReferencesWithRegex(content)
-    // TODO: remove objectKeyReferences and related logic once SALTO-6026 is communicated
-    const objectKeyReferencesElemIDs = getServiceElemIDsFromPaths(
-      objectKeyReferences,
-      serviceIdToElemID,
-      customRecordFieldsToServiceIds,
-      element,
-    )
-    if (objectKeyReferencesElemIDs.length > 0) {
-      log.info(
-        'Found %d object key references in file %s: %o',
-        objectKeyReferences.length,
-        element.value[PATH],
-        objectKeyReferencesElemIDs,
-      )
-    }
-    const semanticReferences = foundReferences.concat(nsConfigReferences)
-    return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
-  }
+  }, 'getSuiteScriptReferences')
+  return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
 }
 
 const replaceReferenceValues = async (

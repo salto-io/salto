@@ -116,16 +116,16 @@ export const DELEGATED_PERMISSION_CLASSIFICATION_TYPE_NAME = recursiveNestedType
   DELEGATED_PERMISSION_CLASSIFICATIONS_FIELD_NAME,
 )
 
-/* Directory object type names */
-const SUPPORTED_DIRECTORY_OBJECT_TYPE_NAME_TO_ODATA_TYPE_NAME: Record<string, string> = {
+/* Microsoft Directory Objects - types mapping */
+const SUPPORTED_DIRECTORY_OBJECTS_TYPE_NAME_TO_ODATA_TYPE_NAME: Record<string, string> = {
   [ADMINISTRATIVE_UNIT_TYPE_NAME]: `${ODATA_PREFIX}administrativeUnit`,
   [APPLICATION_TYPE_NAME]: `${ODATA_PREFIX}application`,
   [GROUP_TYPE_NAME]: `${ODATA_PREFIX}group`,
   [SERVICE_PRINCIPAL_TYPE_NAME]: `${ODATA_PREFIX}servicePrincipal`,
 }
 
-export const SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME: Record<string, string> = Object.entries(
-  SUPPORTED_DIRECTORY_OBJECT_TYPE_NAME_TO_ODATA_TYPE_NAME,
+export const SUPPORTED_DIRECTORY_OBJECTS_ODATA_TYPE_NAME_TO_TYPE_NAME: Record<string, string> = Object.entries(
+  SUPPORTED_DIRECTORY_OBJECTS_TYPE_NAME_TO_ODATA_TYPE_NAME,
 ).reduce((acc, [typeName, odataType]) => ({ ...acc, [odataType]: typeName }), {})
 
 /* Context keys */

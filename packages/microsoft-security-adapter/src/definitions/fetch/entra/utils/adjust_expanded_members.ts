@@ -19,14 +19,14 @@ import _ from 'lodash'
 import { ODATA_TYPE_FIELD, entraConstants } from '../../../../constants'
 import { AdjustFunctionSingle } from '../../shared/types'
 
-const { SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME } = entraConstants
+const { SUPPORTED_DIRECTORY_OBJECTS_ODATA_TYPE_NAME_TO_TYPE_NAME } = entraConstants
 
 export const adjustEntitiesWithExpandedMembers: AdjustFunctionSingle = async ({ value, typeName }) => {
   validatePlainObject(value, typeName)
   const members = _.get(value, 'members', [])
   validateArray(members, `${typeName} members`)
 
-  const supportedDirectoryObjectODataTypeNames = Object.keys(SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME)
+  const supportedDirectoryObjectODataTypeNames = Object.keys(SUPPORTED_DIRECTORY_OBJECTS_ODATA_TYPE_NAME_TO_TYPE_NAME)
   return {
     value: {
       ...value,

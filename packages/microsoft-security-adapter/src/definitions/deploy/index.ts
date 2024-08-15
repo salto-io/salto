@@ -13,4 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { createDeployDefinitions } from './entra/deploy'
+export { createDeployDefinitions } from './shared/deploy'

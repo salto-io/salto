@@ -15,9 +15,9 @@
  */
 
 import { collections } from '@salto-io/lowerdash'
-import { createDefinitionForAppRoleAssignment } from '../../../../src/definitions/deploy/entra/utils'
-import { AdjustFunction } from '../../../../src/definitions/deploy/shared/types'
-import { contextMock } from '../../../mocks'
+import { createDefinitionForAppRoleAssignment } from '../../../../../src/definitions/deploy/entra/utils'
+import { AdjustFunction } from '../../../../../src/definitions/deploy/shared/types'
+import { contextMock } from '../../../../mocks'
 
 const { makeArray } = collections.array
 

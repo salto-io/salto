@@ -16,13 +16,13 @@
 
 import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { ADAPTER_NAME } from '../../../../src/constants'
-import { contextMock, objectTypeMock } from '../../../mocks'
-import { GROUP_LIFE_CYCLE_POLICY_FIELD_NAME } from '../../../../src/constants/entra'
+import { ADAPTER_NAME } from '../../../../../src/constants'
+import { contextMock, objectTypeMock } from '../../../../mocks'
+import { GROUP_LIFE_CYCLE_POLICY_FIELD_NAME } from '../../../../../src/constants/entra'
 import {
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
-} from '../../../../src/definitions/deploy/entra/utils'
+} from '../../../../../src/definitions/deploy/entra/utils'
 
 const { makeArray } = collections.array
 

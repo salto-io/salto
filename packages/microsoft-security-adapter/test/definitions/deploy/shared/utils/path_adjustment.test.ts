@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { DeployCustomDefinitions } from '../../../../src/definitions/deploy/shared/types'
-import { createCustomizationsWithBasePathForDeploy } from '../../../../src/definitions/deploy/shared/utils'
+import { DeployCustomDefinitions } from '../../../../../src/definitions/deploy/shared/types'
+import { createCustomizationsWithBasePathForDeploy } from '../../../../../src/definitions/deploy/shared/utils'
 
 describe(`${createCustomizationsWithBasePathForDeploy.name}`, () => {
   it('should add the base path to the endpoint path when it exists', () => {

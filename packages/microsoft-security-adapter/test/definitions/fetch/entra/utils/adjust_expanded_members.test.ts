@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { ODATA_TYPE_FIELD } from '../../../../src/constants'
-import { adjustEntitiesWithExpandedMembers } from '../../../../src/definitions/fetch/entra/utils'
+import { ODATA_TYPE_FIELD } from '../../../../../src/constants'
+import { adjustEntitiesWithExpandedMembers } from '../../../../../src/definitions/fetch/entra/utils'
 
 describe(`${adjustEntitiesWithExpandedMembers.name}`, () => {
   it('should throw an error when value is not an object', async () => {

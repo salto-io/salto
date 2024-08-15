@@ -15,9 +15,9 @@
  */
 
 import _ from 'lodash'
-import { addParentIdToAppRoles } from '../../../../src/definitions/fetch/entra/utils'
-import { APP_ROLES_FIELD_NAME } from '../../../../src/constants/entra'
-import { PARENT_ID_FIELD_NAME } from '../../../../src/constants'
+import { addParentIdToAppRoles } from '../../../../../src/definitions/fetch/entra/utils'
+import { APP_ROLES_FIELD_NAME } from '../../../../../src/constants/entra'
+import { PARENT_ID_FIELD_NAME } from '../../../../../src/constants'
 
 describe(`${addParentIdToAppRoles.name}`, () => {
   it('should throw an error when appRoles is not an array', async () => {

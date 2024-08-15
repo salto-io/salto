@@ -13,7 +13,7 @@ import { APP_ROLES_FIELD_NAME, IDENTIFIER_URIS_FIELD_NAME } from '../../../const
 import { AdjustFunctionSingle } from '../types'
 
 /*
- * Adjust the application object.
+ * Adjust the Entra application object.
  * 1. Remove the default identifier uri, as it's not deployable between envs.
  * 2. Add the parent id to the app roles.
  */

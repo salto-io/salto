@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { createCustomizationsWithBasePathForFetch } from '../../../../src/definitions/fetch/entra/utils'
-import { FetchCustomizations } from '../../../../src/definitions/fetch/shared/types'
+import { createCustomizationsWithBasePathForFetch } from '../../../../../src/definitions/fetch/entra/utils'
+import { FetchCustomizations } from '../../../../../src/definitions/fetch/shared/types'
 
 describe(`${createCustomizationsWithBasePathForFetch.name}`, () => {
   it('should return the correct customizations', () => {

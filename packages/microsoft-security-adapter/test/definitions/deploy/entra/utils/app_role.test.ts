@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { PARENT_ID_FIELD_NAME } from '../../../../src/constants'
-import { adjustParentWithAppRoles } from '../../../../src/definitions/deploy/entra/utils'
-import { contextMock } from '../../../mocks'
+import { PARENT_ID_FIELD_NAME } from '../../../../../src/constants'
+import { adjustParentWithAppRoles } from '../../../../../src/definitions/deploy/entra/utils'
+import { contextMock } from '../../../../mocks'
 
 const PARENT_TYPE_NAME = 'parentTypeName'
 

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { ODATA_TYPE_FIELD } from '../../../../src/constants'
-import { ROLE_DEFINITION_TYPE_NAME } from '../../../../src/constants/entra'
-import { adjustRoleDefinitionForDeployment } from '../../../../src/definitions/deploy/entra/utils'
-import { contextMock } from '../../../mocks'
+import { ODATA_TYPE_FIELD } from '../../../../../src/constants'
+import { ROLE_DEFINITION_TYPE_NAME } from '../../../../../src/constants/entra'
+import { adjustRoleDefinitionForDeployment } from '../../../../../src/definitions/deploy/entra/utils'
+import { contextMock } from '../../../../mocks'
 
 describe(`${adjustRoleDefinitionForDeployment.name}`, () => {
   it('should throw an error if the value is not an object', async () => {

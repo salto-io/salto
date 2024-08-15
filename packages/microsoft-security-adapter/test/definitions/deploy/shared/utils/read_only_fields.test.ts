@@ -17,9 +17,9 @@
 import {
   TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
   TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
-} from '../../../../src/change_validators'
-import { omitReadOnlyFields, omitReadOnlyFieldsWrapper } from '../../../../src/definitions/deploy/shared/utils'
-import { contextMock, modificationChangeMock, removalChangeMock } from '../../../mocks'
+} from '../../../../../src/change_validators'
+import { omitReadOnlyFields, omitReadOnlyFieldsWrapper } from '../../../../../src/definitions/deploy/shared/utils'
+import { contextMock, modificationChangeMock, removalChangeMock } from '../../../../mocks'
 
 const typeNamesWithReadOnlyFieldsOnAddition = Object.keys(TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION)
 const readOnlyTypeNameAddition = typeNamesWithReadOnlyFieldsOnAddition[0]

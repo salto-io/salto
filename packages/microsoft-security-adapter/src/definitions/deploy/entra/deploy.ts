@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
-import { definitions, deployment } from '@salto-io/adapter-components'
+import { deployment } from '@salto-io/adapter-components'
 import { entraConstants, ODATA_ID_FIELD } from '../../../constants'
-import { AdditionalAction, ClientOptions } from '../../types'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../../requests/clients'
 import { DeployCustomDefinitions, DeployRequestDefinition, DeployableRequestDefinition } from '../shared/types'
 import {
@@ -29,7 +27,6 @@ import {
 import {
   createCustomConditionCheckChangesInFields,
   createCustomizationsWithBasePathForDeploy,
-  omitReadOnlyFields,
   omitReadOnlyFieldsWrapper,
 } from '../shared/utils'
 
@@ -881,39 +878,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
   },
 }
 
-const createCustomizations = (): DeployCustomDefinitions => {
-  const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
-    AdditionalAction,
-    ClientOptions
-  >({})
-
-  return _.merge(standardRequestDefinitions, {
-    ...createCustomizationsWithBasePathForDeploy(graphV1CustomDefinitions, GRAPH_V1_PATH),
-    ...createCustomizationsWithBasePathForDeploy(graphBetaCustomDefinitions, GRAPH_BETA_PATH),
-  })
-}
-
-export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitions<never, ClientOptions> => ({
-  instances: {
-    default: {
-      requestsByAction: {
-        default: {
-          request: {
-            context: deployment.helpers.DEFAULT_CONTEXT,
-            transformation: {
-              adjust: omitReadOnlyFields,
-            },
-          },
-          condition: {
-            transformForCheck: {
-              adjust: omitReadOnlyFields,
-            },
-          },
-        },
-        customizations: {},
-      },
-      changeGroupId: deployment.grouping.selfGroup,
-    },
-    customizations: createCustomizations(),
-  },
+export const createEntraCustomizations = (): DeployCustomDefinitions => ({
+  ...createCustomizationsWithBasePathForDeploy(graphV1CustomDefinitions, GRAPH_V1_PATH),
+  ...createCustomizationsWithBasePathForDeploy(graphBetaCustomDefinitions, GRAPH_BETA_PATH),
 })

@@ -16,18 +16,11 @@
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { validatePlainObject } from '@salto-io/adapter-utils'
-import { UserFetchConfig } from '../../../config'
 import { Options } from '../../types'
 import { entraConstants, PARENT_ID_FIELD_NAME } from '../../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
-import {
-  DEFAULT_FIELD_CUSTOMIZATIONS,
-  DEFAULT_ID_PARTS,
-  DEFAULT_TRANSFORMATION,
-  ID_FIELD_TO_HIDE,
-  NAME_ID_FIELD,
-} from '../shared/constants'
+import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
 import {
   adjustEntitiesWithExpandedMembers,
   createCustomizationsWithBasePathForFetch,
@@ -850,26 +843,10 @@ const graphBetaCustomizations: FetchCustomizations = {
   },
 }
 
-const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
+export const createEntraCustomizations = (): Record<
+  string,
+  definitions.fetch.InstanceFetchApiDefinitions<Options>
+> => ({
   ...createCustomizationsWithBasePathForFetch(graphV1Customizations, GRAPH_V1_PATH),
   ...createCustomizationsWithBasePathForFetch(graphBetaCustomizations, GRAPH_BETA_PATH),
-})
-
-export const createFetchDefinitions = (
-  _fetchConfig: UserFetchConfig,
-): definitions.fetch.FetchApiDefinitions<Options> => ({
-  instances: {
-    default: {
-      resource: {
-        serviceIDFields: ['id'],
-      },
-      element: {
-        topLevel: {
-          elemID: { parts: DEFAULT_ID_PARTS },
-        },
-        fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
-      },
-    },
-    customizations: createCustomizations(),
-  },
 })

@@ -26,7 +26,10 @@ import {
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from '../constants'
 
-export const OAUTH_REQUIRED_SCOPES = [
+// While it’s true that at the moment we can maintain a single list of scopes for both adapters,
+// we do plan on enabling the user to choose to manage only Entra or Intune.
+// Therefore, it would be easier not to combine them for now.
+const ENTRA_OAUTH_REQUIRED_SCOPES = [
   'AdministrativeUnit.ReadWrite.All',
   'Application.ReadWrite.All',
   'CustomSecAttributeDefinition.ReadWrite.All',
@@ -41,6 +44,8 @@ export const OAUTH_REQUIRED_SCOPES = [
   'RoleManagement.ReadWrite.Directory',
   'UserAuthenticationMethod.ReadWrite.All',
 ]
+
+export const OAUTH_REQUIRED_SCOPES = ENTRA_OAUTH_REQUIRED_SCOPES
 
 export type OauthRequestParameters = {
   tenantId: string

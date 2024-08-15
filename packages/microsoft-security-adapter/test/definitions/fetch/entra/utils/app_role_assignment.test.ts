@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { createDefinitionForAppRoleAssignment } from '../../../../src/definitions/fetch/entra/utils'
+import { createDefinitionForAppRoleAssignment } from '../../../../../src/definitions/fetch/entra/utils'
 
 describe(`${createDefinitionForAppRoleAssignment.name}`, () => {
   it('should return the correct definition', () => {

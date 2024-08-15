@@ -15,8 +15,8 @@
  */
 
 import { InstanceElement, getChangeData } from '@salto-io/adapter-api'
-import { createCustomConditionCheckChangesInFields } from '../../../../src/definitions/deploy/shared/utils'
-import { additionChangeMock, contextMock, objectTypeMock, removalChangeMock } from '../../../mocks'
+import { createCustomConditionCheckChangesInFields } from '../../../../../src/definitions/deploy/shared/utils'
+import { additionChangeMock, contextMock, objectTypeMock, removalChangeMock } from '../../../../mocks'
 
 describe(`${createCustomConditionCheckChangesInFields.name}`, () => {
   describe('addition changes', () => {

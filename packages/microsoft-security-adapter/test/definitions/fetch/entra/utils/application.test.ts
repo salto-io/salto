@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { IDENTIFIER_URIS_FIELD_NAME } from '../../../../src/constants/entra'
-import { adjustApplication } from '../../../../src/definitions/fetch/entra/utils'
+import { IDENTIFIER_URIS_FIELD_NAME } from '../../../../../src/constants/entra'
+import { adjustApplication } from '../../../../../src/definitions/fetch/entra/utils'
 
 describe(`${adjustApplication.name}`, () => {
   it('should throw an error when value is not an object', async () => {

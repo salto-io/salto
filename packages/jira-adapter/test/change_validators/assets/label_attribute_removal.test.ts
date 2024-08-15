@@ -94,8 +94,8 @@ describe('labelAttributeValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
-  it('should not do anything if enableJsmExperimental is false', async () => {
-    config.fetch.enableJsmExperimental = false
+  it('should not do anything if enableJSM is false', async () => {
+    config.fetch.enableJSM = false
     const validator = deleteLabelAtttributeValidator(config)
     const changeErrors = await validator(
       [toChange({ before: attributeInstance })],

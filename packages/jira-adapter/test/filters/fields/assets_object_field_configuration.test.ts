@@ -263,7 +263,7 @@ describe('assetsObjectFieldConfiguration', () => {
       connection = conn
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableAssetsObjectFieldConfiguration = true
-      config.fetch.enableJSMPremium = true
+      config.fetch.enableJSM = true
       filter = assetsObjectFieldConfigurationFilter(
         getFilterParams({
           client,

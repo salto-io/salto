@@ -365,7 +365,7 @@ const updateAutomationLabels = async (
   }
 }
 const proccessComponentPreDeploy = (component: Component, config: JiraConfig): void => {
-  if (config.fetch.enableJSMPremium && isAssetComponent(component)) {
+  if (config.fetch.enableJSM && isAssetComponent(component)) {
     const schema = component.value.schemaId.value
     component.value.schemaLabel = schema.value.name
     component.value.workspaceId = schema.value.workspaceId
@@ -400,7 +400,7 @@ const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig
 }
 
 const proccessComponentPostDeploy = (component: Component, config: JiraConfig): void => {
-  if (config.fetch.enableJSMPremium && isAssetComponent(component)) {
+  if (config.fetch.enableJSM && isAssetComponent(component)) {
     delete component.value.schemaLabel
     delete component.value.objectTypeLabel
     delete component.value.workspaceId

@@ -813,7 +813,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     latestSupportedApiVersion: { refType: BuiltinTypes.BOOLEAN },
     metaTypes: { refType: BuiltinTypes.BOOLEAN },
     cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
-    flowCoordinates: {refType: BuiltinTypes.BOOLEAN },
+    flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

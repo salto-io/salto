@@ -202,6 +202,11 @@ const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: stri
 const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean =>
   getUnFoundDeleteName(message, deletionsPackageName) !== undefined
 
+const canceledDeployError = (isCheckOnly: boolean): SaltoError => ({
+  message: `${isCheckOnly ? 'Validation' : 'Deployment'} was canceled.`,
+  severity: 'Error',
+})
+
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
@@ -237,6 +242,13 @@ const processDeployResponse = (
     }
     log.warn('unknown messageType %s', messageType)
     return 'Warning'
+  }
+
+  if (result.status === 'Canceled') {
+    return {
+      successfulFullNames: [],
+      errors: [canceledDeployError(result.checkOnly)],
+    }
   }
 
   const allFailureMessages = makeArray(result.details).flatMap(detail => makeArray(detail.componentFailures))

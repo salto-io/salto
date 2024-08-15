@@ -549,7 +549,9 @@ const getParametersAccountSpecificValueToTransform = (
   suiteQLTablesMap: Record<string, InstanceElement>,
   selectRecordTypeMap: Record<string, unknown>,
 ): AccountSpecificValueToTransform[] => {
-  const params = getConditionParameters(value[INIT_CONDITION])
+  const conditionFormula = value[INIT_CONDITION][FORMULA]
+  const allParams = getConditionParameters(value[INIT_CONDITION])
+  const params = allParams
     // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles)
     // but only params that have selectrecordtype are represented with internalid in the formula
     .filter(param => param?.[SELECT_RECORD_TYPE] !== undefined)
@@ -558,14 +560,16 @@ const getParametersAccountSpecificValueToTransform = (
     // 0 (zero) can be used in a formula (e.g 'arrayIndexOf(...) < 0'), but it's not an internalid
     .filter(internalId => internalId !== '0')
   if (params.length !== internalIds.length) {
-    log.warn(
-      'params length %d do not match the internal ids extracted from the formula: %s',
-      params.length,
-      formulaWithInternalIds,
-    )
+    log.warn('params length %d do not match the internal ids extracted from the formula: %o', params.length, {
+      formula: {
+        fromSuiteApp: formulaWithInternalIds,
+        fromSDF: conditionFormula,
+      },
+      params: allParams,
+    })
     return []
   }
-  const sortedParams = _.sortBy(params, param => value[INIT_CONDITION][FORMULA].indexOf(`"${param.name}"`))
+  const sortedParams = _.sortBy(params, param => conditionFormula.indexOf(`"${param.name}"`))
   return sortedParams.flatMap((param, index) => {
     if (param.value !== ACCOUNT_SPECIFIC_VALUE) {
       return []

@@ -198,7 +198,7 @@ describe('Netsuite adapter E2E with real account', () => {
     }
 
     const randomNumber = String(Date.now()).substring(6)
-    const randomString = `created by oss e2e - ${randomNumber}`
+    const randomString = `created by e2e - ${randomNumber}`
 
     additionalTypes[FOLDER].annotate({ [CORE_ANNOTATIONS.ALIAS]: 'Folder' })
     additionalTypes[FILE].annotate({ [CORE_ANNOTATIONS.ALIAS]: 'File' })

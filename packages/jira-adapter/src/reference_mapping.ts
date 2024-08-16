@@ -854,6 +854,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: GROUP_TYPE_NAME },
   },
   {
+    src: { field: 'value', parentTypes: [AUTOMATION_EMAIL_RECIPENT, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_GROUP] },
+    serializationStrategy: 'groupId',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
     src: { field: 'field', parentTypes: [AUTOMATION_CONDITION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },

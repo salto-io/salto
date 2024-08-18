@@ -413,7 +413,7 @@ const createCustomizations = ({
                   },
                   {
                     // Okta returns 404 for '/api/internal/instance/{appId}/grouppushrules' if the app is in status inactive
-                    match: ['(^ACTIVE$)'],
+                    match: ['^ACTIVE$'],
                     fromField: 'status',
                   },
                 ],

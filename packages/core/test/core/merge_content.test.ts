@@ -6,8 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import * as diff3 from '@salto-io/node-diff3'
-import { StaticFile } from '@salto-io/adapter-api'
-import { mergeStaticFiles, mergeStrings } from '../../src/core/merge_content'
+import { ElemID, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
+import { mergeLists, mergeStaticFiles, mergeStrings } from '../../src/core/merge_content'
 
 jest.mock('@salto-io/node-diff3', () => ({
   __esModule: true,
@@ -144,6 +144,140 @@ describe('merge contents', () => {
       expect(
         await mergeStaticFiles(changeId, { current: currentFile, base: baseFile, incoming: binaryFileContent }),
       ).toBeUndefined()
+    })
+  })
+
+  describe('merge lists', () => {
+    describe('list of primitives', () => {
+      const baseList = [1, 2, 3]
+      const currentList = [1, 2, 3, 4]
+      const incomingMergeableList = [0, 2, 1, 3]
+      const incomingUnmergeableList = [1, 2, 3, 5]
+      const incomingAddedList = [0, 1, 2, 5, 3]
+
+      const modifiedMergedList = [0, 2, 1, 3, 4]
+      const addedMergedList = [0, 1, 2, 5, 3, 4]
+
+      it('should merge modified list', () => {
+        expect(mergeLists(changeId, { current: currentList, base: baseList, incoming: incomingMergeableList })).toEqual(
+          modifiedMergedList,
+        )
+      })
+      it('should merge added list', () => {
+        expect(mergeLists(changeId, { current: currentList, base: undefined, incoming: incomingAddedList })).toEqual(
+          addedMergedList,
+        )
+      })
+      it('should not merge unmergeable modified list', () => {
+        expect(
+          mergeLists(changeId, { current: currentList, base: baseList, incoming: incomingUnmergeableList }),
+        ).toBeUndefined()
+      })
+      it('should not merge unmergeable added list', () => {
+        expect(
+          mergeLists(changeId, { current: currentList, base: undefined, incoming: incomingUnmergeableList }),
+        ).toBeUndefined()
+      })
+    })
+    describe('list of references', () => {
+      const baseList = [
+        new ReferenceExpression(new ElemID('salto', 'test1'), 1),
+        new ReferenceExpression(new ElemID('salto', 'test2'), 2),
+        new ReferenceExpression(new ElemID('salto', 'test3'), 3),
+      ]
+      const currentList = [
+        new ReferenceExpression(new ElemID('salto', 'test1'), 1.1),
+        new ReferenceExpression(new ElemID('salto', 'test2'), 2.2),
+        new ReferenceExpression(new ElemID('salto', 'test3'), 3.3),
+        new ReferenceExpression(new ElemID('salto', 'test4'), 4.4),
+      ]
+      const incomingMergeableList = [
+        new ReferenceExpression(new ElemID('salto', 'test0'), 0),
+        new ReferenceExpression(new ElemID('salto', 'test2'), 2.5),
+        new ReferenceExpression(new ElemID('salto', 'test1'), 1.5),
+        new ReferenceExpression(new ElemID('salto', 'test3'), 3.5),
+      ]
+      const incomingUnmergeableList = [
+        new ReferenceExpression(new ElemID('salto', 'test1'), 1.5),
+        new ReferenceExpression(new ElemID('salto', 'test2'), 2.5),
+        new ReferenceExpression(new ElemID('salto', 'test3'), 3.5),
+        new ReferenceExpression(new ElemID('salto', 'test5'), 5.5),
+      ]
+      const incomingAddedList = [
+        new ReferenceExpression(new ElemID('salto', 'test0'), 0),
+        new ReferenceExpression(new ElemID('salto', 'test1'), 1.5),
+        new ReferenceExpression(new ElemID('salto', 'test2'), 2.5),
+        new ReferenceExpression(new ElemID('salto', 'test5'), 5.5),
+        new ReferenceExpression(new ElemID('salto', 'test3'), 3.5),
+      ]
+
+      const modifiedMergedList = [
+        new ReferenceExpression(new ElemID('salto', 'test0'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test2'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test1'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test3'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test4'), expect.any(Number)),
+      ]
+      const addedMergedList = [
+        new ReferenceExpression(new ElemID('salto', 'test0'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test1'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test2'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test5'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test3'), expect.any(Number)),
+        new ReferenceExpression(new ElemID('salto', 'test4'), expect.any(Number)),
+      ]
+
+      it('should merge modified list', () => {
+        expect(mergeLists(changeId, { current: currentList, base: baseList, incoming: incomingMergeableList })).toEqual(
+          modifiedMergedList,
+        )
+      })
+      it('should merge added list', () => {
+        expect(mergeLists(changeId, { current: currentList, base: undefined, incoming: incomingAddedList })).toEqual(
+          addedMergedList,
+        )
+      })
+      it('should not merge unmergeable modified list', () => {
+        expect(
+          mergeLists(changeId, { current: currentList, base: baseList, incoming: incomingUnmergeableList }),
+        ).toBeUndefined()
+      })
+      it('should not merge unmergeable added list', () => {
+        expect(
+          mergeLists(changeId, { current: currentList, base: undefined, incoming: incomingUnmergeableList }),
+        ).toBeUndefined()
+      })
+    })
+    describe('list of objects', () => {
+      const baseList = [{ num: 1 }, { num: 2 }, { num: 3 }]
+      const currentList = [{ num: 1 }, { num: 2 }, { num: 3 }, { num: 4 }]
+      const incomingMergeableList = [{ num: 0 }, { num: 1, inner: [1, 2] }, { num: 2 }, { num: 3 }]
+      const incomingUnmergeableList = [{ num: 1 }, { num: 2 }, { num: 3 }, { num: 4, inner: [1, 2] }]
+      const incomingAddedList = [{ num: 0 }, { num: 1 }, { num: 2 }, { num: 5 }, { num: 3 }]
+
+      const modifiedMergedList = [{ num: 0 }, { num: 1, inner: [1, 2] }, { num: 2 }, { num: 3 }, { num: 4 }]
+      const addedMergedList = [{ num: 0 }, { num: 1 }, { num: 2 }, { num: 5 }, { num: 3 }, { num: 4 }]
+
+      it('should merge modified list', () => {
+        expect(mergeLists(changeId, { current: currentList, base: baseList, incoming: incomingMergeableList })).toEqual(
+          modifiedMergedList,
+        )
+      })
+      it('should merge added list', () => {
+        expect(mergeLists(changeId, { current: currentList, base: undefined, incoming: incomingAddedList })).toEqual(
+          addedMergedList,
+        )
+      })
+      it('should not merge unmergeable modified list', () => {
+        expect(
+          mergeLists(changeId, { current: currentList, base: baseList, incoming: incomingUnmergeableList }),
+        ).toBeUndefined()
+      })
+      it('should not merge unmergeable added list', () => {
+        expect(
+          mergeLists(changeId, { current: currentList, base: undefined, incoming: incomingUnmergeableList }),
+        ).toBeUndefined()
+      })
     })
   })
 })

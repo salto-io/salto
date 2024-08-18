@@ -7,6 +7,7 @@
  */
 export * from './src/change'
 export * from './src/compare'
+export * from './src/list_comparison'
 export * from './src/decorators'
 export * from './src/dependencies'
 export * from './src/element_source'

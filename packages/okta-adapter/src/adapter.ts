@@ -153,6 +153,7 @@ export interface OktaAdapterParams {
   elementsSource: ReadOnlyElementsSource
   isOAuthLogin: boolean
   adminClient?: OktaClient
+  accountName?: string
 }
 
 /**
@@ -185,6 +186,7 @@ export default class OktaAdapter implements AdapterOperations {
   private adminClient?: OktaClient
   private fixElementsFunc: FixElementsFunc
   private definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
+  private accountName?: string
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -195,6 +197,7 @@ export default class OktaAdapter implements AdapterOperations {
     elementsSource,
     isOAuthLogin,
     adminClient,
+    accountName,
   }: OktaAdapterParams) {
     this.userConfig = userConfig
     this.configInstance = configInstance
@@ -207,6 +210,7 @@ export default class OktaAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.fetchQuery = createElementQueryWithJsonWebKey(this.userConfig.fetch, fetchCriteria)
+    this.accountName = accountName
 
     const definitions = {
       // TODO - SALTO-5746 - only provide adminClient when it is defined
@@ -222,13 +226,16 @@ export default class OktaAdapter implements AdapterOperations {
       sources: { openAPI: [OPEN_API_DEFINITIONS] },
     }
 
-    this.definitions = {
-      ...definitions,
-      fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
-        userElemID: userConfig.fetch.elemID,
-        fetchConfig: definitions.fetch,
-      }),
-    }
+    this.definitions = definitionsUtils.mergeDefinitionsWithOverrides(
+      {
+        ...definitions,
+        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
+          userElemID: userConfig.fetch.elemID,
+          fetchConfig: definitions.fetch,
+        }),
+      },
+      this.accountName,
+    )
 
     this.paginator = paginator
 

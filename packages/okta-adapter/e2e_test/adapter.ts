@@ -39,6 +39,7 @@ export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts
     elementsSource,
     adminClient,
     isOAuthLogin: false,
+    accountName: 'okta',
   })
   return { client, adapter }
 }

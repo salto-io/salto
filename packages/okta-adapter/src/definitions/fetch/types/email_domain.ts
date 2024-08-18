@@ -31,7 +31,7 @@ const hasValidationStatus = createSchemeGuard<EmailDomain>(EMAIL_DOMAIN_SCHEMA)
 /**
  * Omit email domains with a DELETED status.
  *
- * When deleting an email domain, Okta marks it as deleted instead of removing it. This can cause a merge bug when
+ * When deleting an email domain, Okta marks it as deleted instead of removing it. This can cause a merge error when
  * recreating the email domain with the same name.
  */
 export const isNotDeletedEmailDomain = (value: unknown): value is Values => {

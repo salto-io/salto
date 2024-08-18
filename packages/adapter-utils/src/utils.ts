@@ -948,6 +948,19 @@ export const getParent = (instance: Element): InstanceElement => {
   return parents[0].value
 }
 
+// This method is used to get the parent's elemID when the references are not neccessarily resolved
+export const getParentElemID = (instance: Element): ElemID => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+  const parent = parents[0]
+  if (!isReferenceExpression(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
+  }
+  return parent.elemID
+}
+
 export const hasValidParent = (element: Element): boolean => {
   try {
     return getParent(element) !== undefined

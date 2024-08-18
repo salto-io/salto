@@ -13,4 +13,4 @@ export { createSkipParentsOfSkippedInstancesValidator } from './skip_parents_of_
 export { createOutgoingUnresolvedReferencesValidator } from './outgoing_unresolved_references'
 export { getDefaultChangeValidators, DEFAULT_CHANGE_VALIDATORS } from './default_change_validators'
 export { createChangeValidator, ValidatorsActivationConfig } from './create_change_validator'
-export { uniqueFieldsChangeValidatorCreator } from './unique_fields'
+export { uniqueFieldsChangeValidatorCreator, ScopeAndUniqueFields, SCOPE } from './unique_fields'

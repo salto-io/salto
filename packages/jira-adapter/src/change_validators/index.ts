@@ -65,19 +65,20 @@ import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
 import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
-import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../constants'
+import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE, SLA_TYPE_NAME } from '../constants'
 import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
 import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
+import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
 
-const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator } =
+const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
 
-const TYPE_TO_UNIQUE_FIELD = {
-  [ISSUE_TYPE_NAME]: ['name'],
-  [PORTAL_GROUP_TYPE]: ['name'],
-  // TODO SALTO-6424 uncomment when we add Scope to unique fields filter.
-  // [SLA_TYPE_NAME]: ['name'],
-  [PROJECT_TYPE]: ['name', 'key'],
+const TYPE_TO_UNIQUE_FIELD: Record<string, deployment.changeValidators.ScopeAndUniqueFields> = {
+  [ISSUE_TYPE_NAME]: { scope: SCOPE.global, uniqueFields: ['name'] },
+  [PORTAL_GROUP_TYPE]: { scope: SCOPE.global, uniqueFields: ['name'] },
+  [SLA_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
+  [PROJECT_TYPE]: { scope: SCOPE.global, uniqueFields: ['name', 'key'] },
+  [FIELD_CONTEXT_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
 }
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {

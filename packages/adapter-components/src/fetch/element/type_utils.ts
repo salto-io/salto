@@ -46,6 +46,9 @@ export const NESTING_SEPARATOR = '__'
 export const toNestedTypeName = (parentName: string, nestedTypeName: string): string =>
   `${parentName}${NESTING_SEPARATOR}${nestedTypeName}`
 
+export const recursiveNestedTypeName = (typeName: string, ...fields: string[]): string =>
+  fields.reduce(toNestedTypeName, typeName)
+
 /**
  * calculate mapping from original type name to new type name. there are two ways to rename a type:
  * - using sourceTypeName on the new type name, saying which original type name it should be renamed from

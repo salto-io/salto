@@ -81,6 +81,10 @@
       "path": "packages/microsoft-entra-adapter",
     },
     {
+      "name": "microsoft-security-adapter",
+      "path": "packages/microsoft-security-adapter",
+    },
+    {
       "name": "netsuite-adapter",
       "path": "packages/netsuite-adapter",
     },

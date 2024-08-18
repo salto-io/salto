@@ -20,7 +20,7 @@ export const fieldConfigurationDescriptionLengthValidator: ChangeValidator = asy
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(inst => inst.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-    .filter(inst => inst.value.description.length > FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)
+    .filter(inst => inst.value.description?.length > FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)
     .map(inst => ({
       elemID: inst.elemID,
       severity: 'Error' as SeverityLevel,

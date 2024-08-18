@@ -14,6 +14,7 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
   let fieldConfigurationInstance: InstanceElement
   const INITIAL_DESCRIPTION = 'initial description'
   const EMPTY_DESCRIPTION = '*'.repeat(0)
+  const UNDEFINED_DESCRIPTION = undefined
   const SHORT_DESCRIPTION = '*'.repeat(1)
   const AVERAGE_DESCRIPTION = '*'.repeat(Math.floor(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH / 2))
   const MAX_DESCRIPTION = '*'.repeat(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)
@@ -32,7 +33,7 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
     })
   })
 
-  it.each([EMPTY_DESCRIPTION, SHORT_DESCRIPTION, AVERAGE_DESCRIPTION, MAX_DESCRIPTION])(
+  it.each([EMPTY_DESCRIPTION, SHORT_DESCRIPTION, AVERAGE_DESCRIPTION, MAX_DESCRIPTION, UNDEFINED_DESCRIPTION])(
     'Should succeed because field configuration description length is lower than maximum.',
     async updatedDescription => {
       const afterInstance = fieldConfigurationInstance.clone()

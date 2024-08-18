@@ -411,6 +411,11 @@ const createCustomizations = ({
                     match: ['GROUP_PUSH'],
                     fromField: 'features',
                   },
+                  {
+                    // Okta returns 404 for '/api/internal/instance/{appId}/grouppushrules' if the app is in status inactive
+                    match: ['(^ACTIVE$)'],
+                    fromField: 'status',
+                  },
                 ],
               },
             }

@@ -85,6 +85,7 @@ export const adapter: Adapter = {
       elementsSource: context.elementsSource,
       isOAuthLogin,
       adminClient: createAdminClient(credentials, config, isOAuthLogin),
+      accountName: context.accountName,
     })
 
     return {

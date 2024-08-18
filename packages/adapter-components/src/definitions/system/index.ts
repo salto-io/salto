@@ -35,4 +35,5 @@ export {
   GeneratedItem,
 } from './shared'
 export { RequiredDefinitions } from './types'
+export { mergeDefinitionsWithOverrides } from './overrides'
 export * from './utils'

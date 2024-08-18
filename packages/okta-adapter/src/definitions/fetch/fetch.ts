@@ -7,7 +7,12 @@
  */
 import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
-import { definitions, fetch as fetchUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import {
+  definitions,
+  fetch as fetchUtils,
+  elements as elementUtils,
+  client as clientUtils,
+} from '@salto-io/adapter-components'
 import { POLICY_TYPE_NAME_TO_PARAMS } from '../../config'
 import { OktaOptions } from '../types'
 import { OktaUserConfig } from '../../user_config'
@@ -590,6 +595,26 @@ const createCustomizations = ({
     requests: [{ endpoint: { path: '/api/v1/mappings' } }],
     resource: {
       directFetch: true,
+      onError: {
+        custom:
+          () =>
+          ({ error, typeName }) => {
+            // /api/v1/mappings returns 401 when the feature is not enabled in the account
+            if (error instanceof clientUtils.HTTPError && error.response.status === 401) {
+              return {
+                action: 'configSuggestion',
+                value: {
+                  type: 'typeToExclude',
+                  value: typeName,
+                  reason: `Salto could not access the ${typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
+                },
+              }
+            }
+            return { action: 'failEntireFetch', value: false }
+          },
+        action: 'failEntireFetch',
+        value: false,
+      },
       recurseInto: {
         ...(includeProfileMappingProperties
           ? {

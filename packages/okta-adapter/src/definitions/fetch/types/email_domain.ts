@@ -16,6 +16,9 @@
 import { Values } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
 
 // This is a partial schema with only the field we access below.
 const EMAIL_DOMAIN_SCHEMA = Joi.object({
@@ -38,5 +41,6 @@ export const isNotDeletedEmailDomain = (value: unknown): value is Values => {
   if (hasValidationStatus(value)) {
     return value.validationStatus !== 'DELETED'
   }
+  log.error('Email domain is missing a validationStatus field, this is unexpected: %o', value)
   return false
 }

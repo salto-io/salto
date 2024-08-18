@@ -28,6 +28,9 @@ describe('isNotDeletedEmailDomain', () => {
     id: '222',
     validationStatus: 'DELETED',
   }
+  const noValidationStatusEmailDomain = {
+    id: '333',
+  }
 
   it('should return true when value is an EmailDomain with status ACTIVE', () => {
     expect(isNotDeletedEmailDomain(activeEmailDomain)).toBeTruthy()
@@ -36,5 +39,9 @@ describe('isNotDeletedEmailDomain', () => {
 
   it('should return false when value is an EmailDomain with status DELETED', () => {
     expect(isNotDeletedEmailDomain(deletedEmailDomain)).toBeFalsy()
+  })
+
+  it('should return false when value is not an EmailDomain', () => {
+    expect(isNotDeletedEmailDomain(noValidationStatusEmailDomain)).toBeFalsy()
   })
 })

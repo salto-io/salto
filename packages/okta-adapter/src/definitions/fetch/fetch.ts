@@ -30,6 +30,7 @@ import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
 import { shouldConvertUserIds } from '../../user_utils'
+import { isNotDeletedEmailDomain } from './types/email_domain'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -908,6 +909,7 @@ const createCustomizations = ({
         isTopLevel: true,
         serviceUrl: { path: '/admin/email/domains' },
         elemID: { parts: [{ fieldName: 'displayName' }] },
+        valueGuard: isNotDeletedEmailDomain,
       },
       fieldCustomizations: { id: { hide: true } },
     },

@@ -39,8 +39,8 @@ const extractRecurseIntoContext = async (
 }
 
 export type RecurseIntoConditionBase = {
-  // `match` strings are regex patterns that are matched against the tested value with search semantics with OR between them.
-// To express AND semantics, use multiple conditions instead.
+  // `match` strings are regex patterns that are matched against the tested value with search semantics.
+  // Patterns have OR semantics between them. To express AND semantics, use multiple conditions instead.
   match: string[]
 }
 type RecurseIntoConditionByField = RecurseIntoConditionBase & {

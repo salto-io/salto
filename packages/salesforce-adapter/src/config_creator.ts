@@ -128,7 +128,7 @@ export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType,
         },
         {
           metadataType: 'ManagedEventSubscription',
-        }
+        },
       ],
     },
     data: {

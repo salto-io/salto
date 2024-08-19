@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { Value, Values } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { RequiredDefinitions } from './types'
 import { APIDefinitionsOptions } from './api'
@@ -77,6 +77,6 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     return obj
   }
   const afterRemoveNullObjects = removeNullObjects(merged)
-  log.debug('Merged definitions with overrides: %s', safeJsonStringify(afterRemoveNullObjects))
+  log.debug('Merged definitions with overrides: %s', inspectValue(afterRemoveNullObjects, { depth: 7}))
   return afterRemoveNullObjects
 }

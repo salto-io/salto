@@ -1,9 +1,17 @@
 /*
- * Copyright 2024 Salto Labs Ltd.
- * Licensed under the Salto Terms of Use (the "License");
- * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
+ *                      Copyright 2024 Salto Labs Ltd.
  *
- * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -19,6 +27,7 @@ import {
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
 import { values } from '@salto-io/lowerdash'
+import { inspectValue } from '@salto-io/adapter-utils'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import {
@@ -51,6 +60,7 @@ import { dumpElementsToFolder } from './sfdx_parser/sfdx_dump'
 import { getAdditionalReferences } from './additional_references'
 import { getCustomReferences } from './custom_references/handlers'
 import { dependencyChanger } from './dependency_changer'
+import { METADATA_DEPLOY_PENDING_STATUS } from './constants'
 
 type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
@@ -249,15 +259,18 @@ export const createDeployProgressReporter = (
     let metadataProgress: string | undefined
     let dataProgress: string | undefined
     if (deployResult) {
-      metadataProgress = `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests.${linkToSalesforce(deployResult)}`
+      metadataProgress =
+        deployResult.status === METADATA_DEPLOY_PENDING_STATUS
+          ? 'Metadata: Waiting on another deploy or automated process to finish'
+          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests.${linkToSalesforce(deployResult)}`
     }
     if (deployedDataInstances > 0) {
       dataProgress = `${deployedDataInstances} Data Instances`
     }
     if (metadataProgress || dataProgress) {
-      progressReporter.reportProgress({
-        message: [dataProgress, metadataProgress, suffix].filter(isDefined).join(', '),
-      })
+      const message = [dataProgress, metadataProgress, suffix].filter(isDefined).join(', ')
+      log.trace('reported message is: %s for deploy result: %s', message, inspectValue(deployResult))
+      progressReporter.reportProgress({ message })
     }
   }
 

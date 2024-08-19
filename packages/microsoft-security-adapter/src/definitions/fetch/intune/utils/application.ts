@@ -6,21 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { validatePlainObject } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { AdjustFunctionSingle } from '../../shared/types'
-import {
-  APP_IDENTIFIER_FIELD_NAME,
-  APP_STORE_URL_FIELD_NAME,
-  APPLICATION_TYPE_NAME,
-  PACKAGE_ID_FIELD_NAME,
-} from '../../../../constants/intune'
+import { APP_IDENTIFIER_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME } from '../../../../constants/intune'
 import { NAME_ID_FIELD } from '../../shared/defaults'
 import { getAdjustedOdataTypeFieldName } from '../../../../utils/shared'
-import { intuneUtils } from '../../../../utils'
-
-const { isAndroidEnterpriseSystemApp } = intuneUtils
 
 export const APPLICATION_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
   uploadState: { omit: true },
@@ -53,17 +42,3 @@ export const APPLICATION_NAME_PARTS: definitions.fetch.FieldIDPart[] = [
     condition: value => !value[APP_IDENTIFIER_FIELD_NAME] && !value[PACKAGE_ID_FIELD_NAME],
   },
 ]
-
-/**
- * Omit redundant fields from application based on its type.
- * These omitted fields do not add any value (can be deduced from other fields) and will fail deployment if included.
- */
-export const omitApplicationRedundantFields: AdjustFunctionSingle = async ({ value }) => {
-  validatePlainObject(value, APPLICATION_TYPE_NAME)
-  if (isAndroidEnterpriseSystemApp(value)) {
-    return {
-      value: _.omit(value, [PACKAGE_ID_FIELD_NAME, APP_STORE_URL_FIELD_NAME]),
-    }
-  }
-  return { value }
-}

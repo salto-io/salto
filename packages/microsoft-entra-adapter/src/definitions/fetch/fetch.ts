@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
@@ -53,10 +45,13 @@ import {
   DOMAIN_TYPE_NAME,
   PERMISSION_GRANT_POLICY_TYPE_NAME,
   CROSS_TENANT_ACCESS_POLICY_TYPE_NAME,
+  APP_ROLE_TYPE_NAME,
+  PARENT_ID_FIELD_NAME,
 } from '../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { FetchCustomizations } from './types'
 import {
+  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
   DEFAULT_FIELD_CUSTOMIZATIONS,
   DEFAULT_ID_PARTS,
   DEFAULT_TRANSFORMATION,
@@ -67,7 +62,17 @@ import {
   adjustEntitiesWithExpandedMembers,
   createCustomizationsWithBasePathForFetch,
   createDefinitionForAppRoleAssignment,
+  addParentIdToAppRoles,
+  adjustApplication,
 } from './utils'
+
+const APP_ROLES_FIELD_CUSTOMIZATIONS = {
+  standalone: {
+    typeName: APP_ROLE_TYPE_NAME,
+    nestPathUnderParent: true,
+    referenceFromParent: false,
+  },
+}
 
 const graphV1Customizations: FetchCustomizations = {
   [GROUP_TYPE_NAME]: {
@@ -97,6 +102,17 @@ const graphV1Customizations: FetchCustomizations = {
               ),
             },
           }
+        },
+      },
+      context: {
+        // We only need this dependency for the conditions under the group life cycle policy recurse definition
+        dependsOn: {
+          [CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES]: {
+            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
+            transformation: {
+              root: 'managedGroupTypes',
+            },
+          },
         },
       },
       recurseInto: {
@@ -129,6 +145,12 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromContext: CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
+              match: ['Selected'],
+            },
+          ],
         },
       },
     },
@@ -198,23 +220,6 @@ const graphV1Customizations: FetchCustomizations = {
   [GROUP_LIFE_CYCLE_POLICY_TYPE_NAME]: {
     resource: {
       directFetch: false,
-      context: {
-        dependsOn: {
-          [LIFE_CYCLE_POLICY_TYPE_NAME]: {
-            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
-            transformation: {
-              pick: ['managedGroupTypes'],
-            },
-          },
-        },
-        // TODO SALTO-6077: we currently overlook this definition. We should validate this definition after fixing the issue
-        conditions: [
-          {
-            fromContext: LIFE_CYCLE_POLICY_TYPE_NAME,
-            match: ['Selected'],
-          },
-        ],
-      },
     },
     requests: [
       {
@@ -234,7 +239,10 @@ const graphV1Customizations: FetchCustomizations = {
         endpoint: {
           path: '/applications',
         },
-        transformation: DEFAULT_TRANSFORMATION,
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          adjust: adjustApplication,
+        },
       },
     ],
     resource: {
@@ -249,11 +257,7 @@ const graphV1Customizations: FetchCustomizations = {
         appId: {
           hide: true,
         },
-        [APP_ROLES_FIELD_NAME]: {
-          sort: {
-            properties: [{ path: 'displayName' }, { path: 'value' }],
-          },
-        },
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
       },
     },
   },
@@ -270,7 +274,6 @@ const graphV1Customizations: FetchCustomizations = {
             'appDescription',
             'appDisplayName',
             'applicationTemplateId',
-            'appRoles',
             'customSecurityAttributes',
             'disabledByMicrosoftStatus',
             'homepage',
@@ -285,6 +288,16 @@ const graphV1Customizations: FetchCustomizations = {
             'appManagementPolicy',
             'appRoleAssignments',
           ],
+          adjust: async ({ value }) => {
+            validatePlainObject(value, 'service principal')
+
+            return {
+              value: {
+                ...value,
+                [APP_ROLES_FIELD_NAME]: addParentIdToAppRoles(value),
+              },
+            }
+          },
         },
       },
     ],
@@ -326,7 +339,31 @@ const graphV1Customizations: FetchCustomizations = {
             referenceFromParent: false,
           },
         },
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        [APP_ROLE_ASSIGNMENT_FIELD_NAME]: {
+          standalone: {
+            typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+            nestPathUnderParent: true,
+            referenceFromParent: false,
+          },
+        },
       },
+    },
+  },
+  [APP_ROLE_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+      serviceIDFields: [PARENT_ID_FIELD_NAME, 'id'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          extendsParent: true,
+          parts: [NAME_ID_FIELD, { fieldName: 'value' }],
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
   [SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME]: createDefinitionForAppRoleAssignment('servicePrincipals'),
@@ -358,6 +395,9 @@ const graphV1Customizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/oauth2PermissionGrants',
+          queryArgs: {
+            $filter: "consentType eq 'AllPrincipals'",
+          },
         },
         transformation: DEFAULT_TRANSFORMATION,
       },
@@ -369,7 +409,6 @@ const graphV1Customizations: FetchCustomizations = {
           parts: [
             { fieldName: 'clientId', isReference: true },
             { fieldName: 'resourceId', isReference: true },
-            { fieldName: 'consentType' },
           ],
         },
       },
@@ -453,9 +492,9 @@ const graphV1Customizations: FetchCustomizations = {
             return {
               value: {
                 ...value,
-                // The appRoles ids are unique *per custom security attribute definition*, so we need to add the parent_id in order to be able to
+                // The ids are unique *per custom security attribute definition*, so we need to add the parent_id in order to be able to
                 // add its id as part of the serviceIDFields
-                parent_id: context.id,
+                [PARENT_ID_FIELD_NAME]: context.id,
               },
             }
           },
@@ -464,7 +503,7 @@ const graphV1Customizations: FetchCustomizations = {
     ],
     resource: {
       directFetch: false,
-      serviceIDFields: ['parent_id', 'id'],
+      serviceIDFields: [PARENT_ID_FIELD_NAME, 'id'],
     },
     element: {
       topLevel: {
@@ -472,11 +511,6 @@ const graphV1Customizations: FetchCustomizations = {
         elemID: {
           extendsParent: true,
           parts: [{ fieldName: 'id' }],
-        },
-      },
-      fieldCustomizations: {
-        parent_id: {
-          hide: true,
         },
       },
     },
@@ -565,6 +599,13 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromField: 'authenticationType',
+              // Exclude federated domains, as this api call does not support them
+              match: ['Managed'],
+            },
+          ],
         },
       },
       mergeAndTransform: {

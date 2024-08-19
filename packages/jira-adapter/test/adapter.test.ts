@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   AdapterOperations,
@@ -29,17 +21,16 @@ import {
   ServiceIds,
 } from '@salto-io/adapter-api'
 import { deployment, elements, client as clientUtils, openapi } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import { mockFunction } from '@salto-io/test-utils'
-import JiraClient from '../src/client/client'
+import JiraClient, { GET_CLOUD_ID_URL } from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { getDefaultConfig } from '../src/config/config'
 import { OBJECT_TYPE_ATTRIBUTE_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
-import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType } from './utils'
+import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType, DEFAULT_CLOUD_ID } from './utils'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from '../src/jsm_utils'
-import { CLOUD_RESOURCE_FIELD } from '../src/filters/automation/cloud_id'
 
 const { getAllElements, getEntriesResponseValues, addRemainingTypes } = elements.ducktype
 const { getAllInstances } = elements.swagger
@@ -508,12 +499,8 @@ describe('adapter', () => {
             ],
           })
         // mock as we call getCloudId in the forms filter.
-        mockAxiosAdapter.onPost().reply(200, {
-          unparsedData: {
-            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-              tenantId: 'cloudId',
-            }),
-          },
+        mockAxiosAdapter.onGet(GET_CLOUD_ID_URL).replyOnce(200, {
+          cloudId: DEFAULT_CLOUD_ID,
         })
         result = await srAdapter.fetch({ progressReporter })
       })
@@ -620,12 +607,8 @@ describe('adapter', () => {
             ],
           })
         // mock as we call getCloudId in the forms filter.
-        mockAxiosAdapter.onPost().reply(200, {
-          unparsedData: {
-            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-              tenantId: 'cloudId',
-            }),
-          },
+        mockAxiosAdapter.onGet(GET_CLOUD_ID_URL).replyOnce(200, {
+          cloudId: DEFAULT_CLOUD_ID,
         })
         result = await srAdapter.fetch({ progressReporter })
       })
@@ -834,12 +817,8 @@ describe('adapter', () => {
             ],
           })
         // mock as we call getCloudId in the forms filter.
-        mockAxiosAdapter.onPost().reply(200, {
-          unparsedData: {
-            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-              tenantId: 'cloudId',
-            }),
-          },
+        mockAxiosAdapter.onGet(GET_CLOUD_ID_URL).replyOnce(200, {
+          cloudId: DEFAULT_CLOUD_ID,
         })
         result = await srAdapter.fetch({ progressReporter })
       })
@@ -953,12 +932,8 @@ describe('adapter', () => {
             ],
           })
         // mock as we call getCloudId in the forms filter.
-        mockAxiosAdapter.onPost().reply(200, {
-          unparsedData: {
-            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-              tenantId: 'cloudId',
-            }),
-          },
+        mockAxiosAdapter.onGet(GET_CLOUD_ID_URL).replyOnce(200, {
+          cloudId: DEFAULT_CLOUD_ID,
         })
         result = await srAdapter.fetch({ progressReporter })
       })

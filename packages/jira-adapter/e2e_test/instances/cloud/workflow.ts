@@ -1,439 +1,354 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, Values, Element } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { createReference } from '../../utils'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
+import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 export const createWorkflowValues = (name: string, allElements: Element[]): Values => ({
+  scope: {
+    type: 'GLOBAL',
+  },
   name,
   description: name,
+  isEditable: true,
+  startPointLayout: {
+    x: 784,
+    y: 92.4,
+  },
   transitions: {
     [naclCase('Build Broken::From: any status::Global')]: {
       name: 'Build Broken',
       description: '',
-      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-      type: 'global',
-      rules: {
-        triggers: [
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:branch-created-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:commit-created-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-created-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-declined-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-merged-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-reopened-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-abandoned-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-approval-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-closed-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-rejected-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-started-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-summarized-trigger',
-          },
-        ],
-        postFunctions: [
-          {
-            type: 'FireIssueEventFunction',
-            configuration: {
-              event: {
-                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
-              },
-            },
-          },
-          {
-            type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
-            configuration: {
-              scriptRunner: {
-                className: 'com.adaptavist.sr.cloud.workflow.AssignToUserInGroup',
-                uuid: 'e9c3d0ec-0d9d-4b1f-b010-3c0e3a18111a',
-                enabled: true,
-                executionUser: 'ADD_ON',
-                condition: 'issue.fields.assignee != null',
-                description: 'Assign Issue',
-                groupName: createReference(
-                  new ElemID(JIRA, 'Group', 'instance', 'system_administrators@b'),
-                  allElements,
-                  ['name'],
-                ),
-                roleId: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
-              },
-            },
-          },
-        ],
+      to: {
+        statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+        port: 7,
       },
+      type: 'GLOBAL',
+      triggers: [
+        {
+          ruleKey: 'system:development-triggers',
+          parameters: {
+            enabledTriggers: [
+              'branch-created-trigger',
+              'commit-created-trigger',
+              'pull-request-created-trigger',
+              'pull-request-declined-trigger',
+              'pull-request-merged-trigger',
+              'pull-request-reopened-trigger',
+              'review-started-trigger',
+              'review-approval-trigger',
+              'review-rejected-trigger',
+              'review-abandoned-trigger',
+              'review-closed-trigger',
+              'review-summarized-trigger',
+            ],
+          },
+        },
+      ],
+      actions: [
+        {
+          ruleKey: 'connect:remote-workflow-function',
+          parameters: {
+            appKey: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
+            id: 'd1738503-2939-425e-9018-0532c0a62bac',
+            disabled: 'false',
+            scriptRunner: {
+              className: 'com.adaptavist.sr.cloud.workflow.AssignToUserInGroup',
+              uuid: '4238d79d-c63a-4e28-9ba7-27e0876bf2de',
+              enabled: true,
+              executionUser: 'ADD_ON',
+              condition: 'issue.fields.assignee != null',
+              description: 'Assign Issue',
+              groupName: createReference(
+                new ElemID(JIRA, 'Group', 'instance', 'system_administrators@b'),
+                allElements,
+                ['name'],
+              ),
+              roleId: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
+            },
+          },
+        },
+      ],
     },
     [naclCase('Create::From: none::Initial')]: {
       name: 'Create',
       description: '',
-      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-      type: 'initial',
-      from: [
+      to: {
+        statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
+        port: 7,
+      },
+      type: 'INITIAL',
+      validators: [
         {
-          sourceAngle: 33.45,
-          targetAngle: 99.89,
+          ruleKey: 'system:check-permission-validator',
+          parameters: {
+            permissionKey: 'CREATE_ISSUES',
+          },
         },
       ],
-      rules: {
-        validators: [
-          {
-            type: 'PermissionValidator',
-            configuration: {
-              permissionKey: 'CREATE_ISSUES',
-            },
+      actions: [
+        {
+          ruleKey: 'system:change-assignee',
+          parameters: {
+            type: 'to-unassigned',
           },
-        ],
-        postFunctions: [
-          {
-            type: 'AssignToCurrentUserFunction',
+        },
+        {
+          ruleKey: 'system:update-field',
+          parameters: {
+            field: createReference(new ElemID(JIRA, 'Field', 'instance', 'Environment__string'), allElements),
+            value: 'ww',
+            mode: 'replace',
           },
-          {
-            type: 'AssignToLeadFunction',
+        },
+        {
+          ruleKey: 'system:set-security-level-from-role',
+          parameters: {
+            roleId: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
           },
-          {
-            type: 'AssignToReporterFunction',
+        },
+        {
+          ruleKey: 'system:copy-value-from-other-field',
+          parameters: {
+            sourceFieldKey: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
+            targetFieldKey: createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator__user'), allElements),
+            issueSource: 'PARENT',
           },
-          {
-            type: 'ClearFieldValuePostFunction',
-            configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Environment__string'), allElements),
-            },
+        },
+        {
+          ruleKey: 'system:update-field',
+          parameters: {
+            field: createReference(new ElemID(JIRA, 'Field', 'instance', 'Environment__string'), allElements),
           },
-          {
-            type: 'CopyValueFromOtherFieldPostFunction',
-            configuration: {
-              sourceFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
-              destinationFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator__user'), allElements),
-              copyType: 'parent',
-            },
+        },
+        {
+          ruleKey: 'system:change-assignee',
+          parameters: {
+            type: 'to-current-user',
           },
-          {
-            type: 'CreateCommentFunction',
+        },
+        {
+          ruleKey: 'system:change-assignee',
+          parameters: {
+            type: 'to-lead',
           },
-          {
-            type: 'FireIssueEventFunction',
-            configuration: {
-              event: {
-                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
-              },
-            },
+        },
+        {
+          ruleKey: 'system:change-assignee',
+          parameters: {
+            type: 'to-reporter',
           },
-          {
-            type: 'IssueStoreFunction',
-          },
-          {
-            type: 'SetIssueSecurityFromRoleFunction',
-            configuration: {
-              projectRole: {
-                id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
-              },
-            },
-          },
-          {
-            type: 'UpdateIssueCustomFieldPostFunction',
-            configuration: {
-              mode: 'replace',
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
-              fieldValue: 'ww',
-            },
-          },
-          {
-            type: 'UpdateIssueFieldFunction',
-            configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
-              fieldValue: '',
-            },
-          },
-          {
-            type: 'UpdateIssueStatusFunction',
-          },
-        ],
-      },
+        },
+      ],
     },
     [naclCase('TransitionToShared::From: Done::Directed')]: {
       name: 'TransitionToShared',
       description: '',
       from: [
         {
-          id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-          sourceAngle: 12.45,
-          targetAngle: 67.89,
+          statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+          port: 1,
         },
       ],
-      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-      type: 'directed',
-      rules: {
-        validators: [
+      to: {
+        statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
+        port: 7,
+      },
+      type: 'DIRECTED',
+      validators: [
+        {
+          ruleKey: 'system:validate-field-value',
+          parameters: {
+            ruleType: 'dateFieldComparison',
+            date1FieldKey: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+            date2FieldKey: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+            includeTime: 'false',
+            conditionSelected: '>',
+          },
+        },
+        {
+          ruleKey: 'system:validate-field-value',
+          parameters: {
+            ruleType: 'fieldRequired',
+            fieldsRequired: [createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements)],
+            ignoreContext: 'true',
+            errorMessage: 'bla bla bla',
+          },
+        },
+        {
+          ruleKey: 'system:validate-field-value',
+          parameters: {
+            ruleType: 'fieldHasSingleValue',
+            fieldKey: createReference(new ElemID(JIRA, 'Field', 'instance', 'Last_Viewed__datetime@suu'), allElements),
+            excludeSubtasks: 'false',
+          },
+        },
+        {
+          ruleKey: 'system:validate-field-value',
+          parameters: {
+            ruleType: 'fieldHasSingleValue',
+            fieldKey: createReference(
+              new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'),
+              allElements,
+            ),
+            excludeSubtasks: 'true',
+          },
+        },
+        {
+          ruleKey: 'system:parent-or-child-blocking-validator',
+          parameters: {
+            blocker: 'PARENT',
+            statusIds: [createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'in_progress@s'), allElements)],
+          },
+        },
+        {
+          ruleKey: 'system:check-permission-validator',
+          parameters: {
+            permissionKey: 'MODIFY_REPORTER',
+          },
+        },
+        {
+          ruleKey: 'system:previous-status-validator',
+          parameters: {
+            previousStatusIds: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+            mostRecentStatusOnly: 'false',
+          },
+        },
+        {
+          ruleKey: 'system:check-permission-validator',
+          parameters: {
+            permissionKey: 'MODIFY_REPORTER',
+          },
+        },
+        {
+          ruleKey: 'system:validate-field-value',
+          parameters: {
+            ruleType: 'windowDateComparison',
+            date1FieldKey: createReference(
+              new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Created__datetime'),
+              allElements,
+            ),
+            date2FieldKey: createReference(
+              new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Created__datetime'),
+              allElements,
+            ),
+            numberOfDays: '2',
+          },
+        },
+      ],
+      conditions: {
+        operation: 'ALL',
+        conditions: [
           {
-            type: 'DateFieldValidator',
-            configuration: {
-              comparator: '>',
-              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
-              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
-              includeTime: false,
+            ruleKey: 'system:restrict-issue-transition',
+            parameters: {
+              accountIds: 'allow-assignee',
             },
           },
           {
-            type: 'FieldHasSingleValueValidator',
-            configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Last_Viewed__datetime@suu'), allElements),
-              excludeSubtasks: false,
+            ruleKey: 'system:restrict-issue-transition',
+            parameters: {
+              accountIds: 'allow-reporter',
             },
           },
           {
-            type: 'FieldHasSingleValueValidator',
-            configuration: {
-              fieldId: createReference(
-                new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'),
-                allElements,
-              ),
-              excludeSubtasks: true,
+            ruleKey: 'system:restrict-from-all-users',
+            parameters: {
+              restrictMode: 'usersAndAPI',
             },
           },
           {
-            type: 'FieldRequiredValidator',
-            configuration: {
-              ignoreContext: true,
-              errorMessage: 'wwww',
-              fieldIds: [createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements)],
+            ruleKey: 'system:block-in-progress-approval',
+          },
+          {
+            ruleKey: 'system:restrict-issue-transition',
+            parameters: {
+              roleIds: [createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements)],
             },
           },
           {
-            type: 'ParentStatusValidator',
-            configuration: {
-              parentStatuses: [
-                {
-                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'in_progress@s'), allElements),
-                },
+            ruleKey: 'system:restrict-issue-transition',
+            parameters: {
+              permissionKeys: 'DELETE_ISSUES',
+            },
+          },
+          {
+            ruleKey: 'system:previous-status-condition',
+            parameters: {
+              previousStatusIds: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+              not: 'true',
+              mostRecentStatusOnly: 'true',
+              includeCurrentStatus: 'true',
+              ignoreLoopTransitions: 'true',
+            },
+          },
+          {
+            ruleKey: 'system:separation-of-duties',
+            parameters: {
+              fromStatusId: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+              toStatusId: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
+            },
+          },
+          {
+            ruleKey: 'system:parent-or-child-blocking-condition',
+            parameters: {
+              blocker: 'CHILD',
+              statusIds: [
+                createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
+                createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
               ],
             },
           },
           {
-            type: 'PermissionValidator',
-            configuration: {
-              permissionKey: 'MODIFY_REPORTER',
+            ruleKey: 'system:restrict-issue-transition',
+            parameters: {
+              denyUserCustomFields: createReference(
+                new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Created__datetime'),
+                allElements,
+              ),
             },
           },
           {
-            type: 'PreviousStatusValidator',
-            configuration: {
-              mostRecentStatusOnly: false,
-              previousStatus: {
-                id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-              },
-            },
-          },
-          {
-            type: 'UserPermissionValidator',
-            configuration: {
-              permissionKey: 'VIEW_DEV_TOOLS',
-              nullAllowed: true,
-              username: 'aaa',
-            },
-          },
-          {
-            type: 'WindowsDateValidator',
-            configuration: {
-              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
-              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
-              windowsDays: 2,
+            ruleKey: 'system:check-field-value',
+            parameters: {
+              fieldId: createReference(
+                new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'),
+                allElements,
+              ),
+              fieldValue: '["val"]',
+              comparator: '>',
+              comparisonType: 'STRING',
             },
           },
         ],
-        postFunctions: [
-          {
-            type: 'FireIssueEventFunction',
-            configuration: {
-              event: {
-                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
-              },
-            },
-          },
-        ],
-        conditions: {
-          operator: 'AND',
-          conditions: [
-            {
-              type: 'AllowOnlyAssignee',
-            },
-            {
-              type: 'AllowOnlyReporter',
-            },
-            {
-              type: 'AlwaysFalseCondition',
-            },
-            {
-              type: 'AlwaysFalseCondition',
-            },
-            {
-              type: 'BlockInProgressApprovalCondition',
-            },
-            {
-              type: 'InAnyProjectRoleCondition',
-              configuration: {
-                projectRoles: [
-                  {
-                    id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
-                  },
-                ],
-              },
-            },
-            {
-              type: 'InProjectRoleCondition',
-              configuration: {
-                projectRole: {
-                  id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
-                },
-              },
-            },
-            {
-              type: 'OnlyBambooNotificationsCondition',
-            },
-            {
-              type: 'PermissionCondition',
-              configuration: {
-                permissionKey: 'DELETE_ISSUES',
-              },
-            },
-            {
-              type: 'PreviousStatusCondition',
-              configuration: {
-                ignoreLoopTransitions: true,
-                includeCurrentStatus: true,
-                mostRecentStatusOnly: true,
-                reverseCondition: true,
-                previousStatus: {
-                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-                },
-              },
-            },
-            {
-              type: 'RemoteOnlyCondition',
-            },
-            {
-              type: 'SeparationOfDutiesCondition',
-              configuration: {
-                toStatus: {
-                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-                },
-                fromStatus: {
-                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-                },
-              },
-            },
-            {
-              type: 'SubTaskBlockingCondition',
-              configuration: {
-                statuses: [
-                  {
-                    id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-                  },
-                  {
-                    id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-                  },
-                ],
-              },
-            },
-            {
-              type: 'UserInAnyGroupCondition',
-              configuration: {
-                groups: [
-                  createReference(new ElemID(JIRA, 'Group', 'instance', 'system_administrators@b'), allElements, [
-                    'name',
-                  ]),
-                ],
-              },
-            },
-            {
-              type: 'UserIsInCustomFieldCondition',
-              configuration: {
-                allowUserInField: false,
-                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
-              },
-            },
-            {
-              type: 'ValueFieldCondition',
-              configuration: {
-                fieldId: createReference(
-                  new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'),
-                  allElements,
-                ),
-                fieldValue: 'val',
-                comparisonType: 'STRING',
-                comparator: '>',
-              },
-            },
-          ],
-        },
       },
     },
   },
   statuses: [
     {
-      id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-      name: 'Backlog',
-      properties: [
-        {
-          key: 'jira.issue.editable',
-          value: 'true',
-        },
-      ],
-      location: {
+      statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
+      layout: {
         x: 12.34,
         y: 56.78,
       },
+      deprecated: false,
+      name: 'Backlog',
     },
     {
-      id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-      name: 'Done',
-      properties: [
-        {
-          key: 'jira.issue.editable',
-          value: 'true',
-        },
-      ],
-      location: {
+      statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+      layout: {
         x: 67.89,
         y: 20.78,
       },
+      deprecated: false,
+      name: 'Done',
     },
   ],
-  diagramInitialEntry: {
-    x: 12.34,
-    y: 34.12,
-  },
 })

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ObjectType, ElemID, toChange, ChangeGroup, InstanceElement, getChangeData } from '@salto-io/adapter-api'
 import { definitions as definitionsUtils, fetch, filterUtils } from '@salto-io/adapter-components'
@@ -132,12 +124,12 @@ describe('deploySpaceAndPermissions', () => {
               after: new InstanceElement('moc', notSpaceObjectType, {
                 id: 'superInternalId',
                 subject: {
-                  type: 'will',
-                  identifier: 'be',
+                  type: 'user',
+                  identifier: 'will',
                 },
                 operation: {
-                  key: 'added',
-                  target: 'yay',
+                  key: 'be',
+                  target: 'added',
                 },
               }),
             }),
@@ -149,42 +141,42 @@ describe('deploySpaceAndPermissions', () => {
         const spaceInstBefore = new InstanceElement('mock', spaceObjectType, {
           key: '111',
           permissionInternalIdMap: {
-            here_to_stay_yay: '1',
-            will_be_removed_Oy: '2',
+            group_to_stay: '1',
+            user_be_removed: '2',
           },
           permissions: [
             {
-              type: 'here',
-              principalId: 'to',
-              key: 'stay',
-              targetType: 'yay',
+              type: 'group',
+              principalId: 'here',
+              key: 'to',
+              targetType: 'stay',
             },
             {
-              type: 'will',
-              principalId: 'be',
-              key: 'removed',
-              targetType: 'Oy',
+              type: 'user',
+              principalId: 'will',
+              key: 'be',
+              targetType: 'removed',
             },
           ],
         })
         const spaceInstAfter = new InstanceElement('mock', spaceObjectType, {
           key: '222',
           permissionInternalIdMap: {
-            here_to_stay_yay: '1',
-            will_be_removed_Oy: '2',
+            group_to_stay: '1',
+            user_be_removed: '2',
           },
           permissions: [
             {
-              type: 'here',
-              principalId: 'to',
-              key: 'stay',
-              targetType: 'yay',
+              type: 'group',
+              principalId: 'here',
+              key: 'to',
+              targetType: 'stay',
             },
             {
-              type: 'will',
-              principalId: 'be',
-              key: 'added',
-              targetType: 'yay',
+              type: 'user',
+              principalId: 'will',
+              key: 'be',
+              targetType: 'added',
             },
           ],
         })
@@ -195,22 +187,22 @@ describe('deploySpaceAndPermissions', () => {
           leftoverChanges: [notSpaceChange],
         })
         expect((getChangeData(modificationChange) as InstanceElement).value.permissionInternalIdMap).toEqual({
-          here_to_stay_yay: '1',
-          will_be_removed_Oy: '2',
-          will_be_added_yay: 'superInternalId',
+          group_to_stay: '1',
+          user_be_removed: '2',
+          user_be_added: 'superInternalId',
         })
         expect((getChangeData(modificationChange) as InstanceElement).value.permissions).toEqual([
           {
-            type: 'here',
-            principalId: 'to',
-            key: 'stay',
-            targetType: 'yay',
+            type: 'group',
+            principalId: 'here',
+            key: 'to',
+            targetType: 'stay',
           },
           {
-            type: 'will',
-            principalId: 'be',
-            key: 'added',
-            targetType: 'yay',
+            type: 'user',
+            principalId: 'will',
+            key: 'be',
+            targetType: 'added',
           },
         ])
         // one for space, one for delete permissions and one for add permissions
@@ -234,12 +226,12 @@ describe('deploySpaceAndPermissions', () => {
             value: {
               id: 'addedDefaultPermissionInternalId',
               principal: {
-                type: 'default',
-                id: 'permission',
+                type: 'group',
+                id: 'defaultPermission',
               },
               operation: {
-                key: 'to',
-                targetType: 'stay',
+                key: 'key',
+                targetType: 'target',
               },
             },
           },
@@ -247,11 +239,11 @@ describe('deploySpaceAndPermissions', () => {
             value: {
               id: 'removeDefaultPermissionInternalId',
               principal: {
-                type: 'default',
-                id: 'permission',
+                type: 'user',
+                id: 'defaultPermission',
               },
               operation: {
-                key: 'to',
+                key: 'anotherKey',
                 targetType: 'remove',
               },
             },
@@ -263,12 +255,12 @@ describe('deploySpaceAndPermissions', () => {
               after: new InstanceElement('moc', notSpaceObjectType, {
                 id: 'superInternalId',
                 subject: {
-                  type: 'will',
-                  identifier: 'be',
+                  type: 'user',
+                  identifier: 'will',
                 },
                 operation: {
-                  key: 'added',
-                  target: 'yay',
+                  key: 'be',
+                  target: 'added',
                 },
               }),
             }),
@@ -281,16 +273,16 @@ describe('deploySpaceAndPermissions', () => {
           key: '222',
           permissions: [
             {
-              type: 'will',
-              principalId: 'be',
-              key: 'added',
-              targetType: 'yay',
-            },
-            {
-              type: 'default',
-              principalId: 'permission',
+              type: 'group',
+              principalId: 'here',
               key: 'to',
               targetType: 'stay',
+            },
+            {
+              type: 'user',
+              principalId: 'will',
+              key: 'be',
+              targetType: 'added',
             },
           ],
         })
@@ -301,22 +293,22 @@ describe('deploySpaceAndPermissions', () => {
           leftoverChanges: [notSpaceChange],
         })
         expect((getChangeData(additionChange) as InstanceElement).value.permissionInternalIdMap).toEqual({
-          default_permission_to_stay: 'addedDefaultPermissionInternalId',
-          will_be_added_yay: 'superInternalId',
-          default_permission_to_remove: 'removeDefaultPermissionInternalId',
+          group_key_target: 'addedDefaultPermissionInternalId',
+          user_be_added: 'superInternalId',
+          user_anotherKey_remove: 'removeDefaultPermissionInternalId',
         })
         expect((getChangeData(additionChange) as InstanceElement).value.permissions).toEqual([
           {
-            type: 'will',
-            principalId: 'be',
-            key: 'added',
-            targetType: 'yay',
-          },
-          {
-            type: 'default',
-            principalId: 'permission',
+            type: 'group',
+            principalId: 'here',
             key: 'to',
             targetType: 'stay',
+          },
+          {
+            type: 'user',
+            principalId: 'will',
+            key: 'be',
+            targetType: 'added',
           },
         ])
         expect(mockRequestAllForResource).toHaveBeenCalledTimes(1)

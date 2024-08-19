@@ -4,11 +4,15 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "typescript",
-      "tsconfig": ".history/packages/adapter-api/tsconfig_20190717112617.json",
-      "problemMatcher": [
-        "$tsc"
-      ]
+      "type": "npm",
+      "script": "build-ts",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "label": "npm: build-ts",
+      "detail": "./build_utils/turbo_run.sh build-ts"
     }
   ]
 }

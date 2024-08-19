@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { isResolvedReferenceExpression, resolvePath } from '@salto-io/adapter-utils'
@@ -20,12 +12,11 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceElement,
-  ReferenceExpression,
   Value,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { references as referenceUtils, resolveValues, restoreValues } from '@salto-io/adapter-components'
+import { resolveValues, restoreValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
 import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../constants'
 import { getLookUpName } from '../../../reference_mapping'
@@ -36,15 +27,9 @@ import {
   walkOverTransitionIdsV2,
 } from '../../workflow/transition_structure'
 import { WorkflowV2Instance, isWorkflowInstance, isWorkflowV2Instance } from '../../workflowV2/types'
+import { getTransitionIdToKeyMap, createTransitionReference } from '../../../common/workflow/transitions'
 
 const { awu } = collections.asynciterable
-
-const getTransitionIdToKeyMap = (workflowInstance: WorkflowV1Instance | WorkflowV2Instance): Map<string, string> =>
-  new Map(
-    Object.entries(workflowInstance.value.transitions)
-      .map(([key, transition]) => [transition.id, key])
-      .filter((entry): entry is [string, string] => entry[0] !== undefined),
-  )
 
 const WALK_OVER_TRANSITION_IDS_FUNCS: Record<string, (transition: Value, func: (scriptRunner: Value) => void) => void> =
   {
@@ -59,20 +44,12 @@ const addTransitionReferences = (
   const transitionIdToKey = getTransitionIdToKeyMap(workflowInstance)
   Object.values(workflowInstance.value.transitions).forEach(transition => {
     WALK_OVER_TRANSITION_IDS_FUNCS[workflowInstance.elemID.typeName](transition, scriptRunner => {
-      const transitionKey = transitionIdToKey.get(scriptRunner.transitionId)
-      const missingValue = enableMissingReferences
-        ? referenceUtils.createMissingValueReference(
-            workflowInstance.elemID.createNestedID('transitions'),
-            scriptRunner.transitionId,
-          )
-        : scriptRunner.transitionId
-      scriptRunner.transitionId =
-        transitionKey === undefined
-          ? missingValue
-          : new ReferenceExpression(
-              workflowInstance.elemID.createNestedID('transitions', transitionKey),
-              workflowInstance.value.transitions[transitionKey],
-            )
+      scriptRunner.transitionId = createTransitionReference({
+        workflowInstance,
+        transitionId: scriptRunner.transitionId,
+        enableMissingReferences,
+        transitionKey: transitionIdToKey.get(scriptRunner.transitionId),
+      })
     })
   })
 }

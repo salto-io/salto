@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
@@ -41,18 +33,21 @@ import {
   MEMBERS_FIELD_NAME,
   ODATA_ID_FIELD,
   DIRECTORY_ROLE_MEMBERS_TYPE_NAME,
+  APP_ROLE_TYPE_NAME,
 } from '../../constants'
 import { AdditionalAction, ClientOptions } from '../types'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
-import { DeployCustomDefinitions, DeployRequestDefinition } from './types'
+import { DeployCustomDefinitions, DeployRequestDefinition, DeployableRequestDefinition } from './types'
 import {
+  omitReadOnlyFieldsWrapper,
   adjustRoleDefinitionForDeployment,
-  createCustomConditionEmptyFieldsOnAddition,
+  createCustomConditionCheckChangesInFields,
   createCustomizationsWithBasePathForDeploy,
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
   omitReadOnlyFields,
+  adjustParentWithAppRoles,
 } from './utils'
 
 const AUTHENTICATION_STRENGTH_POLICY_DEPLOYABLE_FIELDS = ['displayName', 'description']
@@ -62,13 +57,35 @@ const SERVICE_PRINCIPAL_MODIFICATION_REQUEST: DeployRequestDefinition = {
     path: '/servicePrincipals/{id}',
     method: 'patch',
   },
+  transformation: {
+    adjust: adjustParentWithAppRoles,
+  },
 }
+
+const APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION = ['web.redirectUriSettings']
 
 const APPLICATION_MODIFICATION_REQUEST: DeployRequestDefinition = {
   endpoint: {
     path: '/applications/{id}',
     method: 'patch',
   },
+  transformation: {
+    omit: APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION,
+    adjust: adjustParentWithAppRoles,
+  },
+}
+
+const APPLICATION_SECOND_MODIFICATION_ITERATION_REQUEST: DeployableRequestDefinition = {
+  request: {
+    endpoint: {
+      path: '/applications/{id}',
+      method: 'patch',
+    },
+    transformation: {
+      pick: APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION,
+    },
+  },
+  condition: createCustomConditionCheckChangesInFields(APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION),
 }
 
 // These fields cannot be specified when creating a group, but can be modified after creation
@@ -184,6 +201,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               toSharedContext: {
                 pick: ['id'],
               },
+              additional: {
+                // The appId is hidden, so it won't exist on addition.
+                // However, it is used to reference the application from other instances, so we should copy it to the applied change.
+                pick: ['appId'],
+              },
             },
           },
           {
@@ -196,11 +218,13 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
+          APPLICATION_SECOND_MODIFICATION_ITERATION_REQUEST,
         ],
         modify: [
           {
             request: APPLICATION_MODIFICATION_REQUEST,
           },
+          APPLICATION_SECOND_MODIFICATION_ITERATION_REQUEST,
         ],
         remove: [
           {
@@ -214,6 +238,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
         ],
       },
     },
+  },
+  [APP_ROLE_TYPE_NAME]: {
+    changeGroupId: deployment.grouping.groupWithFirstParent,
+    // Deploying an application/servicePrincipal with its appRoles is done in a single request using the definition of the application via a filter
+    requestsByAction: {},
   },
   [SERVICE_PRINCIPAL_TYPE_NAME]: {
     requestsByAction: {
@@ -282,11 +311,11 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 pick: GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION,
               },
             },
-            condition: createCustomConditionEmptyFieldsOnAddition(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
+            condition: createCustomConditionCheckChangesInFields(GROUP_UNDEPLOYABLE_FIELDS_ON_ADDITION),
           },
           {
             request: getGroupLifecyclePolicyGroupModificationRequest('add'),
-            condition: createCustomConditionEmptyFieldsOnAddition([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
+            condition: createCustomConditionCheckChangesInFields([GROUP_LIFE_CYCLE_POLICY_FIELD_NAME]),
           },
         ],
         modify: [
@@ -642,7 +671,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                adjust: adjustRoleDefinitionForDeployment,
+                adjust: omitReadOnlyFieldsWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },
@@ -655,7 +684,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'patch',
               },
               transformation: {
-                adjust: adjustRoleDefinitionForDeployment,
+                adjust: omitReadOnlyFieldsWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },

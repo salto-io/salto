@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import Ajv from 'ajv'
@@ -68,6 +60,8 @@ const RECORDS_PER_QUERY = 10
 
 const FORMULA = 'formula'
 const FORMULA_PARAMS = 'formulaParams'
+
+const MULTISELECT_FIELD = 'valuemultiselect'
 
 const RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX = `${ACCOUNT_SPECIFIC_VALUE} (`
 const RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX = ')'
@@ -587,7 +581,9 @@ const getParametersAccountSpecificValueToTransform = (
   suiteQLTablesMap: Record<string, InstanceElement>,
   selectRecordTypeMap: Record<string, unknown>,
 ): AccountSpecificValueToTransform[] => {
-  const params = getConditionParameters(value[INIT_CONDITION])
+  const conditionFormula = value[INIT_CONDITION][FORMULA]
+  const allParams = getConditionParameters(value[INIT_CONDITION])
+  const params = allParams
     // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles)
     // but only params that have selectrecordtype are represented with internalid in the formula
     .filter(param => param?.[SELECT_RECORD_TYPE] !== undefined)
@@ -596,14 +592,16 @@ const getParametersAccountSpecificValueToTransform = (
     // 0 (zero) can be used in a formula (e.g 'arrayIndexOf(...) < 0'), but it's not an internalid
     .filter(internalId => internalId !== '0')
   if (params.length !== internalIds.length) {
-    log.warn(
-      'params length %d do not match the internal ids extracted from the formula: %s',
-      params.length,
-      formulaWithInternalIds,
-    )
+    log.warn('params length %d do not match the internal ids extracted from the formula: %o', params.length, {
+      formula: {
+        fromSuiteApp: formulaWithInternalIds,
+        fromSDF: conditionFormula,
+      },
+      params: allParams,
+    })
     return []
   }
-  const sortedParams = _.sortBy(params, param => value[INIT_CONDITION][FORMULA].indexOf(`"${param.name}"`))
+  const sortedParams = _.sortBy(params, param => conditionFormula.indexOf(`"${param.name}"`))
   return sortedParams.flatMap((param, index) => {
     if (param.value !== ACCOUNT_SPECIFIC_VALUE) {
       return []
@@ -635,6 +633,14 @@ const getAccountSpecificValueToTransform = (
     if (internalId === undefined || internalId === '') {
       log.warn('missing field %s in record %s: %o', field.name, record.serviceId, innerResult.body)
       return []
+    }
+    if (
+      field.name === MULTISELECT_FIELD &&
+      Array.isArray(internalId) &&
+      internalId.length === 1 &&
+      typeof internalId[0] === 'string'
+    ) {
+      return { field, value: innerValue, internalId: internalId[0] }
     }
     if (typeof internalId !== 'string') {
       log.warn('field %s in record %s is not a string: %o', field.name, record.serviceId, internalId)

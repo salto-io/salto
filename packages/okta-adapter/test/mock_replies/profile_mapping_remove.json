@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/api/v1/mappings/profilemapping-fakeid1",
+    "scope": "",
+    "method": "GET",
+    "status": 404,
+    "response": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "99",
+      "x-rate-limit-reset": "1722759718"
+    }
+  }
+]

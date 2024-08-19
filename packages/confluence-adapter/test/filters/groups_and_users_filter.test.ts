@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { definitions as definitionsUtils, fetch, filterUtils } from '@salto-io/adapter-components'
@@ -19,30 +11,18 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import groupsAndUsersFilter, { FALLBACK_DISPLAY_NAME } from '../../src/filters/groups_and_users_filter'
 import { DEFAULT_CONFIG, UserConfig } from '../../src/config'
 import { Options } from '../../src/definitions/types'
-import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../src/constants'
+import { ADAPTER_NAME, GROUP_TYPE_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../src/constants'
 import { createDeployDefinitions, createFetchDefinitions } from '../../src/definitions'
-import * as getUsersAndGroupsModule from '../../src/get_users_and_groups'
+import * as getUsersAndGroupsModule from '../../src/users'
 
-const mockGetUsersAndGroups = jest.spyOn(getUsersAndGroupsModule, 'getUsersAndGroups').mockResolvedValue({
-  usersIndex: {
-    userId1: {
-      accountId: 'userId1',
-      displayName: 'user1',
-    },
-    userId2: {
-      accountId: 'userId2',
-      displayName: 'user2',
-    },
+const mockGetUsersAndGroups = jest.spyOn(getUsersAndGroupsModule, 'getUsersIndex').mockResolvedValue({
+  userId1: {
+    accountId: 'userId1',
+    displayName: 'user1',
   },
-  groupsIndex: {
-    groupId1: {
-      name: 'group1',
-      id: 'groupId1',
-    },
-    groupId2: {
-      name: 'group2',
-      id: 'groupId2',
-    },
+  userId2: {
+    accountId: 'userId2',
+    displayName: 'user2',
   },
 })
 
@@ -51,6 +31,7 @@ describe('groupsAndUsersFilter', () => {
   let elements: InstanceElement[]
   const spaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SPACE_TYPE_NAME) })
   const pageObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, PAGE_TYPE_NAME) })
+  const groupObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, GROUP_TYPE_NAME) })
   const otherObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'otherType') })
   const generateElements = (): InstanceElement[] => {
     const spaceInst = new InstanceElement('space', spaceObjectType, {
@@ -90,7 +71,15 @@ describe('groupsAndUsersFilter', () => {
     const otherInst = new InstanceElement('other', otherObjectType, {
       authorId: { accountId: 'userId1' },
     })
-    return [spaceInst, pageInst, otherInst]
+    const group1Inst = new InstanceElement('group1', groupObjectType, {
+      name: 'group1',
+      id: 'groupId1',
+    })
+    const group2Inst = new InstanceElement('group2', groupObjectType, {
+      name: 'group2',
+      id: 'groupId2',
+    })
+    return [spaceInst, pageInst, otherInst, group1Inst, group2Inst]
   }
   const fetchDef = createFetchDefinitions(DEFAULT_CONFIG)
   const deployDef = createDeployDefinitions()

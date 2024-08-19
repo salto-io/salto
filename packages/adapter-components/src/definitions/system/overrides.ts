@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { Value, Values } from '@salto-io/adapter-api'
@@ -23,12 +15,16 @@ import { APIDefinitionsOptions } from './api'
 const log = logger(module)
 export const DEFINITIONS_OVERRIDES = 'SALTO_DEFINITIONS_OVERRIDES'
 
-const getParsedDefinitionsOverrides = (): Values => {
+const getParsedDefinitionsOverrides = (accountName: string): Values => {
   const overrides = process.env[DEFINITIONS_OVERRIDES]
   try {
     const parsedOverrides = overrides === undefined ? undefined : JSON.parse(overrides)
-    if (parsedOverrides !== undefined && typeof parsedOverrides === 'object') {
-      return parsedOverrides as Values
+    if (
+      parsedOverrides !== undefined &&
+      parsedOverrides[accountName] !== undefined &&
+      typeof parsedOverrides === 'object'
+    ) {
+      return parsedOverrides[accountName] as Values
     }
   } catch (e) {
     if (e instanceof SyntaxError) {
@@ -50,6 +46,7 @@ const getParsedDefinitionsOverrides = (): Values => {
  */
 export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOptions>(
   definitions: RequiredDefinitions<Options>,
+  accountName?: string,
 ): RequiredDefinitions<Options> => {
   const customMerge = (objValue: Value, srcValue: Value): Value => {
     if (_.isArray(objValue)) {
@@ -57,8 +54,12 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     }
     return undefined
   }
+  if (accountName === undefined) {
+    log.error('Account name is undefined, cannot merge definitions with overrides')
+    return definitions
+  }
   log.debug('starting to merge definitions with overrides')
-  const overrides = getParsedDefinitionsOverrides()
+  const overrides = getParsedDefinitionsOverrides(accountName)
   if (_.isEmpty(overrides)) {
     return definitions
   }

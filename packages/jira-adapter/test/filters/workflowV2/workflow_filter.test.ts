@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -364,13 +356,10 @@ describe('workflow filter', () => {
       await filter.onFetch(elements)
       expect(elements).toHaveLength(2)
     })
-    it('should fail when WorkflowConfiguration type is not found', async () => {
+    it('should not fail when WorkflowConfiguration type is not found', async () => {
       const filterResult = (await filter.onFetch([])) as FilterResult
       const errors = filterResult.errors ?? []
-      expect(errors).toBeDefined()
-      expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Failed to fetch Workflows.')
-      expect(errors[0].severity).toEqual('Error')
+      expect(errors).toEqual([])
     })
     it('should fail when id response data is not valid', async () => {
       mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
@@ -478,6 +467,104 @@ describe('workflow filter', () => {
         `The following transitions of workflow workflow are not unique: Create.
 It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
       )
+    })
+
+    describe('resolution properties', () => {
+      beforeEach(() => {
+        mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
+          yield [
+            {
+              id: { entityId: '1' },
+              statuses: [
+                { id: '11', name: 'Create' },
+                { id: '2', name: 'another one' },
+              ],
+            },
+            { id: { entityId: '2' }, statuses: [{ id: '22', name: 'Quack Quack' }] },
+          ]
+        })
+        connection.post.mockResolvedValue({
+          status: 200,
+          data: {
+            workflows: [
+              {
+                id: '1',
+                name: 'firstWorkflow',
+                version: {
+                  versionNumber: 1,
+                  id: '1',
+                },
+                scope: {
+                  type: 'global',
+                },
+                transitions: [
+                  {
+                    type: 'INITIAL',
+                    name: 'Create',
+                    properties: {
+                      'jira.issue.editable': 'true',
+                    },
+                    to: {
+                      statusReference: '11',
+                    },
+                  },
+                  {
+                    type: 'DIRECTED',
+                    name: 'ToStatus2',
+                    from: [
+                      {
+                        statusReference: '11',
+                      },
+                    ],
+                    to: {
+                      statusReference: '2',
+                    },
+                    properties: {
+                      'jira.field.resolution.exclude': '10000,10001',
+                      'jira.field.resolution.include': '10002',
+                    },
+                  },
+                ],
+                statuses: [
+                  {
+                    properties: {
+                      'jira.issue.editable': 'true',
+                    },
+                    statusReference: '11',
+                  },
+                  {
+                    statusReference: '2',
+                  },
+                ],
+              },
+            ],
+            statuses: [
+              {
+                id: '11',
+                name: 'Create',
+                statusReference: '11',
+              },
+              {
+                id: '2',
+                name: 'another one',
+                statusReference: '2',
+              },
+            ],
+          },
+        })
+      })
+      it('should spilt properties to list', async () => {
+        await filter.onFetch(elements)
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].properties).toEqual([
+          { key: 'jira.issue.editable', value: 'true' },
+        ])
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2].properties).toEqual([
+          { key: 'jira.field.resolution.exclude', value: ['10000', '10001'] },
+          { key: 'jira.field.resolution.include', value: ['10002'] },
+        ])
+      })
     })
 
     describe('transition parameters', () => {
@@ -1205,6 +1292,29 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             statuses: [],
           })
         })
+
+        describe('resolution properties', () => {
+          beforeEach(() => {
+            workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.Create].properties = [
+              { key: 'jira.issue.editable', value: 'true' },
+            ]
+            workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2].properties = [
+              { key: 'jira.field.resolution.exclude', value: ['10000', '10001'] },
+              { key: 'jira.field.resolution.include', value: ['10002'] },
+            ]
+          })
+          it('should convert properties to string', async () => {
+            await filter.preDeploy([toChange({ after: workflowInstance })])
+            expect(workflowInstance.value.workflows[0].transitions[0].properties).toEqual({
+              'jira.issue.editable': 'true',
+            })
+            expect(workflowInstance.value.workflows[0].transitions[1].properties).toEqual({
+              'jira.field.resolution.exclude': '10000,10001',
+              'jira.field.resolution.include': '10002',
+            })
+          })
+        })
+
         describe('transition parameters', () => {
           beforeEach(() => {
             const conditions = {

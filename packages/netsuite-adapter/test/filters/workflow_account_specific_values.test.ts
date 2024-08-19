@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -295,6 +287,7 @@ describe('workflow account specific values filter', () => {
                       [SCRIPT_ID]: 'workflowaction124',
                       field: 'STDBODYACCOUNT',
                       defaultvalue: ACCOUNT_SPECIFIC_VALUE,
+                      valuemultiselect: ACCOUNT_SPECIFIC_VALUE,
                       recipient: ACCOUNT_SPECIFIC_VALUE,
                       sender: ACCOUNT_SPECIFIC_VALUE,
                     },
@@ -372,6 +365,7 @@ describe('workflow account specific values filter', () => {
                       [SCRIPT_ID]: 'workflowaction124',
                       conditionformula: '',
                       defaultvalue: '5',
+                      valuemultiselect: ['4'],
                       sender: '-3',
                       recipient: '-4',
                     },
@@ -424,7 +418,7 @@ describe('workflow account specific values filter', () => {
                   sublistId: 'actions',
                   typeSuffix: 'action',
                   customTypes: { customactionaction: 'customaction' },
-                  fields: ['scriptid', 'defaultvalue', 'conditionformula', 'recipient', 'sender'],
+                  fields: ['scriptid', 'defaultvalue', 'conditionformula', 'valuemultiselect', 'recipient', 'sender'],
                   filter: {
                     fieldId: 'scriptid',
                     in: ['workflowaction167', 'workflowaction66', 'workflowaction124'],
@@ -624,6 +618,7 @@ describe('workflow account specific values filter', () => {
                         [SCRIPT_ID]: 'workflowaction124',
                         field: 'STDBODYACCOUNT',
                         defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Account 5)`,
+                        valuemultiselect: `${ACCOUNT_SPECIFIC_VALUE} (Account 4)`,
                         recipient: `${ACCOUNT_SPECIFIC_VALUE} (Salto user 4)`,
                         sender: `${ACCOUNT_SPECIFIC_VALUE} (Salto user 3)`,
                       },

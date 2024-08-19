@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import util from 'util'
@@ -147,17 +139,18 @@ const addNestedInstancesToPackageManifest = async (
   return Object.assign({}, ...(await Promise.all(nestedTypeInfo.nestedInstanceFields.map(addNestedInstancesFromField))))
 }
 
-const addChangeToPackage = async (
+export const addChangeToPackage = async (
   pkg: DeployPackage,
   change: Change<MetadataInstanceElement>,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
+  options?: { forceAddToManifest: boolean },
 ): Promise<MetadataIdsMap> => {
   const instance = getChangeData(change)
   const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
   const instanceMetadataType = await metadataType(instance)
   const instanceApiName = await apiName(instance)
 
-  const addInstanceToManifest = !isWrapperInstance
+  const addInstanceToManifest = options?.forceAddToManifest || !isWrapperInstance
   const addedIds = addInstanceToManifest ? { [instanceMetadataType]: new Set([instanceApiName]) } : {}
   if (isRemovalChange(change)) {
     pkg.delete(assertMetadataObjectType(await instance.getType()), instanceApiName)
@@ -209,6 +202,11 @@ const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: stri
 const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean =>
   getUnFoundDeleteName(message, deletionsPackageName) !== undefined
 
+const canceledDeployError = (isCheckOnly: boolean): SaltoError => ({
+  message: `${isCheckOnly ? 'Validation' : 'Deployment'} was canceled.`,
+  severity: 'Error',
+})
+
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
@@ -244,6 +242,13 @@ const processDeployResponse = (
     }
     log.warn('unknown messageType %s', messageType)
     return 'Warning'
+  }
+
+  if (result.status === 'Canceled') {
+    return {
+      successfulFullNames: [],
+      errors: [canceledDeployError(result.checkOnly)],
+    }
   }
 
   const allFailureMessages = makeArray(result.details).flatMap(detail => makeArray(detail.componentFailures))
@@ -381,7 +386,7 @@ const getChangeError = async (change: Change): Promise<SaltoElementError | undef
   return undefined
 }
 
-const validateChanges = async (
+export const validateChanges = async (
   changes: ReadonlyArray<Change>,
 ): Promise<{
   validChanges: ReadonlyArray<Change<MetadataInstanceElement>>

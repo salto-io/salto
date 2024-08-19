@@ -1,26 +1,19 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, createMatchingObjectType } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
+import {
+  createDefaultInstanceFromType,
+  createMatchingObjectType,
+  createOptionsTypeGuard,
+} from '@salto-io/adapter-utils'
 import { configType } from './config/config'
 import * as constants from './constants'
-
-const log = logger(module)
 
 const optionsElemId = new ElemID(constants.JIRA, 'configOptionsType')
 
@@ -36,21 +29,10 @@ export const optionsType = createMatchingObjectType<ConfigOptionsType>({
     enableJSM: { refType: BuiltinTypes.BOOLEAN },
   },
 })
-const isOptionsTypeInstance = (
-  instance: InstanceElement,
-): instance is InstanceElement & { value: ConfigOptionsType } => {
-  if (instance.refType.elemID.isEqual(optionsElemId)) {
-    return true
-  }
-  log.error(
-    `Received an invalid instance for config options. Received instance with refType ElemId full name: ${instance.refType.elemID.getFullName()}`,
-  )
-  return false
-}
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options !== undefined && isOptionsTypeInstance(options)) {
+  if (options !== undefined && createOptionsTypeGuard<ConfigOptionsType>(optionsElemId)(options)) {
     if (options.value.enableScriptRunnerAddon) {
       defaultConf.value.fetch.enableScriptRunnerAddon = true
     }

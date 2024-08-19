@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -46,7 +38,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { CLIENT_CONFIG, FETCH_CONFIG, OLD_API_DEFINITIONS_CONFIG } from './config'
-import { configType, OktaUserConfig } from './user_config'
+import { configType, getExcludeJWKConfigSuggestion, OktaUserConfig, OktaUserFetchConfig } from './user_config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -61,13 +53,13 @@ import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import accessPolicyRuleConstraintsFilter from './filters/access_policy_rule_constraints'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
-import appUserSchemaDeploymentFilter from './filters/app_user_schema_deployment'
+import appUserSchemaAdditionAndRemovalFilter from './filters/app_user_schema_deployment'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
 import userFilter from './filters/user'
 import serviceUrlFilter from './filters/service_url'
-import schemaFieldsRemovalFilter from './filters/schema_field_removal'
+import schemaDeploymentFilter from './filters/schema_deployment'
 import appLogoFilter from './filters/app_logo'
 import brandThemeRemovalFilter from './filters/brand_theme_removal'
 import brandThemeFilesFilter from './filters/brand_theme_files'
@@ -83,6 +75,7 @@ import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
+  JWK_TYPE_NAME,
   OKTA,
   POLICY_PRIORITY_TYPE_NAMES,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
@@ -118,8 +111,8 @@ const DEFAULT_FILTERS = [
   addImportantValues, // TODO SALTO-5607 - move to infra
   accessPolicyRuleConstraintsFilter,
   defaultPolicyRuleDeployment,
-  appUserSchemaDeploymentFilter,
-  schemaFieldsRemovalFilter,
+  appUserSchemaAdditionAndRemovalFilter,
+  schemaDeploymentFilter,
   appLogoFilter,
   brandThemeRemovalFilter,
   brandThemeFilesFilter,
@@ -160,8 +153,27 @@ export interface OktaAdapterParams {
   elementsSource: ReadOnlyElementsSource
   isOAuthLogin: boolean
   adminClient?: OktaClient
+  accountName?: string
 }
 
+/**
+ * Temporary adjusment to support migration of JsonWebKey type into the exclude list
+ */
+const createElementQueryWithJsonWebKey = (
+  fetchConfig: OktaUserFetchConfig,
+  criteria: Record<string, elementUtils.query.QueryCriterion>,
+): elementUtils.query.ElementQuery => {
+  const isJWKExcluded = fetchConfig.exclude.find(fetchEnrty => fetchEnrty.type === JWK_TYPE_NAME)
+  const isJWKIncluded = fetchConfig.include.find(fetchEntry => fetchEntry.type === JWK_TYPE_NAME)
+  const updatedConfig =
+    !isJWKExcluded && !isJWKIncluded
+      ? {
+          ...fetchConfig,
+          exclude: fetchConfig.exclude.concat({ type: JWK_TYPE_NAME }),
+        }
+      : fetchConfig
+  return elementUtils.query.createElementQuery(updatedConfig, criteria)
+}
 export default class OktaAdapter implements AdapterOperations {
   private createFiltersRunner: (usersPromise?: Promise<User[]>) => Required<Filter>
   private client: OktaClient
@@ -174,6 +186,7 @@ export default class OktaAdapter implements AdapterOperations {
   private adminClient?: OktaClient
   private fixElementsFunc: FixElementsFunc
   private definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
+  private accountName?: string
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -184,6 +197,7 @@ export default class OktaAdapter implements AdapterOperations {
     elementsSource,
     isOAuthLogin,
     adminClient,
+    accountName,
   }: OktaAdapterParams) {
     this.userConfig = userConfig
     this.configInstance = configInstance
@@ -195,7 +209,8 @@ export default class OktaAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
+    this.fetchQuery = createElementQueryWithJsonWebKey(this.userConfig.fetch, fetchCriteria)
+    this.accountName = accountName
 
     const definitions = {
       // TODO - SALTO-5746 - only provide adminClient when it is defined
@@ -211,13 +226,16 @@ export default class OktaAdapter implements AdapterOperations {
       sources: { openAPI: [OPEN_API_DEFINITIONS] },
     }
 
-    this.definitions = {
-      ...definitions,
-      fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
-        userElemID: userConfig.fetch.elemID,
-        fetchConfig: definitions.fetch,
-      }),
-    }
+    this.definitions = definitionsUtils.mergeDefinitionsWithOverrides(
+      {
+        ...definitions,
+        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
+          userElemID: userConfig.fetch.elemID,
+          fetchConfig: definitions.fetch,
+        }),
+      },
+      this.accountName,
+    )
 
     this.paginator = paginator
 
@@ -300,7 +318,7 @@ export default class OktaAdapter implements AdapterOperations {
     )
   }
 
-  @logDuration('fetching account configuration')
+  @logDuration('generating instances and types from service')
   async getElements(): Promise<fetchUtils.FetchElements> {
     const typesByTypeName = await this.getAllSwaggerTypes()
 
@@ -339,6 +357,7 @@ export default class OktaAdapter implements AdapterOperations {
     const configChanges = (getElementsConfigChanges ?? [])
       .concat(classicOrgConfigSuggestion ?? [])
       .concat(oauthConfigChange ?? [])
+      .concat(getExcludeJWKConfigSuggestion(this.configInstance) ?? [])
     const updatedConfig =
       !_.isEmpty(configChanges) && this.configInstance
         ? definitionsUtils.getUpdatedConfigFromConfigChanges({

@@ -1,25 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS } from '../../src/client'
+import { RATE_LIMIT_DEFAULT_OPTIONS } from '../../src/client'
 import { RateLimiter, RateLimiterOptions } from '../../src/client/rate_limiter'
 
 describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck => {
-  const DEFAULT_RATE_LIMITER = new RateLimiter({ useBottleneck })
+  let DEFAULT_RATE_LIMITER: RateLimiter
 
   beforeEach(() => {
+    DEFAULT_RATE_LIMITER = new RateLimiter({ useBottleneck })
     jest.resetAllMocks() // Reset all mocks after each test
     jest.restoreAllMocks()
   })
@@ -70,7 +63,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
       { delayMS: 1, expected: 1 },
       { delayMS: 0, expected: 0 },
       { delayMS: -1, expected: 0 },
-      { delayMS: undefined, expected: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS },
+      { delayMS: undefined, expected: RATE_LIMIT_DEFAULT_OPTIONS.delayMS },
     ])('should handle boundary values for delayMS', ({ delayMS, expected }) => {
       const rateLimiter = new RateLimiter({ delayMS, useBottleneck })
       expect(rateLimiter.options.delayMS).toBe(expected)
@@ -143,7 +136,7 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
     it('should throw an error when startPaused and useBottleneck are set to true', () => {
       if (useBottleneck) {
         expect(() => new RateLimiter({ startPaused: true, useBottleneck })).toThrow(
-          "Bottleneck queue can't be paused and thus can't be initialized with startPaused.",
+          "Bottleneck queue can't be paused and thus can't be initialized with startPaused==true or pauseDuringDelay==true.",
         )
       } else {
         const rateLimiter = new RateLimiter({ startPaused: true, useBottleneck })
@@ -186,77 +179,218 @@ describe.each([true, false])('RateLimiter (useBottleneck: %s)', useBottleneck =>
       expect(asyncTask1).toHaveBeenCalledWith(1)
       expect(asyncTask2).toHaveBeenCalledWith(2)
     })
-  })
 
-  it('should add a single async function to the queue and execute it', async () => {
-    const rateLimiter = new RateLimiter({ useBottleneck })
+    it('should add a single async function to the queue and execute it', async () => {
+      const rateLimiter = new RateLimiter({ useBottleneck })
 
-    const asyncTask = jest.fn(async (taskId: number) => taskId)
+      const asyncTask = jest.fn(async (taskId: number) => taskId)
 
-    const result = await rateLimiter.add(() => asyncTask(1))
-    expect(result).toBe(1)
-    expect(asyncTask).toHaveBeenCalledWith(1)
-  })
-
-  it('should add multiple tasks to the queue and execute them', async () => {
-    const rateLimiter = new RateLimiter({ useBottleneck })
-
-    const asyncTask = jest.fn(async (taskId: number) => taskId)
-
-    const tasks = [() => asyncTask(1), () => asyncTask(2), () => asyncTask(3)]
-
-    const results = await Promise.all(rateLimiter.addAll(tasks))
-
-    expect(results).toEqual([1, 2, 3])
-    expect(asyncTask).toHaveBeenCalledWith(1)
-    expect(asyncTask).toHaveBeenCalledWith(2)
-    expect(asyncTask).toHaveBeenCalledWith(3)
-  })
-  it('should properly calculate the next delay for a task.', () => {
-    let timeElapsed = 0
-    jest.spyOn(Date, 'now').mockReturnValue(timeElapsed) // Mock current time
-    const delayMS = 500
-    const rateLimiter = new RateLimiter({ delayMS })
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.nextDelay()).toBe(delayMS)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.nextDelay()).toBe(delayMS * 2)
-
-    // Partial delay
-    timeElapsed = 100
-    jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.nextDelay()).toBe(delayMS * 3 - timeElapsed)
-
-    // No delay needed
-    // @ts-expect-error accessing private member/function
-    timeElapsed = rateLimiter.prevInvocationTime + delayMS
-    jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.nextDelay()).toBe(0)
-  })
-  it('should properly wrap task with delay.', async () => {
-    const delayMS = 500
-    const rateLimiter = new RateLimiter({ delayMS })
-
-    const timer = {
-      // @ts-expect-error accessing private member/function
-      startTime: rateLimiter.prevInvocationTime,
-      timeElapsed: undefined,
-    }
-    // @ts-expect-error accessing private member/function
-    const delayedTask = rateLimiter.getDelayedTask(() => {
-      timer.timeElapsed = Date.now() - timer.startTime
+      const result = await rateLimiter.add(() => asyncTask(1))
+      expect(result).toBe(1)
+      expect(asyncTask).toHaveBeenCalledWith(1)
     })
-    await delayedTask()
-    const { timeElapsed, startTime } = timer
 
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.prevInvocationTime).toBeGreaterThanOrEqual(startTime + delayMS)
-    // @ts-expect-error accessing private member/function
-    expect(rateLimiter.prevInvocationTime).toBeLessThan(startTime + delayMS * 2)
+    it('should add multiple tasks to the queue and execute them', async () => {
+      const rateLimiter = new RateLimiter({ useBottleneck })
 
-    expect(timeElapsed).toBeGreaterThanOrEqual(delayMS)
-    expect(timeElapsed).toBeLessThan(delayMS * 2)
+      const asyncTask = jest.fn(async (taskId: number) => taskId)
+
+      const tasks = [() => asyncTask(1), () => asyncTask(2), () => asyncTask(3)]
+
+      const results = await Promise.all(rateLimiter.addAll(tasks))
+
+      expect(results).toEqual([1, 2, 3])
+      expect(asyncTask).toHaveBeenCalledWith(1)
+      expect(asyncTask).toHaveBeenCalledWith(2)
+      expect(asyncTask).toHaveBeenCalledWith(3)
+    })
+    it('should properly calculate the next delay for a task.', () => {
+      let timeElapsed = 0
+      jest.spyOn(Date, 'now').mockReturnValue(timeElapsed) // Mock current time
+      const delayMS = 500
+      const rateLimiter = new RateLimiter({ delayMS })
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.nextDelay()).toBe(delayMS)
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.nextDelay()).toBe(delayMS * 2)
+
+      // Partial delay
+      timeElapsed = 100
+      jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.nextDelay()).toBe(delayMS * 3 - timeElapsed)
+
+      // No delay needed
+      // @ts-expect-error accessing private member/function
+      timeElapsed = rateLimiter.prevInvocationTime + delayMS
+      jest.spyOn(Date, 'now').mockReturnValue(timeElapsed)
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.nextDelay()).toBe(0)
+    })
+    it('should properly wrap task with delay.', async () => {
+      const delayMS = 500
+      const rateLimiter = new RateLimiter({ delayMS })
+
+      const timer = {
+        // @ts-expect-error accessing private member/function
+        startTime: rateLimiter.prevInvocationTime,
+        timeElapsed: 0,
+      }
+      // @ts-expect-error accessing private member/function
+      const delayedTask = rateLimiter.getDelayedTask(() => {
+        timer.timeElapsed = Date.now() - timer.startTime
+      })
+      await delayedTask()
+      const { timeElapsed, startTime } = timer
+
+      const toleranceMS = 5 // required tolerance for delays
+
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.prevInvocationTime).toBeGreaterThanOrEqual(startTime + delayMS - toleranceMS)
+      // @ts-expect-error accessing private member/function
+      expect(rateLimiter.prevInvocationTime).toBeLessThan(startTime + delayMS * 2 + toleranceMS)
+
+      expect(timeElapsed).toBeGreaterThanOrEqual(delayMS - toleranceMS)
+      expect(timeElapsed).toBeLessThan(delayMS * 2 + toleranceMS)
+    })
+  })
+  describe('Configuring retry', () => {
+    const errorMessage = 'Some error'
+    const maxRetries = 2
+    const retryDelayMS = 50
+    const toleranceMS = 5
+
+    let throwingTask: () => Promise<never>
+    let retryPredicate: (numAttempts: number, error: Error) => boolean
+    let calculateRetryDelayMS: (numAttempts: number, error: Error) => number
+
+    beforeEach(() => {
+      throwingTask = jest.fn(async () => {
+        throw new Error(errorMessage)
+      })
+      retryPredicate = jest.fn(
+        (numAttempts: number, error: Error): boolean =>
+          error instanceof Error && error.message === errorMessage && numAttempts < maxRetries,
+      )
+      calculateRetryDelayMS = jest.fn((numAttempts: number, error: Error): number =>
+        error instanceof Error && error.message === errorMessage && numAttempts < maxRetries
+          ? (numAttempts + 1) * retryDelayMS
+          : 0,
+      )
+    })
+    it('should not retry if not configured.', async () => {
+      await expect(DEFAULT_RATE_LIMITER.add(throwingTask)).rejects.toThrow(errorMessage)
+      expect(DEFAULT_RATE_LIMITER.counters.retries).toEqual(0)
+      expect(DEFAULT_RATE_LIMITER.counters.failed).toEqual(1)
+    })
+    it('should retry if configured.', async () => {
+      const rateLimiter = new RateLimiter({ retryPredicate, useBottleneck })
+
+      await expect(rateLimiter.add(throwingTask)).rejects.toThrow(errorMessage)
+      expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(rateLimiter.counters.retries).toEqual(maxRetries)
+      expect(rateLimiter.counters.failed).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.total).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.done).toEqual(maxRetries + 1)
+    })
+    it('should delay between retries.', async () => {
+      const startTime = Date.now()
+      const rateLimiter = new RateLimiter({ retryPredicate, calculateRetryDelayMS })
+
+      await expect(rateLimiter.add(throwingTask)).rejects.toThrow(errorMessage)
+      const timeElapsed = Date.now() - startTime
+
+      expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxRetries)
+
+      let expectedTimeElapsed = 0
+      for (let index = 1; index <= maxRetries; index += 1) {
+        expectedTimeElapsed += index * retryDelayMS
+      }
+      expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed - toleranceMS)
+      expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
+      expect(rateLimiter.counters.retries).toEqual(maxRetries)
+      expect(rateLimiter.counters.failed).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.total).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.done).toEqual(maxRetries + 1)
+    })
+    it('should delay between retries without affecting other jobs when pauseDuringRetryDelay==false.', async () => {
+      const startTime = Date.now()
+      const rateLimiter = new RateLimiter({
+        retryPredicate,
+        calculateRetryDelayMS,
+        useBottleneck,
+        maxConcurrentCalls: 1,
+        delayMS: 0,
+      })
+      const timingTask = jest.fn(async () => Date.now() - startTime)
+      const thrownRes = rateLimiter.add(throwingTask)
+      const timingRes = await rateLimiter.add(timingTask)
+      await expect(thrownRes).rejects.toThrow(errorMessage)
+      expect(timingRes).toBeGreaterThanOrEqual(0)
+      expect(timingRes).toBeLessThan(retryDelayMS + toleranceMS)
+
+      const timeElapsed = Date.now() - startTime
+
+      expect(timingTask).toHaveBeenCalledTimes(1)
+      expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
+      expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxRetries)
+
+      let expectedTimeElapsed = 0
+      for (let index = 1; index <= maxRetries; index += 1) {
+        expectedTimeElapsed += index * retryDelayMS
+      }
+      expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed - toleranceMS)
+      expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
+      expect(rateLimiter.counters.retries).toEqual(maxRetries)
+      expect(rateLimiter.counters.failed).toEqual(maxRetries + 1)
+      expect(rateLimiter.counters.total).toEqual(maxRetries + 1 + 1)
+      expect(rateLimiter.counters.done).toEqual(maxRetries + 1 + 1)
+      expect(rateLimiter.counters.succeeded).toEqual(1)
+    })
+    it('should pause entire queue on retry if configured to do so', async () => {
+      if (!useBottleneck) {
+        const startTime = Date.now()
+        const rateLimiter = new RateLimiter({
+          retryPredicate,
+          calculateRetryDelayMS,
+          pauseDuringRetryDelay: true,
+          useBottleneck,
+          maxConcurrentCalls: 1,
+          delayMS: 0,
+          startPaused: true,
+        })
+        const timingTask = jest.fn(async () => Date.now() - startTime)
+
+        const thrownRes = rateLimiter.add(throwingTask)
+        const timingRes = rateLimiter.add(timingTask)
+        rateLimiter.resume()
+
+        await expect(thrownRes).rejects.toThrow(errorMessage)
+        expect(await timingRes).toBeGreaterThanOrEqual(retryDelayMS)
+
+        const timeElapsed = Date.now() - startTime
+
+        expect(timingTask).toHaveBeenCalledTimes(1)
+        expect(throwingTask).toHaveBeenCalledTimes(maxRetries + 1)
+        expect(retryPredicate).toHaveBeenCalledTimes(maxRetries + 1)
+        expect(calculateRetryDelayMS).toHaveBeenCalledTimes(maxRetries + 1)
+
+        let expectedTimeElapsed = 0
+        for (let index = 1; index <= maxRetries; index += 1) {
+          expectedTimeElapsed += index * retryDelayMS
+        }
+        expect(timeElapsed).toBeGreaterThanOrEqual(expectedTimeElapsed)
+        expect(timeElapsed).toBeLessThanOrEqual(expectedTimeElapsed * 2 + toleranceMS)
+        expect(rateLimiter.counters.retries).toEqual(maxRetries)
+        expect(rateLimiter.counters.failed).toEqual(maxRetries + 1)
+        expect(rateLimiter.counters.total).toEqual(maxRetries + 1 + 1)
+        expect(rateLimiter.counters.done).toEqual(maxRetries + 1 + 1)
+        expect(rateLimiter.counters.succeeded).toEqual(1)
+      }
+    })
   })
 })

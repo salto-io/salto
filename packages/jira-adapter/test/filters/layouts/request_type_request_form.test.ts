@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   filterUtils,
@@ -32,7 +24,7 @@ import {
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
-import JiraClient from '../../../src/client/client'
+import JiraClient, { GQL_BASE_URL_GIRA } from '../../../src/client/client'
 import requestTypeLayoutsFilter from '../../../src/filters/layouts/request_type_request_form'
 import { getFilterParams, mockClient } from '../../utils'
 import { JIRA, PROJECT_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
@@ -111,7 +103,7 @@ describe('requestTypeLayoutsFilter', () => {
 
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             data: {
               issueLayoutConfiguration: {
@@ -217,7 +209,7 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it('should not add missing reference if enableMissingRef is false', async () => {
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             data: {
               issueLayoutConfiguration: {
@@ -321,7 +313,7 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it('should add request form when metadata is null', async () => {
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             data: {
               issueLayoutConfiguration: {
@@ -365,7 +357,7 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it("should remove requestType from elements if couldn't fetch requestType layouts since it does not exist or user does not have required permissions ", async () => {
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             errors: [
               {
@@ -391,7 +383,7 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it("should not remove requestType from elements if couldn't fetch requestType layouts for different error ", async () => {
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return {
             errors: [
               {

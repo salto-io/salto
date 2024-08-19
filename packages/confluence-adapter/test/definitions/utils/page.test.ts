@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -25,11 +17,11 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
 import {
-  adjustPageOnModification,
   putHomepageIdInAdditionContext,
   homepageAdditionToModification,
-  createAdjustUserReferencesReverse,
   createAdjustUserReferences,
+  adjustPageOnModification,
+  adjustUserReferencesOnPageReverse,
 } from '../../../src/definitions/utils'
 
 describe('page definitions utils', () => {
@@ -40,41 +32,6 @@ describe('page definitions utils', () => {
     after: new InstanceElement('mockSpaceName', spaceObjectType, { id: 'mockSpaceId' }),
   })
   describe('adjustPageOnModification', () => {
-    describe('increasePageVersion', () => {
-      it('should increase the page version number', async () => {
-        const args = {
-          typeName: 'mockType',
-          context: {
-            elementSource: buildElementsSourceFromElements([]),
-            changeGroup: {
-              changes: [],
-              groupID: 'group-id',
-            },
-            sharedContext: {},
-            change: pageChange,
-          },
-          value: { version: { number: 1 } },
-        }
-        expect((await adjustPageOnModification(args)).value.version.number).toEqual(2)
-      })
-
-      it('should return version = 2 if the version number is not a number (homepage addition case)', async () => {
-        const args = {
-          typeName: 'mockType',
-          context: {
-            elementSource: buildElementsSourceFromElements([]),
-            changeGroup: {
-              changes: [],
-              groupID: 'group-id',
-            },
-            sharedContext: {},
-            change: pageChange,
-          },
-          value: { version: { number: 'not a number' } },
-        }
-        expect((await adjustPageOnModification(args)).value.version).toEqual({ number: 2 })
-      })
-    })
     describe('updateHomepageId', () => {
       it('should do nothing if there is no space change in the change group', async () => {
         const args = {
@@ -146,7 +103,6 @@ describe('page definitions utils', () => {
             notUser: 'not',
           },
         }
-        const adjustUserReferencesOnPageReverse = createAdjustUserReferencesReverse(PAGE_TYPE_NAME)
         expect((await adjustUserReferencesOnPageReverse(args)).value).toEqual({
           authorId: 'authorId',
           ownerId: 'ownerId',

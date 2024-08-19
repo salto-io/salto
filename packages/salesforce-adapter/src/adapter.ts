@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   TypeElement,
@@ -117,6 +109,7 @@ import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
+import flowCoordinatesFilter from './filters/flow_coordinates'
 import { getConfigFromConfigChanges } from './config_change'
 import {
   LocalFilterCreator,
@@ -269,6 +262,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: importantValuesFilter },
   { creator: hideTypesFolder },
   { creator: generatedDependenciesFilter },
+  { creator: flowCoordinatesFilter },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
 ]
@@ -361,6 +355,41 @@ const METADATA_TO_RETRIEVE = [
   'Workflow',
 ]
 
+export const NESTED_METADATA_TYPES = {
+  CustomLabels: {
+    nestedInstanceFields: ['labels'],
+    isNestedApiNameRelative: false,
+  },
+  AssignmentRules: {
+    nestedInstanceFields: ['assignmentRule'],
+    isNestedApiNameRelative: true,
+  },
+  AutoResponseRules: {
+    nestedInstanceFields: ['autoresponseRule'],
+    isNestedApiNameRelative: true,
+  },
+  EscalationRules: {
+    nestedInstanceFields: ['escalationRule'],
+    isNestedApiNameRelative: true,
+  },
+  MatchingRules: {
+    nestedInstanceFields: ['matchingRules'],
+    isNestedApiNameRelative: true,
+  },
+  SharingRules: {
+    nestedInstanceFields: ['sharingCriteriaRules', 'sharingGuestRules', 'sharingOwnerRules', 'sharingTerritoryRules'],
+    isNestedApiNameRelative: true,
+  },
+  Workflow: {
+    nestedInstanceFields: Object.keys(WORKFLOW_FIELD_TO_TYPE),
+    isNestedApiNameRelative: true,
+  },
+  CustomObject: {
+    nestedInstanceFields: [...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), 'fields'],
+    isNestedApiNameRelative: true,
+  },
+}
+
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
 export const SYSTEM_FIELDS = [
   'ConnectionReceivedId',
@@ -417,45 +446,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
-    nestedMetadataTypes = {
-      CustomLabels: {
-        nestedInstanceFields: ['labels'],
-        isNestedApiNameRelative: false,
-      },
-      AssignmentRules: {
-        nestedInstanceFields: ['assignmentRule'],
-        isNestedApiNameRelative: true,
-      },
-      AutoResponseRules: {
-        nestedInstanceFields: ['autoresponseRule'],
-        isNestedApiNameRelative: true,
-      },
-      EscalationRules: {
-        nestedInstanceFields: ['escalationRule'],
-        isNestedApiNameRelative: true,
-      },
-      MatchingRules: {
-        nestedInstanceFields: ['matchingRules'],
-        isNestedApiNameRelative: true,
-      },
-      SharingRules: {
-        nestedInstanceFields: [
-          'sharingCriteriaRules',
-          'sharingGuestRules',
-          'sharingOwnerRules',
-          'sharingTerritoryRules',
-        ],
-        isNestedApiNameRelative: true,
-      },
-      Workflow: {
-        nestedInstanceFields: Object.keys(WORKFLOW_FIELD_TO_TYPE),
-        isNestedApiNameRelative: true,
-      },
-      CustomObject: {
-        nestedInstanceFields: [...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), 'fields'],
-        isNestedApiNameRelative: true,
-      },
-    },
+    nestedMetadataTypes = NESTED_METADATA_TYPES,
     filterCreators = defaultFilters,
     client,
     getElemIdFunc,

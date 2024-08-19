@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -24,22 +16,37 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { JiraConfig } from '../../config/config'
 import { FilterCreator } from '../../filter'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
+import JiraClient from '../../client/client'
 
 const FIELD_CONFIGURATION_TYPE_NAME = 'FieldConfiguration'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
+
+const putFieldItemsChunk = async (
+  client: JiraClient,
+  parentId: string,
+  fieldsChunk: Values[],
+): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> =>
+  client.put({
+    url: `/rest/api/3/fieldconfiguration/${parentId}/fields`,
+    data: {
+      fieldConfigurationItems: fieldsChunk,
+    },
+  })
 
 const deployFieldConfigurationItems = async (
   instance: InstanceElement,
-  client: clientUtils.HTTPWriteClientInterface,
+  client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
-  const fields = (instance.value.fields ?? [])
+  const fields: Values[] = (instance.value.fields ?? [])
     .filter((fieldConf: Values) => isResolvedReferenceExpression(fieldConf.id))
     .map((fieldConf: Values) => ({ ...fieldConf, id: fieldConf.id.value.value.id }))
 
@@ -47,16 +54,13 @@ const deployFieldConfigurationItems = async (
     return
   }
 
-  await Promise.all(
-    _.chunk(fields, config.client.fieldConfigurationItemsDeploymentLimit).map(async fieldsChunk =>
-      client.put({
-        url: `/rest/api/3/fieldconfiguration/${instance.value.id}/fields`,
-        data: {
-          fieldConfigurationItems: fieldsChunk,
-        },
-      }),
-    ),
-  )
+  const fieldChunks = _.chunk(fields, config.client.fieldConfigurationItemsDeploymentLimit)
+  if (client.isDataCenter) {
+    // in DC calling deploy in parallel for field configuration items causes deadlocks and data corruption
+    await awu(fieldChunks).forEach(async fieldsChunk => putFieldItemsChunk(client, instance.value.id, fieldsChunk))
+  } else {
+    await Promise.all(fieldChunks.map(async fieldsChunk => putFieldItemsChunk(client, instance.value.id, fieldsChunk)))
+  }
 }
 
 const filter: FilterCreator = ({ config, client }) => ({

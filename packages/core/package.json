@@ -1,7 +1,7 @@
 {
   "name": "@salto-io/core",
   "version": "0.3.61",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "description": "Salto core",
   "repository": {
     "type": "git",
@@ -46,6 +46,7 @@
     "@salto-io/logging": "0.3.61",
     "@salto-io/lowerdash": "0.3.61",
     "@salto-io/microsoft-entra-adapter": "0.3.61",
+    "@salto-io/microsoft-security-adapter": "0.3.61",
     "@salto-io/netsuite-adapter": "0.3.61",
     "@salto-io/node-diff3": "3.1.0-salto.1",
     "@salto-io/okta-adapter": "0.3.61",

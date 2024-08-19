@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -78,6 +70,7 @@ import {
   PayloadWorkflowStatus,
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
   TRANSITION_LIST_FIELDS,
+  WorkflowV2Transition,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_RETRY_PERIODS } from '../../constants'
@@ -92,6 +85,7 @@ import {
   isWorkflowSchemeItem,
   projectHasWorkflowSchemeReference,
 } from '../../change_validators/workflow_scheme_migration'
+import { RESOLUTION_KEY_PATTERN } from '../../references/workflow_properties'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -140,6 +134,26 @@ const fetchWorkflowData = async (paginator: clientUtils.Paginator): Promise<Work
 }
 
 const convertIdsStringToList = (ids: string): string[] => ids.split(',')
+
+const splitResolutionProperties = (transitions: WorkflowV2Transition[]): void => {
+  transitions.forEach(transition => {
+    if (transition.properties !== undefined) {
+      transition.properties = _.mapValues(transition.properties, (value, key) =>
+        new RegExp(RESOLUTION_KEY_PATTERN).test(key) ? value.split(',') : value,
+      )
+    }
+  })
+}
+
+const joinResolutionProperties = (transitions: WorkflowV2Transition[]): void => {
+  transitions.forEach(transition => {
+    if (transition.properties !== undefined) {
+      transition.properties = _.mapValues(transition.properties, (value, key) =>
+        new RegExp(RESOLUTION_KEY_PATTERN).test(key) ? value.join(',') : value,
+      )
+    }
+  })
+}
 
 const convertTransitionParametersFields = (
   workflowName: string,
@@ -223,6 +237,7 @@ const createWorkflowInstances = async ({
       await Promise.all(
         response.data.workflows.map(async workflow => {
           convertTransitionParametersFields(workflow.name, workflow.transitions, convertParametersFieldsToList)
+          splitResolutionProperties(workflow.transitions)
           convertPropertiesToList([...(workflow.statuses ?? []), ...(workflow.transitions ?? [])])
           if (workflow.id === undefined) {
             // should never happen
@@ -689,6 +704,7 @@ const getWorkflowForDeploy = async (
     convertParametersFieldsToString,
   )
   convertPropertiesToMap([...(resolvedInstance.value.statuses ?? []), ...(resolvedInstance.value.transitions ?? [])])
+  joinResolutionProperties(resolvedInstance.value.transitions)
   walkOnElement({ element: resolvedInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
   walkOnElement({ element: resolvedInstance, func: insertConditionGroups })
   return resolvedInstance
@@ -717,14 +733,18 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
   return {
     name: 'workflowFilter',
     onFetch: async (elements: Element[]) => {
-      if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(WORKFLOW_CONFIGURATION_TYPE)) {
+      if (
+        client.isDataCenter ||
+        !config.fetch.enableNewWorkflowAPI ||
+        !fetchQuery.isTypeMatch(WORKFLOW_CONFIGURATION_TYPE)
+      ) {
         return { errors: [] }
       }
       const workflowConfiguration = findObject(elements, WORKFLOW_CONFIGURATION_TYPE)
       if (workflowConfiguration === undefined) {
         log.error('WorkflowConfiguration type was not found')
         return {
-          errors: [workflowFetchError()],
+          errors: [],
         }
       }
       setTypeDeploymentAnnotations(workflowConfiguration)

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -28,8 +20,7 @@ import { PAGE_SIZE, DEFAULT_TIMEOUT_OPTS } from '../config'
 const {
   DEFAULT_RETRY_OPTS,
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
-  RATE_LIMIT_USE_BOTTLENECK,
+  RATE_LIMIT_DEFAULT_OPTIONS,
   throttle,
   logDecorator,
   requiresLogin,
@@ -145,8 +136,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-      delayPerRequestMS: RATE_LIMIT_DEFAULT_DELAY_PER_REQUEST_MS,
-      useBottleneck: RATE_LIMIT_USE_BOTTLENECK,
+      delayPerRequestMS: RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
+      useBottleneck: RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
       // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
       retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
       timeout: DEFAULT_TIMEOUT_OPTS,

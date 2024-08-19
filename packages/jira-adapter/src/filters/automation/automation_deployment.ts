@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   AdditionChange,
@@ -41,7 +33,6 @@ import { FilterCreator } from '../../filter'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
-import { getCloudId } from './cloud_id'
 import { getAutomations } from './automation_fetch'
 import { JiraConfig } from '../../config/config'
 import { PROJECT_TYPE_TO_RESOURCE_TYPE } from './automation_structure'
@@ -508,7 +499,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
-      const cloudId = !client.isDataCenter ? await getCloudId(client) : undefined
+      const cloudId = !client.isDataCenter ? await client.getCloudId() : undefined
       if (isAdditionChange(change)) {
         await createAutomation(getChangeData(change), client, cloudId, config)
         await updateAutomationLabels(change, client, cloudId)

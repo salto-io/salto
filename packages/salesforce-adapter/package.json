@@ -1,7 +1,7 @@
 {
   "name": "@salto-io/salesforce-adapter",
   "version": "0.3.61",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Salesforce adapter",
   "repository": {
     "type": "git",
@@ -31,6 +31,8 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
+    "@salesforce/core": "^8.1.1",
+    "@salesforce/source-deploy-retrieve": "^12.1.4",
     "@salto-io/adapter-api": "0.3.61",
     "@salto-io/adapter-components": "0.3.61",
     "@salto-io/adapter-utils": "0.3.61",

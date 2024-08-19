@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -1470,7 +1462,7 @@ describe('Adapter', () => {
         })
       })
       it('should call getChangedObjects with the right date range', async () => {
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(getElementMock).toHaveBeenCalledWith(
           new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
         )
@@ -1499,7 +1491,7 @@ describe('Adapter', () => {
 
       it('should pass the received query to the client', async () => {
         const getCustomObjectsMock = jest.spyOn(client, 'getCustomObjects')
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
 
         const passedQuery = getCustomObjectsMock.mock.calls[0][1].updatedFetchQuery
         expect(passedQuery.isObjectMatch({ instanceId: 'aaaa', type: 'workflow' })).toBeTruthy()
@@ -1534,7 +1526,6 @@ describe('Adapter', () => {
               },
               filePaths: [],
             },
-            useChangesDetection: false,
           },
           getElemIdFunc: mockGetElemIdFunc,
         })
@@ -1550,12 +1541,11 @@ describe('Adapter', () => {
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: {
             ...config,
-            useChangesDetection: true,
           },
           getElemIdFunc: mockGetElemIdFunc,
         })
 
-        await adapter.fetch(mockFetchOpts)
+        await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(getChangedObjectsMock).toHaveBeenCalled()
       })
     })

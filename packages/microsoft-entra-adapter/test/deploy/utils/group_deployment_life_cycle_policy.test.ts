@@ -1,26 +1,21 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import {
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
 } from '../../../src/definitions/deploy/utils'
 import { contextMock, objectTypeMock } from '../../mocks'
 import { ADAPTER_NAME, GROUP_LIFE_CYCLE_POLICY_FIELD_NAME } from '../../../src/constants'
+
+const { makeArray } = collections.array
 
 const lifeCycleReference = new ReferenceExpression(new ElemID(ADAPTER_NAME, 'obj', 'instance', 'test'), {
   value: { id: 'testLifeCyclePolicyId' },
@@ -73,7 +68,10 @@ describe(`${getGroupLifecyclePolicyGroupModificationRequest.name}`, () => {
         typeName: 'group',
         context: contextMock,
       })
-      expect(adjustedItem?.value).toEqual({ groupId: 'id1' })
+      // Just for TS reasons - since the adjust function can return an array or a single item
+      const adjustedItemAsArray = makeArray(adjustedItem)
+      expect(adjustedItemAsArray).toHaveLength(1)
+      expect(adjustedItemAsArray[0].value).toEqual({ groupId: 'id1' })
     })
   })
 })

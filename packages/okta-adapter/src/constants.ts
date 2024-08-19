@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 export const OKTA = 'okta'
 export const APPLICATION_TYPE_NAME = 'Application'
@@ -55,6 +47,7 @@ export const MFA_POLICY_PRIORITY_TYPE_NAME = 'MultifactorEnrollmentPolicyPriorit
 export const PASSWORD_POLICY_PRIORITY_TYPE_NAME = 'PasswordPolicyPriority'
 export const AUTOMATION_TYPE_NAME = 'Automation'
 export const AUTOMATION_RULE_TYPE_NAME = 'AutomationRule'
+export const JWK_TYPE_NAME = 'JsonWebKey'
 export const ACTIVE_STATUS = 'ACTIVE'
 export const INACTIVE_STATUS = 'INACTIVE'
 export const POLICY_TYPE_NAMES = [
@@ -109,3 +102,4 @@ export const GROUP_PUSH_RULE_TYPE_NAME = 'GroupPushRule'
 export const DOMAIN_TYPE_NAME = 'Domain'
 export const USER_TYPE_NAME = 'User'
 export const SMS_TEMPLATE_TYPE_NAME = 'SmsTemplate'
+export const SCHEMA_TYPES = [GROUP_SCHEMA_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, USER_SCHEMA_TYPE_NAME]

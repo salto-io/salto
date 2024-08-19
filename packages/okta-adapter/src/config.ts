@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ActionName } from '@salto-io/adapter-api'
 import { config as configUtils, definitions } from '@salto-io/adapter-components'
@@ -213,35 +205,6 @@ const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] =
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
-  ApplicationGroupAssignment: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'put',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-      },
-      modify: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'put',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/apps/{appId}/groups/{groupId}',
-        method: 'delete',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-          groupId: 'id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
   AppUserSchema: {
     deployRequests: {
       // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and removals
@@ -259,24 +222,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       remove: {
         url: '',
         method: 'delete',
-      },
-    },
-  },
-  AppLogo: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps/{appId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/apps/{appId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-        },
       },
     },
   },
@@ -306,50 +251,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           typeId: '_parent.0.id',
         },
         omitRequestBody: true,
-      },
-    },
-  },
-  AuthorizationServerPolicy: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies',
-        method: 'post',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
-        method: 'put',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-          policyId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
-        method: 'delete',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-          policyId: 'id',
-        },
-        omitRequestBody: true,
-      },
-      activate: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/activate',
-        method: 'post',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-          policyId: 'id',
-        },
-      },
-      deactivate: {
-        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/deactivate',
-        method: 'post',
-        urlParamsToFields: {
-          authorizationServerId: '_parent.0.id',
-          policyId: 'id',
-        },
       },
     },
   },
@@ -416,64 +317,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         url: '/api/v1/org',
         method: 'put',
         fieldsToIgnore: ['contactTypes'],
-      },
-    },
-  },
-  BrandLogo: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'delete',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-        omitRequestBody: true,
-      },
-    },
-  },
-  FavIcon: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'delete',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-        omitRequestBody: true,
       },
     },
   },
@@ -544,43 +387,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         method: 'post',
         urlParamsToFields: {
           ruleId: 'id',
-        },
-      },
-    },
-  },
-  NetworkZone: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/zones',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/zones/{zoneId}',
-        method: 'put',
-        urlParamsToFields: {
-          zoneId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/zones/{zoneId}',
-        method: 'delete',
-        urlParamsToFields: {
-          zoneId: 'id',
-        },
-        omitRequestBody: true,
-      },
-      activate: {
-        url: '/api/v1/zones/{zoneId}/lifecycle/activate',
-        method: 'post',
-        urlParamsToFields: {
-          zoneId: 'id',
-        },
-      },
-      deactivate: {
-        url: '/api/v1/zones/{zoneId}/lifecycle/deactivate',
-        method: 'post',
-        urlParamsToFields: {
-          zoneId: 'id',
         },
       },
     },

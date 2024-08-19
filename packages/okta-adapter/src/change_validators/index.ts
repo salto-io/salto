@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
@@ -25,12 +17,11 @@ import { appGroupValidator } from './app_group'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
 import { appIntegrationSetupValidator } from './app_integration_setup'
 import { assignedAccessPoliciesValidator } from './assigned_policies'
-import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_fields'
 import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { usersValidator } from './user'
 import { appWithGroupPushValidator } from './app_with_group_push'
 import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
-import { appUserSchemaBaseChangesValidator } from './app_user_schema_base_properties'
+import { schemaBaseChangesValidator } from './app_user_schema_base_properties'
 import { appGroupAssignmentValidator } from './app_group_assignments'
 import { appUrlsValidator } from './app_urls'
 import { profileMappingRemovalValidator } from './profile_mapping_removal'
@@ -41,6 +32,8 @@ import { domainModificationValidator } from './domain_modification'
 import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
 import { brandThemeRemovalValidator } from './brand_theme_removal'
 import { userStatusValidator } from './user_status'
+import { disabledAuthenticatorsInMfaPolicyValidator } from './disabled_authenticators_in_mfa'
+import { oidcIdentityProviderValidator } from './oidc_idp'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -50,6 +43,7 @@ import {
 } from '../config'
 import { OktaUserConfig, ChangeValidatorName } from '../user_config'
 import { OktaOptions } from '../definitions/types'
+import { BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 
 const {
   createCheckDeploymentBasedOnConfigValidator,
@@ -75,6 +69,7 @@ export default ({
     ...Object.keys(oldApiDefsConfig[API_DEFINITIONS_CONFIG].types),
     ...Object.keys(oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types),
   ]
+  const typesHandledByFilters = [FAV_ICON_TYPE_NAME, BRAND_LOGO_TYPE_NAME]
   const typesDeployedWithNewInfra = definitionUtils.queryWithDefault(definitions.deploy?.instances ?? {}).allKeys()
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
@@ -83,11 +78,11 @@ export default ({
         oldApiDefsConfig[API_DEFINITIONS_CONFIG].types,
         oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types,
       ),
-      typesWithNoDeploy: typesDeployedWithNewInfra,
+      typesWithNoDeploy: [...typesDeployedWithNewInfra, ...typesHandledByFilters],
     }),
     createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator<OktaOptions>({
       deployDefinitions: definitions.deploy ?? { instances: {} },
-      typesWithNoDeploy: typesDeployedWithOldInfra,
+      typesWithNoDeploy: [...typesDeployedWithOldInfra, ...typesHandledByFilters],
     }),
     appGroup: appGroupValidator,
     groupRuleStatus: groupRuleStatusValidator,
@@ -97,11 +92,10 @@ export default ({
     userTypeAndSchema: userTypeAndSchemaValidator,
     appIntegrationSetup: appIntegrationSetupValidator(client),
     assignedAccessPolicies: assignedAccessPoliciesValidator,
-    groupSchemaModifyBase: groupSchemaModifyBaseValidator,
     enabledAuthenticators: enabledAuthenticatorsValidator,
     users: usersValidator(client, userConfig, fetchQuery),
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
-    appUserSchemaBaseChanges: appUserSchemaBaseChangesValidator,
+    schemaBaseChanges: schemaBaseChangesValidator,
     appWithGroupPush: appWithGroupPushValidator,
     groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
     appGroupAssignment: appGroupAssignmentValidator,
@@ -114,6 +108,8 @@ export default ({
     domainAddition: domainAdditionValidator,
     domainModification: domainModificationValidator,
     userStatusChanges: userStatusValidator,
+    disabledAuthenticatorsInMfaPolicy: disabledAuthenticatorsInMfaPolicyValidator,
+    oidcIdentityProvider: oidcIdentityProviderValidator,
   }
 
   return createChangeValidator({

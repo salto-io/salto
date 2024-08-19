@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -50,6 +42,7 @@ import {
   GetAllResponse,
   GetResult,
   GetSelectValueResponse,
+  SoapDeployResult,
   isDeployListSuccess,
   isGetAllErrorResponse,
   isGetSelectValueSuccessResponse,
@@ -321,7 +314,7 @@ export default class SoapClient {
   @retryOnBadResponse
   public async addFileCabinetInstances(
     fileCabinetInstances: FileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     const body = {
       record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
     }
@@ -342,25 +335,17 @@ export default class SoapClient {
       throw new Error(`Failed to addList: error code: ${code}, error message: ${message}`)
     }
 
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
-      if (!isWriteResponseSuccess(writeResponse)) {
-        const { code, message } = writeResponse.status.statusDetail[0]
-
-        log.error(
-          `SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`,
-        )
-        return new Error(
-          `SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`,
-        )
-      }
-      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
-    })
+    return SoapClient.parseWriteResponseList(
+      response.writeResponseList.writeResponse,
+      fileCabinetInstances.map(instance => instance.path),
+      'addList',
+    )
   }
 
   @retryOnBadResponse
   public async deleteFileCabinetInstances(
     instances: ExistingFileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     const body = {
       baseRef: instances.map(SoapClient.convertToDeletionRecord),
     }
@@ -382,24 +367,17 @@ export default class SoapClient {
       throw new Error(`Failed to deleteList: error code: ${code}, error message: ${message}`)
     }
 
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
-      if (!isWriteResponseSuccess(writeResponse)) {
-        const { code, message } = writeResponse.status.statusDetail[0]
-        log.error(
-          `SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`,
-        )
-        return Error(
-          `SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`,
-        )
-      }
-      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
-    })
+    return SoapClient.parseWriteResponseList(
+      response.writeResponseList.writeResponse,
+      instances.map(instance => instance.path),
+      'deleteList',
+    )
   }
 
   @retryOnBadResponse
   public async updateFileCabinetInstances(
     fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     const body = {
       record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
     }
@@ -420,19 +398,11 @@ export default class SoapClient {
       throw new Error(`Failed to updateList: error code: ${code}, error message: ${message}`)
     }
 
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
-      if (!isWriteResponseSuccess(writeResponse)) {
-        const { code, message } = writeResponse.status.statusDetail[0]
-
-        log.error(
-          `SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`,
-        )
-        return Error(
-          `SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`,
-        )
-      }
-      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
-    })
+    return SoapClient.parseWriteResponseList(
+      response.writeResponseList.writeResponse,
+      fileCabinetInstances.map(instance => instance.path),
+      'updateList',
+    )
   }
 
   public async getNetsuiteWsdl(): Promise<soap.WSDL> {
@@ -633,21 +603,18 @@ export default class SoapClient {
 
   private static parseWriteResponseList(
     writeResponseList: WriteResponse[],
-    instances: InstanceElement[],
+    instanceIds: string[],
     action: 'updateList' | 'addList' | 'deleteList',
-  ): (number | Error)[] {
+  ): SoapDeployResult[] {
     return writeResponseList.map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
         const { code, message } = writeResponse.status.statusDetail[0]
-
         log.error(
-          `SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`,
+          `SOAP api call ${action} for instance ${instanceIds[index]} failed. error code: ${code}, error message: ${message}`,
         )
-        return Error(
-          `SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`,
-        )
+        return { isSuccess: false, errorMessage: message }
       }
-      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
+      return { isSuccess: true, internalId: writeResponse.baseRef.attributes.internalId }
     })
   }
 
@@ -697,7 +664,7 @@ export default class SoapClient {
     instances: InstanceElement[],
     action: 'updateList' | 'addList',
     hasElemID: HasElemIDFunc,
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     const fullNameToWriteResponse = new Map<string, WriteResponse>()
 
     await this.redeployLockedFieldsWithRetry(
@@ -710,20 +677,20 @@ export default class SoapClient {
 
     return SoapClient.parseWriteResponseList(
       instances.map(({ elemID }) => fullNameToWriteResponse.get(elemID.getFullName())) as WriteResponse[],
-      instances,
+      instances.map(instance => instance.elemID.getFullName()),
       action,
     )
   }
 
-  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<SoapDeployResult[]> {
     return this.runFullDeploy(instances, 'updateList', hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<SoapDeployResult[]> {
     return this.runFullDeploy(instances, 'addList', hasElemID)
   }
 
-  public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async deleteInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
     const body = {
       baseRef: await awu(instances)
         .map(async instance => {
@@ -738,10 +705,14 @@ export default class SoapClient {
         })
         .toArray(),
     }
-    return SoapClient.parseWriteResponseList(await this.runDeployAction(body, 'deleteList'), instances, 'deleteList')
+    return SoapClient.parseWriteResponseList(
+      await this.runDeployAction(body, 'deleteList'),
+      instances.map(instance => instance.elemID.getFullName()),
+      'deleteList',
+    )
   }
 
-  public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async deleteSdfInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
     const body = {
       baseRef: await awu(instances)
         .map(async instance => {
@@ -756,7 +727,11 @@ export default class SoapClient {
         })
         .toArray(),
     }
-    return SoapClient.parseWriteResponseList(await this.runDeployAction(body, 'deleteList'), instances, 'deleteList')
+    return SoapClient.parseWriteResponseList(
+      await this.runDeployAction(body, 'deleteList'),
+      instances.map(instance => instance.elemID.getFullName()),
+      'deleteList',
+    )
   }
 
   private async getAllSearchPages(initialSearchResponse: SearchResponse, type: string): Promise<SearchPageResponse> {

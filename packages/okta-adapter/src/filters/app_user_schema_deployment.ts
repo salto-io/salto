@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import Joi from 'joi'
@@ -20,12 +12,11 @@ import {
   InstanceElement,
   isInstanceChange,
   getChangeData,
-  toChange,
   isAdditionChange,
   AdditionChange,
   ModificationChange,
-  isModificationChange,
-  ElemID,
+  RemovalChange,
+  isAdditionOrRemovalChange,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -33,12 +24,13 @@ import {
   fetch as fetchUtils,
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard, getParents, resolvePath, setPath } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParents } from '@salto-io/adapter-utils'
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployWithStatus } from '../deprecated_deployment'
-import { BASE_PATH } from '../change_validators/app_user_schema_base_properties'
+import { makeSchemaDeployable } from './schema_deployment'
+import { OktaOptions } from '../definitions/types'
 
 const log = logger(module)
 
@@ -55,8 +47,12 @@ const isAppUserSchema = createSchemeGuard<AppUserSchema>(
   'Recieved invalid app user schema response',
 )
 
-const isAppUserSchemaChange = (change: Change): change is Change<InstanceElement> =>
-  isInstanceChange(change) && getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME
+const isAppUserSchemaAdditionOrRemovalChange = (
+  change: Change,
+): change is AdditionChange<InstanceElement> | RemovalChange<InstanceElement> =>
+  isAdditionOrRemovalChange(change) &&
+  isInstanceChange(change) &&
+  getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME
 
 const getAutoCreatedAppUserSchema = async (
   applicationId: string,
@@ -97,7 +93,7 @@ const getAppUserSchemaInstance = (
   fieldsToOmit: string[],
 ): InstanceElement => {
   const createdAppUserSchemaInstance = appUserSchemaInstance.clone()
-  createdAppUserSchemaInstance.value = _.omit(autoCreatedappUserSchema, [...Object.keys(fieldsToOmit), 'name'])
+  createdAppUserSchemaInstance.value = _.omit(autoCreatedappUserSchema, fieldsToOmit)
   return createdAppUserSchemaInstance
 }
 
@@ -125,32 +121,22 @@ const makeModificationFromAddition = async (
     appUserSchemaInstance,
     fieldsToOmit,
   )
-  return { action: 'modify', data: { before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance.clone() } }
-}
-
-const getBaseElemID = (appUserSchemaInstance: InstanceElement): ElemID =>
-  appUserSchemaInstance.elemID.createNestedID(...BASE_PATH)
-
-const deployModificationChange = async (
-  change: ModificationChange<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-  apiDefinitions: OktaSwaggerApiConfig,
-): Promise<void> => {
-  const { before } = change.data
-  const after = change.data.after.clone()
-  const beforeBaseElemId = getBaseElemID(before)
-  setPath(after, getBaseElemID(after), resolvePath(before, beforeBaseElemId))
-  await defaultDeployWithStatus(toChange({ before, after }), client, apiDefinitions)
+  return {
+    action: 'modify',
+    data: { before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance.clone() },
+  }
 }
 
 const deployAdditionChange = async (
   change: AdditionChange<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-  fieldsToOmit: string[],
+  definitions: definitionsUtils.ApiDefinitions<OktaOptions>,
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
+  const fieldsToOmit = fetchUtils.element.getFieldsToOmit(definitions, APP_USER_SCHEMA_TYPE_NAME)
   const modifiedChange = await makeModificationFromAddition(change, client, fieldsToOmit)
-  return deployModificationChange(modifiedChange, client, apiDefinitions)
+  makeSchemaDeployable(modifiedChange, {})
+  await defaultDeployWithStatus(modifiedChange, client, apiDefinitions)
 }
 
 const deployRemovalChange = async (
@@ -164,38 +150,24 @@ const deployRemovalChange = async (
   }
 }
 
-const deployChange = async <Options extends definitionsUtils.APIDefinitionsOptions = {}>(
-  change: Change<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
-  definitions: definitionsUtils.ApiDefinitions<Options>,
-  apiDefinitions: OktaSwaggerApiConfig,
-): Promise<void> => {
-  if (isAdditionChange(change)) {
-    const fieldsToOmit = fetchUtils.element.getFieldsToOmit(definitions, APP_USER_SCHEMA_TYPE_NAME)
-    return deployAdditionChange(change, client, fieldsToOmit, apiDefinitions)
-  }
-  if (isModificationChange(change)) {
-    return deployModificationChange(change, client, apiDefinitions)
-  }
-  return deployRemovalChange(change, client)
-}
-
 /**
  * Deploy changes of appUserSchema.
  * additions - changing them to modification changes,
  * because appUserSchema automatically created by the service when deploying new Application
- * modifications - changing the base field to the original value because Okta's API doesn't support changing it
  * removals - verifying the parent application is deleted. appUserSchema is deleted if and only if the parent application is deleted
  */
 const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
-  name: 'appUserSchemaDeploymentFilter',
+  name: 'appUserSchemaAdditionAndRemovalFilter',
   deploy: async changes => {
     const client = definitions.clients.options.main.httpClient
-    const [relevantChanges, leftoverChanges] = _.partition(changes, isAppUserSchemaChange)
+    const [relevantChanges, leftoverChanges] = _.partition(changes, isAppUserSchemaAdditionOrRemovalChange)
 
-    const deployResult = await deployChanges(relevantChanges, async change =>
-      deployChange(change, client, definitions, oldApiDefinitions[API_DEFINITIONS_CONFIG]),
-    )
+    const deployResult = await deployChanges(relevantChanges, async change => {
+      if (isAdditionChange(change)) {
+        return deployAdditionChange(change, client, definitions, oldApiDefinitions[API_DEFINITIONS_CONFIG])
+      }
+      return deployRemovalChange(change, client)
+    })
 
     return {
       leftoverChanges,

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Change, InstanceElement, StaticFile, getChangeData, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -779,13 +771,13 @@ describe('suiteapp_file_cabinet', () => {
   describe('deploy', () => {
     beforeEach(() => {
       mockSuiteAppClient.updateFileCabinetInstances.mockImplementation(async fileCabinetInstances =>
-        fileCabinetInstances.map(({ id }: { id: number }) => id),
+        fileCabinetInstances.map(({ id }: { id: number }) => ({ isSuccess: true, internalId: String(id) })),
       )
       mockSuiteAppClient.addFileCabinetInstances.mockImplementation(async fileCabinetInstances =>
-        fileCabinetInstances.map(() => _.random(101, 200)),
+        fileCabinetInstances.map(() => ({ isSuccess: true, internalId: String(_.random(101, 200)) })),
       )
       mockSuiteAppClient.deleteFileCabinetInstances.mockImplementation(async fileCabinetInstances =>
-        fileCabinetInstances.map(({ id }: { id: number }) => id),
+        fileCabinetInstances.map(({ id }: { id: number }) => ({ isSuccess: true, internalId: String(id) })),
       )
     })
 
@@ -823,7 +815,10 @@ describe('suiteapp_file_cabinet', () => {
       })
 
       it('should return applied changes for successful updates and errors for others', async () => {
-        mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([0, new Error('someError')])
+        mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([
+          { isSuccess: true, internalId: '0' },
+          { isSuccess: false, errorMessage: 'someError' },
+        ])
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient).deploy(
           changes.slice(0, 2),
           'update',
@@ -963,7 +958,7 @@ describe('suiteapp_file_cabinet', () => {
           }),
         ]
         mockSuiteAppClient.addFileCabinetInstances.mockImplementation(async fileCabinetInstances =>
-          fileCabinetInstances.map(() => new Error('some error')),
+          fileCabinetInstances.map(() => ({ isSuccess: false, errorMessage: 'some error' })),
         )
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient).deploy(
           changes,

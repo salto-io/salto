@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios, { AxiosHeaders } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -27,7 +19,7 @@ import {
 } from '../../src/client'
 import { createConnection, Credentials } from './common'
 import { TimeoutError } from '../../src/client/http_client'
-import { RATE_LIMIT_USE_BOTTLENECK } from '../../src/client/constants'
+import { RATE_LIMIT_DEFAULT_USE_BOTTLENECK } from '../../src/client/constants'
 
 const STATUSES_TO_RETRY = [1, 2, 3]
 
@@ -52,7 +44,7 @@ describe('client_http_client', () => {
         rateLimit: { total: -1, get: 3, deploy: 4 },
         maxRequestsPerMinute: -1,
         delayPerRequestMS: 0,
-        useBottleneck: RATE_LIMIT_USE_BOTTLENECK,
+        useBottleneck: RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
         retry: {
           maxAttempts: 3,
           retryDelay: 123,

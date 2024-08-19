@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -35,9 +27,7 @@ import {
   deployment,
   definitions as definitionsUtils,
   filterUtils,
-  references,
   ChangeElementResolver,
-  createChangeElementResolver,
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { types } from '@salto-io/lowerdash'
@@ -51,6 +41,7 @@ import {
 import { Options } from '../definitions/types'
 import { ADAPTER_NAME } from '../constants'
 import { customConvertError } from '../error_utils'
+import { changeResolver } from '../definitions/references'
 
 const log = logger(module)
 
@@ -270,6 +261,7 @@ export const deployArrayFieldsFilterCreator =
       const { deploy, ...otherDefs } = definitions
       const { topLevelTypeName } = arrayFieldDefinition
       if (deploy === undefined) {
+        log.error('could not find deploy definitions')
         return {
           deployResult: {
             appliedChanges: [],
@@ -284,6 +276,7 @@ export const deployArrayFieldsFilterCreator =
         }
       }
       if (changeGroup === undefined) {
+        log.error('change group not provided')
         return {
           deployResult: {
             appliedChanges: [],
@@ -303,9 +296,7 @@ export const deployArrayFieldsFilterCreator =
         changeGroup,
         elementSource,
         convertError: customConvertError,
-        changeResolver: createChangeElementResolver<Change<InstanceElement>>({
-          getLookUpName: references.generateLookupFunc(definitions.references?.rules ?? []),
-        }),
+        changeResolver,
         sharedContext,
       }
 

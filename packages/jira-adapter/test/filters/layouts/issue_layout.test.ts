@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   filterUtils,
@@ -35,7 +27,7 @@ import {
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
-import JiraClient, { graphQLResponseType } from '../../../src/client/client'
+import JiraClient, { GQL_BASE_URL_GIRA, graphQLResponseType } from '../../../src/client/client'
 import issueLayoutFilter, { getLayoutRequestsAsync } from '../../../src/filters/layouts/issue_layout'
 import asyncApiCallsFilter from '../../../src/filters/async_api_calls'
 import { getFilterParams, mockClient, createEmptyType } from '../../utils'
@@ -163,6 +155,9 @@ describe('issue layout filter', () => {
                     {
                       fieldItemId: 'testField1',
                     },
+                    {
+                      panelItemId: 'devSummary',
+                    },
                   ],
                 },
               },
@@ -187,6 +182,9 @@ describe('issue layout filter', () => {
                   },
                   {
                     fieldItemId: 'testField2',
+                  },
+                  {
+                    panelItemId: 'devSummary',
                   },
                 ],
               },
@@ -256,7 +254,7 @@ describe('issue layout filter', () => {
 
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
+        if (params.url === GQL_BASE_URL_GIRA) {
           return requestReply
         }
         throw new Error('Err')
@@ -492,6 +490,29 @@ describe('issue layout filter', () => {
       expect(issueLayout?.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual(
         'https://ori-salto-test.atlassian.net/plugins/servlet/project-config/projKey/issuelayout?screenId=11',
       )
+      expect(issueLayout?.value).toEqual({
+        extraDefinerId: '11',
+        id: '11111_11',
+        issueLayoutConfig: {
+          items: [
+            {
+              type: 'FIELD',
+              sectionType: 'PRIMARY',
+              key: 'testField1',
+            },
+            {
+              type: 'PANEL',
+              sectionType: 'PRIMARY',
+              key: 'devSummary',
+            },
+            {
+              type: 'FIELD',
+              sectionType: 'SECONDARY',
+              key: 'testField2',
+            },
+          ],
+        },
+      })
     })
     it('should not crash if the adapterContext.layoutsPromise is empty', async () => {
       adapterContext.layoutsPromise = {}
@@ -705,6 +726,14 @@ describe('issue layout filter', () => {
         sectionType: 'PRIMARY',
         key: new ReferenceExpression(fieldInstance3.elemID, fieldInstance3),
       }
+      afterIssueLayoutInstance.value.issueLayoutConfig.items[3] = {
+        type: 'PANEL',
+        sectionType: 'PRIMARY',
+        key: 'devSummary',
+        data: {
+          name: 'Development',
+        },
+      }
       const res = await layoutFilter.deploy([
         { action: 'modify', data: { before: issueLayoutInstance, after: afterIssueLayoutInstance } },
       ])
@@ -750,6 +779,14 @@ describe('issue layout filter', () => {
                 data: {
                   name: 'TestField3',
                   type: 'testField3',
+                },
+              },
+              {
+                key: 'devSummary',
+                sectionType: 'primary',
+                type: 'PANEL',
+                data: {
+                  name: 'Development',
                 },
               },
             ],

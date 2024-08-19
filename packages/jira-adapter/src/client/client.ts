@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -211,6 +203,46 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     throw new Error('Failed to get GQL response')
   }
 
+  public async atlassianApiGet(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.get({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiPost(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.post({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiPut(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.put({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
+  public async atlassianApiDelete(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const cloudId = await this.getCloudId()
+    return this.delete({
+      ...args,
+      url: `https://api.atlassian.com/jira/forms/cloud/${cloudId}/${args.url}`,
+    })
+  }
+
   public async getPrivate(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
@@ -276,6 +308,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       url: GET_CLOUD_ID_URL,
     })
     if (!isCloudIdResponse(response.data)) {
+      this.cloudId = undefined // This invalidates cloudId cache.
       throw new Error(`'Failed to get cloud id, received invalid response' ${response.data}`)
     }
     return response.data.cloudId
@@ -283,6 +316,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
 
   public async getCloudId(): Promise<string> {
     if (this.cloudId === undefined) {
+      // Caches result/promise so that future calls await on the same request.
       this.cloudId = this.getCloudIdPromise()
     }
     return this.cloudId

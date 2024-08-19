@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { X2jOptions, XMLBuilder, XmlBuilderOptions, XMLParser } from 'fast-xml-parser'
@@ -42,6 +34,7 @@ import { ConfigRecord } from './suiteapp_client/types'
 import { isFileCabinetInstance } from '../types'
 import { getServiceIdsToElemIds } from '../service_id_info'
 import { ATTRIBUTE_PREFIX } from './constants'
+import { SoapDeployResult } from './suiteapp_client/soap_client/types'
 
 const log = logger(module)
 const { matchAll } = strings
@@ -124,7 +117,7 @@ export const toDependencyError = (dependency: { elemId: ElemID; dependOn: ElemID
 
 export const getDeployResultFromSuiteAppResult = <T extends Change>(
   changes: T[],
-  results: (number | Error)[],
+  results: SoapDeployResult[],
 ): {
   appliedChanges: T[]
   errors: SaltoElementError[]
@@ -141,11 +134,11 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
       return
     }
     const { elemID } = getChangeData(change)
-    if (typeof result === 'number') {
+    if (result.isSuccess) {
       appliedChanges.push(change)
-      elemIdToInternalId[elemID.getFullName()] = result.toString()
+      elemIdToInternalId[elemID.getFullName()] = result.internalId
     } else {
-      errors.push(toElementError(elemID, result.message))
+      errors.push(toElementError(elemID, result.errorMessage))
     }
   })
 

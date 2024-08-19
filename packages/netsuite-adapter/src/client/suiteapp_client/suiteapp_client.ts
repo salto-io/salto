@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import Bottleneck from 'bottleneck'
 import OAuth from 'oauth-1.0a'
@@ -72,7 +64,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config/constants'
 import { CONSUMER_KEY, CONSUMER_SECRET, INSUFFICIENT_PERMISSION_ERROR } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { CustomRecordResponse, RecordResponse } from './soap_client/types'
+import { CustomRecordResponse, SoapDeployResult, RecordResponse } from './soap_client/types'
 import {
   ReadFileEncodingError,
   ReadFileError,
@@ -728,19 +720,19 @@ export default class SuiteAppClient {
 
   public async updateFileCabinetInstances(
     fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.updateFileCabinetInstances(fileCabinetInstances)
   }
 
   public async addFileCabinetInstances(
     fileCabinetInstances: FileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.addFileCabinetInstances(fileCabinetInstances)
   }
 
   public async deleteFileCabinetInstances(
     fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteFileCabinetInstances(fileCabinetInstances)
   }
 
@@ -756,19 +748,19 @@ export default class SuiteAppClient {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 
-  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<SoapDeployResult[]> {
     return this.soapClient.updateInstances(instances, hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<SoapDeployResult[]> {
     return this.soapClient.addInstances(instances, hasElemID)
   }
 
-  public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async deleteInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteInstances(instances)
   }
 
-  public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async deleteSdfInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteSdfInstances(instances)
   }
 

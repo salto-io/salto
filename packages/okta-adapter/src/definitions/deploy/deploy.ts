@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import _ from 'lodash'
@@ -40,6 +32,12 @@ import {
   NAME_FIELD,
   ID_FIELD,
   BRAND_THEME_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  AUTHORIZATION_POLICY,
+  APP_LOGO_TYPE_NAME,
+  NETWORK_ZONE_TYPE_NAME,
+  IDENTITY_PROVIDER_TYPE_NAME,
+  JWK_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -48,6 +46,7 @@ import {
   isInactiveCustomAppChange,
 } from './types/application'
 import { isActivationChange, isDeactivationChange } from './utils/status'
+import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -125,6 +124,178 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         {
           first: 'add',
           second: 'modify',
+        },
+      ],
+    },
+    [AUTHORIZATION_POLICY]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+              copyFromResponse: {
+                toSharedContext: simpleStatus.toSharedContext,
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: simpleStatus.modificationCondition,
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}',
+                  method: 'put',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}',
+                  method: 'delete',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          activate: [
+            {
+              condition: {
+                custom: simpleStatus.activationCondition,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/activate',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          deactivate: [
+            {
+              condition: {
+                custom: simpleStatus.deactivationCondition,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{authorizationServerId}/policies/{id}/lifecycle/deactivate',
+                  method: 'post',
+                },
+                context: {
+                  authorizationServerId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: simpleStatus.toActionNames,
+      actionDependencies: simpleStatus.actionDependencies,
+    },
+    [NETWORK_ZONE_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              omit: ['status'],
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones',
+                  method: 'post',
+                },
+              },
+              copyFromResponse: {
+                toSharedContext: simpleStatus.toSharedContext,
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: simpleStatus.modificationCondition,
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          activate: [
+            {
+              condition: {
+                custom: simpleStatus.activationCondition,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones/{id}/lifecycle/activate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          deactivate: [
+            {
+              condition: {
+                custom: simpleStatus.deactivationCondition,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/zones/{id}/lifecycle/deactivate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: changeContext => {
+        // NetworkZone works like other "simple status" types, except it must
+        // be deactivated before removal.
+        const { change } = changeContext
+        if (isRemovalChange(change)) {
+          return ['deactivate', 'remove']
+        }
+        return simpleStatus.toActionNames(changeContext)
+      },
+      actionDependencies: [
+        ...simpleStatus.actionDependencies,
+        {
+          first: 'deactivate',
+          second: 'remove',
         },
       ],
     },
@@ -289,6 +460,83 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           second: 'deactivate',
         },
       ],
+    },
+    [APP_GROUP_ASSIGNMENT_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: {
+              // These are synthetic fields that are not part of the API.
+              // We use them to store service IDs in non-reference fields.
+              omit: ['groupId', 'appId'],
+            },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{appId}/groups/{id}',
+                  method: 'put',
+                },
+                context: {
+                  appId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{appId}/groups/{id}',
+                  method: 'put',
+                },
+                context: {
+                  appId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{appId}/groups/{id}',
+                  method: 'delete',
+                },
+                context: {
+                  appId: '{_parent.0.id}',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [APP_LOGO_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          // AppLogo deployment is handled by a filter.
+          // We define actions here to avoid "action not supported" CV error. AppLogo doesn't support "remove" action,
+          // so we can't add it to the CV ignore list.
+          add: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+        },
+      },
     },
     [BRAND_TYPE_NAME]: {
       requestsByAction: {
@@ -472,6 +720,84 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/users/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [IDENTITY_PROVIDER_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps', method: 'post' },
+                transformation: { omit: ['status'] },
+              },
+              copyFromResponse: {
+                toSharedContext: simpleStatus.toSharedContext,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/{id}', method: 'put' },
+                transformation: { omit: ['status'] },
+              },
+              condition: simpleStatus.modificationCondition,
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/{id}', method: 'delete' },
+              },
+            },
+          ],
+          activate: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/{id}/lifecycle/activate', method: 'post' },
+              },
+              condition: {
+                custom: simpleStatus.activationCondition,
+              },
+            },
+          ],
+          deactivate: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/{id}/lifecycle/deactivate', method: 'post' },
+              },
+              condition: {
+                custom: simpleStatus.deactivationCondition,
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: simpleStatus.toActionNames,
+      actionDependencies: simpleStatus.actionDependencies,
+    },
+    [JWK_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/credentials/keys', method: 'post' },
+                transformation: {
+                  pick: ['x5c'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/idps/credentials/keys/{kid}', method: 'delete' },
               },
             },
           ],

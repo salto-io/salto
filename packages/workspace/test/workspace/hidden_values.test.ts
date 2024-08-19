@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -33,6 +25,8 @@ import {
   isAdditionChange,
   ListType,
   ReadOnlyElementsSource,
+  Field,
+  isField,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -283,6 +277,48 @@ describe('mergeWithHidden', () => {
 })
 
 describe('handleHiddenChanges', () => {
+  describe('added Field change with hidden annotation refType', () => {
+    it('should return correct hidden and visible parts', async () => {
+      const fieldType = new ObjectType({
+        elemID: new ElemID('test', 'fieldType'),
+        annotationRefsOrTypes: {
+          stringValue: BuiltinTypes.STRING,
+          hiddenStringValue: BuiltinTypes.HIDDEN_STRING,
+        },
+      })
+      const objectType = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            refType: fieldType,
+            annotations: {
+              stringValue: 'visible',
+              hiddenStringValue: 'hidden',
+            },
+          },
+        },
+      })
+      const { field } = objectType.fields
+      const change: DetailedChange = {
+        id: field.elemID,
+        action: 'add',
+        data: { after: field },
+      }
+      const { hidden, visible } = await handleHiddenChanges(
+        [change],
+        mockState([objectType]),
+        createInMemoryElementSource(),
+      )
+      expect(hidden).toHaveLength(1)
+      const fieldHiddenPart = getChangeData(hidden[0]) as Field
+      expect(fieldHiddenPart).toSatisfy(isField)
+      expect(fieldHiddenPart.annotations).toEqual({ hiddenStringValue: 'hidden' })
+      expect(visible).toHaveLength(1)
+      const fieldVisiblePart = getChangeData(visible[0]) as Field
+      expect(fieldVisiblePart).toSatisfy(isField)
+      expect(fieldVisiblePart.annotations).toEqual({ stringValue: 'visible' })
+    })
+  })
   describe('hidden_string in instance annotations', () => {
     let instance: InstanceElement
     let instanceType: ObjectType

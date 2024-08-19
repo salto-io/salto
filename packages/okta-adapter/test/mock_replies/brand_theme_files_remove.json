@@ -1,0 +1,26 @@
+[
+  {
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/favicon",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "495",
+      "x-rate-limit-reset": "1721570238"
+    }
+  },
+  {
+    "path": "/api/v1/brands/brand-fakeid1/themes/brandtheme-fakeid1/logo",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "494",
+      "x-rate-limit-reset": "1721570238"
+    }
+  }
+]

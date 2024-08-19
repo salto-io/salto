@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   FetchResult,
@@ -260,7 +252,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly withPartialDeletion?: boolean
   private readonly skipList?: NetsuiteQueryParameters // old version
-  private readonly useChangesDetection: boolean | undefined // TODO remove this from config SALTO-3676
   private createFiltersRunner: (
     params:
       | {
@@ -298,7 +289,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.fetchTarget = config.fetchTarget
     this.withPartialDeletion = config.withPartialDeletion
     this.skipList = config.skipList // old version
-    this.useChangesDetection = config.useChangesDetection
     this.deployReferencedElements = config.deploy?.deployReferencedElements ?? config.deployReferencedElements
     this.warnStaleData = config.deploy?.warnOnStaleWorkspaceData
     this.validateBeforeDeploy = config.deploy?.validate ?? DEFAULT_VALIDATE
@@ -356,7 +346,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public fetchByQuery: FetchByQueryFunc = async (
     fetchQuery: NetsuiteQuery,
     progressReporter: ProgressReporter,
-    useChangesDetection: boolean,
+    withChangesDetection: boolean,
     isPartial: boolean,
   ): Promise<FetchByQueryReturnType> => {
     const [sysInfo, configRecords, installedBundles] = await Promise.all([
@@ -372,7 +362,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const changedObjectsQuery = await this.getChangedObjectsQuery(
       fetchQueryWithBundles,
-      useChangesDetection,
+      withChangesDetection,
       timeZoneAndFormat,
       sysInfo,
     )
@@ -532,20 +522,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
-  private shouldFetchWithChangesDetection(shouldFetchWithChangesDetectionParams: {
-    withChangesDetection: boolean
-    hasFetchTarget: boolean
-    isFirstFetch: boolean
-  }): boolean {
-    return (
-      !shouldFetchWithChangesDetectionParams.isFirstFetch &&
-      (this.useChangesDetection === true ||
-        shouldFetchWithChangesDetectionParams.withChangesDetection ||
-        // by default when having fetch target we prefer to fetch with change detection (unless explicitly disabled)
-        (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
-    )
-  }
-
   /**
    * Fetch configuration elements: objects, types and instances for the given Netsuite account.
    * Account credentials were given in the constructor.
@@ -575,12 +551,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ]
       .filter(values.isDefined)
       .reduce(andQuery)
-
-    const fetchWithChangesDetection = this.shouldFetchWithChangesDetection({
-      withChangesDetection,
-      hasFetchTarget,
-      isFirstFetch,
-    })
+    const fetchWithChangesDetection = !isFirstFetch && withChangesDetection
     const isPartial = fetchWithChangesDetection || hasFetchTarget
 
     const { failures, elements, deletedElements, deletedElementErrors } = await this.fetchByQuery(
@@ -602,7 +573,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   private async getChangedObjectsQuery(
     fetchQuery: NetsuiteQuery,
-    useChangesDetection: boolean,
+    withChangesDetection: boolean,
     timeZoneAndFormat: TimeZoneAndFormat,
     sysInfo: SystemInformation | undefined,
   ): Promise<NetsuiteQuery | undefined> {
@@ -611,7 +582,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return undefined
     }
 
-    if (!useChangesDetection) {
+    if (!withChangesDetection) {
       log.debug('Changes detection is disabled')
       return undefined
     }
